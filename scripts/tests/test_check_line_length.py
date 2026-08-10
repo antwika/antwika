@@ -63,14 +63,18 @@ def it_finds_violations_across_the_configured_file_globs() -> None:
 def it_checks_backend_sources_outside_src() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
-        write(root / "backends/sdl3/src/Sdl3Backend.cpp", ("a" * 90) + "\n")
-        write(root / "backends/sdl3/src/Sdl3Backend.hpp", ("b" * 90) + "\n")
+        write(root / "backends/raylib/src/RaylibBackend.cpp", ("a" * 90) + "\n")
+        write(root / "backends/raylib/src/RaylibBackend.hpp", ("b" * 90) + "\n")
 
         violations = check_line_length.find_violations(root)
 
         assert len(violations) == 2
-        assert violations[0][0] == root / "backends/sdl3/src/Sdl3Backend.cpp"
-        assert violations[1][0] == root / "backends/sdl3/src/Sdl3Backend.hpp"
+        assert violations[0][0] == (
+            root / "backends/raylib/src/RaylibBackend.cpp"
+        )
+        assert violations[1][0] == (
+            root / "backends/raylib/src/RaylibBackend.hpp"
+        )
 
 
 def it_keeps_every_configured_source_line_at_or_under_eighty_chars() -> None:

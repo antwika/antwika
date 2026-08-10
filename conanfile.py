@@ -13,9 +13,9 @@ class AntwikaConan(ConanFile):
     )
 
     options = {
-        "gfx_backend": ["null", "sdl3", "raylib"],
-        "input_backend": ["auto", "null", "sdl3", "raylib"],
-        "sound_backend": ["null", "sdl3", "raylib"],
+        "gfx_backend": ["null", "raylib"],
+        "input_backend": ["auto", "null", "raylib"],
+        "sound_backend": ["null", "raylib"],
         "network_backend": ["null", "sockets"],
     }
 
@@ -66,9 +66,7 @@ class AntwikaConan(ConanFile):
 
         backends = self._selected_frameworks
 
-        if "sdl3" in backends:
-            self.requires("sdl/3.2.20")
-        elif "raylib" in backends:
+        if "raylib" in backends:
             self.requires("raylib/6.0")
 
     def build_requirements(self) -> None:

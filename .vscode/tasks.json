@@ -142,7 +142,6 @@
             "description": "Graphics backend for later builds",
             "options": [
                 "null",
-                "sdl3",
                 "raylib"
             ],
             "default": "null"
@@ -153,7 +152,7 @@
             "description": "Sound backend for later builds",
             "options": [
                 "null",
-                "sdl3"
+                "raylib"
             ],
             "default": "null"
         },

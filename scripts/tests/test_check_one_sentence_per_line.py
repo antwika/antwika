@@ -298,7 +298,7 @@ def it_checks_backend_sources_outside_src() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         write(
-            root / "backends/sdl3/src/Sdl3Backend.cpp",
+            root / "backends/raylib/src/RaylibBackend.cpp",
             "// This wraps\n// onto a second line.\nint x;\n",
         )
 
@@ -306,7 +306,7 @@ def it_checks_backend_sources_outside_src() -> None:
 
         assert len(violations) == 1
         assert (
-            violations[0].path == root / "backends/sdl3/src/Sdl3Backend.cpp"
+            violations[0].path == root / "backends/raylib/src/RaylibBackend.cpp"
         )
 
 

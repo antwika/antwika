@@ -1030,7 +1030,7 @@ def it_finds_violations_across_the_configured_globs() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         write(root / "src/libs/a/src/A.cpp", "// nope\n")
-        write(root / "backends/sdl3/src/B.hpp", "// nope\n")
+        write(root / "backends/raylib/src/B.hpp", "// nope\n")
         write(root / "scripts/gated.py", "# nope\n")
         write(root / "cmake/Gated.cmake", "# nope\n")
         write(root / ".github/workflows/gated.yml", "# nope\n")
@@ -1040,7 +1040,7 @@ def it_finds_violations_across_the_configured_globs() -> None:
 
         assert len(violations) == 5
         assert root / "src/libs/a/src/A.cpp" in paths
-        assert root / "backends/sdl3/src/B.hpp" in paths
+        assert root / "backends/raylib/src/B.hpp" in paths
         assert root / "scripts/gated.py" in paths
         assert root / "cmake/Gated.cmake" in paths
         assert root / ".github/workflows/gated.yml" in paths

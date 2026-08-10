@@ -24,7 +24,7 @@ The directory is the unit that has to stay together, because `antwika::app::asse
 They are split because the sound and network conformance suites run with no display, and everything else runs under Xvfb when the graphics backend is not `null`.
 
 ```sh
-SDL_AUDIO_DRIVER=dummy ctest --test-dir build \
+ctest --test-dir build \
     -R 'SoundBackendConformance|NetworkBackendConformance'
 
 xvfb-run -a ctest --test-dir build \

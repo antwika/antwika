@@ -291,13 +291,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: SDL3
-            backend: sdl3
-            subsystems: gfx input sound
-            options: -o gfx_backend=sdl3 -o sound_backend=sdl3
-            folder_vars: "['options.gfx_backend']"
-            preset: conan-gfx_backend_sdl3-release
-            lockfile: conan-sdl3.lock
           - name: raylib
             backend: raylib
             subsystems: gfx input sound
@@ -412,7 +405,7 @@ jobs:
               sound)
                 printf 'pcm.!default { type null }\nctl.!default { type null }\n' \
                   > /etc/asound.conf
-                runner=(env SDL_AUDIO_DRIVER=dummy)
+                runner=(env)
                 ;;
               network) runner=(env) ;;
               *) runner=(xvfb-run -a) ;;

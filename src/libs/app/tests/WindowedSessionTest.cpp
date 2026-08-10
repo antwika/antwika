@@ -353,7 +353,7 @@ TEST(WindowedSessionTest, Describe_ReportsAnyOtherBackendAsDrawing)
     Fixture fixture;
     FakeInputBackend input;
 
-    ON_CALL(fixture.backend, name()).WillByDefault(Return("sdl3"));
+    ON_CALL(fixture.backend, name()).WillByDefault(Return("raylib"));
 
     const WindowedSession session(
         fixture.logging.logger(), fixture.backend, input, describe());

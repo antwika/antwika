@@ -36,26 +36,14 @@ json-schema-validator 2.4.0    -- MIT
 stb cci.20240531               -- MIT, or public domain
 
 
-Linked when the gfx or sound backend is sdl3
---------------------------------------------
-
-SDL 3.2.20                     -- zlib
-
-SDL arrives with a dependency graph of its own. On Linux that graph
-carries LGPL-2.1 components: pulseaudio, libalsa, libsndfile, mpg123,
-libmp3lame, libiconv and libgettext's libintl. dbus is dual-licensed
-AFL-2.1 or GPL-2.0-or-later, and the AFL terms are the ones to take.
-The rest are permissive: openssl (Apache-2.0), opus, ogg, vorbis and
-flac (BSD-3-Clause), wayland, xkbcommon, libxml2, expat (MIT), zlib.
-
 The exact set moves with the profile and the recipe options, so read it
 off the build you intend to ship rather than off this list:
 
     conan graph info . --format=json
 
 
-Linked when the gfx backend is raylib
--------------------------------------
+Linked when the gfx or sound backend is raylib
+----------------------------------------------
 
 raylib 6.0                     -- zlib
 glfw 3.4                       -- zlib
@@ -91,11 +79,10 @@ Before a binary release
    binaries needs those texts alongside it.
 
 2. No profile or build script sets a shared option, so Conan builds
-   dependencies static by default. Statically linking the LGPL
-   components listed above obliges you to give recipients the means to
-   relink against a modified version of them. Building those shared
-   (-o *:shared=True), or taking them from the system, avoids the
-   question. The raylib and null backends do not raise it at all.
+   dependencies static by default. No Conan package above is copyleft,
+   so static linking raises no relinking obligation. The mingw runtime
+   DLLs are the only copyleft components, and the GCC Runtime Library
+   Exception noted beside them is what lets a release carry them.
 
-3. conan.lock, conan-sdl3.lock and conan-raylib.lock pin what is
-   actually built. Re-read this file whenever one of them changes.
+3. conan.lock and conan-raylib.lock pin what is actually built.
+   Re-read this file whenever one of them changes.

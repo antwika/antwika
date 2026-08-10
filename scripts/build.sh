@@ -117,8 +117,7 @@ fi
 headless_suites='SoundBackendConformance|NetworkBackendConformance'
 
 echo "==> Sound and network suites, with no display"
-SDL_AUDIO_DRIVER=dummy \
-    ctest --test-dir build --output-on-failure --no-tests=error \
+ctest --test-dir build --output-on-failure --no-tests=error \
     -R "$headless_suites"
 
 echo "==> Everything else"
