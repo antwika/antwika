@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include <antwika/gfx/Color.hpp>
+#include <antwika/gfx/Glyphs.hpp>
 #include <antwika/gfx/Size.hpp>
 
 namespace antwika::ui
@@ -10,6 +11,7 @@ namespace antwika::ui
 
     using antwika::gfx::Color;
     using antwika::gfx::Size;
+    using antwika::gfx::TextFace;
 
     struct Theme final
     {
@@ -48,6 +50,8 @@ namespace antwika::ui
         Color dividerHovered{.red = 70, .green = 78, .blue = 96};
 
         Color dividerHeld{.red = 96, .green = 106, .blue = 130};
+
+        TextFace face = TextFace::Normal;
 
         std::uint32_t textScale = 1;
 

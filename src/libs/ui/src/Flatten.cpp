@@ -113,7 +113,7 @@ namespace antwika::ui::detail
                 }
 
                 const auto cell =
-                    antwika::gfx::kGlyphAdvance * node.textScale;
+                    antwika::gfx::scaledGlyphAdvance(node.textScale);
                 const auto cells =
                     cell > 0 ? node.arranged.size.width / cell : 0U;
 

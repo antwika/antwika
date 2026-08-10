@@ -34,6 +34,16 @@ namespace antwika::gfx
 
         virtual void setTitle(std::string_view title) = 0;
 
+        /**
+         * @brief Resizes the window's client area live.
+         *
+         * Ensures: backends without live resize ignore the request,
+         *          so callers re-check size() afterwards.
+         */
+        virtual void setSize(Size)
+        {
+        }
+
         virtual void setFullscreen(bool fullscreen) = 0;
 
         virtual void close() = 0;

@@ -14,7 +14,6 @@ antwika_add_app(
         src/EditorState.cpp
         src/EditorTheme.cpp
         src/EditorUi.cpp
-        src/FileList.cpp
         src/Ink.cpp
         src/Messages.cpp
         src/OpeningSheet.cpp

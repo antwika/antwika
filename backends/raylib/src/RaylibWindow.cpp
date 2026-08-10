@@ -48,6 +48,8 @@ namespace antwika::gfx::raylib
                 "xvfb-run");
         }
 
+        SetExitKey(KEY_NULL);
+
         if (desc.resizable)
         {
             SetWindowState(FLAG_WINDOW_RESIZABLE);
@@ -114,6 +116,20 @@ namespace antwika::gfx::raylib
         }
 
         SetWindowTitle(windowTitle.c_str());
+    }
+
+    void RaylibWindow::setSize(const Size size)
+    {
+        requestedSize = size;
+
+        if (!open)
+        {
+            return;
+        }
+
+        SetWindowSize(
+            static_cast<int>(size.width),
+            static_cast<int>(size.height));
     }
 
     void RaylibWindow::setFullscreen(bool fullscreen)

@@ -1,0 +1,205 @@
+# Map editor task backlog
+
+This file records the map_editor work queue agreed on 2026-08-10, so the specifications survive even if the session executing them dies mid-stream.
+The tasks run strictly in order because each one touches the same app.
+A task is not done until it builds clean under -Werror, passes the three style checker scripts, keeps every existing test green, and has been exercised under Xvfb with xdotool-driven synthetic input.
+Unit tests for the editor itself remain deferred by explicit decision; see docs/MAP_SYSTEM_PLAN.md for the surrounding plan.
+
+## Status
+
+| # | Task | State |
+| --- | --- | --- |
+| 1 | Menu bar | shipped |
+| 1b | Menu click-toggle fix | shipped |
+| 2 | Map camera: zoom and pan | shipped |
+| 3 | WFC generation directed by pins | shipped |
+| 4 | Compact ui theme | shipped |
+| 5 | File explorer dialog | shipped |
+| 6 | Smaller text face | shipped |
+| 7 | Tile sheet workspace | shipped |
+| 8 | Character management | shipped |
+| 9 | User-selectable UI scale | shipped |
+| 10 | Canvas presentation and map extension | shipped |
+| 11 | Free-mask persistence, schema v2 | shipped |
+| 12 | Runtime keyboard under the raylib backend | shipped |
+| 13 | Map palette picker | shipped |
+| 14 | Developer console in tilemap_demo and map_editor | shipped |
+
+## 1: menu bar (shipped)
+
+A ui-built bar at the top of the 480×270 canvas: File (New, Save, Load, Quit), Edit (Undo, Redo, Delete Entity), View (Validator toggle), Map (Playtest, Validate Now), with keyboard shortcuts shown in entry labels.
+Entries route through the existing undoable command functions only.
+Implemented with `ui::Context::dropdown` overlay nodes; open state is app-owned in the store.
+The map viewport shifted down by the bar height and bar clicks never reach the map.
+
+## 1b: menu click-toggle fix (shipped)
+
+Bug found by synthetic clicking: the menu opens on mouse press and the release closes it again, so only holding the button keeps it open.
+Expected: a completed click leaves the menu open; it closes only on entry choice, a second title click, an outside press, or Escape.
+Verification is the xdotool click-wait-capture sequence proving the entries stay visible after release.
+Outcome: instrumentation proved the editor's logic was already edge-correct, and the real defect sits in the raylib input backend, whose once-per-frame state diff drops a press-and-release pair that lands inside one poll, so a zero-delay synthetic click delivers no events at all.
+The backend is outside the permitted footprint, so verification uses clicks with a human-scale hold (about 60 ms), for which open, stay-open, second-click close, outside close, and Escape all pass.
+
+## 2: map camera — zoom and pan
+
+Wheel over the map viewport zooms through discrete steps (0.5x to 4x) anchored at the cursor; middle-button drag pans (right-drag fallback if the backend never emits middle); horizontal scroll pans horizontally.
+Pan clamps so part of the map always stays visible.
+The draw plan stays at 1x coordinates; only rendering and hit-testing apply the camera transform, and `cellUnder` inverts it.
+Panel, menu bar, and HUD never scale with the map camera.
+Verification includes painting the correct cell while zoomed, proven by saving and inspecting the JSON.
+
+## 3: WFC generation directed by pins
+
+Painted cells are pinned constraints; a seventh "free" brush (key 7) unpins cells, marked with a quiet visual tick.
+Map > Generate (key G) runs the antwika::wfc solver over free cells only: pinned cells enter as single-value domains.
+Generation domain is Floor, Wall, Water, Path, Cliff with weights 8/3/2/2/1; Stair is artist-only but pinned stairs constrain neighbours.
+Adjacency (4-way, symmetric): floor touches anything; wall touches wall/floor/path/stair; water touches water/floor; path touches path/floor/wall/stair; cliff touches cliff/floor.
+Deterministic seeding from a store-held counter incremented per run; success applies as one undoable command; contradiction leaves the map untouched and reports.
+File > New pins only the border; loading a map pins everything (superseded by task 11 for v2 files, whose saved free mask loads verbatim; v1 files still pin everything); generated cells stay free for re-rolls.
+Verification: pinned water survives a Generate verbatim in the saved JSON, and undo reverts the whole Generate.
+Amendment: the solver is fully deterministic with no rng of its own, so variety comes from seed pins — roughly every sixth free cell is pre-collapsed to a weighted random value drawn from an xorshift32 stream, restricted to values compatible with already-fixed neighbours so the seeded solve cannot contradict; an unseeded solve is the fallback.
+
+## 4: compact ui theme
+
+A denser `ui::Theme` instance local to the editor (roughly padding 4→2, gap 4→2, buttonPadding 6→3, proportional scrollbar/slider shrink); src/libs/ui is not touched because eleven apps share it.
+Layout constants derived from theme metrics (menu bar height) are recomputed, not left stale.
+The reclaimed panel space grows the findings list.
+Shipped values: padding 2, gap 1, buttonPadding 2, scrollbarWidth 4, sliderHeight 8, giving a menu bar height of 12 canvas pixels.
+
+## 5: file explorer dialog
+
+Part A extracts atlas_editor's pure `FileList` helpers (FileEntry, kParentEntry, entriesIn, pathIn, entryText) into src/libs/io as `antwika::io`, moving its existing tests along (they must pass) and updating atlas_editor call sites.
+Part B: the File menu becomes New, Open..., Save, Save As..., Quit; Open/Save As raise a modal ui-built explorer: path label, entry list (parent, directories, then *.json files), click-to-navigate, editable filename field, Confirm/Cancel, scrolling or paging for long listings.
+While open, everything underneath is suppressed and Escape closes the dialog before meaning anything else.
+Verification includes a Save As landing a file at the navigated path on disk.
+Amendments at shipping: atlas_editor keeps compiling through a small compat header re-exporting the io names into its namespace, because the call sites are many; long listings page with Prev/Next buttons rather than a scroll region, since the ui library scrolls text areas but not widget lists; the Escape-closes-dialog path is implemented but cannot be exercised under the raylib backend, which emits no keyboard events at all.
+
+## 6: smaller text face
+
+The built-in font is a TTF rasterized at 8px line height by GlyphCells, so a smaller face is the same font at 6px (7px fallback if 6 is illegible in captures).
+Additive only: default face and all other apps stay byte-identical; footprint may include gfx, ui, and both backends if drawText needs a face parameter, choosing the least invasive mechanism after reading the whole text path.
+`ui::Theme` gains the face field and ui layout measures with the chosen face's metrics, so bar and button heights shrink accordingly.
+Amendment at shipping (2026-08-10): the face rides in the existing uint32 text scale (face id in the high bits, multiplier in the low bits), so no drawText signature changed and every plain scale keeps its meaning.
+The small face rasterizes the built-in TTF at a 6-pixel line height with a 5-pixel advance, which captures show fully legible, so the 7-pixel fallback was not needed.
+The editor's menu bar height drops from 12 to 10 canvas pixels, superseding the value recorded in task 4.
+
+## 7: tile sheet workspace
+
+The editor loads assets/tiles/<terrain>.png (via a --tiles flag, default assets/tiles) as the render source when present and correctly sized, else falls back to the procedural placeholder per terrain.
+View > Tiles (Tab) swaps the viewport for a magnified pixel workspace over the selected terrain's 32×48 sheet: slot grid with hover labels per docs/TILE_SHEETS.md, left-click inks, right-click clears, strictly 1-bit, undoable, with the texture re-uploaded on edit so the map view updates live.
+File > Save in this view writes the sheet through gfx::PngWriter.
+Verification includes the restart round-trip: paint, save, relaunch, and the map renders the new art.
+Amendment (2026-08-10): the workspace presentation mirrors atlas_editor's Canvas/TileGrid/SpriteGuides ideas — zoom-gated faint pixel grid, stronger guide lines on the 8×8 slot and row-band boundaries, atlas_editor-style transparency backdrop, and its cheap affordances (hover pixel highlight, ink indicator) where they fit the compact theme — reimplemented locally, not linked, unless a genuinely pure helper justifies a FileList-style extraction.
+Amendments at shipping (2026-08-10): the workspace magnification is fixed at 5x (above the 4x grid gate) rather than user-zoomable, the edited sheet follows the terrain brush palette, and each sheet carries its own undo/redo stacks that Edit > Undo/Redo drive while the view is active.
+File > Save's label adapts to "Save Sheet" and writes only the selected terrain's sheet; Open and Save As keep operating on maps in every view.
+The Tab fast path waits for task 12's keyboard, so View > Tiles/Map is the working toggle, and the raylib backend delivers right-button clears without trouble.
+
+## 8: character management
+
+Convention: one character = assets/characters/<name>.png, a 64×64 sheet of 4×4 16×16 frames; rows walk_down/walk_up/walk_left/walk_right, columns frames 0-3, frame 0 doubling as idle; a JSON sidecar describes the table.
+View > Characters (Tab cycles Map/Tiles/Characters): panel lists characters with New (procedural silhouette placeholder, rejecting empty/duplicate names), Delete behind a confirm step that removes PNG and sidecar, and a name field; the viewport reuses the pixel workspace; a panel preview animates the hovered row at ~8 fps.
+Spawn entities offer their enemy field as a dropdown of character names if panel space allows.
+tilemap_demo renders assets/characters/player.png as the animated player (direction row, cycling while moving, idle at rest) with the orange rect as fallback.
+Verification includes running the demo with a painted player.png and capturing the sprite in place of the rect.
+Amendment (2026-08-10): the character pixel workspace follows the same atlas_editor-derived presentation as the tile workspace — zoom-gated pixel grid, stronger 16×16 frame guide lines, its transparency backdrop, and transferable affordances — reimplemented locally per the task 7 amendment.
+Amendments at shipping (2026-08-10): the character workspace runs at a fixed 4x zoom, and the animated row preview sits in the workspace's left margin rather than the panel, because the ui phase paints the panel above everything the render phase draws; the previewed row follows the workspace hover (walk_down when nothing is hovered) at a tick/8 frame clock.
+A --characters flag (default assets/characters) picks the directory, New writes the placeholder PNG and sidecar immediately so Delete always has files to remove, and the name field starts prefilled with "player" since the raylib backend still delivers no typing before task 12 — empty-name rejection therefore ships tested by code path while duplicate rejection was exercised live.
+The demo hardcodes assets/characters/player.png relative to its working directory, keeps the orange rect fallback, and the idle sprite render was captured in place of the rect; task 12 later verified arrow-driven movement with the walk frames cycling.
+The spawn enemy dropdown shipped with a "(none)" first entry, and the chosen name was verified in the saved JSON.
+
+## 9: user-selectable UI scale
+
+View menu offers UI Scale 2x (960×540), 3x (1440×810, default), 4x (1920×1080); the 480×270 canvas is unchanged and everything scales as crisp integer multiples, with the active choice marked.
+Live window resize preferred (an additive IWindow method backed by raylib's SetWindowSize is allowed under the same rules as task 6); the ViewportRenderer transform must be rebuilt on change so pointer hit-testing stays correct, which verification proves by painting after a live switch.
+If live resize is impractical, the choice persists and applies at startup with a "restart to apply" note.
+The chosen scale persists in a map_editor config file following atlas_editor's ConfigFile precedent.
+Amendments at shipping (2026-08-10): live resize worked, through an additive `IWindow::setSize` whose base implementation is a documented no-op, a raylib override calling SetWindowSize, and an additive `ViewportRenderer::resize` rebuilding the transform.
+The three scales sit in the View menu with a "*" marking the active one, the config file is `config.json` beside the binary via the ANTWIKA_CONFIG_FILE macro, and painting after a live 3x-to-2x switch landed on the intended cell in the saved JSON.
+Under the window-manager-less Xvfb a relaunched window centers itself, which is environmental, not app behavior.
+
+## 10: canvas presentation and map extension
+
+Part A (editor only): a subtle two-shade checkerboard behind the tiles inside map bounds, locked to cell space and transforming with the camera, with one solid darker void color outside the bounds; Shade and validator overlays draw above it unchanged.
+Part B: an additive `expandedMap(map, west, north, east, south)` free function in src/libs/tilemap returning a larger map with cells copied at the offset, entities (including trigger extents' origins) shifted by (west, north), header preserved, and zero growth returning an equal map — with unit tests in tilemap's style covering corner copy, entity shift, zero-growth equality, and header preservation, because the deferral covers editor code, not that tested library.
+Editor: painting within a few cells beyond an edge shows a ghost cell and auto-extends the map to include it, keeping pins, the free grid, the ECS mirror, and the camera pan consistent (no visual jump on west/north growth), and undo reverts extension plus paint together; explicit Map > Extend entries are optional if auto-extend suffices.
+Verification: zoomed-out capture showing checker inside and void outside, painting past the west edge grows columns and shifts a placed entity's column in the saved JSON, and undo restores the old dimensions.
+Amendments at shipping (2026-08-10): the undo stacks now snapshot the pin grid beside the map, so one undo reverts extension, pins, and paint together instead of falling back to reconcilePins's all-pinned repair.
+Growth from painting defaults the new cells to free, anticipating task 11, and explicit Map > Extend entries were not needed because auto-extend suffices.
+All four verification points passed live: ghost cell at a west off-edge hover, 20-to-21 column growth with the entity shifting from column 2 to 3 in the JSON, an undo restoring both, and the checkerboard-inside/void-outside capture at 0.5x zoom.
+
+## 11: free-mask persistence, schema v2
+
+The generation pin/free mask travels with the map file; the Cell model does not change because the mask is serialization-level.
+MapJson gains an always-emitted "free" section, one string per row of '.' (pinned) and 'o' (free) in the terrain row style, and kSchemaVersion bumps to 2.
+The loader accepts v1 and v2: a v1 document (no "free" member) loads all-pinned, v2 requires the section with matching dimensions, and toJson always writes v2.
+The mask rides beside the map in a small MapDocument-style pairing (or parallel functions — implementer's call, reported) with the existing TileMap-only signatures kept working on an all-pinned default.
+The tested-lib rule applies: tilemap unit tests must cover the v2 round-trip, v1 migration to all-pinned, dimension-mismatch rejection, and unknown-schema rejection.
+mapcheck_cli and tilemap_demo keep using the TileMap-only path and must load v2 untouched; assets/maps/demo.json is re-exported as v2 and map_assets_validate stays green.
+In the editor the pinned grid loads from and saves with the file, File > New keeps border-pinned/interior-free, v1 maps load all-pinned, and task 10's expandedMap growth defaults new cells to free with the mask growing in sync.
+When this ships, the task 3 rule "loading a map pins everything" is superseded for v2 files, and a note there must say so.
+Verification: paint pins and free regions, save, inspect the JSON's free rows, reload and capture the free ticks in the same places, load a v1 map and confirm all-pinned, tilemap tests green, and the standard bars.
+Amendments at shipping (2026-08-10): the pairing shipped as a `MapDocument{map, free}` struct in MapJson with toJson/mapDocumentFromJson overloads and saveMapFile/loadMapDocumentFile beside the untouched TileMap-only signatures, which now always write schema 2 with an all-pinned free section.
+The loader accepts schema 1 and 2, a v2 document without the free section is rejected, and a stray free section on a v1 document is read rather than ignored.
+assets/maps/demo.json was re-exported as v2 (schema 2 plus an all-pinned free block) and map_assets_validate stays green; the eight new MapJson tests bring the tilemap suite to 45.
+
+## 12: runtime keyboard under the raylib backend
+
+Task 1b's investigation found that the raylib input backend declares keyboard=false and emits no key events, so tilemap_demo's arrow movement and every editor fast path are dead in a real run.
+Investigate first how the interactive apps (game, life, sudoku, atlas_editor) receive keyboard under raylib — an app-lib/gfx-side source such as the WindowedSession pipeline or game's KeyboardSource, or an unimplemented backend path — and follow the repo's intended path rather than inventing one.
+If the intended path is app-lib or gfx-side, wire map_editor's KeyboardSystem and tilemap_demo to consume it (footprint: both apps plus src/libs/app for a genuinely needed additive helper).
+If the intended path is the input backend, implement key events there additively with keyboard=true, using raylib's key-pressed queue or edge tracking that cannot drop sub-frame events, without replicating the mouse state-diff defect and keeping backend tests green.
+Either way tilemap_demo's arrows and Escape must work, as must the editor fast paths (1-7, E/Q, B, L, U/R, S, G, V, Tab, Escape, F5).
+Verification: xdotool key events under Xvfb move the demo player and drive editor paint/undo/menu-close, or if key events cannot reach raylib under Xvfb, an explicit statement plus null/replay-backend verification and a written event-path trace.
+Amendments at shipping (2026-08-10): the investigation found no app-lib or gfx-side keyboard source anywhere — the game/life/atlas_editor pipelines all consume the same IInputBackend that declared keyboard=false — so the intended path is the input backend, and key events landed there additively.
+Presses drain raylib's GetKeyPressed queue (which holds sub-frame presses, so nothing can drop) with a repeat flag from a held-key table, releases come from IsKeyDown edges over that table, modifiers are sampled at event time, and capabilities now claim keyboard=true; 93 of the 105 Key values map (IntlBackslash has no raylib code).
+RaylibWindow now calls SetExitKey(KEY_NULL) so applications own Escape instead of raylib closing the window on it.
+Tab additionally became the editor's Map/Tiles/Characters cycle (the task 7 gap), U/R/S route to the sheet undo, redo, and save while a workspace view is active, and xdotool verified: demo arrows plus Escape-quit, editor brush digits, E/U, S (file mtime), V, G, Tab, Escape closing menus and the file dialog without quitting, and a full file name typed into the Save As field with Backspace editing and Return submit.
+
+## 13: map palette picker
+
+The artist picks the map's two 1-bit palette colors — ink and paper — with a full-range color picker; MapHeader already carries Rgb ink and Rgb paper and the JSON schema serializes them, while today both apps render hardcoded constants.
+Rendering first (footprint src/apps/map_editor plus src/apps/tilemap_demo): sheets bake in white ink and map sprites draw with tint = the header's ink color (Shade keeps its black tint); loaded assets/tiles PNGs either tint-multiply, if drawn in white or light gray, or re-color on load by mapping every opaque pixel to white — whichever keeps existing PNGs looking right, reported.
+clear() uses the header's paper color, and the task 10 checkerboard shades plus any paper-relative chrome derive from the header palette so light maps stay readable; ui panel and menu theme colors stay fixed.
+Palette changes take effect live with no texture re-bake, or a single cheap re-bake on change (implementer's call, reported).
+tilemap_demo renders with the loaded map's header palette, and its built-in demo map keeps the current colors as its header values.
+Picker ui: Map > Palette... opens a modal dialog under the file dialog's modality rules — two swatches (ink, paper) with the active one selectable, a hue slider, a saturation/value 2D square rendered as a generated texture regenerated on hue change with click or drag picking, R/G/B readouts, and a #rrggbb hex field; live preview recolors the map behind the dialog; Apply commits one undoable header edit through the command path and Cancel restores the colors from before the dialog opened.
+If the SV square proves awkward, six sliders (R, G, B per swatch) plus the hex field still count as full-range, but the SV square comes first and the outcome is reported.
+Verification under Xvfb (mouse-only unless task 12 has landed): drag in the SV square and hue slider with the map recoloring live behind the dialog, Apply then save and assert the JSON header ink and paper match the picked values exactly, reload to confirm persistence, capture the Cancel path restoring prior colors, and undo after Apply reverting; standard bars throughout.
+
+Amendments at shipping (2026-08-10): loaded assets/tiles PNGs re-color on load — every opaque pixel maps to white with alpha kept — rather than trusting the file's baked color, so pre-task-13 sheets saved with the old gray-green ink render identically once tinted.
+Palette changes are tint-only with zero re-bake: the sheet textures stay white-baked and only the per-draw tint and clear color change.
+The picker keeps hue, saturation, and value as its working state while dragging and recomputes them from the swatch only on open, swatch switch, or hex entry, so integer rounding in the conversions never makes a drag drift.
+The SV square shipped as specified: a 128x64 texture regenerated on hue change, drawn by the ui system after the panel paint using the widget rect the layout reports, with press-and-drag hit-testing done against that rect.
+The hex field accepts rrggbb without the leading '#', because the raylib key path delivers shift+3 as a plain '3', and the field text still displays the '#rrggbb' form.
+Fresh maps from makeEditorState and File > New now carry ink 214,224,216 and paper 12,14,16 in the header, and DemoMap plus a re-exported assets/maps/demo.json carry the same values, so every default view keeps the pre-task-13 look while a default-header v1/v2 map (black on white) renders honestly by its own palette.
+The checker shades and void derive arithmetically from paper (a 12/255 and 24/255 step toward white on dark paper, mirrored toward black on light paper, void 143/255 toward black on dark and 64/255 on light), while the ghost and free-mark chrome picks a light or dark constant set by paper luminance.
+The Tiles and Characters workspaces keep the fixed dark clear color, since their margins are editor chrome, not map presentation.
+A `modalOpen` helper now guards pointer gestures, fast paths, F5, and Tab for both the file and palette dialogs, and Escape cancels the palette dialog exactly like its Cancel button.
+Verification passed live under Xvfb: SV-square and hue drags recolored the map behind the dialog mid-drag, typed hex values 3366cc/eeddaa landed exactly as [51,102,204]/[238,221,170] in the saved JSON, a relaunch rendered them, Cancel and Escape restored the prior colors, one undo after Apply reverted both colors together with redo restoring them, an outside click neither painted (wall brush over floor stayed floor in the JSON) nor closed the dialog, and tilemap_demo rendered the picked palette from the file while the built-in map kept the classic colors.
+
+## 14: developer console in tilemap_demo and map_editor
+
+Wire the repo's developer console (src/libs/console) into tilemap_demo — the Wakewater game stand-in — and, if the pattern transfers cheaply, into map_editor as well.
+This task depends on task 12, because a console needs typing, so it runs after runtime keyboard lands.
+Study the existing mounts first: the console lib serves nine apps, life is likely the smallest example (ConsolePicture overlay in its RenderSystem) and game the fullest (ConsoleMount/ConsoleScene/ConsoleSink/ConsoleGatedSink, Typing, IConsoleCommands implementations, OptionsConsoleControls, SnapshotCommands with a JSON snapshot store); follow the repo's canonical mount pattern rather than hand-rolling one.
+tilemap_demo (required): the console toggles with the repo's conventional key (matching what the other apps bind), overlays the top portion of the canvas, captures keyboard while open with movement suppressed, and closes with the same key or Escape per convention.
+Commands via IConsoleCommands, v1 set: help, map <path> (load a map file with errors printed to the console), tp <column> <row> (teleport clamped with a printed warning on unwalkable targets), pos, palette <ink|paper> <#rrggbb> (only if task 13 landed), and quit.
+If the SnapshotCommands/ISnapshotStore pattern fits without inventing state serialization, wire snapshot save/load the way game does; if it drags in more machinery than the demo is worth, skip it and record why.
+Footprint: src/apps/tilemap_demo/** plus linking antwika::console.
+map_editor (if cheap after the demo wiring, else recorded as skipped with reasons): same mount pattern with help, open <path>, save [<path>], generate [seed], validate, scale <2|3|4> (if task 9 landed), and palette; while the console is open it owns all keys and never fights the ui text fields.
+Verification under Xvfb with post-task-12 keyboard: capture the open console overlay with prompt, type a tp command and capture the moved player, type map with a bad path and capture the error in the history, close and confirm movement keys work again; for the editor, open, type save, and confirm the file mtime changed; standard bars, and the console lib's own tests stay green.
+
+Amendments at shipping (2026-08-10): the study found that ConsoleMount hardwires SnapshotCommands as its whole command table and no app passes custom commands, so both apps assemble the mount's own inner piece — the lib's ConsoleSink with ConsoleState, ConsoleScene, FixedConsoleControls, InputFold, and ConsolePicture — around an app IConsoleCommands, with the console lib untouched.
+The snapshot save/load pattern was skipped in both apps: IJsonSnapshotStore requires a magic, a version, and a migration chain, which is more machinery than a demo whose whole mutable state is one player cell and a map path is worth, and the editor already owns richer persistence through its map files.
+The conventional keys are FixedConsoleControls' defaults — Grave toggles, Enter executes — and since the lib itself never closes on Escape, both apps close the console app-side on an Escape press while it shows, so Escape never quits through an open console.
+Both direct-loop apps feed the sink by hand: one engine.tick TickEvent per frame for the slide animation and repaint, then every polled input event encoded through InputEventCodec, which is exactly what the engine-loop apps' dispatcher does.
+The overlay is window-sized (life's precedent, whose "canvas" is the window) and painted on the window renderer above the viewport, because at the apps' small canvases the scene's eight history rows overflow the half-canvas sheet and render nothing.
+tilemap_demo shipped help, map, tp, pos, palette, and quit; tp clamps into bounds and refuses an unwalkable target with a printed warning, map prints load errors into the history, palette reuses task 13's semantics, and quit routes through the sink's stop path into window close.
+map_editor proved cheap after the demo wiring and shipped an EditorConsoleSystem scheduled first in the input phase, with help, open, save [path], generate [seed] (seeding the store counter), validate (reporting the finding count), scale <2|3|4> (a store-carried pending scale the ui system applies, rebuilding the overlay at the new window size), palette (one undoable header edit), and quit.
+While the console shows, the editor's KeyboardSystem returns before reading any key, so the console owns all keys and never fights the ui text fields, and pointer presses and wheel scrolls under the console sheet are swallowed following ConsoleGatedSink's semantics; the hex commands accept bare rrggbb because shift+3 still types '3'.
+Verification under Xvfb passed: captures show the demo console overlay with prompt and help, a tp 10 8 moving the player with arrows dead while open and alive after close, a bad map path's error in the history (typed with a dash-named file since the layout delivers no '/'), Escape closing the console with the app surviving, and quit exiting cleanly; the editor captures show the console over the live map, save creating the file and a later save changing its mtime, validate/generate/palette/scale acting with the map recoloring and the window resizing live, undo reverting the console's palette edit after close, and quit closing the editor.
+All 6633 display-bound tests plus the 80 headless conformance tests stay green, including the console lib's suites.
+
+## After the queue drains
+
+Open threads deliberately not in the queue: editor unit tests and replay coverage (blocked on the deferred-tests decision and the WindowedSession migration), boat traversal edges in mapcheck, hover mapping ignoring elevation lift, and the void left where cutaway hides a block.

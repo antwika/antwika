@@ -16,7 +16,7 @@ namespace antwika::ui::detail
     [[nodiscard]] inline Node caretNode(const Theme &theme)
     {
         const auto height = clampToU32(
-            std::uint64_t{antwika::gfx::kGlyphLineHeight}
+            std::uint64_t{antwika::gfx::glyphLineHeightOf(theme.face)}
             * theme.textScale);
 
         const auto width = theme.textScale > 0 ? theme.textScale : 1;

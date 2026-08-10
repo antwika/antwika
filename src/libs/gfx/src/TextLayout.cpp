@@ -11,15 +11,17 @@ namespace antwika::gfx
 
     Size textSize(std::string_view text, std::uint32_t scale) noexcept
     {
-        if (text.empty() || scale == 0)
+        const auto height = scaledGlyphLineHeight(scale);
+
+        if (text.empty() || height == 0)
         {
             return Size{};
         }
 
         const auto cells = static_cast<std::uint32_t>(text.size());
         return Size{
-            .width = cells * kGlyphAdvance * scale,
-            .height = kGlyphLineHeight * scale,
+            .width = cells * scaledGlyphAdvance(scale),
+            .height = height,
         };
     }
 

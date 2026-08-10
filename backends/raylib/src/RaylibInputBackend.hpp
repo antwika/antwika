@@ -6,9 +6,11 @@
 #include <optional>
 #include <string_view>
 
+#include <antwika/enums/Enumeration.hpp>
 #include <antwika/input/IInputBackend.hpp>
 #include <antwika/input/InputCapabilities.hpp>
 #include <antwika/input/InputEvent.hpp>
+#include <antwika/input/Key.hpp>
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/input/Position.hpp>
 #include <antwika/log/ILogger.hpp>
@@ -41,6 +43,7 @@ namespace antwika::input::raylib
         std::deque<InputEvent> pending;
         std::optional<Position> lastPosition;
         std::array<bool, kMouseButtonCount> held{};
+        std::array<bool, enums::kCount<Key>> heldKeys{};
 
         std::uint64_t wheelFrame = ~std::uint64_t{0};
 

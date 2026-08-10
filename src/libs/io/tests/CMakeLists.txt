@@ -1,6 +1,7 @@
 find_package(GTest REQUIRED)
 
 add_executable(antwika_io_tests
+    FileListTest.cpp
     FileTest.cpp
 )
 

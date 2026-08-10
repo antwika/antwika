@@ -6,13 +6,13 @@
 
 #include <antwika/testing/ScratchPath.hpp>
 
-#include "antwika/atlas_editor/FileList.hpp"
+#include "antwika/io/FileList.hpp"
 
-using antwika::atlas_editor::entriesIn;
-using antwika::atlas_editor::entryText;
-using antwika::atlas_editor::FileEntry;
-using antwika::atlas_editor::kParentEntry;
-using antwika::atlas_editor::pathIn;
+using antwika::io::entriesIn;
+using antwika::io::entryText;
+using antwika::io::FileEntry;
+using antwika::io::kParentEntry;
+using antwika::io::pathIn;
 using antwika::testing::ScratchDirectory;
 
 namespace
@@ -26,7 +26,7 @@ namespace
 
 TEST(FileListTest, EntriesIn_NamesEveryFileInReadingOrder)
 {
-    const ScratchDirectory dir("atlas_editor_files");
+    const ScratchDirectory dir("io_files");
 
     dir.write("second.png", "x");
     dir.write("first.png", "x");
@@ -41,7 +41,7 @@ TEST(FileListTest, EntriesIn_NamesEveryFileInReadingOrder)
 
 TEST(FileListTest, EntriesIn_PutsTheDirectoriesAheadOfTheFiles)
 {
-    const ScratchDirectory dir("atlas_editor_folders");
+    const ScratchDirectory dir("io_folders");
     std::filesystem::create_directories(dir.pathIn("nested"));
 
     dir.write("alone.png", "x");
@@ -56,7 +56,7 @@ TEST(FileListTest, EntriesIn_PutsTheDirectoriesAheadOfTheFiles)
 
 TEST(FileListTest, EntriesIn_LeadsWithTheParentEvenWhenItCannotRead)
 {
-    const ScratchDirectory dir("atlas_editor_absent");
+    const ScratchDirectory dir("io_absent");
 
     EXPECT_EQ(
         entriesIn(dir.pathIn("nowhere")),
@@ -65,7 +65,7 @@ TEST(FileListTest, EntriesIn_LeadsWithTheParentEvenWhenItCannotRead)
 
 TEST(FileListTest, EntriesIn_SortsTheDirectoriesAmongThemselves)
 {
-    const ScratchDirectory dir("atlas_editor_sorted");
+    const ScratchDirectory dir("io_sorted");
     std::filesystem::create_directories(dir.pathIn("beta"));
     std::filesystem::create_directories(dir.pathIn("alpha"));
 
@@ -118,7 +118,7 @@ TEST(FileListTest, FileEntry_ComparesEveryFieldItCarries)
 
 TEST(FileListTest, EntriesIn_LeavesOutWhatIsNeitherFileNorDirectory)
 {
-    const ScratchDirectory dir("atlas_editor_odd");
+    const ScratchDirectory dir("io_odd");
 
     std::filesystem::create_symlink(
         dir.pathIn("nothing-here"), dir.pathIn("dangling"));
@@ -130,7 +130,7 @@ TEST(FileListTest, EntriesIn_LeavesOutWhatIsNeitherFileNorDirectory)
 
 TEST(FileListTest, EntriesIn_NamesAFileTooLongToSitInsideAString)
 {
-    const ScratchDirectory dir("atlas_editor_long");
+    const ScratchDirectory dir("io_long");
     const std::string named =
         "a-sprite-sheet-with-a-very-long-name-indeed.png";
 
@@ -143,7 +143,7 @@ TEST(FileListTest, EntriesIn_NamesAFileTooLongToSitInsideAString)
 
 TEST(FileListTest, EntriesIn_NamesADirectoryTooLongToSitInsideAString)
 {
-    const ScratchDirectory dir("atlas_editor_longdir");
+    const ScratchDirectory dir("io_longdir");
     const std::string named =
         "a-directory-with-a-very-long-name-indeed-here";
 

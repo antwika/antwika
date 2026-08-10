@@ -1,0 +1,41 @@
+{
+  "sheet": {
+    "width": 32,
+    "height": 48
+  },
+  "masks": "4x4 at 0,0",
+  "slots": {
+    "wall_band": [
+      0,
+      32
+    ],
+    "wall_rim": [
+      8,
+      32
+    ],
+    "bridge_deck": [
+      16,
+      32
+    ],
+    "shade": [
+      24,
+      32
+    ],
+    "surface_variant_1": [
+      0,
+      40
+    ],
+    "surface_variant_2": [
+      8,
+      40
+    ],
+    "water_frame_b": [
+      16,
+      40
+    ],
+    "spare": [
+      24,
+      40
+    ]
+  }
+}

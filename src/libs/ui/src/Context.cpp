@@ -169,7 +169,8 @@ namespace antwika::ui
             .width = kFit,
             .height = kFit,
             .text = std::string{text}, // GCOVR_EXCL_LINE
-            .textScale = themeValue.textScale,
+            .textScale = antwika::gfx::encodeTextScale(
+                themeValue.face, themeValue.textScale),
             .textColor = color});
     }
 

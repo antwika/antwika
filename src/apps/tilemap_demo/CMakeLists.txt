@@ -1,0 +1,24 @@
+antwika_add_app(
+    NAME tilemap_demo
+    SOURCES
+        src/DemoConsole.cpp
+        src/DemoMap.cpp
+        src/PlaceholderSheets.cpp
+        src/main.cpp
+    LIBS
+        antwika::app
+        antwika::autotile
+        antwika::cli
+        antwika::console
+        antwika::engine
+        antwika::enums
+        antwika::event
+        antwika::gfx
+        antwika::gfx_backend
+        antwika::input
+        antwika::input_backend
+        antwika::log
+        antwika::tilemap
+        antwika::time
+        antwika::ui
+)

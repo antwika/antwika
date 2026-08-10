@@ -35,6 +35,14 @@ namespace antwika::gfx
 
         [[nodiscard]] Viewport viewport() const noexcept;
 
+        /**
+         * @brief Rebuilds the transform for a new window size.
+         *
+         * Ensures: later drawing and viewport() hit-testing use the
+         *          new size while the canvas stays unchanged.
+         */
+        void resize(Size newReported);
+
         void clear(Color color) override;
 
         void drawRect(RectF rect, Color color) override;

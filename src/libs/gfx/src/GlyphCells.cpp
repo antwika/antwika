@@ -34,10 +34,10 @@ namespace antwika::gfx
 
     GlyphCells::GlyphCells(std::uint32_t scale)
         : cell{
-              .width = kGlyphAdvance * scale,
-              .height = kGlyphLineHeight * scale}
+              .width = scaledGlyphAdvance(scale),
+              .height = scaledGlyphLineHeight(scale)}
     {
-        if (scale == 0)
+        if (cell.height == 0)
         {
             return;
         }

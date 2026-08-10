@@ -83,14 +83,15 @@ namespace antwika::ui
             const Theme &theme) noexcept
         {
             return clampToU32(
-                std::uint64_t{antwika::gfx::kGlyphLineHeight}
+                std::uint64_t{
+                    antwika::gfx::glyphLineHeightOf(theme.face)}
                 * theme.textScale);
         }
 
         [[nodiscard]] std::uint32_t advanceOf(const Theme &theme) noexcept
         {
             return clampToU32(
-                std::uint64_t{antwika::gfx::kGlyphAdvance}
+                std::uint64_t{antwika::gfx::glyphAdvanceOf(theme.face)}
                 * theme.textScale);
         }
 
@@ -169,7 +170,8 @@ namespace antwika::ui
                                : std::nullopt),
                     .text = std::string{ // GCOVR_EXCL_LINE
                         line.text.substr(from, to - from)},
-                    .textScale = theme.textScale,
+                    .textScale = antwika::gfx::encodeTextScale(
+                        theme.face, theme.textScale),
                     .textColor = theme.text});
             }
 

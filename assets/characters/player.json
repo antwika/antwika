@@ -1,0 +1,7 @@
+{
+  "size": 64,
+  "frame": 16,
+  "columns": 4,
+  "idle_column": 0,
+  "rows": ["walk_down", "walk_up", "walk_left", "walk_right"]
+}

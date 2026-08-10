@@ -54,6 +54,8 @@ namespace antwika::gfx::raylib
 
         void setTitle(std::string_view title) override;
 
+        void setSize(Size size) override;
+
         void setFullscreen(bool fullscreen) override;
 
         void close() override;

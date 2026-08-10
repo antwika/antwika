@@ -1,4 +1,4 @@
-#include "antwika/atlas_editor/FileList.hpp"
+#include "antwika/io/FileList.hpp"
 
 #include <algorithm>
 #include <filesystem>
@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 
-namespace antwika::atlas_editor
+namespace antwika::io
 {
 
     namespace

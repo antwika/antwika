@@ -16,7 +16,6 @@ antwika_add_app_tests(
         EditorStateTest.cpp
         EditorThemeTest.cpp
         EditorUiTest.cpp
-        FileListTest.cpp
         InkTest.cpp
         MessagesTest.cpp
         PngAtlasStoreTest.cpp

@@ -25,6 +25,12 @@ namespace antwika::gfx
         return transform;
     }
 
+    void ViewportRenderer::resize(const Size newReported)
+    {
+        reported = newReported;
+        transform = viewportFor(newReported, canvas);
+    }
+
     void ViewportRenderer::clear(Color color)
     {
         inner.clear(color);
@@ -48,10 +54,13 @@ namespace antwika::gfx
         std::uint32_t scale,
         Color color)
     {
-        const auto drawn = transform.toWindowScale(scale);
+        const auto multiplier = textMultiplierOf(scale);
+        const auto drawn = encodeTextScale(
+            textFaceOf(scale), transform.toWindowScale(multiplier));
 
         const bool exact =
-            (static_cast<std::uint64_t>(scale) * transform.numerator)
+            (static_cast<std::uint64_t>(multiplier)
+             * transform.numerator)
                 % transform.denominator
             == 0;
 
@@ -64,7 +73,7 @@ namespace antwika::gfx
         for (std::size_t at = 0; at < text.size(); ++at)
         {
             const auto step = static_cast<std::int64_t>(at)
-                              * kGlyphAdvance * scale;
+                              * scaledGlyphAdvance(scale);
 
             const PointF cell{
                 origin.x + static_cast<float>(step), origin.y};
