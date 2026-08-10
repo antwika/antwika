@@ -8,6 +8,7 @@ namespace antwika::map_editor
     struct MapEditorConfig final
     {
         std::uint32_t uiScale = 3;
+        bool fullscreen = false;
     };
 
 }

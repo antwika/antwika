@@ -17,12 +17,14 @@ namespace antwika::map_editor
         void describeMembers(nlohmann::json &schema)
         {
             schema["properties"]["uiScale"] = wholeShape(2, 4);
+            schema["properties"]["fullscreen"]["type"] = "boolean";
         }
 
         void encodeMembers(
             const MapEditorConfig &config, nlohmann::json &out)
         {
             out["uiScale"] = config.uiScale;
+            out["fullscreen"] = config.fullscreen;
         }
 
         MapEditorConfig decodeMembers(const nlohmann::json &document)
@@ -30,6 +32,8 @@ namespace antwika::map_editor
             MapEditorConfig config;
             config.uiScale =
                 memberOr(document, "uiScale", config.uiScale);
+            config.fullscreen =
+                memberOr(document, "fullscreen", config.fullscreen);
             return config;
         }
     }

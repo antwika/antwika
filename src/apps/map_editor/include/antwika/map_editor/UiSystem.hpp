@@ -82,6 +82,10 @@ namespace antwika::map_editor
 
         void setUiScale(std::uint32_t scale);
 
+        void toggleFullscreen();
+
+        void writeConfigNow();
+
         void press(ui::WidgetId activated);
 
         EditorStore &store;

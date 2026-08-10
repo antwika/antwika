@@ -24,6 +24,7 @@ Unit tests for the editor itself remain deferred by explicit decision; see docs/
 | 12 | Runtime keyboard under the raylib backend | shipped |
 | 13 | Map palette picker | shipped |
 | 14 | Developer console in tilemap_demo and map_editor | shipped |
+| 15 | Fullscreen support | shipped |
 
 ## 1: menu bar (shipped)
 
@@ -199,6 +200,18 @@ map_editor proved cheap after the demo wiring and shipped an EditorConsoleSystem
 While the console shows, the editor's KeyboardSystem returns before reading any key, so the console owns all keys and never fights the ui text fields, and pointer presses and wheel scrolls under the console sheet are swallowed following ConsoleGatedSink's semantics; the hex commands accept bare rrggbb because shift+3 still types '3'.
 Verification under Xvfb passed: captures show the demo console overlay with prompt and help, a tp 10 8 moving the player with arrows dead while open and alive after close, a bad map path's error in the history (typed with a dash-named file since the layout delivers no '/'), Escape closing the console with the app surviving, and quit exiting cleanly; the editor captures show the console over the live map, save creating the file and a later save changing its mtime, validate/generate/palette/scale acting with the map recoloring and the window resizing live, undo reverting the console's palette edit after close, and quit closing the editor.
 All 6633 display-bound tests plus the 80 headless conformance tests stay green, including the console lib's suites.
+
+## 15: fullscreen support
+
+Fullscreen toggles by F10 or View > Fullscreen in map_editor, by F10 alone in tilemap_demo, persists in the editor's config file, and is applied at startup.
+The gfx::IWindow fullscreen API turned out to already exist at the base commit — pure-virtual setFullscreen/isFullscreen with a WindowDesc.fullscreen field, the null backend recording the flag, and game's F10 event source — so the backend work here is the mechanism switch, not an API addition.
+backends/raylib now toggles through ToggleBorderlessWindowed and answers isFullscreen from IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE) instead of exclusive ToggleFullscreen, keeping the desktop resolution and sane alt-tab; the gfx conformance suites stay green over the new mechanism.
+The editor's View menu gained "Fullscreen  F10" with a "*" marking the active state like the UI Scale entries, and F10 rides the keyboard fast path through a store-carried pending toggle the ui system applies, guarded like F5 so it is inert while a modal dialog is open (and while the console is open, since the console owns all keys).
+On toggle the task 9 resize machinery is reused: after setFullscreen the actual window size is queried and the ViewportRenderer transform rebuilt, and a store-held window size lets the task 14 console overlay rebuild itself at the new dimensions.
+Selecting a UI Scale while fullscreen leaves fullscreen first and then applies the windowed scale, rather than sitting inert — the chosen and reported call.
+The config file gained an optional boolean "fullscreen" member written on every toggle and scale change and applied after window creation, before the ViewportRenderer is built, so a persisted fullscreen start computes its transform from the real monitor-sized window; files without the member load as windowed.
+tilemap_demo handles F10 in its loop with the same rebuild plus a console overlay rebuild at the new window size.
+Verification under the 1920x1080 Xvfb root: F10 moved the editor from 1440x810 at 240,135 to 1920x1080 at 0,0 with the capture filling the root at a crisp 4x, a wall painted at cell 5,4 while fullscreen landed exactly there in the saved JSON, F10 restored the windowed geometry, UI Scale 2x chosen while fullscreen left fullscreen into a 960x540 window with the config recording uiScale 2 and fullscreen false, a relaunch after quitting fullscreen started at 1920x1080 from the persisted flag, and the demo toggled 1280x720 to 1920x1080 and back with arrows alive throughout.
 
 ## After the queue drains
 

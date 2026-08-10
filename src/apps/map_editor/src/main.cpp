@@ -156,6 +156,14 @@ int main(int argc, char **argv)
                     {.width = kCanvas.width * store.uiScale,
                      .height = kCanvas.height * store.uiScale}});
 
+            if (config.fullscreen)
+            {
+                window->setFullscreen(true);
+            }
+
+            store.fullscreen = window->isFullscreen();
+            store.windowSize = window->size();
+
             ViewportRenderer view(
                 window->renderer(), window->size(), kCanvas);
 

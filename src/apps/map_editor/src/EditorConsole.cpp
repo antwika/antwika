@@ -1,5 +1,6 @@
 #include "antwika/map_editor/EditorConsole.hpp"
 
+#include <algorithm>
 #include <array>
 #include <charconv>
 #include <cstdint>
@@ -23,9 +24,7 @@ namespace antwika::map_editor
 
     namespace
     {
-        constexpr std::int32_t kCanvasWidth = 480;
-
-        constexpr std::int32_t kCanvasHeight = 270;
+        constexpr std::uint32_t kCanvasHeight = 270;
 
         struct Split final
         {
@@ -298,11 +297,7 @@ namespace antwika::map_editor
         EditorStore &store, log::ILogger &logger)
         : store(store),
           fold(codec),
-          overlay(gfx::Size{
-              .width = static_cast<std::uint32_t>(kCanvasWidth)
-                       * store.uiScale,
-              .height = static_cast<std::uint32_t>(kCanvasHeight)
-                        * store.uiScale}),
+          overlay(store.windowSize),
           commands(store, logger),
           quit(store),
           sink(console::ConsoleSinkSetup{
@@ -312,23 +307,16 @@ namespace antwika::map_editor
               .scene = scene,
               .controls = controls,
               .commands = commands,
-              .stop = quit}),
-          builtScale(store.uiScale)
+              .stop = quit})
     {
     }
 
     void EditorConsoleSystem::update(
         ecs::World &, const antwika::time::Tick tick)
     {
-        if (builtScale != store.uiScale)
+        if (overlay.canvas() != store.windowSize)
         {
-            overlay = console::ConsolePicture(gfx::Size{
-                .width = static_cast<std::uint32_t>(kCanvasWidth)
-                         * store.uiScale,
-                .height =
-                    static_cast<std::uint32_t>(kCanvasHeight)
-                    * store.uiScale});
-            builtScale = store.uiScale;
+            overlay = console::ConsolePicture(store.windowSize);
         }
 
         const event::TickEvent frameTick{
@@ -360,7 +348,8 @@ namespace antwika::map_editor
 
         store.input.consoleVisible = state.visible();
         store.input.consoleHeightCanvas = static_cast<std::int32_t>(
-            state.height() / store.uiScale);
+            state.height() * kCanvasHeight
+            / std::max(1U, store.windowSize.height));
     }
 
     const console::ConsolePicture &

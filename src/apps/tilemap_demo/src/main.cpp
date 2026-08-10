@@ -328,6 +328,15 @@ int main(int argc, char **argv)
                         window->close();
                     }
 
+                    if (pressed->key == Key::F10)
+                    {
+                        window->setFullscreen(
+                            !window->isFullscreen());
+                        view.resize(window->size());
+                        overlay = antwika::console::ConsolePicture(
+                            window->size());
+                    }
+
                     if (pressed->key == Key::ArrowUp)
                     {
                         move(map, player, 0, -1);

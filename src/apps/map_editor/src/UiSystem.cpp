@@ -79,6 +79,14 @@ namespace antwika::map_editor
             setUiScale(scale);
         }
 
+        if (store.pendingFullscreenToggle)
+        {
+            store.pendingFullscreenToggle = false;
+            toggleFullscreen();
+        }
+
+        store.fullscreen = window.isFullscreen();
+
         const ui::Pointer pointer{
             .position = store.input.canvasPointer,
             .down = store.input.down,
@@ -567,6 +575,12 @@ namespace antwika::map_editor
                 return;
             }
 
+            if (entry == 5)
+            {
+                toggleFullscreen();
+                return;
+            }
+
             toggleOverlay(state);
             return;
         }
@@ -729,9 +743,15 @@ namespace antwika::map_editor
 
     void UiSystem::setUiScale(const std::uint32_t scale)
     {
-        if (scale == store.uiScale)
+        if (scale == store.uiScale && !window.isFullscreen())
         {
             return;
+        }
+
+        if (window.isFullscreen())
+        {
+            window.setFullscreen(false);
+            store.fullscreen = false;
         }
 
         store.uiScale = scale;
@@ -741,18 +761,47 @@ namespace antwika::map_editor
             .height = canvas.height * scale};
 
         window.setSize(size);
-        view.resize(size);
 
-        std::ofstream out(app::assetPath("config.json"));
+        const auto actual = window.size();
 
-        if (out)
-        {
-            writeConfig(MapEditorConfig{.uiScale = scale}, out);
-        }
+        view.resize(actual);
+        store.windowSize = actual;
+        writeConfigNow();
 
         logger.log(
             log::Level::Info,
             "map_editor: ui scale " + std::to_string(scale) + "x");
+    }
+
+    void UiSystem::toggleFullscreen()
+    {
+        window.setFullscreen(!window.isFullscreen());
+
+        const auto actual = window.size();
+
+        view.resize(actual);
+        store.windowSize = actual;
+        store.fullscreen = window.isFullscreen();
+        writeConfigNow();
+
+        logger.log(
+            log::Level::Info,
+            store.fullscreen ? "map_editor: fullscreen on"
+                             : "map_editor: fullscreen off");
+    }
+
+    void UiSystem::writeConfigNow()
+    {
+        std::ofstream out(app::assetPath("config.json"));
+
+        if (out)
+        {
+            writeConfig(
+                MapEditorConfig{
+                    .uiScale = store.uiScale,
+                    .fullscreen = window.isFullscreen()},
+                out);
+        }
     }
 
     void UiSystem::press(const WidgetId activated)

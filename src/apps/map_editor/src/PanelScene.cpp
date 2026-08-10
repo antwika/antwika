@@ -655,12 +655,17 @@ namespace antwika::map_editor
                 scaleLabel(3, store.uiScale),
                 scaleLabel(4, store.uiScale)};
 
-            const std::array<std::string_view, 5> viewOptions{
+            const std::string fullscreenLabel =
+                store.fullscreen ? "Fullscreen  F10 *"
+                                 : "Fullscreen  F10";
+
+            const std::array<std::string_view, 6> viewOptions{
                 kViewEntries[0],
                 cycleLabelFor(activeView),
                 scaleLabels[0],
                 scaleLabels[1],
-                scaleLabels[2]};
+                scaleLabels[2],
+                fullscreenLabel};
 
             for (std::size_t index = 0;
                  index < widgets::kMenuCount;

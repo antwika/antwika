@@ -12,6 +12,7 @@
 #include <antwika/geometry/Grid.hpp>
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/Point.hpp>
+#include <antwika/gfx/Size.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/io/FileList.hpp>
 #include <antwika/tilemap/Rgb.hpp>
@@ -226,6 +227,9 @@ namespace antwika::map_editor
         CharacterSet characters{};
         std::uint32_t uiScale = 3;
         std::optional<std::uint32_t> pendingUiScale{};
+        bool fullscreen = false;
+        bool pendingFullscreenToggle = false;
+        gfx::Size windowSize{};
     };
 
     /**

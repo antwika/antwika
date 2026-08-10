@@ -114,7 +114,6 @@ namespace antwika::map_editor
         EditorCommands commands;
         QuitSink quit;
         console::ConsoleSink sink;
-        std::uint32_t builtScale;
     };
 
 }

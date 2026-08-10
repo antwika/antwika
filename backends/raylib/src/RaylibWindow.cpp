@@ -98,7 +98,8 @@ namespace antwika::gfx::raylib
 
     bool RaylibWindow::isFullscreen() const
     {
-        return open ? IsWindowFullscreen() : lastFullscreen;
+        return open ? IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE)
+                    : lastFullscreen;
     }
 
     IRenderer &RaylibWindow::renderer()
@@ -141,9 +142,10 @@ namespace antwika::gfx::raylib
             return;
         }
 
-        if (IsWindowFullscreen() != fullscreen)
+        if (IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE)
+            != fullscreen)
         {
-            ToggleFullscreen();
+            ToggleBorderlessWindowed();
         }
     }
 

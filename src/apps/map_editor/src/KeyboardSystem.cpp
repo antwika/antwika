@@ -111,6 +111,12 @@ namespace antwika::map_editor
                 continue;
             }
 
+            if (key == Key::F10 && !modalOpen(store))
+            {
+                store.pendingFullscreenToggle = true;
+                continue;
+            }
+
             if (fieldFocused)
             {
                 if (const auto meaning = uiKeyFor(key, shift))
