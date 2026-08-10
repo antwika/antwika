@@ -18,6 +18,8 @@ RUN apt-get update \
         ccache \
     && rm -rf /var/lib/apt/lists/*
 
+ENV CCACHE_SLOPPINESS=pch_defines,time_macros
+
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         libegl-dev \

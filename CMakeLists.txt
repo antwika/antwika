@@ -26,6 +26,9 @@ option(ANTWIKA_BUILD_BENCHMARKS
 option(ANTWIKA_ENABLE_LTO
     "Link Release builds with interprocedural optimisation" OFF)
 
+option(ANTWIKA_ENABLE_PCH
+    "Precompile the standard headers most sources include" ON)
+
 if(NOT DEFINED CMAKE_CXX_COMPILER_LAUNCHER)
     find_program(ANTWIKA_CCACHE ccache)
 
@@ -91,21 +94,46 @@ if(ENABLE_COVERAGE AND BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
     endif()
 endif()
 
+if(ANTWIKA_ENABLE_PCH)
+    file(WRITE "${CMAKE_BINARY_DIR}/antwika_pch.cpp" "")
+
+    add_library(antwika_pch OBJECT "${CMAKE_BINARY_DIR}/antwika_pch.cpp")
+
+    target_precompile_headers(antwika_pch
+        PRIVATE
+            <algorithm>
+            <array>
+            <cstddef>
+            <cstdint>
+            <functional>
+            <memory>
+            <optional>
+            <span>
+            <stdexcept>
+            <string>
+            <string_view>
+            <utility>
+            <vector>
+    )
+endif()
+
 if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
     find_package(GTest REQUIRED)
 
-    file(WRITE "${CMAKE_BINARY_DIR}/antwika_test_pch.cpp" "")
+    if(ANTWIKA_ENABLE_PCH)
+        file(WRITE "${CMAKE_BINARY_DIR}/antwika_test_pch.cpp" "")
 
-    add_library(antwika_test_pch OBJECT
-        "${CMAKE_BINARY_DIR}/antwika_test_pch.cpp")
+        add_library(antwika_test_pch OBJECT
+            "${CMAKE_BINARY_DIR}/antwika_test_pch.cpp")
 
-    target_link_libraries(antwika_test_pch PRIVATE gtest::gtest)
+        target_link_libraries(antwika_test_pch PRIVATE gtest::gtest)
 
-    target_precompile_headers(antwika_test_pch
-        PRIVATE
-            <gmock/gmock.h>
-            <gtest/gtest.h>
-    )
+        target_precompile_headers(antwika_test_pch
+            PRIVATE
+                <gmock/gmock.h>
+                <gtest/gtest.h>
+        )
+    endif()
 endif()
 
 add_subdirectory(src)
@@ -117,7 +145,7 @@ endif()
 
 antwika_install_notices(share/doc/antwika)
 
-function(antwika_collect_executables directory out_variable)
+function(antwika_collect_compiled_targets directory out_variable)
     get_property(targets DIRECTORY "${directory}"
         PROPERTY BUILDSYSTEM_TARGETS)
     get_property(subdirectories DIRECTORY "${directory}"
@@ -128,48 +156,69 @@ function(antwika_collect_executables directory out_variable)
     foreach(target IN LISTS targets)
         get_target_property(type ${target} TYPE)
 
-        if(type STREQUAL "EXECUTABLE")
+        if(type STREQUAL "EXECUTABLE"
+                OR type STREQUAL "OBJECT_LIBRARY"
+                OR type STREQUAL "SHARED_LIBRARY"
+                OR type STREQUAL "STATIC_LIBRARY")
             list(APPEND collected ${target})
         endif()
     endforeach()
 
     foreach(subdirectory IN LISTS subdirectories)
-        antwika_collect_executables("${subdirectory}" nested)
+        antwika_collect_compiled_targets("${subdirectory}" nested)
         list(APPEND collected ${nested})
     endforeach()
 
     set(${out_variable} "${collected}" PARENT_SCOPE)
 endfunction()
 
-antwika_collect_executables("${CMAKE_CURRENT_SOURCE_DIR}"
-    ANTWIKA_EXECUTABLE_TARGETS)
+function(antwika_reuse_precompiled_headers target provider)
+    target_precompile_headers(${target} REUSE_FROM ${provider})
 
-list(SORT ANTWIKA_EXECUTABLE_TARGETS)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(${target}
+            PRIVATE -Wno-error=invalid-pch)
+    endif()
 
-foreach(target IN LISTS ANTWIKA_EXECUTABLE_TARGETS)
-    if(TARGET antwika_test_pch AND target MATCHES "_tests$")
-        target_precompile_headers(${target} REUSE_FROM antwika_test_pch)
+    get_target_property(target_directory ${target} SOURCE_DIR)
+    get_target_property(target_sources ${target} SOURCES)
 
-        if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-            target_compile_options(${target}
-                PRIVATE -Wno-error=invalid-pch)
+    foreach(source IN LISTS target_sources)
+        get_filename_component(resolved "${source}" REALPATH
+            BASE_DIR "${target_directory}")
+
+        string(FIND "${resolved}" "${CMAKE_BINARY_DIR}/" generated)
+
+        if(generated EQUAL 0)
+            set_source_files_properties("${source}"
+                TARGET_DIRECTORY ${target}
+                PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
         endif()
+    endforeach()
+endfunction()
 
-        get_target_property(target_directory ${target} SOURCE_DIR)
-        get_target_property(target_sources ${target} SOURCES)
+antwika_collect_compiled_targets("${CMAKE_CURRENT_SOURCE_DIR}"
+    ANTWIKA_COMPILED_TARGETS)
 
-        foreach(source IN LISTS target_sources)
-            get_filename_component(resolved "${source}" REALPATH
-                BASE_DIR "${target_directory}")
+list(SORT ANTWIKA_COMPILED_TARGETS)
 
-            string(FIND "${resolved}" "${target_directory}/" inside)
+set(ANTWIKA_EXECUTABLE_TARGETS "")
 
-            if(NOT inside EQUAL 0)
-                set_source_files_properties("${source}"
-                    TARGET_DIRECTORY ${target}
-                    PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
-            endif()
-        endforeach()
+foreach(target IN LISTS ANTWIKA_COMPILED_TARGETS)
+    get_target_property(type ${target} TYPE)
+
+    if(type STREQUAL "EXECUTABLE")
+        list(APPEND ANTWIKA_EXECUTABLE_TARGETS ${target})
+    endif()
+
+    if(target STREQUAL "antwika_pch" OR target STREQUAL "antwika_test_pch")
+        continue()
+    endif()
+
+    if(TARGET antwika_test_pch AND target MATCHES "_tests$")
+        antwika_reuse_precompiled_headers(${target} antwika_test_pch)
+    elseif(TARGET antwika_pch)
+        antwika_reuse_precompiled_headers(${target} antwika_pch)
     endif()
 endforeach()
 
