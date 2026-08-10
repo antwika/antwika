@@ -5,7 +5,7 @@ antwika_add_app_tests(
         ConfigFileTest.cpp
         ConsoleSinkTest.cpp
         MessagesTest.cpp
-        PoolPreviewTest.cpp
+        PoolDrawTest.cpp
         PoolSceneTest.cpp
         PoolSnapshotTest.cpp
         RenderSystemTest.cpp
@@ -21,7 +21,6 @@ antwika_add_app_tests(
     LIBS
         antwika::ecs::tests::mocks
         antwika::app
-        antwika::app::tests::preview
         antwika::config
         antwika::config::tests::conformance
         antwika::console

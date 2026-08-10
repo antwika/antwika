@@ -2,12 +2,13 @@
 #include <gtest/gtest.h>
 
 #include <cstdint>
+#include <memory>
 #include <vector>
 
-#include <antwika/app/preview/DrawnPreview.hpp>
 #include <antwika/gfx/Bitmap.hpp>
-#include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/gfx/mocks/MockRenderer.hpp>
+#include <antwika/gfx/mocks/MockTexture.hpp>
 
 #include "antwika/gfx_demo/DemoScene.hpp"
 
@@ -15,10 +16,13 @@ namespace
 {
     using antwika::gfx::Bitmap;
     using antwika::gfx::kBytesPerPixel;
-    using antwika::app::preview::drawnPreview;
-    using antwika::gfx::IRenderer;
     using antwika::gfx::Size;
+    using antwika::gfx::mocks::MockRenderer;
+    using antwika::gfx::mocks::MockTexture;
     using antwika::gfx_demo::DemoScene;
+    using ::testing::_;
+    using ::testing::AtLeast;
+    using ::testing::NiceMock;
 
     constexpr Size kCanvas{.width = 800, .height = 600};
 
@@ -48,21 +52,21 @@ namespace
     }
 }
 
-TEST(LogoPreviewTest, Draw_WritesTheDemoWithItsLogo)
+TEST(LogoDrawTest, Draw_DrawsTheDemoWithItsLogo)
 {
-    EXPECT_FALSE(
-        drawnPreview(
-            {.name = "gfx-demo",
-             .title = "Antwika Gfx Demo",
-             .canvas = kCanvas},
-            [](IRenderer &renderer)
-            {
-                const auto logo = renderer.createTexture(chequeredLogo());
+    NiceMock<MockRenderer> renderer;
 
-                const DemoScene scene;
-                const auto frame = scene.describe(kCanvas);
+    ON_CALL(renderer, createTexture(_))
+        .WillByDefault(
+            [](const Bitmap &)
+            { return std::make_unique<NiceMock<MockTexture>>(); });
 
-                scene.draw(renderer, kCanvas, *logo, frame.commands);
-            })
-            .empty());
+    EXPECT_CALL(renderer, drawRect(_, _)).Times(AtLeast(1));
+
+    const auto logo = renderer.createTexture(chequeredLogo());
+
+    const DemoScene scene;
+    const auto frame = scene.describe(kCanvas);
+
+    scene.draw(renderer, kCanvas, *logo, frame.commands);
 }

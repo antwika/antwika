@@ -1,9 +1,11 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <antwika/app/preview/DrawnPreview.hpp>
-#include <antwika/gfx/IRenderer.hpp>
+#include <memory>
+
 #include <antwika/gfx/Size.hpp>
+#include <antwika/gfx/mocks/MockRenderer.hpp>
+#include <antwika/gfx/mocks/MockTexture.hpp>
 #include <antwika/i18n/Locale.hpp>
 #include <antwika/ui/Pointer.hpp>
 
@@ -17,21 +19,25 @@
 
 namespace
 {
-    using antwika::app::preview::drawnPreview;
     using antwika::atlas_editor::Canvas;
     using antwika::atlas_editor::EditorScene;
     using antwika::atlas_editor::EditorState;
     using antwika::atlas_editor::snapshotOf;
     using antwika::atlas_editor::TileGrid;
-    using antwika::gfx::IRenderer;
+    using antwika::gfx::Bitmap;
     using antwika::gfx::Rect;
     using antwika::gfx::Size;
+    using antwika::gfx::mocks::MockRenderer;
+    using antwika::gfx::mocks::MockTexture;
+    using ::testing::_;
+    using ::testing::AtLeast;
+    using ::testing::NiceMock;
 
     constexpr Size kCanvas{.width = 800, .height = 600};
     constexpr Size kSheet{.width = 64, .height = 64};
 }
 
-TEST(PreviewShotTest, Draw_WritesTheSheetBesideItsPreview)
+TEST(PreviewPaneDrawTest, Draw_DrawsTheSheetBesideItsPreview)
 {
     antwika::gfx::Bitmap bitmap;
     bitmap.size = kSheet;
@@ -73,19 +79,18 @@ TEST(PreviewShotTest, Draw_WritesTheSheetBesideItsPreview)
             state.image().size(),
             *state.preview().focused)});
 
-    EXPECT_FALSE(
-        drawnPreview(
-            {.name = "atlas-editor-preview",
-             .title = "Antwika Atlas Editor",
-             .canvas = kCanvas},
-            [&](IRenderer &renderer)
-            {
-                const auto sheet =
-                    renderer.createTexture(state.image().bitmap());
+    NiceMock<MockRenderer> renderer;
 
-                const EditorScene scene;
-                scene.draw(
-                    renderer, snapshotOf(state, pane), sheet.get());
-            })
-            .empty());
+    ON_CALL(renderer, createTexture(_))
+        .WillByDefault(
+            [](const Bitmap &)
+            { return std::make_unique<NiceMock<MockTexture>>(); });
+
+    EXPECT_CALL(renderer, drawRect(_, _)).Times(AtLeast(1));
+
+    const auto sheet = renderer.createTexture(state.image().bitmap());
+
+    const EditorScene scene;
+
+    scene.draw(renderer, snapshotOf(state, pane), sheet.get());
 }

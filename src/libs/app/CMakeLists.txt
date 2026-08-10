@@ -5,7 +5,6 @@ antwika_add_library(
         src/ConsoleLogging.cpp
         src/FramePacedSource.cpp
         src/FramePacingTrace.cpp
-        src/FramePreview.cpp
         src/FullscreenToggleSource.cpp
         src/MaxTicks.cpp
         src/PngFile.cpp

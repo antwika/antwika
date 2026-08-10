@@ -92,7 +92,7 @@ antwika_add_app_tests(
         SaveLoadStateTest.cpp
         SaveMigrationTest.cpp
         SaveSectionsTest.cpp
-        ScenePreviewTest.cpp
+        SceneDrawTest.cpp
         SceneSnapshotTest.cpp
         ServiceTest.cpp
         ServiceWalkTest.cpp
@@ -124,11 +124,10 @@ antwika_add_app_tests(
         WorldMapStateTest.cpp
         WorldMapTest.cpp
     EXTRA_SOURCES
-        ScenePainter.cpp
+        SceneDrawer.cpp
     LIBS
         antwika::animation
         antwika::app
-        antwika::app::tests::preview
         antwika::atlas
         antwika::app::tests::fakes
         antwika::cli

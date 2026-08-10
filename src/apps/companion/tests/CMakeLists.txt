@@ -10,8 +10,8 @@ antwika_add_app_tests(
         LifeStageTest.cpp
         LineageTest.cpp
         MessagesTest.cpp
+        PetDrawTest.cpp
         PetLayoutTest.cpp
-        PetPreviewTest.cpp
         PetSaveTest.cpp
         PetSceneTest.cpp
         PetSnapshotTest.cpp
@@ -25,7 +25,6 @@ antwika_add_app_tests(
     LIBS
         antwika::animation
         antwika::app
-        antwika::app::tests::preview
         antwika::config
         antwika::config::tests::conformance
         antwika::console

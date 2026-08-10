@@ -1,7 +1,7 @@
 antwika_add_app_tests(
     APP life
     TESTS
-        BoardPreviewTest.cpp
+        BoardDrawTest.cpp
         BoardSceneTest.cpp
         BoardSinkTest.cpp
         BoardTest.cpp
@@ -23,7 +23,6 @@ antwika_add_app_tests(
         StateDumpTest.cpp
     LIBS
         antwika::app
-        antwika::app::tests::preview
         antwika::config
         antwika::config::tests::conformance
         antwika::console

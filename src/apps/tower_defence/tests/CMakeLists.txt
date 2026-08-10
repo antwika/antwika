@@ -22,7 +22,7 @@ add_executable(antwika_tower_defence_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TowerDefenceSnapshotStore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TowerPlacementSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Wave.cpp
-    BattlePreviewTest.cpp
+    BattleDrawTest.cpp
     BattleTest.cpp
     CampaignTest.cpp
     ConfigFileTest.cpp
@@ -48,7 +48,6 @@ target_include_directories(antwika_tower_defence_tests
 target_link_libraries(antwika_tower_defence_tests
     PRIVATE
         antwika::app
-        antwika::app::tests::preview
         antwika::config
         antwika::config::tests::conformance
         antwika::console

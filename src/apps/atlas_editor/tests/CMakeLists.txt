@@ -20,15 +20,15 @@ antwika_add_app_tests(
         InkTest.cpp
         MessagesTest.cpp
         PngAtlasStoreTest.cpp
+        PreviewPaneDrawTest.cpp
         PreviewSceneTest.cpp
-        PreviewShotTest.cpp
         PreviewSinkTest.cpp
         PreviewTest.cpp
         RunIntegrationTest.cpp
         SceneTest.cpp
         SelectionTest.cpp
         ShapesTest.cpp
-        SheetPreviewTest.cpp
+        SheetDrawTest.cpp
         SnapshotStoreTest.cpp
         SpriteGuidesTest.cpp
         StateDumpTest.cpp
@@ -36,7 +36,6 @@ antwika_add_app_tests(
         ViewportReplayTest.cpp
     LIBS
         antwika::app
-        antwika::app::tests::preview
         antwika::atlas
         antwika::cli
         antwika::config

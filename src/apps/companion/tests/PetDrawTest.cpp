@@ -1,9 +1,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <antwika/app/preview/DrawnPreview.hpp>
-#include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/i18n/Locale.hpp>
 
 #include "antwika/companion/Messages.hpp"
@@ -19,9 +18,11 @@ namespace
     using antwika::companion::PetSnapshot;
     using antwika::companion::PetState;
     using antwika::companion::Saying;
-    using antwika::app::preview::drawnPreview;
-    using antwika::gfx::IRenderer;
     using antwika::gfx::Size;
+    using antwika::gfx::mocks::MockRenderer;
+    using ::testing::_;
+    using ::testing::AtLeast;
+    using ::testing::NiceMock;
 
     constexpr Size kCanvas{.width = 512, .height = 512};
 
@@ -47,20 +48,16 @@ namespace
     }
 }
 
-TEST(PetPreviewTest, Draw_WritesTheCompanionAtHome)
+TEST(PetDrawTest, Draw_DrawsTheCompanionAtHome)
 {
-    EXPECT_FALSE(
-        drawnPreview(
-            {.name = "companion",
-             .title = "Antwika Companion",
-             .canvas = kCanvas},
-            [](IRenderer &renderer)
-            {
-                const antwika::companion::Translator translator{
-                    antwika::i18n::kDefaultLocale};
+    NiceMock<MockRenderer> renderer;
 
-                const PetScene scene(translator);
-                scene.draw(renderer, kCanvas, awake());
-            })
-            .empty());
+    EXPECT_CALL(renderer, drawRect(_, _)).Times(AtLeast(1));
+
+    const antwika::companion::Translator translator{
+        antwika::i18n::kDefaultLocale};
+
+    const PetScene scene(translator);
+
+    scene.draw(renderer, kCanvas, awake());
 }

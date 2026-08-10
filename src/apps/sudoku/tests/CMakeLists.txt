@@ -1,8 +1,8 @@
 antwika_add_app_tests(
     APP sudoku
     TESTS
+        BoardDrawTest.cpp
         BoardLayoutTest.cpp
-        BoardPreviewTest.cpp
         BoardSinkTest.cpp
         BoardTest.cpp
         ConfigFileTest.cpp
@@ -25,7 +25,6 @@ antwika_add_app_tests(
         UnsolvablePuzzleTest.cpp
     LIBS
         antwika::app
-        antwika::app::tests::preview
         antwika::cli
         antwika::config
         antwika::config::tests::conformance

@@ -3,8 +3,8 @@ find_package(GTest REQUIRED)
 add_executable(antwika_music_editor_tests
     ConfigFileTest.cpp
     ConsoleSinkTest.cpp
+    EditorDrawTest.cpp
     EditorKeysTest.cpp
-    EditorPreviewTest.cpp
     EditorSceneTest.cpp
     EditorSinkTest.cpp
     EditorStateTest.cpp
@@ -57,7 +57,6 @@ target_sources(antwika_music_editor_tests
 target_link_libraries(antwika_music_editor_tests
     PRIVATE
         antwika::app
-        antwika::app::tests::preview
         antwika::engine
         antwika::config
         antwika::config::tests::conformance

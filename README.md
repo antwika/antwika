@@ -33,18 +33,15 @@ xvfb-run -a ctest --test-dir build \
 
 Running a bare `ctest` instead will fail the sound suites, which have no audio device to open.
 
-## Pictures without a window
+## Drawing without a window
 
-`antwika::gfx::BitmapRenderer` draws into a `Bitmap` instead of onto a screen, `BitmapWindow` hands one out as an `IWindow`, and `BitmapBackend` puts the pair behind `IGfxBackend`, where it answers the same conformance suite as the SDL3 and null backends.
-
-Every graphical app has a preview test that paints a frame that way and writes it with `antwika::app::writtenPreview`.
+Every graphical app has a draw test that builds a scene and paints one frame through `antwika::gfx::mocks::MockRenderer`, asserting the calls the scene makes rather than the pixels they would produce.
 
 ```sh
-ctest --test-dir build -R PreviewTest
-ls build/bin/*/preview
+ctest --test-dir build -R DrawTest
 ```
 
-A page has no 3D renderer, so `gfx3d_demo` draws nothing on one and has no preview.
+No test rasterises a frame, so none of them needs a display or a graphics backend.
 
 ## Coverage
 

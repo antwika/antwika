@@ -1,7 +1,6 @@
 find_package(GTest REQUIRED)
 
 add_subdirectory(fakes)
-add_subdirectory(preview)
 
 add_executable(antwika_app_tests
     AssetPathTest.cpp
@@ -9,7 +8,6 @@ add_executable(antwika_app_tests
     FramePacedSourceTest.cpp
     FramePacingTraceTest.cpp
     FramePresentationTest.cpp
-    FramePreviewTest.cpp
     FullscreenToggleSourceTest.cpp
     HoverRecordingTest.cpp
     MaxTicksTest.cpp

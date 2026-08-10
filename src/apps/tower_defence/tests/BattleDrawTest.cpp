@@ -3,9 +3,8 @@
 
 #include <cstdint>
 
-#include <antwika/app/preview/DrawnPreview.hpp>
-#include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/gfx/mocks/MockRenderer.hpp>
 
 #include "antwika/tower_defence/BattleScene.hpp"
 #include "antwika/tower_defence/BattleSnapshot.hpp"
@@ -13,9 +12,8 @@
 
 namespace
 {
-    using antwika::app::preview::drawnPreview;
-    using antwika::gfx::IRenderer;
     using antwika::gfx::Size;
+    using antwika::gfx::mocks::MockRenderer;
     using antwika::tower_defence::BattleConfig;
     using antwika::tower_defence::BattleScene;
     using antwika::tower_defence::Campaign;
@@ -27,6 +25,9 @@ namespace
     using antwika::tower_defence::Tile;
     using antwika::tower_defence::Wave;
     using antwika::tower_defence::WaveEntry;
+    using ::testing::_;
+    using ::testing::AtLeast;
+    using ::testing::NiceMock;
 
     constexpr Size kCanvas{.width = 960, .height = 720};
 
@@ -67,25 +68,21 @@ namespace
     }
 }
 
-TEST(BattlePreviewTest, Draw_WritesABattleUnderWay)
+TEST(BattleDrawTest, Draw_DrawsABattleUnderWay)
 {
-    EXPECT_FALSE(
-        drawnPreview(
-            {.name = "tower-defence",
-             .title = "Antwika Tower Defence",
-             .canvas = kCanvas},
-            [](IRenderer &renderer)
-            {
-                Campaign campaign(oneLevel());
-                placeSomeTowers(campaign);
+    NiceMock<MockRenderer> renderer;
 
-                for (std::uint32_t step = 0; step < 20; ++step)
-                {
-                    campaign.step();
-                }
+    EXPECT_CALL(renderer, drawRect(_, _)).Times(AtLeast(1));
 
-                const BattleScene scene;
-                scene.draw(renderer, kCanvas, snapshotOf(campaign));
-            })
-            .empty());
+    Campaign campaign(oneLevel());
+    placeSomeTowers(campaign);
+
+    for (std::uint32_t step = 0; step < 20; ++step)
+    {
+        campaign.step();
+    }
+
+    const BattleScene scene;
+
+    scene.draw(renderer, kCanvas, snapshotOf(campaign));
 }

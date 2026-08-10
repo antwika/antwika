@@ -4,9 +4,8 @@
 #include <string>
 #include <utility>
 
-#include <antwika/app/preview/DrawnPreview.hpp>
-#include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/holdem/CardText.hpp>
 
 #include "antwika/poker/TableScene.hpp"
@@ -14,14 +13,16 @@
 
 namespace
 {
-    using antwika::app::preview::drawnPreview;
-    using antwika::gfx::IRenderer;
     using antwika::gfx::Size;
+    using antwika::gfx::mocks::MockRenderer;
     using antwika::holdem::parseCards;
     using antwika::poker::SeatSnapshot;
     using antwika::poker::Stage;
     using antwika::poker::TableScene;
     using antwika::poker::TableSnapshot;
+    using ::testing::_;
+    using ::testing::AtLeast;
+    using ::testing::NiceMock;
 
     constexpr Size kCanvas{.width = 1024, .height = 640};
 
@@ -57,17 +58,13 @@ namespace
     }
 }
 
-TEST(TablePreviewTest, Draw_WritesATableOnTheFlop)
+TEST(TableDrawTest, Draw_DrawsATableOnTheFlop)
 {
-    EXPECT_FALSE(
-        drawnPreview(
-            {.name = "poker",
-             .title = "Antwika Poker",
-             .canvas = kCanvas},
-            [](IRenderer &renderer)
-            {
-                const TableScene scene;
-                scene.draw(renderer, kCanvas, liveTable());
-            })
-            .empty());
+    NiceMock<MockRenderer> renderer;
+
+    EXPECT_CALL(renderer, drawRect(_, _)).Times(AtLeast(1));
+
+    const TableScene scene;
+
+    scene.draw(renderer, kCanvas, liveTable());
 }

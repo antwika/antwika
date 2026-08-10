@@ -1,9 +1,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <antwika/app/preview/DrawnPreview.hpp>
-#include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/i18n/Locale.hpp>
 #include <antwika/scheduler/Priority.hpp>
 
@@ -13,9 +12,8 @@
 
 namespace
 {
-    using antwika::app::preview::drawnPreview;
-    using antwika::gfx::IRenderer;
     using antwika::gfx::Size;
+    using antwika::gfx::mocks::MockRenderer;
     using antwika::scheduler::kLowPriority;
     using antwika::scheduler::kNormalPriority;
     using antwika::task_worker::PoolScene;
@@ -23,6 +21,9 @@ namespace
     using antwika::task_worker::TaskView;
     using antwika::task_worker::WorkerStatus;
     using antwika::task_worker::WorkerView;
+    using ::testing::_;
+    using ::testing::AtLeast;
+    using ::testing::NiceMock;
 
     constexpr Size kCanvas{.width = 960, .height = 600};
 
@@ -43,20 +44,16 @@ namespace
     }
 }
 
-TEST(PoolPreviewTest, Draw_WritesAPoolAtWork)
+TEST(PoolDrawTest, Draw_DrawsAPoolAtWork)
 {
-    EXPECT_FALSE(
-        drawnPreview(
-            {.name = "task-worker",
-             .title = "Antwika Task Worker",
-             .canvas = kCanvas},
-            [](IRenderer &renderer)
-            {
-                const antwika::task_worker::Translator translator{
-                    antwika::i18n::kDefaultLocale};
+    NiceMock<MockRenderer> renderer;
 
-                const PoolScene scene(translator);
-                scene.draw(renderer, kCanvas, busyPool());
-            })
-            .empty());
+    EXPECT_CALL(renderer, drawRect(_, _)).Times(AtLeast(1));
+
+    const antwika::task_worker::Translator translator{
+        antwika::i18n::kDefaultLocale};
+
+    const PoolScene scene(translator);
+
+    scene.draw(renderer, kCanvas, busyPool());
 }

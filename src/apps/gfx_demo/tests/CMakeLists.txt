@@ -3,10 +3,9 @@ antwika_add_app_tests(
     TESTS
         DemoLoopTest.cpp
         DemoSceneTest.cpp
-        LogoPreviewTest.cpp
+        LogoDrawTest.cpp
     LIBS
         antwika::app
-        antwika::app::tests::preview
         antwika::gfx
         antwika::gfx::tests::mocks
         antwika::input

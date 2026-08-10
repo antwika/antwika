@@ -3,13 +3,14 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 
-#include <antwika/app/preview/DrawnPreview.hpp>
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Point.hpp>
-#include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/gfx/mocks/MockRenderer.hpp>
+#include <antwika/gfx/mocks/MockTexture.hpp>
 
 #include "antwika/atlas_editor/Canvas.hpp"
 #include "antwika/atlas_editor/EditorScene.hpp"
@@ -26,10 +27,14 @@ namespace
     using antwika::atlas_editor::Pixel;
     using antwika::atlas_editor::snapshotOf;
     using antwika::atlas_editor::TileGrid;
+    using antwika::gfx::Bitmap;
     using antwika::gfx::Color;
-    using antwika::app::preview::drawnPreview;
-    using antwika::gfx::IRenderer;
     using antwika::gfx::Size;
+    using antwika::gfx::mocks::MockRenderer;
+    using antwika::gfx::mocks::MockTexture;
+    using ::testing::_;
+    using ::testing::AtLeast;
+    using ::testing::NiceMock;
 
     constexpr Size kCanvas{.width = 800, .height = 600};
 
@@ -87,21 +92,21 @@ namespace
     }
 }
 
-TEST(SheetPreviewTest, Draw_WritesASheetUnderTheGrid)
+TEST(SheetDrawTest, Draw_DrawsASheetUnderTheGrid)
 {
-    EXPECT_FALSE(
-        drawnPreview(
-            {.name = "atlas-editor",
-             .title = "Antwika Atlas Editor",
-             .canvas = kCanvas},
-            [](IRenderer &renderer)
-            {
-                const auto state = painted();
-                const auto sheet =
-                    renderer.createTexture(state.image().bitmap());
+    NiceMock<MockRenderer> renderer;
 
-                const EditorScene scene;
-                scene.draw(renderer, snapshotOf(state), sheet.get());
-            })
-            .empty());
+    ON_CALL(renderer, createTexture(_))
+        .WillByDefault(
+            [](const Bitmap &)
+            { return std::make_unique<NiceMock<MockTexture>>(); });
+
+    EXPECT_CALL(renderer, drawRect(_, _)).Times(AtLeast(1));
+
+    const auto state = painted();
+    const auto sheet = renderer.createTexture(state.image().bitmap());
+
+    const EditorScene scene;
+
+    scene.draw(renderer, snapshotOf(state), sheet.get());
 }

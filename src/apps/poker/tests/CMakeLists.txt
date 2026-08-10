@@ -14,7 +14,7 @@ antwika_add_app_tests(
         RoomSummaryTest.cpp
         SnapshotStoreTest.cpp
         StateDumpTest.cpp
-        TablePreviewTest.cpp
+        TableDrawTest.cpp
         TablePrinterTest.cpp
         TableRenderSinkTest.cpp
         TableSceneTest.cpp
@@ -22,7 +22,6 @@ antwika_add_app_tests(
         WatchOptionsTest.cpp
     LIBS
         antwika::app
-        antwika::app::tests::preview
         antwika::cli
         antwika::console
         antwika::console::tests::conformance

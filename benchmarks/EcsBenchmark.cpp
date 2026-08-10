@@ -15,10 +15,6 @@
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
-#include <antwika/gfx/BitmapRenderer.hpp>
-#include <antwika/gfx/Color.hpp>
-#include <antwika/gfx/Rect.hpp>
-#include <antwika/gfx/Size.hpp>
 #include <antwika/time/Tick.hpp>
 
 namespace
@@ -362,45 +358,6 @@ namespace
         return Result{millisSince(start), checksum};
     }
 
-    // Mirrors a preview frame: clear the page, then lay opaque and
-    // translucent rectangles over it.
-    [[nodiscard]] Result benchmarkRenderer()
-    {
-        constexpr int kFrames = 200;
-
-        SilentLogger logger;
-        antwika::gfx::BitmapRenderer renderer(
-            logger, antwika::gfx::Size{1280, 720});
-
-        const auto start = Clock::now();
-
-        for (int frame = 0; frame < kFrames; ++frame)
-        {
-            renderer.clear(antwika::gfx::Color{10, 20, 30, 255});
-
-            for (int at = 0; at < 40; ++at)
-            {
-                const auto span = static_cast<std::int32_t>(at);
-                renderer.drawRect(
-                    antwika::gfx::Rect{
-                        {span * 8, span * 4}, {200, 120}},
-                    antwika::gfx::Color{200, 100, 50, 255});
-                renderer.drawRect(
-                    antwika::gfx::Rect{
-                        {span * 8 + 4, span * 4 + 2}, {180, 100}},
-                    antwika::gfx::Color{20, 200, 90, 128});
-            }
-        }
-
-        std::uint64_t checksum = 0;
-        for (const auto value : renderer.page().pixels)
-        {
-            checksum += value;
-        }
-
-        return Result{millisSince(start), checksum};
-    }
-
     void report(const char *name, const Result &result)
     {
         std::printf(
@@ -420,7 +377,6 @@ int main()
     report("views", benchmarkViews());
     report("teardown", benchmarkTeardown());
     report("events-sso", benchmarkEvents("ok"));
-    report("renderer", benchmarkRenderer());
     report(
         "events-heap",
         benchmarkEvents(

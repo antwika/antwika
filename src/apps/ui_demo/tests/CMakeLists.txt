@@ -8,10 +8,9 @@ antwika_add_app_tests(
         MessagesTest.cpp
         RenderSinkTest.cpp
         RunIntegrationTest.cpp
-        ShowcasePreviewTest.cpp
+        ShowcaseDrawTest.cpp
     LIBS
         antwika::app
-        antwika::app::tests::preview
         antwika::engine
         antwika::event
         antwika::event::tests::mocks

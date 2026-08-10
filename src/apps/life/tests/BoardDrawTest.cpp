@@ -4,20 +4,21 @@
 #include <cstdint>
 #include <vector>
 
-#include <antwika/app/preview/DrawnPreview.hpp>
-#include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/gfx/mocks/MockRenderer.hpp>
 
 #include "antwika/life/Board.hpp"
 #include "antwika/life/BoardScene.hpp"
 
 namespace
 {
-    using antwika::app::preview::drawnPreview;
-    using antwika::gfx::IRenderer;
     using antwika::gfx::Size;
+    using antwika::gfx::mocks::MockRenderer;
     using antwika::life::Board;
     using antwika::life::BoardScene;
+    using ::testing::_;
+    using ::testing::AtLeast;
+    using ::testing::NiceMock;
 
     constexpr std::uint32_t kAcross = 48;
 
@@ -45,17 +46,13 @@ namespace
     }
 }
 
-TEST(BoardPreviewTest, Draw_WritesABoardOfLife)
+TEST(BoardDrawTest, Draw_DrawsABoardOfLife)
 {
-    EXPECT_FALSE(
-        drawnPreview(
-            {.name = "life",
-             .title = "Antwika Life",
-             .canvas = kCanvas},
-            [](IRenderer &renderer)
-            {
-                const BoardScene scene;
-                scene.draw(renderer, kCanvas, seeded());
-            })
-            .empty());
+    NiceMock<MockRenderer> renderer;
+
+    EXPECT_CALL(renderer, drawRect(_, _)).Times(AtLeast(1));
+
+    const BoardScene scene;
+
+    scene.draw(renderer, kCanvas, seeded());
 }

@@ -19,10 +19,6 @@ add_library(antwika_gfx
     ${ANTWIKA_GFX_FONT_SOURCE}
     src/AtlasText.cpp
     src/Bitmap.cpp
-    src/BitmapBackend.cpp
-    src/BitmapRenderer.cpp
-    src/BitmapTexture.cpp
-    src/BitmapWindow.cpp
     src/Blit.cpp
     src/BuiltInFont.cpp
     src/Camera3D.cpp

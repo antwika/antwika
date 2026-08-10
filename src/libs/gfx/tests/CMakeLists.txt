@@ -6,10 +6,7 @@ add_subdirectory(mocks)
 
 add_executable(antwika_gfx_tests
     AtlasTextTest.cpp
-    BitmapBackendConformanceTest.cpp
-    BitmapRendererTest.cpp
     BitmapTest.cpp
-    BitmapWindowTest.cpp
     BlitTest.cpp
     Camera3DTest.cpp
     ColorTest.cpp

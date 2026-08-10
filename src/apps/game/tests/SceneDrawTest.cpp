@@ -3,19 +3,19 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <fstream>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include <antwika/ecs/SystemScheduler.hpp>
 #include <antwika/ecs/World.hpp>
-#include <antwika/gfx/PngReader.hpp>
+#include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/gfx/mocks/MockRenderer.hpp>
+#include <antwika/gfx/mocks/MockTexture.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
-#include <antwika/app/FramePreview.hpp>
-
-#include "ScenePainter.hpp"
+#include "SceneDrawer.hpp"
 #include "Translators.hpp"
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingIndex.hpp"
@@ -70,9 +70,15 @@ namespace
     using antwika::game::SpawnSystem;
     using antwika::game::SupplySystem;
     using antwika::game::WalkerSystem;
+    using antwika::gfx::Bitmap;
     using antwika::gfx::Size;
+    using antwika::gfx::mocks::MockRenderer;
+    using antwika::gfx::mocks::MockTexture;
     using antwika::game::tests::kTranslator;
     using antwika::log::mocks::MockLogger;
+    using ::testing::_;
+    using ::testing::AtLeast;
+    using ::testing::NiceMock;
 
     constexpr Size kCanvas{.width = 960, .height = 600};
 
@@ -80,10 +86,10 @@ namespace
 
     constexpr std::size_t kTicks = 400;
 
-    class ScenePreviewTest : public ::testing::Test
+    class SceneDrawTest : public ::testing::Test
     {
     protected:
-        ScenePreviewTest()
+        SceneDrawTest()
         {
             const auto walk = scheduler.createPhase("walk");
             scheduler.addSystem(walk, walkers);
@@ -156,11 +162,17 @@ namespace
             }
         }
 
-        [[nodiscard]] static Size sizeOfPng(const std::string &path)
+        [[nodiscard]] static std::unique_ptr<NiceMock<MockRenderer>>
+            stubbedRenderer()
         {
-            std::ifstream in(path, std::ios::binary);
+            auto renderer = std::make_unique<NiceMock<MockRenderer>>();
 
-            return antwika::gfx::PngReader().read(in).size;
+            ON_CALL(*renderer, createTexture(_))
+                .WillByDefault(
+                    [](const Bitmap &)
+                    { return std::make_unique<NiceMock<MockTexture>>(); });
+
+            return renderer;
         }
 
         ::testing::NiceMock<MockLogger> logger;
@@ -182,18 +194,19 @@ namespace
     };
 }
 
-TEST_F(ScenePreviewTest, PaintedScene_WritesTheCityAsItStands)
+TEST_F(SceneDrawTest, DrawScene_DrawsTheCityAsItStands)
 {
     run();
 
-    const auto path = antwika::app::writtenPreview(
-        antwika::game::preview::paintedScene(city(MapView::Normal), kCanvas),
-        "city");
+    const auto renderer = stubbedRenderer();
 
-    EXPECT_EQ(sizeOfPng(path), kCanvas);
+    EXPECT_CALL(*renderer, drawTexture(_, _, _, _)).Times(AtLeast(1));
+
+    antwika::game::preview::drawScene(
+        *renderer, city(MapView::Normal), kCanvas);
 }
 
-TEST_F(ScenePreviewTest, PaintedScene_WritesEveryHeatMapWithItsNumbers)
+TEST_F(SceneDrawTest, DrawScene_DrawsEveryHeatMapWithItsNumbers)
 {
     run();
 
@@ -206,12 +219,10 @@ TEST_F(ScenePreviewTest, PaintedScene_WritesEveryHeatMapWithItsNumbers)
 
         ASSERT_FALSE(snapshot.overlay.empty()) << index;
 
-        const auto path = antwika::app::writtenPreview(
-            antwika::game::preview::paintedScene(snapshot, kCanvas),
-            std::string("overlay-")
-                + std::string(
-                    kTranslator.text(antwika::game::mapViewLabel(view))));
+        const auto renderer = stubbedRenderer();
 
-        EXPECT_EQ(sizeOfPng(path), kCanvas);
+        EXPECT_CALL(*renderer, drawText(_, _, _, _)).Times(AtLeast(1));
+
+        antwika::game::preview::drawScene(*renderer, snapshot, kCanvas);
     }
 }
