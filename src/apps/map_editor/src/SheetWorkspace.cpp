@@ -551,25 +551,25 @@ namespace antwika::map_editor
 
         const auto lx = (pixel.x - 64) % 16;
         const auto ly = pixel.y % 16;
-        const bool midX = lx == 7 || lx == 8;
-        const bool midY = ly == 7 || ly == 8;
+        const bool midX = lx >= 5 && lx <= 10;
+        const bool midY = ly >= 5 && ly <= 10;
 
-        if (ly == 0 && midX)
+        if (ly <= 1 && midX)
         {
             return autotile::kEdgeNorth;
         }
 
-        if (ly == 15 && midX)
+        if (ly >= 14 && midX)
         {
             return autotile::kEdgeSouth;
         }
 
-        if (lx == 0 && midY)
+        if (lx <= 1 && midY)
         {
             return autotile::kEdgeWest;
         }
 
-        if (lx == 15 && midY)
+        if (lx >= 14 && midY)
         {
             return autotile::kEdgeEast;
         }
@@ -618,7 +618,8 @@ namespace antwika::map_editor
         auto &tiles = store.tiles;
 
         if (gesture.kind == GestureKind::Press
-            && store.view == EditorView::Tiles && gesture.ink)
+            && store.view == EditorView::Tiles && gesture.ink
+            && gesture.ctrl)
         {
             if (const auto edge =
                     connectorHotspotAt(gesture.pixel))
@@ -628,8 +629,9 @@ namespace antwika::map_editor
                 tiles.connectors[enums::index(store.state.brush)]
                     .edges[static_cast<std::size_t>(slot)] ^=
                     *edge;
-                return;
             }
+
+            return;
         }
 
         if (gesture.kind == GestureKind::Press)
@@ -737,6 +739,37 @@ namespace antwika::map_editor
             "map_editor: saved "
                 + sheetPathFor(store.tiles.directory, store.state.brush)
                       .string());
+    }
+
+    namespace
+    {
+        void drawMarkerOutline(
+            gfx::ViewportRenderer &view,
+            const PointF origin,
+            const float size,
+            const Color color,
+            const float inset)
+        {
+            const auto left = origin.x + inset;
+            const auto top = origin.y + inset;
+            const auto extent = size - 2.0F * inset;
+
+            view.drawRect(
+                RectF({left, top}, {extent, 1.0F}), color);
+            view.drawRect(
+                RectF(
+                    {left, top + extent - 1.0F}, {extent, 1.0F}),
+                color);
+            view.drawRect(
+                RectF(
+                    {left, top + 1.0F}, {1.0F, extent - 2.0F}),
+                color);
+            view.drawRect(
+                RectF(
+                    {left + extent - 1.0F, top + 1.0F},
+                    {1.0F, extent - 2.0F}),
+                color);
+        }
     }
 
     void drawPixelOutline(
@@ -902,22 +935,30 @@ namespace antwika::map_editor
             for (const auto &[bit, at] : markers)
             {
                 const auto on = (edges & bit) != 0;
-
-                view.drawRect(
-                    RectF(
-                        {left + (tileX + at.x) * zoom,
-                         top + (tileY + at.y) * zoom},
-                        {2.0F * zoom, 2.0F * zoom}),
+                const auto color =
                     on ? Color{
                              .red = 244,
                              .green = 208,
                              .blue = 63,
-                             .alpha = 200}
+                             .alpha = 220}
                        : Color{
                              .red = 110,
                              .green = 114,
                              .blue = 124,
-                             .alpha = 160});
+                             .alpha = 180};
+                const PointF origin{
+                    left + (tileX + at.x) * zoom,
+                    top + (tileY + at.y) * zoom};
+                const auto size = 2.0F * zoom;
+
+                drawMarkerOutline(
+                    view,
+                    origin,
+                    size,
+                    Color{.red = 0, .green = 0, .blue = 0,
+                          .alpha = 200},
+                    1.0F);
+                drawMarkerOutline(view, origin, size, color, 0.0F);
             }
         }
     }

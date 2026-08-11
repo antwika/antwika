@@ -575,6 +575,8 @@ namespace antwika::map_editor
                         first = false;
                     }
                 }
+
+                hint += "  ctrl+click toggles";
             }
 
             return hint;

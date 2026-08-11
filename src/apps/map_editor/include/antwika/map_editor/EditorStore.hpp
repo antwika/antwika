@@ -97,6 +97,7 @@ namespace antwika::map_editor
         GestureKind kind = GestureKind::Press;
         gfx::Point pixel{};
         bool ink = true;
+        bool ctrl = false;
     };
 
     struct InputFold final

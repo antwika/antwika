@@ -64,7 +64,7 @@ The rest of the bottom strip, from 32,64 to 96,80 and under the specials, is spa
 
 An optional `connectors` object declares, per terrain and per interior variant 1 through 7, which display-tile edges carry a connector, as a string of the letters N, E, S, and W (for example `"connectors": {"wall": {"1": "EW", "7": ""}}`).
 A variant the sidecar does not mention connects all four edges, which reproduces the pre-connector behavior exactly, and the base tile is implicitly all-connected and not configurable.
-The editor shows the declaration as four edge markers while the cursor is over a variant tile, toggles one on a click at its two-pixel edge-midpoint hotspot (paint across a hotspot by dragging through it), and File > Save Sheet writes the section back, omitting all-connected defaults.
+The editor shows the declaration as four outline-only edge markers while the cursor is over a variant tile, toggles one on a ctrl+click in the edge-midpoint zone, and File > Save Sheet writes the section back, omitting all-connected defaults; plain clicks always paint, markers included.
 
 The variant scatter is edge-aware: variants are chosen row-major so each choice matches its west and north neighbours' facing edges, connector to connector and blank to blank, still keyed off the deterministic position hash with the base favored.
 When the status-quo pick does not fit, the fallback prefers candidates matching both facing edges (the base first, else the hash picks), then candidates matching the west edge alone, then the north edge alone, then the base.

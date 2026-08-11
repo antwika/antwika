@@ -166,8 +166,12 @@ namespace antwika::map_editor
     /**
      * @brief The connector edge under a variant-slot pixel, if any.
      *
-     * @return One edge bit when the pixel sits on a two-pixel edge
-     *         midpoint hotspot of a variant tile.
+     * @return One edge bit when the pixel sits in a variant tile's
+     *         edge-midpoint zone: six pixels along the edge and two
+     *         pixels deep.
+     *
+     * Ensures: only a ctrl-click consults this zone, so plain
+     *          clicks paint everywhere on the tile.
      */
     [[nodiscard]] std::optional<std::uint8_t> connectorHotspotAt(
         gfx::Point pixel);

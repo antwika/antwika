@@ -223,12 +223,16 @@ namespace antwika::input::raylib
             if (down)
             {
                 pending.push_back(PointerButtonPressed{
-                    .button = button, .position = position});
+                    .button = button,
+                    .position = position,
+                    .modifiers = modifiersNow()});
             }
             else
             {
                 pending.push_back(PointerButtonReleased{
-                    .button = button, .position = position});
+                    .button = button,
+                    .position = position,
+                    .modifiers = modifiersNow()});
             }
         }
 

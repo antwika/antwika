@@ -35,6 +35,7 @@ Unit tests for the editor itself remain deferred by explicit decision; see docs/
 | 23 | Artist-editable adjacency rules and weights | shipped |
 | 24 | Per-variant edge connectors | shipped |
 | 25 | Two-color drawing with palette baking | shipped |
+| 26 | Ctrl+click edge toggles and outline markers | fixed |
 
 ## 1: menu bar (shipped)
 
@@ -311,6 +312,7 @@ The autotile library gained a Connectors header and a buildDrawPlan overload tak
 The scatter is edge-aware and deterministic: variants are chosen row-major so each choice sees its west and north neighbours' facing edges and must match both, connector to connector and blank to blank; the status-quo hash pick is tried first (which is what preserves default behavior bit-for-bit), and on a miss the fallback prefers both-edge matches (base first, else the hash picks among them by id order), then west-only, then north-only, then the base — the rule documented in TILE_SHEETS.md.
 Edges facing non-interior tiles stay unconstrained, water frame B stays base-only, and the art-matches-declaration duty is documented as the artist's responsibility.
 The workspace shows four edge markers at the hovered variant tile's edge midpoints (yellow for connector, dim for blank), a click on a two-pixel midpoint hotspot toggles one (dragging through still paints), Save Sheet writes the section, the hint line reports "variant 1  px 79,7  ink  edges E,W", and the connector state rides the hint cache key so a toggle refreshes the line immediately.
+Superseded by task 26: the toggle now requires ctrl+click over an enlarged midpoint zone, plain clicks paint everywhere on the tile, and the markers render as outlines.
 Verified under Xvfb with a test sidecar declaring truthful contacts (straight-H E+W, straight-V N+S, the elbows, the T, the valve E+W, and the tank with no edges): a Python replica of the hash and chooser predicted every interior corner's variant, every shared edge matched by declaration, and pixel checks at all shared midpoints inside the wall slab showed ink exactly where connectors meet and blank where blanks meet with zero mismatches — the no-edge tank simply never enters the constrained interior, which is the mechanism keeping pipe stubs out of blank-edged neighbours.
 Two captures of the same map were pixel-identical, the E-edge toggle saved as "W" in tiles.json and survived a relaunch, and the truthful-contact interior visibly collapses toward the all-connected cross, an honest consequence of edge matching that richer all-edge art relieves.
 The shipped assets/tiles sidecar carries no connectors section, so defaults apply out of the box.
@@ -325,6 +327,16 @@ tilemap_demo bakes the same way, keeping the placeholder and player source bitma
 The artist picks the active draw color through two panel swatches showing the live palette colors (or the C key), left-click paints that class, right-click erases to transparency, the hovered-pixel hint suffix reads ink, paper, or blank plus the active "drawing" color, and the workspace canvas shows classes in the live palette so what you draw is what the map shows.
 Verified under Xvfb: ink and paper strokes rendered in the palette's cyan and near-black over the checkerboard, the saved wall.png byte-asserted exactly the 255-white and 128-gray opaque set with correct alphas, the classes round-tripped a relaunch with the hint reading "paper", 27 base wall tiles sampled both classes in their palette roles and again after a console palette change to new ink and paper values, the picker drag recolored both classes live behind the dialog, right-click erased both classes back to the checkerboard, a paper detail painted on the player rendered in the paper color in the demo beside the ink body, and the all-ink legacy map render stayed pixel-identical to the pre-change reference.
 The task 22 rule that characters tint with the ink color at draw time is superseded by the palette bake, which colors both classes.
+
+## 26: ctrl+click edge toggles and outline markers
+
+User report: the edge markers' click hotspots blocked normal pixel drawing underneath them, and the filled markers hid the artwork.
+Edge connector toggles now require ctrl+left-click; a plain left or right click anywhere on a variant tile — markers included — paints or erases exactly like the rest of the tile.
+The raylib input backend declared a modifiers field on pointer events but never filled it, so it now samples the modifier state on pointer presses and releases exactly as the task 12 key path does, additively, with all backend suites green.
+Since the toggle no longer competes with drawing, the hotspot grew from the 2x1 midpoint pixels to a six-pixels-along, two-deep midpoint zone per edge.
+Markers render as one-canvas-pixel outlines with no fill — yellow for connected, dim for blank — plus a one-pixel black inner contrast line, which shipped because a bare yellow outline over light ink or paper art is ambiguous; the artwork stays visible through the hollow center.
+The hint line appends "ctrl+click toggles" over variant tiles, and the guide and TILE_SHEETS.md describe the new gesture; task 24's section carries a supersession note.
+Verified under Xvfb: a plain click on the west marker zone painted a paper pixel there (stored as 128-gray in the saved PNG) and left the sidecar connector-free, a ctrl+click in the same zone toggled the west edge off (sidecar saved wall variant 1 as "NES") without painting (the clicked pixel stayed 255-white ink), the hint read "variant 1  px 65,7  ink  drawing paper  edges N,E,S  ctrl+click toggles", and marker-interior samples showed the ink-colored artwork rather than any marker fill, with the dim blank-edge outline distinct from the yellow connected ones in the capture.
 
 ## After the queue drains
 

@@ -288,7 +288,9 @@ namespace antwika::map_editor
                                     .kind = GestureKind::Press,
                                     .pixel = *pixel,
                                     .ink = down->button
-                                           == MouseButton::Left});
+                                           == MouseButton::Left,
+                                    .ctrl = down->modifiers
+                                                .control});
                         }
                     }
 
