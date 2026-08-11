@@ -258,6 +258,57 @@ namespace antwika::map_editor
             return (x + y) % 2 == 0;
         }
 
+
+        [[nodiscard]] bool onQuadrantPipe(const std::int32_t at)
+        {
+            return at == 3 || at == 4;
+        }
+
+        /**
+         * @brief The wall demonstration quadrant pieces.
+         *
+         * Ensures: slot edge contacts match the documented example
+         *          connector sets (cross, straights, elbows, tee,
+         *          west cap and a plain block).
+         */
+        [[nodiscard]] bool quadrantInk(
+            const TerrainClass terrain,
+            const std::int32_t slot,
+            const std::int32_t x,
+            const std::int32_t y)
+        {
+            if (terrain != TerrainClass::Wall)
+            {
+                return false;
+            }
+
+            switch (slot)
+            {
+                case 0:
+                    return onQuadrantPipe(x) || onQuadrantPipe(y);
+                case 1:
+                    return onQuadrantPipe(y);
+                case 2:
+                    return onQuadrantPipe(x);
+                case 3:
+                    return (onQuadrantPipe(x) && y <= 4)
+                           || (onQuadrantPipe(y) && x >= 3);
+                case 4:
+                    return (onQuadrantPipe(x) && y >= 3)
+                           || (onQuadrantPipe(y) && x <= 4);
+                case 5:
+                    return onQuadrantPipe(y)
+                           || (onQuadrantPipe(x) && y >= 3);
+                case 6:
+                    return (onQuadrantPipe(y) && x <= 4)
+                           || (x == 5 && y >= 2 && y <= 5);
+                case 7:
+                    return x >= 3 && x <= 4 && y >= 3 && y <= 4;
+                default:
+                    return false;
+            }
+        }
+
         [[nodiscard]] bool frameBInk(
             const TerrainClass terrain,
             const std::int32_t x,
@@ -335,6 +386,25 @@ namespace antwika::map_editor
                     put(
                         kRightColumn + kDisplayTile + x,
                         3 * kDisplayTile + y);
+                }
+            }
+        }
+
+
+        for (std::int32_t slot = 0; slot < 16; ++slot)
+        {
+            const auto originX =
+                slot < 8 ? 32 + slot * 8 : (slot - 8) * 8;
+            const auto originY = slot < 8 ? 64 : 72;
+
+            for (std::int32_t y = 0; y < 8; ++y)
+            {
+                for (std::int32_t x = 0; x < 8; ++x)
+                {
+                    if (quadrantInk(terrain, slot, x, y))
+                    {
+                        put(originX + x, originY + y);
+                    }
                 }
             }
         }

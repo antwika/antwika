@@ -201,6 +201,49 @@ def frame_b_ink(terrain: str, x: int, y: int) -> bool:
     return pattern_ink(terrain, (x + 2) % 8, y % 8)
 
 
+def on_quadrant_pipe(at: int) -> bool:
+    return at in (3, 4)
+
+
+def quadrant_ink(terrain: str, slot: int, x: int, y: int) -> bool:
+    if terrain != "wall":
+        return False
+
+    if slot == 0:
+        return on_quadrant_pipe(x) or on_quadrant_pipe(y)
+
+    if slot == 1:
+        return on_quadrant_pipe(y)
+
+    if slot == 2:
+        return on_quadrant_pipe(x)
+
+    if slot == 3:
+        return (on_quadrant_pipe(x) and y <= 4) or (
+            on_quadrant_pipe(y) and x >= 3
+        )
+
+    if slot == 4:
+        return (on_quadrant_pipe(x) and y >= 3) or (
+            on_quadrant_pipe(y) and x <= 4
+        )
+
+    if slot == 5:
+        return on_quadrant_pipe(y) or (
+            on_quadrant_pipe(x) and y >= 3
+        )
+
+    if slot == 6:
+        return (on_quadrant_pipe(y) and x <= 4) or (
+            x == 5 and 2 <= y <= 5
+        )
+
+    if slot == 7:
+        return 3 <= x <= 4 and 3 <= y <= 4
+
+    return False
+
+
 def sheet_pixels(terrain: str) -> bytearray:
     pixels = bytearray(SHEET_WIDTH * SHEET_HEIGHT * 4)
 
@@ -231,6 +274,15 @@ def sheet_pixels(terrain: str) -> bytearray:
         for x in range(TILE):
             if frame_b_ink(terrain, x, y):
                 put(RIGHT + TILE + x, 3 * TILE + y)
+
+    for slot in range(16):
+        origin_x = 32 + slot * 8 if slot < 8 else (slot - 8) * 8
+        origin_y = SPECIAL_ROW if slot < 8 else SPECIAL_ROW + 8
+
+        for y in range(8):
+            for x in range(8):
+                if quadrant_ink(terrain, slot, x, y):
+                    put(origin_x + x, origin_y + y)
 
     for y in range(8):
         for x in range(8):

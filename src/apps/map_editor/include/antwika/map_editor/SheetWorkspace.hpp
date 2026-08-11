@@ -177,6 +177,23 @@ namespace antwika::map_editor
         gfx::Point pixel);
 
     /**
+     * @brief The quadrant-library slot under a sheet pixel, if any.
+     *
+     * @return The slot id 0 to 15 across the two 8x8 library rows.
+     */
+    [[nodiscard]] std::optional<std::int32_t> quadrantSlotAt(
+        gfx::Point pixel);
+
+    /**
+     * @brief The connector edge under a quadrant-slot pixel.
+     *
+     * @return One edge bit when the pixel sits in the four-along,
+     *         two-deep edge-midpoint zone of a quadrant slot.
+     */
+    [[nodiscard]] std::optional<std::uint8_t> quadrantHotspotAt(
+        gfx::Point pixel);
+
+    /**
      * @brief Folds one pointer gesture into the current sheet.
      *
      * Ensures: a press starts an undoable stroke, moves extend it

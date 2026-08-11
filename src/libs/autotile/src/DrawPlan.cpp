@@ -134,6 +134,114 @@ namespace antwika::autotile
             return true;
         }
 
+        [[nodiscard]] bool quadrantEdgeOn(
+            const SheetConnectors &sheet,
+            const std::int32_t slot,
+            const std::uint8_t edge) noexcept
+        {
+            return (sheet.quadrants[static_cast<std::size_t>(slot)]
+                    & edge)
+                   != 0;
+        }
+
+        [[nodiscard]] bool quadrantFits(
+            const SheetConnectors &sheet,
+            const std::int32_t slot,
+            const std::int32_t west,
+            const std::int32_t north,
+            const bool useWest,
+            const bool useNorth) noexcept
+        {
+            if (useWest && west >= 0
+                && quadrantEdgeOn(sheet, slot, kEdgeWest)
+                       != quadrantEdgeOn(sheet, west, kEdgeEast))
+            {
+                return false;
+            }
+
+            if (useNorth && north >= 0
+                && quadrantEdgeOn(sheet, slot, kEdgeNorth)
+                       != quadrantEdgeOn(sheet, north, kEdgeSouth))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        [[nodiscard]] std::uint8_t chooseQuadrant(
+            const SheetConnectors &sheet,
+            const std::uint64_t hash,
+            const std::int32_t west,
+            const std::int32_t north) noexcept
+        {
+            std::array<std::uint8_t, kQuadrantSlots> declared{};
+            std::size_t count = 0;
+
+            for (std::size_t slot = 0; slot < kQuadrantSlots;
+                 ++slot)
+            {
+                if ((sheet.quadrantMask & (1U << slot)) != 0)
+                {
+                    declared[count] =
+                        static_cast<std::uint8_t>(slot);
+                    ++count;
+                }
+            }
+
+            const auto base = declared[0];
+            const auto bucket = hash % (2 * count);
+            const auto preliminary =
+                bucket < count
+                    ? base
+                    : declared[bucket - count];
+
+            if (quadrantFits(
+                    sheet, preliminary, west, north, true, true))
+            {
+                return preliminary;
+            }
+
+            constexpr std::array<std::array<bool, 2>, 3> kPasses{
+                {{true, true}, {true, false}, {false, true}}};
+
+            for (const auto &pass : kPasses)
+            {
+                std::array<std::uint8_t, kQuadrantSlots>
+                    candidates{};
+                std::size_t fitting = 0;
+                bool baseFits = false;
+
+                for (std::size_t at = 0; at < count; ++at)
+                {
+                    if (!quadrantFits(
+                            sheet,
+                            declared[at],
+                            west,
+                            north,
+                            pass[0],
+                            pass[1]))
+                    {
+                        continue;
+                    }
+
+                    baseFits = baseFits || declared[at] == base;
+                    candidates[fitting] = declared[at];
+                    ++fitting;
+                }
+
+                if (fitting == 0)
+                {
+                    continue;
+                }
+
+                return baseFits ? base
+                                : candidates[hash % fitting];
+            }
+
+            return base;
+        }
+
         [[nodiscard]] std::uint8_t chooseVariant(
             const SheetConnectors &sheet,
             const std::uint64_t hash,
@@ -264,6 +372,14 @@ namespace antwika::autotile
 
                 for (const auto terrain : kDrawOrder)
                 {
+                    if (connectors[enums::index(terrain)]
+                            .quadrantMask
+                        != 0)
+                    {
+                        addQuadrantSurfaces(level, terrain, width);
+                        continue;
+                    }
+
                     std::vector<std::int32_t> previousRow(
                         width, -1);
                     std::vector<std::int32_t> currentRow(width, -1);
@@ -300,13 +416,134 @@ namespace antwika::autotile
                 }
             }
 
-            [[nodiscard]] std::int32_t addSurface(
+            /**
+             * @brief Assembles a quadrant terrain's surfaces.
+             *
+             * Ensures: interior full-mask tiles become four 8x8
+             *          quadrant draws on the uniform lattice while
+             *          every partial mask keeps its normal surface
+             *          piece.
+             */
+            void addQuadrantSurfaces(
+                const std::int32_t level,
+                const TerrainClass terrain,
+                const std::size_t width)
+            {
+                const auto rows =
+                    static_cast<std::size_t>(map.rows()) + 1;
+                std::vector<std::uint8_t> interior(
+                    width * rows, 0);
+
+                for (std::int64_t dualRow = 0;
+                     dualRow <= map.rows();
+                     ++dualRow)
+                {
+                    for (std::int64_t dualColumn = 0;
+                         dualColumn <= map.columns();
+                         ++dualColumn)
+                    {
+                        const auto mask = surfaceMask(
+                            dualColumn, dualRow, level, terrain);
+
+                        if (mask == 0)
+                        {
+                            continue;
+                        }
+
+                        if (mask == kFullMask)
+                        {
+                            interior
+                                [static_cast<std::size_t>(dualRow)
+                                     * width
+                                 + static_cast<std::size_t>(
+                                     dualColumn)] = 1;
+                            continue;
+                        }
+
+                        plan.push_back(TileDraw{
+                            .terrain = terrain,
+                            .piece = TilePiece::Surface,
+                            .mask = mask,
+                            .variant = 0,
+                            .screen = {
+                                .x = static_cast<std::int32_t>(
+                                         dualColumn)
+                                         * kUnit
+                                     - kHalfTile,
+                                .y = static_cast<std::int32_t>(
+                                         dualRow)
+                                         * kUnit
+                                     - kHalfTile
+                                     - level * kLevelRise}});
+                    }
+                }
+
+                addQuadrantLattice(level, terrain, interior, width);
+            }
+
+            void addQuadrantLattice(
+                const std::int32_t level,
+                const TerrainClass terrain,
+                const std::vector<std::uint8_t> &interior,
+                const std::size_t width)
+            {
+                const auto &sheet =
+                    connectors[enums::index(terrain)];
+                const auto lattice = width * 2;
+                std::vector<std::int32_t> previousRow(lattice, -1);
+                std::vector<std::int32_t> currentRow(lattice, -1);
+
+                for (std::size_t qr = 0;
+                     qr < (static_cast<std::size_t>(map.rows()) + 1)
+                              * 2;
+                     ++qr)
+                {
+                    std::ranges::fill(currentRow, -1);
+
+                    for (std::size_t qc = 0; qc < lattice; ++qc)
+                    {
+                        if (interior[(qr / 2) * width + qc / 2]
+                            == 0)
+                        {
+                            continue;
+                        }
+
+                        const auto west =
+                            qc > 0 ? currentRow[qc - 1] : -1;
+                        const auto north = previousRow[qc];
+                        const auto slot = chooseQuadrant(
+                            sheet,
+                            positionHash(
+                                static_cast<std::int64_t>(qc),
+                                static_cast<std::int64_t>(qr)),
+                            west,
+                            north);
+
+                        currentRow[qc] = slot;
+                        plan.push_back(TileDraw{
+                            .terrain = terrain,
+                            .piece = TilePiece::Quadrant,
+                            .mask = 0,
+                            .variant = slot,
+                            .screen = {
+                                .x = static_cast<std::int32_t>(qc)
+                                         * kHalfTile
+                                     - kHalfTile,
+                                .y = static_cast<std::int32_t>(qr)
+                                         * kHalfTile
+                                     - kHalfTile
+                                     - level * kLevelRise}});
+                    }
+
+                    std::swap(previousRow, currentRow);
+                }
+            }
+
+            [[nodiscard]] std::uint8_t surfaceMask(
                 const std::int64_t dualColumn,
                 const std::int64_t dualRow,
                 const std::int32_t level,
-                const TerrainClass terrain,
-                const std::int32_t west,
-                const std::int32_t north)
+                const TerrainClass terrain) const
             {
                 std::uint8_t mask = 0;
 
@@ -330,6 +567,20 @@ namespace antwika::autotile
                 {
                     mask |= 8;
                 }
+
+                return mask;
+            }
+
+            [[nodiscard]] std::int32_t addSurface(
+                const std::int64_t dualColumn,
+                const std::int64_t dualRow,
+                const std::int32_t level,
+                const TerrainClass terrain,
+                const std::int32_t west,
+                const std::int32_t north)
+            {
+                const auto mask = surfaceMask(
+                    dualColumn, dualRow, level, terrain);
 
                 if (mask == 0)
                 {

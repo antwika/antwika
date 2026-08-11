@@ -27,11 +27,29 @@ namespace antwika::autotile
         }
     }
 
+    geometry::Rect quadrantSource(const std::uint8_t slot) noexcept
+    {
+        const auto index = static_cast<std::int32_t>(slot);
+
+        if (index < 8)
+        {
+            return halfSlotAt(32 + index * kHalfTile, kSpecialRow);
+        }
+
+        return halfSlotAt(
+            (index - 8) * kHalfTile, kSpecialRow + kHalfTile);
+    }
+
     geometry::Rect sheetSource(
         const TilePiece piece,
         const std::uint8_t mask,
         const std::uint8_t variant) noexcept
     {
+        if (piece == TilePiece::Quadrant)
+        {
+            return quadrantSource(variant);
+        }
+
         if (piece == TilePiece::WallBand)
         {
             return halfSlotAt(0, kSpecialRow);

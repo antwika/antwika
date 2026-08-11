@@ -36,6 +36,7 @@ Unit tests for the editor itself remain deferred by explicit decision; see docs/
 | 24 | Per-variant edge connectors | shipped |
 | 25 | Two-color drawing with palette baking | shipped |
 | 26 | Ctrl+click edge toggles and outline markers | fixed |
+| 27 | Quadrant libraries with 8px edge matching | shipped |
 
 ## 1: menu bar (shipped)
 
@@ -337,6 +338,17 @@ Since the toggle no longer competes with drawing, the hotspot grew from the 2x1 
 Markers render as one-canvas-pixel outlines with no fill — yellow for connected, dim for blank — plus a one-pixel black inner contrast line, which shipped because a bare yellow outline over light ink or paper art is ambiguous; the artwork stays visible through the hollow center.
 The hint line appends "ctrl+click toggles" over variant tiles, and the guide and TILE_SHEETS.md describe the new gesture; task 24's section carries a supersession note.
 Verified under Xvfb: a plain click on the west marker zone painted a paper pixel there (stored as 128-gray in the saved PNG) and left the sidecar connector-free, a ctrl+click in the same zone toggled the west edge off (sidecar saved wall variant 1 as "NES") without painting (the clicked pixel stayed 255-white ink), the hint read "variant 1  px 65,7  ink  drawing paper  edges N,E,S  ctrl+click toggles", and marker-interior samples showed the ink-colored artwork rather than any marker fill, with the dim blank-edge outline distinct from the yellow connected ones in the capture.
+
+## 27: quadrant libraries with 8px edge matching
+
+Per terrain, the artist may draw a library of 8x8 quadrant sprites with per-slot connector flags; when the sidecar declares at least one quadrant slot for a terrain (the activation trigger), that terrain's interior assembles from the library on a uniform 8-pixel lattice with edge matching instead of scattering 16x16 variants.
+The sixteen library slots reuse the previously spare sheet rows — slots 0 to 7 at (32,64) and 8 to 15 at (0,72) — so the sheet stays 96x80, the workspace needs no panning, and legibility is unchanged.
+The autotile library gained TilePiece::Quadrant with quadrantSource, quadrant fields on SheetConnectors (edge bits plus a declared-slot mask), and an addQuadrantSurfaces path: interior full-mask tiles become four 8x8 draws on the lattice (which ignores display-tile boundaries), partial masks keep their surface pieces, and the row-major choice matches west and north facing edges with the lowest declared slot as favored base and the section 24 fallback chain; edges facing non-interior tiles stay unconstrained.
+Water frame-B animation stays variant-path-only — a quadrant water interior does not animate — the simplest honest choice.
+The sidecar grew a per-terrain "quadrants" object mapping slot ids to edge-letter strings; ctrl+click on a quadrant slot's four-along, two-deep edge zone declares the slot and toggles the edge with the section 26 outline markers scaled down, ctrl+right-click removes a slot from the library, declared slots show a corner dot, and hints read "quadrant 0  px 32,66  ink  drawing ink  edges N,E,S  ctrl+click toggles" or "not in library  ctrl+click adds".
+The shipped wall sheet carries a demonstration library (cross, straights, elbows, tee, west cap, plain block) drawn identically by both C++ generators and the script, but the shipped sidecar declares nothing, so shipped behavior is unchanged; the activating configuration is given as a documented example in TILE_SHEETS.md.
+The load fix along the way: loadConnectorsFile no longer early-returns when the sidecar has quadrants but no 16x16 connectors section — caught because the first slab capture rendered the variant path and the pixel checks refused it.
+Verified under Xvfb: with no sidecar config the render is pixel-identical to a stash-built pre-change reference; with the test library active, a Python replica of the lattice chooser predicted all 240 interior quadrants, pixel checks at every shared 8px edge (including 120 boundaries interior to display tiles) showed connector-meets-connector and blank-meets-blank with zero mismatches and 385 connector crossings — visibly denser than the 16px network; two captures were identical; plain click in a marker zone painted (255-white byte-asserted in the PNG) while ctrl+click toggled the sidecar to "NES" without painting (alpha stayed zero); a floor strip rendered identically with and without the wall library present, proving variant terrains untouched; and a restart round-tripped both the painted quadrant art and the connector state.
 
 ## After the queue drains
 

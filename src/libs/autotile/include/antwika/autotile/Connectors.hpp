@@ -15,6 +15,8 @@ namespace antwika::autotile
     inline constexpr std::uint8_t kEdgeWest = 8;
     inline constexpr std::uint8_t kEdgeAll = 15;
 
+    inline constexpr std::size_t kQuadrantSlots = 16;
+
     struct SheetConnectors final
     {
         std::array<std::uint8_t, 8> edges{
@@ -26,6 +28,8 @@ namespace antwika::autotile
             kEdgeAll,
             kEdgeAll,
             kEdgeAll};
+        std::array<std::uint8_t, kQuadrantSlots> quadrants{};
+        std::uint16_t quadrantMask = 0;
 
         [[nodiscard]] bool operator==(
             const SheetConnectors &other) const = default;

@@ -12,11 +12,12 @@ namespace antwika::autotile
         WallBand,
         BridgeDeck,
         Shade,
+        Quadrant,
     };
 
     [[nodiscard]] constexpr TilePiece enumBound(TilePiece) noexcept
     {
-        return TilePiece::Shade;
+        return TilePiece::Quadrant;
     }
 
 }

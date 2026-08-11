@@ -220,6 +220,11 @@ namespace antwika::map_editor
                 kSpecial[static_cast<std::size_t>(pixel.x / 8)]);
         }
 
+        if (const auto slot = quadrantSlotAt(pixel))
+        {
+            return "quadrant " + std::to_string(*slot);
+        }
+
         return "spare";
     }
 
@@ -403,39 +408,85 @@ namespace antwika::map_editor
         const auto document =
             nlohmann::json::parse(in, nullptr, false);
 
-        if (document.is_discarded()
-            || !document.contains("connectors")
-            || !document.at("connectors").is_object())
+        if (document.is_discarded())
         {
             return connectors;
         }
 
-        for (const auto &[name, slots] :
-             document.at("connectors").items())
+        if (document.contains("connectors")
+            && document.at("connectors").is_object())
         {
-            for (const auto terrain :
-                 enums::kAll<tilemap::TerrainClass>)
+            for (const auto &[name, slots] :
+                 document.at("connectors").items())
             {
-                if (tilemap::toString(terrain) != name
-                    || !slots.is_object())
+                for (const auto terrain :
+                     enums::kAll<tilemap::TerrainClass>)
                 {
-                    continue;
-                }
-
-                for (const auto &[slot, edges] : slots.items())
-                {
-                    const auto variant = std::atoi(slot.c_str());
-
-                    if (variant < 1 || variant > 7
-                        || !edges.is_string())
+                    if (tilemap::toString(terrain) != name
+                        || !slots.is_object())
                     {
                         continue;
                     }
 
-                    connectors[enums::index(terrain)]
-                        .edges[static_cast<std::size_t>(variant)] =
-                        edgesFromText(
-                            edges.get<std::string>());
+                    for (const auto &[slot, edges] : slots.items())
+                    {
+                        const auto variant =
+                            std::atoi(slot.c_str());
+
+                        if (variant < 1 || variant > 7
+                            || !edges.is_string())
+                        {
+                            continue;
+                        }
+
+                        connectors[enums::index(terrain)]
+                            .edges[static_cast<std::size_t>(
+                                variant)] =
+                            edgesFromText(
+                                edges.get<std::string>());
+                    }
+                }
+            }
+        }
+
+        if (document.contains("quadrants")
+            && document.at("quadrants").is_object())
+        {
+            for (const auto &[name, slots] :
+                 document.at("quadrants").items())
+            {
+                for (const auto terrain :
+                     enums::kAll<tilemap::TerrainClass>)
+                {
+                    if (tilemap::toString(terrain) != name
+                        || !slots.is_object())
+                    {
+                        continue;
+                    }
+
+                    auto &sheet =
+                        connectors[enums::index(terrain)];
+
+                    for (const auto &[slot, edges] :
+                         slots.items())
+                    {
+                        const auto at = std::atoi(slot.c_str());
+
+                        if (at < 0
+                            || at >= static_cast<std::int32_t>(
+                                   autotile::kQuadrantSlots)
+                            || !edges.is_string())
+                        {
+                            continue;
+                        }
+
+                        sheet.quadrants[static_cast<std::size_t>(
+                            at)] =
+                            edgesFromText(
+                                edges.get<std::string>());
+                        sheet.quadrantMask |= static_cast<
+                            std::uint16_t>(1U << at);
+                    }
                 }
             }
         }
@@ -503,6 +554,46 @@ namespace antwika::map_editor
         else
         {
             document["connectors"] = std::move(section);
+        }
+
+        nlohmann::json quadrantSection = nlohmann::json::object();
+
+        for (const auto terrain :
+             enums::kAll<tilemap::TerrainClass>)
+        {
+            const auto &sheet = connectors[enums::index(terrain)];
+
+            if (sheet.quadrantMask == 0)
+            {
+                continue;
+            }
+
+            nlohmann::json slots = nlohmann::json::object();
+
+            for (std::size_t at = 0;
+                 at < autotile::kQuadrantSlots;
+                 ++at)
+            {
+                if ((sheet.quadrantMask & (1U << at)) == 0)
+                {
+                    continue;
+                }
+
+                slots[std::to_string(at)] =
+                    edgesToText(sheet.quadrants[at]);
+            }
+
+            quadrantSection[std::string(
+                tilemap::toString(terrain))] = std::move(slots);
+        }
+
+        if (quadrantSection.empty())
+        {
+            document.erase("quadrants");
+        }
+        else
+        {
+            document["quadrants"] = std::move(quadrantSection);
         }
 
         std::ofstream out(path);
@@ -577,6 +668,59 @@ namespace antwika::map_editor
         return std::nullopt;
     }
 
+    std::optional<std::int32_t> quadrantSlotAt(const Point pixel)
+    {
+        if (pixel.y >= 64 && pixel.y < 72 && pixel.x >= 32
+            && pixel.x < 96)
+        {
+            return (pixel.x - 32) / 8;
+        }
+
+        if (pixel.y >= 72 && pixel.y < 80 && pixel.x >= 0
+            && pixel.x < 64)
+        {
+            return 8 + pixel.x / 8;
+        }
+
+        return std::nullopt;
+    }
+
+    std::optional<std::uint8_t> quadrantHotspotAt(
+        const Point pixel)
+    {
+        if (!quadrantSlotAt(pixel).has_value())
+        {
+            return std::nullopt;
+        }
+
+        const auto lx = pixel.x % 8;
+        const auto ly = pixel.y % 8;
+        const bool midX = lx >= 2 && lx <= 5;
+        const bool midY = ly >= 2 && ly <= 5;
+
+        if (ly <= 1 && midX)
+        {
+            return autotile::kEdgeNorth;
+        }
+
+        if (ly >= 6 && midX)
+        {
+            return autotile::kEdgeSouth;
+        }
+
+        if (lx <= 1 && midY)
+        {
+            return autotile::kEdgeWest;
+        }
+
+        if (lx >= 6 && midY)
+        {
+            return autotile::kEdgeEast;
+        }
+
+        return std::nullopt;
+    }
+
     namespace
     {
         void applyStrokePixel(
@@ -618,17 +762,42 @@ namespace antwika::map_editor
         auto &tiles = store.tiles;
 
         if (gesture.kind == GestureKind::Press
-            && store.view == EditorView::Tiles && gesture.ink
-            && gesture.ctrl)
+            && store.view == EditorView::Tiles && gesture.ctrl)
         {
-            if (const auto edge =
-                    connectorHotspotAt(gesture.pixel))
-            {
-                const auto slot = *variantSlotAt(gesture.pixel);
+            auto &sheet =
+                tiles.connectors[enums::index(store.state.brush)];
 
-                tiles.connectors[enums::index(store.state.brush)]
-                    .edges[static_cast<std::size_t>(slot)] ^=
-                    *edge;
+            if (gesture.ink)
+            {
+                if (const auto edge =
+                        connectorHotspotAt(gesture.pixel))
+                {
+                    const auto slot =
+                        *variantSlotAt(gesture.pixel);
+
+                    sheet.edges[static_cast<std::size_t>(slot)] ^=
+                        *edge;
+                }
+                else if (
+                    const auto edge =
+                        quadrantHotspotAt(gesture.pixel))
+                {
+                    const auto slot =
+                        *quadrantSlotAt(gesture.pixel);
+
+                    sheet.quadrants[static_cast<std::size_t>(
+                        *quadrantSlotAt(gesture.pixel))] ^= *edge;
+                    sheet.quadrantMask |= static_cast<
+                        std::uint16_t>(1U << slot);
+                }
+            }
+            else if (
+                const auto slot = quadrantSlotAt(gesture.pixel))
+            {
+                sheet.quadrantMask &= static_cast<std::uint16_t>(
+                    ~(1U << *slot));
+                sheet.quadrants[static_cast<std::size_t>(*slot)] =
+                    0;
             }
 
             return;
@@ -914,6 +1083,89 @@ namespace antwika::map_editor
             {left + static_cast<float>(hover->x) * zoom,
              top + static_cast<float>(hover->y) * zoom},
             zoom);
+
+        for (std::size_t at = 0; at < autotile::kQuadrantSlots;
+             ++at)
+        {
+            if ((connectors.quadrantMask & (1U << at)) == 0)
+            {
+                continue;
+            }
+
+            const auto source = autotile::quadrantSource(
+                static_cast<std::uint8_t>(at));
+
+            view.drawRect(
+                RectF(
+                    {left
+                         + static_cast<float>(source.origin.x)
+                               * zoom,
+                     top
+                         + static_cast<float>(source.origin.y)
+                               * zoom},
+                    {zoom, zoom}),
+                Color{
+                    .red = 244,
+                    .green = 208,
+                    .blue = 63,
+                    .alpha = 220});
+        }
+
+        if (const auto slot = quadrantSlotAt(*hover))
+        {
+            if ((connectors.quadrantMask & (1U << *slot)) != 0)
+            {
+                const auto source = autotile::quadrantSource(
+                    static_cast<std::uint8_t>(*slot));
+                const auto tileX =
+                    static_cast<float>(source.origin.x);
+                const auto tileY =
+                    static_cast<float>(source.origin.y);
+                const auto edges = connectors.quadrants
+                                       [static_cast<std::size_t>(
+                                           *slot)];
+                const std::array<
+                    std::pair<std::uint8_t, PointF>,
+                    4>
+                    markers{
+                        {{autotile::kEdgeNorth, {3.0F, 0.0F}},
+                         {autotile::kEdgeSouth, {3.0F, 6.0F}},
+                         {autotile::kEdgeWest, {0.0F, 3.0F}},
+                         {autotile::kEdgeEast, {6.0F, 3.0F}}}};
+
+                for (const auto &[bit, at] : markers)
+                {
+                    const auto on = (edges & bit) != 0;
+                    const auto color =
+                        on ? Color{
+                                 .red = 244,
+                                 .green = 208,
+                                 .blue = 63,
+                                 .alpha = 220}
+                           : Color{
+                                 .red = 110,
+                                 .green = 114,
+                                 .blue = 124,
+                                 .alpha = 180};
+                    const PointF origin{
+                        left + (tileX + at.x) * zoom,
+                        top + (tileY + at.y) * zoom};
+
+                    drawMarkerOutline(
+                        view,
+                        origin,
+                        2.0F * zoom,
+                        Color{
+                            .red = 0,
+                            .green = 0,
+                            .blue = 0,
+                            .alpha = 200},
+                        1.0F);
+                    drawMarkerOutline(
+                        view, origin, 2.0F * zoom, color, 0.0F);
+                }
+            }
+        }
 
         if (const auto slot = variantSlotAt(*hover))
         {

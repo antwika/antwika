@@ -71,6 +71,17 @@ When the status-quo pick does not fit, the fallback prefers candidates matching 
 Edges facing anything that is not a same-terrain interior tile — mask edges, other terrains, the map border — are unconstrained, and keeping that art coherent stays the artist's responsibility for now.
 The art must honor the declaration: a declared connector edge should carry pipe ink at the edge midpoint and a blank edge should not, or mismatched pixels will show even though placement is consistent.
 
+## Quadrant libraries
+
+A terrain may assemble its interior from a library of 8x8 quadrant sprites instead of scattering whole 16x16 variant tiles, multiplying variety combinatorially from few drawn assets.
+The library holds sixteen slots in the previously spare sheet space — slots 0 to 7 beside the specials at (32,64) through (96,72) and slots 8 to 15 below them at (0,72) through (64,80) — so the sheet stays 96x80 and the workspace needs no panning.
+The sidecar declares the library per terrain as `"quadrants": {"0": "NESW", "1": "EW", ...}`, one edge-letter string per slot; the quadrant path activates for a terrain exactly when at least one of its quadrant slots is declared, and terrains without any declaration keep the 16x16 variant scatter unchanged.
+When active, the terrain's interior full-mask tiles become four quadrant draws each on a uniform 8-pixel lattice that ignores display-tile boundaries, while every partial-mask tile keeps its normal surface piece.
+The lattice scatter is deterministic and row-major: each choice must match its west and north neighbours' facing edges, connector to connector and blank to blank; the lowest declared slot is the favored base, a status-quo hash pick is tried first, and the fallback prefers both-edge matches (base first, else the hash picks), then west-only, then north-only, then the base.
+Edges facing mask tiles, other terrains, or the map border stay unconstrained, and water's frame-B animation applies only on the variant path — a quadrant-assembled water interior does not animate.
+In the workspace, hovering a quadrant slot shows the same ctrl+click outline edge markers scaled to 8x8 (the toggle zone is four pixels along the edge and two deep), ctrl+click on an edge declares the slot and toggles that edge, ctrl+right-click removes the slot from the library, and declared slots carry a small corner dot.
+The shipped wall sheet includes a demonstration library drawn in slots 0 to 7 — cross, straight-H, straight-V, two elbows, a tee, a west cap and a plain block — but the shipped sidecar declares nothing, so out-of-the-box rendering is unchanged; to activate it, add `"quadrants": {"wall": {"0": "NESW", "1": "EW", "2": "NS", "3": "NE", "4": "SW", "5": "ESW", "6": "W", "7": ""}}` to tiles.json.
+
 ## Generation rules
 
 `assets/tiles/rules.json` makes the generation weights and the terrain adjacency artist-editable per tileset, honoring `--tiles`.

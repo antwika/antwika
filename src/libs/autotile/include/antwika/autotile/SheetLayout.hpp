@@ -33,6 +33,16 @@ namespace antwika::autotile
      *
      * Ensures: every input yields a rectangle inside the sheet.
      */
+    /**
+     * @brief The 8x8 source rect of a quadrant-library slot.
+     *
+     * Ensures: slots zero to seven sit in the row beside the
+     *          specials and slots eight to fifteen in the row
+     *          below, reusing the previously spare sheet space.
+     */
+    [[nodiscard]] geometry::Rect quadrantSource(
+        std::uint8_t slot) noexcept;
+
     [[nodiscard]] geometry::Rect sheetSource(
         TilePiece piece,
         std::uint8_t mask,

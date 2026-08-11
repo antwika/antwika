@@ -579,6 +579,63 @@ namespace antwika::map_editor
                 hint += "  ctrl+click toggles";
             }
 
+            if (const auto slot = quadrantSlotAt(*pixel))
+            {
+                const auto &sheet =
+                    store.tiles
+                        .connectors[enums::index(
+                            store.state.brush)];
+
+                if ((sheet.quadrantMask & (1U << *slot)) == 0)
+                {
+                    hint += "  not in library"
+                            "  ctrl+click adds";
+                }
+                else
+                {
+                    const auto edges =
+                        sheet.quadrants[static_cast<std::size_t>(
+                            *slot)];
+
+                    hint += "  edges ";
+
+                    if (edges == 0)
+                    {
+                        hint += "none";
+                    }
+                    else
+                    {
+                        const std::array<
+                            std::pair<std::uint8_t, char>,
+                            4>
+                            letters{
+                                {{autotile::kEdgeNorth, 'N'},
+                                 {autotile::kEdgeEast, 'E'},
+                                 {autotile::kEdgeSouth, 'S'},
+                                 {autotile::kEdgeWest, 'W'}}};
+                        bool first = true;
+
+                        for (const auto &[bit, letter] : letters)
+                        {
+                            if ((edges & bit) == 0)
+                            {
+                                continue;
+                            }
+
+                            if (!first)
+                            {
+                                hint += ",";
+                            }
+
+                            hint += letter;
+                            first = false;
+                        }
+                    }
+
+                    hint += "  ctrl+click toggles";
+                }
+            }
+
             return hint;
         }
 
@@ -652,6 +709,21 @@ namespace antwika::map_editor
                                 store.state.brush)]
                             .edges[static_cast<std::size_t>(
                                 *slot)];
+                }
+
+                if (const auto slot = quadrantSlotAt(*pixel))
+                {
+                    const auto &sheet =
+                        store.tiles
+                            .connectors[enums::index(
+                                store.state.brush)];
+                    const bool declared =
+                        (sheet.quadrantMask & (1U << *slot)) != 0;
+
+                    connectorEdges = static_cast<std::uint8_t>(
+                        (declared ? 0x40 : 0x20)
+                        | sheet.quadrants[static_cast<
+                            std::size_t>(*slot)]);
                 }
             }
         }

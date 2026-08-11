@@ -90,6 +90,7 @@ Each 16×16 mask tile draws centered on a dual-grid corner, and its mask encodes
 Interior machinery connects across tiles when pipes cross edges only at the two-pixel edge midpoints, per the connection convention in TILE_SHEETS.md — the wall placeholders ship as connectable pipe pieces that demonstrate it.
 Each variant can declare which edges carry a connector (hover a variant tile and ctrl+click an edge marker), and the scatter only places variants whose facing edges agree, so directional pieces — straight runs, caps, standalone machines — are now safe to draw.
 Map > Rules... edits the tileset's generation weights and terrain adjacency; the rules live in rules.json beside the sheets and are not part of map undo.
+Choose quadrants over variant tiles when a terrain's interior should weave fine machinery from few pieces: declare 8x8 quadrant sprites in the library rows (ctrl+click their edge markers exactly like variants) and the interior assembles them on an 8-pixel lattice with matched edges, while variant tiles remain the right tool for hand-composed 16x16 set pieces; a terrain uses quadrants exactly when its library declares at least one slot.
 Every edit updates the map view live; File > Save Sheet writes `assets/tiles/<terrain>.png`, which the editor and demo load at startup.
 Sheets are drawn in white and tinted by the map's ink color at render time.
 The layout convention is documented in [TILE_SHEETS.md](TILE_SHEETS.md).
