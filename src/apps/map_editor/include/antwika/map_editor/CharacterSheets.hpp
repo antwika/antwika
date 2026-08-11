@@ -25,6 +25,10 @@ namespace antwika::map_editor
 
     inline constexpr std::int32_t kCharacterZoom = 4;
 
+    inline constexpr std::int32_t kCharacterLeft = 32;
+
+    inline constexpr std::int32_t kCharacterTop = 12;
+
     /**
      * @brief Names a direction row of the 4x4 frame table.
      */

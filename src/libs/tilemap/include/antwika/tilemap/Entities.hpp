@@ -14,6 +14,7 @@ namespace antwika::tilemap
     {
         std::string id{};
         geometry::GridCell at{};
+        std::int32_t level = 0;
         std::string targetMap{};
         std::string targetEntry{};
         std::vector<std::string> requiredTags{};
@@ -26,6 +27,7 @@ namespace antwika::tilemap
     {
         std::string id{};
         geometry::GridCell at{};
+        std::int32_t level = 0;
 
         [[nodiscard]] bool operator==(const BoatEmbark &other) const
             = default;
@@ -35,6 +37,7 @@ namespace antwika::tilemap
     {
         std::string id{};
         geometry::GridCell at{};
+        std::int32_t level = 0;
         std::string enemy{};
 
         [[nodiscard]] bool operator==(const SpawnPoint &other) const
@@ -45,6 +48,7 @@ namespace antwika::tilemap
     {
         std::string id{};
         geometry::GridCell at{};
+        std::int32_t level = 0;
         std::string item{};
         std::vector<std::string> grantedTags{};
 
@@ -55,6 +59,7 @@ namespace antwika::tilemap
     {
         std::string id{};
         geometry::GridCell at{};
+        std::int32_t level = 0;
 
         [[nodiscard]] bool operator==(const Npc &other) const = default;
     };
@@ -63,6 +68,7 @@ namespace antwika::tilemap
     {
         std::string id{};
         geometry::GridCell at{};
+        std::int32_t level = 0;
         std::uint32_t columns = 1;
         std::uint32_t rows = 1;
         std::string event{};

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <optional>
 #include <string>
 
@@ -13,6 +14,7 @@ namespace antwika::mapcheck
         std::string map{};
         std::string message{};
         std::optional<geometry::GridCell> at{};
+        std::optional<std::int32_t> level{};
 
         [[nodiscard]] bool operator==(const Finding &other) const = default;
     };

@@ -293,3 +293,21 @@ TEST(ViewportRendererTest, PopTransform_ReachesTheWrappedRenderer)
 
     view.popTransform();
 }
+
+TEST(ViewportRendererTest, Resize_RebuildsTheTransformForTheNewSize)
+{
+    NiceMock<MockRenderer> inner;
+    ViewportRenderer renderer(
+        inner, Size{.width = 200, .height = 100}, kCanvas);
+    const auto before = renderer.viewport();
+
+    renderer.resize(Size{.width = 400, .height = 400});
+
+    const auto after = renderer.viewport();
+
+    EXPECT_NE(before, after);
+    EXPECT_EQ(
+        after,
+        antwika::gfx::viewportFor(
+            Size{.width = 400, .height = 400}, kCanvas));
+}

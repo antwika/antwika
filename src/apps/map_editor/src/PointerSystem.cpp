@@ -11,7 +11,7 @@
 
 #include "antwika/map_editor/CharacterSheets.hpp"
 #include "antwika/map_editor/Commands.hpp"
-#include "antwika/map_editor/SheetWorkspace.hpp"
+#include "antwika/map_editor/TilesetWorkspace.hpp"
 
 namespace antwika::map_editor
 {
@@ -38,21 +38,6 @@ namespace antwika::map_editor
         {
             return canvas.x >= 0 && canvas.x < kMapViewWidth
                    && canvas.y >= kMenuBarHeight;
-        }
-
-        [[nodiscard]] Point mapPoint(
-            const Point canvas, const MapCamera &camera) noexcept
-        {
-            const auto zoom = camera.zoom();
-            const auto localX =
-                static_cast<float>(canvas.x) - camera.panX;
-            const auto localY =
-                static_cast<float>(canvas.y - kMenuBarHeight)
-                - camera.panY;
-
-            return Point{
-                .x = static_cast<std::int32_t>(localX / zoom),
-                .y = static_cast<std::int32_t>(localY / zoom)};
         }
 
         [[nodiscard]] SignedCell signedCellUnder(
@@ -129,11 +114,21 @@ namespace antwika::map_editor
     {
         auto &input = store.input;
         const bool tilesView = store.view != EditorView::Map;
-        const auto workspacePixel = [this](const Point canvas)
+        const auto workspacePixel =
+            [this](const Point canvas) -> std::optional<Point>
         {
-            return store.view == EditorView::Tiles
-                       ? sheetPixelAt(canvas)
-                       : characterPixelAt(canvas);
+            if (store.view == EditorView::Tiles)
+            {
+                if (canvas.x < 0 || canvas.x >= kMapViewWidth
+                    || canvas.y < kMenuBarHeight)
+                {
+                    return std::nullopt;
+                }
+
+                return canvas;
+            }
+
+            return characterPixelAt(canvas);
         };
 
         input.pressed = false;
@@ -186,15 +181,16 @@ namespace antwika::map_editor
                     {
                         store.state.hovered = cellUnder(
                             store.state.map,
-                            mapPoint(canvas, store.camera));
+                            mapPointOf(canvas, store.camera));
                     }
 
                     input.gestures.push_back(MapGesture{
                         .kind = GestureKind::Move,
                         .cell = cellUnder(
                             store.state.map,
-                            mapPoint(canvas, store.camera)),
-                        .signedCell = signedCell});
+                            mapPointOf(canvas, store.camera)),
+                        .signedCell = signedCell,
+                        .erase = input.erasing});
                 }
                 else
                 {
@@ -207,10 +203,27 @@ namespace antwika::map_editor
             if (const auto *scrolled =
                     std::get_if<PointerScrolled>(&event))
             {
-                if (tilesView || modalOpen(store)
+                if (modalOpen(store)
                     || !input.canvasPointer.has_value()
-                    || consoleCovers(store, *input.canvasPointer)
-                    || !overMap(*input.canvasPointer))
+                    || consoleCovers(store, *input.canvasPointer))
+                {
+                    continue;
+                }
+
+                if (store.view == EditorView::Tiles)
+                {
+                    if (scrolled->vertical != 0
+                        && overLibrary(*input.canvasPointer))
+                    {
+                        adjustLibraryPage(
+                            store,
+                            scrolled->vertical < 0 ? 1 : -1);
+                    }
+
+                    continue;
+                }
+
+                if (tilesView || !overMap(*input.canvasPointer))
                 {
                     continue;
                 }
@@ -297,6 +310,27 @@ namespace antwika::map_editor
                     continue;
                 }
 
+                if (down->button == MouseButton::Right)
+                {
+                    if (overMap(canvas) && !store.ui.pointerOverUi
+                        && !store.ui.openMenu.has_value()
+                        && !modalOpen(store)
+                        && !store.picker.active)
+                    {
+                        input.erasing = true;
+                        input.gestures.push_back(MapGesture{
+                            .kind = GestureKind::Press,
+                            .cell = cellUnder(
+                                store.state.map,
+                                mapPointOf(canvas, store.camera)),
+                            .signedCell = signedCellUnder(
+                                canvas, store.camera),
+                            .erase = true});
+                    }
+
+                    continue;
+                }
+
                 if (down->button != MouseButton::Left)
                 {
                     continue;
@@ -316,14 +350,22 @@ namespace antwika::map_editor
                     {
                         store.state.hovered = cellUnder(
                             store.state.map,
-                            mapPoint(canvas, store.camera));
+                            mapPointOf(canvas, store.camera));
+                    }
+
+                    if (store.picker.active
+                        || down->modifiers.control)
+                    {
+                        store.picker.pending =
+                            mapPointOf(canvas, store.camera);
+                        continue;
                     }
 
                     input.gestures.push_back(MapGesture{
                         .kind = GestureKind::Press,
                         .cell = cellUnder(
                             store.state.map,
-                            mapPoint(canvas, store.camera)),
+                            mapPointOf(canvas, store.camera)),
                         .signedCell = signedCell});
                 }
 
@@ -350,6 +392,19 @@ namespace antwika::map_editor
 
                     input.sheetGestures.push_back(SheetGesture{
                         .kind = GestureKind::Release});
+                    continue;
+                }
+
+                if (up->button == MouseButton::Right)
+                {
+                    if (input.erasing)
+                    {
+                        input.erasing = false;
+                        input.gestures.push_back(MapGesture{
+                            .kind = GestureKind::Release,
+                            .erase = true});
+                    }
+
                     continue;
                 }
 

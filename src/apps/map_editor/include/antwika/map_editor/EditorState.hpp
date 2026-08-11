@@ -8,7 +8,7 @@
 #include <antwika/geometry/Grid.hpp>
 #include <antwika/log/ILogger.hpp>
 #include <antwika/mapcheck/Validate.hpp>
-#include <antwika/tilemap/Cell.hpp>
+#include <antwika/tilemap/Column.hpp>
 #include <antwika/tilemap/TerrainClass.hpp>
 #include <antwika/tilemap/TileMap.hpp>
 
@@ -21,7 +21,7 @@ namespace antwika::map_editor
     {
         std::uint32_t columns = 0;
         std::uint32_t rows = 0;
-        std::vector<tilemap::Cell> cells{};
+        std::vector<tilemap::Column> cells{};
     };
 
     struct MapSnapshot final
@@ -40,8 +40,25 @@ namespace antwika::map_editor
     {
         tilemap::TileMap map;
         std::filesystem::path path{};
+
+        /**
+         * @brief A change counter for render caching.
+         *
+         * Ensures: bumped by every command that changes what the
+         *          map renders as, so equal values mean an
+         *          unchanged picture.
+         */
+        std::uint64_t revision = 0;
         tilemap::TerrainClass brush = tilemap::TerrainClass::Floor;
         bool brushFree = false;
+
+        /**
+         * @brief The level edits act on, as session state.
+         *
+         * Ensures: reset to zero when a map is created, opened, or
+         *          reloaded, and untouched by undo and redo.
+         */
+        std::int32_t activeLevel = 0;
         std::vector<bool> pinned{};
         GenerationRules rules = defaultGenerationRules();
         std::uint32_t generateSeed = 1;
@@ -70,24 +87,24 @@ namespace antwika::map_editor
      *
      * @param path The map file the editor loads from and saves to.
      * @param logger Receives a message when loading the file fails.
-     * @return The loaded map, or a fresh bordered map when the file
+     * @return The loaded map, or a fresh blank map when the file
      *         does not exist or fails to load.
      */
     [[nodiscard]] EditorState makeEditorState(
         std::filesystem::path path, log::ILogger &logger);
 
     /**
-     * @brief Replaces the map with a fresh bordered one.
+     * @brief Replaces the map with a fresh blank one.
      *
-     * Ensures: the undo and redo stacks are cleared, the counters
-     *          restart at one, only the border cells are pinned, and
-     *          the file on disk is untouched.
+     * Ensures: every cell holds a single floor slab at level zero,
+     *          every cell is pinned, the active level returns to
+     *          zero, the undo and redo stacks are cleared, the
+     *          counters restart at one, the stamp and selection
+     *          state reset, and the file on disk is untouched.
      */
     void newMap(EditorState &state);
 
     void pinAll(EditorState &state);
-
-    void pinBorder(EditorState &state);
 
     /**
      * @brief Rebuilds the pin grid from a serialized free mask.

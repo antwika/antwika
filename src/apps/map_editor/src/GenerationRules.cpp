@@ -159,11 +159,12 @@ namespace antwika::map_editor
                     continue;
                 }
 
-                adjacency.push_back(nlohmann::json::array(
-                    {std::string(tilemap::toString(
-                         static_cast<TerrainClass>(a))),
-                     std::string(tilemap::toString(
-                         static_cast<TerrainClass>(b)))}));
+                auto pair = nlohmann::json::array();
+                pair.push_back(std::string(
+                    tilemap::toString(static_cast<TerrainClass>(a))));
+                pair.push_back(std::string(
+                    tilemap::toString(static_cast<TerrainClass>(b))));
+                adjacency.push_back(std::move(pair));
             }
         }
 
@@ -222,6 +223,7 @@ namespace antwika::map_editor
         }
 
         out << rulesToJson(rules).dump(2) << '\n';
+        out.flush();
 
         if (!out.good())
         {

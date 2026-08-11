@@ -20,7 +20,10 @@ namespace antwika::map_editor
         std::optional<gfx::Point> pointer{};
         bool modal = false;
         std::size_t edits = 0;
-        std::uint8_t connectorEdges = 0;
+        std::int32_t level = 0;
+        std::size_t tilesState = 0;
+        std::size_t selectionState = 0;
+        std::size_t pickerState = 0;
 
         [[nodiscard]] bool operator==(const HintKey &other) const =
             default;
@@ -30,9 +33,10 @@ namespace antwika::map_editor
      * @brief The cache key for the hovered target's hint.
      *
      * Ensures: the key changes with the view, the hovered widget,
-     *          the pointer position, modality, and the undo depth,
-     *          so a cached hint never outlives an edit under a
-     *          still pointer.
+     *          the pointer position, modality, the undo depth, the
+     *          active level, the tiles workspace state, the
+     *          selection state, and the picker walk, so a cached
+     *          hint never outlives an edit under a still pointer.
      */
     [[nodiscard]] HintKey hintKeyFor(
         const EditorStore &store, ui::WidgetId hovered);

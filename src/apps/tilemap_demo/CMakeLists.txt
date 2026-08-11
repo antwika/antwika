@@ -3,7 +3,7 @@ antwika_add_app(
     SOURCES
         src/DemoConsole.cpp
         src/DemoMap.cpp
-        src/PlaceholderSheets.cpp
+        src/PlaceholderTilesets.cpp
         src/main.cpp
     LIBS
         antwika::app
@@ -19,6 +19,7 @@ antwika_add_app(
         antwika::input_backend
         antwika::log
         antwika::tilemap
+        antwika::tileset
         antwika::time
         antwika::ui
 )

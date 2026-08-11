@@ -170,7 +170,7 @@ namespace antwika::map_editor
         }
 
         return text;
-    }
+    } // GCOVR_EXCL_LINE
 
     std::optional<tilemap::Rgb> rgbOfHex(const std::string &text)
     {

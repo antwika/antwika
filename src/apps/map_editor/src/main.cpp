@@ -21,6 +21,8 @@
 #include <antwika/gfx/WindowEvent.hpp>
 #include <antwika/input/SelectedInputBackend.hpp>
 #include <antwika/log/Level.hpp>
+#include <antwika/tileset/TilesetError.hpp>
+#include <antwika/tileset/TilesetFile.hpp>
 #include <antwika/time/SystemSleeper.hpp>
 #include <antwika/time/Tick.hpp>
 
@@ -31,11 +33,11 @@
 #include "antwika/map_editor/EditorStore.hpp"
 #include "antwika/map_editor/EntityEditSystem.hpp"
 #include "antwika/map_editor/GenerationRules.hpp"
+#include "antwika/map_editor/Hotkeys.hpp"
 #include "antwika/map_editor/KeyboardSystem.hpp"
 #include "antwika/map_editor/MapRenderSystem.hpp"
 #include "antwika/map_editor/MirrorSystem.hpp"
 #include "antwika/map_editor/PointerSystem.hpp"
-#include "antwika/map_editor/SheetWorkspace.hpp"
 #include "antwika/map_editor/UiSystem.hpp"
 #include "antwika/map_editor/ValidationSystem.hpp"
 
@@ -67,9 +69,9 @@ namespace
 
     constexpr std::string_view kDefaultPath = "map.json";
 
-    constexpr std::string_view kTilesFlag = "--tiles";
+    constexpr std::string_view kTilesetsFlag = "--tilesets";
 
-    constexpr std::string_view kDefaultTiles = "assets/tiles";
+    constexpr std::string_view kDefaultTilesets = "assets/tilesets";
 
     constexpr std::string_view kCharactersFlag = "--characters";
 
@@ -82,9 +84,9 @@ namespace
             .valueName = "path",
             .help = "Load and save the map at this path."},
         antwika::cli::FlagSpec{
-            .name = kTilesFlag,
+            .name = kTilesetsFlag,
             .valueName = "dir",
-            .help = "Load and save terrain sheets in this directory."},
+            .help = "Load and save tilesets in this directory."},
         antwika::cli::FlagSpec{
             .name = kCharactersFlag,
             .valueName = "dir",
@@ -119,25 +121,34 @@ int main(int argc, char **argv)
                             .value_or(std::string(kDefaultPath))),
                     logger)};
 
-            store.tiles.directory = std::filesystem::path(
-                command.value(kTilesFlag)
-                    .value_or(std::string(kDefaultTiles)));
+            store.tilesets.directory = std::filesystem::path(
+                command.value(kTilesetsFlag)
+                    .value_or(std::string(kDefaultTilesets)));
 
             store.state.rules =
                 antwika::map_editor::loadRulesFileOrDefaults(
-                    store.tiles.directory / "rules.json", logger);
+                    store.tilesets.directory / "rules.json",
+                    logger);
 
-            for (const auto terrain :
-                 antwika::enums::kAll<antwika::tilemap::TerrainClass>)
+            for (const auto &name : antwika::tileset::listTilesets(
+                     store.tilesets.directory))
             {
-                store.tiles.docs[antwika::enums::index(terrain)]
-                    .image = antwika::map_editor::loadSheetOrPlaceholder(
-                    store.tiles.directory, terrain, logger);
-            }
+                const auto path =
+                    store.tilesets.directory / name;
 
-            store.tiles.connectors =
-                antwika::map_editor::loadConnectorsFile(
-                    store.tiles.directory);
+                try
+                {
+                    store.tilesets.open.push_back(
+                        antwika::map_editor::TilesetDoc{
+                            .data =
+                                antwika::tileset::loadTileset(path),
+                            .path = path});
+                }
+                catch (const antwika::tileset::TilesetError &error)
+                {
+                    logger.log(Level::Warning, error.what());
+                }
+            }
 
             store.characters.directory = std::filesystem::path(
                 command.value(kCharactersFlag)
@@ -154,6 +165,8 @@ int main(int argc, char **argv)
                     antwika::app::assetPath("config.json"));
 
             store.uiScale = std::clamp(config.uiScale, 2U, 4U);
+            store.hotkeys =
+                antwika::map_editor::hotkeysFromConfig(config.keys);
 
             const auto backend =
                 antwika::gfx::makeSelectedBackend(logger);
@@ -195,6 +208,7 @@ int main(int argc, char **argv)
                 *window,
                 kCanvas,
                 consoleSystem.picture(),
+                antwika::app::assetPath("config.json"),
                 logger);
 
             const auto inputPhase = scheduler.createPhase("input");

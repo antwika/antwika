@@ -246,7 +246,7 @@ namespace antwika::input::raylib
                 continue;
             }
 
-            auto &wasDown = heldKeys[enums::index(*key)];
+            auto &wasDown = heldKeys[keyIndex(*key)];
 
             pending.push_back(KeyPressed{
                 .key = *key,
@@ -257,7 +257,7 @@ namespace antwika::input::raylib
 
         for (const auto &[key, raylibKey] : kKeys)
         {
-            auto &wasDown = heldKeys[enums::index(key)];
+            auto &wasDown = heldKeys[keyIndex(key)];
 
             if (!wasDown || IsKeyDown(raylibKey))
             {

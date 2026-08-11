@@ -10,7 +10,9 @@
 
 #include <antwika/log/Level.hpp>
 #include <antwika/tilemap/MapFile.hpp>
+#include <antwika/tilemap/Overlay.hpp>
 #include <antwika/tilemap/Rgb.hpp>
+#include <antwika/tilemap/Slab.hpp>
 #include <antwika/tilemap/TerrainClass.hpp>
 #include <antwika/tilemap/TileMapError.hpp>
 
@@ -20,7 +22,10 @@ namespace antwika::tilemap_demo
     namespace
     {
         using antwika::geometry::GridCell;
+        using antwika::tilemap::Column;
         using antwika::tilemap::Rgb;
+        using antwika::tilemap::Slab;
+        using antwika::tilemap::TerrainClass;
         using antwika::tilemap::TileMap;
 
         struct Split final
@@ -52,7 +57,7 @@ namespace antwika::tilemap_demo
             }
 
             return split;
-        }
+        } // GCOVR_EXCL_LINE
 
         [[nodiscard]] std::optional<std::uint32_t> parseNumber(
             const std::string &text)
@@ -168,12 +173,89 @@ namespace antwika::tilemap_demo
             "palette <ink|paper> <#rrggbb> - recolor the map"};
     }
 
-    bool walkable(const TileMap &map, const GridCell cell)
+    bool standableWalkable(
+        const Column &column, const std::int32_t level)
     {
-        const auto terrain = map.at(cell).terrain;
+        const auto *slab = column.slabAt(level);
 
-        return terrain != tilemap::TerrainClass::Wall
-               && terrain != tilemap::TerrainClass::Water;
+        if (slab == nullptr
+            || slab->terrain == TerrainClass::Wall)
+        {
+            return false;
+        }
+
+        if (slab->terrain == TerrainClass::Water
+            && slab->overlay != tilemap::Overlay::Bridge)
+        {
+            return false;
+        }
+
+        return column.standable(level);
+    }
+
+    std::optional<std::int32_t> topStandableWalkable(
+        const Column &column)
+    {
+        const auto &slabs = column.slabs();
+
+        for (auto slab = slabs.rbegin(); slab != slabs.rend();
+             ++slab)
+        {
+            if (standableWalkable(column, slab->level))
+            {
+                return slab->level;
+            }
+        }
+
+        return std::nullopt;
+    }
+
+    std::int32_t restingLevel(const Column &column)
+    {
+        if (const auto landing = topStandableWalkable(column))
+        {
+            return *landing;
+        }
+
+        const auto *top = column.top();
+
+        return top != nullptr ? top->level : 0;
+    }
+
+    std::optional<std::int32_t> landingLevel(
+        const TileMap &map,
+        const GridCell from,
+        const std::int32_t fromLevel,
+        const GridCell to)
+    {
+        const auto &target = map.at(to);
+        std::optional<std::int32_t> best{};
+        const auto *below = target.topAtOrBelow(fromLevel);
+
+        if (below != nullptr
+            && standableWalkable(target, below->level))
+        {
+            best = below->level;
+        }
+
+        const auto up = fromLevel + 1;
+        const auto *riser = target.slabAt(up);
+
+        if (riser != nullptr && standableWalkable(target, up))
+        {
+            const auto *source = map.at(from).slabAt(fromLevel);
+            const bool stair =
+                (source != nullptr
+                 && source->terrain == TerrainClass::Stair)
+                || riser->terrain == TerrainClass::Stair;
+
+            if (stair)
+            {
+                best = up;
+            }
+        }
+
+        return best;
     }
 
     DemoCommands::DemoCommands(
@@ -216,8 +298,8 @@ namespace antwika::tilemap_demo
             console.pushHistory(
                 "player at "
                 + std::to_string(player.cell.column) + ","
-                + std::to_string(player.cell.row)
-                + " h=" + std::to_string(player.height));
+                + std::to_string(player.cell.row) + " level "
+                + std::to_string(player.level));
             return;
         }
 
@@ -250,7 +332,7 @@ namespace antwika::tilemap_demo
         {
             map = tilemap::loadMapFile(arguments);
         }
-        catch (const tilemap::TileMapError &error)
+        catch (const tilemap::TileMapError &error) // GCOVR_EXCL_LINE
         {
             console.pushHistory("map: " + std::string(error.what()));
             return;
@@ -259,7 +341,7 @@ namespace antwika::tilemap_demo
         player.cell.column =
             std::min(player.cell.column, map.columns() - 1);
         player.cell.row = std::min(player.cell.row, map.rows() - 1);
-        player.height = map.at(player.cell).height;
+        player.level = restingLevel(map.at(player.cell));
         player.moveTicks = 0;
 
         console.pushHistory("loaded " + arguments);
@@ -283,18 +365,19 @@ namespace antwika::tilemap_demo
         const auto target = GridCell{
             .column = std::min(*column, map.columns() - 1),
             .row = std::min(*row, map.rows() - 1)};
+        const auto landing = topStandableWalkable(map.at(target));
 
-        if (!walkable(map, target))
+        if (!landing.has_value())
         {
             console.pushHistory(
                 "tp: " + std::to_string(target.column) + ","
                 + std::to_string(target.row)
-                + " is not walkable");
+                + " has no standable surface");
             return;
         }
 
         player.cell = target;
-        player.height = map.at(target).height;
+        player.level = *landing;
         player.moveTicks = 0;
 
         console.pushHistory(

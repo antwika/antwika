@@ -23,7 +23,9 @@ namespace antwika::autotile
             const GridCell cell,
             const std::int32_t playerHeight)
         {
-            return map.at(cell).height > playerHeight;
+            const auto *top = map.at(cell).top();
+
+            return top != nullptr && top->level > playerHeight;
         }
     }
 
@@ -54,6 +56,8 @@ namespace antwika::autotile
             hidden[indexOf(map, cell)] = true;
             pending.push_back(cell);
         };
+
+        seed(player);
 
         for (std::uint32_t rowStep = 1; rowStep <= 2; ++rowStep)
         {

@@ -1,10 +1,12 @@
 #include "antwika/tilemap_demo/DemoMap.hpp"
 
 #include <cstdint>
+#include <utility>
 
 #include <antwika/geometry/Grid.hpp>
 #include <antwika/tilemap/MapHeader.hpp>
 #include <antwika/tilemap/Rgb.hpp>
+#include <antwika/tilemap/Slab.hpp>
 #include <antwika/tilemap/TerrainClass.hpp>
 
 namespace antwika::tilemap_demo
@@ -13,6 +15,7 @@ namespace antwika::tilemap_demo
     namespace
     {
         using antwika::geometry::GridCell;
+        using antwika::tilemap::Slab;
         using antwika::tilemap::TerrainClass;
         using antwika::tilemap::TileMap;
 
@@ -32,11 +35,17 @@ namespace antwika::tilemap_demo
             {
                 for (auto column = left; column <= right; ++column)
                 {
-                    auto &cell = map.at(
+                    auto &stack = map.at(
                         GridCell{.column = column, .row = row});
 
-                    cell.terrain = terrain;
-                    cell.height = height;
+                    stack.clear();
+
+                    for (std::int32_t level = 0; level <= height;
+                         ++level)
+                    {
+                        stack.place(Slab{
+                            .level = level, .terrain = terrain});
+                    }
                 }
             }
         }
@@ -44,15 +53,14 @@ namespace antwika::tilemap_demo
 
     TileMap demoMap()
     {
-        TileMap map(
-            antwika::tilemap::MapHeader{
-                .id = "wakewater-demo",
-                .ink = antwika::tilemap::Rgb{
-                    .red = 214, .green = 224, .blue = 216},
-                .paper = antwika::tilemap::Rgb{
-                    .red = 12, .green = 14, .blue = 16}},
-            kColumns,
-            kRows);
+        antwika::tilemap::MapHeader header;
+        header.id = "wakewater-demo";
+        header.ink = antwika::tilemap::Rgb{
+            .red = 214, .green = 224, .blue = 216};
+        header.paper = antwika::tilemap::Rgb{
+            .red = 12, .green = 14, .blue = 16};
+
+        TileMap map(std::move(header), kColumns, kRows);
 
         paint(map, 0, 0, kColumns - 1, 0, TerrainClass::Wall, 0);
         paint(map, 0, kRows - 1, kColumns - 1, kRows - 1,
@@ -73,6 +81,6 @@ namespace antwika::tilemap_demo
         paint(map, 7, 2, 10, 4, TerrainClass::Wall, 4);
 
         return map;
-    }
+    } // GCOVR_EXCL_LINE
 
 }

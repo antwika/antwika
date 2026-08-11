@@ -15,14 +15,16 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/io/FileList.hpp>
-#include <antwika/autotile/Connectors.hpp>
 #include <antwika/tilemap/Rgb.hpp>
 #include <antwika/tilemap/TerrainClass.hpp>
+#include <antwika/tileset/PixelClass.hpp>
+#include <antwika/tileset/Tileset.hpp>
 #include <antwika/ui/Interactions.hpp>
 #include <antwika/ui/Keyboard.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
 #include "antwika/map_editor/EditorState.hpp"
+#include "antwika/map_editor/Hotkeys.hpp"
 #include "antwika/map_editor/PaletteMath.hpp"
 
 namespace antwika::map_editor
@@ -90,6 +92,7 @@ namespace antwika::map_editor
         GestureKind kind = GestureKind::Press;
         geometry::GridCell cell{};
         SignedCell signedCell{};
+        bool erase = false;
     };
 
     struct SheetGesture final
@@ -110,6 +113,7 @@ namespace antwika::map_editor
         std::string typed{};
         std::vector<MapGesture> gestures{};
         std::vector<SheetGesture> sheetGestures{};
+        bool erasing = false;
         bool panning = false;
         gfx::Point panAnchor{};
         bool quit = false;
@@ -133,21 +137,189 @@ namespace antwika::map_editor
         std::uint64_t revision = 0;
     };
 
-    struct TileSheets final
-    {
-        std::filesystem::path directory{};
-        std::array<SheetDoc, enums::kCount<tilemap::TerrainClass>>
-            docs{};
-        autotile::TerrainConnectors connectors{};
-        bool stroke = false;
-        bool strokeInk = true;
-        bool drawPaper = false;
-    };
-
     struct FieldBuffer final
     {
         std::string text{};
         std::size_t cursor = 0;
+    };
+
+    enum class TilesetTool : std::uint8_t
+    {
+        Draw = 0,
+        Sockets,
+        Decor,
+        Select,
+    };
+
+    enum class MapTool : std::uint8_t
+    {
+        Paint = 0,
+        Select,
+    };
+
+    enum class CharacterTool : std::uint8_t
+    {
+        Draw = 0,
+        Select,
+    };
+
+    struct TilesetSelection final
+    {
+        std::size_t layer = 0;
+        std::size_t sprite = 0;
+        std::size_t frame = 0;
+
+        [[nodiscard]] bool operator==(
+            const TilesetSelection &other) const = default;
+    };
+
+    struct CellSpan final
+    {
+        geometry::GridCell origin{};
+        std::uint32_t columns = 1;
+        std::uint32_t rows = 1;
+    };
+
+    struct MapSelection final
+    {
+        std::optional<CellSpan> rect{};
+        bool dragging = false;
+        bool dragged = false;
+        geometry::GridCell anchor{};
+        geometry::GridCell focus{};
+        bool moving = false;
+        geometry::GridCell moveAnchor{};
+        geometry::GridCell movePointer{};
+    };
+
+    struct PixelSpan final
+    {
+        gfx::Point origin{};
+        std::int32_t width = 1;
+        std::int32_t height = 1;
+    };
+
+    struct PixelSelection final
+    {
+        std::optional<PixelSpan> rect{};
+        bool dragging = false;
+        bool dragged = false;
+        gfx::Point anchor{};
+        gfx::Point focus{};
+        bool moving = false;
+        gfx::Point moveAnchor{};
+        gfx::Point movePointer{};
+    };
+
+    struct TilesSelection final
+    {
+        PixelSelection pixels{};
+
+        /**
+         * @brief The open-tileset index the rect was made on.
+         *
+         * Ensures: a rect whose doc or ctx no longer matches the
+         *          active document reads as no selection.
+         */
+        std::size_t doc = 0;
+        TilesetSelection ctx{};
+    };
+
+    struct CharacterSelection final
+    {
+        PixelSelection pixels{};
+
+        /**
+         * @brief The character index the rect was made on.
+         *
+         * Ensures: a rect whose character no longer matches the
+         *          selected one reads as no selection.
+         */
+        std::size_t character = 0;
+    };
+
+    struct PixelClipboard final
+    {
+        std::int32_t width = 0;
+        std::int32_t height = 0;
+        std::vector<tileset::PixelClass> pixels{};
+    };
+
+    struct TilesetSnapshot final
+    {
+        tileset::Tileset data{};
+        TilesetSelection sel{};
+    };
+
+    struct TilesetDoc final
+    {
+        tileset::Tileset data{};
+        std::filesystem::path path{};
+        TilesetSelection sel{};
+        std::vector<TilesetSnapshot> undoStack{};
+        std::vector<TilesetSnapshot> redoStack{};
+        bool dirty = false;
+        std::uint64_t revision = 0;
+    };
+
+    struct TilesetWorkspace final
+    {
+        std::filesystem::path directory{};
+        std::vector<TilesetDoc> open{};
+        std::size_t active = 0;
+        TilesetTool tool = TilesetTool::Draw;
+        std::optional<std::size_t> activeSocket{};
+        bool pickerOpen = false;
+        std::size_t libraryPage = 0;
+        bool stroke = false;
+        bool strokeInk = true;
+        bool decorStroke = false;
+        bool drawPaper = false;
+        bool confirmDeleteSprite = false;
+        std::uint32_t previewSeed = 0;
+        bool previewAuto = false;
+        FieldBuffer socketNameField{};
+        std::string message{};
+    };
+
+    struct NewTilesetDialog final
+    {
+        bool open = false;
+        FieldBuffer nameField{};
+        std::size_t terrain = 0;
+        bool terrainOpen = false;
+        std::string message{};
+    };
+
+    struct BindingsDialog final
+    {
+        bool open = false;
+        std::array<
+            std::size_t,
+            enums::kCount<tilemap::TerrainClass>>
+            chosen{};
+        std::array<bool, enums::kCount<tilemap::TerrainClass>>
+            pickerOpen{};
+        std::string message{};
+    };
+
+    struct PickedSprite final
+    {
+        tilemap::TerrainClass terrain =
+            tilemap::TerrainClass::Floor;
+        std::uint16_t atlasRow = 0;
+        std::string label{};
+        std::uint64_t tick = 0;
+    };
+
+    struct PickerState final
+    {
+        bool active = false;
+        std::optional<gfx::Point> pending{};
+        std::optional<gfx::Point> walkCell{};
+        std::size_t walkDepth = 0;
+        std::optional<PickedSprite> picked{};
+        std::string hover{};
     };
 
     struct UiSession final
@@ -173,11 +345,18 @@ namespace antwika::map_editor
         SaveAs,
     };
 
+    enum class DialogTarget : std::uint8_t
+    {
+        Map = 0,
+        Tileset,
+    };
+
     inline constexpr std::size_t kDialogRows = 10;
 
     struct FileDialog final
     {
         DialogMode mode = DialogMode::None;
+        DialogTarget target = DialogTarget::Map;
         std::string directory{};
         std::vector<io::FileEntry> entries{};
         std::size_t page = 0;
@@ -209,6 +388,13 @@ namespace antwika::map_editor
         std::string message{};
     };
 
+    struct KeysDialog final
+    {
+        bool open = false;
+        std::optional<HotkeyAction> capturing{};
+        std::string message{};
+    };
+
     struct CharacterDoc final
     {
         std::string name{};
@@ -220,6 +406,7 @@ namespace antwika::map_editor
         std::filesystem::path directory{};
         std::vector<CharacterDoc> list{};
         std::size_t selected = 0;
+        CharacterTool tool = CharacterTool::Draw;
         FieldBuffer nameField{};
         bool confirmDelete = false;
         std::string message{};
@@ -234,38 +421,78 @@ namespace antwika::map_editor
         FileDialog dialog{};
         PaletteDialog palette{};
         RulesDialog rules{};
+        NewTilesetDialog newTileset{};
+        BindingsDialog bindings{};
+        KeysDialog keys{};
+        HotkeyBindings hotkeys = defaultHotkeyBindings();
         EditorView view = EditorView::Map;
-        TileSheets tiles{};
+        PickerState picker{};
+        TilesetWorkspace tilesets{};
         CharacterSet characters{};
+        MapTool mapTool = MapTool::Paint;
+        MapSelection mapSelection{};
+        TilesSelection tilesSelection{};
+        CharacterSelection charSelection{};
+        std::optional<Stamp> mapClipboard{};
+        std::optional<PixelClipboard> pixelClipboard{};
         std::uint32_t uiScale = 3;
         std::optional<std::uint32_t> pendingUiScale{};
         bool fullscreen = false;
         bool pendingFullscreenToggle = false;
+        bool pendingConfigWrite = false;
         gfx::Size windowSize{};
     };
 
     /**
      * @brief Whether a modal dialog owns the pointer and keys.
      *
-     * Ensures: true while the file dialog or the palette dialog is
-     *          open, during which map and workspace input is
-     *          suppressed.
+     * Ensures: true while the file, palette, rules, new-tileset,
+     *          bindings, or keys dialog is open, during which map
+     *          and workspace input is suppressed.
      */
     [[nodiscard]] inline bool modalOpen(
         const EditorStore &store) noexcept
     {
         return store.dialog.open() || store.palette.open
-               || store.rules.open;
+               || store.rules.open || store.newTileset.open
+               || store.bindings.open || store.keys.open;
     }
 
     /**
      * @brief The sheet document the active workspace edits.
      *
-     * @return The selected terrain's sheet in the tiles view, the
-     *         selected character's sheet in the characters view,
-     *         and null in the map view or with nothing to edit.
+     * @return The selected character's sheet in the characters view,
+     *         and null in the other views or with nothing to edit.
      */
     [[nodiscard]] SheetDoc *activeSheet(EditorStore &store);
+
+    /**
+     * @brief The tileset document the tiles view edits.
+     *
+     * @return The active open tileset, or null when none is open.
+     */
+    [[nodiscard]] TilesetDoc *activeTilesetDoc(EditorStore &store);
+
+    [[nodiscard]] const TilesetDoc *activeTilesetDoc(
+        const EditorStore &store);
+
+    /**
+     * @brief Finds the map pixel a canvas position lands on.
+     *
+     * @param canvas The pointer position in canvas pixels.
+     * @return The position in unzoomed map pixels, matching the
+     *         draw plan's screen coordinates.
+     */
+    [[nodiscard]] gfx::Point mapPointOf(
+        gfx::Point canvas, const MapCamera &camera) noexcept;
+
+    /**
+     * @brief Toggles the sprite picker mode.
+     *
+     * Ensures: the pending pick, the stack walk, and the hover text
+     *          reset, so a fresh mode starts at the stack bottom.
+     */
+    void togglePicker(EditorStore &store);
 
     /**
      * @brief Steps the view through Map, Tiles, and Characters.
@@ -273,18 +500,29 @@ namespace antwika::map_editor
     void cycleEditorView(EditorStore &store);
 
     /**
-     * @brief Opens the file dialog in the map's directory.
-     *
-     * Ensures: the listing shows directories and .json files only,
-     *          and Save As pre-fills the current file name.
+     * @brief Steps the view through Characters, Tiles, and Map.
      */
-    void openFileDialog(EditorStore &store, DialogMode mode);
+    void cycleEditorViewBack(EditorStore &store);
+
+    /**
+     * @brief Opens the file dialog for maps or tilesets.
+     *
+     * Ensures: a map dialog lists directories and .json files in the
+     *          map's directory, a tileset dialog lists the tileset
+     *          directories under the tilesets directory, and Save As
+     *          pre-fills the current name.
+     */
+    void openFileDialog(
+        EditorStore &store,
+        DialogMode mode,
+        DialogTarget target = DialogTarget::Map);
 
     /**
      * @brief Re-lists the dialog's directory.
      *
-     * Ensures: only directories and .json files remain, and the
-     *          page index returns to the first page.
+     * Ensures: a map dialog keeps directories and .json files only, a
+     *          tileset dialog lists tileset directories by name, and
+     *          the page index returns to the first page.
      */
     void refreshDialogEntries(FileDialog &dialog);
 

@@ -41,7 +41,10 @@ namespace antwika::map_editor
                     .index = static_cast<std::uint32_t>(index)});
             world.add(
                 mirrored,
-                CellRef{.column = cell.column, .row = cell.row});
+                CellRef{
+                    .column = cell.column,
+                    .row = cell.row,
+                    .level = entityLevelOf(entities[index])});
             spawned.push_back(mirrored);
         }
 

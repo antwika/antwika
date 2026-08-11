@@ -1,6 +1,7 @@
 #include "antwika/map_editor/UiSystem.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -16,6 +17,8 @@
 #include <antwika/enums/Enumeration.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/tilemap/TerrainClass.hpp>
+#include <antwika/tileset/TilesetError.hpp>
+#include <antwika/tileset/TilesetFile.hpp>
 #include <antwika/gfx/Glyphs.hpp>
 #include <antwika/ui/Keyboard.hpp>
 #include <antwika/ui/Painter.hpp>
@@ -28,9 +31,14 @@
 #include "antwika/map_editor/Generate.hpp"
 #include "antwika/map_editor/GenerationRules.hpp"
 #include "antwika/map_editor/Hints.hpp"
+#include "antwika/map_editor/Hotkeys.hpp"
 #include "antwika/map_editor/PaletteMath.hpp"
 #include "antwika/map_editor/PanelScene.hpp"
+#include "antwika/map_editor/PlaceholderTilesets.hpp"
+#include "antwika/map_editor/Selection.hpp"
 #include "antwika/map_editor/SheetWorkspace.hpp"
+#include "antwika/map_editor/TilesetWorkspace.hpp"
+#include "antwika/map_editor/ToolIcons.hpp"
 #include "antwika/map_editor/Widgets.hpp"
 
 namespace antwika::map_editor
@@ -50,6 +58,13 @@ namespace antwika::map_editor
                    && raw < widgets::kTerrainBase
                                 + widgets::kPaletteCount;
         }
+
+        struct GlyphButton final
+        {
+            WidgetId id = kNoWidget;
+            const IconGlyph *glyph = nullptr;
+            bool selected = false;
+        };
     }
 
     UiSystem::UiSystem(
@@ -58,14 +73,21 @@ namespace antwika::map_editor
         gfx::IWindow &window,
         const gfx::Size canvas,
         const console::ConsolePicture &console,
+        std::string configPath,
         log::ILogger &logger)
         : store(store),
           view(view),
           window(window),
           canvas(canvas),
           console(console),
-          logger(logger)
+          configPath(std::move(configPath)),
+          logger(logger) // GCOVR_EXCL_LINE
     {
+        for (const auto terrain : enums::kAll<TerrainClass>)
+        {
+            iconPlaceholders[enums::index(terrain)] =
+                placeholderTileset(terrain);
+        }
     }
 
     void UiSystem::update(World &, antwika::time::Tick)
@@ -89,6 +111,12 @@ namespace antwika::map_editor
             toggleFullscreen();
         }
 
+        if (store.pendingConfigWrite)
+        {
+            store.pendingConfigWrite = false;
+            writeConfigNow();
+        }
+
         store.fullscreen = window.isFullscreen();
 
         const ui::Pointer pointer{
@@ -96,9 +124,10 @@ namespace antwika::map_editor
             .down = store.input.down,
             .pressed = store.input.pressed,
             .extends = false};
-        const ui::Keyboard keyboard{
-            .keys = store.input.uiKeys,
-            .typed = store.input.typed};
+        ui::Keyboard keyboard{};
+
+        keyboard.keys = store.input.uiKeys;
+        keyboard.typed = store.input.typed;
 
         const auto first =
             describePanel(store, canvas, pointer, keyboard);
@@ -116,6 +145,7 @@ namespace antwika::map_editor
             drawPaletteOverlay(frame.rects);
         }
 
+        drawToolIcons(frame.rects);
         drawHint();
         ui::paint(window.renderer(), console.commands());
 
@@ -146,6 +176,24 @@ namespace antwika::map_editor
             return;
         }
 
+        if (store.newTileset.open)
+        {
+            actNewTileset(interactions);
+            return;
+        }
+
+        if (store.bindings.open)
+        {
+            actBindings(interactions);
+            return;
+        }
+
+        if (store.keys.open)
+        {
+            actKeys(interactions);
+            return;
+        }
+
         if (actMenus(interactions))
         {
             return;
@@ -156,23 +204,243 @@ namespace antwika::map_editor
                              ? interactions.focused
                              : interactions.activated;
 
-        if (interactions.chosen.has_value()
-            && interactions.chosen->dropdown == widgets::kKindPicker)
+        if (interactions.chosen.has_value())
         {
-            store.ui.placeKind = interactions.chosen->index;
-            store.ui.placeOpen = false;
-            return;
-        }
+            const auto &chosen = *interactions.chosen;
 
-        if (interactions.chosen.has_value()
-            && interactions.chosen->dropdown == widgets::kEnemyPicker)
-        {
-            chooseEnemy(interactions.chosen->index);
-            store.ui.enemyOpen = false;
+            if (chosen.dropdown == widgets::kKindPicker)
+            {
+                store.ui.placeKind = chosen.index;
+                store.ui.placeOpen = false;
+            }
+            else if (chosen.dropdown == widgets::kEnemyPicker)
+            {
+                chooseEnemy(chosen.index);
+                store.ui.enemyOpen = false;
+            }
+            else
+            {
+                chooseTileset(chosen.index);
+            }
+
             return;
         }
 
         press(interactions.activated);
+    }
+
+    void UiSystem::chooseTileset(const std::size_t index)
+    {
+        store.tilesets.pickerOpen = false;
+        activateTileset(store, index);
+    }
+
+    void UiSystem::actNewTileset(
+        const ui::Interactions &interactions)
+    {
+        auto &dialog = store.newTileset;
+
+        store.ui.focus = interactions.activated == kNoWidget
+                             ? interactions.focused
+                             : interactions.activated;
+
+        if (interactions.edit.has_value()
+            && interactions.edit->field == widgets::kNewTilesetName)
+        {
+            dialog.nameField.text = interactions.edit->text;
+            dialog.nameField.cursor = interactions.edit->cursor;
+
+            if (interactions.edit->submitted)
+            {
+                createTilesetPressed(store);
+            }
+
+            return;
+        }
+
+        if (interactions.chosen.has_value()
+            && interactions.chosen->dropdown
+                   == widgets::kNewTilesetTerrain)
+        {
+            dialog.terrain = interactions.chosen->index;
+            dialog.terrainOpen = false;
+            return;
+        }
+
+        const auto activated = interactions.activated;
+
+        if (activated == widgets::kNewTilesetTerrain)
+        {
+            dialog.terrainOpen = !dialog.terrainOpen;
+        }
+        else if (activated == widgets::kNewTilesetCreate)
+        {
+            createTilesetPressed(store);
+        }
+        else if (activated == widgets::kNewTilesetCancel)
+        {
+            dialog.open = false;
+        }
+    }
+
+    void UiSystem::actBindings(const ui::Interactions &interactions)
+    {
+        auto &dialog = store.bindings;
+
+        store.ui.focus = interactions.activated == kNoWidget
+                             ? interactions.focused
+                             : interactions.activated;
+
+        if (interactions.chosen.has_value())
+        {
+            const auto picked = widgets::rangeIndex(
+                interactions.chosen->dropdown,
+                widgets::kBindingPickerBase,
+                widgets::kRulesTerrains);
+
+            if (picked.has_value())
+            {
+                dialog.chosen[*picked] =
+                    interactions.chosen->index;
+                dialog.pickerOpen[*picked] = false;
+                return;
+            }
+        }
+
+        const auto activated = interactions.activated;
+        const auto picker = widgets::rangeIndex(
+            activated,
+            widgets::kBindingPickerBase,
+            widgets::kRulesTerrains);
+
+        if (picker.has_value())
+        {
+            dialog.pickerOpen[*picker] =
+                !dialog.pickerOpen[*picker];
+            return;
+        }
+
+        if (activated == widgets::kBindingsApply)
+        {
+            applyBindingsDialog();
+            return;
+        }
+
+        if (activated == widgets::kBindingsCancel)
+        {
+            dialog.open = false;
+        }
+    }
+
+    void UiSystem::actKeys(const ui::Interactions &interactions)
+    {
+        auto &dialog = store.keys;
+        const auto activated = interactions.activated;
+
+        store.ui.focus = activated == kNoWidget
+                             ? interactions.focused
+                             : activated;
+
+        if (const auto row = widgets::rangeIndex(
+                activated,
+                widgets::kKeysRowBase,
+                kHotkeyActionCount))
+        {
+            dialog.capturing = enums::at<HotkeyAction>(*row);
+            dialog.message.clear();
+            return;
+        }
+
+        if (activated == widgets::kKeysDefaults)
+        {
+            store.hotkeys = defaultHotkeyBindings();
+            dialog.capturing.reset();
+            dialog.message.clear();
+            store.pendingConfigWrite = true;
+            return;
+        }
+
+        if (activated == widgets::kKeysClose)
+        {
+            dialog.open = false;
+        }
+    }
+
+    void UiSystem::applyBindingsDialog()
+    {
+        auto &dialog = store.bindings;
+        std::array<
+            std::string,
+            enums::kCount<TerrainClass>>
+            names{};
+
+        for (const auto terrain : enums::kAll<TerrainClass>)
+        {
+            const auto at = enums::index(terrain);
+            const auto chosen = dialog.chosen[at];
+
+            if (chosen == 0)
+            {
+                continue;
+            }
+
+            std::size_t seen = 0;
+
+            for (const auto &doc : store.tilesets.open)
+            {
+                if (doc.data.terrain != terrain)
+                {
+                    continue;
+                }
+
+                ++seen;
+
+                if (seen == chosen)
+                {
+                    names[at] = doc.data.name;
+                    break;
+                }
+            }
+        }
+
+        setTilesets(store.state, names);
+        dialog.open = false;
+    }
+
+    void UiSystem::openBindingsDialog()
+    {
+        BindingsDialog dialog{.open = true};
+        const auto &bound = store.state.map.header().tilesets;
+
+        for (const auto terrain : enums::kAll<TerrainClass>)
+        {
+            const auto at = enums::index(terrain);
+
+            if (bound[at].empty())
+            {
+                continue;
+            }
+
+            std::size_t seen = 0;
+
+            for (const auto &doc : store.tilesets.open)
+            {
+                if (doc.data.terrain != terrain)
+                {
+                    continue;
+                }
+
+                ++seen;
+
+                if (doc.data.name == bound[at])
+                {
+                    dialog.chosen[at] = seen;
+                    break;
+                }
+            }
+        }
+
+        store.bindings = dialog;
     }
 
     void UiSystem::actDialog(const ui::Interactions &interactions)
@@ -204,13 +472,7 @@ namespace antwika::map_editor
         if (row.has_value())
         {
             const auto at = dialog.page * kDialogRows + *row;
-
-            if (at >= dialog.entries.size())
-            {
-                return;
-            }
-
-            const auto &entry = dialog.entries[at];
+            const auto &entry = dialog.entries.at(at);
 
             if (entry.directory)
             {
@@ -277,8 +539,7 @@ namespace antwika::map_editor
             return;
         }
 
-        if (interactions.slid.has_value()
-            && interactions.slid->slider == widgets::kPaletteHue)
+        if (interactions.slid.has_value())
         {
             palette.hueDragging = true;
             palette.hsv.hue = interactions.slid->value;
@@ -366,7 +627,8 @@ namespace antwika::map_editor
         if (activated == widgets::kRulesApply)
         {
             const auto error = saveRulesFile(
-                store.tiles.directory / "rules.json", dialog.edit);
+                store.tilesets.directory / "rules.json",
+                dialog.edit);
 
             if (error.has_value())
             {
@@ -388,21 +650,20 @@ namespace antwika::map_editor
     void UiSystem::dragPaletteSquare(const ui::WidgetRects &rects)
     {
         auto &palette = store.palette;
-        const auto rect = rects.find(widgets::kPaletteSv);
 
-        if (!rect.has_value()
-            || !store.input.canvasPointer.has_value())
+        if (!store.input.canvasPointer.has_value())
         {
             return;
         }
 
+        const auto rect = rects.find(widgets::kPaletteSv).value();
         const auto &pointer = *store.input.canvasPointer;
-        const auto left = rect->origin.x;
-        const auto top = rect->origin.y;
+        const auto left = rect.origin.x;
+        const auto top = rect.origin.y;
         const auto width =
-            static_cast<std::int32_t>(rect->size.width);
+            static_cast<std::int32_t>(rect.size.width);
         const auto height =
-            static_cast<std::int32_t>(rect->size.height);
+            static_cast<std::int32_t>(rect.size.height);
         const bool inside =
             pointer.x >= left && pointer.x < left + width
             && pointer.y >= top && pointer.y < top + height;
@@ -488,6 +749,198 @@ namespace antwika::map_editor
             gfx::Color{.red = 255, .green = 255, .blue = 255});
     }
 
+    void UiSystem::drawToolIcons(const ui::WidgetRects &rects)
+    {
+        const ui::Theme theme{};
+        const auto &tilesets = store.tilesets;
+        const std::array<GlyphButton, 9> glyphs{
+            GlyphButton{
+                .id = widgets::terrainButton(
+                    widgets::kFreeBrushIndex),
+                .glyph = &kFreeBrushGlyph,
+                .selected = store.state.brushFree},
+            GlyphButton{
+                .id = widgets::kPickerToggle,
+                .glyph = &kPickerGlyph,
+                .selected = store.picker.active},
+            GlyphButton{
+                .id = widgets::kMapSelectTool,
+                .glyph = &kSelectToolGlyph,
+                .selected = store.mapTool == MapTool::Select},
+            GlyphButton{
+                .id = widgets::kToolDraw,
+                .glyph = &kDrawToolGlyph,
+                .selected = tilesets.tool == TilesetTool::Draw},
+            GlyphButton{
+                .id = widgets::kToolSockets,
+                .glyph = &kSocketToolGlyph,
+                .selected = tilesets.tool == TilesetTool::Sockets},
+            GlyphButton{
+                .id = widgets::kToolDecor,
+                .glyph = &kDecorToolGlyph,
+                .selected = tilesets.tool == TilesetTool::Decor},
+            GlyphButton{
+                .id = widgets::kToolSelect,
+                .glyph = &kSelectToolGlyph,
+                .selected = tilesets.tool == TilesetTool::Select},
+            GlyphButton{
+                .id = widgets::kCharToolDraw,
+                .glyph = &kDrawToolGlyph,
+                .selected = store.characters.tool
+                            == CharacterTool::Draw},
+            GlyphButton{
+                .id = widgets::kCharToolSelect,
+                .glyph = &kSelectToolGlyph,
+                .selected = store.characters.tool
+                            == CharacterTool::Select}};
+
+        for (const auto &button : glyphs)
+        {
+            const bool tab = button.id == widgets::kToolDraw
+                             || button.id == widgets::kToolSockets
+                             || button.id == widgets::kToolDecor
+                             || button.id == widgets::kToolSelect;
+
+            if (tab && tilesets.pickerOpen)
+            {
+                continue;
+            }
+
+            const auto rect = rects.find(button.id);
+
+            if (!rect.has_value())
+            {
+                continue;
+            }
+
+            if (button.selected)
+            {
+                view.drawRect(*rect, theme.buttonText);
+            }
+
+            drawIconGlyph(
+                view,
+                *rect,
+                *button.glyph,
+                button.selected ? theme.buttonPressed
+                                : theme.buttonText);
+        }
+
+        drawBrushIcons(rects);
+    }
+
+    void UiSystem::drawBrushIcons(const ui::WidgetRects &rects)
+    {
+        const ui::Theme theme{};
+        const auto side =
+            static_cast<std::int32_t>(tileset::kSpriteSide);
+
+        for (const auto terrain : enums::kAll<TerrainClass>)
+        {
+            const auto at = enums::index(terrain);
+            const auto rect =
+                rects.find(widgets::terrainButton(at));
+
+            if (!rect.has_value())
+            {
+                continue;
+            }
+
+            const bool selected = !store.state.brushFree
+                                  && store.state.brush == terrain;
+
+            if (selected)
+            {
+                view.drawRect(*rect, theme.buttonText);
+            }
+
+            const auto *texture = terrainIconTexture(at);
+
+            if (texture == nullptr)
+            {
+                continue;
+            }
+
+            const auto left =
+                rect->origin.x
+                + (static_cast<std::int32_t>(rect->size.width)
+                   - side)
+                      / 2;
+            const auto top =
+                rect->origin.y
+                + (static_cast<std::int32_t>(rect->size.height)
+                   - side)
+                      / 2;
+
+            view.drawTexture(
+                *texture,
+                gfx::RectF(
+                    {0.0F, 0.0F},
+                    {static_cast<float>(side),
+                     static_cast<float>(side)}),
+                gfx::RectF(
+                    {static_cast<float>(left),
+                     static_cast<float>(top)},
+                    {static_cast<float>(side),
+                     static_cast<float>(side)}),
+                gfx::Color{
+                    .red = 255, .green = 255, .blue = 255});
+        }
+    }
+
+    const gfx::ITexture *UiSystem::terrainIconTexture(
+        const std::size_t at)
+    {
+        const auto &header = store.state.map.header();
+        const tileset::Tileset *set = &iconPlaceholders[at];
+        std::uint64_t revision = 0;
+        const auto &bound = header.tilesets[at];
+        const auto fallback =
+            "default-"
+            + std::string(tilemap::toString(
+                enums::at<TerrainClass>(at)));
+        const TilesetDoc *doc = nullptr;
+
+        for (const auto &open : store.tilesets.open)
+        {
+            if (!bound.empty() && open.data.name == bound)
+            {
+                doc = &open;
+                break;
+            }
+
+            if (doc == nullptr && open.data.name == fallback)
+            {
+                doc = &open;
+            }
+        }
+
+        if (doc != nullptr)
+        {
+            set = &doc->data;
+            revision = doc->revision;
+        }
+
+        auto &slot = terrainIcons[at];
+
+        if (slot.texture == nullptr || slot.name != set->name
+            || slot.revision != revision
+            || slot.ink != header.ink
+            || slot.paper != header.paper)
+        {
+            slot.name = set->name;
+            slot.revision = revision;
+            slot.ink = header.ink;
+            slot.paper = header.paper;
+            slot.texture = view.createTexture(terrainIconBitmap(
+                *set,
+                colorOf(header.ink),
+                colorOf(header.paper)));
+        }
+
+        return slot.texture.get();
+    }
+
     void UiSystem::refreshHint(const ui::WidgetId hovered)
     {
         const auto key = hintKeyFor(store, hovered);
@@ -519,13 +972,84 @@ namespace antwika::map_editor
             ui::Theme{}.muted);
     }
 
+    void UiSystem::confirmTilesetDialog()
+    {
+        auto &dialog = store.dialog;
+        auto &tilesets = store.tilesets;
+        const auto &name = dialog.nameField.text;
+        const std::filesystem::path path =
+            io::pathIn(dialog.directory, name);
+
+        if (dialog.mode == DialogMode::Open)
+        {
+            for (std::size_t at = 0; at < tilesets.open.size();
+                 ++at)
+            {
+                if (tilesets.open[at].data.name == name
+                    || tilesets.open[at].path == path)
+                {
+                    chooseTileset(at);
+                    dialog.mode = DialogMode::None;
+                    return;
+                }
+            }
+
+            try
+            {
+                TilesetDoc doc;
+
+                doc.data = antwika::tileset::loadTileset(path);
+                doc.path = path;
+                tilesets.open.push_back(std::move(doc));
+                chooseTileset(tilesets.open.size() - 1);
+                dialog.mode = DialogMode::None;
+            }
+            catch (const tileset::TilesetError &error) // GCOVR_EXCL_LINE
+            {
+                dialog.message = error.what();
+            }
+
+            return;
+        }
+
+        auto *doc = activeTilesetDoc(store);
+
+        if (doc == nullptr)
+        {
+            dialog.message = "no tileset open";
+            return;
+        }
+
+        try
+        {
+            doc->data.name = name;
+            doc->path = path;
+            antwika::tileset::saveTileset(path, doc->data);
+            doc->dirty = false;
+            ++doc->revision;
+            dialog.mode = DialogMode::None;
+        }
+        catch (const tileset::TilesetError &error) // GCOVR_EXCL_LINE
+        {
+            dialog.message = error.what();
+        }
+    }
+
     void UiSystem::confirmDialog()
     {
         auto &dialog = store.dialog;
 
         if (dialog.nameField.text.empty())
         {
-            dialog.message = "enter a file name";
+            dialog.message = dialog.target == DialogTarget::Tileset
+                                 ? "enter a tileset name"
+                                 : "enter a file name";
+            return;
+        }
+
+        if (dialog.target == DialogTarget::Tileset)
+        {
+            confirmTilesetDialog();
             return;
         }
 
@@ -611,23 +1135,47 @@ namespace antwika::map_editor
 
         if (menu == 0)
         {
+            if (tiles)
+            {
+                switch (entry)
+                {
+                    case 0:
+                        store.newTileset = {};
+                        store.newTileset.open = true;
+                        return;
+                    case 1:
+                        openFileDialog(
+                            store,
+                            DialogMode::Open,
+                            DialogTarget::Tileset);
+                        return;
+                    case 2:
+                        saveActiveTileset(store, logger);
+                        return;
+                    case 3:
+                        openFileDialog(
+                            store,
+                            DialogMode::SaveAs,
+                            DialogTarget::Tileset);
+                        return;
+                    default:
+                        store.input.quit = true;
+                        return;
+                }
+            }
+
             switch (entry)
             {
                 case 0:
                     newMap(state);
                     store.ui.selected.reset();
                     loadEntityBuffers(store);
+                    store.camera = MapCamera{};
                     return;
                 case 1:
                     openFileDialog(store, DialogMode::Open);
                     return;
                 case 2:
-                    if (tiles)
-                    {
-                        saveCurrentSheet();
-                        return;
-                    }
-
                     if (store.view == EditorView::Characters)
                     {
                         saveCurrentCharacter();
@@ -650,7 +1198,15 @@ namespace antwika::map_editor
             switch (entry)
             {
                 case 0:
-                    if (store.view != EditorView::Map)
+                    clearSelectionsAfterHistory(store);
+
+                    if (store.view == EditorView::Tiles)
+                    {
+                        tilesetUndo(store);
+                        return;
+                    }
+
+                    if (store.view == EditorView::Characters)
                     {
                         sheetUndo(store);
                         return;
@@ -659,7 +1215,15 @@ namespace antwika::map_editor
                     undo(state);
                     return;
                 case 1:
-                    if (store.view != EditorView::Map)
+                    clearSelectionsAfterHistory(store);
+
+                    if (store.view == EditorView::Tiles)
+                    {
+                        tilesetRedo(store);
+                        return;
+                    }
+
+                    if (store.view == EditorView::Characters)
                     {
                         sheetRedo(store);
                         return;
@@ -667,8 +1231,11 @@ namespace antwika::map_editor
 
                     redo(state);
                     return;
-                default:
+                case 2:
                     removeEntitiesAtHovered(state);
+                    return;
+                default:
+                    store.keys = KeysDialog{.open = true};
                     return;
             }
         }
@@ -721,13 +1288,14 @@ namespace antwika::map_editor
             return;
         }
 
+        if (entry == 4)
+        {
+            openBindingsDialog();
+            return;
+        }
+
         store.rules = RulesDialog{
             .open = true, .edit = store.state.rules};
-    }
-
-    void UiSystem::saveCurrentSheet()
-    {
-        saveActiveTerrainSheet(store, logger);
     }
 
     void UiSystem::cycleView()
@@ -742,31 +1310,13 @@ namespace antwika::map_editor
 
     void UiSystem::chooseEnemy(const std::size_t index)
     {
-        if (!store.ui.selected.has_value())
-        {
-            return;
-        }
+        const auto at = store.ui.selected.value();
+        auto edited = store.state.map.entities().at(at);
+        auto &spawn = std::get<tilemap::SpawnPoint>(edited);
 
-        const auto at = *store.ui.selected;
-        const auto &entities = store.state.map.entities();
-
-        if (at >= entities.size())
-        {
-            return;
-        }
-
-        auto edited = entities[at];
-        auto *spawn = std::get_if<tilemap::SpawnPoint>(&edited);
-
-        if (spawn == nullptr)
-        {
-            return;
-        }
-
-        spawn->enemy =
-            index == 0 || index > store.characters.list.size()
-                ? std::string{}
-                : store.characters.list[index - 1].name;
+        spawn.enemy = index == 0
+                          ? std::string{}
+                          : store.characters.list[index - 1].name;
 
         replaceEntity(store.state, at, std::move(edited));
     }
@@ -793,8 +1343,9 @@ namespace antwika::map_editor
             return;
         }
 
-        CharacterDoc character{.name = name};
+        CharacterDoc character;
 
+        character.name = name;
         character.sheet.image = placeholderCharacter();
         character.sheet.dirty = true;
 
@@ -847,9 +1398,10 @@ namespace antwika::map_editor
         deleteCharacterFiles(
             characters.list[characters.selected].name,
             characters.directory);
-        characters.list.erase(
-            characters.list.begin()
-            + static_cast<std::ptrdiff_t>(characters.selected));
+        const auto at =
+            static_cast<std::ptrdiff_t>(characters.selected);
+
+        characters.list.erase(characters.list.begin() + at);
 
         if (characters.selected >= characters.list.size()
             && characters.selected > 0)
@@ -916,16 +1468,15 @@ namespace antwika::map_editor
 
     void UiSystem::writeConfigNow()
     {
-        std::ofstream out(app::assetPath("config.json"));
+        MapEditorConfig config{};
 
-        if (out)
-        {
-            writeConfig(
-                MapEditorConfig{
-                    .uiScale = store.uiScale,
-                    .fullscreen = window.isFullscreen()},
-                out);
-        }
+        config.uiScale = store.uiScale;
+        config.fullscreen = window.isFullscreen();
+        config.keys = hotkeysToConfig(store.hotkeys);
+
+        std::ofstream out(configPath);
+
+        writeConfig(config, out);
     }
 
     void UiSystem::press(const WidgetId activated)
@@ -936,6 +1487,12 @@ namespace antwika::map_editor
             && activated != widgets::kCharDelete)
         {
             store.characters.confirmDelete = false;
+        }
+
+        if (activated != kNoWidget
+            && activated != widgets::kSpriteDelete)
+        {
+            store.tilesets.confirmDeleteSprite = false;
         }
 
         if (const auto row = widgets::characterRowIndex(
@@ -950,15 +1507,46 @@ namespace antwika::map_editor
             return;
         }
 
+        if (activated == widgets::kPickerToggle)
+        {
+            togglePicker(store);
+            return;
+        }
+
+        if (activated == widgets::kMapSelectTool)
+        {
+            store.mapTool = store.mapTool == MapTool::Select
+                                ? MapTool::Paint
+                                : MapTool::Select;
+            return;
+        }
+
+        if (activated == widgets::kCharToolDraw)
+        {
+            store.characters.tool = CharacterTool::Draw;
+            return;
+        }
+
+        if (activated == widgets::kCharToolSelect)
+        {
+            store.characters.tool = CharacterTool::Select;
+            return;
+        }
+
         if (activated == widgets::kDrawInk)
         {
-            store.tiles.drawPaper = false;
+            store.tilesets.drawPaper = false;
             return;
         }
 
         if (activated == widgets::kDrawPaper)
         {
-            store.tiles.drawPaper = true;
+            store.tilesets.drawPaper = true;
+            return;
+        }
+
+        if (pressTilesets(activated))
+        {
             return;
         }
 
@@ -1002,13 +1590,13 @@ namespace antwika::map_editor
         {
             store.ui.placeOpen = !store.ui.placeOpen;
         }
-        else if (activated == widgets::kHeightUp)
+        else if (activated == widgets::kLevelUp)
         {
-            raiseHovered(state);
+            stepActiveLevel(state, 1);
         }
-        else if (activated == widgets::kHeightDown)
+        else if (activated == widgets::kLevelDown)
         {
-            lowerHovered(state);
+            stepActiveLevel(state, -1);
         }
         else if (activated == widgets::kBridge)
         {
@@ -1022,6 +1610,204 @@ namespace antwika::map_editor
         {
             generate(state, logger);
         }
+    }
+
+    bool UiSystem::pressTilesets(const WidgetId activated)
+    {
+        auto &tilesets = store.tilesets;
+
+        if (activated == widgets::kTilesetPicker)
+        {
+            tilesets.pickerOpen = !tilesets.pickerOpen;
+            return true;
+        }
+
+        auto *doc = activeTilesetDoc(store);
+
+        if (doc == nullptr)
+        {
+            return false;
+        }
+
+        if (activated == widgets::kToolDraw)
+        {
+            tilesets.tool = TilesetTool::Draw;
+            return true;
+        }
+
+        if (activated == widgets::kToolSockets)
+        {
+            tilesets.tool = TilesetTool::Sockets;
+            return true;
+        }
+
+        if (activated == widgets::kToolSelect)
+        {
+            tilesets.tool = TilesetTool::Select;
+            return true;
+        }
+
+        if (activated == widgets::kToolDecor)
+        {
+            if (doc->sel.layer >= 1)
+            {
+                tilesets.tool = TilesetTool::Decor;
+                tilesets.libraryPage = 0;
+            }
+            else
+            {
+                tilesets.message = "decor needs a decor layer";
+            }
+
+            return true;
+        }
+
+        if (const auto frame = widgets::rangeIndex(
+                activated,
+                widgets::kFrameButtonBase,
+                widgets::kFrameButtonCount))
+        {
+            selectTilesetFrame(store, *frame);
+            return true;
+        }
+
+        if (activated == widgets::kFrameClear)
+        {
+            clearActiveFrame(store);
+            return true;
+        }
+
+        if (const auto row = widgets::rangeIndex(
+                activated,
+                widgets::kLayerRowBase,
+                std::min(
+                    widgets::kLayerRowCount,
+                    doc->data.layers.size())))
+        {
+            doc->sel.layer = *row;
+
+            const auto sprites =
+                doc->data.layers[*row].sprites.size();
+
+            doc->sel.sprite =
+                sprites == 0
+                    ? 0
+                    : std::min(doc->sel.sprite, sprites - 1);
+            tilesets.libraryPage = 0;
+
+            if (*row == 0
+                && tilesets.tool == TilesetTool::Decor)
+            {
+                tilesets.tool = TilesetTool::Draw;
+            }
+
+            return true;
+        }
+
+        if (activated == widgets::kLayerAdd)
+        {
+            addLayerPressed(store);
+            return true;
+        }
+
+        if (activated == widgets::kLayerRemove)
+        {
+            removeLayerPressed(store);
+            return true;
+        }
+
+        if (activated == widgets::kSpriteAdd)
+        {
+            addSpritePressed(store);
+            return true;
+        }
+
+        if (activated == widgets::kSpriteDuplicate)
+        {
+            duplicateSpritePressed(store);
+            return true;
+        }
+
+        if (activated == widgets::kSpriteDelete)
+        {
+            if (!tilesets.confirmDeleteSprite)
+            {
+                tilesets.confirmDeleteSprite = true;
+                return true;
+            }
+
+            tilesets.confirmDeleteSprite = false;
+            deleteSpriteConfirmed(store);
+            return true;
+        }
+
+        if (const auto row = widgets::rangeIndex(
+                activated,
+                widgets::kSocketRowBase,
+                std::min(
+                    widgets::kSocketRowCount,
+                    doc->data.socketNames.size())))
+        {
+            tilesets.activeSocket = *row;
+            return true;
+        }
+
+        if (activated == widgets::kSocketAdd)
+        {
+            addSocketPressed(store);
+            return true;
+        }
+
+        if (activated == widgets::kSocketRename)
+        {
+            renameSocketPressed(store);
+            return true;
+        }
+
+        if (activated == widgets::kSocketDelete)
+        {
+            deleteSocketPressed(store);
+            return true;
+        }
+
+        if (activated == widgets::kDecorAll)
+        {
+            setDecorAll(store, true);
+            return true;
+        }
+
+        if (activated == widgets::kDecorNone)
+        {
+            setDecorAll(store, false);
+            return true;
+        }
+
+        if (activated == widgets::kDensityDown)
+        {
+            adjustDensity(store, -16);
+            return true;
+        }
+
+        if (activated == widgets::kDensityUp)
+        {
+            adjustDensity(store, 16);
+            return true;
+        }
+
+        if (activated == widgets::kWeightDown)
+        {
+            adjustWeight(store, -1);
+            return true;
+        }
+
+        if (activated == widgets::kWeightUp)
+        {
+            adjustWeight(store, 1);
+            return true;
+        }
+
+        return activated == widgets::kDensityValue
+               || activated == widgets::kWeightValue;
     }
 
 }

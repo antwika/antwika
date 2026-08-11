@@ -72,6 +72,12 @@ namespace antwika::map_editor
             store.characters.nameField.cursor = change.cursor;
             return;
         }
+        else if (change.field == widgets::kSocketName)
+        {
+            store.tilesets.socketNameField.text = change.text;
+            store.tilesets.socketNameField.cursor = change.cursor;
+            return;
+        }
 
         if (buffer == nullptr)
         {

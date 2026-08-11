@@ -1,0 +1,103 @@
+{
+  "schema": 1,
+  "name": "default-path",
+  "terrain": "path",
+  "nextSpriteId": 9,
+  "layers": [
+    {
+      "name": "base",
+      "sprites": [
+        {
+          "id": 0,
+          "sockets": {
+            "n": "path",
+            "e": "path",
+            "s": "path",
+            "w": "path"
+          },
+          "on": []
+        },
+        {
+          "id": 1,
+          "sockets": {
+            "n": "edge",
+            "e": "path",
+            "s": "path",
+            "w": "path"
+          },
+          "on": []
+        },
+        {
+          "id": 2,
+          "sockets": {
+            "n": "path",
+            "e": "edge",
+            "s": "path",
+            "w": "path"
+          },
+          "on": []
+        },
+        {
+          "id": 3,
+          "sockets": {
+            "n": "path",
+            "e": "path",
+            "s": "edge",
+            "w": "path"
+          },
+          "on": []
+        },
+        {
+          "id": 4,
+          "sockets": {
+            "n": "path",
+            "e": "path",
+            "s": "path",
+            "w": "edge"
+          },
+          "on": []
+        },
+        {
+          "id": 5,
+          "sockets": {
+            "n": "edge",
+            "e": "path",
+            "s": "path",
+            "w": "edge"
+          },
+          "on": []
+        },
+        {
+          "id": 6,
+          "sockets": {
+            "n": "edge",
+            "e": "edge",
+            "s": "path",
+            "w": "path"
+          },
+          "on": []
+        },
+        {
+          "id": 7,
+          "sockets": {
+            "n": "path",
+            "e": "path",
+            "s": "edge",
+            "w": "edge"
+          },
+          "on": []
+        },
+        {
+          "id": 8,
+          "sockets": {
+            "n": "path",
+            "e": "edge",
+            "s": "edge",
+            "w": "path"
+          },
+          "on": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,10 +1,12 @@
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <filesystem>
 #include <optional>
 #include <string>
 
+#include <antwika/enums/Enumeration.hpp>
 #include <antwika/log/ILogger.hpp>
 #include <antwika/tilemap/Entities.hpp>
 #include <antwika/tilemap/Rgb.hpp>
@@ -69,9 +71,22 @@ namespace antwika::map_editor
         EditorState &state,
         const std::vector<tilemap::TerrainClass> &terrains);
 
-    void raiseHovered(EditorState &state);
+    /**
+     * @brief Steps the active editing level by the given amount.
+     *
+     * Ensures: the level stays inside [-32, 32], no undo snapshot
+     *          is taken, and the render revision is unchanged.
+     */
+    void stepActiveLevel(EditorState &state, std::int32_t delta);
 
-    void lowerHovered(EditorState &state);
+    /**
+     * @brief Removes the hovered cell's slab at the active level.
+     *
+     * Ensures: a cell with no slab at the active level is a
+     *          no-op, the map never grows, an erased cell is
+     *          pinned, and the selected brush does not matter.
+     */
+    void eraseSlabHovered(EditorState &state);
 
     void toggleBridge(EditorState &state);
 
@@ -98,6 +113,45 @@ namespace antwika::map_editor
 
     void removeEntitiesAtHovered(EditorState &state);
 
+    /**
+     * @brief Copies a span of whole columns into the map clipboard.
+     *
+     * Ensures: every level of every spanned column is captured, and
+     *          the map itself is untouched.
+     */
+    void copyMapSpan(EditorStore &store, CellSpan span);
+
+    /**
+     * @brief Empties a span of columns as one undo step.
+     *
+     * Ensures: every spanned cell loses all slabs and becomes
+     *          pinned, so Generate leaves the holes.
+     */
+    void clearMapSpan(EditorState &state, CellSpan span);
+
+    /**
+     * @brief Pastes the map clipboard at the hovered cell.
+     *
+     * Ensures: whole columns paste level-absolute with the
+     *          clipboard's top-left at the hovered cell, cells
+     *          beyond the map bounds are clipped, the map never
+     *          grows, and the paste is one undo step.
+     */
+    void pasteMapClipboard(EditorStore &store);
+
+    /**
+     * @brief Moves a span of columns by a cell delta.
+     *
+     * Ensures: vacated cells lose all slabs and become pinned,
+     *          cells landing outside the map are clipped away, and
+     *          the move is one undo step.
+     */
+    void moveMapSpan(
+        EditorState &state,
+        CellSpan span,
+        std::int32_t deltaColumn,
+        std::int32_t deltaRow);
+
     void markStampStart(EditorState &state);
 
     void copyStampEnd(EditorState &state);
@@ -113,6 +167,19 @@ namespace antwika::map_editor
      */
     void setPalette(
         EditorState &state, tilemap::Rgb ink, tilemap::Rgb paper);
+
+    /**
+     * @brief Sets the header tileset bindings as one undoable edit.
+     *
+     * Ensures: unchanged bindings take no undo snapshot, and cells,
+     *          entities, and the rest of the header keep their
+     *          values.
+     */
+    void setTilesets(
+        EditorState &state,
+        const std::array<
+            std::string,
+            enums::kCount<tilemap::TerrainClass>> &names);
 
     /**
      * @brief Sets the header palette with no undo snapshot.

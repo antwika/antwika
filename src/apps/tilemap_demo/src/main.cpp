@@ -5,9 +5,11 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <variant>
+#include <vector>
 
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/RunGuarded.hpp>
@@ -22,8 +24,8 @@
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/autotile/DrawPlan.hpp>
-#include <antwika/autotile/SheetLayout.hpp>
-#include <antwika/autotile/TilePiece.hpp>
+#include <antwika/autotile/SystemSheet.hpp>
+#include <antwika/autotile/TileDraw.hpp>
 #include <antwika/cli/CommandLine.hpp>
 #include <antwika/enums/Enumeration.hpp>
 #include <antwika/geometry/Grid.hpp>
@@ -46,12 +48,15 @@
 #include <antwika/tilemap/Rgb.hpp>
 #include <antwika/tilemap/TerrainClass.hpp>
 #include <antwika/tilemap/TileMap.hpp>
+#include <antwika/tileset/Atlas.hpp>
+#include <antwika/tileset/Tileset.hpp>
+#include <antwika/tileset/TilesetFile.hpp>
 #include <antwika/time/SystemSleeper.hpp>
 #include <antwika/ui/Painter.hpp>
 
 #include "antwika/tilemap_demo/DemoConsole.hpp"
 #include "antwika/tilemap_demo/DemoMap.hpp"
-#include "antwika/tilemap_demo/PlaceholderSheets.hpp"
+#include "antwika/tilemap_demo/PlaceholderTilesets.hpp"
 
 using antwika::app::ConsoleLogging;
 using antwika::app::runGuarded;
@@ -66,9 +71,11 @@ using antwika::log::Level;
 using antwika::tilemap::TerrainClass;
 using antwika::tilemap::TileMap;
 using antwika::tilemap_demo::demoMap;
-using antwika::tilemap_demo::placeholderSheet;
+using antwika::tilemap_demo::landingLevel;
+using antwika::tilemap_demo::placeholderSystemSheet;
+using antwika::tilemap_demo::placeholderTileset;
 using antwika::tilemap_demo::Player;
-using antwika::tilemap_demo::walkable;
+using antwika::tilemap_demo::restingLevel;
 
 namespace
 {
@@ -81,6 +88,11 @@ namespace
             .name = "--map",
             .valueName = "path",
             .help = "Load a map JSON file instead of the built-in map."},
+        antwika::cli::FlagSpec{
+            .name = "--tilesets",
+            .valueName = "dir",
+            .help = "Load tilesets from this directory instead of "
+                    "assets/tilesets."},
     };
 
     constexpr antwika::gfx::Size kCanvas{.width = 320, .height = 180};
@@ -124,6 +136,107 @@ namespace
         }
 
         return baked;
+    }
+
+    [[nodiscard]] antwika::gfx::Bitmap loadSystemArt(
+        const std::filesystem::path &directory,
+        antwika::log::ILogger &logger)
+    {
+        const auto path = directory / "system.png";
+
+        if (!std::filesystem::is_regular_file(path))
+        {
+            return placeholderSystemSheet();
+        }
+
+        try
+        {
+            std::ifstream in(path, std::ios::binary);
+            const auto bitmap = antwika::gfx::PngReader{}.read(in);
+
+            if (bitmap.size.width != 32 || bitmap.size.height != 8)
+            {
+                logger.log(
+                    Level::Warning,
+                    "tilemap_demo: system.png is not 32x8");
+                return placeholderSystemSheet();
+            }
+
+            logger.log(Level::Info, "Loaded " + path.string());
+
+            return bakedSheet(
+                bitmap,
+                Color{.red = 255, .green = 255, .blue = 255},
+                Color{.red = 128, .green = 128, .blue = 128});
+        }
+        catch (const antwika::gfx::GfxError &error)
+        {
+            logger.log(Level::Warning, error.what());
+            return placeholderSystemSheet();
+        }
+    }
+
+    [[nodiscard]] const antwika::tileset::Tileset *findTileset(
+        const std::vector<antwika::tileset::Tileset> &library,
+        const std::string &name)
+    {
+        for (const auto &set : library)
+        {
+            if (set.name == name)
+            {
+                return &set;
+            }
+        }
+
+        return nullptr;
+    }
+
+    [[nodiscard]] antwika::tileset::Tileset resolveTileset(
+        const std::vector<antwika::tileset::Tileset> &library,
+        const std::string &bound,
+        const TerrainClass terrain)
+    {
+        const auto *found =
+            bound.empty() ? nullptr : findTileset(library, bound);
+
+        if (found == nullptr)
+        {
+            found = findTileset(
+                library,
+                "default-"
+                    + std::string(
+                        antwika::tilemap::toString(terrain)));
+        }
+
+        return found != nullptr ? *found
+                                : placeholderTileset(terrain);
+    }
+
+    [[nodiscard]] antwika::gfx::Bitmap atlasArtOf(
+        const antwika::tileset::Tileset &set,
+        const Color ink,
+        const Color paper)
+    {
+        if (antwika::tileset::atlasIndexOf(set).rows > 0)
+        {
+            return antwika::tileset::bakeAtlas(set, ink, paper);
+        }
+
+        antwika::gfx::Bitmap blank{
+            .size =
+                {.width = static_cast<std::uint32_t>(
+                     antwika::tileset::kAtlasWidth),
+                 .height = static_cast<std::uint32_t>(
+                     antwika::tileset::kSpriteSide)},
+            .pixels = {}};
+
+        blank.pixels.assign(
+            static_cast<std::size_t>(antwika::tileset::kAtlasWidth)
+                * antwika::tileset::kSpriteSide
+                * antwika::gfx::kBytesPerPixel,
+            0);
+
+        return blank;
     }
 
     constexpr std::uint32_t kWalkTicks = 12;
@@ -182,14 +295,16 @@ namespace
         const auto target = GridCell{
             .column = static_cast<std::uint32_t>(column),
             .row = static_cast<std::uint32_t>(row)};
+        const auto landed =
+            landingLevel(map, player.cell, player.level, target);
 
-        if (!walkable(map, target))
+        if (!landed.has_value())
         {
             return;
         }
 
         player.cell = target;
-        player.height = map.at(target).height;
+        player.level = *landed;
         player.moveTicks = kWalkTicks;
     }
 
@@ -293,23 +408,48 @@ int main(int argc, char **argv)
                 logger.log(Level::Info, "Loaded map: " + *path);
             }
 
+            const std::filesystem::path tilesetsDir =
+                command.value("--tilesets")
+                    .value_or(std::string("assets/tilesets"));
+            const auto library =
+                antwika::tileset::loadTilesetLibrary(tilesetsDir);
+
+            logger.log(
+                Level::Info,
+                "Loaded " + std::to_string(library.size())
+                    + " tilesets from " + tilesetsDir.string());
+
             std::array<
-                antwika::gfx::Bitmap,
+                antwika::tileset::Tileset,
                 antwika::enums::kCount<TerrainClass>>
-                sheetArt;
+                tilesets;
             std::array<
                 std::unique_ptr<antwika::gfx::ITexture>,
                 antwika::enums::kCount<TerrainClass>>
-                sheets;
+                atlases;
+            antwika::autotile::TilesetBindings bindings{};
 
             for (const auto terrain :
                  antwika::enums::kAll<TerrainClass>)
             {
-                sheetArt[antwika::enums::index(terrain)] =
-                    placeholderSheet(terrain, kWhite);
+                const auto at = antwika::enums::index(terrain);
+
+                bindings.byTerrain[at] = &tilesets[at];
             }
 
+            std::optional<std::array<
+                std::string,
+                antwika::enums::kCount<TerrainClass>>>
+                boundNames;
+
+            const auto systemArt =
+                loadSystemArt(tilesetsDir, logger);
+            std::unique_ptr<antwika::gfx::ITexture> systemSheet;
+
             Player player;
+
+            player.level = restingLevel(map.at(player.cell));
+
             antwika::time::SystemSleeper sleeper;
             std::uint32_t clock = 0;
 
@@ -447,6 +587,27 @@ int main(int argc, char **argv)
                     break;
                 }
 
+                if (!boundNames.has_value()
+                    || *boundNames != map.header().tilesets)
+                {
+                    boundNames = map.header().tilesets;
+
+                    for (const auto terrain :
+                         antwika::enums::kAll<TerrainClass>)
+                    {
+                        const auto at =
+                            antwika::enums::index(terrain);
+
+                        tilesets[at] = resolveTileset(
+                            library,
+                            map.header().tilesets[at],
+                            terrain);
+                    }
+
+                    bakedInk.reset();
+                    bakedPaper.reset();
+                }
+
                 const auto ink = colorOf(map.header().ink);
                 const auto paper = colorOf(map.header().paper);
 
@@ -462,9 +623,12 @@ int main(int argc, char **argv)
                         const auto at =
                             antwika::enums::index(terrain);
 
-                        sheets[at] = view.createTexture(bakedSheet(
-                            sheetArt[at], ink, paper));
+                        atlases[at] = view.createTexture(
+                            atlasArtOf(tilesets[at], ink, paper));
                     }
+
+                    systemSheet = view.createTexture(
+                        bakedSheet(systemArt, ink, paper));
 
                     if (playerArt.has_value())
                     {
@@ -477,18 +641,32 @@ int main(int argc, char **argv)
                 view.fillSurround(Color{});
 
                 const auto plan = antwika::autotile::buildDrawPlan(
-                    map, player.cell, player.height, clock);
+                    map,
+                    player.cell,
+                    player.level,
+                    clock,
+                    bindings);
 
                 for (const auto &draw : plan)
                 {
-                    const auto source = antwika::autotile::sheetSource(
-                        draw.piece, draw.mask, draw.variant);
-
+                    const bool sprite =
+                        draw.kind
+                        == antwika::autotile::DrawKind::Sprite;
+                    const auto source =
+                        sprite ? antwika::tileset::atlasSource(
+                            draw.atlasRow, draw.frame)
+                               : antwika::autotile::systemSource(
+                                   draw.kind);
+                    const auto &texture =
+                        sprite ? *atlases[antwika::enums::index(
+                            draw.terrain)]
+                               : *systemSheet;
                     const auto shade =
-                        draw.piece == antwika::autotile::TilePiece::Shade;
+                        draw.kind
+                        == antwika::autotile::DrawKind::Shade;
 
                     view.drawTexture(
-                        *sheets[antwika::enums::index(draw.terrain)],
+                        texture,
                         source,
                         RectF(
                             {static_cast<float>(draw.screen.x),
@@ -519,7 +697,7 @@ int main(int argc, char **argv)
                                  * 16.0F,
                              static_cast<float>(player.cell.row)
                                      * 16.0F
-                                 - static_cast<float>(player.height)
+                                 - static_cast<float>(player.level)
                                        * 8.0F},
                             {16.0F, 16.0F}),
                         kWhite);
@@ -533,7 +711,7 @@ int main(int argc, char **argv)
                     const auto markerY =
                         static_cast<float>(player.cell.row) * 16.0F
                         + 4.0F
-                        - static_cast<float>(player.height) * 8.0F;
+                        - static_cast<float>(player.level) * 8.0F;
 
                     view.drawRect(
                         RectF({markerX, markerY}, {8.0F, 8.0F}),

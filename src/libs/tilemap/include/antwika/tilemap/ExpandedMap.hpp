@@ -14,12 +14,13 @@ namespace antwika::tilemap
      * @param north Rows added before the first row.
      * @param east Columns added after the last column.
      * @param south Rows added after the last row.
-     * @return The grown map with cells copied at the offset, every
-     *         entity origin shifted by (west, north), and the header
-     *         preserved.
+     * @return The grown map with columns copied at the offset, every
+     *         entity origin shifted by (west, north) at its level,
+     *         and the header preserved.
      *
      * Ensures: zero growth on every side returns an equal map, and
-     *          the added cells hold default values.
+     *          the added cells each hold a single floor slab at
+     *          level zero.
      */
     [[nodiscard]] TileMap expandedMap(
         const TileMap &map,

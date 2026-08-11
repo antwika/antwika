@@ -69,6 +69,14 @@ jobs:
         shell: bash
         run: python3 scripts/generate_poker_atlas.py --check
 
+      - name: Test generate-placeholder-tiles script
+        shell: bash
+        run: python3 scripts/tests/test_generate_placeholder_tiles.py
+
+      - name: Check the placeholder tilesets are current
+        shell: bash
+        run: python3 scripts/generate_placeholder_tiles.py --check
+
       - name: Test coverage badge script
         shell: bash
         run: python3 scripts/tests/test_generate_coverage_badge.py

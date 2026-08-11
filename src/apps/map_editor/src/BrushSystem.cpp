@@ -7,7 +7,9 @@
 
 #include "antwika/map_editor/Commands.hpp"
 #include "antwika/map_editor/Components.hpp"
+#include "antwika/map_editor/Selection.hpp"
 #include "antwika/map_editor/SheetWorkspace.hpp"
+#include "antwika/map_editor/TilesetWorkspace.hpp"
 #include "antwika/map_editor/Widgets.hpp"
 
 namespace antwika::map_editor
@@ -52,11 +54,39 @@ namespace antwika::map_editor
     {
         auto &state = store.state;
 
-        if (store.view != EditorView::Map)
+        if (store.view == EditorView::Tiles)
         {
             for (const auto &gesture : store.input.sheetGestures)
             {
-                applySheetGesture(store, gesture);
+                applyTilesetGesture(store, gesture);
+            }
+
+            return;
+        }
+
+        if (store.view == EditorView::Characters)
+        {
+            for (const auto &gesture : store.input.sheetGestures)
+            {
+                if (store.characters.tool
+                    == CharacterTool::Select)
+                {
+                    applyCharSelectGesture(store, gesture);
+                }
+                else
+                {
+                    applySheetGesture(store, gesture);
+                }
+            }
+
+            return;
+        }
+
+        if (store.mapTool == MapTool::Select)
+        {
+            for (const auto &gesture : store.input.gestures)
+            {
+                applyMapSelectGesture(store, gesture);
             }
 
             return;
@@ -64,6 +94,18 @@ namespace antwika::map_editor
 
         for (const auto &gesture : store.input.gestures)
         {
+            if (gesture.erase)
+            {
+                if (gesture.kind != GestureKind::Release
+                    && !outsideMap(state, gesture.signedCell))
+                {
+                    state.hovered = gesture.cell;
+                    eraseSlabHovered(state);
+                }
+
+                continue;
+            }
+
             if (gesture.kind == GestureKind::Release)
             {
                 state.painting = false;

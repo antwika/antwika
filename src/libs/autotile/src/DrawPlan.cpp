@@ -2,11 +2,16 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
+#include <antwika/tileset/Atlas.hpp>
+#include <antwika/tileset/Sprite.hpp>
+
 #include "antwika/autotile/Cutaway.hpp"
-#include "antwika/autotile/SheetLayout.hpp"
+#include "antwika/autotile/Metrics.hpp"
 
 namespace antwika::autotile
 {
@@ -17,6 +22,8 @@ namespace antwika::autotile
         using tilemap::Overlay;
         using tilemap::TerrainClass;
         using tilemap::TileMap;
+        using tileset::Side;
+        using tileset::Sprite;
 
         constexpr std::array kDrawOrder = {
             TerrainClass::Water,
@@ -27,10 +34,14 @@ namespace antwika::autotile
             TerrainClass::Wall,
         };
 
-        constexpr std::uint8_t kFullMask = 15;
-        constexpr std::uint32_t kWaterPeriod = 30;
+        constexpr std::uint32_t kFramePeriod = 30;
         constexpr std::uint8_t kShadeBelow = 192;
         constexpr std::uint8_t kDenseShadeBelow = 96;
+
+        constexpr auto kNorth = enums::index(Side::North);
+        constexpr auto kEast = enums::index(Side::East);
+        constexpr auto kSouth = enums::index(Side::South);
+        constexpr auto kWest = enums::index(Side::West);
 
         struct LevelRange final
         {
@@ -47,12 +58,16 @@ namespace antwika::autotile
                 for (std::uint32_t column = 0; column < map.columns();
                      ++column)
                 {
-                    const auto height =
-                        map.at(GridCell{.column = column, .row = row})
-                            .height;
+                    const auto cell =
+                        GridCell{.column = column, .row = row};
 
-                    range.lowest = std::min(range.lowest, height);
-                    range.highest = std::max(range.highest, height);
+                    for (const auto &slab : map.at(cell).slabs())
+                    {
+                        range.lowest =
+                            std::min(range.lowest, slab.level);
+                        range.highest =
+                            std::max(range.highest, slab.level);
+                    }
                 }
             }
 
@@ -85,119 +100,104 @@ namespace antwika::autotile
             return mixed;
         }
 
-        [[nodiscard]] std::uint8_t scatteredVariant(
-            const std::uint64_t hash) noexcept
+        [[nodiscard]] std::uint8_t frameOf(
+            const Sprite &sprite, const std::uint32_t clock) noexcept
         {
-            const auto bucket = hash % (2 * kVariantSlots);
-
-            if (bucket < kVariantSlots)
+            if (sprite.frameCount <= 1)
             {
                 return 0;
             }
 
             return static_cast<std::uint8_t>(
-                bucket - kVariantSlots + 1);
+                (clock / kFramePeriod) % sprite.frameCount);
         }
 
-        [[nodiscard]] bool edgeOn(
-            const SheetConnectors &sheet,
-            const std::int32_t variant,
-            const std::uint8_t edge) noexcept
+        [[nodiscard]] bool shapeFits(
+            const Sprite &sprite,
+            const std::array<bool, 4> &out) noexcept
         {
-            return (sheet.edges[static_cast<std::size_t>(variant)]
-                    & edge)
-                   != 0;
-        }
-
-        [[nodiscard]] bool fitsNeighbours(
-            const SheetConnectors &sheet,
-            const std::int32_t variant,
-            const std::int32_t west,
-            const std::int32_t north,
-            const bool useWest,
-            const bool useNorth) noexcept
-        {
-            if (useWest && west >= 0
-                && edgeOn(sheet, variant, kEdgeWest)
-                       != edgeOn(sheet, west, kEdgeEast))
+            for (std::size_t side = 0; side < 4; ++side)
             {
-                return false;
-            }
-
-            if (useNorth && north >= 0
-                && edgeOn(sheet, variant, kEdgeNorth)
-                       != edgeOn(sheet, north, kEdgeSouth))
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        [[nodiscard]] bool quadrantEdgeOn(
-            const SheetConnectors &sheet,
-            const std::int32_t slot,
-            const std::uint8_t edge) noexcept
-        {
-            return (sheet.quadrants[static_cast<std::size_t>(slot)]
-                    & edge)
-                   != 0;
-        }
-
-        [[nodiscard]] bool quadrantFits(
-            const SheetConnectors &sheet,
-            const std::int32_t slot,
-            const std::int32_t west,
-            const std::int32_t north,
-            const bool useWest,
-            const bool useNorth) noexcept
-        {
-            if (useWest && west >= 0
-                && quadrantEdgeOn(sheet, slot, kEdgeWest)
-                       != quadrantEdgeOn(sheet, west, kEdgeEast))
-            {
-                return false;
-            }
-
-            if (useNorth && north >= 0
-                && quadrantEdgeOn(sheet, slot, kEdgeNorth)
-                       != quadrantEdgeOn(sheet, north, kEdgeSouth))
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        [[nodiscard]] std::uint8_t chooseQuadrant(
-            const SheetConnectors &sheet,
-            const std::uint64_t hash,
-            const std::int32_t west,
-            const std::int32_t north) noexcept
-        {
-            std::array<std::uint8_t, kQuadrantSlots> declared{};
-            std::size_t count = 0;
-
-            for (std::size_t slot = 0; slot < kQuadrantSlots;
-                 ++slot)
-            {
-                if ((sheet.quadrantMask & (1U << slot)) != 0)
+                if (out[side]
+                    != (sprite.sockets[side] == tileset::kEdgeSocket))
                 {
-                    declared[count] =
-                        static_cast<std::uint8_t>(slot);
-                    ++count;
+                    return false;
                 }
             }
 
-            const auto base = declared[0];
-            const auto bucket = hash % (2 * count);
+            return true;
+        }
+
+        [[nodiscard]] bool pairFits(
+            const std::vector<Sprite> &sprites,
+            const std::size_t candidate,
+            const std::int32_t west,
+            const std::int32_t north,
+            const bool useWest,
+            const bool useNorth) noexcept
+        {
+            const auto &sprite = sprites[candidate];
+
+            if (useWest && west >= 0
+                && sprites[static_cast<std::size_t>(west)]
+                           .sockets[kEast]
+                       != sprite.sockets[kWest])
+            {
+                return false;
+            }
+
+            if (useNorth && north >= 0
+                && sprites[static_cast<std::size_t>(north)]
+                           .sockets[kSouth]
+                       != sprite.sockets[kNorth])
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        [[nodiscard]] std::size_t weightedPick(
+            const std::vector<Sprite> &sprites,
+            const std::vector<std::size_t> &candidates,
+            const std::uint64_t hash)
+        {
+            std::uint64_t total = 0;
+
+            for (const auto candidate : candidates)
+            {
+                total += sprites[candidate].weight;
+            }
+
+            auto roll = hash % total;
+
+            for (std::size_t at = 0; at + 1 < candidates.size(); ++at)
+            {
+                const auto weight = sprites[candidates[at]].weight;
+
+                if (roll < weight)
+                {
+                    return candidates[at];
+                }
+
+                roll -= weight;
+            }
+
+            return candidates.back();
+        }
+
+        [[nodiscard]] std::size_t chooseFrom(
+            const std::vector<Sprite> &sprites,
+            const std::vector<std::size_t> &declared,
+            const std::uint64_t hash,
+            const std::int32_t west,
+            const std::int32_t north)
+        {
             const auto preliminary =
-                bucket < count
-                    ? base
-                    : declared[bucket - count];
+                weightedPick(sprites, declared, hash);
 
-            if (quadrantFits(
-                    sheet, preliminary, west, north, true, true))
+            if (pairFits(
+                    sprites, preliminary, west, north, true, true))
             {
                 return preliminary;
             }
@@ -207,93 +207,62 @@ namespace antwika::autotile
 
             for (const auto &pass : kPasses)
             {
-                std::array<std::uint8_t, kQuadrantSlots>
-                    candidates{};
-                std::size_t fitting = 0;
-                bool baseFits = false;
+                std::vector<std::size_t> candidates{};
 
-                for (std::size_t at = 0; at < count; ++at)
+                for (const auto candidate : declared)
                 {
-                    if (!quadrantFits(
-                            sheet,
-                            declared[at],
+                    if (pairFits(
+                            sprites,
+                            candidate,
                             west,
                             north,
                             pass[0],
                             pass[1]))
                     {
-                        continue;
+                        candidates.push_back(candidate);
                     }
-
-                    baseFits = baseFits || declared[at] == base;
-                    candidates[fitting] = declared[at];
-                    ++fitting;
                 }
 
-                if (fitting == 0)
+                if (!candidates.empty())
                 {
-                    continue;
+                    return weightedPick(sprites, candidates, hash);
                 }
-
-                return baseFits ? base
-                                : candidates[hash % fitting];
             }
 
-            return base;
+            return preliminary;
         }
 
-        [[nodiscard]] std::uint8_t chooseVariant(
-            const SheetConnectors &sheet,
+        [[nodiscard]] std::size_t chooseSprite(
+            const std::vector<Sprite> &sprites,
+            const std::array<bool, 4> &out,
             const std::uint64_t hash,
             const std::int32_t west,
-            const std::int32_t north) noexcept
+            const std::int32_t north)
         {
-            const auto preliminary = scatteredVariant(hash);
+            std::vector<std::size_t> declared{};
 
-            if (fitsNeighbours(
-                    sheet, preliminary, west, north, true, true))
+            for (std::size_t at = 0; at < sprites.size(); ++at)
             {
-                return preliminary;
+                if (shapeFits(sprites[at], out))
+                {
+                    declared.push_back(at);
+                }
             }
 
-            constexpr std::array<std::array<bool, 2>, 3> kPasses{
-                {{true, true}, {true, false}, {false, true}}};
-
-            for (const auto &pass : kPasses)
+            if (!declared.empty())
             {
-                std::array<std::uint8_t, 8> candidates{};
-                std::size_t count = 0;
-                bool baseFits = false;
-
-                for (std::int32_t variant = 0; variant < 8;
-                     ++variant)
-                {
-                    if (!fitsNeighbours(
-                            sheet,
-                            variant,
-                            west,
-                            north,
-                            pass[0],
-                            pass[1]))
-                    {
-                        continue;
-                    }
-
-                    baseFits = baseFits || variant == 0;
-                    candidates[count] =
-                        static_cast<std::uint8_t>(variant);
-                    ++count;
-                }
-
-                if (count == 0)
-                {
-                    continue;
-                }
-
-                return baseFits ? 0 : candidates[hash % count];
+                return chooseFrom(
+                    sprites, declared, hash, west, north);
             }
 
-            return 0;
+            std::vector<std::size_t> all{};
+
+            for (std::size_t at = 0; at < sprites.size(); ++at)
+            {
+                all.push_back(at);
+            }
+
+            return chooseFrom(sprites, all, hash, west, north);
         }
 
         class PlanBuilder final
@@ -304,13 +273,18 @@ namespace antwika::autotile
                 const GridCell player,
                 const std::int32_t playerHeight,
                 const std::uint32_t clock,
-                const TerrainConnectors &connectors)
+                const TilesetBindings &bindings)
                 : map(map),
                   playerHeight(playerHeight),
                   clock(clock),
-                  connectors(connectors),
+                  bindings(bindings),
                   hidden(cutawayHidden(map, player, playerHeight))
             {
+                for (std::size_t at = 0; at < atlas.size(); ++at)
+                {
+                    atlas[at] =
+                        tileset::atlasIndexOf(*bindings.byTerrain[at]);
+                }
             }
 
             [[nodiscard]] DrawPlan build()
@@ -332,18 +306,18 @@ namespace antwika::autotile
             }
 
         private:
+            /**
+             * @brief Tells whether a cell surfaces the terrain.
+             *
+             * Requires: column and row lie inside the grid, which
+             *           inside() settles before it calls this.
+             */
             [[nodiscard]] bool contributes(
                 const std::int64_t column,
                 const std::int64_t row,
                 const std::int32_t level,
                 const TerrainClass terrain) const
             {
-                if (column < 0 || row < 0
-                    || column >= map.columns() || row >= map.rows())
-                {
-                    return false;
-                }
-
                 const auto cell = GridCell{
                     .column = static_cast<std::uint32_t>(column),
                     .row = static_cast<std::uint32_t>(row)};
@@ -354,8 +328,10 @@ namespace antwika::autotile
                 }
 
                 const auto &held = map.at(cell);
+                const auto *slab = held.slabAt(level);
 
-                return held.height == level && held.terrain == terrain;
+                return slab != nullptr && slab->terrain == terrain
+                       && held.slabAt(level + 1) == nullptr;
             }
 
             [[nodiscard]] bool cutAway(
@@ -365,265 +341,348 @@ namespace antwika::autotile
                        && level > playerHeight;
             }
 
-            void addSurfaces(const std::int32_t level)
-            {
-                const auto width =
-                    static_cast<std::size_t>(map.columns()) + 1;
-
-                for (const auto terrain : kDrawOrder)
-                {
-                    if (connectors[enums::index(terrain)]
-                            .quadrantMask
-                        != 0)
-                    {
-                        addQuadrantSurfaces(level, terrain, width);
-                        continue;
-                    }
-
-                    std::vector<std::int32_t> previousRow(
-                        width, -1);
-                    std::vector<std::int32_t> currentRow(width, -1);
-
-                    for (std::int64_t dualRow = 0;
-                         dualRow <= map.rows();
-                         ++dualRow)
-                    {
-                        std::ranges::fill(currentRow, -1);
-
-                        for (std::int64_t dualColumn = 0;
-                             dualColumn <= map.columns();
-                             ++dualColumn)
-                        {
-                            const auto at = static_cast<
-                                std::size_t>(dualColumn);
-                            const auto west =
-                                dualColumn > 0
-                                    ? currentRow[at - 1]
-                                    : -1;
-                            const auto north = previousRow[at];
-
-                            currentRow[at] = addSurface(
-                                dualColumn,
-                                dualRow,
-                                level,
-                                terrain,
-                                west,
-                                north);
-                        }
-
-                        std::swap(previousRow, currentRow);
-                    }
-                }
-            }
-
-            /**
-             * @brief Assembles a quadrant terrain's surfaces.
-             *
-             * Ensures: interior full-mask tiles become four 8x8
-             *          quadrant draws on the uniform lattice while
-             *          every partial mask keeps its normal surface
-             *          piece.
-             */
-            void addQuadrantSurfaces(
-                const std::int32_t level,
-                const TerrainClass terrain,
-                const std::size_t width)
-            {
-                const auto rows =
-                    static_cast<std::size_t>(map.rows()) + 1;
-                std::vector<std::uint8_t> interior(
-                    width * rows, 0);
-
-                for (std::int64_t dualRow = 0;
-                     dualRow <= map.rows();
-                     ++dualRow)
-                {
-                    for (std::int64_t dualColumn = 0;
-                         dualColumn <= map.columns();
-                         ++dualColumn)
-                    {
-                        const auto mask = surfaceMask(
-                            dualColumn, dualRow, level, terrain);
-
-                        if (mask == 0)
-                        {
-                            continue;
-                        }
-
-                        if (mask == kFullMask)
-                        {
-                            interior
-                                [static_cast<std::size_t>(dualRow)
-                                     * width
-                                 + static_cast<std::size_t>(
-                                     dualColumn)] = 1;
-                            continue;
-                        }
-
-                        plan.push_back(TileDraw{
-                            .terrain = terrain,
-                            .piece = TilePiece::Surface,
-                            .mask = mask,
-                            .variant = 0,
-                            .screen = {
-                                .x = static_cast<std::int32_t>(
-                                         dualColumn)
-                                         * kUnit
-                                     - kHalfTile,
-                                .y = static_cast<std::int32_t>(
-                                         dualRow)
-                                         * kUnit
-                                     - kHalfTile
-                                     - level * kLevelRise}});
-                    }
-                }
-
-                addQuadrantLattice(level, terrain, interior, width);
-            }
-
-            void addQuadrantLattice(
-                const std::int32_t level,
-                const TerrainClass terrain,
-                const std::vector<std::uint8_t> &interior,
-                const std::size_t width)
-            {
-                const auto &sheet =
-                    connectors[enums::index(terrain)];
-                const auto lattice = width * 2;
-                std::vector<std::int32_t> previousRow(lattice, -1);
-                std::vector<std::int32_t> currentRow(lattice, -1);
-
-                for (std::size_t qr = 0;
-                     qr < (static_cast<std::size_t>(map.rows()) + 1)
-                              * 2;
-                     ++qr)
-                {
-                    std::ranges::fill(currentRow, -1);
-
-                    for (std::size_t qc = 0; qc < lattice; ++qc)
-                    {
-                        if (interior[(qr / 2) * width + qc / 2]
-                            == 0)
-                        {
-                            continue;
-                        }
-
-                        const auto west =
-                            qc > 0 ? currentRow[qc - 1] : -1;
-                        const auto north = previousRow[qc];
-                        const auto slot = chooseQuadrant(
-                            sheet,
-                            positionHash(
-                                static_cast<std::int64_t>(qc),
-                                static_cast<std::int64_t>(qr)),
-                            west,
-                            north);
-
-                        currentRow[qc] = slot;
-                        plan.push_back(TileDraw{
-                            .terrain = terrain,
-                            .piece = TilePiece::Quadrant,
-                            .mask = 0,
-                            .variant = slot,
-                            .screen = {
-                                .x = static_cast<std::int32_t>(qc)
-                                         * kHalfTile
-                                     - kHalfTile,
-                                .y = static_cast<std::int32_t>(qr)
-                                         * kHalfTile
-                                     - kHalfTile
-                                     - level * kLevelRise}});
-                    }
-
-                    std::swap(previousRow, currentRow);
-                }
-            }
-
-            [[nodiscard]] std::uint8_t surfaceMask(
-                const std::int64_t dualColumn,
-                const std::int64_t dualRow,
+            [[nodiscard]] bool inside(
+                const std::int64_t latticeColumn,
+                const std::int64_t latticeRow,
                 const std::int32_t level,
                 const TerrainClass terrain) const
             {
-                std::uint8_t mask = 0;
-
-                if (contributes(
-                        dualColumn - 1, dualRow - 1, level, terrain))
-                {
-                    mask |= 1;
-                }
-
-                if (contributes(dualColumn, dualRow - 1, level, terrain))
-                {
-                    mask |= 2;
-                }
-
-                if (contributes(dualColumn - 1, dualRow, level, terrain))
-                {
-                    mask |= 4;
-                }
-
-                if (contributes(dualColumn, dualRow, level, terrain))
-                {
-                    mask |= 8;
-                }
-
-                return mask;
+                return latticeColumn >= 0 && latticeRow >= 0
+                       && latticeColumn < 2 * map.columns()
+                       && latticeRow < 2 * map.rows()
+                       && contributes(
+                           latticeColumn / 2,
+                           latticeRow / 2,
+                           level,
+                           terrain);
             }
 
-            [[nodiscard]] std::int32_t addSurface(
-                const std::int64_t dualColumn,
-                const std::int64_t dualRow,
+            [[nodiscard]] std::array<bool, 4> bordersOf(
+                const std::int64_t latticeColumn,
+                const std::int64_t latticeRow,
                 const std::int32_t level,
-                const TerrainClass terrain,
-                const std::int32_t west,
-                const std::int32_t north)
+                const TerrainClass terrain) const
             {
-                const auto mask = surfaceMask(
-                    dualColumn, dualRow, level, terrain);
+                return {
+                    !inside(
+                        latticeColumn,
+                        latticeRow - 1,
+                        level,
+                        terrain),
+                    !inside(
+                        latticeColumn + 1,
+                        latticeRow,
+                        level,
+                        terrain),
+                    !inside(
+                        latticeColumn,
+                        latticeRow + 1,
+                        level,
+                        terrain),
+                    !inside(
+                        latticeColumn - 1,
+                        latticeRow,
+                        level,
+                        terrain)};
+            }
 
-                if (mask == 0)
+            [[nodiscard]] geometry::Point latticeScreen(
+                const std::int64_t latticeColumn,
+                const std::int64_t latticeRow,
+                const std::int32_t level) const
+            {
+                return {
+                    .x = static_cast<std::int32_t>(latticeColumn)
+                         * kHalfTile,
+                    .y = static_cast<std::int32_t>(latticeRow)
+                             * kHalfTile
+                         - level * kLevelRise};
+            }
+
+            void addSurfaces(const std::int32_t level)
+            {
+                for (const auto terrain : kDrawOrder)
                 {
-                    return -1;
+                    assembleTerrain(level, terrain);
+                }
+            }
+
+            void assembleTerrain(
+                const std::int32_t level, const TerrainClass terrain)
+            {
+                const auto &set =
+                    *bindings.byTerrain[enums::index(terrain)];
+                const auto &base = set.layers[0].sprites;
+
+                if (base.empty())
+                {
+                    return;
                 }
 
-                std::int32_t chosen = -1;
-                std::uint8_t variant = 0;
+                const auto columns =
+                    static_cast<std::int64_t>(map.columns()) * 2;
+                const auto rows =
+                    static_cast<std::int64_t>(map.rows()) * 2;
+                const auto &offsets =
+                    atlas[enums::index(terrain)].layerRowOffsets;
 
-                if (mask == kFullMask)
+                std::vector<std::int32_t> chosen(
+                    static_cast<std::size_t>(columns * rows), -1);
+
+                for (std::int64_t latticeRow = 0; latticeRow < rows;
+                     ++latticeRow)
                 {
-                    const auto hash =
-                        positionHash(dualColumn, dualRow);
-                    const auto &sheet =
-                        connectors[enums::index(terrain)];
-
-                    chosen = chooseVariant(sheet, hash, west, north);
-                    variant = static_cast<std::uint8_t>(chosen);
-
-                    if (terrain == TerrainClass::Water
-                        && chosen == 0)
+                    for (std::int64_t latticeColumn = 0;
+                         latticeColumn < columns;
+                         ++latticeColumn)
                     {
-                        variant =
-                            (clock / kWaterPeriod + hash) % 2 == 0
-                                ? 0
-                                : kWaterFrameBVariant;
+                        if (!inside(
+                                latticeColumn,
+                                latticeRow,
+                                level,
+                                terrain))
+                        {
+                            continue;
+                        }
+
+                        const auto at = static_cast<std::size_t>(
+                            latticeRow * columns + latticeColumn);
+                        const auto west =
+                            latticeColumn > 0 ? chosen[at - 1] : -1;
+                        const auto north =
+                            latticeRow > 0
+                                ? chosen
+                                      [at
+                                       - static_cast<std::size_t>(
+                                           columns)]
+                                : -1;
+                        const auto pick = chooseSprite(
+                            base,
+                            bordersOf(
+                                latticeColumn,
+                                latticeRow,
+                                level,
+                                terrain),
+                            positionHash(latticeColumn, latticeRow),
+                            west,
+                            north);
+
+                        chosen[at] = static_cast<std::int32_t>(pick);
+                        plan.push_back(TileDraw{
+                            .terrain = terrain,
+                            .kind = DrawKind::Sprite,
+                            .atlasRow = static_cast<std::uint16_t>(
+                                offsets[0] + pick),
+                            .frame = frameOf(base[pick], clock),
+                            .screen = latticeScreen(
+                                latticeColumn, latticeRow, level)});
                     }
                 }
 
+                for (std::size_t layer = 1; layer < set.layers.size();
+                     ++layer)
+                {
+                    addDecor(level, terrain, layer, chosen);
+                }
+            }
+
+            void addDecor(
+                const std::int32_t level,
+                const TerrainClass terrain,
+                const std::size_t layerAt,
+                const std::vector<std::int32_t> &chosen)
+            {
+                const auto &set =
+                    *bindings.byTerrain[enums::index(terrain)];
+                const auto &layer = set.layers[layerAt];
+
+                if (layer.sprites.empty())
+                {
+                    return;
+                }
+
+                const auto columns =
+                    static_cast<std::int64_t>(map.columns()) * 2;
+                const auto rows =
+                    static_cast<std::int64_t>(map.rows()) * 2;
+                const auto &offsets =
+                    atlas[enums::index(terrain)].layerRowOffsets;
+
+                std::vector<std::int32_t> decor(chosen.size(), -1);
+
+                for (std::int64_t latticeRow = 0; latticeRow < rows;
+                     ++latticeRow)
+                {
+                    for (std::int64_t latticeColumn = 0;
+                         latticeColumn < columns;
+                         ++latticeColumn)
+                    {
+                        const auto at = static_cast<std::size_t>(
+                            latticeRow * columns + latticeColumn);
+
+                        if (chosen[at] < 0)
+                        {
+                            continue;
+                        }
+
+                        placeDecor(
+                            set,
+                            layer,
+                            layerAt,
+                            offsets,
+                            chosen,
+                            decor,
+                            at,
+                            latticeColumn,
+                            latticeRow,
+                            columns,
+                            level,
+                            terrain);
+                    }
+                }
+            }
+
+            void placeDecor(
+                const tileset::Tileset &set,
+                const tileset::Layer &layer,
+                const std::size_t layerAt,
+                const std::vector<std::uint32_t> &offsets,
+                const std::vector<std::int32_t> &chosen,
+                std::vector<std::int32_t> &decor,
+                const std::size_t at,
+                const std::int64_t latticeColumn,
+                const std::int64_t latticeRow,
+                const std::int64_t columns,
+                const std::int32_t level,
+                const TerrainClass terrain)
+            {
+                const auto hash = std::rotl(
+                    positionHash(latticeColumn, latticeRow),
+                    static_cast<int>((layerAt * 13) % 64));
+                const auto west =
+                    latticeColumn > 0 ? decor[at - 1] : -1;
+                const auto north =
+                    latticeRow > 0
+                        ? decor
+                              [at
+                               - static_cast<std::size_t>(columns)]
+                        : -1;
+
+                const auto forced =
+                    (west >= 0
+                     && layer.sprites[static_cast<std::size_t>(west)]
+                                .sockets[kEast]
+                            != tileset::kOpenSocket)
+                    || (north >= 0
+                        && layer
+                                   .sprites[static_cast<std::size_t>(
+                                       north)]
+                                   .sockets[kSouth]
+                               != tileset::kOpenSocket);
+
+                if (!forced && (hash >> 32) % 256 >= layer.density)
+                {
+                    return;
+                }
+
+                const auto baseId =
+                    set.layers[0]
+                        .sprites[static_cast<std::size_t>(chosen[at])]
+                        .id;
+                const auto eastHasBase =
+                    latticeColumn + 1 < columns && chosen[at + 1] >= 0;
+                const auto southHasBase =
+                    at + static_cast<std::size_t>(columns)
+                        < chosen.size()
+                    && chosen[at + static_cast<std::size_t>(columns)]
+                           >= 0;
+
+                std::vector<std::size_t> candidates{};
+
+                for (std::size_t sprite = 0;
+                     sprite < layer.sprites.size();
+                     ++sprite)
+                {
+                    if (decorFits(
+                            layer.sprites,
+                            sprite,
+                            baseId,
+                            west,
+                            north,
+                            eastHasBase,
+                            southHasBase))
+                    {
+                        candidates.push_back(sprite);
+                    }
+                }
+
+                if (candidates.empty())
+                {
+                    return;
+                }
+
+                const auto pick =
+                    weightedPick(layer.sprites, candidates, hash);
+
+                decor[at] = static_cast<std::int32_t>(pick);
                 plan.push_back(TileDraw{
                     .terrain = terrain,
-                    .piece = TilePiece::Surface,
-                    .mask = mask,
-                    .variant = variant,
-                    .screen = {
-                        .x = static_cast<std::int32_t>(dualColumn)
-                             * kUnit
-                             - kHalfTile,
-                        .y = static_cast<std::int32_t>(dualRow) * kUnit
-                             - kHalfTile
-                             - level * kLevelRise}});
+                    .kind = DrawKind::Sprite,
+                    .atlasRow = static_cast<std::uint16_t>(
+                        offsets[layerAt] + pick),
+                    .frame = frameOf(layer.sprites[pick], clock),
+                    .screen = latticeScreen(
+                        latticeColumn, latticeRow, level)});
+            }
 
-                return chosen;
+            [[nodiscard]] static bool decorFits(
+                const std::vector<Sprite> &sprites,
+                const std::size_t candidate,
+                const tileset::SpriteId baseId,
+                const std::int32_t west,
+                const std::int32_t north,
+                const bool eastHasBase,
+                const bool southHasBase)
+            {
+                const auto &sprite = sprites[candidate];
+
+                if (std::ranges::find(sprite.on, baseId)
+                    == sprite.on.end())
+                {
+                    return false;
+                }
+
+                const auto wanted =
+                    west >= 0
+                        ? sprites[static_cast<std::size_t>(west)]
+                              .sockets[kEast]
+                        : tileset::kOpenSocket;
+
+                if (sprite.sockets[kWest] != wanted)
+                {
+                    return false;
+                }
+
+                const auto above =
+                    north >= 0
+                        ? sprites[static_cast<std::size_t>(north)]
+                              .sockets[kSouth]
+                        : tileset::kOpenSocket;
+
+                if (sprite.sockets[kNorth] != above)
+                {
+                    return false;
+                }
+
+                if (!eastHasBase
+                    && sprite.sockets[kEast] != tileset::kOpenSocket)
+                {
+                    return false;
+                }
+
+                return southHasBase
+                       || sprite.sockets[kSouth]
+                              == tileset::kOpenSocket;
             }
 
             void addFaces(const std::int32_t level)
@@ -641,53 +700,59 @@ namespace antwika::autotile
                 }
             }
 
+            [[nodiscard]] bool southHasSlab(
+                const GridCell cell, const std::int32_t level) const
+            {
+                const auto south = GridCell{
+                    .column = cell.column, .row = cell.row + 1};
+
+                if (south.row >= map.rows())
+                {
+                    return level <= 0;
+                }
+
+                return map.at(south).slabAt(level) != nullptr;
+            }
+
             void addFace(const GridCell cell, const std::int32_t level)
             {
-                const auto height = map.at(cell).height;
+                const auto &held = map.at(cell);
 
-                if (height != level)
+                if (held.slabAt(level) == nullptr)
                 {
                     return;
                 }
 
-                const auto south = GridCell{
-                    .column = cell.column, .row = cell.row + 1};
-
-                const auto below = south.row < map.rows()
-                                       ? map.at(south).height
-                                       : 0;
-
-                auto top = height;
-
-                if (hidden[indexOf(map, cell)])
+                if (hidden[indexOf(map, cell)]
+                    && level > playerHeight)
                 {
-                    top = std::min(top, playerHeight);
+                    return;
                 }
 
-                for (auto band = below + 1; band <= top; ++band)
+                if (southHasSlab(cell, level))
                 {
-                    const auto piece = band == height
-                                           ? TilePiece::WallRim
-                                           : TilePiece::WallBand;
-
-                    const auto y =
-                        static_cast<std::int32_t>(south.row) * kUnit
-                        - band * kLevelRise;
-
-                    const auto x =
-                        static_cast<std::int32_t>(cell.column) * kUnit;
-
-                    plan.push_back(TileDraw{
-                        .terrain = TerrainClass::Cliff,
-                        .piece = piece,
-                        .mask = 0,
-                        .screen = {.x = x, .y = y}});
-                    plan.push_back(TileDraw{
-                        .terrain = TerrainClass::Cliff,
-                        .piece = piece,
-                        .mask = 0,
-                        .screen = {.x = x + kHalfTile, .y = y}});
+                    return;
                 }
+
+                const auto kind = held.slabAt(level + 1) == nullptr
+                                      ? DrawKind::WallRim
+                                      : DrawKind::WallBand;
+
+                const auto y =
+                    static_cast<std::int32_t>(cell.row + 1) * kUnit
+                    - level * kLevelRise;
+
+                const auto x =
+                    static_cast<std::int32_t>(cell.column) * kUnit;
+
+                plan.push_back(TileDraw{
+                    .terrain = TerrainClass::Cliff,
+                    .kind = kind,
+                    .screen = {.x = x, .y = y}});
+                plan.push_back(TileDraw{
+                    .terrain = TerrainClass::Cliff,
+                    .kind = kind,
+                    .screen = {.x = x + kHalfTile, .y = y}});
             }
 
             void addBridges(const std::int32_t level)
@@ -708,10 +773,10 @@ namespace antwika::autotile
             void addBridge(
                 const GridCell cell, const std::int32_t level)
             {
-                const auto &held = map.at(cell);
+                const auto *slab = map.at(cell).slabAt(level);
 
-                if (held.height != level
-                    || held.overlay != Overlay::Bridge)
+                if (slab == nullptr
+                    || slab->overlay != Overlay::Bridge)
                 {
                     return;
                 }
@@ -722,7 +787,7 @@ namespace antwika::autotile
                 }
 
                 pushQuad(
-                    TilePiece::BridgeDeck, held.terrain, cell, level);
+                    DrawKind::BridgeDeck, slab->terrain, cell, level);
             }
 
             void addShades()
@@ -741,33 +806,37 @@ namespace antwika::autotile
 
             void addShade(const GridCell cell)
             {
-                const auto &held = map.at(cell);
-
-                if (held.light >= kShadeBelow)
+                for (const auto &slab : map.at(cell).slabs())
                 {
-                    return;
-                }
+                    if (slab.light >= kShadeBelow)
+                    {
+                        continue;
+                    }
 
-                if (cutAway(cell, held.height))
-                {
-                    return;
-                }
+                    if (cutAway(cell, slab.level))
+                    {
+                        continue;
+                    }
 
-                pushQuad(
-                    TilePiece::Shade, held.terrain, cell, held.height);
-
-                if (held.light < kDenseShadeBelow)
-                {
                     pushQuad(
-                        TilePiece::Shade,
-                        held.terrain,
+                        DrawKind::Shade,
+                        slab.terrain,
                         cell,
-                        held.height);
+                        slab.level);
+
+                    if (slab.light < kDenseShadeBelow)
+                    {
+                        pushQuad(
+                            DrawKind::Shade,
+                            slab.terrain,
+                            cell,
+                            slab.level);
+                    }
                 }
             }
 
             void pushQuad(
-                const TilePiece piece,
+                const DrawKind kind,
                 const TerrainClass terrain,
                 const GridCell cell,
                 const std::int32_t level)
@@ -783,8 +852,7 @@ namespace antwika::autotile
                 {
                     plan.push_back(TileDraw{
                         .terrain = terrain,
-                        .piece = piece,
-                        .mask = 0,
+                        .kind = kind,
                         .screen = {
                             .x = left + part % 2 * kHalfTile,
                             .y = top + part / 2 * kHalfTile}});
@@ -794,8 +862,12 @@ namespace antwika::autotile
             const TileMap &map;
             std::int32_t playerHeight;
             std::uint32_t clock;
-            const TerrainConnectors &connectors;
+            const TilesetBindings &bindings;
             std::vector<bool> hidden;
+            std::array<
+                tileset::AtlasIndex,
+                enums::kCount<TerrainClass>>
+                atlas{};
             DrawPlan plan{};
         };
     }
@@ -804,24 +876,11 @@ namespace antwika::autotile
         const TileMap &map,
         const GridCell player,
         const std::int32_t playerHeight,
-        const std::uint32_t clock)
-    {
-        const TerrainConnectors allConnected{};
-
-        return PlanBuilder(
-                   map, player, playerHeight, clock, allConnected)
-            .build();
-    }
-
-    DrawPlan buildDrawPlan(
-        const TileMap &map,
-        const GridCell player,
-        const std::int32_t playerHeight,
         const std::uint32_t clock,
-        const TerrainConnectors &connectors)
+        const TilesetBindings &bindings)
     {
         return PlanBuilder(
-                   map, player, playerHeight, clock, connectors)
+                   map, player, playerHeight, clock, bindings)
             .build();
     }
 

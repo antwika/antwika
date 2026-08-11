@@ -13,15 +13,20 @@ antwika_add_app(
         src/Generate.cpp
         src/GenerationRules.cpp
         src/Hints.cpp
+        src/Hotkeys.cpp
         src/KeyboardSystem.cpp
         src/MapRenderSystem.cpp
         src/MirrorSystem.cpp
         src/OverlayDraw.cpp
         src/PaletteMath.cpp
         src/PanelScene.cpp
-        src/PlaceholderSheets.cpp
+        src/PlaceholderTilesets.cpp
         src/PointerSystem.cpp
+        src/Selection.cpp
         src/SheetWorkspace.cpp
+        src/TilesetPreview.cpp
+        src/TilesetWorkspace.cpp
+        src/ToolIcons.cpp
         src/UiKeyMapping.cpp
         src/UiSystem.cpp
         src/ValidationSystem.cpp
@@ -45,7 +50,10 @@ antwika_add_app(
         antwika::mapcheck
         antwika::replay
         antwika::tilemap
+        antwika::tileset
         antwika::time
         antwika::ui
         antwika::wfc
+    ASSETS
+        assets/config.json
 )

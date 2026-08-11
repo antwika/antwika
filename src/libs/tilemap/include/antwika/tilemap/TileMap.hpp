@@ -6,7 +6,7 @@
 
 #include <antwika/geometry/Grid.hpp>
 
-#include "antwika/tilemap/Cell.hpp"
+#include "antwika/tilemap/Column.hpp"
 #include "antwika/tilemap/Entities.hpp"
 #include "antwika/tilemap/MapHeader.hpp"
 
@@ -17,11 +17,14 @@ namespace antwika::tilemap
     {
     public:
         /**
-         * @brief Creates a map of default cells.
+         * @brief Creates a map of single-slab columns.
          *
          * @param columns Grid width in unit cells; must be at least one.
          * @param rows Grid height in unit cells; must be at least one.
          * @throws TileMapError If columns or rows is zero.
+         *
+         * Ensures: every column holds a single default floor slab at
+         *          level zero.
          */
         TileMap(
             MapHeader header,
@@ -33,18 +36,18 @@ namespace antwika::tilemap
         [[nodiscard]] std::uint32_t rows() const noexcept;
 
         /**
-         * @brief Reaches the cell at the given column and row.
+         * @brief Reaches the column at the given cell.
          *
          * @throws TileMapError If the cell lies outside the grid.
          */
-        [[nodiscard]] Cell &at(geometry::GridCell cell);
+        [[nodiscard]] Column &at(geometry::GridCell cell);
 
         /**
-         * @brief Reads the cell at the given column and row.
+         * @brief Reads the column at the given cell.
          *
          * @throws TileMapError If the cell lies outside the grid.
          */
-        [[nodiscard]] const Cell &at(geometry::GridCell cell) const;
+        [[nodiscard]] const Column &at(geometry::GridCell cell) const;
 
         [[nodiscard]] const std::vector<Entity> &entities() const noexcept;
 
@@ -56,7 +59,7 @@ namespace antwika::tilemap
         MapHeader header_;
         std::uint32_t columns_;
         std::uint32_t rows_;
-        std::vector<Cell> cells_{};
+        std::vector<Column> grid_{};
         std::vector<Entity> entities_{};
     };
 

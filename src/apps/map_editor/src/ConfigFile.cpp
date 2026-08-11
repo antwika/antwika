@@ -18,6 +18,9 @@ namespace antwika::map_editor
         {
             schema["properties"]["uiScale"] = wholeShape(2, 4);
             schema["properties"]["fullscreen"]["type"] = "boolean";
+            schema["properties"]["keys"]["type"] = "object";
+            schema["properties"]["keys"]["additionalProperties"]
+                  ["type"] = "string";
         }
 
         void encodeMembers(
@@ -25,6 +28,7 @@ namespace antwika::map_editor
         {
             out["uiScale"] = config.uiScale;
             out["fullscreen"] = config.fullscreen;
+            out["keys"] = config.keys;
         }
 
         MapEditorConfig decodeMembers(const nlohmann::json &document)
@@ -34,8 +38,9 @@ namespace antwika::map_editor
                 memberOr(document, "uiScale", config.uiScale);
             config.fullscreen =
                 memberOr(document, "fullscreen", config.fullscreen);
+            config.keys = memberOr(document, "keys", config.keys);
             return config;
-        }
+        } // GCOVR_EXCL_LINE
     }
 
     ANTWIKA_CONFIG_FILE(

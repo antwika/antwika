@@ -12,6 +12,7 @@ add_executable(antwika_gfx_tests
     ColorTest.cpp
     GlyphBlitTest.cpp
     GlyphCellsTest.cpp
+    GlyphMetricsTest.cpp
     GlyphSheetTest.cpp
     GlyphSheetTexturesTest.cpp
     IWindowTest.cpp

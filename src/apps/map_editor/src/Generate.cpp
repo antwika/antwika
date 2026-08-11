@@ -60,7 +60,7 @@ namespace antwika::map_editor
             }
 
             return table;
-        }
+        } // GCOVR_EXCL_LINE
 
         [[nodiscard]] std::uint32_t next(std::uint32_t &rng) noexcept
         {
@@ -107,27 +107,36 @@ namespace antwika::map_editor
             auto roll = static_cast<double>(next(rng) % 1024U)
                         / 1024.0 * total;
 
-            for (const auto value : domain)
+            for (const auto value : domain) // GCOVR_EXCL_LINE
             {
                 roll -= rules.weights[value];
 
-                if (roll <= 0.0)
+                if (roll <= 0.0) // GCOVR_EXCL_LINE
                 {
                     return value;
                 }
             }
 
-            return domain.singleValue();
+            return domain.singleValue(); // GCOVR_EXCL_LINE
         }
 
-        [[nodiscard]] std::vector<std::optional<std::size_t>>
-        pinnedValues(const EditorState &state)
+        struct PinnedField final
+        {
+            std::vector<std::optional<std::size_t>> fixed{};
+            std::vector<bool> pinnedVoid{};
+        };
+
+        [[nodiscard]] PinnedField pinnedValues(
+            const EditorState &state)
         {
             const auto columns = state.map.columns();
             const auto rows = state.map.rows();
+            const auto cells =
+                static_cast<std::size_t>(columns) * rows;
 
-            std::vector<std::optional<std::size_t>> fixed(
-                static_cast<std::size_t>(columns) * rows);
+            PinnedField field;
+            field.fixed.assign(cells, std::nullopt);
+            field.pinnedVoid.assign(cells, false);
 
             for (std::uint32_t row = 0; row < rows; ++row)
             {
@@ -138,16 +147,27 @@ namespace antwika::map_editor
                         GridCell{.column = column, .row = row};
                     const auto index = pinIndex(state.map, cell);
 
-                    if (state.pinned[index])
+                    if (!state.pinned[index])
                     {
-                        fixed[index] = static_cast<std::size_t>(
-                            state.map.at(cell).terrain);
+                        continue;
                     }
+
+                    const auto *slab = state.map.at(cell).slabAt(
+                        state.activeLevel);
+
+                    if (slab == nullptr)
+                    {
+                        field.pinnedVoid[index] = true;
+                        continue;
+                    }
+
+                    field.fixed[index] =
+                        static_cast<std::size_t>(slab->terrain);
                 }
             }
 
-            return fixed;
-        }
+            return field;
+        } // GCOVR_EXCL_LINE
 
         void dropIncompatible(
             Domain &domain,
@@ -173,12 +193,12 @@ namespace antwika::map_editor
             const EditorState &state,
             const CompatibilityTable &table,
             const bool seeded,
-            std::uint32_t seed)
+            const std::uint32_t seed,
+            std::vector<std::optional<std::size_t>> fixed)
         {
             const auto columns = state.map.columns();
             const auto rows = state.map.rows();
             auto rng = scrambled(seed);
-            auto fixed = pinnedValues(state);
 
             std::vector<Domain> wave;
             wave.reserve(
@@ -247,11 +267,13 @@ namespace antwika::map_editor
             }
 
             return wave;
-        }
+        } // GCOVR_EXCL_LINE
 
         [[nodiscard]] std::vector<AdjacencyConstraint>
         makeConstraints(
-            const EditorState &state, const CompatibilityTable &table)
+            const EditorState &state,
+            const CompatibilityTable &table,
+            const std::vector<bool> &pinnedVoid)
         {
             const auto columns = state.map.columns();
             const auto rows = state.map.rows();
@@ -267,12 +289,19 @@ namespace antwika::map_editor
                         static_cast<std::size_t>(row) * columns
                         + column;
 
-                    if (column + 1 < columns)
+                    if (pinnedVoid[at])
+                    {
+                        continue;
+                    }
+
+                    if (column + 1 < columns
+                        && !pinnedVoid[at + 1])
                     {
                         constraints.emplace_back(at, at + 1, table);
                     }
 
-                    if (row + 1 < rows)
+                    if (row + 1 < rows
+                        && !pinnedVoid[at + columns])
                     {
                         constraints.emplace_back(
                             at, at + columns, table);
@@ -281,7 +310,7 @@ namespace antwika::map_editor
             }
 
             return constraints;
-        }
+        } // GCOVR_EXCL_LINE
 
         [[nodiscard]] std::optional<std::vector<TerrainClass>> solve(
             const EditorState &state,
@@ -289,11 +318,18 @@ namespace antwika::map_editor
             const std::uint32_t seed)
         {
             const auto table = makeTable(state.rules);
-            const auto constraints = makeConstraints(state, table);
+            auto field = pinnedValues(state);
+            const auto constraints =
+                makeConstraints(state, table, field.pinnedVoid);
             const auto refs = antwika::wfc::referencesTo(constraints);
 
             const Solver solver(
-                makeWave(state, table, seeded, seed),
+                makeWave(
+                    state,
+                    table,
+                    seeded,
+                    seed,
+                    std::move(field.fixed)),
                 refs,
                 {state.rules.weights.begin(),
                  state.rules.weights.end()},

@@ -1,0 +1,104 @@
+{
+  "schema": 1,
+  "name": "default-water",
+  "terrain": "water",
+  "nextSpriteId": 9,
+  "layers": [
+    {
+      "name": "base",
+      "sprites": [
+        {
+          "id": 0,
+          "frames": 3,
+          "sockets": {
+            "n": "water",
+            "e": "water",
+            "s": "water",
+            "w": "water"
+          },
+          "on": []
+        },
+        {
+          "id": 1,
+          "sockets": {
+            "n": "edge",
+            "e": "water",
+            "s": "water",
+            "w": "water"
+          },
+          "on": []
+        },
+        {
+          "id": 2,
+          "sockets": {
+            "n": "water",
+            "e": "edge",
+            "s": "water",
+            "w": "water"
+          },
+          "on": []
+        },
+        {
+          "id": 3,
+          "sockets": {
+            "n": "water",
+            "e": "water",
+            "s": "edge",
+            "w": "water"
+          },
+          "on": []
+        },
+        {
+          "id": 4,
+          "sockets": {
+            "n": "water",
+            "e": "water",
+            "s": "water",
+            "w": "edge"
+          },
+          "on": []
+        },
+        {
+          "id": 5,
+          "sockets": {
+            "n": "edge",
+            "e": "water",
+            "s": "water",
+            "w": "edge"
+          },
+          "on": []
+        },
+        {
+          "id": 6,
+          "sockets": {
+            "n": "edge",
+            "e": "edge",
+            "s": "water",
+            "w": "water"
+          },
+          "on": []
+        },
+        {
+          "id": 7,
+          "sockets": {
+            "n": "water",
+            "e": "water",
+            "s": "edge",
+            "w": "edge"
+          },
+          "on": []
+        },
+        {
+          "id": 8,
+          "sockets": {
+            "n": "water",
+            "e": "edge",
+            "s": "edge",
+            "w": "water"
+          },
+          "on": []
+        }
+      ]
+    }
+  ]
+}

@@ -37,6 +37,17 @@ Unit tests for the editor itself remain deferred by explicit decision; see docs/
 | 25 | Two-color drawing with palette baking | shipped |
 | 26 | Ctrl+click edge toggles and outline markers | fixed |
 | 27 | Quadrant libraries with 8px edge matching | shipped |
+| 28 | Socket-based tilesets with layers, decor, and animation | shipped |
+| 29 | Blank New, four frames, reverse view cycling, rebindable hotkeys | shipped |
+| 30 | Generated-combination preview panel in the tileset workspace | shipped |
+| 31 | Per-level slab columns: overhangs, tunnels, schema v4 | shipped |
+| 32 | Artist-controlled per-sprite frequency weights | shipped |
+| 33 | Sprite picker with layer-cycling picks in the map view | shipped |
+| 34 | Playtest map flag, brush-independent erase, erase hint | fixed |
+| 35 | Demo renders the map's bound tilesets with decor and animation | shipped |
+| 36 | One-level character clearance | shipped |
+| 37 | Icon toolbars with hint-line tool names | shipped |
+| 38 | Select tool: marquee, move, cut, copy, paste in all views | shipped |
 
 ## 1: menu bar (shipped)
 
@@ -349,6 +360,104 @@ The sidecar grew a per-terrain "quadrants" object mapping slot ids to edge-lette
 The shipped wall sheet carries a demonstration library (cross, straights, elbows, tee, west cap, plain block) drawn identically by both C++ generators and the script, but the shipped sidecar declares nothing, so shipped behavior is unchanged; the activating configuration is given as a documented example in TILE_SHEETS.md.
 The load fix along the way: loadConnectorsFile no longer early-returns when the sidecar has quadrants but no 16x16 connectors section — caught because the first slab capture rendered the variant path and the pixel checks refused it.
 Verified under Xvfb: with no sidecar config the render is pixel-identical to a stash-built pre-change reference; with the test library active, a Python replica of the lattice chooser predicted all 240 interior quadrants, pixel checks at every shared 8px edge (including 120 boundaries interior to display tiles) showed connector-meets-connector and blank-meets-blank with zero mismatches and 385 connector crossings — visibly denser than the 16px network; two captures were identical; plain click in a marker zone painted (255-white byte-asserted in the PNG) while ctrl+click toggled the sidecar to "NES" without painting (alpha stayed zero); a floor strip rendered identically with and without the wall library present, proving variant terrains untouched; and a restart round-tripped both the painted quadrant art and the connector state.
+
+## 28: socket-based tilesets with layers, decor, and animation
+
+The fixed 96x80 sheet system — corner-mask grid, variant column, quadrant slots, and letter-coded connectors — is replaced wholesale by artist-authored tilesets: named, growable libraries of 8x8 sprites, each bound to one terrain, stored as `assets/tilesets/<name>/` directories of a JSON sidecar plus one class-coded PNG per layer.
+Adjacency is decided by named edge sockets (equal names may touch) with two reserved names: `edge` marks a side facing out of the terrain region, so borders emerge from the socket system on a 1:1 un-offset lattice where each painted cell owns its own 2x2 sprites, and `open` marks a decor edge facing emptiness.
+Tilesets carry layers — layer 0 tiles the region, higher layers are decor scattered deterministically by a per-layer density gate wherever the decor sprite's base-sprite allowlist and decor-decor sockets allow — and each sprite may carry up to four animation frames cycled on the global clock, generalizing the old water special case to every sprite.
+Maps bind a tileset per terrain in the header (schema v3; older maps load unbound and fall back to `default-<terrain>`, then to a compiled placeholder), applied as one undoable edit through Map > Tilesets....
+The work landed as a new tested `tileset` lib (model, byte-stable JSON codec, layer-PNG store, atlas bake; 91 tests), map schema v3 in `tilemap` (53 tests), a rewritten autotile assembler keeping the per-level, face, bridge, shade, and cutaway pipeline, a rebuilt Tiles-view workspace (zoomed sprite editor with colored socket bands, paged library grid with socket ticks, frame strip with anim preview, Draw/Sock/Decr tools, per-tileset snapshot undo), New Tileset and Bindings dialogs, a regenerated placeholder generator with byte-exact `--check` CI, and TILESETS.md replacing TILE_SHEETS.md.
+Verified under Xvfb with synthetic input: map and demo render the generated default tilesets with socket-matched borders; pixel strokes, socket add/apply/clear, frame-2 creation, sprite and tileset creation all undo correctly; a new wall tileset saved, survived an editor restart, rebound onto the demo map through the bindings dialog (visibly restyling every wall region), and reverted with a single undo; decor motifs scatter on allowlisted floor sprites; water animates at runtime across timed captures; the demo app renders and moves the player; and the repo tree stayed pristine throughout.
+Known quirks parked for hardening: an ink-on-ink stroke still marks the tileset dirty and pushes an undo step, and quitting discards unsaved tileset edits without a prompt.
+
+## 29: blank New, four frames, reverse view cycling, rebindable hotkeys
+
+Four artist-workflow refinements shipped as one batch.
+File > New (and the no-`--map` startup) now yields a truly blank slate: a 20x11 all-floor, height-zero, fully pinned field with no wall border, no entities, default palette, empty tileset bindings, cleared undo history, and a reset camera — so Generate does nothing until the artist marks free cells with brush 7.
+The animation cap rose from three frames to four: `tileset::kMaxFrames` drives everything, so the atlas and layer PNGs widened from 24 to 32 pixels, the generator regenerated the committed tilesets, the frame row gained a fourth button with keys 1-4 selecting frames in the Tiles view, the Clr cascade and first-stroke-copies semantics extend to frame 4, and the frame-strip previews shrank to 24x24 to keep the anim box left of the library grid.
+Shift+Tab cycles the views in reverse; key events already carried the shift modifier, so no backend change was needed.
+Hotkeys are now rebindable: twenty letter/function actions (heights, bridge, light, undo/redo, save/reload, generate, validator, entity fast paths, stamps, draw-color toggle, playtest, fullscreen) resolve through a bindings table with an Edit > Keys... modal — click a row, press the new key, conflicts and reserved keys (digits, Tab, Escape, grave, arrows) are refused with a message, and [Defaults] restores the shipped set — persisted as a "keys" object in the config file beside uiScale and fullscreen.
+View-dependent behavior stays attached to the action, so a rebound save key still saves the map or the tileset per view, and F5/F10 no longer fire while a text field is focused since they resolve through the same table.
+Verified under Xvfb with synthetic input: New produced the uniform floor field with zero free cells and a reset camera; key 4 plus one stroke created frames 2-4 as copies of frame 1 and a single undo removed them; Shift+Tab stepped Map to Characters; raise-height rebound from E to Y, took effect immediately, was refused when a second action tried to claim Y, and survived an editor restart via config.json; the regenerated 32-wide assets passed `--check` and rendered the demo map with borders, decor, and water animation intact; full suite 6812 tests green and all four style checkers clean.
+
+## 30: generated-combination preview panel in the tileset workspace
+
+The Tiles view gained an always-visible preview panel: an 11x5 lattice of 8x8 sprites at game scale below the frame strip, showing the selected sprite pinned at an outlined center cell inside a valid generated combination of its tileset.
+The region shape is carved from the selected sprite's `edge` sides (everything beyond an `edge` side of the center is outside), the base fills in rings outward from the pinned center under the assembler's shape-fit and socket-match rules with the same progressive relaxation ladder, and every decor layer then scatters on top per allowlists, decor sockets, and density — so the panel composites all layers and animated sprites cycle their frames on the global clock.
+Selecting a decor sprite pins it at center over a seeded pick from its sits-on allowlist; an empty allowlist shows the base-only neighborhood with a "no base sprites allowed yet" message.
+A custom-drawn regen button rerolls the seeded arrangement and an auto checkbox increments the seed every 90 ticks for hands-free cycling; both are view state, outside undo and outside the config file, and the generated result is cached by tileset revision, selection, and seed following the map plan-cache precedent.
+Generation lives in the app's TilesetPreview.cpp with an xorshift32 stream, deterministic per seed.
+Verified under Xvfb: a grass base sprite previewed with flower and pebble decor on allowlisted bases only; an N-edge wall sprite previewed with the rows above it outside and the border running through the center; a flower pinned over grass_a; a freshly added decor sprite with no allowlist produced the message; a regen click changed 2106 preview pixels; auto-mode captures two seconds apart differed without input and were pixel-identical once unchecked; full suite 6732+80 green and all four style checkers clean.
+
+## 31: per-level slab columns — overhangs, tunnels, schema v4
+
+The one-cell-one-height model is gone: a cell now holds a column of one-level-thick solid slabs (level, terrain, overlay, water, light), so a floor at level 0 can sit under a roof at level 3 — the artist draws tunnels and overhangs per height level.
+The player is two levels tall (kClearance = 2 in the tilemap lib), so a surface is standable only with two empty levels above it, and a walkable tunnel needs its roof at least three levels above its floor.
+Movement, shared by validator and demo, follows the landing rule: the reachable neighbour surface is the topmost slab at or below your level (equal walks, lower is a one-way drop — you land on roofs, never through them), plus a surface exactly one level up via a stair on either end; water currents now bypass only the stair requirement rather than arbitrary rises.
+Rendering keeps every public signature: a slab contributes sprites only when exposed (no slab directly above, preserving pixel parity with migrated maps), faces are per-slab bands where the south column lacks that level (off-map south counts as solid up to level zero), shades and bridges iterate slabs, and the cutaway's rises test plus a new own-column seed opens roofs above the player or the hovered cell.
+Map schema v4 replaces the dense terrain/height/light and sparse bridge/water sections with a sorted per-level "levels" array of row strings (dot = no slab), entities carry a level, and schemas 1-3 load by solid-filling each cell from the map's lowest level up to its height with attributes on the top slab — capped at a 64-level span so pathological legacy files fail cleanly instead of exhausting memory.
+The editor paints on an active level stepped with E and Q (the raise and lower height commands died, hotkey config tokens kept), right-click erases the active level's slab and pins the authored hole, bridges and light act on the active level's slab, stamps copy whole columns, entities place at the active level and draw markers on their own level, Generate fills free cells at the active level while pinned holes drop their adjacency constraints, and hovering cuts away everything above the active level so tunnel interiors stay editable.
+mapcheck was rewritten over (cell, level) surfaces and gained its first test suite — seventeen tests at full branch coverage — with findings carrying an optional level, per-column CellReach for the overlay, and a distinct finding when an entity rests on no standable surface; the tilemap suite grew from fifty-three to ninety tests across the Slab/Column model, the v4 codec, and the migration paths.
+Verified under Xvfb end to end: a wall massif pierced by a ground-level tunnel authored entirely with synthetic input, the roof auto-cutting while hovering the bore, a schema-4 save whose levels array round-trips pixel-identically through a reload, the demo player walking through the tunnel at level 0, climbing a stair chain to stand at level 3 directly over the bore, dropping off the roof edge onto the ground, a one-air-level bore correctly rejected by the validator, and the untouched schema-2 demo map rendering identically through migration; the full suite stands at 6786 plus 80 conformance tests, all green.
+Authoring guidance from verification: wall tops are never walkable in either the demo or the validator, so a roof meant to be crossed must be painted floor, path, or stair.
+
+## 32: artist-controlled per-sprite frequency weights
+
+Every tileset sprite carries a weight from 1 to 16 (default 4), and wherever the assembler must choose among several equally valid sprites — same shape fit and matching sockets, or several eligible decor candidates — the deterministic hash now picks proportionally to weight instead of the old hardcoded rule that gave the lowest declared sprite half the buckets.
+Weights bias only among already-valid candidates and never override socket or shape validity; the favored-sprite concept is gone, and the relaxation ladder's candidate picks and the decor scatter use the same weighted selection, mirrored in the workspace's preview panel.
+The JSON codec writes the weight only when it differs from the default, so existing tileset files and the canonical-bytes contract are unchanged; values outside 1..16 are rejected.
+The Tiles panel gained a weight stepper for the selected sprite under the sprite row, visible in every tool mode, undoable through the tileset snapshot stack and live in the map preview; library-cell hints append the weight when it is not default.
+The placeholder floor tileset demonstrates the feature with pebbles at weight 2, rarer than flowers, and the generator emits and checks the member byte-identically to the C++ writer.
+Verified by a statistical harness assembling a 40x40 lattice: two same-socket interiors at weights 15 and 1 land at a 6.3 percent rare share against the expected 6.25, equal weights land at 48.3 percent, decor ratios match, and two runs are byte-identical; under Xvfb the stepper stepped and clamped, undo reverted, the weight persisted through save and relaunch, and the preview re-rolled on the change; full suite green and all four style checkers clean.
+
+## 33: sprite picker with layer-cycling picks in the map view
+
+A picker (eyedropper) lets the artist click a sprite on the rendered map to select it in the tileset workspace, so finding the sprite behind any pixel takes one click instead of a hunt through the library.
+The tool toggles via a Pick button in the map panel, a rebindable hotkey (default I, config token "picker"), or Escape to leave; ctrl+left-click is a one-shot pick without entering the mode, and painting, erasing, and entity selection are suppressed while the mode is on.
+A pick inverts the camera to the clicked plan point, collects the 8x8 sprite draws covering it from the cached draw plan in bottom-to-top order, and walks that stack on successive clicks at the same lattice spot — base sprite first, then the decor layered on it, wrapping — with the walk resetting when a different spot is clicked.
+The chosen draw's atlas row reverse-maps through the tileset's layer offsets to activate the bound tileset document and set its layer and sprite selection without leaving the map view; the tileset dropdown and the picker now share one activation path.
+Terrains rendering from the compiled placeholder report "placeholder tileset - not editable" in the hover hint, the preview label, and the workspace message instead of selecting anything.
+Feedback is a hover hint naming what the next click would pick and which layer follows, plus a preview box above the hint line showing the picked sprite's art at 2x with its tileset, layer, and index, visible while the mode is on or for three seconds after a pick.
+The keys dialog grew to twenty-one rows by tightening its row pitch with a gap-free inner column.
+Verified under Xvfb: hover hint on a decor-bearing floor cell, first click selecting the base grass sprite (focus ring confirmed in the Tiles view), second click selecting the flower decor with its layer row pressed, third click wrapping to base, ctrl+click with the mode off selecting a wall sprite, I and Escape toggling with painting restored after exit, the new action rebinding to M and back, and the empty-tilesets placeholder path showing the not-editable message; full suite 6871 green and all four style checkers clean.
+
+## 34: playtest map flag, brush-independent erase, erase hint
+
+Three defects surfaced by the user actually authoring maps, fixed as one batch.
+F5 saved the map but launched the demo with no `--map` argument, so playtesting always showed the built-in hardcoded layout; the playtest command now appends the current map path, quoted, and the demo renders the freshly saved edits.
+Right-click erase silently did nothing while the free brush was selected, an arbitrary coupling that read as "erasing is broken"; the brush check is gone, so the eraser works regardless of the selected brush and the erased cell is still pinned.
+The hint line never mentioned the erase gesture, leaving it discoverable only in the guide; hovering a cell whose active level holds a slab now appends "right-click erases".
+Verified under Xvfb: a wall patch painted on a fresh map appeared in the demo after F5 (process list shows the `--map` argument, the demo scene matches the edit instead of the built-in map), a right-click with the free brush selected removed a slab (panel and hint flip to "no slab"), and the hint text renders over slab-bearing cells; both apps rebuild warning-free and all four style checkers stay clean.
+
+## 35: demo renders the map's bound tilesets with decor and animation
+
+The playtest demo had rendered from compiled placeholder tilesets since the socket-tileset cutover, so F5 showed different art than the editor and no decor at all — acceptable while no real assets existed, misleading once the artist started authoring.
+The demo now takes `--tilesets <dir>` (default `assets/tilesets`), loads the tileset library once at startup, loads the shared system sheet when it is the expected 32x8, and resolves each terrain exactly as the editor does: the map header's binding name, then `default-<terrain>`, then the compiled placeholder.
+Bindings re-resolve whenever the header's binding names change (startup and console map reloads), atlases re-bake on palette changes through the existing path, and the draw loop is untouched — decor layers and per-sprite animation flow straight out of the assembler once the real sprites are bound.
+A missing or empty tilesets directory falls back to placeholders without complaint, and nothing was deleted.
+Verified under Xvfb: the demo on the committed demo map shows grass with scattered flower and pebble decor, default-wall art, and rippling water (timed frames differ exactly in a water region); an editor F5 launch renders identical art to the editor's map view with matching decor positions; `--tilesets /nonexistent` renders the old placeholders without crashing; full suite 6791 plus 80 conformance tests green and all four style checkers clean.
+
+## 36: one-level character clearance
+
+The character's logical height dropped from two levels to one: `kClearance` in the tilemap lib is now 1, so a surface is standable unless a slab sits at the level directly above it, and any gap with a single level of air — floor at L, roof at L+2 — is passable.
+The validator and the demo already shared the constant, so the rule cannot diverge; the mapcheck suite reworked its low-roof, tunnel, stair-headroom, and buried-entity scenarios to pin the new boundary (roof at L+1 blocks, L+2 passes), and the guide's overhang, headroom, and stair sentences follow.
+Verified under Xvfb: the demo player walked under an L+2 roof (pos level 0 inside) and was blocked by an L+1 roof; tilemap 90/90, mapcheck 17/17, the asset gate, and all style checkers green.
+
+## 37: icon toolbars with hint-line tool names
+
+Tool controls became square 10x10 icon buttons: the six terrain brushes draw their bound tileset's first base sprite baked with the map palette (falling back through default and placeholder resolution automatically), the free brush a dashed-cell glyph, the picker an eyedropper, and the Tiles tabs a pencil, a socket plug, and a flower; the active tool inverts.
+Hovering any icon shows the full tool name with its key in the hint line, and the brush label above the row keeps a persistent readout.
+The mechanism is app-side icon overdraw on unchanged ui-lib buttons — the shared ui lib's draw commands, coverage gate, and every other app stay untouched, and dispatch, keys 1-7, hover, and the 2x/3x/4x scales all kept working (verified by screenshot at each scale).
+Adding a tool later costs one button call, one glyph, and one hint.
+
+## 38: select tool — marquee, move, cut, copy, paste in all views
+
+A Select tool (marching-ants icon) joined every toolbar, including a first two-icon toolbar for the Characters view.
+With it active, a left drag marquees a region — cell-aligned columns on the map, pixel rects in the tileset sprite editor and the character sheet — and ctrl+C, ctrl+X, and ctrl+V copy, cut, and paste it; dragging from inside a selection moves it as one undo step, cut and vacated regions become empty (map cells stay pinned so Generate leaves the holes), and paste anchors at the hovered cell or pixel and works from any tool.
+The map clipboard carries whole columns level-absolutely like stamps; the tile and character editors share one pixel clipboard whose blank pixels paste transparently, so art moves freely between a character sheet and a sprite.
+Escape clears the selection first and then leaves the tool; undo and redo clear selections; chords respect field focus and never collide with the plain C draw-color toggle; the raylib key events already carried the control modifier.
+Verified under Xvfb across seventeen screenshots: map copy, cut leaving pinned holes, clipboard surviving a cut, a (2,2) move restored by a single undo, the Escape chain, tile-to-tile paste with transparent blanks, character head cut and re-paste, a cross-view character-to-sprite paste, and plain C still toggling the draw color; full suite 6791 plus 80 green and all four style checkers clean.
 
 ## After the queue drains
 

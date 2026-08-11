@@ -52,6 +52,6 @@ namespace antwika::tilemap
         }
 
         return grown;
-    }
+    } // GCOVR_EXCL_LINE
 
 }

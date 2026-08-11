@@ -42,4 +42,11 @@ namespace antwika::map_editor
             [](const auto &kind) { return kind.at; }, entity);
     }
 
+    std::int32_t entityLevelOf(
+        const tilemap::Entity &entity) noexcept
+    {
+        return std::visit(
+            [](const auto &kind) { return kind.level; }, entity);
+    }
+
 }

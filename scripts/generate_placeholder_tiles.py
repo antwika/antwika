@@ -1,44 +1,42 @@
 #!/usr/bin/env python3
 
+import argparse
 import json
 import struct
 import sys
 import zlib
+from collections.abc import Callable
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+Pattern = Callable[[int, int], bool]
 
-TILES_DIR = ROOT / "assets" / "tiles"
+DEFAULT_ROOT = Path(__file__).resolve().parent.parent
 
-SHEET_WIDTH = 96
-SHEET_HEIGHT = 80
+TILESETS_DIR = Path("assets/tilesets")
 
-TILE = 16
+SPRITE = 8
 
-RIGHT = 64
+MAX_FRAMES = 4
 
-SPECIAL_ROW = 64
+ATLAS_WIDTH = MAX_FRAMES * SPRITE
 
-VARIANT_SHIFTS = ((3, 0), (0, 3), (2, 5), (5, 2), (1, 6), (6, 1), (4, 4))
+DEFAULT_DENSITY = 64
 
-INK = (0xD6, 0xE0, 0xD8, 255)
+DEFAULT_WEIGHT = 4
+
+INK = (255, 255, 255, 255)
+PAPER = (128, 128, 128, 255)
 TRANSPARENT = (0, 0, 0, 0)
 
-TERRAINS = ("floor", "wall", "water", "cliff", "path", "stair")
-
-SLOTS = {
-    "surface_variant_1": [64, 0],
-    "surface_variant_2": [80, 0],
-    "surface_variant_3": [64, 16],
-    "surface_variant_4": [80, 16],
-    "surface_variant_5": [64, 32],
-    "surface_variant_6": [80, 32],
-    "surface_variant_7": [64, 48],
-    "water_frame_b": [80, 48],
-    "wall_band": [0, 64],
-    "wall_rim": [8, 64],
-    "bridge_deck": [16, 64],
-    "shade": [24, 64],
+EDGE_SIDES = {
+    "edge_n": ("n",),
+    "edge_e": ("e",),
+    "edge_s": ("s",),
+    "edge_w": ("w",),
+    "corner_nw": ("n", "w"),
+    "corner_ne": ("n", "e"),
+    "corner_sw": ("s", "w"),
+    "corner_se": ("s", "e"),
 }
 
 
@@ -61,124 +59,12 @@ def pattern_ink(terrain: str, x: int, y: int) -> bool:
     return y % 2 == 0
 
 
-def coverage(mask: int, x: int, y: int) -> float:
-    fx = x / 15.0
-    fy = y / 15.0
-
-    value = 0.0
-
-    if mask & 1:
-        value += (1.0 - fx) * (1.0 - fy)
-
-    if mask & 2:
-        value += fx * (1.0 - fy)
-
-    if mask & 4:
-        value += (1.0 - fx) * fy
-
-    if mask & 8:
-        value += fx * fy
-
-    return value
+def dirt_ink(x: int, y: int) -> bool:
+    return (x % 4 == 1 and y % 4 == 3) or (x % 4 == 3 and y % 4 == 1)
 
 
-def on_pipe(at: int) -> bool:
-    return at in (7, 8)
-
-
-def pipe_ink(piece: int, x: int, y: int) -> bool:
-    if piece == 0:
-        return on_pipe(x) or on_pipe(y)
-
-    if piece == 1:
-        return on_pipe(y)
-
-    if piece == 2:
-        return on_pipe(x)
-
-    if piece == 3:
-        return (on_pipe(x) and y <= 8) or (on_pipe(y) and x >= 7)
-
-    if piece == 4:
-        return (on_pipe(x) and y >= 7) or (on_pipe(y) and x <= 8)
-
-    if piece == 5:
-        return on_pipe(y) or (on_pipe(x) and y >= 7)
-
-    if piece == 6:
-        return on_pipe(y) or (
-            5 <= x <= 10
-            and 5 <= y <= 10
-            and (x in (5, 10) or y in (5, 10))
-        )
-
-    return (
-        (3 <= x <= 12 and 3 <= y <= 12 and (x in (3, 12) or y in (3, 12)))
-        or (on_pipe(x) and (y < 3 or y > 12))
-        or (on_pipe(y) and (x < 3 or x > 12))
-        or (y in (6, 9) and 5 <= x <= 10)
-    )
-
-
-def wall_backdrop_ink(x: int, y: int) -> bool:
-    return x % 4 == 2 and y % 4 == 2
-
-
-def wall_interior_ink(piece: int, x: int, y: int) -> bool:
-    return wall_backdrop_ink(x, y) or pipe_ink(piece, x, y)
-
-
-def floor_detail_ink(variant: int, x: int, y: int) -> bool:
-    if variant == 1:
-        return y == 8 and x % 3 != 2
-
-    if variant == 2:
-        return x == 8 and y % 3 != 2
-
-    if variant == 3:
-        return x in (2, 13) and y in (2, 13)
-
-    if variant == 4:
-        return 5 <= x <= 10 and 5 <= y <= 10 and (x + y) % 2 == 0
-
-    if variant == 5:
-        return (x, y) in ((3, 10), (11, 4), (12, 12))
-
-    if variant == 6:
-        return (x == 8 and y <= 8 and y % 3 != 2) or (
-            y == 8 and x <= 8 and x % 3 != 2
-        )
-
-    return 6 <= x <= 9 and 6 <= y <= 9 and (x in (6, 9) or y in (6, 9))
-
-
-def surface_ink(terrain: str, mask: int, x: int, y: int) -> bool:
-    if mask == 15 and terrain == "wall":
-        return wall_interior_ink(0, x, y)
-
-    value = coverage(mask, x, y)
-
-    if value < 0.5:
-        return False
-
-    if value < 0.66:
-        return True
-
-    return pattern_ink(terrain, x % 8, y % 8)
-
-
-def variant_ink(terrain: str, variant: int, x: int, y: int) -> bool:
-    if terrain == "wall":
-        return wall_interior_ink(variant, x, y)
-
-    if terrain == "floor":
-        return pattern_ink(terrain, x % 8, y % 8) or floor_detail_ink(
-            variant, x, y
-        )
-
-    shift_x, shift_y = VARIANT_SHIFTS[variant - 1]
-
-    return pattern_ink(terrain, (x + shift_x) % 8, (y + shift_y) % 8)
+def water_phase_ink(phase: int, x: int, y: int) -> bool:
+    return y % 4 == 2 and (x + phase) % 4 != 3
 
 
 def band_ink(x: int, y: int) -> bool:
@@ -197,108 +83,246 @@ def shade_ink(x: int, y: int) -> bool:
     return (x + y) % 2 == 0
 
 
-def frame_b_ink(terrain: str, x: int, y: int) -> bool:
-    return pattern_ink(terrain, (x + 2) % 8, y % 8)
+FLOWER_MOTIF = frozenset(
+    ((3, 2), (2, 3), (3, 3), (4, 3), (3, 4), (3, 5), (3, 6))
+)
+
+PEBBLE_MOTIF = frozenset(
+    ((4, 5), (5, 5), (3, 6), (4, 6), (5, 6), (6, 6))
+)
 
 
-def on_quadrant_pipe(at: int) -> bool:
-    return at in (3, 4)
+def base_frame(pattern: Pattern) -> list[str]:
+    return [
+        "ink" if pattern(x, y) else "paper"
+        for y in range(SPRITE)
+        for x in range(SPRITE)
+    ]
 
 
-def quadrant_ink(terrain: str, slot: int, x: int, y: int) -> bool:
-    if terrain != "wall":
-        return False
+def bordered_frame(
+    pattern: Pattern, sides: tuple[str, ...]
+) -> list[str]:
+    def rimmed(x: int, y: int) -> bool:
+        if "n" in sides and (y == 0 or (y == 1 and x % 2 == 0)):
+            return True
 
-    if slot == 0:
-        return on_quadrant_pipe(x) or on_quadrant_pipe(y)
+        if "s" in sides and (y == 7 or (y == 6 and x % 2 == 0)):
+            return True
 
-    if slot == 1:
-        return on_quadrant_pipe(y)
+        if "w" in sides and (x == 0 or (x == 1 and y % 2 == 0)):
+            return True
 
-    if slot == 2:
-        return on_quadrant_pipe(x)
+        return "e" in sides and (x == 7 or (x == 6 and y % 2 == 0))
 
-    if slot == 3:
-        return (on_quadrant_pipe(x) and y <= 4) or (
-            on_quadrant_pipe(y) and x >= 3
+    return base_frame(lambda x, y: rimmed(x, y) or pattern(x, y))
+
+
+def decor_frame(motif: frozenset) -> list[str]:
+    return [
+        "ink" if (x, y) in motif else None
+        for y in range(SPRITE)
+        for x in range(SPRITE)
+    ]
+
+
+def sprite(
+    sockets: dict,
+    frames: list,
+    on: tuple = (),
+    weight: int = DEFAULT_WEIGHT,
+) -> dict:
+    return {
+        "sockets": sockets,
+        "frames": frames,
+        "on": list(on),
+        "weight": weight,
+    }
+
+
+def same_socket(name: str) -> dict:
+    return {"n": name, "e": name, "s": name, "w": name}
+
+
+def edge_sockets(interior: str, sides: tuple[str, ...]) -> dict:
+    return {
+        side: "edge" if side in sides else interior
+        for side in ("n", "e", "s", "w")
+    }
+
+
+def border_sprites(interior: str, pattern: Pattern) -> list[dict]:
+    return [
+        sprite(
+            edge_sockets(interior, sides),
+            [bordered_frame(pattern, sides)],
+        )
+        for sides in EDGE_SIDES.values()
+    ]
+
+
+def bordered_tileset(
+    terrain: str, socket: str, pattern: Pattern
+) -> dict:
+    sprites = [sprite(same_socket(socket), [base_frame(pattern)])]
+    sprites += border_sprites(socket, pattern)
+
+    return {
+        "name": f"default-{terrain}",
+        "terrain": terrain,
+        "layers": [{"name": "base", "sprites": sprites}],
+    }
+
+
+def floor_tileset() -> dict:
+    def grass_a(x: int, y: int) -> bool:
+        return pattern_ink("floor", x, y)
+
+    def grass_b(x: int, y: int) -> bool:
+        return pattern_ink("floor", (x + 2) % 8, y)
+
+    base = [
+        sprite(same_socket("grass"), [base_frame(grass_a)]),
+        sprite(same_socket("grass"), [base_frame(grass_b)]),
+        sprite(same_socket("dirt"), [base_frame(dirt_ink)]),
+    ]
+    base += border_sprites("grass", grass_a)
+
+    decor = [
+        sprite(same_socket("open"), [decor_frame(FLOWER_MOTIF)], (0,)),
+        sprite(
+            same_socket("open"),
+            [decor_frame(PEBBLE_MOTIF)],
+            (0, 1),
+            weight=2,
+        ),
+    ]
+
+    return {
+        "name": "default-floor",
+        "terrain": "floor",
+        "layers": [
+            {"name": "base", "sprites": base},
+            {"name": "decor", "density": 48, "sprites": decor},
+        ],
+    }
+
+
+def water_tileset() -> dict:
+    ripple = [
+        base_frame(lambda x, y, p=phase: water_phase_ink(p, x, y))
+        for phase in range(3)
+    ]
+
+    def calm(x: int, y: int) -> bool:
+        return water_phase_ink(0, x, y)
+
+    sprites = [sprite(same_socket("water"), ripple)]
+    sprites += border_sprites("water", calm)
+
+    return {
+        "name": "default-water",
+        "terrain": "water",
+        "layers": [{"name": "base", "sprites": sprites}],
+    }
+
+
+def tilesets() -> list[dict]:
+    def plain(terrain: str) -> dict:
+        return bordered_tileset(
+            terrain,
+            terrain,
+            lambda x, y: pattern_ink(terrain, x, y),
         )
 
-    if slot == 4:
-        return (on_quadrant_pipe(x) and y >= 3) or (
-            on_quadrant_pipe(y) and x <= 4
-        )
-
-    if slot == 5:
-        return on_quadrant_pipe(y) or (
-            on_quadrant_pipe(x) and y >= 3
-        )
-
-    if slot == 6:
-        return (on_quadrant_pipe(y) and x <= 4) or (
-            x == 5 and 2 <= y <= 5
-        )
-
-    if slot == 7:
-        return 3 <= x <= 4 and 3 <= y <= 4
-
-    return False
+    return [
+        floor_tileset(),
+        plain("wall"),
+        water_tileset(),
+        plain("cliff"),
+        plain("path"),
+        plain("stair"),
+    ]
 
 
-def sheet_pixels(terrain: str) -> bytearray:
-    pixels = bytearray(SHEET_WIDTH * SHEET_HEIGHT * 4)
+def tileset_json_text(tileset: dict) -> str:
+    next_id = 0
+    layers = []
 
-    def put(x: int, y: int) -> None:
-        at = (y * SHEET_WIDTH + x) * 4
-        pixels[at : at + 4] = bytes(INK)
+    for index, layer in enumerate(tileset["layers"]):
+        sprites = []
 
-    for mask in range(16):
-        origin_x = (mask % 4) * TILE
-        origin_y = (mask // 4) * TILE
+        for entry in layer["sprites"]:
+            record = {"id": next_id}
+            next_id += 1
 
-        for y in range(TILE):
-            for x in range(TILE):
-                if surface_ink(terrain, mask, x, y):
-                    put(origin_x + x, origin_y + y)
+            if len(entry["frames"]) != 1:
+                record["frames"] = len(entry["frames"])
 
-    for variant in range(1, 8):
-        slot = variant - 1
-        origin_x = RIGHT + slot % 2 * TILE
-        origin_y = slot // 2 * TILE
+            if entry["weight"] != DEFAULT_WEIGHT:
+                record["weight"] = entry["weight"]
 
-        for y in range(TILE):
-            for x in range(TILE):
-                if variant_ink(terrain, variant, x, y):
-                    put(origin_x + x, origin_y + y)
+            record["sockets"] = entry["sockets"]
+            record["on"] = entry["on"]
+            sprites.append(record)
 
-    for y in range(TILE):
-        for x in range(TILE):
-            if frame_b_ink(terrain, x, y):
-                put(RIGHT + TILE + x, 3 * TILE + y)
+        record = {"name": layer["name"]}
+        density = layer.get("density", DEFAULT_DENSITY)
 
-    for slot in range(16):
-        origin_x = 32 + slot * 8 if slot < 8 else (slot - 8) * 8
-        origin_y = SPECIAL_ROW if slot < 8 else SPECIAL_ROW + 8
+        if index >= 1 and density != DEFAULT_DENSITY:
+            record["density"] = density
 
-        for y in range(8):
-            for x in range(8):
-                if quadrant_ink(terrain, slot, x, y):
-                    put(origin_x + x, origin_y + y)
+        record["sprites"] = sprites
+        layers.append(record)
 
-    for y in range(8):
-        for x in range(8):
-            if band_ink(x, y):
-                put(x, SPECIAL_ROW + y)
+    document = {
+        "schema": 1,
+        "name": tileset["name"],
+        "terrain": tileset["terrain"],
+        "nextSpriteId": next_id,
+        "layers": layers,
+    }
 
-            if rim_ink(x, y):
-                put(8 + x, SPECIAL_ROW + y)
+    return json.dumps(document, indent=2) + "\n"
 
-            if bridge_ink(x, y):
-                put(16 + x, SPECIAL_ROW + y)
 
-            if shade_ink(x, y):
-                put(24 + x, SPECIAL_ROW + y)
+def layer_png(sprites: list[dict]) -> bytes:
+    height = len(sprites) * SPRITE
+    pixels = bytearray(ATLAS_WIDTH * height * 4)
 
-    return pixels
+    for row, entry in enumerate(sprites):
+        for slot, frame in enumerate(entry["frames"]):
+            for y in range(SPRITE):
+                for x in range(SPRITE):
+                    kind = frame[y * SPRITE + x]
+
+                    if kind is None:
+                        continue
+
+                    color = INK if kind == "ink" else PAPER
+                    at = (
+                        (row * SPRITE + y) * ATLAS_WIDTH
+                        + slot * SPRITE
+                        + x
+                    ) * 4
+                    pixels[at : at + 4] = bytes(color)
+
+    return png_bytes(ATLAS_WIDTH, height, bytes(pixels))
+
+
+def system_png() -> bytes:
+    pieces = (band_ink, rim_ink, bridge_ink, shade_ink)
+    width = len(pieces) * SPRITE
+    pixels = bytearray(width * SPRITE * 4)
+
+    for slot, piece in enumerate(pieces):
+        for y in range(SPRITE):
+            for x in range(SPRITE):
+                if piece(x, y):
+                    at = (y * width + slot * SPRITE + x) * 4
+                    pixels[at : at + 4] = bytes(INK)
+
+    return png_bytes(width, SPRITE, bytes(pixels))
 
 
 def png_chunk(kind: bytes, payload: bytes) -> bytes:
@@ -359,37 +383,73 @@ def rules_text() -> str:
     return json.dumps(document, indent=2) + "\n"
 
 
-def sidecar_text() -> str:
-    sidecar = {
-        "sheet": {"width": SHEET_WIDTH, "height": SHEET_HEIGHT},
-        "masks": "4x4 of 16x16 at 0,0",
-        "slots": SLOTS,
+def render_outputs() -> dict[Path, bytes]:
+    outputs = {
+        TILESETS_DIR / "system.png": system_png(),
+        TILESETS_DIR / "rules.json": rules_text().encode("utf-8"),
     }
 
-    return json.dumps(sidecar, indent=2) + "\n"
+    for tileset in tilesets():
+        directory = TILESETS_DIR / tileset["name"]
+        outputs[directory / "tileset.json"] = tileset_json_text(
+            tileset
+        ).encode("utf-8")
+
+        for index, layer in enumerate(tileset["layers"]):
+            if layer["sprites"]:
+                outputs[directory / f"layer-{index}.png"] = layer_png(
+                    layer["sprites"]
+                )
+
+    return outputs
 
 
 def main() -> int:
-    TILES_DIR.mkdir(parents=True, exist_ok=True)
+    parser = argparse.ArgumentParser(
+        description="Generate the placeholder tilesets."
+    )
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=DEFAULT_ROOT,
+        help="Repository root (defaults to the parent of scripts/)",
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Only report whether the committed tilesets are up to date",
+    )
+    args = parser.parse_args()
 
-    for terrain in TERRAINS:
-        target = TILES_DIR / f"{terrain}.png"
-        target.write_bytes(
-            png_bytes(
-                SHEET_WIDTH,
-                SHEET_HEIGHT,
-                bytes(sheet_pixels(terrain)),
+    outputs = render_outputs()
+
+    if args.check:
+        failed = False
+
+        for relative, wanted in sorted(outputs.items()):
+            target = args.root / relative
+
+            if not target.exists():
+                print(f"Missing: {target}")
+                failed = True
+            elif target.read_bytes() != wanted:
+                print(f"Stale: {target}")
+                failed = True
+
+        if failed:
+            print(
+                "Regenerate with scripts/generate_placeholder_tiles.py."
             )
-        )
+            return 1
+
+        print(f"OK: {len(outputs)} files match the generator")
+        return 0
+
+    for relative, wanted in sorted(outputs.items()):
+        target = args.root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(wanted)
         print(f"OK: wrote {target}")
-
-    sidecar = TILES_DIR / "tiles.json"
-    sidecar.write_text(sidecar_text(), encoding="utf-8")
-    print(f"OK: wrote {sidecar}")
-
-    rules = TILES_DIR / "rules.json"
-    rules.write_text(rules_text(), encoding="utf-8")
-    print(f"OK: wrote {rules}")
 
     return 0
 

@@ -22,42 +22,19 @@ namespace antwika::map_editor
         constexpr std::int32_t kUnitSize = 16;
 
         using antwika::geometry::GridCell;
-        using antwika::tilemap::TerrainClass;
         using antwika::tilemap::TileMap;
-
-        [[nodiscard]] bool onBorder(
-            const std::uint32_t column, const std::uint32_t row)
-        {
-            return row == 0 || row == kFreshRows - 1 || column == 0
-                   || column == kFreshColumns - 1;
-        }
 
         [[nodiscard]] TileMap freshMap()
         {
-            TileMap map(
-                tilemap::MapHeader{
-                    .id = "untitled",
-                    .ink = tilemap::Rgb{
-                        .red = 214, .green = 224, .blue = 216},
-                    .paper = tilemap::Rgb{
-                        .red = 12, .green = 14, .blue = 16}},
-                kFreshColumns,
-                kFreshRows);
+            tilemap::MapHeader header;
+            header.id = "untitled";
+            header.ink =
+                tilemap::Rgb{.red = 214, .green = 224, .blue = 216};
+            header.paper =
+                tilemap::Rgb{.red = 12, .green = 14, .blue = 16};
 
-            for (std::uint32_t row = 0; row < kFreshRows; ++row)
-            {
-                for (std::uint32_t column = 0; column < kFreshColumns;
-                     ++column)
-                {
-                    if (onBorder(column, row))
-                    {
-                        map.at(GridCell{.column = column, .row = row})
-                            .terrain = TerrainClass::Wall;
-                    }
-                }
-            }
-
-            return map;
+            return TileMap(
+                std::move(header), kFreshColumns, kFreshRows);
         }
 
         struct LoadedMap final
@@ -84,7 +61,7 @@ namespace antwika::map_editor
                     .free = std::move(loaded.free),
                     .fromFile = true};
             }
-            catch (const tilemap::TileMapError &error)
+            catch (const tilemap::TileMapError &error) // GCOVR_EXCL_LINE
             {
                 logger.log(log::Level::Error, error.what());
                 return {.map = freshMap()};
@@ -134,15 +111,14 @@ namespace antwika::map_editor
         const auto spawns = countOf<tilemap::SpawnPoint>(map);
         const auto triggers = countOf<tilemap::TriggerVolume>(map);
 
-        auto state = EditorState{
-            .map = std::move(map),
-            .path = std::move(path),
-            .nextTransition = transitions + 1,
-            .nextNpc = npcs + 1,
-            .nextPickup = pickups + 1,
-            .nextBoat = boats + 1,
-            .nextSpawn = spawns + 1,
-            .nextTrigger = triggers + 1};
+        EditorState state{.map = std::move(map)}; // GCOVR_EXCL_LINE
+        state.path = std::move(path);
+        state.nextTransition = transitions + 1;
+        state.nextNpc = npcs + 1;
+        state.nextPickup = pickups + 1;
+        state.nextBoat = boats + 1;
+        state.nextSpawn = spawns + 1;
+        state.nextTrigger = triggers + 1;
 
         if (loaded.fromFile)
         {
@@ -150,7 +126,7 @@ namespace antwika::map_editor
         }
         else
         {
-            pinBorder(state);
+            pinAll(state);
         }
 
         return state;
@@ -208,29 +184,6 @@ namespace antwika::map_editor
             true);
     }
 
-    void pinBorder(EditorState &state)
-    {
-        const auto columns = state.map.columns();
-        const auto rows = state.map.rows();
-
-        state.pinned.assign(
-            static_cast<std::size_t>(columns) * rows, false);
-
-        for (std::uint32_t row = 0; row < rows; ++row)
-        {
-            for (std::uint32_t column = 0; column < columns; ++column)
-            {
-                if (row == 0 || row == rows - 1 || column == 0
-                    || column == columns - 1)
-                {
-                    state.pinned
-                        [static_cast<std::size_t>(row) * columns
-                         + column] = true;
-                }
-            }
-        }
-    }
-
     void reconcilePins(EditorState &state)
     {
         const auto cells =
@@ -253,8 +206,9 @@ namespace antwika::map_editor
     void newMap(EditorState &state)
     {
         state.map = freshMap();
-        pinBorder(state);
+        pinAll(state);
         state.brushFree = false;
+        state.activeLevel = 0;
         state.undoStack.clear();
         state.redoStack.clear();
         state.hovered = GridCell{};
@@ -266,8 +220,11 @@ namespace antwika::map_editor
         state.nextSpawn = 1;
         state.nextTrigger = 1;
         state.stampStart.reset();
+        state.stamp.reset();
+        state.hoveredBeyond.reset();
         state.report.reset();
         state.reportStale = true;
+        ++state.revision;
     }
 
     geometry::GridCell cellUnder(

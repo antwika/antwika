@@ -1,0 +1,103 @@
+{
+  "schema": 1,
+  "name": "default-cliff",
+  "terrain": "cliff",
+  "nextSpriteId": 9,
+  "layers": [
+    {
+      "name": "base",
+      "sprites": [
+        {
+          "id": 0,
+          "sockets": {
+            "n": "cliff",
+            "e": "cliff",
+            "s": "cliff",
+            "w": "cliff"
+          },
+          "on": []
+        },
+        {
+          "id": 1,
+          "sockets": {
+            "n": "edge",
+            "e": "cliff",
+            "s": "cliff",
+            "w": "cliff"
+          },
+          "on": []
+        },
+        {
+          "id": 2,
+          "sockets": {
+            "n": "cliff",
+            "e": "edge",
+            "s": "cliff",
+            "w": "cliff"
+          },
+          "on": []
+        },
+        {
+          "id": 3,
+          "sockets": {
+            "n": "cliff",
+            "e": "cliff",
+            "s": "edge",
+            "w": "cliff"
+          },
+          "on": []
+        },
+        {
+          "id": 4,
+          "sockets": {
+            "n": "cliff",
+            "e": "cliff",
+            "s": "cliff",
+            "w": "edge"
+          },
+          "on": []
+        },
+        {
+          "id": 5,
+          "sockets": {
+            "n": "edge",
+            "e": "cliff",
+            "s": "cliff",
+            "w": "edge"
+          },
+          "on": []
+        },
+        {
+          "id": 6,
+          "sockets": {
+            "n": "edge",
+            "e": "edge",
+            "s": "cliff",
+            "w": "cliff"
+          },
+          "on": []
+        },
+        {
+          "id": 7,
+          "sockets": {
+            "n": "cliff",
+            "e": "cliff",
+            "s": "edge",
+            "w": "edge"
+          },
+          "on": []
+        },
+        {
+          "id": 8,
+          "sockets": {
+            "n": "cliff",
+            "e": "edge",
+            "s": "edge",
+            "w": "cliff"
+          },
+          "on": []
+        }
+      ]
+    }
+  ]
+}

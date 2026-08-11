@@ -64,7 +64,7 @@ namespace antwika::tilemap
             {
                 in >> document;
             }
-            catch (const nlohmann::json::exception &error)
+            catch (const nlohmann::json::exception &error) // GCOVR_EXCL_LINE
             {
                 throw TileMapError(
                     std::string("the map file is not valid json: ")

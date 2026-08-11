@@ -1,5 +1,6 @@
 #include "antwika/mapcheck_cli/CheckMaps.hpp"
 
+#include <cstdint>
 #include <string>
 #include <utility>
 #include <variant>
@@ -19,8 +20,13 @@ namespace antwika::mapcheck_cli
     {
         constexpr geometry::GridCell kFallbackEntry{.column = 1, .row = 1};
 
-        [[nodiscard]] geometry::GridCell entryOf(
-            const tilemap::TileMap &map)
+        struct Entry final
+        {
+            geometry::GridCell at{};
+            std::int32_t level = 0;
+        };
+
+        [[nodiscard]] Entry entryOf(const tilemap::TileMap &map)
         {
             for (const auto &entity : map.entities())
             {
@@ -28,20 +34,34 @@ namespace antwika::mapcheck_cli
                     std::get_if<tilemap::Transition>(&entity);
                 if (transition != nullptr)
                 {
-                    return transition->at;
+                    return Entry{
+                        .at = transition->at,
+                        .level = transition->level};
                 }
             }
-            return kFallbackEntry;
+            if (kFallbackEntry.column >= map.columns()
+                || kFallbackEntry.row >= map.rows())
+            {
+                return Entry{.at = kFallbackEntry};
+            }
+            const auto *top = map.at(kFallbackEntry).top();
+            return Entry{
+                .at = kFallbackEntry,
+                .level = top == nullptr ? 0 : top->level};
         }
 
         void printFinding(
             std::ostream &out, const mapcheck::Finding &finding)
         {
             out << finding.map << ": " << finding.message;
-            if (finding.at.has_value())
+            if (finding.at.has_value()) // GCOVR_EXCL_LINE
             {
                 out << " (" << finding.at->column << ','
                     << finding.at->row << ')';
+            }
+            if (finding.level.has_value()) // GCOVR_EXCL_LINE
+            {
+                out << " level " << *finding.level;
             }
             out << '\n';
         }
@@ -61,7 +81,7 @@ namespace antwika::mapcheck_cli
                 loaded.emplace_back(
                     path.stem().string(), tilemap::loadMapFile(path));
             }
-            catch (const tilemap::TileMapError &error)
+            catch (const tilemap::TileMapError &error) // GCOVR_EXCL_LINE
             {
                 out << path.stem().string() << ": " << error.what()
                     << '\n';
@@ -71,7 +91,9 @@ namespace antwika::mapcheck_cli
 
         for (const auto &[name, map] : loaded)
         {
-            auto report = mapcheck::validateMap(map, entryOf(map), {});
+            const auto entry = entryOf(map);
+            auto report =
+                mapcheck::validateMap(map, entry.at, entry.level, {});
             for (auto &finding : report.findings)
             {
                 finding.map = name;

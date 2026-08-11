@@ -3,8 +3,10 @@ antwika_add_library(
     SOURCES
         src/Cutaway.cpp
         src/DrawPlan.cpp
-        src/SheetLayout.cpp
+        src/SystemSheet.cpp
     DEPENDS
+        antwika::enums
         antwika::geometry
         antwika::tilemap
+        antwika::tileset
 )

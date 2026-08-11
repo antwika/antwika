@@ -37,3 +37,12 @@ TEST(IWindowTest, ConfiguredSize_DefaultFollowsWhateverSizeReports)
     EXPECT_EQ(small.configuredSize(), (Size{.width = 1, .height = 2}));
     EXPECT_EQ(large.configuredSize(), (Size{.width = 800, .height = 600}));
 }
+
+TEST(IWindowTest, SetSize_IsIgnoredByAWindowWithoutLiveResize)
+{
+    FakeUnresizableWindow window(Size{.width = 320, .height = 240});
+
+    window.setSize(Size{.width = 800, .height = 600});
+
+    EXPECT_EQ(window.size(), (Size{.width = 320, .height = 240}));
+}

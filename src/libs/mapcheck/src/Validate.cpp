@@ -4,15 +4,17 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <variant>
 
-#include <antwika/tilemap/Cell.hpp>
+#include <antwika/tilemap/Column.hpp>
 #include <antwika/tilemap/Entities.hpp>
 #include <antwika/tilemap/FlowDirection.hpp>
 #include <antwika/tilemap/Overlay.hpp>
+#include <antwika/tilemap/Slab.hpp>
 #include <antwika/tilemap/TerrainClass.hpp>
 
 namespace antwika::mapcheck
@@ -21,11 +23,12 @@ namespace antwika::mapcheck
     namespace
     {
         using geometry::GridCell;
-        using tilemap::Cell;
+        using tilemap::Column;
         using tilemap::Entity;
         using tilemap::FlowDirection;
         using tilemap::Overlay;
         using tilemap::Pickup;
+        using tilemap::Slab;
         using tilemap::TerrainClass;
         using tilemap::TileMap;
         using tilemap::Transition;
@@ -40,12 +43,21 @@ namespace antwika::mapcheck
             FlowDirection::West,
         };
 
+        struct Surface final
+        {
+            GridCell cell{};
+            std::size_t slab = 0;
+
+            [[nodiscard]] bool operator==( // GCOVR_EXCL_LINE
+                const Surface &other) const = default;
+        };
+
         [[nodiscard]] bool inBounds(const TileMap &map, const GridCell cell)
         {
             return cell.column < map.columns() && cell.row < map.rows();
         }
 
-        [[nodiscard]] std::size_t indexOf(
+        [[nodiscard]] std::size_t cellIndexOf(
             const TileMap &map, const GridCell cell)
         {
             return static_cast<std::size_t>(cell.row) * map.columns()
@@ -60,17 +72,17 @@ namespace antwika::mapcheck
         }
 
         [[nodiscard]] bool isWalkable(
-            const Cell &cell, const std::vector<std::string> &held)
+            const Slab &slab, const std::vector<std::string> &held)
         {
-            switch (cell.terrain)
+            switch (slab.terrain)
             {
                 case TerrainClass::Floor:
                 case TerrainClass::Path:
                 case TerrainClass::Stair:
                     return true;
                 case TerrainClass::Water:
-                    return cell.overlay == Overlay::Bridge
-                        || (cell.water.swimmable
+                    return slab.overlay == Overlay::Bridge
+                        || (slab.water.swimmable
                             && holdsTag(held, kSwimTag));
                 default:
                     return false;
@@ -123,93 +135,198 @@ namespace antwika::mapcheck
         }
 
         [[nodiscard]] std::optional<FlowDirection> currentOf(
-            const Cell &cell)
+            const Slab &slab)
         {
-            if (cell.terrain != TerrainClass::Water
-                || cell.overlay == Overlay::Bridge)
+            if (slab.terrain != TerrainClass::Water
+                || slab.overlay == Overlay::Bridge)
             {
                 return std::nullopt;
             }
-            return cell.water.current;
+            return slab.water.current;
         }
 
-        [[nodiscard]] bool stepAllowed(const Cell &source, const Cell &target)
+        [[nodiscard]] std::vector<std::size_t> surfaceOffsets(
+            const TileMap &map)
         {
-            const auto rise = static_cast<std::int64_t>(target.height)
-                - source.height;
-            if (rise <= 0)
+            const auto cells =
+                static_cast<std::size_t>(map.columns()) * map.rows();
+            std::vector<std::size_t> first(cells + 1, 0);
+            for (std::uint32_t row = 0; row < map.rows(); ++row)
             {
-                return true;
+                for (std::uint32_t column = 0;
+                     column < map.columns();
+                     ++column)
+                {
+                    const GridCell cell{.column = column, .row = row};
+                    const auto index = cellIndexOf(map, cell);
+                    first[index + 1] =
+                        first[index] + map.at(cell).slabs().size();
+                }
             }
-            return rise == 1
-                && (source.terrain == TerrainClass::Stair
-                    || target.terrain == TerrainClass::Stair);
+            return first;
+        } // GCOVR_EXCL_LINE
+
+        [[nodiscard]] std::size_t surfaceIdOf(
+            const TileMap &map,
+            const std::vector<std::size_t> &first,
+            const Surface surface)
+        {
+            return first[cellIndexOf(map, surface.cell)] + surface.slab;
         }
 
-        [[nodiscard]] bool hasEdge(
+        [[nodiscard]] std::optional<std::size_t> slabIndexAt(
+            const Column &column, const std::int32_t level)
+        {
+            const auto &slabs = column.slabs();
+            for (std::size_t index = 0; index < slabs.size(); ++index)
+            {
+                if (slabs[index].level == level)
+                {
+                    return index;
+                }
+            }
+            return std::nullopt;
+        }
+
+        [[nodiscard]] std::optional<Surface> footingAt(
             const TileMap &map,
-            const GridCell from,
-            const FlowDirection direction,
+            const GridCell cell,
+            const std::int32_t level,
             const std::vector<std::string> &held)
         {
-            const auto to = offsetCell(map, from, direction);
-            if (!to.has_value())
+            if (!inBounds(map, cell))
             {
-                return false;
+                return std::nullopt;
             }
-
-            const auto &source = map.at(from);
-            const auto &target = map.at(*to);
-            if (!isWalkable(source, held) || !isWalkable(target, held))
+            const auto &column = map.at(cell);
+            const auto slab = slabIndexAt(column, level);
+            if (!slab.has_value()
+                || !column.standable(level)
+                || !isWalkable(column.slabs()[*slab], held))
             {
-                return false;
+                return std::nullopt;
+            }
+            return Surface{.cell = cell, .slab = *slab};
+        }
+
+        [[nodiscard]] std::size_t indexWithin(
+            const Column &column, const Slab &slab)
+        {
+            return static_cast<std::size_t>(
+                &slab - column.slabs().data());
+        }
+
+        void appendTargets(
+            const TileMap &map,
+            const GridCell from,
+            const Slab &source,
+            const FlowDirection direction,
+            const std::vector<std::string> &held,
+            std::vector<Surface> &out)
+        {
+            const auto to = offsetCell(map, from, direction);
+            if (!to.has_value() || !isWalkable(source, held))
+            {
+                return;
             }
 
             const auto current = currentOf(source);
-            if (current == direction)
-            {
-                return true;
-            }
             if (current == opposite(direction))
             {
-                return false;
+                return;
             }
-            return stepAllowed(source, target);
+
+            const auto &column = map.at(*to);
+            const auto *landing = column.topAtOrBelow(source.level);
+            if (landing != nullptr
+                && column.standable(landing->level)
+                && isWalkable(*landing, held))
+            {
+                out.push_back(Surface{
+                    .cell = *to,
+                    .slab = indexWithin(column, *landing)});
+            }
+
+            if (source.level
+                == std::numeric_limits<std::int32_t>::max())
+            {
+                return;
+            }
+            const auto *riser = column.slabAt(source.level + 1);
+            if (riser == nullptr
+                || !column.standable(riser->level)
+                || !isWalkable(*riser, held))
+            {
+                return;
+            }
+            if (source.terrain != TerrainClass::Stair
+                && riser->terrain != TerrainClass::Stair
+                && current != direction)
+            {
+                return;
+            }
+            out.push_back(Surface{
+                .cell = *to,
+                .slab = indexWithin(column, *riser)});
+        }
+
+        [[nodiscard]] std::vector<Surface> targetsFrom(
+            const TileMap &map,
+            const Surface from,
+            const std::vector<std::string> &held)
+        {
+            std::vector<Surface> targets{};
+            const auto &source = map.at(from.cell).slabs()[from.slab];
+            for (const auto direction : kDirections)
+            {
+                appendTargets(
+                    map, from.cell, source, direction, held, targets);
+            }
+            return targets;
+        } // GCOVR_EXCL_LINE
+
+        [[nodiscard]] bool linksTo(
+            const TileMap &map,
+            const GridCell from,
+            const Slab &source,
+            const FlowDirection direction,
+            const std::vector<std::string> &held,
+            const Surface target)
+        {
+            std::vector<Surface> targets{};
+            appendTargets(map, from, source, direction, held, targets);
+            return std::ranges::find(targets, target) != targets.end();
         }
 
         [[nodiscard]] std::vector<bool> reachableFrom(
             const TileMap &map,
+            const std::vector<std::size_t> &first,
             const GridCell entry,
+            const std::int32_t entryLevel,
             const std::vector<std::string> &held)
         {
-            std::vector<bool> seen(
-                static_cast<std::size_t>(map.columns()) * map.rows(),
-                false);
-            if (!inBounds(map, entry) || !isWalkable(map.at(entry), held))
+            std::vector<bool> seen(first.back(), false);
+            const auto start = footingAt(map, entry, entryLevel, held);
+            if (!start.has_value())
             {
                 return seen;
             }
 
-            std::vector<GridCell> frontier{entry};
-            seen[indexOf(map, entry)] = true;
+            std::vector<Surface> frontier{*start};
+            seen[surfaceIdOf(map, first, *start)] = true;
             while (!frontier.empty())
             {
                 const auto from = frontier.back();
                 frontier.pop_back();
-                for (const auto direction : kDirections)
+                for (const auto &target : targetsFrom(map, from, held))
                 {
-                    if (!hasEdge(map, from, direction, held))
+                    const auto id = surfaceIdOf(map, first, target);
+                    if (seen[id])
                     {
                         continue;
                     }
-                    const auto to = *offsetCell(map, from, direction);
-                    const auto index = indexOf(map, to);
-                    if (seen[index])
-                    {
-                        continue;
-                    }
-                    seen[index] = true;
-                    frontier.push_back(to);
+                    seen[id] = true;
+                    frontier.push_back(target);
                 }
             }
             return seen;
@@ -217,39 +334,53 @@ namespace antwika::mapcheck
 
         [[nodiscard]] std::vector<bool> returnersTo(
             const TileMap &map,
+            const std::vector<std::size_t> &first,
             const GridCell entry,
+            const std::int32_t entryLevel,
             const std::vector<std::string> &held)
         {
-            std::vector<bool> seen(
-                static_cast<std::size_t>(map.columns()) * map.rows(),
-                false);
-            if (!inBounds(map, entry) || !isWalkable(map.at(entry), held))
+            std::vector<bool> seen(first.back(), false);
+            const auto start = footingAt(map, entry, entryLevel, held);
+            if (!start.has_value())
             {
                 return seen;
             }
 
-            std::vector<GridCell> frontier{entry};
-            seen[indexOf(map, entry)] = true;
+            std::vector<Surface> frontier{*start};
+            seen[surfaceIdOf(map, first, *start)] = true;
             while (!frontier.empty())
             {
                 const auto to = frontier.back();
                 frontier.pop_back();
                 for (const auto direction : kDirections)
                 {
-                    const auto from = offsetCell(map, to, direction);
+                    const auto from =
+                        offsetCell(map, to.cell, direction);
                     if (!from.has_value())
                     {
                         continue;
                     }
-                    const auto index = indexOf(map, *from);
-                    if (seen[index]
-                        || !hasEdge(
-                            map, *from, opposite(direction), held))
+                    const auto &column = map.at(*from);
+                    const auto base = first[cellIndexOf(map, *from)];
+                    for (std::size_t slab = 0;
+                         slab < column.slabs().size();
+                         ++slab)
                     {
-                        continue;
+                        if (seen[base + slab]
+                            || !linksTo(
+                                map,
+                                *from,
+                                column.slabs()[slab],
+                                opposite(direction),
+                                held,
+                                to))
+                        {
+                            continue;
+                        }
+                        seen[base + slab] = true;
+                        frontier.push_back(
+                            Surface{.cell = *from, .slab = slab});
                     }
-                    seen[index] = true;
-                    frontier.push_back(*from);
                 }
             }
             return seen;
@@ -259,6 +390,12 @@ namespace antwika::mapcheck
         {
             return std::visit(
                 [](const auto &one) { return one.at; }, entity);
+        }
+
+        [[nodiscard]] std::int32_t levelOf(const Entity &entity)
+        {
+            return std::visit(
+                [](const auto &one) { return one.level; }, entity);
         }
 
         [[nodiscard]] std::string idOf(const Entity &entity)
@@ -283,6 +420,7 @@ namespace antwika::mapcheck
 
         [[nodiscard]] bool covered(
             const TileMap &map,
+            const std::vector<std::size_t> &first,
             const std::vector<bool> &reached,
             const TriggerVolume &volume)
         {
@@ -295,10 +433,19 @@ namespace antwika::mapcheck
                     const GridCell cell{
                         .column = volume.at.column + column,
                         .row = volume.at.row + row};
-                    if (inBounds(map, cell)
-                        && reached[indexOf(map, cell)])
+                    if (!inBounds(map, cell))
                     {
-                        return true;
+                        continue;
+                    }
+                    const auto index = cellIndexOf(map, cell);
+                    for (auto id = first[index];
+                         id < first[index + 1];
+                         ++id)
+                    {
+                        if (reached[id])
+                        {
+                            return true;
+                        }
                     }
                 }
             }
@@ -307,19 +454,24 @@ namespace antwika::mapcheck
 
         [[nodiscard]] bool isReached(
             const TileMap &map,
+            const std::vector<std::size_t> &first,
             const std::vector<bool> &reached,
+            const std::vector<std::string> &held,
             const Entity &entity)
         {
             if (const auto *volume = std::get_if<TriggerVolume>(&entity))
             {
-                return covered(map, reached, *volume);
+                return covered(map, first, reached, *volume);
             }
-            const auto cell = cellOf(entity);
-            return inBounds(map, cell) && reached[indexOf(map, cell)];
+            const auto footing = footingAt(
+                map, cellOf(entity), levelOf(entity), held);
+            return footing.has_value()
+                && reached[surfaceIdOf(map, first, *footing)];
         }
 
         [[nodiscard]] bool collectGrants(
             const TileMap &map,
+            const std::vector<std::size_t> &first,
             const std::vector<bool> &reached,
             std::vector<std::string> &held)
         {
@@ -328,7 +480,7 @@ namespace antwika::mapcheck
             {
                 const auto *granted = grantsOf(entity);
                 if (granted == nullptr
-                    || !isReached(map, reached, entity))
+                    || !isReached(map, first, reached, held, entity))
                 {
                     continue;
                 }
@@ -347,24 +499,41 @@ namespace antwika::mapcheck
 
         void reportUnreachable(
             const TileMap &map,
+            const std::vector<std::size_t> &first,
             const std::vector<bool> &reached,
+            const std::vector<std::string> &held,
             std::vector<Finding> &findings)
         {
             for (const auto &entity : map.entities())
             {
-                if (isReached(map, reached, entity))
+                const auto cell = cellOf(entity);
+                const auto level = levelOf(entity);
+                if (std::get_if<TriggerVolume>(&entity) == nullptr
+                    && !footingAt(map, cell, level, held).has_value())
+                {
+                    findings.push_back(Finding{ // GCOVR_EXCL_LINE
+                        .message = "entity " // GCOVR_EXCL_LINE
+                            + idOf(entity) // GCOVR_EXCL_LINE
+                            + " rests on no standable surface",
+                        .at = cell,
+                        .level = level});
+                }
+                if (isReached(map, first, reached, held, entity))
                 {
                     continue;
                 }
-                findings.push_back(Finding{
-                    .message =
-                        "entity " + idOf(entity) + " is unreachable",
-                    .at = cellOf(entity)});
+                findings.push_back(Finding{ // GCOVR_EXCL_LINE
+                    .message = "entity " // GCOVR_EXCL_LINE
+                        + idOf(entity) // GCOVR_EXCL_LINE
+                        + " is unreachable", // GCOVR_EXCL_LINE
+                    .at = cell,
+                    .level = level});
             }
         }
 
         void reportGates(
             const TileMap &map,
+            const std::vector<std::size_t> &first,
             const std::vector<bool> &reached,
             const std::vector<std::string> &held,
             std::vector<Finding> &findings)
@@ -373,7 +542,7 @@ namespace antwika::mapcheck
             {
                 const auto *transition = std::get_if<Transition>(&entity);
                 if (transition == nullptr
-                    || !isReached(map, reached, entity))
+                    || !isReached(map, first, reached, held, entity))
                 {
                     continue;
                 }
@@ -383,42 +552,74 @@ namespace antwika::mapcheck
                     {
                         continue;
                     }
-                    findings.push_back(Finding{
-                        .message = "gate " + transition->id
-                            + " requires tag never granted: " + tag,
-                        .at = transition->at});
+                    findings.push_back(Finding{ // GCOVR_EXCL_LINE
+                        .message = "gate " // GCOVR_EXCL_LINE
+                        + transition->id // GCOVR_EXCL_LINE
+                        + " requires tag never granted: " // GCOVR_EXCL_LINE
+                        + tag, // GCOVR_EXCL_LINE
+                        .at = transition->at,
+                        .level = transition->level});
                 }
             }
         }
 
         [[nodiscard]] std::size_t fillRegion(
             const TileMap &map,
+            const std::vector<std::size_t> &first,
+            const std::vector<std::string> &held,
             const std::vector<bool> &dead,
             std::vector<bool> &seen,
-            const GridCell seed)
+            const Surface seed)
         {
-            std::vector<GridCell> frontier{seed};
-            seen[indexOf(map, seed)] = true;
+            std::vector<Surface> frontier{seed};
+            seen[surfaceIdOf(map, first, seed)] = true;
             std::size_t count = 0;
             while (!frontier.empty())
             {
-                const auto cell = frontier.back();
+                const auto surface = frontier.back();
                 frontier.pop_back();
                 ++count;
                 for (const auto direction : kDirections)
                 {
-                    const auto next = offsetCell(map, cell, direction);
-                    if (!next.has_value())
+                    const auto from =
+                        offsetCell(map, surface.cell, direction);
+                    if (!from.has_value())
                     {
                         continue;
                     }
-                    const auto index = indexOf(map, *next);
-                    if (seen[index] || !dead[index])
+                    const auto &column = map.at(*from);
+                    const auto base = first[cellIndexOf(map, *from)];
+                    for (std::size_t slab = 0;
+                         slab < column.slabs().size();
+                         ++slab)
+                    {
+                        if (seen[base + slab]
+                            || !dead[base + slab]
+                            || !linksTo(
+                                map,
+                                *from,
+                                column.slabs()[slab],
+                                opposite(direction),
+                                held,
+                                surface))
+                        {
+                            continue;
+                        }
+                        seen[base + slab] = true;
+                        frontier.push_back(
+                            Surface{.cell = *from, .slab = slab});
+                    }
+                }
+                for (const auto &target :
+                     targetsFrom(map, surface, held))
+                {
+                    const auto id = surfaceIdOf(map, first, target);
+                    if (seen[id])
                     {
                         continue;
                     }
-                    seen[index] = true;
-                    frontier.push_back(*next);
+                    seen[id] = true;
+                    frontier.push_back(target);
                 }
             }
             return count;
@@ -426,12 +627,15 @@ namespace antwika::mapcheck
 
         void reportDeadEnds(
             const TileMap &map,
+            const std::vector<std::size_t> &first,
             const GridCell entry,
+            const std::int32_t entryLevel,
             const std::vector<std::string> &held,
             const std::vector<bool> &reached,
             std::vector<Finding> &findings)
         {
-            const auto returners = returnersTo(map, entry, held);
+            const auto returners =
+                returnersTo(map, first, entry, entryLevel, held);
             std::vector<bool> dead(reached.size(), false);
             for (std::size_t index = 0; index < reached.size(); ++index)
             {
@@ -446,20 +650,71 @@ namespace antwika::mapcheck
                      ++column)
                 {
                     const GridCell cell{.column = column, .row = row};
-                    const auto index = indexOf(map, cell);
-                    if (!dead[index] || seen[index])
+                    const auto base = first[cellIndexOf(map, cell)];
+                    const auto &slabs = map.at(cell).slabs();
+                    for (std::size_t slab = 0;
+                         slab < slabs.size();
+                         ++slab)
                     {
-                        continue;
+                        if (!dead[base + slab] || seen[base + slab])
+                        {
+                            continue;
+                        }
+                        const auto count = fillRegion(
+                            map,
+                            first,
+                            held,
+                            dead,
+                            seen,
+                            Surface{.cell = cell, .slab = slab});
+                        findings.push_back(Finding{ // GCOVR_EXCL_LINE
+                            .message = "dead end region of " // GCOVR_EXCL_LINE
+                                + std::to_string(count) // GCOVR_EXCL_LINE
+                                + (count == 1
+                                    ? " surface"
+                                    : " surfaces"),
+                            .at = cell,
+                            .level = slabs[slab].level});
                     }
-                    const auto count = fillRegion(map, dead, seen, cell);
-                    findings.push_back(Finding{
-                        .message = "dead end region of "
-                            + std::to_string(count)
-                            + (count == 1 ? " cell" : " cells"),
-                        .at = cell});
                 }
             }
         }
+
+        [[nodiscard]] std::vector<CellReach> reachOf(
+            const TileMap &map,
+            const std::vector<std::size_t> &first,
+            const std::vector<bool> &reached,
+            const std::vector<std::string> &held)
+        {
+            std::vector<CellReach> reach(first.size() - 1);
+            for (std::uint32_t row = 0; row < map.rows(); ++row)
+            {
+                for (std::uint32_t column = 0;
+                     column < map.columns();
+                     ++column)
+                {
+                    const GridCell cell{.column = column, .row = row};
+                    const auto index = cellIndexOf(map, cell);
+                    const auto &slabs = map.at(cell).slabs();
+                    auto &one = reach[index];
+                    for (std::size_t slab = 0;
+                         slab < slabs.size();
+                         ++slab)
+                    {
+                        if (map.at(cell).standable(slabs[slab].level)
+                            && isWalkable(slabs[slab], held))
+                        {
+                            one.anyStandable = true;
+                        }
+                        if (reached[first[index] + slab])
+                        {
+                            one.anyReached = true;
+                        }
+                    }
+                }
+            }
+            return reach;
+        } // GCOVR_EXCL_LINE
 
         [[nodiscard]] const TileMap *findMap(
             const std::vector<std::pair<std::string, TileMap>> &maps,
@@ -498,11 +753,14 @@ namespace antwika::mapcheck
             const auto *target = findMap(maps, transition.targetMap);
             if (target == nullptr)
             {
-                findings.push_back(Finding{
+                findings.push_back(Finding{ // GCOVR_EXCL_LINE
                     .map = name,
-                    .message = "transition " + transition.id
-                        + " targets missing map " + transition.targetMap,
-                    .at = transition.at});
+                    .message = "transition " // GCOVR_EXCL_LINE
+                        + transition.id // GCOVR_EXCL_LINE
+                        + " targets missing map " // GCOVR_EXCL_LINE
+                        + transition.targetMap, // GCOVR_EXCL_LINE
+                    .at = transition.at,
+                    .level = transition.level});
                 return;
             }
 
@@ -510,26 +768,33 @@ namespace antwika::mapcheck
                 findTransition(*target, transition.targetEntry);
             if (counterpart == nullptr)
             {
-                findings.push_back(Finding{
+                findings.push_back(Finding{ // GCOVR_EXCL_LINE
                     .map = name,
-                    .message = "transition " + transition.id
-                        + " targets missing entry "
-                        + transition.targetEntry
-                        + " in " + transition.targetMap,
-                    .at = transition.at});
+                    .message = "transition " // GCOVR_EXCL_LINE
+                        + transition.id // GCOVR_EXCL_LINE
+                        + " targets missing entry " // GCOVR_EXCL_LINE
+                        + transition.targetEntry // GCOVR_EXCL_LINE
+                        + " in " // GCOVR_EXCL_LINE
+                        + transition.targetMap, // GCOVR_EXCL_LINE
+                    .at = transition.at,
+                    .level = transition.level});
                 return;
             }
 
             if (counterpart->targetMap != name
                 || counterpart->targetEntry != transition.id)
             {
-                findings.push_back(Finding{
+                findings.push_back(Finding{ // GCOVR_EXCL_LINE
                     .map = name,
-                    .message = "transition " + transition.id
-                        + " counterpart " + transition.targetEntry
-                        + " in " + transition.targetMap
-                        + " does not lead back",
-                    .at = transition.at});
+                    .message = "transition " // GCOVR_EXCL_LINE
+                        + transition.id // GCOVR_EXCL_LINE
+                        + " counterpart " // GCOVR_EXCL_LINE
+                        + transition.targetEntry // GCOVR_EXCL_LINE
+                        + " in " // GCOVR_EXCL_LINE
+                        + transition.targetMap // GCOVR_EXCL_LINE
+                        + " does not lead back", // GCOVR_EXCL_LINE
+                    .at = transition.at,
+                    .level = transition.level});
             }
         }
     }
@@ -537,29 +802,36 @@ namespace antwika::mapcheck
     MapReport validateMap(
         const tilemap::TileMap &map,
         const geometry::GridCell entry,
+        const std::int32_t entryLevel,
         const std::vector<std::string> &grantedTags)
     {
+        const auto first = surfaceOffsets(map);
         auto held = grantedTags;
-        auto reached = reachableFrom(map, entry, held);
-        while (collectGrants(map, reached, held))
+        auto reached =
+            reachableFrom(map, first, entry, entryLevel, held);
+        while (collectGrants(map, first, reached, held))
         {
-            reached = reachableFrom(map, entry, held);
+            reached =
+                reachableFrom(map, first, entry, entryLevel, held);
         }
 
         MapReport report{};
 
-        if (!inBounds(map, entry) || !isWalkable(map.at(entry), held))
+        if (!footingAt(map, entry, entryLevel, held).has_value())
         {
-            report.findings.push_back(Finding{
-                .message = "entry cell is not walkable",
-                .at = entry});
+            report.findings.push_back(Finding{ // GCOVR_EXCL_LINE
+                .message = "entry surface is not walkable", // GCOVR_EXCL_LINE
+                .at = entry,
+                .level = entryLevel});
         }
 
-        reportUnreachable(map, reached, report.findings);
-        reportGates(map, reached, held, report.findings);
-        reportDeadEnds(map, entry, held, reached, report.findings);
+        reportUnreachable(map, first, reached, held, report.findings);
+        reportGates(map, first, reached, held, report.findings);
+        reportDeadEnds(
+            map, first, entry, entryLevel, held, reached,
+            report.findings);
 
-        report.reachable = std::move(reached);
+        report.reachable = reachOf(map, first, reached, held);
         return report;
     }
 
@@ -580,6 +852,6 @@ namespace antwika::mapcheck
             }
         }
         return findings;
-    }
+    } // GCOVR_EXCL_LINE
 
 }

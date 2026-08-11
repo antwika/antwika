@@ -1,0 +1,155 @@
+{
+  "schema": 1,
+  "name": "default-floor",
+  "terrain": "floor",
+  "nextSpriteId": 13,
+  "layers": [
+    {
+      "name": "base",
+      "sprites": [
+        {
+          "id": 0,
+          "sockets": {
+            "n": "grass",
+            "e": "grass",
+            "s": "grass",
+            "w": "grass"
+          },
+          "on": []
+        },
+        {
+          "id": 1,
+          "sockets": {
+            "n": "grass",
+            "e": "grass",
+            "s": "grass",
+            "w": "grass"
+          },
+          "on": []
+        },
+        {
+          "id": 2,
+          "sockets": {
+            "n": "dirt",
+            "e": "dirt",
+            "s": "dirt",
+            "w": "dirt"
+          },
+          "on": []
+        },
+        {
+          "id": 3,
+          "sockets": {
+            "n": "edge",
+            "e": "grass",
+            "s": "grass",
+            "w": "grass"
+          },
+          "on": []
+        },
+        {
+          "id": 4,
+          "sockets": {
+            "n": "grass",
+            "e": "edge",
+            "s": "grass",
+            "w": "grass"
+          },
+          "on": []
+        },
+        {
+          "id": 5,
+          "sockets": {
+            "n": "grass",
+            "e": "grass",
+            "s": "edge",
+            "w": "grass"
+          },
+          "on": []
+        },
+        {
+          "id": 6,
+          "sockets": {
+            "n": "grass",
+            "e": "grass",
+            "s": "grass",
+            "w": "edge"
+          },
+          "on": []
+        },
+        {
+          "id": 7,
+          "sockets": {
+            "n": "edge",
+            "e": "grass",
+            "s": "grass",
+            "w": "edge"
+          },
+          "on": []
+        },
+        {
+          "id": 8,
+          "sockets": {
+            "n": "edge",
+            "e": "edge",
+            "s": "grass",
+            "w": "grass"
+          },
+          "on": []
+        },
+        {
+          "id": 9,
+          "sockets": {
+            "n": "grass",
+            "e": "grass",
+            "s": "edge",
+            "w": "edge"
+          },
+          "on": []
+        },
+        {
+          "id": 10,
+          "sockets": {
+            "n": "grass",
+            "e": "edge",
+            "s": "edge",
+            "w": "grass"
+          },
+          "on": []
+        }
+      ]
+    },
+    {
+      "name": "decor",
+      "density": 48,
+      "sprites": [
+        {
+          "id": 11,
+          "sockets": {
+            "n": "open",
+            "e": "open",
+            "s": "open",
+            "w": "open"
+          },
+          "on": [
+            0
+          ]
+        },
+        {
+          "id": 12,
+          "weight": 2,
+          "sockets": {
+            "n": "open",
+            "e": "open",
+            "s": "open",
+            "w": "open"
+          },
+          "on": [
+            0,
+            1
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -42,12 +42,16 @@ namespace antwika::map_editor
     {
         std::uint32_t column = 0;
         std::uint32_t row = 0;
+        std::int32_t level = 0;
     };
 
     [[nodiscard]] MarkerKind markerKindOf(
         const tilemap::Entity &entity) noexcept;
 
     [[nodiscard]] geometry::GridCell entityCellOf(
+        const tilemap::Entity &entity) noexcept;
+
+    [[nodiscard]] std::int32_t entityLevelOf(
         const tilemap::Entity &entity) noexcept;
 
 }

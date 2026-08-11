@@ -7,12 +7,22 @@ using antwika::tilemap::kSchemaVersion;
 using antwika::tilemap::MapHeader;
 using antwika::tilemap::Rgb;
 
-TEST(MapHeaderTest, MapHeader_DefaultsToSchemaVersionTwo)
+TEST(MapHeaderTest, MapHeader_DefaultsToSchemaVersionFour)
 {
     const MapHeader header{};
 
-    EXPECT_EQ(header.schemaVersion, 2U);
-    EXPECT_EQ(kSchemaVersion, 2U);
+    EXPECT_EQ(header.schemaVersion, 4U);
+    EXPECT_EQ(kSchemaVersion, 4U);
+}
+
+TEST(MapHeaderTest, MapHeader_DefaultsToEveryTerrainUnbound)
+{
+    const MapHeader header{};
+
+    for (const auto &tileset : header.tilesets)
+    {
+        EXPECT_EQ(tileset, "");
+    }
 }
 
 TEST(MapHeaderTest, MapHeader_DefaultsToBlackInkOnWhitePaper)
@@ -49,5 +59,9 @@ TEST(MapHeaderTest, OperatorEquals_ComparesEveryField)
 
     other = base;
     other.paper.blue = 221;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.tilesets[0] = "field";
     EXPECT_NE(base, other);
 }

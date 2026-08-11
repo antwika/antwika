@@ -1,0 +1,103 @@
+{
+  "schema": 1,
+  "name": "default-wall",
+  "terrain": "wall",
+  "nextSpriteId": 9,
+  "layers": [
+    {
+      "name": "base",
+      "sprites": [
+        {
+          "id": 0,
+          "sockets": {
+            "n": "wall",
+            "e": "wall",
+            "s": "wall",
+            "w": "wall"
+          },
+          "on": []
+        },
+        {
+          "id": 1,
+          "sockets": {
+            "n": "edge",
+            "e": "wall",
+            "s": "wall",
+            "w": "wall"
+          },
+          "on": []
+        },
+        {
+          "id": 2,
+          "sockets": {
+            "n": "wall",
+            "e": "edge",
+            "s": "wall",
+            "w": "wall"
+          },
+          "on": []
+        },
+        {
+          "id": 3,
+          "sockets": {
+            "n": "wall",
+            "e": "wall",
+            "s": "edge",
+            "w": "wall"
+          },
+          "on": []
+        },
+        {
+          "id": 4,
+          "sockets": {
+            "n": "wall",
+            "e": "wall",
+            "s": "wall",
+            "w": "edge"
+          },
+          "on": []
+        },
+        {
+          "id": 5,
+          "sockets": {
+            "n": "edge",
+            "e": "wall",
+            "s": "wall",
+            "w": "edge"
+          },
+          "on": []
+        },
+        {
+          "id": 6,
+          "sockets": {
+            "n": "edge",
+            "e": "edge",
+            "s": "wall",
+            "w": "wall"
+          },
+          "on": []
+        },
+        {
+          "id": 7,
+          "sockets": {
+            "n": "wall",
+            "e": "wall",
+            "s": "edge",
+            "w": "edge"
+          },
+          "on": []
+        },
+        {
+          "id": 8,
+          "sockets": {
+            "n": "wall",
+            "e": "edge",
+            "s": "edge",
+            "w": "wall"
+          },
+          "on": []
+        }
+      ]
+    }
+  ]
+}

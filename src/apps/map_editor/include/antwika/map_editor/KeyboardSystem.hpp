@@ -34,6 +34,10 @@ namespace antwika::map_editor
     private:
         void handleFastPath(input::Key key);
 
+        void perform(HotkeyAction action);
+
+        void keysDialogKey(input::Key key);
+
         EditorStore &store;
         gfx::IWindow &window;
         log::ILogger &logger;

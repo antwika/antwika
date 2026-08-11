@@ -17,6 +17,7 @@
 #include <antwika/tilemap/ExpandedMap.hpp>
 #include <antwika/tilemap/MapFile.hpp>
 #include <antwika/tilemap/Overlay.hpp>
+#include <antwika/tilemap/Slab.hpp>
 #include <antwika/tilemap/TileMapError.hpp>
 
 #include "antwika/map_editor/PaletteMath.hpp"
@@ -28,16 +29,19 @@ namespace antwika::map_editor
     {
         constexpr std::size_t kUndoDepth = 256;
 
-        constexpr std::string_view kPlaytestCommand =
-            "./build/bin/antwika_tilemap_demo/antwika_tilemap_demo &";
+        constexpr std::string_view kPlaytestBinary =
+            "./build/bin/antwika_tilemap_demo/antwika_tilemap_demo";
         constexpr std::uint32_t kReportPeriod = 30;
         constexpr std::uint8_t kLightFull = 255;
         constexpr std::uint8_t kLightDim = 160;
         constexpr std::uint8_t kLightDark = 64;
+        constexpr std::int32_t kLevelFloor = -32;
+        constexpr std::int32_t kLevelCeiling = 32;
 
         using antwika::geometry::GridCell;
         using antwika::tilemap::Entity;
         using antwika::tilemap::Overlay;
+        using antwika::tilemap::Slab;
         using antwika::tilemap::TileMap;
 
         [[nodiscard]] GridCell entityCell(const Entity &entity)
@@ -54,8 +58,9 @@ namespace antwika::map_editor
                 stack.erase(stack.begin());
             }
 
-            stack.push_back(MapSnapshot{
-                .map = state.map, .pinned = state.pinned});
+            MapSnapshot taken{.map = state.map}; // GCOVR_EXCL_LINE
+            taken.pinned = state.pinned;
+            stack.push_back(std::move(taken));
         }
 
         void pushUndo(EditorState &state)
@@ -63,6 +68,7 @@ namespace antwika::map_editor
             pushCapped(state.undoStack, state);
             state.redoStack.clear();
             state.reportStale = true;
+            ++state.revision;
         }
 
         void clampHovered(EditorState &state)
@@ -91,7 +97,7 @@ namespace antwika::map_editor
             }
 
             return rebuilt;
-        }
+        } // GCOVR_EXCL_LINE
 
         [[nodiscard]] TileMap withPalette(
             const TileMap &map,
@@ -127,17 +133,63 @@ namespace antwika::map_editor
             return rebuilt;
         }
 
-        [[nodiscard]] GridCell entryCell(const TileMap &map)
+        [[nodiscard]] TileMap withTilesets(
+            const TileMap &map,
+            const std::array<
+                std::string,
+                enums::kCount<tilemap::TerrainClass>> &names)
         {
-            for (const auto &entity : map.entities())
+            auto header = map.header();
+
+            header.tilesets = names;
+
+            TileMap rebuilt(
+                std::move(header), map.columns(), map.rows());
+
+            for (std::uint32_t row = 0; row < map.rows(); ++row)
             {
-                if (std::holds_alternative<tilemap::SpawnPoint>(entity))
+                for (std::uint32_t column = 0;
+                     column < map.columns();
+                     ++column)
                 {
-                    return entityCell(entity);
+                    const auto cell =
+                        GridCell{.column = column, .row = row};
+
+                    rebuilt.at(cell) = map.at(cell);
                 }
             }
 
-            return GridCell{.column = 1, .row = 1};
+            for (const auto &entity : map.entities())
+            {
+                rebuilt.addEntity(entity);
+            }
+
+            return rebuilt;
+        }
+
+        struct EntrySurface final
+        {
+            GridCell cell{};
+            std::int32_t level = 0;
+        };
+
+        [[nodiscard]] EntrySurface entryCell(const TileMap &map)
+        {
+            for (const auto &entity : map.entities())
+            {
+                if (const auto *spawn =
+                        std::get_if<tilemap::SpawnPoint>(&entity))
+                {
+                    return {.cell = spawn->at, .level = spawn->level};
+                }
+            }
+
+            const auto fallback = GridCell{.column = 1, .row = 1};
+            const auto *top = map.at(fallback).top();
+
+            return {
+                .cell = fallback,
+                .level = top != nullptr ? top->level : 0};
         }
     }
 
@@ -252,7 +304,21 @@ namespace antwika::map_editor
         }
 
         state.pinned[index] = true;
-        state.map.at(state.hovered).terrain = state.brush;
+
+        auto &column = state.map.at(state.hovered);
+
+        if (auto *slab = column.slabAt(state.activeLevel))
+        {
+            slab->terrain = state.brush;
+        }
+        else
+        {
+            column.place(Slab{
+                .level = state.activeLevel,
+                .terrain = state.brush});
+        }
+
+        ++state.revision;
     }
 
     void paintHovered(EditorState &state)
@@ -269,13 +335,24 @@ namespace antwika::map_editor
 
         state.pinned[index] = true;
 
-        if (state.map.at(state.hovered).terrain == state.brush)
+        auto &column = state.map.at(state.hovered);
+        auto *slab = column.slabAt(state.activeLevel);
+
+        if (slab != nullptr && slab->terrain == state.brush)
         {
             return;
         }
 
         pushUndo(state);
-        state.map.at(state.hovered).terrain = state.brush;
+
+        if (slab != nullptr)
+        {
+            slab->terrain = state.brush;
+            return;
+        }
+
+        column.place(Slab{
+            .level = state.activeLevel, .terrain = state.brush});
     }
 
     void applyGenerated(
@@ -301,78 +378,116 @@ namespace antwika::map_editor
                     continue;
                 }
 
-                state.map.at(cell).terrain = terrains[index];
+                auto &stack = state.map.at(cell);
+
+                if (auto *slab = stack.slabAt(state.activeLevel))
+                {
+                    slab->terrain = terrains[index];
+                    continue;
+                }
+
+                stack.place(Slab{
+                    .level = state.activeLevel,
+                    .terrain = terrains[index]});
             }
         }
     }
 
-    void raiseHovered(EditorState &state)
+    void stepActiveLevel(
+        EditorState &state, const std::int32_t delta)
     {
-        pushUndo(state);
-        ++state.map.at(state.hovered).height;
+        state.activeLevel = std::clamp(
+            state.activeLevel + delta, kLevelFloor, kLevelCeiling);
     }
 
-    void lowerHovered(EditorState &state)
+    void eraseSlabHovered(EditorState &state)
     {
+        reconcilePins(state);
+
+        auto &column = state.map.at(state.hovered);
+
+        if (column.slabAt(state.activeLevel) == nullptr)
+        {
+            return;
+        }
+
+        state.pinned[pinIndex(state.map, state.hovered)] = true;
         pushUndo(state);
-        --state.map.at(state.hovered).height;
+        column.remove(state.activeLevel);
     }
 
     void toggleBridge(EditorState &state)
     {
+        auto *slab =
+            state.map.at(state.hovered).slabAt(state.activeLevel);
+
+        if (slab == nullptr)
+        {
+            return;
+        }
+
         pushUndo(state);
-
-        auto &cell = state.map.at(state.hovered);
-
-        cell.overlay = cell.overlay == Overlay::Bridge
-                           ? Overlay::None
-                           : Overlay::Bridge;
+        slab->overlay = slab->overlay == Overlay::Bridge
+                            ? Overlay::None
+                            : Overlay::Bridge;
     }
 
     void cycleLight(EditorState &state)
     {
+        auto *slab =
+            state.map.at(state.hovered).slabAt(state.activeLevel);
+
+        if (slab == nullptr)
+        {
+            return;
+        }
+
         pushUndo(state);
 
-        auto &cell = state.map.at(state.hovered);
-
-        if (cell.light == kLightFull)
+        if (slab->light == kLightFull)
         {
-            cell.light = kLightDim;
+            slab->light = kLightDim;
         }
-        else if (cell.light == kLightDim)
+        else if (slab->light == kLightDim)
         {
-            cell.light = kLightDark;
+            slab->light = kLightDark;
         }
         else
         {
-            cell.light = kLightFull;
+            slab->light = kLightFull;
         }
     }
 
     void placeTransition(EditorState &state)
     {
         pushUndo(state);
-        state.map.addEntity(tilemap::Transition{
-            .id = "door-" + std::to_string(state.nextTransition++),
-            .at = state.hovered});
+        tilemap::Transition made;
+        made.id = "door-" + std::to_string(state.nextTransition++);
+        made.at = state.hovered;
+        made.level = state.activeLevel;
+        state.map.addEntity(std::move(made));
     }
 
     void placeNpc(EditorState &state)
     {
         pushUndo(state);
-        state.map.addEntity(tilemap::Npc{
-            .id = "npc-" + std::to_string(state.nextNpc++),
-            .at = state.hovered});
+        tilemap::Npc made;
+        made.id = "npc-" + std::to_string(state.nextNpc++);
+        made.at = state.hovered;
+        made.level = state.activeLevel;
+        state.map.addEntity(std::move(made));
     }
 
     void placePickup(EditorState &state)
     {
         pushUndo(state);
-        state.map.addEntity(tilemap::Pickup{
-            .id = "pickup-" + std::to_string(state.nextPickup++),
-            .at = state.hovered,
-            .item = "key",
-            .grantedTags = {"key"}});
+        tilemap::Pickup made;
+        made.id = "pickup-" + std::to_string(state.nextPickup++);
+        made.at = state.hovered;
+        made.level = state.activeLevel;
+        made.item = "key";
+        made.grantedTags.emplace_back("key");
+        state.map.addEntity(std::move(made));
     }
 
     void placeEntityKind(EditorState &state, const MarkerKind kind)
@@ -383,17 +498,28 @@ namespace antwika::map_editor
                 placeTransition(state);
                 return;
             case MarkerKind::Boat:
+            {
                 pushUndo(state);
-                state.map.addEntity(tilemap::BoatEmbark{
-                    .id = "boat-" + std::to_string(state.nextBoat++),
-                    .at = state.hovered});
+
+                tilemap::BoatEmbark boat;
+                boat.id = "boat-" + std::to_string(state.nextBoat++);
+                boat.at = state.hovered;
+                boat.level = state.activeLevel;
+                state.map.addEntity(std::move(boat));
                 return;
+            }
             case MarkerKind::Spawn:
+            {
                 pushUndo(state);
-                state.map.addEntity(tilemap::SpawnPoint{
-                    .id = "spawn-" + std::to_string(state.nextSpawn++),
-                    .at = state.hovered});
+
+                tilemap::SpawnPoint spawn;
+                spawn.id =
+                    "spawn-" + std::to_string(state.nextSpawn++);
+                spawn.at = state.hovered;
+                spawn.level = state.activeLevel;
+                state.map.addEntity(std::move(spawn));
                 return;
+            }
             case MarkerKind::Pickup:
                 placePickup(state);
                 return;
@@ -401,12 +527,17 @@ namespace antwika::map_editor
                 placeNpc(state);
                 return;
             case MarkerKind::Trigger:
+            {
                 pushUndo(state);
-                state.map.addEntity(tilemap::TriggerVolume{
-                    .id = "trigger-"
-                          + std::to_string(state.nextTrigger++),
-                    .at = state.hovered});
+
+                tilemap::TriggerVolume trigger;
+                trigger.id =
+                    "trigger-" + std::to_string(state.nextTrigger++);
+                trigger.at = state.hovered;
+                trigger.level = state.activeLevel;
+                state.map.addEntity(std::move(trigger));
                 return;
+            }
         }
     }
 
@@ -458,6 +589,149 @@ namespace antwika::map_editor
         }
 
         state.map = std::move(rebuilt);
+    }
+
+    void copyMapSpan(EditorStore &store, const CellSpan span)
+    {
+        Stamp stamp{
+            .columns = span.columns,
+            .rows = span.rows,
+            .cells = {}};
+
+        for (std::uint32_t row = 0; row < span.rows; ++row)
+        {
+            for (std::uint32_t column = 0;
+                 column < span.columns;
+                 ++column)
+            {
+                stamp.cells.push_back(store.state.map.at(GridCell{
+                    .column = span.origin.column + column,
+                    .row = span.origin.row + row}));
+            }
+        }
+
+        store.mapClipboard = std::move(stamp);
+    }
+
+    void clearMapSpan(EditorState &state, const CellSpan span)
+    {
+        reconcilePins(state);
+        pushUndo(state);
+
+        for (std::uint32_t row = 0; row < span.rows; ++row)
+        {
+            for (std::uint32_t column = 0;
+                 column < span.columns;
+                 ++column)
+            {
+                const auto cell = GridCell{
+                    .column = span.origin.column + column,
+                    .row = span.origin.row + row};
+
+                state.map.at(cell) = tilemap::Column{};
+                state.pinned[pinIndex(state.map, cell)] = true;
+            }
+        }
+    }
+
+    void pasteMapClipboard(EditorStore &store)
+    {
+        auto &state = store.state;
+
+        if (!store.mapClipboard.has_value())
+        {
+            return;
+        }
+
+        pushUndo(state);
+
+        const auto &clip = *store.mapClipboard;
+
+        for (std::uint32_t row = 0; row < clip.rows; ++row)
+        {
+            for (std::uint32_t column = 0;
+                 column < clip.columns;
+                 ++column)
+            {
+                const auto target = GridCell{
+                    .column = state.hovered.column + column,
+                    .row = state.hovered.row + row};
+
+                if (target.column >= state.map.columns()
+                    || target.row >= state.map.rows())
+                {
+                    continue;
+                }
+
+                state.map.at(target) = clip.cells
+                    [static_cast<std::size_t>(row) * clip.columns
+                     + column];
+            }
+        }
+    }
+
+    void moveMapSpan(
+        EditorState &state,
+        const CellSpan span,
+        const std::int32_t deltaColumn,
+        const std::int32_t deltaRow)
+    {
+        reconcilePins(state);
+        pushUndo(state);
+
+        std::vector<tilemap::Column> held{};
+
+        for (std::uint32_t row = 0; row < span.rows; ++row)
+        {
+            for (std::uint32_t column = 0;
+                 column < span.columns;
+                 ++column)
+            {
+                const auto cell = GridCell{
+                    .column = span.origin.column + column,
+                    .row = span.origin.row + row};
+
+                held.push_back(state.map.at(cell));
+                state.map.at(cell) = tilemap::Column{};
+                state.pinned[pinIndex(state.map, cell)] = true;
+            }
+        }
+
+        const auto columns =
+            static_cast<std::int32_t>(state.map.columns());
+        const auto rows =
+            static_cast<std::int32_t>(state.map.rows());
+
+        for (std::uint32_t row = 0; row < span.rows; ++row)
+        {
+            for (std::uint32_t column = 0;
+                 column < span.columns;
+                 ++column)
+            {
+                const auto targetColumn =
+                    static_cast<std::int32_t>(
+                        span.origin.column + column)
+                    + deltaColumn;
+                const auto targetRow = static_cast<std::int32_t>(
+                                           span.origin.row + row)
+                                       + deltaRow;
+
+                if (targetColumn < 0 || targetRow < 0
+                    || targetColumn >= columns
+                    || targetRow >= rows)
+                {
+                    continue;
+                }
+
+                state.map.at(GridCell{
+                    .column =
+                        static_cast<std::uint32_t>(targetColumn),
+                    .row = static_cast<std::uint32_t>(
+                        targetRow)}) = held
+                    [static_cast<std::size_t>(row) * span.columns
+                     + column];
+            }
+        }
     }
 
     void markStampStart(EditorState &state)
@@ -546,6 +820,21 @@ namespace antwika::map_editor
         state.map = withPalette(state.map, ink, paper);
     }
 
+    void setTilesets(
+        EditorState &state,
+        const std::array<
+            std::string,
+            enums::kCount<tilemap::TerrainClass>> &names)
+    {
+        if (state.map.header().tilesets == names)
+        {
+            return;
+        }
+
+        pushUndo(state);
+        state.map = withTilesets(state.map, names);
+    }
+
     void previewPalette(
         EditorState &state,
         const tilemap::Rgb ink,
@@ -558,6 +847,7 @@ namespace antwika::map_editor
         }
 
         state.map = withPalette(state.map, ink, paper);
+        ++state.revision;
     }
 
     tilemap::Rgb activePaletteColor(const EditorStore &store)
@@ -599,10 +889,11 @@ namespace antwika::map_editor
 
     void openPaletteDialog(EditorStore &store)
     {
-        store.palette = PaletteDialog{
-            .open = true,
-            .savedInk = store.state.map.header().ink,
-            .savedPaper = store.state.map.header().paper};
+        PaletteDialog fresh;
+        fresh.open = true;
+        fresh.savedInk = store.state.map.header().ink;
+        fresh.savedPaper = store.state.map.header().paper;
+        store.palette = std::move(fresh);
         syncPaletteFromActive(store);
     }
 
@@ -642,6 +933,7 @@ namespace antwika::map_editor
         clampHovered(state);
         reconcilePins(state);
         state.reportStale = true;
+        ++state.revision;
     }
 
     void redo(EditorState &state)
@@ -658,6 +950,7 @@ namespace antwika::map_editor
         clampHovered(state);
         reconcilePins(state);
         state.reportStale = true;
+        ++state.revision;
     }
 
     void toggleOverlay(EditorState &state)
@@ -669,14 +962,14 @@ namespace antwika::map_editor
     {
         try
         {
-            tilemap::saveMapFile(
-                state.path,
-                tilemap::MapDocument{
-                    .map = state.map, .free = freeMaskOf(state)});
+            tilemap::MapDocument document{.map = state.map}; // GCOVR_EXCL_LINE
+            document.free = freeMaskOf(state);
+
+            tilemap::saveMapFile(state.path, document);
             logger.log(
                 log::Level::Info, "saved " + state.path.string());
         }
-        catch (const tilemap::TileMapError &error)
+        catch (const tilemap::TileMapError &error) // GCOVR_EXCL_LINE
         {
             logger.log(log::Level::Error, error.what());
         }
@@ -694,13 +987,14 @@ namespace antwika::map_editor
             pushUndo(state);
             state.map = std::move(loaded.map);
             state.path = path;
+            state.activeLevel = 0;
             clampHovered(state);
             applyFreeMask(state, loaded.free);
             logger.log(
                 log::Level::Info, "opened " + path.string());
             return std::nullopt;
         }
-        catch (const tilemap::TileMapError &error)
+        catch (const tilemap::TileMapError &error) // GCOVR_EXCL_LINE
         {
             logger.log(log::Level::Error, error.what());
             return std::string{error.what()};
@@ -714,15 +1008,15 @@ namespace antwika::map_editor
     {
         try
         {
-            tilemap::saveMapFile(
-                path,
-                tilemap::MapDocument{
-                    .map = state.map, .free = freeMaskOf(state)});
+            tilemap::MapDocument document{.map = state.map}; // GCOVR_EXCL_LINE
+            document.free = freeMaskOf(state);
+
+            tilemap::saveMapFile(path, document);
             state.path = path;
             logger.log(log::Level::Info, "saved " + path.string());
             return std::nullopt;
         }
-        catch (const tilemap::TileMapError &error)
+        catch (const tilemap::TileMapError &error) // GCOVR_EXCL_LINE
         {
             logger.log(log::Level::Error, error.what());
             return std::string{error.what()};
@@ -733,13 +1027,17 @@ namespace antwika::map_editor
     {
         saveMap(state, logger);
 
-        const std::string command{kPlaytestCommand};
+        const auto command = std::string(kPlaytestBinary)
+                             + " --map \"" + state.path.string()
+                             + "\" &";
 
         logger.log(log::Level::Info, "launching " + command);
 
-        if (std::system(command.c_str()) != 0)
+        if (std::system(command.c_str()) != 0) // GCOVR_EXCL_LINE
         {
-            logger.log(log::Level::Warning, "playtest launch failed");
+            logger.log( // GCOVR_EXCL_LINE
+                log::Level::Warning, // GCOVR_EXCL_LINE
+                "playtest launch failed"); // GCOVR_EXCL_LINE
         }
     }
 
@@ -752,12 +1050,13 @@ namespace antwika::map_editor
 
             pushUndo(state);
             state.map = std::move(loaded.map);
+            state.activeLevel = 0;
             clampHovered(state);
             applyFreeMask(state, loaded.free);
             logger.log(
                 log::Level::Info, "reloaded " + state.path.string());
         }
-        catch (const tilemap::TileMapError &error)
+        catch (const tilemap::TileMapError &error) // GCOVR_EXCL_LINE
         {
             logger.log(log::Level::Error, error.what());
         }
@@ -765,8 +1064,10 @@ namespace antwika::map_editor
 
     void validateNow(EditorState &state)
     {
+        const auto entry = entryCell(state.map);
+
         state.report = mapcheck::validateMap(
-            state.map, entryCell(state.map), {});
+            state.map, entry.cell, entry.level, {});
         state.reportStale = false;
         state.framesSinceReport = 0;
     }
@@ -786,8 +1087,10 @@ namespace antwika::map_editor
             return;
         }
 
+        const auto entry = entryCell(state.map);
+
         state.report = mapcheck::validateMap(
-            state.map, entryCell(state.map), {});
+            state.map, entry.cell, entry.level, {});
         state.reportStale = false;
         state.framesSinceReport = 0;
     }

@@ -51,10 +51,6 @@ namespace antwika::map_editor
         constexpr Color kWhite{
             .red = 255, .green = 255, .blue = 255};
 
-        constexpr std::int32_t kLeft = 32;
-
-        constexpr std::int32_t kTop = 12;
-
         constexpr std::int32_t kExtent =
             static_cast<std::int32_t>(kCharacterSize) * kCharacterZoom;
 
@@ -63,6 +59,7 @@ namespace antwika::map_editor
 
         constexpr std::string_view kSidecar =
             "{\n"
+            "  \"schema\": 1,\n"
             "  \"size\": 64,\n"
             "  \"frame\": 16,\n"
             "  \"columns\": 4,\n"
@@ -190,8 +187,8 @@ namespace antwika::map_editor
 
     std::optional<Point> characterPixelAt(const Point canvas) noexcept
     {
-        const auto localX = canvas.x - kLeft;
-        const auto localY = canvas.y - kTop;
+        const auto localX = canvas.x - kCharacterLeft;
+        const auto localY = canvas.y - kCharacterTop;
 
         if (localX < 0 || localY < 0 || localX >= kExtent
             || localY >= kExtent)
@@ -208,12 +205,10 @@ namespace antwika::map_editor
     {
         Bitmap sheet{
             .size = {.width = kCharacterSize, .height = kCharacterSize},
-            .pixels = {}};
-
-        sheet.pixels.assign(
-            static_cast<std::size_t>(kCharacterSize) * kCharacterSize
-                * gfx::kBytesPerPixel,
-            0);
+            .pixels = std::vector<std::uint8_t>(
+                static_cast<std::size_t>(kCharacterSize) * kCharacterSize
+                    * gfx::kBytesPerPixel,
+                0)};
 
         for (std::int32_t row = 0; row < 4; ++row)
         {
@@ -236,8 +231,12 @@ namespace antwika::map_editor
         for (const auto &entry :
              std::filesystem::directory_iterator(directory, missing))
         {
-            if (!entry.is_regular_file()
-                || entry.path().extension() != ".png")
+            if (!entry.is_regular_file())
+            {
+                continue;
+            }
+
+            if (entry.path().extension() != ".png")
             {
                 continue;
             }
@@ -259,13 +258,12 @@ namespace antwika::map_editor
                     continue;
                 }
 
-                CharacterDoc character{
-                    .name = entry.path().stem().string()};
-
+                CharacterDoc character;
+                character.name = entry.path().stem().string();
                 character.sheet.image = std::move(bitmap);
                 list.push_back(std::move(character));
             }
-            catch (const gfx::GfxError &error)
+            catch (const gfx::GfxError &error) // GCOVR_EXCL_LINE
             {
                 logger.log(log::Level::Warning, error.what());
             }
@@ -296,9 +294,11 @@ namespace antwika::map_editor
                 return "cannot open " + png.string();
             }
 
-            gfx::PngWriter{}.write(character.sheet.image, out);
-
-            if (!out.good())
+            try
+            {
+                gfx::PngWriter{}.write(character.sheet.image, out);
+            }
+            catch (const gfx::GfxError &) // GCOVR_EXCL_LINE
             {
                 return "cannot write " + png.string();
             }
@@ -374,8 +374,8 @@ namespace antwika::map_editor
         const std::optional<Point> hover,
         const std::uint32_t tick)
     {
-        const auto left = static_cast<float>(kLeft);
-        const auto top = static_cast<float>(kTop);
+        const auto left = static_cast<float>(kCharacterLeft);
+        const auto top = static_cast<float>(kCharacterTop);
         const auto zoom = static_cast<float>(kCharacterZoom);
         const auto size = static_cast<std::int32_t>(kCharacterSize);
 

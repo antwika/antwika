@@ -4,17 +4,19 @@
 #include <variant>
 
 #include <antwika/geometry/Grid.hpp>
-#include <antwika/tilemap/Cell.hpp>
+#include <antwika/tilemap/Column.hpp>
 #include <antwika/tilemap/Entities.hpp>
 #include <antwika/tilemap/MapHeader.hpp>
+#include <antwika/tilemap/Slab.hpp>
 #include <antwika/tilemap/TerrainClass.hpp>
 #include <antwika/tilemap/TileMap.hpp>
 #include <antwika/tilemap/TileMapError.hpp>
 
 using antwika::geometry::GridCell;
-using antwika::tilemap::Cell;
+using antwika::tilemap::Column;
 using antwika::tilemap::MapHeader;
 using antwika::tilemap::Npc;
+using antwika::tilemap::Slab;
 using antwika::tilemap::TerrainClass;
 using antwika::tilemap::TileMap;
 using antwika::tilemap::TileMapError;
@@ -38,14 +40,17 @@ TEST(TileMapTest, Ctor_ThrowsOnZeroRows)
     EXPECT_THROW(mapOf(3, 0), TileMapError);
 }
 
-TEST(TileMapTest, Ctor_FillsTheGridWithDefaultCells)
+TEST(TileMapTest, Ctor_FillsEveryColumnWithADefaultSlabAtLevelZero)
 {
     const auto map = mapOf(3, 2);
 
+    Column single;
+    (void)single.place(Slab{});
+
     EXPECT_EQ(map.columns(), 3U);
     EXPECT_EQ(map.rows(), 2U);
-    EXPECT_EQ(map.at(GridCell{.column = 0, .row = 0}), Cell{});
-    EXPECT_EQ(map.at(GridCell{.column = 2, .row = 1}), Cell{});
+    EXPECT_EQ(map.at(GridCell{.column = 0, .row = 0}), single);
+    EXPECT_EQ(map.at(GridCell{.column = 2, .row = 1}), single);
 }
 
 TEST(TileMapTest, Ctor_KeepsTheHeaderItWasGiven)
@@ -55,34 +60,31 @@ TEST(TileMapTest, Ctor_KeepsTheHeaderItWasGiven)
     EXPECT_EQ(map.header().id, "wakewater-01");
 }
 
-TEST(TileMapTest, At_AddressesCellsByColumnAndRow)
+TEST(TileMapTest, At_AddressesColumnsByColumnAndRow)
 {
     auto map = mapOf(3, 2);
 
-    map.at(GridCell{.column = 2, .row = 0}).terrain =
-        TerrainClass::Water;
-    map.at(GridCell{.column = 0, .row = 1}).terrain =
-        TerrainClass::Cliff;
+    (void)map.at(GridCell{.column = 2, .row = 0})
+        .place(Slab{.level = 1, .terrain = TerrainClass::Water});
+    (void)map.at(GridCell{.column = 0, .row = 1})
+        .place(Slab{.level = -1, .terrain = TerrainClass::Cliff});
 
     const auto &read = map;
+    ASSERT_NE(
+        read.at(GridCell{.column = 2, .row = 0}).slabAt(1), nullptr);
     EXPECT_EQ(
-        read.at(GridCell{.column = 2, .row = 0}).terrain,
+        read.at(GridCell{.column = 2, .row = 0}).slabAt(1)->terrain,
         TerrainClass::Water);
+    ASSERT_NE(
+        read.at(GridCell{.column = 0, .row = 1}).slabAt(-1),
+        nullptr);
     EXPECT_EQ(
-        read.at(GridCell{.column = 0, .row = 1}).terrain,
+        read.at(GridCell{.column = 0, .row = 1}).slabAt(-1)->terrain,
         TerrainClass::Cliff);
     EXPECT_EQ(
-        read.at(GridCell{.column = 0, .row = 0}).terrain,
-        TerrainClass::Floor);
+        read.at(GridCell{.column = 1, .row = 0}).slabs().size(), 1U);
     EXPECT_EQ(
-        read.at(GridCell{.column = 1, .row = 0}).terrain,
-        TerrainClass::Floor);
-    EXPECT_EQ(
-        read.at(GridCell{.column = 1, .row = 1}).terrain,
-        TerrainClass::Floor);
-    EXPECT_EQ(
-        read.at(GridCell{.column = 2, .row = 1}).terrain,
-        TerrainClass::Floor);
+        read.at(GridCell{.column = 1, .row = 1}).slabs().size(), 1U);
 }
 
 TEST(TileMapTest, At_ThrowsOnAColumnBeyondTheGrid)

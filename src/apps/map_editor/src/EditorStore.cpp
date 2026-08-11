@@ -9,6 +9,7 @@
 #include <vector>
 
 #include <antwika/tilemap/Entities.hpp>
+#include <antwika/tileset/TilesetFile.hpp>
 
 namespace antwika::map_editor
 {
@@ -29,7 +30,11 @@ namespace antwika::map_editor
         {
             const auto cursor = text.size();
 
-            return FieldBuffer{.text = std::move(text), .cursor = cursor};
+            FieldBuffer buffer;
+            buffer.text = std::move(text);
+            buffer.cursor = cursor;
+
+            return buffer;
         }
 
         [[nodiscard]] std::string idOf(const tilemap::Entity &entity)
@@ -41,11 +46,6 @@ namespace antwika::map_editor
 
     SheetDoc *activeSheet(EditorStore &store)
     {
-        if (store.view == EditorView::Tiles)
-        {
-            return &store.tiles.docs[enums::index(store.state.brush)];
-        }
-
         if (store.view == EditorView::Characters)
         {
             auto &characters = store.characters;
@@ -59,6 +59,56 @@ namespace antwika::map_editor
         }
 
         return nullptr;
+    }
+
+    TilesetDoc *activeTilesetDoc(EditorStore &store)
+    {
+        auto &open = store.tilesets.open;
+
+        if (open.empty())
+        {
+            return nullptr;
+        }
+
+        return &open[store.tilesets.active % open.size()];
+    }
+
+    const TilesetDoc *activeTilesetDoc(const EditorStore &store)
+    {
+        const auto &open = store.tilesets.open;
+
+        if (open.empty())
+        {
+            return nullptr;
+        }
+
+        return &open[store.tilesets.active % open.size()];
+    }
+
+    gfx::Point mapPointOf(
+        const gfx::Point canvas, const MapCamera &camera) noexcept
+    {
+        const auto zoom = camera.zoom();
+        const auto localX =
+            static_cast<float>(canvas.x) - camera.panX;
+        const auto localY =
+            static_cast<float>(canvas.y - kMenuBarHeight)
+            - camera.panY;
+
+        return gfx::Point{
+            .x = static_cast<std::int32_t>(localX / zoom),
+            .y = static_cast<std::int32_t>(localY / zoom)};
+    }
+
+    void togglePicker(EditorStore &store)
+    {
+        auto &picker = store.picker;
+
+        picker.active = !picker.active;
+        picker.pending.reset();
+        picker.walkCell.reset();
+        picker.walkDepth = 0;
+        picker.hover.clear();
     }
 
     void cycleEditorView(EditorStore &store)
@@ -77,6 +127,22 @@ namespace antwika::map_editor
         }
     }
 
+    void cycleEditorViewBack(EditorStore &store)
+    {
+        switch (store.view)
+        {
+            case EditorView::Map:
+                store.view = EditorView::Characters;
+                return;
+            case EditorView::Characters:
+                store.view = EditorView::Tiles;
+                return;
+            default:
+                store.view = EditorView::Map;
+                return;
+        }
+    }
+
     void clampCamera(
         MapCamera &camera,
         const float mapWidth,
@@ -84,14 +150,15 @@ namespace antwika::map_editor
     {
         const auto zoom = camera.zoom();
 
-        camera.panX = std::clamp(
-            camera.panX,
-            kMinVisible - mapWidth * zoom,
-            static_cast<float>(kMapViewWidth) - kMinVisible);
-        camera.panY = std::clamp(
-            camera.panY,
-            kMinVisible - mapHeight * zoom,
-            static_cast<float>(kMapViewHeight) - kMinVisible);
+        const auto lowX = kMinVisible - mapWidth * zoom;
+        const auto highX =
+            static_cast<float>(kMapViewWidth) - kMinVisible;
+        const auto lowY = kMinVisible - mapHeight * zoom;
+        const auto highY =
+            static_cast<float>(kMapViewHeight) - kMinVisible;
+
+        camera.panX = std::clamp(camera.panX, lowX, highX);
+        camera.panY = std::clamp(camera.panY, lowY, highY);
     }
 
     void zoomAt(
@@ -142,29 +209,78 @@ namespace antwika::map_editor
         }
     }
 
-    void openFileDialog(EditorStore &store, const DialogMode mode)
+    void openFileDialog(
+        EditorStore &store,
+        const DialogMode mode,
+        const DialogTarget target)
     {
         auto &dialog = store.dialog;
 
         dialog.mode = mode;
+        dialog.target = target;
         dialog.message.clear();
+
+        if (target == DialogTarget::Tileset)
+        {
+            dialog.directory = store.tilesets.directory.string();
+
+            const auto *doc = activeTilesetDoc(store);
+            const auto name = doc != nullptr && mode == DialogMode::SaveAs
+                                  ? doc->data.name
+                                  : std::string{};
+
+            FieldBuffer named;
+            named.text = name;
+            named.cursor = name.size();
+            dialog.nameField = std::move(named);
+            refreshDialogEntries(dialog);
+            return;
+        }
 
         const auto parent = store.state.path.parent_path();
 
-        dialog.directory =
-            parent.empty() ? std::string{"."} : parent.string();
+        if (parent.empty())
+        {
+            dialog.directory = ".";
+        }
+        else
+        {
+            dialog.directory = parent.string();
+        }
 
         const auto name = store.state.path.filename().string();
 
-        dialog.nameField = FieldBuffer{
-            .text = mode == DialogMode::SaveAs ? name : std::string{},
-            .cursor = mode == DialogMode::SaveAs ? name.size() : 0};
+        FieldBuffer named;
+
+        if (mode == DialogMode::SaveAs)
+        {
+            named.text = name;
+            named.cursor = name.size();
+        }
+
+        dialog.nameField = std::move(named);
 
         refreshDialogEntries(dialog);
     }
 
     void refreshDialogEntries(FileDialog &dialog)
     {
+        if (dialog.target == DialogTarget::Tileset)
+        {
+            dialog.entries.clear();
+
+            for (auto &name : tileset::listTilesets(dialog.directory))
+            {
+                io::FileEntry entry;
+                entry.name = std::move(name);
+                entry.directory = false;
+                dialog.entries.push_back(std::move(entry));
+            }
+
+            dialog.page = 0;
+            return;
+        }
+
         auto listed = io::entriesIn(dialog.directory);
 
         std::vector<io::FileEntry> kept;
@@ -230,7 +346,7 @@ namespace antwika::map_editor
         }
 
         return joined;
-    }
+    } // GCOVR_EXCL_LINE
 
     std::vector<std::string> splitTags(const std::string &joined)
     {

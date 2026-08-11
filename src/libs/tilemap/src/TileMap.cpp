@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <utility>
 
+#include "antwika/tilemap/Slab.hpp"
 #include "antwika/tilemap/TileMapError.hpp"
 
 namespace antwika::tilemap
@@ -21,9 +22,14 @@ namespace antwika::tilemap
             throw TileMapError("a tile map needs at least one cell");
         }
 
-        cells_.resize(
+        grid_.resize(
             static_cast<std::size_t>(columns)
             * static_cast<std::size_t>(rows));
+
+        for (auto &column : grid_)
+        {
+            (void)column.place(Slab{});
+        }
     }
 
     const MapHeader &TileMap::header() const noexcept
@@ -41,14 +47,14 @@ namespace antwika::tilemap
         return rows_;
     }
 
-    Cell &TileMap::at(const geometry::GridCell cell)
+    Column &TileMap::at(const geometry::GridCell cell)
     {
-        return cells_[indexOf(cell)];
+        return grid_[indexOf(cell)];
     }
 
-    const Cell &TileMap::at(const geometry::GridCell cell) const
+    const Column &TileMap::at(const geometry::GridCell cell) const
     {
-        return cells_[indexOf(cell)];
+        return grid_[indexOf(cell)];
     }
 
     const std::vector<Entity> &TileMap::entities() const noexcept

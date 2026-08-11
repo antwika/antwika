@@ -1,14 +1,19 @@
 #include "antwika/map_editor/KeyboardSystem.hpp"
 
+#include <string>
 #include <variant>
 
+#include <antwika/enums/Enumeration.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/tilemap/TerrainClass.hpp>
 
 #include "antwika/map_editor/CharacterSheets.hpp"
 #include "antwika/map_editor/Commands.hpp"
 #include "antwika/map_editor/Generate.hpp"
+#include "antwika/map_editor/Hotkeys.hpp"
+#include "antwika/map_editor/Selection.hpp"
 #include "antwika/map_editor/SheetWorkspace.hpp"
+#include "antwika/map_editor/TilesetWorkspace.hpp"
 #include "antwika/map_editor/UiKeyMapping.hpp"
 #include "antwika/map_editor/Widgets.hpp"
 
@@ -20,6 +25,27 @@ namespace antwika::map_editor
         using antwika::input::Key;
         using antwika::input::KeyPressed;
         using antwika::tilemap::TerrainClass;
+
+        void selectFrameDigit(EditorStore &store, const Key key)
+        {
+            switch (key)
+            {
+                case Key::Digit1:
+                    selectTilesetFrame(store, 0);
+                    return;
+                case Key::Digit2:
+                    selectTilesetFrame(store, 1);
+                    return;
+                case Key::Digit3:
+                    selectTilesetFrame(store, 2);
+                    return;
+                case Key::Digit4:
+                    selectTilesetFrame(store, 3);
+                    return;
+                default:
+                    return;
+            }
+        }
 
         void selectDigit(EditorState &state, const Key key)
         {
@@ -86,6 +112,12 @@ namespace antwika::map_editor
             const auto key = pressed->key;
             const auto shift = pressed->modifiers.shift;
 
+            if (store.keys.open)
+            {
+                keysDialogKey(key);
+                continue;
+            }
+
             if (key == Key::Escape && store.dialog.open())
             {
                 store.dialog.mode = DialogMode::None;
@@ -111,18 +143,6 @@ namespace antwika::map_editor
                 continue;
             }
 
-            if (key == Key::F5 && !modalOpen(store))
-            {
-                playtest(store.state, logger);
-                continue;
-            }
-
-            if (key == Key::F10 && !modalOpen(store))
-            {
-                store.pendingFullscreenToggle = true;
-                continue;
-            }
-
             if (fieldFocused)
             {
                 if (const auto meaning = uiKeyFor(key, shift))
@@ -143,21 +163,31 @@ namespace antwika::map_editor
 
             if (key == Key::Tab && !modalOpen(store))
             {
-                cycleEditorView(store);
-                continue;
-            }
-
-            if (key == Key::Tab || key == Key::Enter)
-            {
-                if (const auto meaning = uiKeyFor(key, shift))
+                if (shift)
                 {
-                    input.uiKeys.push_back(*meaning);
+                    cycleEditorViewBack(store);
+                }
+                else
+                {
+                    cycleEditorView(store);
                 }
 
                 continue;
             }
 
+            if (key == Key::Tab || key == Key::Enter)
+            {
+                input.uiKeys.push_back(*uiKeyFor(key, shift));
+                continue;
+            }
+
             if (modalOpen(store))
+            {
+                continue;
+            }
+
+            if (pressed->modifiers.control
+                && selectionChord(store, key))
             {
                 continue;
             }
@@ -168,31 +198,73 @@ namespace antwika::map_editor
 
     void KeyboardSystem::handleFastPath(const input::Key key)
     {
+        if (key == Key::Escape)
+        {
+            if (clearActiveSelection(store))
+            {
+                return;
+            }
+
+            if (exitActiveSelectTool(store))
+            {
+                return;
+            }
+
+            if (store.picker.active)
+            {
+                togglePicker(store);
+                return;
+            }
+
+            store.input.quit = true;
+            window.close();
+            return;
+        }
+
+        if (const auto action = actionOfKey(store.hotkeys, key))
+        {
+            perform(*action);
+            return;
+        }
+
+        if (store.view == EditorView::Map)
+        {
+            selectDigit(store.state, key);
+        }
+        else if (store.view == EditorView::Tiles)
+        {
+            selectFrameDigit(store, key);
+        }
+    }
+
+    void KeyboardSystem::perform(const HotkeyAction action)
+    {
         auto &state = store.state;
 
-        switch (key)
+        switch (action)
         {
-            case Key::Escape:
-                store.input.quit = true;
-                window.close();
+            case HotkeyAction::RaiseHeight:
+                stepActiveLevel(state, 1);
                 return;
-            case Key::E:
-                raiseHovered(state);
+            case HotkeyAction::LowerHeight:
+                stepActiveLevel(state, -1);
                 return;
-            case Key::Q:
-                lowerHovered(state);
-                return;
-            case Key::B:
+            case HotkeyAction::Bridge:
                 toggleBridge(state);
                 return;
-            case Key::C:
-                store.tiles.drawPaper = !store.tiles.drawPaper;
-                return;
-            case Key::L:
+            case HotkeyAction::Light:
                 cycleLight(state);
                 return;
-            case Key::U:
-                if (store.view != EditorView::Map)
+            case HotkeyAction::Undo:
+                clearSelectionsAfterHistory(store);
+
+                if (store.view == EditorView::Tiles)
+                {
+                    tilesetUndo(store);
+                    return;
+                }
+
+                if (store.view == EditorView::Characters)
                 {
                     sheetUndo(store);
                     return;
@@ -200,8 +272,16 @@ namespace antwika::map_editor
 
                 undo(state);
                 return;
-            case Key::R:
-                if (store.view != EditorView::Map)
+            case HotkeyAction::Redo:
+                clearSelectionsAfterHistory(store);
+
+                if (store.view == EditorView::Tiles)
+                {
+                    tilesetRedo(store);
+                    return;
+                }
+
+                if (store.view == EditorView::Characters)
                 {
                     sheetRedo(store);
                     return;
@@ -209,10 +289,10 @@ namespace antwika::map_editor
 
                 redo(state);
                 return;
-            case Key::S:
+            case HotkeyAction::Save:
                 if (store.view == EditorView::Tiles)
                 {
-                    saveActiveTerrainSheet(store, logger);
+                    saveActiveTileset(store, logger);
                     return;
                 }
 
@@ -224,40 +304,98 @@ namespace antwika::map_editor
 
                 saveMap(state, logger);
                 return;
-            case Key::O:
+            case HotkeyAction::Reload:
                 reloadMap(state, logger);
                 return;
-            case Key::V:
-                toggleOverlay(state);
-                return;
-            case Key::T:
-                placeTransition(state);
-                return;
-            case Key::N:
-                placeNpc(state);
-                return;
-            case Key::K:
-                placePickup(state);
-                return;
-            case Key::X:
-                removeEntitiesAtHovered(state);
-                return;
-            case Key::LeftBracket:
-                markStampStart(state);
-                return;
-            case Key::RightBracket:
-                copyStampEnd(state);
-                return;
-            case Key::P:
-                pasteStamp(state);
-                return;
-            case Key::G:
+            case HotkeyAction::Generate:
                 generate(state, logger);
                 return;
+            case HotkeyAction::Validator:
+                toggleOverlay(state);
+                return;
+            case HotkeyAction::PlaceTransition:
+                placeTransition(state);
+                return;
+            case HotkeyAction::PlaceNpc:
+                placeNpc(state);
+                return;
+            case HotkeyAction::PlaceKey:
+                placePickup(state);
+                return;
+            case HotkeyAction::DeleteEntities:
+                removeEntitiesAtHovered(state);
+                return;
+            case HotkeyAction::StampCorner:
+                markStampStart(state);
+                return;
+            case HotkeyAction::StampCopy:
+                copyStampEnd(state);
+                return;
+            case HotkeyAction::StampPaste:
+                pasteStamp(state);
+                return;
+            case HotkeyAction::DrawColor:
+                store.tilesets.drawPaper =
+                    !store.tilesets.drawPaper;
+                return;
+            case HotkeyAction::Playtest:
+                playtest(state, logger);
+                return;
+            case HotkeyAction::Picker:
+                if (store.view == EditorView::Map)
+                {
+                    togglePicker(store);
+                }
+
+                return;
             default:
-                selectDigit(state, key);
+                store.pendingFullscreenToggle = true;
                 return;
         }
+    }
+
+    void KeyboardSystem::keysDialogKey(const input::Key key)
+    {
+        auto &dialog = store.keys;
+
+        if (!dialog.capturing.has_value())
+        {
+            if (key == Key::Escape)
+            {
+                dialog.open = false;
+            }
+
+            return;
+        }
+
+        if (key == Key::Escape)
+        {
+            dialog.capturing.reset();
+            dialog.message.clear();
+            return;
+        }
+
+        if (!bindableHotkey(key))
+        {
+            dialog.message = "that key is reserved";
+            return;
+        }
+
+        const auto action = *dialog.capturing;
+        const auto holder = actionOfKey(store.hotkeys, key);
+
+        if (holder.has_value() && *holder != action)
+        {
+            dialog.message = std::string(keyCaption(key))
+                             + " is bound to "
+                             + std::string(hotkeyLabel(*holder));
+            return;
+        }
+
+        store.hotkeys[enums::index(action)] = key;
+        dialog.capturing.reset();
+        dialog.message.clear();
+        store.pendingConfigWrite = true;
     }
 
 }
