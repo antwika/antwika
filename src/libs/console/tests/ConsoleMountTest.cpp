@@ -411,6 +411,30 @@ TEST(ConsoleMountTest, Sink_CountsAnEngineTickAsNoPressAtAll)
     EXPECT_EQ(harness.overlay.commands(), settled);
 }
 
+TEST(ConsoleMountTest, Events_HandTheHostWhatTheConsoleSent)
+{
+    Harness harness;
+    ConsoleMount mount(ConsoleMountSetup{
+        .overlay = harness.overlay,
+        .input = harness.input,
+        .store = harness.store,
+        .dumpPath = harness.dumpPath,
+        .loadEnabled = true});
+
+    const auto reader = mount.events().open();
+
+    harness.openFully(mount, Key::Grave);
+
+    const std::string sent = "send spawn";
+    mount.state().setLine(sent, sent.size());
+    harness.press(mount, Key::Enter);
+
+    const auto due = mount.events().take(reader);
+
+    ASSERT_EQ(due.size(), 1U);
+    EXPECT_EQ(due.front().name, "spawn");
+}
+
 TEST(ConsoleMountTest, Gate_TakesAKeyOnlyWhileTheConsoleIsOut)
 {
     Harness harness;

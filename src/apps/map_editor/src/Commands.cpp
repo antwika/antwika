@@ -30,7 +30,7 @@ namespace antwika::map_editor
         constexpr std::size_t kUndoDepth = 256;
 
         constexpr std::string_view kPlaytestBinary =
-            "./build/bin/antwika_tilemap_demo/antwika_tilemap_demo";
+            "./build/bin/antwika_game/antwika_game";
         constexpr std::uint32_t kReportPeriod = 30;
         constexpr std::uint8_t kLightFull = 255;
         constexpr std::uint8_t kLightDim = 160;

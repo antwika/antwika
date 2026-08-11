@@ -15,8 +15,7 @@ The map system splits into three new pure libraries and two apps, keeping the ed
 | `autotile` | library | Dual-grid sprite selection, wall bands, cutaway, draw-plan generation. |
 | `mapcheck` | library | Reachability validation, tag cross-checks, world-graph pass. |
 | `map_editor` | app | The authoring tool. |
-| `tilemap_demo` | app | Milestone 1 proof app, later a rendering scratchpad. |
-| `wakewater` | app | The game itself (working title Wakewater), created outside this plan. |
+| `game` | app | The game itself (working title Wakewater), grown from the milestone 1 proof app that was called `tilemap_demo` while it was one. |
 
 Existing code is reused rather than duplicated:
 
@@ -28,7 +27,7 @@ Existing code is reused rather than duplicated:
 | `antwika::app` | `WindowedHost`, `WindowedSession`, and frame pacing for both apps. |
 | `antwika::input` | Editor and demo input handling. |
 | `antwika::config` | The nlohmann-based JSON document plumbing for map files. |
-| `antwika::replay` | Record-and-replay tests for the editor loop, as the `game` app already does. |
+| `antwika::replay` | Record-and-replay tests for the editor loop. |
 | `antwika::wfc` | The existing constraint solver, only if step 13 ever happens. |
 
 ## Step 0: preconditions
@@ -63,7 +62,7 @@ Define the spritesheet layout convention where sheet position encodes the corner
 Add `scripts/generate_placeholder_tiles.py`, in the vein of `generate_poker_atlas.py`, emitting deliberately ugly but legible 1-bit placeholder sheets for every terrain.
 Document the convention in this directory so the artist can replace placeholders sheet by sheet without code changes.
 
-## Step 5: `tilemap_demo` — the milestone 1 proof
+## Step 5: `game` — the milestone 1 proof
 
 Create the demo app: a hardcoded map containing multi-level cliffs, stairs, water basins, and a tall structure with a narrow pathway behind it, rendered through `ViewportRenderer` at 320×180 with integer scaling.
 A keyboard-driven player marker proves collision feel is out of scope here but cutaway is not: walking behind the tall structure must hide its connected block from the marker's level upward.
@@ -80,7 +79,7 @@ Ship a small `mapcheck` CLI app and register a CTest entry that runs it over eve
 
 Create the editor app on `WindowedHost` with the smallest useful loop: terrain brush, height brush with per-level isolation views, save and load through `tilemap`, and the live `autotile` preview.
 Undo and redo land in this step, not later: every mutation goes through a command history from the first commit, and the command types live in the app's object library where `antwika_add_app_tests` can cover them headlessly.
-Editor sessions are covered with record-and-replay tests following the `game` app's `replays/` precedent.
+Editor sessions are covered with record-and-replay tests, replaying a recorded session against the editor loop.
 
 ## Step 8: entities and the world graph in the editor
 
@@ -97,8 +96,7 @@ Golden tests pin that the same map renders identically across runs.
 ## Step 10: stamps and the playtest handoff
 
 Add region select, copy, and paste, with stamps persisted as map-fragment files reusing the step 2 schema.
-Add the playtest handoff in its simplest honest form first: the editor launches the `wakewater` binary with a map path and spawn position on the command line.
-This step depends on the `wakewater` app existing at all; if it does not yet, the handoff targets `tilemap_demo` as a stand-in.
+Add the playtest handoff in its simplest honest form first: the editor launches the `game` binary with a map path and spawn position on the command line.
 
 ## Step 11: water, phase by phase
 

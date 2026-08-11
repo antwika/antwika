@@ -1,148 +1,25 @@
 antwika_add_app(
     NAME game
     SOURCES
-        src/Action.cpp
-        src/AppMode.cpp
-        src/AtlasSheets.cpp
-        src/BindingEvent.cpp
-        src/BindingSink.cpp
-        src/BindingSource.cpp
-        src/BuildGhost.cpp
-        src/BuildingIndex.cpp
-        src/BuildingSystem.cpp
-        src/CityGrid.cpp
-        src/CityRatings.cpp
-        src/ConfigFile.cpp
-        src/Coverage.cpp
-        src/CoverageSystem.cpp
-        src/Demolition.cpp
-        src/Desirability.cpp
-        src/DesirabilitySystem.cpp
-        src/DropRiskServices.cpp
-        src/Employment.cpp
-        src/Errand.cpp
-        src/ErrandRouting.cpp
-        src/FpsReadout.cpp
-        src/FrameMeter.cpp
-        src/Game.cpp
-        src/GameSnapshotStore.cpp
-        src/GameStateReducer.cpp
-        src/GridScene.cpp
-        src/GridSink.cpp
-        src/HaulingSystem.cpp
-        src/Homing.cpp
-        src/HotkeySink.cpp
-        src/Household.cpp
-        src/HousingQuery.cpp
-        src/HousingSystem.cpp
-        src/Hover.cpp
-        src/Journey.cpp
-        src/KeyText.cpp
-        src/KeyboardEvent.cpp
-        src/KeyboardLayout.cpp
-        src/KeyboardSource.cpp
-        src/LabourDispatchSystem.cpp
-        src/LabourQuery.cpp
-        src/LocaleEvent.cpp
-        src/LocaleSource.cpp
-        src/LocaleState.cpp
-        src/MainMenuScene.cpp
-        src/MainMenuSink.cpp
-        src/MapView.cpp
-        src/MenuCommands.cpp
-        src/MenuModalScene.cpp
-        src/Messages.cpp
-        src/ModeGatedSink.cpp
-        src/OptionsConsoleControls.cpp
-        src/OptionsFile.cpp
-        src/OptionsScene.cpp
-        src/OptionsState.cpp
-        src/OverlayField.cpp
-        src/OverlayLabel.cpp
-        src/PathIndex.cpp
-        src/PauseGatedSystem.cpp
-        src/PauseState.cpp
-        src/Placement.cpp
-        src/PopulationSystem.cpp
-        src/ProductionSystem.cpp
-        src/RatingsSystem.cpp
-        src/ReadoutPanel.cpp
-        src/RenameToServices.cpp
-        src/RenderSystem.cpp
-        src/ResourceColour.cpp
-        src/RoadDrag.cpp
-        src/RoadPlan.cpp
-        src/RuinSystem.cpp
-        src/SaveCli.cpp
-        src/SaveCoverage.cpp
-        src/SaveDirectory.cpp
-        src/SaveGame.cpp
-        src/SaveGameFile.cpp
-        src/SaveHousing.cpp
-        src/SaveLabour.cpp
-        src/SaveLoadScene.cpp
-        src/SaveLoadSink.cpp
-        src/SaveLoadState.cpp
-        src/SaveMigrants.cpp
-        src/SaveMigration.cpp
-        src/SaveProduction.cpp
-        src/SaveRuins.cpp
-        src/SaveSections.cpp
-        src/SceneSnapshot.cpp
-        src/SessionGatedSystem.cpp
-        src/SessionStore.cpp
-        src/SpawnSystem.cpp
-        src/Staff.cpp
-        src/StaffingSystem.cpp
-        src/StandingBuildings.cpp
-        src/StateDump.cpp
-        src/Store.cpp
-        src/SupplySystem.cpp
-        src/Toolbar.cpp
-        src/UiOverlay.cpp
-        src/UiSink.cpp
-        src/ViewCommands.cpp
-        src/WalkerMotion.cpp
-        src/WalkerSystem.cpp
-        src/WorldMap.cpp
-        src/WorldMapScene.cpp
-        src/WorldMapSink.cpp
-        src/WorldMapState.cpp
+        src/DemoConsole.cpp
+        src/DemoMap.cpp
+        src/PlaceholderTilesets.cpp
         src/main.cpp
     LIBS
-        antwika::enums
-        antwika::animation
-        antwika::console
         antwika::app
-        antwika::atlas
+        antwika::autotile
         antwika::cli
-        antwika::config
-        antwika::ecs
-        antwika::ecs_commons
+        antwika::console
         antwika::engine
+        antwika::enums
+        antwika::event
         antwika::gfx
         antwika::gfx_backend
-        antwika::i18n
         antwika::input
         antwika::input_backend
-        antwika::io
         antwika::log
-        antwika::pathfinding
-        antwika::replay
-        antwika::rng
-        antwika::simulation
+        antwika::tilemap
+        antwika::tileset
         antwika::time
-        antwika::tween
         antwika::ui
-        antwika::wfc
-    ASSETS
-        assets/atlas_1x1.png
-        assets/atlas_1x1.png.json
-        assets/atlas_2x2.png
-        assets/atlas_2x2.png.json
-        assets/atlas_3x3.png
-        assets/atlas_3x3.png.json
-        assets/config.json
-        assets/walker_1x1.png
-        assets/walker_1x1.png.json
 )

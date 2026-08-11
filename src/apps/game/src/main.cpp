@@ -1,315 +1,760 @@
+#include <array>
 #include <chrono>
 #include <cstdint>
-#include <functional>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
+#include <variant>
 #include <vector>
 
-#include <antwika/app/AssetPath.hpp>
 #include <antwika/app/ConsoleLogging.hpp>
-#include <antwika/app/FramePacingTrace.hpp>
-#include <antwika/app/FramePacedSource.hpp>
-#include <antwika/app/FullscreenToggleSource.hpp>
-#include <antwika/app/PngFile.hpp>
-#include <antwika/app/RunRecorded.hpp>
-#include <antwika/app/WindowPointerMapping.hpp>
-#include <antwika/ecs/ISystem.hpp>
-#include <antwika/gfx/Point.hpp>
+#include <antwika/app/RunGuarded.hpp>
+#include <antwika/console/ConsolePicture.hpp>
+#include <antwika/console/ConsoleScene.hpp>
+#include <antwika/console/ConsoleSink.hpp>
+#include <antwika/console/ConsoleState.hpp>
+#include <antwika/console/IConsoleControls.hpp>
+#include <antwika/console/InputFold.hpp>
+#include <antwika/engine/Events.hpp>
+#include <antwika/event/Event.hpp>
+#include <antwika/event/ITickEventSink.hpp>
+#include <antwika/event/TickEvent.hpp>
+#include <antwika/autotile/DrawPlan.hpp>
+#include <antwika/autotile/MissingArt.hpp>
+#include <antwika/autotile/SystemSheet.hpp>
+#include <antwika/autotile/TileDraw.hpp>
+#include <antwika/cli/CommandLine.hpp>
+#include <antwika/enums/Enumeration.hpp>
+#include <antwika/geometry/Grid.hpp>
+#include <antwika/gfx/Color.hpp>
+#include <antwika/gfx/GfxError.hpp>
+#include <antwika/gfx/ITexture.hpp>
+#include <antwika/gfx/IWindow.hpp>
+#include <antwika/gfx/PngReader.hpp>
+#include <antwika/gfx/RectF.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
+#include <antwika/gfx/ViewportRenderer.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
-#include <antwika/i18n/Locale.hpp>
+#include <antwika/gfx/WindowEvent.hpp>
+#include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
-#include <antwika/input/InputPipeline.hpp>
-#include <antwika/input/PointerHintChannel.hpp>
 #include <antwika/input/Key.hpp>
 #include <antwika/input/SelectedInputBackend.hpp>
 #include <antwika/log/Level.hpp>
-#include <antwika/replay/ReplaySource.hpp>
-#include <antwika/app/WindowInputSource.hpp>
-#include <antwika/time/SystemClock.hpp>
+#include <antwika/tilemap/MapFile.hpp>
+#include <antwika/tilemap/Rgb.hpp>
+#include <antwika/tilemap/TerrainClass.hpp>
+#include <antwika/tilemap/TileMap.hpp>
+#include <antwika/tileset/Atlas.hpp>
+#include <antwika/tileset/Tileset.hpp>
+#include <antwika/tileset/TilesetFile.hpp>
 #include <antwika/time/SystemSleeper.hpp>
-#include <antwika/console/ConsolePicture.hpp>
-#include <antwika/console/SnapshotCommands.hpp>
+#include <antwika/ui/Painter.hpp>
 
-#include "antwika/game/Game.hpp"
-#include "antwika/game/AppMode.hpp"
-#include "antwika/game/AtlasSheets.hpp"
-#include "antwika/game/BindingSource.hpp"
-#include "antwika/game/LocaleSource.hpp"
-#include "antwika/game/LocaleState.hpp"
-#include "antwika/game/BuildingIndex.hpp"
-#include "antwika/game/Camera.hpp"
-#include "antwika/game/ConfigFile.hpp"
-#include "antwika/game/Desirability.hpp"
-#include "antwika/game/FrameMeter.hpp"
-#include "antwika/game/GridExtent.hpp"
-#include "antwika/game/GridScene.hpp"
-#include "antwika/game/KeyBindings.hpp"
-#include "antwika/game/KeyboardSource.hpp"
-#include "antwika/game/MainMenuScene.hpp"
-#include "antwika/game/MapView.hpp"
-#include "antwika/game/Messages.hpp"
-#include "antwika/game/OptionsFile.hpp"
-#include "antwika/game/PathIndex.hpp"
-#include "antwika/game/PauseState.hpp"
-#include "antwika/game/RenderSystem.hpp"
-#include "antwika/game/RoadDrag.hpp"
-#include "antwika/game/SaveCli.hpp"
-#include "antwika/game/SaveDirectory.hpp"
-#include "antwika/game/SaveGameFile.hpp"
-#include "antwika/game/SaveLoadScene.hpp"
-#include "antwika/game/UiCanvas.hpp"
-#include "antwika/game/UiOverlay.hpp"
-#include "antwika/game/WorldMap.hpp"
-#include "antwika/game/WorldMapScene.hpp"
-#include "antwika/game/WorldMapState.hpp"
+#include "antwika/game/DemoConsole.hpp"
+#include "antwika/game/DemoMap.hpp"
+#include "antwika/game/PlaceholderTilesets.hpp"
 
 using antwika::app::ConsoleLogging;
-using antwika::app::RecordedRun;
-using antwika::ecs::ISystem;
-using antwika::game::AppModeState;
-using antwika::game::Camera;
-using antwika::game::GridExtent;
-using antwika::game::GridScene;
-using antwika::game::MainMenuScene;
-using antwika::game::PathIndex;
-using antwika::game::RenderSystem;
-using antwika::game::SaveLoadScene;
-using antwika::game::UiOverlay;
-using antwika::game::WorldMapConfig;
-using antwika::game::WorldMapScene;
-using antwika::game::WorldMapState;
-using antwika::gfx::Point;
+using antwika::app::runGuarded;
+using antwika::geometry::GridCell;
+using antwika::gfx::Color;
+using antwika::gfx::RectF;
+using antwika::gfx::ViewportRenderer;
 using antwika::gfx::WindowDesc;
-using antwika::input::InputEventCodec;
-using antwika::input::InputPipeline;
+using antwika::input::Key;
+using antwika::input::KeyPressed;
 using antwika::log::Level;
-using antwika::replay::ReplaySource;
-using antwika::app::WindowInputSource;
-using antwika::time::SystemSleeper;
+using antwika::tilemap::TerrainClass;
+using antwika::tilemap::TileMap;
+using antwika::game::demoMap;
+using antwika::game::landingLevel;
+using antwika::game::placeholderSystemSheet;
+using antwika::game::placeholderTileset;
+using antwika::game::Player;
+using antwika::game::restingLevel;
 
 namespace
 {
-    constexpr GridExtent kExtent{.width = 24, .height = 24};
+    constexpr std::chrono::milliseconds kFramePeriod{16};
 
-    constexpr Point kInitialPan{.x = 512, .y = 48};
+    constexpr std::string_view kName = "antwika_game";
 
-    constexpr std::chrono::milliseconds kTickInterval{40};
+    constexpr std::array kFlags = {
+        antwika::cli::FlagSpec{
+            .name = "--map",
+            .valueName = "path",
+            .help = "Load a map JSON file instead of the built-in map."},
+        antwika::cli::FlagSpec{
+            .name = "--tilesets",
+            .valueName = "dir",
+            .help = "Load tilesets from this directory instead of "
+                    "assets/tilesets."},
+    };
 
-    constexpr std::uint32_t kFramesPerTick = 400;
+    constexpr antwika::gfx::Size kCanvas{.width = 320, .height = 180};
 
-    constexpr std::chrono::milliseconds kPacingWindow{1000};
+    constexpr antwika::gfx::Size kWindow{.width = 1280, .height = 720};
 
-    constexpr antwika::input::Key kQuitKey = antwika::game::kQuitKey;
+    constexpr Color kMarker{.red = 255, .green = 176, .blue = 64};
 
-    constexpr antwika::input::Key kFullscreenKey =
-        antwika::game::kFullscreenKey;
+    constexpr Color kWhite{.red = 255, .green = 255, .blue = 255};
 
-    constexpr WorldMapConfig kWorld{.width = 24, .height = 16, .seed = 7};
+    constexpr Color kBlack{.red = 0, .green = 0, .blue = 0};
 
-    constexpr std::string_view kSaveDirectory = "saves";
+    constexpr Color kMissing{.red = 255, .green = 0, .blue = 0};
 
-    constexpr std::string_view kOptionsFile = "options.json";
-
-    void run(const RecordedRun &recorded)
+    [[nodiscard]] Color colorOf(const antwika::tilemap::Rgb rgb)
     {
-        const auto config = antwika::game::loadConfigFileOrDefaults(
-            antwika::app::assetPath("config.json"));
-
-        ConsoleLogging logging(std::cout, Level::Info);
-        auto &logger = logging.logger();
-
-        const auto backend = antwika::gfx::makeSelectedBackend(logger);
-        const auto inputBackend =
-            antwika::input::makeSelectedInputBackend(logger);
-        logger.log(
-            Level::Info,
-            "Antwika Game on backends: " + std::string(backend->name())
-                + " / " + std::string(inputBackend->name()));
-
-        const auto window = backend->createWindow(WindowDesc{
-            .title = "Antwika Game",
-            .size = antwika::game::kUiCanvas,
-            .resizable = true});
-
-        const auto sheets =
-            antwika::game::loadAtlasSheets(config.atlases);
-
-        const auto atlas1x1 = window->renderer().createTexture(
-            sheets.of(antwika::game::AtlasKind::OneByOne));
-        const auto atlas2x2 = window->renderer().createTexture(
-            sheets.of(antwika::game::AtlasKind::TwoByTwo));
-        const auto atlas3x3 = window->renderer().createTexture(
-            sheets.of(antwika::game::AtlasKind::ThreeByThree));
-        const auto walkerAtlas =
-            window->renderer().createTexture(sheets.walker);
-
-        antwika::game::LocaleState localeState;
-        const antwika::game::Translator &translator =
-            localeState.translator();
-
-        Camera camera(kInitialPan);
-        PathIndex paths;
-        antwika::game::BuildingIndex built;
-        const GridScene scene(translator);
-        const MainMenuScene menuScene(translator);
-
-        AppModeState mode;
-
-        antwika::game::PauseState pause;
-
-        antwika::game::RoadDrag drag;
-
-        antwika::game::MapViewState mapView;
-
-        antwika::game::DesirabilityField desirability;
-
-        UiOverlay overlay(antwika::game::kUiCanvas);
-        UiOverlay menuOverlay(antwika::game::kUiCanvas);
-        UiOverlay saveOverlay(antwika::game::kUiCanvas);
-        antwika::console::ConsolePicture consoleOverlay(
-            antwika::game::kUiCanvas);
-
-        const SaveLoadScene saveScene(translator);
-
-        antwika::input::PointerHintChannel hint;
-
-        const WorldMapScene worldScene;
-        WorldMapState cities(antwika::game::generateWorldMap(kWorld));
-
-        const antwika::time::SystemClock clock;
-        antwika::game::FrameMeter frameMeter(clock);
-
-        RenderSystem renderSystem(antwika::game::RenderSetup{
-            .window = *window,
-            .mode = mode,
-            .canvas = antwika::game::kUiCanvas,
-            .scene = scene,
-            .atlases =
-                {.oneByOne = *atlas1x1,
-                 .twoByTwo = *atlas2x2,
-                 .threeByThree = *atlas3x3,
-                 .walker = *walkerAtlas,
-                 .specs = sheets.specs},
-            .paths = paths,
-            .built = built,
-            .camera = camera,
-            .extent = kExtent,
-            .pause = pause,
-            .overlay = overlay,
-            .view = mapView,
-            .desirability = desirability,
-            .drag = drag,
-            .hint = hint,
-            .menuScene = menuScene,
-            .menuOverlay = menuOverlay,
-            .saveScene = saveScene,
-            .saveOverlay = saveOverlay,
-            .consoleOverlay = consoleOverlay,
-            .worldScene = worldScene,
-            .cities = cities,
-            .fps = frameMeter});
-        SystemSleeper sleeper;
-
-        std::vector<std::reference_wrapper<ISystem>> observers{
-            renderSystem};
-
-        ReplaySource fileSource(
-            antwika::app::scriptedEvents(recorded.options.replayPath));
-
-        const InputEventCodec codec;
-
-        const antwika::app::WindowPointerMapping mapping(
-            *window, antwika::game::kUiCanvas);
-
-        InputPipeline input(
-            fileSource,
-            *inputBackend,
-            codec,
-            {.readsDevice = !recorded.options.replayPath.has_value(),
-             .pointerMapping = mapping,
-             .coalescePointerMotion = true,
-             .thinIdleMotion = true,
-             .pointerHint = hint,
-             .stopOnKey = kQuitKey});
-
-        WindowInputSource source(input, *backend, window->id());
-
-        antwika::app::FullscreenToggleSource fullscreen(
-            source, *window, codec, kFullscreenKey);
-
-        antwika::app::FramePacingTrace pacingTrace(
-            clock, logger, kPacingWindow);
-
-        antwika::app::FramePacedSource paced(
-            fullscreen,
-            renderSystem,
-            sleeper,
-            clock,
-            {.tickInterval = kTickInterval,
-             .framesPerTick = kFramesPerTick},
-            input.framePump(),
-            pacingTrace);
-
-        const auto machine = antwika::game::machineOptionsFor(
-            recorded.options.replayPath.has_value(),
-            std::string(kOptionsFile));
-
-        antwika::game::BindingSource bound(paced, machine.bindings);
-
-        antwika::game::LocaleSource localised(bound, machine.locale);
-
-        antwika::game::KeyboardSource typed(localised, machine.keyboard);
-
-        const auto saveOptions =
-            antwika::game::saveCliOptionsFrom(recorded.commandLine);
-
-        antwika::game::requireRecordableStart(
-            saveOptions, recorded.options.recordPath.has_value());
-
-        const auto summary =
-            antwika::game::bootstrap(antwika::game::GameWiring{
-                .logger = logger,
-                .eventSink = recorded.eventSink,
-                .inputSource = typed,
-                .codec = codec,
-                .extent = kExtent,
-                .camera = camera,
-                .paths = paths,
-                .built = built,
-                .mode = mode,
-                .pause = pause,
-                .view = mapView,
-                .desirability = desirability,
-                .drag = drag,
-                .observers = observers,
-                .replayRecorder = recorded.replayRecorder,
-                .overlay = overlay,
-                .menuOverlay = menuOverlay,
-                .world = cities,
-                .saveOverlay = saveOverlay,
-                .consoleOverlay = consoleOverlay,
-                .consoleLoadEnabled = 
-                    antwika::console::consoleLoadPermitted(
-                        recorded.options),
-                .saves = antwika::game::listSaveGames(kSaveDirectory),
-                .saveDirectory = std::string(kSaveDirectory),
-                .start = antwika::game::loadGameFileIfNamed(
-                    saveOptions.loadPath),
-                .savePath = saveOptions.savePath,
-                .optionsPath = machine.path,
-                .seed = kWorld.seed,
-                .locale = localeState,
-                .canvas = antwika::game::kUiCanvas,
-                .config = config});
-
-        antwika::game::printSummary(std::cout, summary);
+        return Color{
+            .red = rgb.red, .green = rgb.green, .blue = rgb.blue};
     }
+
+    [[nodiscard]] antwika::gfx::Bitmap bakedSheet(
+        const antwika::gfx::Bitmap &sheet,
+        const Color ink,
+        const Color paper)
+    {
+        auto baked = sheet;
+
+        for (std::size_t at = 0; at + 3 < baked.pixels.size();
+             at += 4)
+        {
+            if (baked.pixels[at + 3] == 0)
+            {
+                continue;
+            }
+
+            const auto luminance = (54U * baked.pixels[at]
+                                    + 183U * baked.pixels[at + 1]
+                                    + 19U * baked.pixels[at + 2])
+                                   / 256U;
+            const auto &color = luminance >= 192 ? ink : paper;
+
+            baked.pixels[at] = color.red;
+            baked.pixels[at + 1] = color.green;
+            baked.pixels[at + 2] = color.blue;
+        }
+
+        return baked;
+    }
+
+    [[nodiscard]] antwika::gfx::Bitmap loadSystemArt(
+        const std::filesystem::path &directory,
+        antwika::log::ILogger &logger)
+    {
+        const auto path = directory / "system.png";
+
+        if (!std::filesystem::is_regular_file(path))
+        {
+            return placeholderSystemSheet();
+        }
+
+        try
+        {
+            std::ifstream in(path, std::ios::binary);
+            const auto bitmap = antwika::gfx::PngReader{}.read(in);
+
+            if (bitmap.size.width != 32 || bitmap.size.height != 8)
+            {
+                logger.log(
+                    Level::Warning,
+                    "game: system.png is not 32x8");
+                return placeholderSystemSheet();
+            }
+
+            logger.log(Level::Info, "Loaded " + path.string());
+
+            return bakedSheet(
+                bitmap,
+                Color{.red = 255, .green = 255, .blue = 255},
+                Color{.red = 128, .green = 128, .blue = 128});
+        }
+        catch (const antwika::gfx::GfxError &error)
+        {
+            logger.log(Level::Warning, error.what());
+            return placeholderSystemSheet();
+        }
+    }
+
+    [[nodiscard]] const antwika::tileset::Tileset *findTileset(
+        const std::vector<antwika::tileset::Tileset> &library,
+        const std::string &name)
+    {
+        for (const auto &set : library)
+        {
+            if (set.name == name)
+            {
+                return &set;
+            }
+        }
+
+        return nullptr;
+    }
+
+    [[nodiscard]] antwika::tileset::Tileset resolveTileset(
+        const std::vector<antwika::tileset::Tileset> &library,
+        const std::string &bound,
+        const TerrainClass terrain)
+    {
+        const auto *found =
+            bound.empty() ? nullptr : findTileset(library, bound);
+
+        if (found == nullptr)
+        {
+            found = findTileset(
+                library,
+                "default-"
+                    + std::string(
+                        antwika::tilemap::toString(terrain)));
+        }
+
+        return found != nullptr ? *found
+                                : placeholderTileset(terrain);
+    }
+
+    [[nodiscard]] antwika::gfx::Bitmap atlasArtOf(
+        const antwika::tileset::Tileset &set,
+        const Color ink,
+        const Color paper)
+    {
+        if (antwika::tileset::atlasIndexOf(set).rows > 0)
+        {
+            return antwika::tileset::bakeAtlas(set, ink, paper);
+        }
+
+        antwika::gfx::Bitmap blank{
+            .size =
+                {.width = static_cast<std::uint32_t>(
+                     antwika::tileset::kAtlasWidth),
+                 .height = static_cast<std::uint32_t>(
+                     antwika::tileset::kSpriteSide)},
+            .pixels = {}};
+
+        blank.pixels.assign(
+            static_cast<std::size_t>(antwika::tileset::kAtlasWidth)
+                * antwika::tileset::kSpriteSide
+                * antwika::gfx::kBytesPerPixel,
+            0);
+
+        return blank;
+    }
+
+    constexpr std::uint32_t kWalkTicks = 12;
+
+    class CloseSink final : public antwika::event::ITickEventSink
+    {
+    public:
+        explicit CloseSink(antwika::gfx::IWindow &window) noexcept
+            : window(window)
+        {
+        }
+
+        void handle(const antwika::event::TickEvent &) override
+        {
+            window.close();
+        }
+
+    private:
+        antwika::gfx::IWindow &window;
+    };
+
+    void move(
+        const TileMap &map,
+        Player &player,
+        const std::int64_t byColumn,
+        const std::int64_t byRow)
+    {
+        if (byRow > 0)
+        {
+            player.direction = 0;
+        }
+        else if (byRow < 0)
+        {
+            player.direction = 1;
+        }
+        else if (byColumn < 0)
+        {
+            player.direction = 2;
+        }
+        else if (byColumn > 0)
+        {
+            player.direction = 3;
+        }
+
+        const auto column =
+            static_cast<std::int64_t>(player.cell.column) + byColumn;
+        const auto row =
+            static_cast<std::int64_t>(player.cell.row) + byRow;
+
+        if (column < 0 || row < 0
+            || column >= map.columns() || row >= map.rows())
+        {
+            return;
+        }
+
+        const auto target = GridCell{
+            .column = static_cast<std::uint32_t>(column),
+            .row = static_cast<std::uint32_t>(row)};
+        const auto landed =
+            landingLevel(map, player.cell, player.level, target);
+
+        if (!landed.has_value())
+        {
+            return;
+        }
+
+        player.cell = target;
+        player.level = *landed;
+        player.moveTicks = kWalkTicks;
+    }
+
+    [[nodiscard]] std::optional<antwika::gfx::Bitmap>
+    loadPlayerSheet(antwika::log::ILogger &logger)
+    {
+        const std::filesystem::path path =
+            "assets/characters/player.png";
+
+        if (!std::filesystem::is_regular_file(path))
+        {
+            return std::nullopt;
+        }
+
+        try
+        {
+            std::ifstream in(path, std::ios::binary);
+            auto bitmap = antwika::gfx::PngReader{}.read(in);
+
+            for (std::size_t at = 0;
+                 at + 3 < bitmap.pixels.size();
+                 at += 4)
+            {
+                if (bitmap.pixels[at + 3] == 0)
+                {
+                    continue;
+                }
+
+                const auto luminance =
+                    (54U * bitmap.pixels[at]
+                     + 183U * bitmap.pixels[at + 1]
+                     + 19U * bitmap.pixels[at + 2])
+                    / 256U;
+                const auto value = luminance >= 192 ? 255 : 128;
+
+                bitmap.pixels[at] =
+                    static_cast<std::uint8_t>(value);
+                bitmap.pixels[at + 1] =
+                    static_cast<std::uint8_t>(value);
+                bitmap.pixels[at + 2] =
+                    static_cast<std::uint8_t>(value);
+            }
+
+            if (bitmap.size.width != 64 || bitmap.size.height != 64)
+            {
+                logger.log(
+                    Level::Warning,
+                    "game: player.png is not 64x64");
+                return std::nullopt;
+            }
+
+            logger.log(Level::Info, "Loaded " + path.string());
+
+            return bitmap;
+        }
+        catch (const antwika::gfx::GfxError &error)
+        {
+            logger.log(Level::Warning, error.what());
+            return std::nullopt;
+        }
+    }
+
 }
 
 int main(int argc, char **argv)
 {
-    return antwika::app::runRecorded(
-        argc, argv, "antwika_game", run, antwika::game::saveCliFlags());
+    ConsoleLogging logging(std::cout, Level::Info);
+    auto &logger = logging.logger();
+
+    return runGuarded(
+        kName,
+        [&logger, argc, argv]
+        {
+            const auto command =
+                antwika::cli::parseCommandLine(argc, argv, kFlags);
+
+            if (command.has(antwika::cli::kHelpFlag))
+            {
+                std::cout << antwika::cli::helpText(kName, kFlags);
+                return;
+            }
+
+            const auto backend = antwika::gfx::makeSelectedBackend(logger);
+            const auto input =
+                antwika::input::makeSelectedInputBackend(logger);
+
+            const auto window = backend->createWindow(WindowDesc{
+                .title = "Wakewater tilemap demo",
+                .size = kWindow,
+                .resizable = true});
+
+            ViewportRenderer view(
+                window->renderer(), window->size(), kCanvas);
+
+            auto map = demoMap();
+
+            if (const auto path = command.value("--map"))
+            {
+                map = antwika::tilemap::loadMapFile(*path);
+
+                logger.log(Level::Info, "Loaded map: " + *path);
+            }
+
+            const std::filesystem::path tilesetsDir =
+                command.value("--tilesets")
+                    .value_or(std::string("assets/tilesets"));
+            const auto library =
+                antwika::tileset::loadTilesetLibrary(tilesetsDir);
+
+            logger.log(
+                Level::Info,
+                "Loaded " + std::to_string(library.size())
+                    + " tilesets from " + tilesetsDir.string());
+
+            std::array<
+                antwika::tileset::Tileset,
+                antwika::enums::kCount<TerrainClass>>
+                tilesets;
+            std::array<
+                std::unique_ptr<antwika::gfx::ITexture>,
+                antwika::enums::kCount<TerrainClass>>
+                atlases;
+            std::array<
+                antwika::tileset::AtlasIndex,
+                antwika::enums::kCount<TerrainClass>>
+                atlasIndices;
+            antwika::autotile::TilesetBindings bindings{};
+
+            for (const auto terrain :
+                 antwika::enums::kAll<TerrainClass>)
+            {
+                const auto at = antwika::enums::index(terrain);
+
+                bindings.byTerrain[at] = &tilesets[at];
+            }
+
+            std::optional<std::array<
+                std::string,
+                antwika::enums::kCount<TerrainClass>>>
+                boundNames;
+
+            const auto systemArt =
+                loadSystemArt(tilesetsDir, logger);
+            std::unique_ptr<antwika::gfx::ITexture> systemSheet;
+
+            Player player;
+
+            player.level = restingLevel(map.at(player.cell));
+
+            antwika::time::SystemSleeper sleeper;
+            std::uint32_t clock = 0;
+
+            const auto playerArt = loadPlayerSheet(logger);
+            std::unique_ptr<antwika::gfx::ITexture> playerSheet;
+            std::optional<antwika::tilemap::Rgb> bakedInk;
+            std::optional<antwika::tilemap::Rgb> bakedPaper;
+
+            const antwika::input::InputEventCodec codec;
+            antwika::console::InputFold fold(codec);
+            antwika::console::ConsolePicture overlay(kWindow);
+            antwika::console::ConsoleState consoleState;
+            const antwika::console::ConsoleScene consoleScene{};
+            const antwika::console::FixedConsoleControls controls;
+            antwika::game::DemoCommands commands(
+                map, player, logger);
+            CloseSink closeSink(*window);
+            antwika::console::ConsoleSink consoleSink(
+                antwika::console::ConsoleSinkSetup{
+                    .console = consoleState,
+                    .input = fold,
+                    .picture = overlay,
+                    .scene = consoleScene,
+                    .controls = controls,
+                    .commands = commands,
+                    .stop = closeSink});
+
+            while (window->isOpen())
+            {
+                bool closeRequested = false;
+
+                while (const auto event = backend->pollEvent())
+                {
+                    if (event->window != window->id())
+                    {
+                        continue;
+                    }
+
+                    if (std::holds_alternative<
+                            antwika::gfx::CloseRequested>(
+                            event->payload))
+                    {
+                        closeRequested = true;
+                    }
+
+                    if (const auto *resized =
+                            std::get_if<antwika::gfx::Resized>(
+                                &event->payload))
+                    {
+                        view.resize(resized->size);
+                        overlay = antwika::console::ConsolePicture(
+                            resized->size);
+                    }
+                }
+
+                if (closeRequested)
+                {
+                    window->close();
+                    break;
+                }
+
+                const antwika::event::TickEvent frameTick{
+                    .tick = clock,
+                    .event = antwika::event::Event{
+                        .name = antwika::engine::events::kTick}};
+
+                fold.handle(frameTick);
+                consoleSink.handle(frameTick);
+
+                while (const auto event = input->pollEvent())
+                {
+                    const antwika::event::TickEvent ticked{
+                        .tick = clock,
+                        .event = codec.encode(event.value())};
+
+                    fold.handle(ticked);
+                    consoleSink.handle(ticked);
+
+                    const auto *pressed =
+                        std::get_if<KeyPressed>(&event.value());
+
+                    if (pressed == nullptr)
+                    {
+                        continue;
+                    }
+
+                    if (consoleState.visible())
+                    {
+                        if (pressed->key == Key::Escape
+                            && !pressed->repeat)
+                        {
+                            consoleState.toggle();
+                        }
+
+                        continue;
+                    }
+
+                    if (pressed->key == Key::Escape)
+                    {
+                        window->close();
+                    }
+
+                    if (pressed->key == Key::F10)
+                    {
+                        window->setFullscreen(
+                            !window->isFullscreen());
+                        view.resize(window->size());
+                        overlay = antwika::console::ConsolePicture(
+                            window->size());
+                    }
+
+                    if (pressed->key == Key::ArrowUp)
+                    {
+                        move(map, player, 0, -1);
+                    }
+
+                    if (pressed->key == Key::ArrowDown)
+                    {
+                        move(map, player, 0, 1);
+                    }
+
+                    if (pressed->key == Key::ArrowLeft)
+                    {
+                        move(map, player, -1, 0);
+                    }
+
+                    if (pressed->key == Key::ArrowRight)
+                    {
+                        move(map, player, 1, 0);
+                    }
+                }
+
+                if (!window->isOpen())
+                {
+                    break;
+                }
+
+                if (!boundNames.has_value()
+                    || *boundNames != map.header().tilesets)
+                {
+                    boundNames = map.header().tilesets;
+
+                    for (const auto terrain :
+                         antwika::enums::kAll<TerrainClass>)
+                    {
+                        const auto at =
+                            antwika::enums::index(terrain);
+
+                        tilesets[at] = resolveTileset(
+                            library,
+                            map.header().tilesets[at],
+                            terrain);
+                    }
+
+                    bakedInk.reset();
+                    bakedPaper.reset();
+                }
+
+                const auto ink = colorOf(map.header().ink);
+                const auto paper = colorOf(map.header().paper);
+
+                if (bakedInk != map.header().ink
+                    || bakedPaper != map.header().paper)
+                {
+                    bakedInk = map.header().ink;
+                    bakedPaper = map.header().paper;
+
+                    for (const auto terrain :
+                         antwika::enums::kAll<TerrainClass>)
+                    {
+                        const auto at =
+                            antwika::enums::index(terrain);
+
+                        atlases[at] = view.createTexture(
+                            atlasArtOf(tilesets[at], ink, paper));
+                        atlasIndices[at] =
+                            antwika::tileset::atlasIndexOf(
+                                tilesets[at]);
+                    }
+
+                    systemSheet = view.createTexture(
+                        bakedSheet(systemArt, ink, paper));
+
+                    if (playerArt.has_value())
+                    {
+                        playerSheet = view.createTexture(bakedSheet(
+                            *playerArt, ink, paper));
+                    }
+                }
+
+                view.clear(paper);
+                view.fillSurround(Color{});
+
+                const auto plan = antwika::autotile::buildDrawPlan(
+                    map,
+                    player.cell,
+                    player.level,
+                    clock,
+                    bindings);
+
+                for (const auto &draw : plan)
+                {
+                    const auto at =
+                        antwika::enums::index(draw.terrain);
+                    const bool sprite =
+                        draw.kind
+                        == antwika::autotile::DrawKind::Sprite;
+                    const auto source =
+                        sprite ? antwika::tileset::atlasSource(
+                            draw.atlasRow, draw.frame)
+                               : antwika::autotile::systemSource(
+                                   draw.kind);
+                    const RectF target(
+                        {static_cast<float>(draw.screen.x),
+                         static_cast<float>(draw.screen.y)},
+                        {static_cast<float>(source.size.width),
+                         static_cast<float>(source.size.height)});
+
+                    if (antwika::autotile::artMissing(
+                            draw, tilesets[at], atlasIndices[at]))
+                    {
+                        view.drawRect(target, kMissing);
+                        continue;
+                    }
+
+                    view.drawTexture(
+                        sprite ? *atlases[at] : *systemSheet,
+                        source,
+                        target,
+                        draw.kind
+                                == antwika::autotile::DrawKind::Shade
+                            ? kBlack
+                            : kWhite);
+                }
+
+                if (playerSheet != nullptr)
+                {
+                    const auto frame =
+                        player.moveTicks > 0
+                            ? static_cast<float>((clock / 8) % 4)
+                            : 0.0F;
+
+                    view.drawTexture(
+                        *playerSheet,
+                        RectF(
+                            {frame * 16.0F,
+                             static_cast<float>(player.direction)
+                                 * 16.0F},
+                            {16.0F, 16.0F}),
+                        RectF(
+                            {static_cast<float>(player.cell.column)
+                                 * 16.0F,
+                             static_cast<float>(player.cell.row)
+                                     * 16.0F
+                                 - static_cast<float>(player.level)
+                                       * 8.0F},
+                            {16.0F, 16.0F}),
+                        kWhite);
+                }
+                else
+                {
+                    const auto markerX =
+                        static_cast<float>(player.cell.column)
+                            * 16.0F
+                        + 4.0F;
+                    const auto markerY =
+                        static_cast<float>(player.cell.row) * 16.0F
+                        + 4.0F
+                        - static_cast<float>(player.level) * 8.0F;
+
+                    view.drawRect(
+                        RectF({markerX, markerY}, {8.0F, 8.0F}),
+                        kMarker);
+                }
+
+                if (player.moveTicks > 0)
+                {
+                    --player.moveTicks;
+                }
+
+                view.drawText(
+                    {4.0F, 4.0F},
+                    "arrows move - esc quits",
+                    1,
+                    ink);
+
+                antwika::ui::paint(
+                    window->renderer(), overlay.commands());
+
+                view.present();
+                sleeper.sleep(kFramePeriod);
+                ++clock;
+            }
+
+            window->close();
+
+            logger.log(Level::Info, "Wakewater tilemap demo closed");
+        });
 }

@@ -222,15 +222,6 @@ jobs:
             exit 1
           fi
 
-      - name: Soak the level generator
-        if: matrix.image == 'gnu'
-        shell: bash
-        run: |
-          cmake --preset conan-release -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          cmake --build build --target antwika_tower_defence_tests -j24
-          build/bin/antwika_tower_defence/antwika_tower_defence_tests \
-            --gtest_filter='LevelGeneratorTest.*'
-
       - name: Generate coverage report
         if: matrix.coverage
         shell: bash

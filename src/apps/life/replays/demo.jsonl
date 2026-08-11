@@ -1,6 +1,0 @@
-{"magic":"antwika-replay","version":2}
-{"event":{"name":"life.toggle_cell","payload":"{\"x\":1,\"y\":0}"},"tick":0}
-{"event":{"name":"life.toggle_cell","payload":"{\"x\":2,\"y\":1}"},"tick":0}
-{"event":{"name":"life.toggle_cell","payload":"{\"x\":0,\"y\":2}"},"tick":0}
-{"event":{"name":"life.toggle_cell","payload":"{\"x\":1,\"y\":2}"},"tick":0}
-{"event":{"name":"life.toggle_cell","payload":"{\"x\":2,\"y\":2}"},"tick":0}

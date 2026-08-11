@@ -5,7 +5,7 @@ It is a statement of intent for work that has not started; nothing in this docum
 
 ## Product shape
 
-The game's working title is Wakewater, and code, directories, and targets use the slug `wakewater`.
+The game's working title is Wakewater, and code, directories, and targets use the slug `game`.
 The display title stays out of user-facing strings except through one central definition, so a later rename stays a directory move rather than a hunt.
 The game is a top-down action-adventure structured around Metroidvania-style floor plans, where branching paths, verticality, and ability-gated progression are core design goals.
 The world is a graph of discrete maps connected by door and stair transitions, with a cut or fade between maps rather than seamless scrolling.

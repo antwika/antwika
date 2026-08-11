@@ -1,37 +1,24 @@
 #include <gtest/gtest.h>
 
-#include <antwika/game/TileAtlas.hpp>
-
-#include "AtlasSpecsFixture.hpp"
-
 #include "antwika/atlas_editor/AtlasEditor.hpp"
+#include "antwika/atlas_editor/TileGrid.hpp"
 
 namespace
 {
     using antwika::atlas_editor::kDefaultSheetSize;
-    using antwika::game::AtlasKind;
-    using antwika::game::testing::kTestSpecs;
+    using antwika::atlas_editor::kDefaultTileHeight;
+    using antwika::atlas_editor::kDefaultTileWidth;
 
-    constexpr auto kGameSheet =
-        kTestSpecs.of(AtlasKind::OneByOne).sheetSize();
-
-    TEST(DefaultSheetSizeTest, AtlasSpec_SizesTheBlankSheetForTheGame)
+    TEST(DefaultSheetSizeTest, kDefaultSheetSize_MakesWholeSlots)
     {
-        EXPECT_EQ(kDefaultSheetSize, kGameSheet);
+        EXPECT_EQ(kDefaultSheetSize.width % kDefaultTileWidth, 0U);
+        EXPECT_EQ(kDefaultSheetSize.height % kDefaultTileHeight, 0U);
     }
 
-    TEST(DefaultSheetSizeTest, AtlasSpec_MakesTheSheetWholeSlots)
+    TEST(DefaultSheetSizeTest, kDefaultSheetSize_HoldsASquareOfSlots)
     {
-        const auto sprite =
-            antwika::game::atlasSpec(
-                kTestSpecs,
-                AtlasKind::OneByOne).spriteSize;
-
         EXPECT_EQ(
-            kDefaultSheetSize.width,
-            kTestSpecs.of(AtlasKind::OneByOne).columns * sprite.width);
-        EXPECT_EQ(
-            kDefaultSheetSize.height,
-            kTestSpecs.of(AtlasKind::OneByOne).rows * sprite.height);
+            kDefaultSheetSize.width / kDefaultTileWidth,
+            kDefaultSheetSize.height / kDefaultTileHeight);
     }
 }

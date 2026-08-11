@@ -61,14 +61,6 @@ jobs:
         shell: bash
         run: python3 scripts/check_comment_style.py
 
-      - name: Test generate-poker-atlas script
-        shell: bash
-        run: python3 scripts/tests/test_generate_poker_atlas.py
-
-      - name: Check the poker table's texture atlas is current
-        shell: bash
-        run: python3 scripts/generate_poker_atlas.py --check
-
       - name: Test generate-placeholder-tiles script
         shell: bash
         run: python3 scripts/tests/test_generate_placeholder_tiles.py

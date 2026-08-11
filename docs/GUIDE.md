@@ -96,7 +96,7 @@ V toggles the validator overlay: unreachable walkable cells fill red, findings w
 Map > Validate Now forces an immediate re-check.
 The validator reasons per surface, so a tunnel floor and the roof above it are tracked separately: it models one-way cliff drops, stair climbs, bridges, swimmable water, currents, headroom (a roof directly above a floor blocks it), and ability tags granted by pickups; a key in an unreachable spot is a finding.
 Falling always lands on the topmost surface below you, so a drop next to a tunnel lands on its roof, never inside it.
-The playtest demo does not enforce one-way drops, so trust the validator over what the demo lets you walk.
+The playtest game does not enforce one-way drops, so trust the validator over what the game lets you walk.
 Cross-map checks (transition pairs) run via `antwika_mapcheck_cli` and as the `map_assets_validate` ctest over `assets/maps`.
 
 ## The palette
@@ -144,7 +144,7 @@ The regen button rolls a new arrangement, and the auto checkbox keeps rolling fr
 
 Each sprite can carry up to four animation frames, selected with the frame buttons or keys 1 to 4 in this view; frame 1 is the sprite as it always draws.
 The first stroke on an absent frame creates it as a copy of frame 1, the small previews show all four with the anim box looping them, and Clr clears frame 1 or removes the selected frame and every frame after it.
-Frames cycle on a global clock in the editor and the demo — the placeholder water shows the effect.
+Frames cycle on a global clock in the editor and the game — the placeholder water shows the effect.
 
 ### Binding tilesets to a map
 
@@ -160,20 +160,20 @@ A character is a 64×64 sheet of 16×16 frames: rows are walk down, up, left, an
 The workspace edits pixels exactly like the tile view — left-click paints the active ink or paper color (panel swatches or C), right-click erases to transparency — and characters render in the map palette's colors everywhere they appear.
 A small Draw/Select toolbar in the panel offers the same pixel marquee as the tiles view, sharing its clipboard, so art can move between characters and tile sprites with Ctrl+C and Ctrl+V.
 A preview beside the workspace plays the animation while you draw.
-Characters save as `assets/characters/<name>.png` plus a JSON sidecar; a character named `player` becomes the playable sprite in the demo.
+Characters save as `assets/characters/<name>.png` plus a JSON sidecar; a character named `player` becomes the playable sprite in the game.
 The sidecar carries a schema version (a sidecar without one counts as version 1), so future format changes can migrate old characters instead of breaking them.
 
 ## Playtesting
 
-F5 (or Map > Playtest) saves the map and launches `antwika_tilemap_demo` on it.
-The demo loads the tilesets under `assets/tilesets` (or `--tilesets <dir>`) and renders each terrain with the map's bound tileset, falling back to `default-<terrain>` and then to the built-in placeholders, so the playtest shows the same art as the editor, decor and animation included.
-In the demo the arrow keys move, Escape quits, and F10 toggles fullscreen; movement is blocked by walls and unbridged water, stairs climb one level, and any drop lands on the topmost surface below.
+F5 (or Map > Playtest) saves the map and launches `antwika_game` on it.
+The game loads the tilesets under `assets/tilesets` (or `--tilesets <dir>`) and renders each terrain with the map's bound tileset, falling back to `default-<terrain>` and then to the built-in placeholders, so the playtest shows the same art as the editor, decor and animation included.
+In the game the arrow keys move, Escape quits, and F10 toggles fullscreen; movement is blocked by walls and unbridged water, stairs climb one level, and any drop lands on the topmost surface below.
 Walking behind tall terrain or under an overhang cuts the occluding block away, so tunnel interiors stay visible.
 
 ## The console
 
 The grave key (`) opens the developer console in both apps; Enter runs a command and `help` lists them.
-The demo offers `map <path>`, `tp <column> <row>`, `pos`, `palette <ink|paper> <hex>`, and `quit`.
+The game offers `map <path>`, `tp <column> <row>`, `pos`, `palette <ink|paper> <hex>`, and `quit`.
 The editor offers `open`, `save`, `generate [seed]`, `validate`, `scale <2|3|4>`, `palette`, and `quit`.
 
 ## Keyboard reference

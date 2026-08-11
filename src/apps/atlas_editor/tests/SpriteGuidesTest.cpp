@@ -1,10 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <array>
 #include <optional>
-
-#include <antwika/game/TileAtlas.hpp>
-
-#include "AtlasSpecsFixture.hpp"
 
 #include "antwika/atlas_editor/SpriteGuides.hpp"
 #include "antwika/atlas_editor/TileGrid.hpp"
@@ -12,10 +9,16 @@
 namespace
 {
     using antwika::atlas_editor::guidesForTile;
+    using antwika::atlas_editor::kIsoTileHeight;
+    using antwika::atlas_editor::kIsoTileWidth;
+    using antwika::atlas_editor::kSpriteHeadroom;
     using antwika::atlas_editor::SpriteGuides;
     using antwika::atlas_editor::TileGrid;
-    using antwika::game::AtlasKind;
-    using antwika::game::testing::kTestSpecs;
+
+    constexpr std::array<TileGrid, 3> kDiamondSlots{
+        TileGrid{.width = 64, .height = 96},
+        TileGrid{.width = 96, .height = 112},
+        TileGrid{.width = 128, .height = 128}};
 
     TEST(SpriteGuidesTest, GuidesForTile_DiamondsAOneByOneSlot)
     {
@@ -53,67 +56,32 @@ namespace
         EXPECT_EQ(guides->footprint.height, 48U);
     }
 
-    TEST(SpriteGuidesTest, GuidesForTile_PivotsWhereTheGameAnchors)
-    {
-        for (const auto kind :
-             {AtlasKind::OneByOne,
-              AtlasKind::TwoByTwo,
-              AtlasKind::ThreeByThree})
-        {
-            const auto spec = antwika::game::atlasSpec(kTestSpecs, kind);
-            const auto guides = guidesForTile(
-                TileGrid{
-                    .width = spec.spriteSize.width,
-                    .height = spec.spriteSize.height});
-
-            ASSERT_TRUE(guides.has_value());
-            EXPECT_EQ(guides->pivot.x, spec.pivot.x);
-            EXPECT_EQ(guides->pivot.y, spec.pivot.y);
-        }
-    }
-
     TEST(SpriteGuidesTest, GuidesForTile_StartsAtTheSameHeadroom)
     {
-        for (const auto kind :
-             {AtlasKind::OneByOne,
-              AtlasKind::TwoByTwo,
-              AtlasKind::ThreeByThree})
+        for (const auto slot : kDiamondSlots)
         {
-            const auto sprite =
-                antwika::game::atlasSpec(kTestSpecs, kind).spriteSize;
-            const auto guides = guidesForTile(
-                TileGrid{
-                    .width = sprite.width, .height = sprite.height});
+            const auto guides = guidesForTile(slot);
 
             ASSERT_TRUE(guides.has_value());
             EXPECT_EQ(
                 guides->pivot.y
                     - static_cast<std::int32_t>(guides->footprint.height),
-                48);
+                static_cast<std::int32_t>(kSpriteHeadroom));
         }
     }
 
     TEST(SpriteGuidesTest, GuidesForTile_MakesADiamondOfWholeCells)
     {
-        const auto cell = antwika::game::kIsoTileSize;
-
-        for (const auto kind :
-             {AtlasKind::OneByOne,
-              AtlasKind::TwoByTwo,
-              AtlasKind::ThreeByThree})
+        for (const auto slot : kDiamondSlots)
         {
-            const auto sprite =
-                antwika::game::atlasSpec(kTestSpecs, kind).spriteSize;
-            const auto guides = guidesForTile(
-                TileGrid{
-                    .width = sprite.width, .height = sprite.height});
+            const auto guides = guidesForTile(slot);
 
             ASSERT_TRUE(guides.has_value());
-            EXPECT_EQ(guides->footprint.width % cell.width, 0U);
-            EXPECT_EQ(guides->footprint.height % cell.height, 0U);
+            EXPECT_EQ(guides->footprint.width % kIsoTileWidth, 0U);
+            EXPECT_EQ(guides->footprint.height % kIsoTileHeight, 0U);
             EXPECT_EQ(
-                guides->footprint.width / cell.width,
-                guides->footprint.height / cell.height);
+                guides->footprint.width / kIsoTileWidth,
+                guides->footprint.height / kIsoTileHeight);
         }
     }
 

@@ -1,8 +1,5 @@
 antwika_add_app_tests(
     APP atlas_editor
-    EXTRA_INCLUDES
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../game/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../game/tests
     TESTS
         AtlasFormTest.cpp
         AtlasMetaTest.cpp

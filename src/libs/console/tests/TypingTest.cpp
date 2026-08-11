@@ -103,6 +103,15 @@ TEST(TypingTest, TypedCharacterFor_TypesEveryCharacterJsonNeeds)
     EXPECT_EQ(typedCharacterFor(Key::Comma, true, kEnglish), '\0');
 }
 
+TEST(TypingTest, TypedCharacterFor_TypesAFileNameOnTheEnglishBoard)
+{
+    constexpr auto kEnglish = KeyboardLayout::English;
+
+    EXPECT_EQ(typedCharacterFor(Key::Minus, false, kEnglish), '-');
+    EXPECT_EQ(typedCharacterFor(Key::Period, false, kEnglish), '.');
+    EXPECT_EQ(typedCharacterFor(Key::Period, true, kEnglish), '\0');
+}
+
 TEST(TypingTest, TypedCharacterFor_ReachesABraceThroughAltOnTheSwedishBoard)
 {
     constexpr auto kSwedish = KeyboardLayout::Swedish;

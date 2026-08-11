@@ -4,6 +4,7 @@ This file records the map_editor work queue agreed on 2026-08-10, so the specifi
 The tasks run strictly in order because each one touches the same app.
 A task is not done until it builds clean under -Werror, passes the three style checker scripts, keeps every existing test green, and has been exercised under Xvfb with xdotool-driven synthetic input.
 Unit tests for the editor itself remain deferred by explicit decision; see docs/MAP_SYSTEM_PLAN.md for the surrounding plan.
+The tasks below name the playtest app `tilemap_demo`, which is what it was called while they shipped; on 2026-08-11 it became `src/apps/game`, the target `antwika_game`, and the namespace `antwika::game`.
 
 ## Status
 
