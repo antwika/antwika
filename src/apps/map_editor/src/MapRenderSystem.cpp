@@ -40,36 +40,59 @@ namespace antwika::map_editor
         EditorStore &store, gfx::ViewportRenderer &view)
         : store(store), view(view)
     {
+        bakedInk = store.state.map.header().ink;
+        bakedPaper = store.state.map.header().paper;
+
         for (const auto terrain :
              enums::kAll<tilemap::TerrainClass>)
         {
             const auto index = enums::index(terrain);
             const auto &doc = store.tiles.docs[index];
 
-            sheets[index] = view.createTexture(
+            sheets[index] = view.createTexture(bakedSheet(
                 doc.image.isComplete()
                     ? doc.image
-                    : placeholderSheet(terrain, kWhite));
+                    : placeholderSheet(terrain, kWhite),
+                colorOf(bakedInk),
+                colorOf(bakedPaper)));
             revisions[index] = doc.revision;
         }
     }
 
     void MapRenderSystem::refreshSheets()
     {
+        const auto &header = store.state.map.header();
+        const bool rebakeAll =
+            header.ink != bakedInk || header.paper != bakedPaper;
+
+        if (rebakeAll)
+        {
+            bakedInk = header.ink;
+            bakedPaper = header.paper;
+        }
+
         for (const auto terrain :
              enums::kAll<tilemap::TerrainClass>)
         {
             const auto index = enums::index(terrain);
             const auto &doc = store.tiles.docs[index];
 
-            if (doc.revision == revisions[index]
+            if ((doc.revision == revisions[index] && !rebakeAll)
                 || !doc.image.isComplete())
             {
                 continue;
             }
 
-            sheets[index] = view.createTexture(doc.image);
+            sheets[index] = view.createTexture(bakedSheet(
+                doc.image,
+                colorOf(bakedInk),
+                colorOf(bakedPaper)));
             revisions[index] = doc.revision;
+        }
+
+        if (rebakeAll)
+        {
+            characterTextures.clear();
         }
     }
 
@@ -189,8 +212,10 @@ namespace antwika::map_editor
                 continue;
             }
 
-            slot.texture =
-                view.createTexture(character.sheet.image);
+            slot.texture = view.createTexture(bakedSheet(
+                character.sheet.image,
+                colorOf(bakedInk),
+                colorOf(bakedPaper)));
             slot.name = character.name;
             slot.revision = character.sheet.revision;
         }
@@ -222,7 +247,6 @@ namespace antwika::map_editor
         drawCharacterWorkspace(
             view,
             *characterTextures[characters.selected].texture,
-            colorOf(store.state.map.header().ink),
             hover,
             static_cast<std::uint32_t>(tick));
     }
@@ -335,7 +359,6 @@ namespace antwika::map_editor
             store.tiles.connectors);
 
         const auto zoom = store.camera.zoom();
-        const auto ink = colorOf(state.map.header().ink);
 
         drawBackdrop();
 
@@ -345,7 +368,7 @@ namespace antwika::map_editor
                 draw.piece, draw.mask, draw.variant);
             const auto tint =
                 draw.piece == autotile::TilePiece::Shade ? kBlack
-                                                         : ink;
+                                                         : kWhite;
 
             view.drawTexture(
                 *sheets[enums::index(draw.terrain)],

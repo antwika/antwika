@@ -517,10 +517,21 @@ namespace antwika::map_editor
                         + std::to_string(pixel->x) + ","
                         + std::to_string(pixel->y);
 
-            if (sheetPixelInked(doc.image, *pixel))
+            switch (sheetPixelClass(doc.image, *pixel))
             {
-                hint += "  ink";
+                case PixelClass::Ink:
+                    hint += "  ink";
+                    break;
+                case PixelClass::Paper:
+                    hint += "  paper";
+                    break;
+                default:
+                    hint += "  blank";
+                    break;
             }
+
+            hint += store.tiles.drawPaper ? "  drawing paper"
+                                          : "  drawing ink";
 
             if (const auto slot = variantSlotAt(*pixel))
             {
@@ -598,13 +609,23 @@ namespace antwika::map_editor
                         + std::to_string(pixel->x) + ","
                         + std::to_string(pixel->y);
 
-            if (sheetPixelInked(
-                    characters.list[characters.selected]
-                        .sheet.image,
-                    *pixel))
+            switch (sheetPixelClass(
+                characters.list[characters.selected].sheet.image,
+                *pixel))
             {
-                hint += "  ink";
+                case PixelClass::Ink:
+                    hint += "  ink";
+                    break;
+                case PixelClass::Paper:
+                    hint += "  paper";
+                    break;
+                default:
+                    hint += "  blank";
+                    break;
             }
+
+            hint += store.tiles.drawPaper ? "  drawing paper"
+                                          : "  drawing ink";
 
             return hint;
         }

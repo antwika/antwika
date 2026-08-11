@@ -316,6 +316,52 @@ namespace antwika::map_editor
             }
         }
 
+        void describeDrawColor(Context &ui, const EditorStore &store)
+        {
+            const auto &header = store.state.map.header();
+
+            ui.label("draw color  C", ui.theme().muted);
+
+            const auto row = ui.row(
+                {.width = kGrow,
+                 .cross = ui::Alignment::Center,
+                 .gap = 2});
+
+            ButtonSpec inkSpec{.id = widgets::kDrawInk};
+            ButtonSpec paperSpec{.id = widgets::kDrawPaper};
+
+            if (store.tiles.drawPaper)
+            {
+                paperSpec.state = ButtonState::Pressed;
+            }
+            else
+            {
+                inkSpec.state = ButtonState::Pressed;
+            }
+
+            ui.button("ink", inkSpec);
+
+            {
+                const auto swatch = ui.panel(
+                    {.width = fixedSize(14),
+                     .height = fixedSize(10),
+                     .background = colorOf(header.ink),
+                     .padding = 0,
+                     .gap = 0});
+            }
+
+            ui.button("paper", paperSpec);
+
+            {
+                const auto swatch = ui.panel(
+                    {.width = fixedSize(14),
+                     .height = fixedSize(10),
+                     .background = colorOf(header.paper),
+                     .padding = 0,
+                     .gap = 0});
+            }
+        }
+
         void describeCharacters(Context &ui, const EditorStore &store)
         {
             const auto &characters = store.characters;
@@ -541,8 +587,8 @@ namespace antwika::map_editor
 
             {
                 const auto swatch = ui.panel(
-                    {.width = fixedSize(kSwatchWidth),
-                     .height = fixedSize(kSwatchHeight),
+                    {.width = fixedSize(14),
+                     .height = fixedSize(10),
                      .background = colorOf(header.ink),
                      .padding = 0,
                      .gap = 0});
@@ -552,8 +598,8 @@ namespace antwika::map_editor
 
             {
                 const auto swatch = ui.panel(
-                    {.width = fixedSize(kSwatchWidth),
-                     .height = fixedSize(kSwatchHeight),
+                    {.width = fixedSize(14),
+                     .height = fixedSize(10),
                      .background = colorOf(header.paper),
                      .padding = 0,
                      .gap = 0});
@@ -940,6 +986,11 @@ namespace antwika::map_editor
                          .background = ui.theme().panel,
                          .padding = 2,
                          .gap = 1});
+
+                    if (store.view != EditorView::Map)
+                    {
+                        describeDrawColor(ui, store);
+                    }
 
                     if (store.view == EditorView::Characters)
                     {

@@ -140,6 +140,7 @@ namespace antwika::map_editor
         autotile::TerrainConnectors connectors{};
         bool stroke = false;
         bool strokeInk = true;
+        bool drawPaper = false;
     };
 
     struct FieldBuffer final

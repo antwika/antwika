@@ -185,6 +185,9 @@ namespace antwika::map_editor
             case Key::B:
                 toggleBridge(state);
                 return;
+            case Key::C:
+                store.tiles.drawPaper = !store.tiles.drawPaper;
+                return;
             case Key::L:
                 cycleLight(state);
                 return;

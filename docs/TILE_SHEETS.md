@@ -7,7 +7,10 @@ The `autotile` library's `SheetLayout.hpp` is the authoritative encoding of this
 
 A sheet is one PNG per terrain, 96 pixels wide and 80 pixels high.
 Surfaces are 16x16 display tiles built from 2x2 composable 8x8 quadrants, and the special pieces are single 8x8 half-tiles.
-Placeholder sheets are drawn over a transparent background with the single ink color `#d6e0d8`, and the renderer recolors ink and paper per map.
+Art carries two drawable classes plus transparency: an opaque white pixel (255) is an ink-class pixel, an opaque mid-gray pixel (128) is a paper-class pixel, and zero alpha is transparent.
+The actual colors always come from the map palette — the renderer bakes textures with the palette's ink and paper applied to their classes and re-bakes whenever the palette changes, so every map recolors the same art.
+Load-time normalization classes any opaque pixel by luminance (192 or higher becomes ink, the rest paper), which keeps every existing pure-white sheet loading as all-ink and still normalizes old off-white legacies to ink.
+Placeholder sheets are ink-only.
 
 ## The corner-mask grid
 

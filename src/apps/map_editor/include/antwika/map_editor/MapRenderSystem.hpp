@@ -11,6 +11,7 @@
 #include <antwika/enums/Enumeration.hpp>
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/ViewportRenderer.hpp>
+#include <antwika/tilemap/Rgb.hpp>
 #include <antwika/tilemap/TerrainClass.hpp>
 #include <antwika/time/Tick.hpp>
 
@@ -66,6 +67,8 @@ namespace antwika::map_editor
 
         EditorStore &store;
         gfx::ViewportRenderer &view;
+        tilemap::Rgb bakedInk{};
+        tilemap::Rgb bakedPaper{};
         Sheets sheets;
         std::array<
             std::uint64_t,

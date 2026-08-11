@@ -42,6 +42,20 @@ namespace antwika::map_editor
         constexpr Color kInk{
             .red = 255, .green = 255, .blue = 255, .alpha = 255};
 
+        constexpr Color kPaper{
+            .red = 128, .green = 128, .blue = 128, .alpha = 255};
+
+        constexpr std::uint32_t kInkLuminance = 192;
+
+        [[nodiscard]] std::uint32_t luminanceAt(
+            const Bitmap &sheet, const std::size_t offset)
+        {
+            return (54U * sheet.pixels[offset]
+                    + 183U * sheet.pixels[offset + 1]
+                    + 19U * sheet.pixels[offset + 2])
+                   / 256U;
+        }
+
         constexpr Color kBackdropLight{
             .red = 74, .green = 76, .blue = 84};
 
@@ -134,7 +148,7 @@ namespace antwika::map_editor
         }
     }
 
-    void recolorOpaqueToWhite(Bitmap &sheet)
+    void normalizeSheetClasses(Bitmap &sheet)
     {
         for (std::size_t offset = 0;
              offset + 3 < sheet.pixels.size();
@@ -145,9 +159,14 @@ namespace antwika::map_editor
                 continue;
             }
 
-            sheet.pixels[offset] = 255;
-            sheet.pixels[offset + 1] = 255;
-            sheet.pixels[offset + 2] = 255;
+            const auto &color =
+                luminanceAt(sheet, offset) >= kInkLuminance
+                    ? kInk
+                    : kPaper;
+
+            sheet.pixels[offset] = color.red;
+            sheet.pixels[offset + 1] = color.green;
+            sheet.pixels[offset + 2] = color.blue;
         }
     }
 
@@ -205,7 +224,7 @@ namespace antwika::map_editor
     }
 
     bool setSheetPixel(
-        Bitmap &sheet, const Point pixel, const bool ink)
+        Bitmap &sheet, const Point pixel, const PixelClass value)
     {
         if (!sheet.isComplete() || !inSheet(sheet, pixel))
         {
@@ -213,7 +232,11 @@ namespace antwika::map_editor
         }
 
         const auto offset = pixelOffset(sheet, pixel);
-        const Color color = ink ? kInk : Color{.alpha = 0};
+        const Color color =
+            value == PixelClass::Ink
+                ? kInk
+                : (value == PixelClass::Paper ? kPaper
+                                              : Color{.alpha = 0});
 
         if (sheet.pixels[offset] == color.red
             && sheet.pixels[offset + 1] == color.green
@@ -231,14 +254,51 @@ namespace antwika::map_editor
         return true;
     }
 
-    bool sheetPixelInked(const Bitmap &sheet, const Point pixel)
+    PixelClass sheetPixelClass(
+        const Bitmap &sheet, const Point pixel)
     {
         if (!sheet.isComplete() || !inSheet(sheet, pixel))
         {
-            return false;
+            return PixelClass::Blank;
         }
 
-        return sheet.pixels[pixelOffset(sheet, pixel) + 3] != 0;
+        const auto offset = pixelOffset(sheet, pixel);
+
+        if (sheet.pixels[offset + 3] == 0)
+        {
+            return PixelClass::Blank;
+        }
+
+        return luminanceAt(sheet, offset) >= kInkLuminance
+                   ? PixelClass::Ink
+                   : PixelClass::Paper;
+    }
+
+    gfx::Bitmap bakedSheet(
+        const Bitmap &sheet, const Color ink, const Color paper)
+    {
+        auto baked = sheet;
+
+        for (std::size_t offset = 0;
+             offset + 3 < baked.pixels.size();
+             offset += gfx::kBytesPerPixel)
+        {
+            if (baked.pixels[offset + 3] == 0)
+            {
+                continue;
+            }
+
+            const auto &color =
+                luminanceAt(baked, offset) >= kInkLuminance
+                    ? ink
+                    : paper;
+
+            baked.pixels[offset] = color.red;
+            baked.pixels[offset + 1] = color.green;
+            baked.pixels[offset + 2] = color.blue;
+        }
+
+        return baked;
     }
 
     gfx::Bitmap loadSheetOrPlaceholder(
@@ -258,7 +318,7 @@ namespace antwika::map_editor
                 if (bitmap.size.width == kSheetWidth
                     && bitmap.size.height == kSheetHeight)
                 {
-                    recolorOpaqueToWhite(bitmap);
+                    normalizeSheetClasses(bitmap);
                     return bitmap;
                 }
 
@@ -520,13 +580,27 @@ namespace antwika::map_editor
     namespace
     {
         void applyStrokePixel(
-            SheetDoc &doc, const Point pixel, const bool ink)
+            SheetDoc &doc,
+            const Point pixel,
+            const PixelClass value)
         {
-            if (setSheetPixel(doc.image, pixel, ink))
+            if (setSheetPixel(doc.image, pixel, value))
             {
                 doc.dirty = true;
                 ++doc.revision;
             }
+        }
+
+        [[nodiscard]] PixelClass strokeClass(
+            const EditorStore &store, const bool leftButton)
+        {
+            if (!leftButton)
+            {
+                return PixelClass::Blank;
+            }
+
+            return store.tiles.drawPaper ? PixelClass::Paper
+                                         : PixelClass::Ink;
         }
     }
 
@@ -564,7 +638,10 @@ namespace antwika::map_editor
             doc.redoStack.clear();
             tiles.stroke = true;
             tiles.strokeInk = gesture.ink;
-            applyStrokePixel(doc, gesture.pixel, gesture.ink);
+            applyStrokePixel(
+                doc,
+                gesture.pixel,
+                strokeClass(store, gesture.ink));
             return;
         }
 
@@ -572,7 +649,10 @@ namespace antwika::map_editor
         {
             if (tiles.stroke)
             {
-                applyStrokePixel(doc, gesture.pixel, tiles.strokeInk);
+                applyStrokePixel(
+                    doc,
+                    gesture.pixel,
+                    strokeClass(store, tiles.strokeInk));
             }
 
             return;

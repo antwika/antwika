@@ -97,6 +97,35 @@ namespace
             .red = rgb.red, .green = rgb.green, .blue = rgb.blue};
     }
 
+    [[nodiscard]] antwika::gfx::Bitmap bakedSheet(
+        const antwika::gfx::Bitmap &sheet,
+        const Color ink,
+        const Color paper)
+    {
+        auto baked = sheet;
+
+        for (std::size_t at = 0; at + 3 < baked.pixels.size();
+             at += 4)
+        {
+            if (baked.pixels[at + 3] == 0)
+            {
+                continue;
+            }
+
+            const auto luminance = (54U * baked.pixels[at]
+                                    + 183U * baked.pixels[at + 1]
+                                    + 19U * baked.pixels[at + 2])
+                                   / 256U;
+            const auto &color = luminance >= 192 ? ink : paper;
+
+            baked.pixels[at] = color.red;
+            baked.pixels[at + 1] = color.green;
+            baked.pixels[at + 2] = color.blue;
+        }
+
+        return baked;
+    }
+
     constexpr std::uint32_t kWalkTicks = 12;
 
     class CloseSink final : public antwika::event::ITickEventSink
@@ -164,16 +193,15 @@ namespace
         player.moveTicks = kWalkTicks;
     }
 
-    [[nodiscard]] std::unique_ptr<antwika::gfx::ITexture>
-    loadPlayerSheet(
-        ViewportRenderer &view, antwika::log::ILogger &logger)
+    [[nodiscard]] std::optional<antwika::gfx::Bitmap>
+    loadPlayerSheet(antwika::log::ILogger &logger)
     {
         const std::filesystem::path path =
             "assets/characters/player.png";
 
         if (!std::filesystem::is_regular_file(path))
         {
-            return nullptr;
+            return std::nullopt;
         }
 
         try
@@ -190,9 +218,19 @@ namespace
                     continue;
                 }
 
-                bitmap.pixels[at] = 255;
-                bitmap.pixels[at + 1] = 255;
-                bitmap.pixels[at + 2] = 255;
+                const auto luminance =
+                    (54U * bitmap.pixels[at]
+                     + 183U * bitmap.pixels[at + 1]
+                     + 19U * bitmap.pixels[at + 2])
+                    / 256U;
+                const auto value = luminance >= 192 ? 255 : 128;
+
+                bitmap.pixels[at] =
+                    static_cast<std::uint8_t>(value);
+                bitmap.pixels[at + 1] =
+                    static_cast<std::uint8_t>(value);
+                bitmap.pixels[at + 2] =
+                    static_cast<std::uint8_t>(value);
             }
 
             if (bitmap.size.width != 64 || bitmap.size.height != 64)
@@ -200,17 +238,17 @@ namespace
                 logger.log(
                     Level::Warning,
                     "tilemap_demo: player.png is not 64x64");
-                return nullptr;
+                return std::nullopt;
             }
 
             logger.log(Level::Info, "Loaded " + path.string());
 
-            return view.createTexture(bitmap);
+            return bitmap;
         }
         catch (const antwika::gfx::GfxError &error)
         {
             logger.log(Level::Warning, error.what());
-            return nullptr;
+            return std::nullopt;
         }
     }
 
@@ -256,6 +294,10 @@ int main(int argc, char **argv)
             }
 
             std::array<
+                antwika::gfx::Bitmap,
+                antwika::enums::kCount<TerrainClass>>
+                sheetArt;
+            std::array<
                 std::unique_ptr<antwika::gfx::ITexture>,
                 antwika::enums::kCount<TerrainClass>>
                 sheets;
@@ -263,16 +305,18 @@ int main(int argc, char **argv)
             for (const auto terrain :
                  antwika::enums::kAll<TerrainClass>)
             {
-                sheets[antwika::enums::index(terrain)] =
-                    view.createTexture(
-                        placeholderSheet(terrain, kWhite));
+                sheetArt[antwika::enums::index(terrain)] =
+                    placeholderSheet(terrain, kWhite);
             }
 
             Player player;
             antwika::time::SystemSleeper sleeper;
             std::uint32_t clock = 0;
 
-            const auto playerSheet = loadPlayerSheet(view, logger);
+            const auto playerArt = loadPlayerSheet(logger);
+            std::unique_ptr<antwika::gfx::ITexture> playerSheet;
+            std::optional<antwika::tilemap::Rgb> bakedInk;
+            std::optional<antwika::tilemap::Rgb> bakedPaper;
 
             const antwika::input::InputEventCodec codec;
             antwika::console::InputFold fold(codec);
@@ -406,6 +450,29 @@ int main(int argc, char **argv)
                 const auto ink = colorOf(map.header().ink);
                 const auto paper = colorOf(map.header().paper);
 
+                if (bakedInk != map.header().ink
+                    || bakedPaper != map.header().paper)
+                {
+                    bakedInk = map.header().ink;
+                    bakedPaper = map.header().paper;
+
+                    for (const auto terrain :
+                         antwika::enums::kAll<TerrainClass>)
+                    {
+                        const auto at =
+                            antwika::enums::index(terrain);
+
+                        sheets[at] = view.createTexture(bakedSheet(
+                            sheetArt[at], ink, paper));
+                    }
+
+                    if (playerArt.has_value())
+                    {
+                        playerSheet = view.createTexture(bakedSheet(
+                            *playerArt, ink, paper));
+                    }
+                }
+
                 view.clear(paper);
                 view.fillSurround(Color{});
 
@@ -430,7 +497,7 @@ int main(int argc, char **argv)
                              static_cast<float>(
                                  source.size.height)}),
                         shade ? Color{.red = 0, .green = 0, .blue = 0}
-                              : ink);
+                              : kWhite);
                 }
 
                 if (playerSheet != nullptr)
@@ -455,7 +522,7 @@ int main(int argc, char **argv)
                                  - static_cast<float>(player.height)
                                        * 8.0F},
                             {16.0F, 16.0F}),
-                        ink);
+                        kWhite);
                 }
                 else
                 {

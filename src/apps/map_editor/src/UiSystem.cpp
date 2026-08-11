@@ -950,6 +950,18 @@ namespace antwika::map_editor
             return;
         }
 
+        if (activated == widgets::kDrawInk)
+        {
+            store.tiles.drawPaper = false;
+            return;
+        }
+
+        if (activated == widgets::kDrawPaper)
+        {
+            store.tiles.drawPaper = true;
+            return;
+        }
+
         if (activated == widgets::kCharNew)
         {
             newCharacter();

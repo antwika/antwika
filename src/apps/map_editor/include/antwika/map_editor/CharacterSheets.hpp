@@ -93,7 +93,6 @@ namespace antwika::map_editor
     void drawCharacterWorkspace(
         gfx::ViewportRenderer &view,
         const gfx::ITexture &sheet,
-        gfx::Color ink,
         std::optional<gfx::Point> hover,
         std::uint32_t tick);
 

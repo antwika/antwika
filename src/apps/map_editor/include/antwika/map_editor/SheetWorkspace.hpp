@@ -7,6 +7,7 @@
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/autotile/Connectors.hpp>
+#include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/PointF.hpp>
 #include <antwika/gfx/ViewportRenderer.hpp>
@@ -45,28 +46,50 @@ namespace antwika::map_editor
      */
     [[nodiscard]] std::string slotLabelAt(gfx::Point pixel);
 
+    enum class PixelClass : std::uint8_t
+    {
+        Blank = 0,
+        Ink,
+        Paper,
+    };
+
     /**
-     * @brief Writes one 1-bit pixel into a sheet bitmap.
+     * @brief Writes one classed pixel into a sheet bitmap.
      *
-     * @param ink True paints the ink color and false clears the
-     *        pixel to transparent.
+     * @param value Ink stores opaque white, Paper stores opaque
+     *        mid-gray, and Blank clears to transparency.
      * @return True when the pixel changed.
      */
-    bool setSheetPixel(gfx::Bitmap &sheet, gfx::Point pixel, bool ink);
+    bool setSheetPixel(
+        gfx::Bitmap &sheet, gfx::Point pixel, PixelClass value);
 
     /**
-     * @brief Maps every opaque pixel to white, keeping alpha.
+     * @brief Normalizes every opaque pixel to its class color.
      *
-     * Ensures: sheets saved with any legacy opaque color render
-     *          identically once tinted at draw time.
+     * Ensures: opaque pixels with luminance at or above 192 store
+     *          the ink white and the rest store the paper mid-gray,
+     *          so legacy all-white and off-white sheets load as
+     *          all-ink.
      */
-    void recolorOpaqueToWhite(gfx::Bitmap &sheet);
+    void normalizeSheetClasses(gfx::Bitmap &sheet);
 
     /**
-     * @brief Reads whether a sheet pixel currently holds ink.
+     * @brief Reads a sheet pixel's class.
+     *
+     * Ensures: transparent pixels read Blank, and opaque pixels
+     *          split by the 192 luminance threshold.
      */
-    [[nodiscard]] bool sheetPixelInked(
+    [[nodiscard]] PixelClass sheetPixelClass(
         const gfx::Bitmap &sheet, gfx::Point pixel);
+
+    /**
+     * @brief Composes a drawable bitmap from a classed sheet.
+     *
+     * @return The sheet with ink-class pixels colored by ink and
+     *         paper-class pixels by paper, alpha preserved.
+     */
+    [[nodiscard]] gfx::Bitmap bakedSheet(
+        const gfx::Bitmap &sheet, gfx::Color ink, gfx::Color paper);
 
     /**
      * @brief Loads a terrain sheet from the tiles directory.

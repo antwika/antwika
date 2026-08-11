@@ -34,6 +34,7 @@ Unit tests for the editor itself remain deferred by explicit decision; see docs/
 | 22 | Character eraser and ink consistency | fixed |
 | 23 | Artist-editable adjacency rules and weights | shipped |
 | 24 | Per-variant edge connectors | shipped |
+| 25 | Two-color drawing with palette baking | shipped |
 
 ## 1: menu bar (shipped)
 
@@ -313,6 +314,17 @@ The workspace shows four edge markers at the hovered variant tile's edge midpoin
 Verified under Xvfb with a test sidecar declaring truthful contacts (straight-H E+W, straight-V N+S, the elbows, the T, the valve E+W, and the tank with no edges): a Python replica of the hash and chooser predicted every interior corner's variant, every shared edge matched by declaration, and pixel checks at all shared midpoints inside the wall slab showed ink exactly where connectors meet and blank where blanks meet with zero mismatches — the no-edge tank simply never enters the constrained interior, which is the mechanism keeping pipe stubs out of blank-edged neighbours.
 Two captures of the same map were pixel-identical, the E-edge toggle saved as "W" in tiles.json and survived a relaunch, and the truthful-contact interior visibly collapses toward the all-connected cross, an honest consequence of edge matching that richer all-edge art relieves.
 The shipped assets/tiles sidecar carries no connectors section, so defaults apply out of the box.
+
+## 25: two-color drawing with palette baking
+
+Both pixel workspaces now draw with two colors plus transparency: art declares ink-class or paper-class pixels and the actual colors keep coming from the map palette, so every map recolors the art as before.
+Storage stays ordinary PNGs — opaque white 255 is ink, opaque mid-gray 128 is paper, zero alpha is transparent — and load-time normalization classes any opaque pixel by a 192 luminance threshold, so existing pure-white sheets load as all-ink and off-white legacies still normalize to ink; both placeholder generators keep emitting ink-only art and remain byte-identical to each other, with assets/tiles unchanged.
+Rendering switched from tint-at-draw to bake-at-palette: sheet and character textures are composed with the palette's actual ink and paper applied to their classes, re-baked whenever the palette changes — Apply, the picker's live preview, and the console palette command — while Shade keeps its black tint and every draw call now tints white.
+No rebake throttle was needed: seven tiny bitmaps re-bake per palette change and the picker drag stayed fluid, recoloring both classes mid-drag.
+tilemap_demo bakes the same way, keeping the placeholder and player source bitmaps and rebuilding textures when the map header palette changes.
+The artist picks the active draw color through two panel swatches showing the live palette colors (or the C key), left-click paints that class, right-click erases to transparency, the hovered-pixel hint suffix reads ink, paper, or blank plus the active "drawing" color, and the workspace canvas shows classes in the live palette so what you draw is what the map shows.
+Verified under Xvfb: ink and paper strokes rendered in the palette's cyan and near-black over the checkerboard, the saved wall.png byte-asserted exactly the 255-white and 128-gray opaque set with correct alphas, the classes round-tripped a relaunch with the hint reading "paper", 27 base wall tiles sampled both classes in their palette roles and again after a console palette change to new ink and paper values, the picker drag recolored both classes live behind the dialog, right-click erased both classes back to the checkerboard, a paper detail painted on the player rendered in the paper color in the demo beside the ink body, and the all-ink legacy map render stayed pixel-identical to the pre-change reference.
+The task 22 rule that characters tint with the ink color at draw time is superseded by the palette bake, which colors both classes.
 
 ## After the queue drains
 

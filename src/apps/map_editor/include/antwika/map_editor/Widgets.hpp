@@ -157,6 +157,10 @@ namespace antwika::map_editor::widgets
 
     inline constexpr ui::WidgetId kRulesCancel{761};
 
+    inline constexpr ui::WidgetId kDrawInk{790};
+
+    inline constexpr ui::WidgetId kDrawPaper{791};
+
     inline constexpr ui::WidgetId kCharName{300};
 
     inline constexpr ui::WidgetId kCharNew{301};
