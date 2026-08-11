@@ -4,6 +4,7 @@
 #include <antwika/tileset/PixelClass.hpp>
 #include <antwika/tileset/Sprite.hpp>
 
+using antwika::tileset::isBlank;
 using antwika::tileset::kMaxFrames;
 using antwika::tileset::kOpenSocket;
 using antwika::tileset::kSpritePixels;
@@ -12,6 +13,7 @@ using antwika::tileset::PixelClass;
 using antwika::tileset::Side;
 using antwika::tileset::SocketId;
 using antwika::tileset::Sprite;
+using antwika::tileset::SpriteFrame;
 using antwika::tileset::toString;
 
 TEST(SpriteTest, Side_CountsFourSides)
@@ -56,6 +58,27 @@ TEST(SpriteTest, Sprite_DefaultsToOneBlankOpenSocketedFrame)
     {
         EXPECT_EQ(pixel, PixelClass::Blank);
     }
+}
+
+TEST(SpriteTest, IsBlank_CallsADefaultConstructedFrameBlank)
+{
+    EXPECT_TRUE(isBlank(SpriteFrame{}));
+}
+
+TEST(SpriteTest, IsBlank_RefusesAFrameHoldingOneInkPixel)
+{
+    SpriteFrame frame;
+    frame.pixels[kSpritePixels - 1] = PixelClass::Ink;
+
+    EXPECT_FALSE(isBlank(frame));
+}
+
+TEST(SpriteTest, IsBlank_RefusesAFrameHoldingOnePaperPixel)
+{
+    SpriteFrame frame;
+    frame.pixels[0] = PixelClass::Paper;
+
+    EXPECT_FALSE(isBlank(frame));
 }
 
 TEST(SpriteTest, OperatorEquals_TellsApartADifferingPixel)

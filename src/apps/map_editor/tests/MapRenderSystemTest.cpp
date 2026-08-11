@@ -83,6 +83,15 @@ namespace
 
     constexpr std::uint32_t kSystemSheetHeight = 8;
 
+    constexpr Color kMissing{.red = 255, .green = 0, .blue = 0};
+
+    constexpr float kCellSide = 8.0F;
+
+    constexpr float kFaceTop =
+        kCellSide + static_cast<float>(kMenuBarHeight);
+
+    constexpr int kLatticeCells = 16;
+
     [[nodiscard]] TilesetDoc docOf(
         std::string name, const TerrainClass terrain)
     {
@@ -133,6 +142,25 @@ namespace
     [[nodiscard]] bool isCharacterSized(const Bitmap &bitmap)
     {
         return bitmap.size.width == 64 && bitmap.size.height == 64;
+    }
+
+    /**
+     * @brief A placeholder tileset with every pixel rubbed out.
+     */
+    [[nodiscard]] antwika::tileset::Tileset erasedTileset(
+        const TerrainClass terrain)
+    {
+        auto set = placeholderTileset(terrain);
+
+        for (auto &layer : set.layers)
+        {
+            for (auto &sprite : layer.sprites)
+            {
+                sprite.frames = {};
+            }
+        }
+
+        return set;
     }
 
     /**
@@ -724,7 +752,27 @@ TEST_F(MapRenderSystemTest, Construct_RejectsASystemSheetItCannotRead)
     EXPECT_FALSE(std::ranges::any_of(uploads, isBlankSheet));
 }
 
-TEST_F(MapRenderSystemTest, Update_DrawsCliffFacesFromTheSystemSheet)
+TEST_F(MapRenderSystemTest, Update_FillsACliffFaceWithTheMissingArtRed)
+{
+    store.state.map.at(GridCell{.column = 0, .row = 0})
+        .place(Slab{.level = 1});
+    store.state.activeLevel = 1;
+
+    EXPECT_CALL(
+        inner,
+        drawRect(
+            RectF({0.0F, kFaceTop}, {kCellSide, kCellSide}),
+            kMissing));
+    EXPECT_CALL(
+        inner,
+        drawRect(
+            RectF({kCellSide, kFaceTop}, {kCellSide, kCellSide}),
+            kMissing));
+
+    run();
+}
+
+TEST_F(MapRenderSystemTest, Update_DrawsNoCliffFaceFromTheSystemSheet)
 {
     store.state.map.at(GridCell{.column = 0, .row = 0})
         .place(Slab{.level = 1});
@@ -737,10 +785,48 @@ TEST_F(MapRenderSystemTest, Update_DrawsCliffFacesFromTheSystemSheet)
             RectF(antwika::autotile::systemSource(
                 antwika::autotile::DrawKind::WallRim)),
             _,
-            Color{.red = 255, .green = 255, .blue = 255}))
-        .Times(2);
+            _))
+        .Times(0);
 
     run();
+}
+
+TEST_F(MapRenderSystemTest, Update_MarksNoPlaceholderSpriteAsMissingArt)
+{
+    EXPECT_CALL(inner, drawRect(_, kMissing)).Times(0);
+
+    run();
+}
+
+TEST_F(MapRenderSystemTest, Update_FillsAnUndrawnSpriteWithTheMissingRed)
+{
+    TilesetDoc doc{.data = erasedTileset(TerrainClass::Floor)};
+    doc.data.name = "shorewall";
+    store.tilesets.open.push_back(std::move(doc));
+    bind(TerrainClass::Floor, "shorewall");
+
+    EXPECT_CALL(inner, drawRect(_, kMissing)).Times(kLatticeCells);
+
+    run();
+
+    EXPECT_EQ(textureDraws, 0U);
+}
+
+TEST_F(MapRenderSystemTest, Update_FillsARowPastTheBakedAtlasWithTheRed)
+{
+    TilesetDoc doc{};
+    doc.data.name = "shorewall";
+    store.tilesets.open.push_back(std::move(doc));
+    bind(TerrainClass::Floor, "shorewall");
+    run();
+
+    growTheTilesetPastItsAtlas();
+
+    EXPECT_CALL(inner, drawRect(_, kMissing)).Times(kLatticeCells);
+
+    run();
+
+    EXPECT_EQ(textureDraws, 0U);
 }
 
 TEST_F(MapRenderSystemTest, Update_TintsShadedSlabsBlack)

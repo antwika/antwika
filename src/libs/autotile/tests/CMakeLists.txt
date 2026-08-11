@@ -3,6 +3,7 @@ find_package(GTest REQUIRED)
 add_executable(antwika_autotile_tests
     CutawayTest.cpp
     DrawPlanTest.cpp
+    MissingArtTest.cpp
     SystemSheetTest.cpp
     TileDrawTest.cpp
 )

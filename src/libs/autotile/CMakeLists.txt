@@ -3,6 +3,7 @@ antwika_add_library(
     SOURCES
         src/Cutaway.cpp
         src/DrawPlan.cpp
+        src/MissingArt.cpp
         src/SystemSheet.cpp
     DEPENDS
         antwika::enums

@@ -89,4 +89,14 @@ namespace antwika::tileset
             const Sprite &other) const = default;
     };
 
+    /**
+     * @brief Whether a frame carries no drawable pixel.
+     *
+     * @param frame The frame to inspect.
+     * @return Whether every pixel of it is PixelClass::Blank.
+     *
+     * Ensures: a default-constructed frame is blank.
+     */
+    [[nodiscard]] bool isBlank(const SpriteFrame &frame) noexcept;
+
 }

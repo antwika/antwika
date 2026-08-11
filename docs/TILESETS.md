@@ -129,14 +129,27 @@ Base sprites are fully opaque, and decor sprites are mostly transparent with an 
 
 `assets/tilesets/system.png` is a single shared 32x8 sheet of four 8x8 pieces, left to right.
 
-| Piece | Position | Content |
-| --- | --- | --- |
-| Wall band | 0,0 | The vertically tiling cliff-face band. |
-| Wall rim | 8,0 | The cliff-face rim under a surface edge. |
-| Bridge deck | 16,0 | The bridge planking drawn over a cell. |
-| Shade | 24,0 | The dither tile the lighting pass draws. |
+| Piece | Position | Content | Drawn |
+| --- | --- | --- | --- |
+| Wall band | 0,0 | The vertically tiling cliff-face band. | No |
+| Wall rim | 8,0 | The cliff-face rim under a surface edge. | No |
+| Bridge deck | 16,0 | The bridge planking drawn over a cell. | No |
+| Shade | 24,0 | The dither tile the lighting pass draws. | Yes |
 
-The renderer tints Shade draws black, so the slot's ink only defines the dither shape.
+Only the shade slot reaches the screen.
+The renderer tints Shade draws black, so that slot's ink only defines the dither shape.
+
+## Missing art
+
+Every visible surface must be art an artist drew, and the renderer fills solid red (255, 0, 0) wherever that is not yet true.
+
+Three kinds of surface are red always, because no tileset can supply them: the cliff-face wall band, the cliff-face wall rim and the bridge deck.
+The system sheet still carries a piece for each, but nothing draws them, and the red says so rather than passing programmer art off as finished.
+
+A tile sprite is red when its row lies past the baked atlas, when the bound tileset holds no sprite at that row, or when the frame being drawn is entirely blank.
+A blank frame bakes to fully transparent, so without the marker it would leave an invisible hole instead of an obvious gap.
+
+The `default-*` tilesets are drawn art and never come out red.
 
 ## Generation rules
 

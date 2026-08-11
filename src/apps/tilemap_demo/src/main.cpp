@@ -24,6 +24,7 @@
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/autotile/DrawPlan.hpp>
+#include <antwika/autotile/MissingArt.hpp>
 #include <antwika/autotile/SystemSheet.hpp>
 #include <antwika/autotile/TileDraw.hpp>
 #include <antwika/cli/CommandLine.hpp>
@@ -102,6 +103,10 @@ namespace
     constexpr Color kMarker{.red = 255, .green = 176, .blue = 64};
 
     constexpr Color kWhite{.red = 255, .green = 255, .blue = 255};
+
+    constexpr Color kBlack{.red = 0, .green = 0, .blue = 0};
+
+    constexpr Color kMissing{.red = 255, .green = 0, .blue = 0};
 
     [[nodiscard]] Color colorOf(const antwika::tilemap::Rgb rgb)
     {
@@ -427,6 +432,10 @@ int main(int argc, char **argv)
                 std::unique_ptr<antwika::gfx::ITexture>,
                 antwika::enums::kCount<TerrainClass>>
                 atlases;
+            std::array<
+                antwika::tileset::AtlasIndex,
+                antwika::enums::kCount<TerrainClass>>
+                atlasIndices;
             antwika::autotile::TilesetBindings bindings{};
 
             for (const auto terrain :
@@ -625,6 +634,9 @@ int main(int argc, char **argv)
 
                         atlases[at] = view.createTexture(
                             atlasArtOf(tilesets[at], ink, paper));
+                        atlasIndices[at] =
+                            antwika::tileset::atlasIndexOf(
+                                tilesets[at]);
                     }
 
                     systemSheet = view.createTexture(
@@ -649,6 +661,8 @@ int main(int argc, char **argv)
 
                 for (const auto &draw : plan)
                 {
+                    const auto at =
+                        antwika::enums::index(draw.terrain);
                     const bool sprite =
                         draw.kind
                         == antwika::autotile::DrawKind::Sprite;
@@ -657,25 +671,27 @@ int main(int argc, char **argv)
                             draw.atlasRow, draw.frame)
                                : antwika::autotile::systemSource(
                                    draw.kind);
-                    const auto &texture =
-                        sprite ? *atlases[antwika::enums::index(
-                            draw.terrain)]
-                               : *systemSheet;
-                    const auto shade =
-                        draw.kind
-                        == antwika::autotile::DrawKind::Shade;
+                    const RectF target(
+                        {static_cast<float>(draw.screen.x),
+                         static_cast<float>(draw.screen.y)},
+                        {static_cast<float>(source.size.width),
+                         static_cast<float>(source.size.height)});
+
+                    if (antwika::autotile::artMissing(
+                            draw, tilesets[at], atlasIndices[at]))
+                    {
+                        view.drawRect(target, kMissing);
+                        continue;
+                    }
 
                     view.drawTexture(
-                        texture,
+                        sprite ? *atlases[at] : *systemSheet,
                         source,
-                        RectF(
-                            {static_cast<float>(draw.screen.x),
-                             static_cast<float>(draw.screen.y)},
-                            {static_cast<float>(source.size.width),
-                             static_cast<float>(
-                                 source.size.height)}),
-                        shade ? Color{.red = 0, .green = 0, .blue = 0}
-                              : kWhite);
+                        target,
+                        draw.kind
+                                == antwika::autotile::DrawKind::Shade
+                            ? kBlack
+                            : kWhite);
                 }
 
                 if (playerSheet != nullptr)

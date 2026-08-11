@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <antwika/autotile/DrawPlan.hpp>
+#include <antwika/autotile/MissingArt.hpp>
 #include <antwika/autotile/SystemSheet.hpp>
 #include <antwika/geometry/Grid.hpp>
 #include <antwika/gfx/Color.hpp>
@@ -41,6 +42,8 @@ namespace antwika::map_editor
         constexpr Color kWhite{.red = 255, .green = 255, .blue = 255};
 
         constexpr Color kBlack{.red = 0, .green = 0, .blue = 0};
+
+        constexpr Color kMissing{.red = 255, .green = 0, .blue = 0};
 
         constexpr std::uint32_t kClockBucket = 30;
 
@@ -966,33 +969,34 @@ namespace antwika::map_editor
 
         for (const auto &draw : cachedPlan)
         {
+            const auto &slot = resolved[enums::index(draw.terrain)];
             const bool sprite =
                 draw.kind == autotile::DrawKind::Sprite;
             const auto source =
                 sprite ? tileset::atlasSource(
                     draw.atlasRow, draw.frame)
                        : autotile::systemSource(draw.kind);
-            const auto &texture =
-                sprite
-                    ? *resolved[enums::index(draw.terrain)].texture
-                    : *systemTexture;
-            const auto tint =
-                draw.kind == autotile::DrawKind::Shade ? kBlack
-                                                       : kWhite;
+            const RectF target(
+                {static_cast<float>(draw.screen.x) * zoom
+                     + store.camera.panX,
+                 static_cast<float>(draw.screen.y) * zoom
+                     + store.camera.panY
+                     + static_cast<float>(kMenuBarHeight)},
+                {static_cast<float>(source.size.width) * zoom,
+                 static_cast<float>(source.size.height) * zoom});
+
+            if (autotile::artMissing(draw, *slot.set, *slot.index))
+            {
+                view.drawRect(target, kMissing);
+                continue;
+            }
 
             view.drawTexture(
-                texture,
+                sprite ? *slot.texture : *systemTexture,
                 source,
-                RectF(
-                    {static_cast<float>(draw.screen.x) * zoom
-                         + store.camera.panX,
-                     static_cast<float>(draw.screen.y) * zoom
-                         + store.camera.panY
-                         + static_cast<float>(kMenuBarHeight)},
-                    {static_cast<float>(source.size.width) * zoom,
-                     static_cast<float>(source.size.height)
-                         * zoom}),
-                tint);
+                target,
+                draw.kind == autotile::DrawKind::Shade ? kBlack
+                                                       : kWhite);
         }
     }
 
