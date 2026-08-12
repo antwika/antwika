@@ -70,7 +70,7 @@ class AntwikaConan(ConanFile):
             self.requires("raylib/6.0")
 
     def build_requirements(self) -> None:
-        self.test_requires("gtest/1.17.0")
+        self.test_requires("gtest/1.18.0")
 
     def generate(self) -> None:
         toolchain = CMakeToolchain(self)

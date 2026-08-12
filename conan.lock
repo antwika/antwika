@@ -4,6 +4,7 @@
         "stb/cci.20240531#ede183dce303916dab0c1b835df3926a%1720366012.336",
         "nlohmann_json/3.12.0#2d634ab0ec8d9f56353e5ccef6d6612c%1744735883.94",
         "json-schema-validator/2.4.0#7a91b14f71f961c2d94a52bd8353d519%1765954078.009",
+        "gtest/1.18.0#e2507fc4efe2ec9e2db9e5c91eefab9f%1786446847.733",
         "gtest/1.17.0#5224b3b3ff3b4ce1133cbdd27d53ee7d%1755784855.585",
         "glm/1.0.1#c0f71fade2e9abf19fba94615b2243ae%1781764384.671"
     ],
