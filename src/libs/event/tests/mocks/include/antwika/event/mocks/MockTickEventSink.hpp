@@ -1,0 +1,18 @@
+#pragma once
+
+#include <gmock/gmock.h>
+
+#include <antwika/event/ITickEventSink.hpp>
+
+namespace antwika::event::mocks
+{
+
+    using antwika::event::ITickEventSink;
+
+    class MockTickEventSink final : public ITickEventSink
+    {
+    public:
+        MOCK_METHOD(void, handle, (const TickEvent &event), (override));
+    };
+
+}

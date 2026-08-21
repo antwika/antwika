@@ -1,0 +1,33 @@
+{
+    $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+    extends: [
+        'config:recommended',
+    ],
+    baseBranchPatterns: [
+        'main',
+    ],
+    automerge: true,
+    automergeType: 'branch',
+    customManagers: [
+        {
+            customType: 'regex',
+            managerFilePatterns: [
+                '/^conanfile\\.py$/',
+            ],
+            matchStrings: [
+                'requires\\("(?<depName>[^/"]+)/(?<currentValue>[^"]+)"',
+            ],
+            datasourceTemplate: 'conan',
+        },
+        {
+            customType: 'regex',
+            managerFilePatterns: [
+                '/^\\.github/workflows/release\\.yml$/',
+            ],
+            matchStrings: [
+                '(?<depName>semantic-release|@semantic-release/changelog|@semantic-release/git)@(?<currentValue>[\\d.]+)',
+            ],
+            datasourceTemplate: 'npm',
+        },
+    ],
+}

@@ -1,0 +1,442 @@
+#include <antwika/component/Health.hpp>
+#include <antwika/component/Item.hpp>
+#include <antwika/component/Position.hpp>
+#include <antwika/editor/ui/EditorLook.hpp>
+#include <antwika/gfx/Camera3D.hpp>
+#include <antwika/gfx/Color.hpp>
+#include <antwika/gfx/Math3D.hpp>
+#include <antwika/gfx/RectF.hpp>
+#include <antwika/input/DirectionKeys.hpp>
+#include <antwika/light/PointLight.hpp>
+#include <antwika/render/HealthBars.hpp>
+#include <antwika/solver/VoxelWeave.hpp>
+#include <antwika/voxel/VoxelCube.hpp>
+#include <antwika/voxelmap/VoxelPick.hpp>
+
+#include "antwika/editor/Editor.hpp"
+
+namespace
+{
+
+    constexpr antwika::gfx::Color kSightPointColor{
+        .red = 255, .green = 64, .blue = 64, .alpha = 255};
+
+    constexpr float kSightPointSide = 3.0F;
+
+    constexpr antwika::gfx::Color kOriginPointColor{
+        .red = 255, .green = 255, .blue = 255, .alpha = 255};
+
+}
+
+namespace antwika::editor
+{
+
+    void Editor::drawWorldOverlays(
+        const ui::Frame &frame,
+        const gfx::Camera3D &camera,
+        const gfx::Mat4 &modelMatrix)
+    {
+        if (!playing && overlayStale)
+        {
+            gridLines = voxelmap::levelGridLines(
+                map.voxels, antwika::voxel::cubeTop(editLevel));
+            topLines = voxelmap::buildableTopOutlines(
+                map.voxels, antwika::voxel::cubeTop(editLevel));
+
+            const auto satisfiedSeamSet = solver::satisfiedSeams(
+                worldMeshes.faces(),
+                worldMeshes.solved(),
+                map.rules,
+                cornerJoining);
+
+            seamsAboveLevel = solver::crossLevelSeams(
+                worldMeshes.faces(),
+                satisfiedSeamSet,
+                antwika::voxel::cubeTop(editLevel));
+            seamsAtLevel = solver::sameLevelSeams(
+                worldMeshes.faces(),
+                satisfiedSeamSet,
+                antwika::voxel::cubeTop(editLevel));
+            overlayStale = false;
+        }
+
+        const auto clipMatrix = camera.viewProjection() * modelMatrix;
+
+        {
+            const auto ruled = [&](const auto &spans,
+                                   const gfx::Color ink)
+            {
+                for (const auto &span : spans)
+                {
+                    const auto fromPoint =
+                        voxelmap::projectToScreen(
+                            clipMatrix,
+                            camera::kCanvasSize,
+                            span.fromPosition);
+                    const auto toPoint =
+                        voxelmap::projectToScreen(
+                            clipMatrix,
+                            camera::kCanvasSize,
+                            span.toPosition);
+
+                    if (fromPoint.has_value() && toPoint.has_value())
+                    {
+                        viewportRenderer.drawLine(*fromPoint, *toPoint, ink);
+                    }
+                }
+            };
+
+            if (playing)
+            {
+                for (const auto keyCell : map.keyCells)
+                {
+                    if (!game->gates().collectedKeyCells.contains(
+                            antwika::voxel::cubeCornerOf(keyCell)))
+                    {
+                        ruled(voxelmap::cubeWireframe(keyCell), kRuleLineColor);
+                    }
+                }
+
+                for (const auto doorCell : map.doorCells)
+                {
+                    ruled(
+                        voxelmap::cubeWireframe(doorCell),
+                        kCornerSeamLineColor);
+                }
+
+                for (const auto entity :
+                     game->world().view<antwika::component::Item>())
+                {
+                    const auto item =
+                        game->world().get<antwika::component::Item>(entity);
+
+                    ruled(
+                        voxelmap::cubeWireframe(item.cell),
+                        static_cast<component::ItemKind>(item.kind)
+                                == component::ItemKind::Food
+                                 ? kFoodBarColor
+                                 : kWaterBarColor);
+                }
+            }
+
+            for (const auto troubleCell : growTroubleCells)
+            {
+                ruled(voxelmap::cubeWireframe(troubleCell),
+                kForbiddenMarkerColor);
+            }
+
+            if (playing && game->pathGoal().has_value())
+            {
+                ruled(
+                    voxelmap::cubeWireframe(*game->pathGoal()),
+                    kPlacementPreviewColor);
+            }
+
+            if (!playing)
+            {
+                if (!lightPasses.hidden().empty())
+                {
+                    ruled(
+                        voxelmap::occluderFootprints(
+                            lightPasses.hidden()),
+                        kLevelGridLineColor);
+                }
+
+                if (!freeLook && grid)
+                {
+                    ruled(gridLines, kLevelGridLineColor);
+                }
+
+                if (!freeLook)
+                {
+                    ruled(topLines, kCursorColor);
+                }
+
+                const auto going = voxelmap::cellUnder(
+                    camera,
+                    modelMatrix,
+                    camera::kCanvasSize,
+                    pointer.pointerOnCanvas,
+                    antwika::voxel::cubeTop(editLevel));
+
+                const auto steering =
+                    orbiting
+                    || (panning && panGripPosition.has_value())
+                    || game->wasdKeys() != input::DirectionKeys{}
+                    || game->arrowKeys() != input::DirectionKeys{}
+                    || descendHeld
+                    || ascendHeld;
+
+                if (going.has_value() && !freeLook
+                    && showPlacementGhost && !steering
+                    && !frame.interactions.pointerOverUi)
+                {
+                    if (tool == map::Tool::Stamp
+                        && (stampFromCell.has_value()
+                            || !stampCells.empty()))
+                    {
+                        for (const auto cube :
+                             stampGhost(*going))
+                        {
+                            ruled(
+                                voxelmap::cubeWireframe(cube),
+                                    kPlacementPreviewColor);
+                        }
+                    }
+                    else if (shapeFromCell.has_value())
+                    {
+                        for (const auto cube : shapedCubes(
+                                 *shapeFromCell, *going))
+                        {
+                            ruled(
+                                voxelmap::cubeWireframe(cube),
+                                    kPlacementPreviewColor);
+                        }
+                    }
+                    else
+                    {
+                        ruled(voxelmap::cubeWireframe(*going),
+                            kPlacementPreviewColor);
+                    }
+                }
+
+                for (const auto lamp : map.lamps)
+                {
+                    ruled(light::lampGizmoSpans(lamp), lamp.tintColor);
+                }
+
+                if (map.spawnCubeCell.has_value())
+                {
+                    ruled(
+                        voxelmap::cubeWireframe(*map.spawnCubeCell),
+                        kCornerFilledMarkerColor);
+                }
+
+                if (map.exitCubeCell.has_value())
+                {
+                    ruled(voxelmap::cubeWireframe(*map.exitCubeCell),
+                        kForbiddenMarkerColor);
+                }
+
+                for (const auto keyCell : map.keyCells)
+                {
+                    ruled(voxelmap::cubeWireframe(keyCell), kRuleLineColor);
+                }
+
+                for (
+                    const auto doorCell : map.doorCells)
+                {
+                    ruled(
+                        voxelmap::cubeWireframe(doorCell),
+                        kCornerSeamLineColor);
+                }
+
+                for (const auto checkpointCell : map.checkpointCells)
+                {
+                    ruled(
+                        voxelmap::cubeWireframe(checkpointCell),
+                        kRuleLineCrossLevelColor);
+                }
+
+                for (const auto foodCell : map.foodCells)
+                {
+                    ruled(voxelmap::cubeWireframe(foodCell), kFoodBarColor);
+                }
+
+                for (const auto waterCell : map.waterCells)
+                {
+                    ruled(voxelmap::cubeWireframe(waterCell), kWaterBarColor);
+                }
+
+                if (tool == map::Tool::Figure
+                    && figurePicked.has_value()
+                    && *figurePicked < map.characters.size())
+                {
+                    for (const auto stop :
+                         map.characters.at(
+                             *figurePicked).patrolPathCells)
+                    {
+                        ruled(
+                            voxelmap::cubeWireframe(stop),
+                            kPlacementPreviewColor);
+                    }
+                }
+
+                if (tool == map::Tool::PressurePlate)
+                {
+                    for (std::size_t index = 0;
+                         index < map.plates.size();
+                         ++index)
+                    {
+                        ruled(
+                            voxelmap::cubeWireframe(map.plates.at(index).cell),
+                            kCursorColor);
+
+                        if (platePicked == index)
+                        {
+                            for (const auto sway :
+                                 map.plates.at(index).toggleCells)
+                            {
+                                ruled(
+                                    voxelmap::cubeWireframe(sway),
+                                    kPlacementPreviewColor);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        const auto seamFrom = clockSource.now();
+
+        if (showRuleLines && !playing)
+        {
+            const auto &faces = worldMeshes.faces();
+            const auto seamRuled =
+                [&](const std::vector<solver::FaceSeam> &seams,
+                    const gfx::Color ink)
+            {
+                for (const auto &seam : seams)
+                {
+                    if (!voxelmap::isFrontFacing(
+                            camera,
+                            modelMatrix,
+                            faces[seam.faceA].side)
+                        || !voxelmap::isFrontFacing(
+                            camera,
+                            modelMatrix,
+                            faces[seam.faceB].side))
+                    {
+                        continue;
+                    }
+
+                    const auto herePoint = voxelmap::projectToScreen(
+                        clipMatrix,
+                        camera::kCanvasSize,
+                        voxelmap::faceMiddle(faces[seam.faceA]));
+                    const auto therePoint = voxelmap::projectToScreen(
+                        clipMatrix,
+                        camera::kCanvasSize,
+                        voxelmap::faceMiddle(faces[seam.faceB]));
+
+                    if (herePoint.has_value()
+                        && therePoint.has_value())
+                    {
+                        viewportRenderer.drawLine(
+                            *herePoint,
+                            *therePoint,
+                            solver::isCornerSeam(faces, seam)
+                                ? kCornerSeamLineColor
+                                : ink);
+                    }
+                }
+            };
+
+            seamRuled(seamsAboveLevel, kRuleLineCrossLevelColor);
+            seamRuled(seamsAtLevel, kRuleLineColor);
+        }
+
+        meters.seamRate.record(
+            std::chrono::duration_cast<
+                std::chrono::nanoseconds>(
+                clockSource.now() - seamFrom));
+
+        drawHealthBars(clipMatrix);
+        drawSightPoints(clipMatrix);
+    }
+
+    void Editor::drawPointMark(
+        const gfx::Mat4 &clipMatrix,
+        const gfx::Vec3 position,
+        const gfx::Color markColor)
+    {
+        const auto onCanvas = voxelmap::projectToScreen(
+            clipMatrix, camera::kCanvasSize, position);
+
+        if (!onCanvas.has_value())
+        {
+            return;
+        }
+
+        viewportRenderer.drawRect(
+            gfx::RectF{
+                gfx::PointF{
+                    onCanvas->x - (kSightPointSide / 2.0F),
+                    onCanvas->y - (kSightPointSide / 2.0F)},
+                gfx::SizeF{kSightPointSide, kSightPointSide}},
+            markColor);
+    }
+
+    void Editor::drawSightPoints(const gfx::Mat4 &clipMatrix)
+    {
+        drawPointMark(
+            clipMatrix, gfx::Vec3{0.0F, 0.0F, 0.0F}, kOriginPointColor);
+
+        if (!playing)
+        {
+            return;
+        }
+
+        if (!lowerSight)
+        {
+            return;
+        }
+
+        const auto stoodPosition =
+            world.get<component::Position>(game->player());
+
+        const gfx::Vec3 walkerPosition{
+            stoodPosition.x, stoodPosition.y, stoodPosition.z};
+
+        drawPointMark(
+            clipMatrix,
+            antwika::voxel::lineOfSight(walkerPosition),
+            kSightPointColor);
+        drawPointMark(
+            clipMatrix,
+            antwika::voxel::upperLineOfSight(walkerPosition),
+            kSightPointColor);
+    }
+
+    void Editor::drawHealthBars(const gfx::Mat4 &clipMatrix)
+    {
+        if (!playing)
+        {
+            return;
+        }
+
+        static constexpr std::array<gfx::Color,
+            antwika::render::kHealthBarParts>
+            kBarColors{
+                kHealthBarEmptyColor,
+                kFoodBarColor,
+                kHealthBarEmptyColor,
+                kWaterBarColor};
+
+        for (const auto entity :
+             game->world().view<component::Position, component::Health>())
+        {
+            const auto overhead = voxelmap::projectToScreen(
+                clipMatrix,
+                camera::kCanvasSize,
+                character::headTopOf(
+                    game->world().get<component::Position>(entity)));
+
+            if (!overhead.has_value())
+            {
+                continue;
+            }
+
+            const auto bars = antwika::render::healthBars(
+                *overhead, game->world().get<component::Health>(entity));
+
+            for (std::size_t index = 0;
+                 index < antwika::render::kHealthBarParts;
+                 ++index)
+            {
+                viewportRenderer.drawRect(bars.at(index), kBarColors.at(index));
+            }
+        }
+    }
+
+}

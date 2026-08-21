@@ -1,0 +1,27 @@
+antwika_add_library(
+    NAME ui
+    SOURCES
+        src/BuildDrawList.cpp
+        src/ContainerScope.cpp
+        src/Context.cpp
+        src/DoubleClick.cpp
+        src/Dropdown.cpp
+        src/Hover.cpp
+        src/HoverHint.cpp
+        src/Layout.cpp
+        src/LayoutTree.cpp
+        src/OccluderRects.cpp
+        src/Painter.cpp
+        src/Resolve.cpp
+        src/ResolveWidgets.cpp
+        src/Slider.cpp
+        src/Split.cpp
+        src/TextArea.cpp
+        src/TextEditing.cpp
+        src/TextField.cpp
+        src/TextWrap.cpp
+        src/Theme.cpp
+        src/WidgetRects.cpp
+    DEPENDS
+        antwika::gfx
+)

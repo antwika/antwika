@@ -1,0 +1,344 @@
+#include "antwika/worldgen/CityRuleset.hpp"
+
+#include <initializer_list>
+#include <utility>
+
+namespace antwika::worldgen
+{
+
+    namespace
+    {
+        using voxel::Facing;
+        using voxel::Kind;
+
+        [[nodiscard]] std::uint8_t rolesOf(
+            const std::initializer_list<Role> roles)
+        {
+            std::uint8_t gatheredCount = 0;
+
+            for (const Role role : roles)
+            {
+                gatheredCount =
+                static_cast<std::uint8_t>(gatheredCount | maskOf(role));
+            }
+
+            return gatheredCount;
+        }
+
+        [[nodiscard]] Prototype air(
+            const char *name,
+            const Socket sideSocket,
+            const Socket bottomSocket)
+        {
+            return Prototype{
+                .name = name,
+                .kind = Kind::Normal,
+                .facing = Facing::Any,
+                .air = true,
+                .sockets =
+                    {sideSocket,
+                     sideSocket,
+                     Socket::Sky,
+                     bottomSocket,
+                     sideSocket,
+                     sideSocket},
+                .roles = bottomSocket == Socket::Stands
+                       ? rolesOf({Role::Room, Role::Perch})
+                       : std::uint8_t{0}};
+        }
+
+        [[nodiscard]] Prototype block(
+            const char *name,
+            const Socket sideSocket,
+            const Socket topSocket,
+            const Socket bottomSocket,
+            const std::uint8_t roles)
+        {
+            return Prototype{
+                .name = name,
+                .kind = Kind::Normal,
+                .facing = Facing::Any,
+                .air = false,
+                .sockets =
+                    {sideSocket,
+                     sideSocket,
+                     topSocket,
+                     bottomSocket,
+                     sideSocket,
+                     sideSocket},
+                .roles = roles};
+        }
+
+        [[nodiscard]] Prototype corbel(const char *name, const Face rootFace)
+        {
+            Prototype madePrototype = block(
+                name,
+                Socket::Facade,
+                Socket::Carries,
+                Socket::Hangs,
+                rolesOf({Role::Bear}));
+
+            madePrototype.sockets[static_cast<std::size_t>(rootFace)] =
+                Socket::NeedsRoot;
+
+            return madePrototype;
+        }
+
+        [[nodiscard]] Prototype stair(
+            const char *name,
+            const Facing facing,
+            const Face headFace,
+            const Face footFace,
+            const Socket flankSocket)
+        {
+            Prototype madePrototype{
+                .name = name,
+                .kind = Kind::Ramp,
+                .facing = facing,
+                .air = false,
+                .sockets =
+                    {flankSocket,
+                     flankSocket,
+                     Socket::StairHead,
+                     Socket::Climbs,
+                     flankSocket,
+                     flankSocket},
+                .roles = rolesOf({Role::Step})};
+
+            madePrototype.sockets[static_cast<std::size_t>(headFace)] =
+                Socket::NeedsLanding;
+            madePrototype.sockets[static_cast<std::size_t>(footFace)] =
+                Socket::NeedsApproach;
+
+            return madePrototype;
+        }
+
+        [[nodiscard]] Prototype ladder(
+            const char *name,
+            const Facing facing,
+            const Face openFace,
+            const Face backFace)
+        {
+            Prototype madePrototype{
+                .name = name,
+                .kind = Kind::Ladder,
+                .facing = facing,
+                .air = false,
+                .sockets =
+                    {Socket::Facade,
+                     Socket::Facade,
+                     Socket::Rung,
+                     Socket::Grips,
+                     Socket::Facade,
+                     Socket::Facade},
+                .roles = rolesOf({Role::Perch, Role::Climb})};
+
+            madePrototype.sockets[static_cast<std::size_t>(openFace)] =
+                Socket::NeedsOpen;
+            madePrototype.sockets[static_cast<std::size_t>(backFace)] =
+                Socket::NeedsBack;
+
+            return madePrototype;
+        }
+
+        [[nodiscard]] District quarter(
+            const char *name,
+            const std::uint8_t untilShare,
+            const std::initializer_list<
+                std::pair<CityPiece, std::uint32_t>> wants)
+        {
+            District madeDistrict{
+                .name = name,
+                .untilShare = untilShare,
+                .desire = std::vector<std::uint32_t>(kCityPieces, 0)};
+
+            for (const auto &[piece, much] : wants)
+            {
+                madeDistrict.desire[indexOf(piece)] = much;
+            }
+
+            return madeDistrict;
+        }
+    }
+
+    std::size_t indexOf(const CityPiece piece)
+    {
+        return static_cast<std::size_t>(piece);
+    }
+
+    Ruleset cityRuleset()
+    {
+        Ruleset ruleset;
+
+        ruleset.prototypes = {
+            air("air open", Socket::OpenSide, Socket::Floats),
+            air("air room", Socket::RoomSide, Socket::Stands),
+            block(
+                "bedrock",
+                Socket::Facade,
+                Socket::Carries,
+                Socket::Rooted,
+                rolesOf({Role::Bear})),
+            block(
+                "fill",
+                Socket::Buried,
+                Socket::Carries,
+                Socket::Rests,
+                rolesOf({Role::Bear})),
+            block(
+                "wall",
+                Socket::Facade,
+                Socket::Carries,
+                Socket::Rests,
+                rolesOf({Role::Bear})),
+            block(
+                "floor",
+                Socket::LandingSide,
+                Socket::Terrace,
+                Socket::Rests,
+                rolesOf({Role::Bear, Role::Land})),
+            corbel("corbel east", Face::East),
+            corbel("corbel west", Face::West),
+            corbel("corbel north", Face::North),
+            corbel("corbel south", Face::South),
+            stair(
+                "stair east",
+                Facing::East,
+                Face::East,
+                Face::West,
+                Socket::StairSideEast),
+            stair(
+                "stair west",
+                Facing::West,
+                Face::West,
+                Face::East,
+                Socket::StairSideWest),
+            stair(
+                "stair north",
+                Facing::North,
+                Face::North,
+                Face::South,
+                Socket::StairSideNorth),
+            stair(
+                "stair south",
+                Facing::South,
+                Face::South,
+                Face::North,
+                Socket::StairSideSouth),
+            ladder("ladder east", Facing::East, Face::East, Face::West),
+            ladder("ladder west", Facing::West, Face::West, Face::East),
+            ladder("ladder north", Facing::North, Face::North, Face::South),
+            ladder("ladder south", Facing::South, Face::South, Face::North),
+            block(
+                "cistern",
+                Socket::WaterSide,
+                Socket::WaterTop,
+                Socket::Submerged,
+                0)};
+
+        ruleset.prototypes[indexOf(CityPiece::Cistern)].kind = Kind::Water;
+
+        ruleset.districts = {
+            quarter(
+                "bedrock",
+                5,
+                {{CityPiece::Bedrock, 40},
+                 {CityPiece::AirOpen, 3},
+                 {CityPiece::AirRoom, 5},
+                 {CityPiece::Fill, 10},
+                 {CityPiece::Wall, 8},
+                 {CityPiece::Floor, 4},
+                 {CityPiece::Cistern, 2},
+                 {CityPiece::StairEast, 1},
+                 {CityPiece::StairWest, 1},
+                 {CityPiece::StairNorth, 1},
+                 {CityPiece::StairSouth, 1},
+                 {CityPiece::LadderEast, 1},
+                 {CityPiece::LadderWest, 1},
+                 {CityPiece::LadderNorth, 1},
+                 {CityPiece::LadderSouth, 1}}),
+            quarter(
+                "undercroft",
+                16,
+                {{CityPiece::AirOpen, 6},
+                 {CityPiece::AirRoom, 14},
+                 {CityPiece::Fill, 10},
+                 {CityPiece::Wall, 14},
+                 {CityPiece::Floor, 8},
+                 {CityPiece::Cistern, 4},
+                 {CityPiece::StairEast, 2},
+                 {CityPiece::StairWest, 2},
+                 {CityPiece::StairNorth, 2},
+                 {CityPiece::StairSouth, 2},
+                 {CityPiece::LadderEast, 3},
+                 {CityPiece::LadderWest, 3},
+                 {CityPiece::LadderNorth, 3},
+                 {CityPiece::LadderSouth, 3}}),
+            quarter(
+                "slums",
+                40,
+                {{CityPiece::AirOpen, 18},
+                 {CityPiece::AirRoom, 16},
+                 {CityPiece::Fill, 8},
+                 {CityPiece::Wall, 16},
+                 {CityPiece::Floor, 10},
+                 {CityPiece::CorbelEast, 3},
+                 {CityPiece::CorbelWest, 3},
+                 {CityPiece::CorbelNorth, 3},
+                 {CityPiece::CorbelSouth, 3},
+                 {CityPiece::StairEast, 4},
+                 {CityPiece::StairWest, 4},
+                 {CityPiece::StairNorth, 4},
+                 {CityPiece::StairSouth, 4},
+                 {CityPiece::LadderEast, 4},
+                 {CityPiece::LadderWest, 4},
+                 {CityPiece::LadderNorth, 4},
+                 {CityPiece::LadderSouth, 4}}),
+            quarter(
+                "middling",
+                68,
+                {{CityPiece::AirOpen, 30},
+                 {CityPiece::AirRoom, 14},
+                 {CityPiece::Fill, 4},
+                 {CityPiece::Wall, 12},
+                 {CityPiece::Floor, 12},
+                 {CityPiece::CorbelEast, 3},
+                 {CityPiece::CorbelWest, 3},
+                 {CityPiece::CorbelNorth, 3},
+                 {CityPiece::CorbelSouth, 3},
+                 {CityPiece::StairEast, 5},
+                 {CityPiece::StairWest, 5},
+                 {CityPiece::StairNorth, 5},
+                 {CityPiece::StairSouth, 5},
+                 {CityPiece::LadderEast, 2},
+                 {CityPiece::LadderWest, 2},
+                 {CityPiece::LadderNorth, 2},
+                 {CityPiece::LadderSouth, 2}}),
+            quarter(
+                "heights",
+                90,
+                {{CityPiece::AirOpen, 52},
+                 {CityPiece::AirRoom, 10},
+                 {CityPiece::Wall, 7},
+                 {CityPiece::Floor, 8},
+                 {CityPiece::CorbelEast, 2},
+                 {CityPiece::CorbelWest, 2},
+                 {CityPiece::CorbelNorth, 2},
+                 {CityPiece::CorbelSouth, 2},
+                 {CityPiece::StairEast, 3},
+                 {CityPiece::StairWest, 3},
+                 {CityPiece::StairNorth, 3},
+                 {CityPiece::StairSouth, 3},
+                 {CityPiece::LadderEast, 1},
+                 {CityPiece::LadderWest, 1},
+                 {CityPiece::LadderNorth, 1},
+                 {CityPiece::LadderSouth, 1}}),
+            quarter(
+                "sky",
+                100,
+                {{CityPiece::AirOpen, 60}, {CityPiece::AirRoom, 2}})};
+
+        return ruleset;
+    }
+
+}

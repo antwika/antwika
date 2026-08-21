@@ -1,0 +1,19 @@
+antwika_add_library(
+    NAME decor
+    SOURCES
+        src/Decor.cpp
+        src/DecorStamp.cpp
+        src/DecorWeave.cpp
+        src/TileAnimation.cpp
+        src/TilingPreview.cpp
+        src/Variants.cpp
+    DEPENDS
+        antwika::gfx
+        antwika::tilemap
+        antwika::tile
+        antwika::time
+        antwika::ui
+        antwika::voxel
+        antwika::voxelmap
+        antwika::wfc
+)

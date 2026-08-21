@@ -1,0 +1,28 @@
+antwika_add_app_tests(
+    APP game
+    TESTS
+        ActionsTest.cpp
+    LIBS
+        antwika::app
+        antwika::camera
+        antwika::character
+        antwika::ecs
+        antwika::gameplay
+        antwika::gfx
+        antwika::gfx_backend
+        antwika::input
+        antwika::input_backend
+        antwika::light
+        antwika::log
+        antwika::map
+        antwika::component
+        antwika::rules
+        antwika::render
+        antwika::solver
+        antwika::tilemap
+        antwika::time
+        antwika::voxel
+        antwika::voxelmap
+        antwika::collision
+        gtest::gtest
+)

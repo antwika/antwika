@@ -1,0 +1,41 @@
+antwika_add_app(
+    NAME game
+    SOURCES
+        src/app/Actions.cpp
+        src/app/Runner.cpp
+        src/main.cpp
+    LIBS
+        antwika::app
+        antwika::camera
+        antwika::character
+        antwika::cli
+        antwika::decor
+        antwika::ecs
+        antwika::gameplay
+        antwika::gfx
+        antwika::gfx_backend
+        antwika::input
+        antwika::input_backend
+        antwika::light
+        antwika::log
+        antwika::map
+        antwika::component
+        antwika::rules
+        antwika::render
+        antwika::solver
+        antwika::tilemap
+        antwika::time
+        antwika::voxel
+        antwika::voxelmap
+        antwika::collision
+    ASSETS
+        ../../../assets/shaders/bloom.frag
+        ../../../assets/shaders/bloom.vert
+        ../../../assets/shaders/shadow.frag
+        ../../../assets/shaders/shadow.vert
+        ../../../assets/shaders/voxel.frag
+        ../../../assets/shaders/voxel.vert
+        ../../../assets/textures/atlas-15x12.png
+        ../../../assets/textures/atlas-15x9.png
+        ../../../assets/textures/character-20x28.png
+)

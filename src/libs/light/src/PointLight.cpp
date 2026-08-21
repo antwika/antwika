@@ -1,0 +1,103 @@
+#include "antwika/light/PointLight.hpp"
+
+#include <cmath>
+#include <numbers>
+#include <vector>
+
+namespace antwika::light
+{
+
+    gfx::Vec3 lampPosition(const Lamp lamp)
+    {
+        return voxelmap::cellMiddle(lamp.cell);
+    }
+
+    gfx::Size shadowAtlasSize()
+    {
+        return gfx::Size{
+            .width = kShadowFaceResolution
+                     * static_cast<std::uint32_t>(gfx::kCubeFaces),
+            .height = kShadowFaceResolution
+                      * static_cast<std::uint32_t>(kMaxLamps)};
+    }
+
+    gfx::Rect shadowFaceRect(
+        const std::size_t slot, const gfx::CubeFace face)
+    {
+        const auto side =
+            static_cast<std::int32_t>(kShadowFaceResolution);
+
+        return gfx::Rect{
+            .originPoint =
+                {.x = static_cast<std::int32_t>(face) * side,
+                 .y = static_cast<std::int32_t>(slot) * side},
+            .size =
+                {.width = kShadowFaceResolution,
+                 .height = kShadowFaceResolution}};
+    }
+
+    gfx::Camera3D shadowCamera(
+        const gfx::Vec3 position, const gfx::CubeFace face)
+    {
+        return gfx::Camera3D{
+            position,
+            position + gfx::directionOf(face),
+            gfx::upVectorOf(face),
+            gfx::Perspective{ // GCOVR_EXCL_LINE
+                .fovYRadians = std::numbers::pi_v<float> / 2.0F,
+                .aspectRatio = 1.0F,
+                .nearPlane = kLampNearPlane,
+                .farPlane = kLampFarPlane}};
+    } // GCOVR_EXCL_LINE
+
+    std::array<voxelmap::LineSegment, 3> lampGizmoSpans(const Lamp lamp)
+    {
+        const auto middle = lampPosition(lamp);
+        const auto arm = kLampGizmoSize;
+
+        return {
+            voxelmap::LineSegment{
+                .fromPosition = middle - gfx::Vec3{arm, 0.0F, 0.0F},
+                .toPosition = middle + gfx::Vec3{arm, 0.0F, 0.0F}},
+            voxelmap::LineSegment{
+                .fromPosition = middle - gfx::Vec3{0.0F, arm, 0.0F},
+                .toPosition = middle + gfx::Vec3{0.0F, arm, 0.0F}},
+            voxelmap::LineSegment{
+                .fromPosition = middle - gfx::Vec3{0.0F, 0.0F, arm},
+                .toPosition = middle + gfx::Vec3{0.0F, 0.0F, arm}}};
+    } // GCOVR_EXCL_LINE
+
+    std::vector<Lamp> withoutLampAt(
+        const std::vector<Lamp> &lamps, const voxel::VoxelCell cell)
+    {
+        std::vector<Lamp> keptLamps;
+
+        for (const auto lamp : lamps)
+        {
+            if (!(lamp.cell == cell))
+            {
+                keptLamps.push_back(lamp);
+            }
+        }
+
+        return keptLamps;
+    } // GCOVR_EXCL_LINE
+
+    std::vector<Lamp> withLampAt(
+        const std::vector<Lamp> &lamps,
+        const voxel::VoxelCell cell,
+        const gfx::Color tintColor)
+    {
+        auto updatedLamps = withoutLampAt(lamps, cell);
+
+        if (updatedLamps.size() >= kMaxLamps)
+        {
+            return lamps;
+        }
+
+        updatedLamps.push_back(Lamp{.cell = cell, .tintColor = tintColor});
+
+        return updatedLamps;
+    } // GCOVR_EXCL_LINE
+
+}

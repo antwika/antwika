@@ -1,0 +1,28 @@
+antwika_add_library(
+    NAME render
+    SOURCES
+        src/AtlasSheets.cpp
+        src/CharacterSkins.cpp
+        src/Checkerboard.cpp
+        src/HealthBars.cpp
+        src/LightPasses.cpp
+        src/ScenePass.cpp
+        src/Sprites.cpp
+        src/WorldMeshes.cpp
+        src/WorldShader.cpp
+    DEPENDS
+        antwika::component
+        antwika::camera
+        antwika::character
+        antwika::decor
+        antwika::gfx
+        antwika::light
+        antwika::map
+        antwika::solver
+        antwika::time
+        antwika::tilemap
+        antwika::tile
+        antwika::voxel
+        antwika::voxelmap
+        antwika::collision
+)

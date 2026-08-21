@@ -1,0 +1,181 @@
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <optional>
+#include <span>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include <antwika/time/Tick.hpp>
+#include <antwika/ui/WidgetId.hpp>
+#include <antwika/tilemap/Tilemap.hpp>
+#include <antwika/voxelmap/Voxel.hpp>
+
+#include <antwika/tile/TileRules.hpp>
+
+namespace antwika::decor
+{
+
+    inline constexpr std::size_t kMaxDecorFrames = 8;
+
+    inline constexpr time::Tick kDecorPaceTick = 24;
+
+    inline constexpr std::uint8_t kFullFrequency = 100;
+
+    inline constexpr std::uint8_t kMaxDecorSpan = 4;
+
+    struct DecorTile final
+    {
+        tilemap::Tile tile{};
+
+        std::vector<tilemap::Tile> frameTiles{};
+
+        std::vector<tilemap::Tile> allowedBaseTiles{};
+
+        std::uint8_t frequency = kFullFrequency;
+
+        std::uint8_t weight = kFullFrequency;
+
+        std::size_t layer = 1;
+
+        std::uint8_t width = 1;
+
+        std::uint8_t height = 1;
+
+        std::vector<tilemap::Tile> spanTiles{};
+
+        [[nodiscard]] bool operator==(const DecorTile &other) const
+            = default;
+    };
+
+    [[nodiscard]] const DecorTile *decorOf(
+        std::span<const DecorTile> decor, tilemap::Tile tile);
+
+    [[nodiscard]] std::vector<DecorTile> withDecorToggled(
+        const std::vector<DecorTile> &decor,
+        tilemap::Tile tile,
+        std::size_t layer = 1);
+
+    [[nodiscard]] std::vector<DecorTile> withBaseToggled(
+        const std::vector<DecorTile> &decor,
+        tilemap::Tile tile,
+        tilemap::Tile baseTile);
+
+    [[nodiscard]] std::vector<DecorTile> withFrameAdded(
+        const std::vector<DecorTile> &decor, tilemap::Tile tile);
+
+    [[nodiscard]] bool decorSpanned(const DecorTile &decor);
+
+    [[nodiscard]] std::vector<DecorTile> withSpanSet(
+        const std::vector<DecorTile> &decor,
+        tilemap::Tile tile,
+        std::uint8_t acrossSpan,
+        std::uint8_t downSpan);
+
+    [[nodiscard]] std::vector<DecorTile> withMemberSet(
+        const std::vector<DecorTile> &decor,
+        tilemap::Tile tile,
+        std::size_t member,
+        tilemap::Tile drawnTile);
+
+    [[nodiscard]] std::vector<DecorTile> withDecorLayerSet(
+        const std::vector<DecorTile> &decor,
+        tilemap::Tile tile,
+        std::size_t layer);
+
+    [[nodiscard]] std::vector<DecorTile> withWeightSet(
+        const std::vector<DecorTile> &decor,
+        tilemap::Tile tile,
+        std::uint8_t weight);
+
+    [[nodiscard]] std::vector<DecorTile> withFrequencySet(
+        const std::vector<DecorTile> &decor,
+        tilemap::Tile tile,
+        std::uint8_t frequency);
+
+    [[nodiscard]] std::vector<DecorTile> withFrameSet(
+        const std::vector<DecorTile> &decor,
+        tilemap::Tile tile,
+        std::size_t frame,
+        tilemap::Tile drawnTile);
+
+    [[nodiscard]] std::vector<DecorTile> compactedDecor(
+        const std::vector<DecorTile> &decor);
+
+    [[nodiscard]] bool tilesCompatible(
+        const tile::TileRules &rules,
+        tilemap::Tile tile,
+        tilemap::TileEdge edge,
+        tilemap::Tile otherTile);
+
+    [[nodiscard]] std::optional<std::vector<std::optional<tilemap::Tile>>>
+    previewNeighbourhood(
+        const tile::TileRules &rules,
+        tilemap::Tile middleTile,
+        std::size_t side,
+        std::uint32_t seed);
+
+    [[nodiscard]] std::map<std::size_t, tilemap::Tile> solveDecor(
+        const std::vector<voxelmap::FaceRef> &faces,
+        std::span<const tilemap::Tile> drawnTiles,
+        std::span<const DecorTile> decor,
+        const tile::TileRules &decorRules,
+        std::uint32_t seed);
+
+    [[nodiscard]] std::vector<
+        std::pair<std::size_t, std::map<std::size_t, tilemap::Tile>>>
+    solveDecorLayers(
+        const std::vector<voxelmap::FaceRef> &faces,
+        std::span<const tilemap::Tile> drawnTiles,
+        std::span<const DecorTile> decor,
+        const tile::TileRules &decorRules,
+        std::uint32_t seed);
+
+    [[nodiscard]] tilemap::Tile decorFrameAt(
+        const DecorTile &decor, time::Tick tick);
+
+    inline constexpr float kDecorDepthBias = 0.01F;
+
+    [[nodiscard]] gfx::MeshData decorMesh(
+        const std::vector<voxelmap::FaceRef> &faces,
+        const std::map<std::size_t, tilemap::Tile> &placedTiles,
+        std::span<const DecorTile> decor,
+        time::Tick tick,
+        float lift = kDecorDepthBias);
+
+    [[nodiscard]] bool hasAnimatedDecor(std::span<const DecorTile> decor);
+
+    inline constexpr ui::WidgetId kInkHexWidget{204};
+
+    inline constexpr ui::WidgetId kAutoPreviewWidget{205};
+
+    inline constexpr ui::WidgetId kRerollPreviewWidget{244};
+
+    inline constexpr ui::WidgetId kPickBaseTilesWidget{207};
+
+    inline constexpr ui::WidgetId kFrameAddWidget{224};
+
+    inline constexpr ui::WidgetId kTilingPanelWidget{233};
+
+    inline constexpr ui::WidgetId kFrequencyWidget{234};
+
+    inline constexpr ui::WidgetId kDecorWeightWidget{235};
+
+    inline constexpr ui::WidgetId kDecorMoveWidget{239};
+
+    [[nodiscard]] ui::WidgetId frameWidget(std::size_t frame);
+
+    inline constexpr ui::WidgetId kSpanAcrossLessWidget{382};
+
+    inline constexpr ui::WidgetId kSpanAcrossMoreWidget{383};
+
+    inline constexpr ui::WidgetId kSpanDownLessWidget{384};
+
+    inline constexpr ui::WidgetId kSpanDownMoreWidget{385};
+
+    [[nodiscard]] ui::WidgetId memberWidget(std::size_t member);
+
+}

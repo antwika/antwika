@@ -1,0 +1,132 @@
+#include "antwika/render/ScenePass.hpp"
+
+#include <cstdint>
+
+#include <antwika/camera/FlyCamera.hpp>
+#include <antwika/gfx/Camera3D.hpp>
+#include <antwika/gfx/Math3D.hpp>
+#include <antwika/gfx/MeshData.hpp>
+#include <antwika/gfx/MeshMaterial.hpp>
+#include <antwika/gfx/Size.hpp>
+
+namespace antwika::render
+{
+
+    namespace
+    {
+    [[nodiscard]] gfx::MeshData screenQuad()
+    {
+        gfx::MeshData mesh;
+
+        mesh.vertices.push_back(
+            gfx::Vertex3D{
+                .position = {-1.0F, -1.0F, 0.0F},
+                .texCoordinate = {0.0F, 0.0F}});
+        mesh.vertices.push_back(
+            gfx::Vertex3D{
+                .position = {1.0F, -1.0F, 0.0F},
+                .texCoordinate = {1.0F, 0.0F}});
+        mesh.vertices.push_back(
+            gfx::Vertex3D{
+                .position = {1.0F, 1.0F, 0.0F},
+                .texCoordinate = {1.0F, 1.0F}});
+        mesh.vertices.push_back(
+            gfx::Vertex3D{
+                .position = {-1.0F, 1.0F, 0.0F},
+                .texCoordinate = {0.0F, 1.0F}});
+
+        for (const auto corner : {1U, 2U, 0U, 2U, 3U, 0U})
+        {
+            mesh.indices.push_back(corner);
+        }
+
+        for (const auto corner : {2U, 1U, 0U, 3U, 2U, 0U})
+        {
+            mesh.indices.push_back(corner);
+        }
+
+        return mesh;
+    } // GCOVR_EXCL_LINE
+    }
+
+    void ScenePass::open(
+        gfx::ViewportRenderer &viewportRenderer,
+        const gfx::ShaderSource &bloomSource)
+    {
+        bloomShader = viewportRenderer.createShader(bloomSource);
+        screenMesh = viewportRenderer.createMesh(screenQuad());
+    }
+
+    void ScenePass::draw(
+        gfx::ViewportRenderer &viewportRenderer,
+        gfx::IShader &voxelShader,
+        const gfx::Color backgroundColor,
+        const std::function<void()> &pile,
+        const std::function<void()> &afterPass)
+    {
+        const auto port = viewportRenderer.viewport();
+        const gfx::Size framePixelsSize{
+            .width = static_cast<std::uint32_t>(
+                static_cast<std::uint64_t>(camera::kCanvasSize.width)
+                * port.numerator / port.denominator),
+            .height = static_cast<std::uint32_t>(
+                static_cast<std::uint64_t>(camera::kCanvasSize.height)
+                * port.numerator / port.denominator)};
+
+        if (!sceneTarget || sceneTarget->size() != framePixelsSize)
+        {
+            sceneTarget = viewportRenderer.createRenderTarget(
+                gfx::RenderTargetSpec{
+                    .size = framePixelsSize, .depth = true});
+        }
+
+        if (!glowTarget)
+        {
+            glowTarget = viewportRenderer.createRenderTarget(
+                gfx::RenderTargetSpec{
+                    .size = camera::kCanvasSize, .depth = true});
+        }
+
+        viewportRenderer.setShaderNumber(voxelShader, "glowOnly", 1.0F);
+        viewportRenderer.beginTarget(*glowTarget);
+        viewportRenderer.clear(gfx::Color{});
+        pile();
+        viewportRenderer.endTarget();
+        viewportRenderer.setShaderNumber(voxelShader, "glowOnly", 0.0F);
+
+        viewportRenderer.beginTarget(*sceneTarget);
+        viewportRenderer.clear(backgroundColor);
+        pile();
+        afterPass();
+        viewportRenderer.endTarget();
+
+        const gfx::Camera3D screenCamera{
+            gfx::Vec3{0.0F, 0.0F, 0.0F},
+            gfx::Vec3{0.0F, 0.0F, -1.0F},
+            gfx::Vec3{0.0F, 1.0F, 0.0F},
+            gfx::Orthographic{
+                .halfWidth = 1.0F,
+                .halfHeight = 1.0F,
+                .nearPlane = -1.0F,
+                .farPlane = 1.0F}};
+
+        viewportRenderer.setShaderVector(
+            *bloomShader,
+            "texelSize",
+            gfx::Vec3{
+                1.0F / static_cast<float>(camera::kCanvasSize.width),
+                1.0F / static_cast<float>(camera::kCanvasSize.height),
+                0.0F});
+        viewportRenderer.setShaderNumber(
+            *bloomShader, "bloomStrength", kBloomStrength);
+        viewportRenderer.drawMesh(
+            *screenMesh,
+            gfx::identityMatrix(),
+            screenCamera,
+            gfx::MeshMaterial{
+                .texture = sceneTarget->color(),
+                .materialMapTexture = glowTarget->color(),
+                .shader = bloomShader.get()});
+    }
+
+}

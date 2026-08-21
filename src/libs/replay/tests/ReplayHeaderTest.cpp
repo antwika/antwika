@@ -1,0 +1,62 @@
+#include <gtest/gtest.h>
+
+#include <antwika/geometry/Size.hpp>
+
+#include "antwika/replay/ReplayHeader.hpp"
+#include "antwika/replay/ReplayVersions.hpp"
+
+using antwika::geometry::Size;
+using antwika::replay::kReplayDocumentVersion;
+using antwika::replay::ReplayHeader;
+
+namespace
+{
+    [[nodiscard]] ReplayHeader aHeader()
+    {
+        return ReplayHeader{
+            .version = kReplayDocumentVersion,
+            .canvasSize = Size{.width = 1024, .height = 640}};
+    }
+}
+
+TEST(ReplayHeaderTest, OperatorEquals_MatchesAnIdenticalHeader)
+{
+    EXPECT_EQ(aHeader(), aHeader());
+}
+
+TEST(ReplayHeaderTest, OperatorEquals_SeparatesADifferentVersion)
+{
+    ReplayHeader otherHeader = aHeader();
+    otherHeader.version = kReplayDocumentVersion + 1;
+
+    EXPECT_NE(aHeader(), otherHeader);
+}
+
+TEST(ReplayHeaderTest, OperatorEquals_SeparatesOneStatedCanvas)
+{
+    ReplayHeader otherHeader = aHeader();
+    otherHeader.canvasSize.reset();
+
+    EXPECT_NE(aHeader(), otherHeader);
+}
+
+TEST(ReplayHeaderTest, OperatorEquals_SeparatesTwoUnequalCanvases)
+{
+    ReplayHeader otherHeader = aHeader();
+    otherHeader.canvasSize = Size{.width = 800, .height = 600};
+
+    EXPECT_NE(aHeader(), otherHeader);
+}
+
+TEST(ReplayHeaderTest, OperatorEquals_MatchesTwoHeadersWithNoCanvas)
+{
+    EXPECT_EQ(ReplayHeader{}, ReplayHeader{});
+}
+
+TEST(ReplayHeaderTest, Ctor_DefaultsToThisBuildsVersion)
+{
+    const ReplayHeader header;
+
+    EXPECT_EQ(header.version, kReplayDocumentVersion);
+    EXPECT_FALSE(header.canvasSize.has_value());
+}

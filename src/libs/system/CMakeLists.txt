@@ -1,0 +1,21 @@
+antwika_add_library(
+    NAME system
+    SOURCES
+        src/AnimationSystem.cpp
+        src/HealthSystem.cpp
+        src/OrientationSystem.cpp
+        src/PatrolSystem.cpp
+        src/TickPacer.cpp
+        src/WalkerSystems.cpp
+    DEPENDS
+        antwika::character
+        antwika::component
+        antwika::ecs
+        antwika::gfx
+        antwika::input
+        antwika::pathfinding
+        antwika::rules
+        antwika::time
+        antwika::voxel
+        antwika::collision
+)

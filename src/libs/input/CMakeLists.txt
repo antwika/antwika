@@ -1,0 +1,31 @@
+antwika_add_library(
+    NAME input
+    SOURCES
+        src/ActionMap.cpp
+        src/BufferedInputSource.cpp
+        src/CoalescingPointerSource.cpp
+        src/DirectionKeys.cpp
+        src/IdleMotionFilter.cpp
+        src/InMemoryClipboard.cpp
+        src/InputEventCodec.cpp
+        src/InputPipeline.cpp
+        src/InputState.cpp
+        src/Key.cpp
+        src/KeyText.cpp
+        src/Keyboard.cpp
+        src/LiveInputSource.cpp
+        src/MappedPointerSource.cpp
+        src/Mouse.cpp
+        src/MouseButton.cpp
+        src/NullInputBackend.cpp
+        src/PointerHintChannel.cpp
+        src/PointerHintSource.cpp
+        src/StopOnKeySource.cpp
+    DEPENDS
+        antwika::schema
+        antwika::enums
+        antwika::engine
+        antwika::event
+        antwika::log
+        antwika::time
+)

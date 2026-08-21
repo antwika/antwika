@@ -1,0 +1,78 @@
+name: Checks
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  GIT_CONFIG_COUNT: 2
+  GIT_CONFIG_KEY_0: advice.detachedHead
+  GIT_CONFIG_VALUE_0: false
+  GIT_CONFIG_KEY_1: init.defaultBranch
+  GIT_CONFIG_VALUE_1: main
+
+jobs:
+  scripts:
+    name: Scripts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Test check-unused-test-doubles script
+        shell: bash
+        run: python3 scripts/tests/test_check_unused_test_doubles.py
+
+      - name: Check for unused test doubles
+        shell: bash
+        run: python3 scripts/check_unused_test_doubles.py
+
+      - name: Test check-one-sentence-per-line script
+        shell: bash
+        run: python3 scripts/tests/test_check_one_sentence_per_line.py
+
+      - name: Check comments and docs are one sentence per line
+        shell: bash
+        run: python3 scripts/check_one_sentence_per_line.py
+
+      - name: Test check-line-length script
+        shell: bash
+        run: python3 scripts/tests/test_check_line_length.py
+
+      - name: Check line length
+        shell: bash
+        run: python3 scripts/check_line_length.py
+
+      - name: Test check-comment-style script
+        shell: bash
+        run: python3 scripts/tests/test_check_comment_style.py
+
+      - name: Check comment style
+        shell: bash
+        run: python3 scripts/check_comment_style.py
+
+      - name: Test check-naming script
+        shell: bash
+        run: python3 scripts/tests/test_check_naming.py
+
+      - name: Check naming
+        shell: bash
+        run: python3 scripts/check_naming.py
+
+      - name: Test coverage badge script
+        shell: bash
+        run: python3 scripts/tests/test_generate_coverage_badge.py
+
+      - name: Test check-full-coverage script
+        shell: bash
+        run: python3 scripts/tests/test_check_full_coverage.py

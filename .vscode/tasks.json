@@ -1,0 +1,151 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Conan install",
+            "type": "shell",
+            "command": "conan install . -of build -pr:b=./profiles/build/${env:CONAN_PROFILE} -pr:h=./profiles/host/${env:CONAN_PROFILE} --build=missing -s build_type=Release --lockfile=conan.lock",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "Update Conan lockfiles",
+            "type": "shell",
+            "command": "./scripts/update_lockfiles.sh",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "CMake preset conan-release",
+            "type": "shell",
+            "command": "cmake --preset conan-release",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "CMake preset conan-coverage",
+            "type": "shell",
+            "command": "cmake --preset conan-coverage",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "CMake build",
+            "type": "shell",
+            "command": "cmake --build build -j24",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "CMake build (coverage)",
+            "type": "shell",
+            "command": "cmake --build build-coverage -j24",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "Test",
+            "type": "shell",
+            "command": "ctest -j24 --test-dir build --output-on-failure",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "Test (coverage)",
+            "type": "shell",
+            "command": "ctest -j24 --test-dir build-coverage --output-on-failure",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "Gcovr coverage report",
+            "type": "shell",
+            "command": "./scripts/coverage.sh --html build-coverage/coverage",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "Select gfx backend",
+            "type": "shell",
+            "command": "./scripts/select_backend.sh gfx ${input:gfxBackend}",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Select sound backend",
+            "type": "shell",
+            "command": "./scripts/select_backend.sh sound ${input:soundBackend}",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Build",
+            "type": "shell",
+            "command": "./scripts/build.sh",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Build (null backend)",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Conan install",
+                "CMake preset conan-release",
+                "CMake build",
+                "Test"
+            ]
+        },
+        {
+            "label": "Coverage",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Conan install",
+                "CMake preset conan-coverage",
+                "CMake build (coverage)",
+                "Test (coverage)",
+                "Gcovr coverage report"
+            ]
+        }
+    ],
+    "inputs": [
+        {
+            "id": "gfxBackend",
+            "type": "pickString",
+            "description": "Graphics backend for later builds",
+            "options": [
+                "null",
+                "raylib"
+            ],
+            "default": "null"
+        },
+        {
+            "id": "soundBackend",
+            "type": "pickString",
+            "description": "Sound backend for later builds",
+            "options": [
+                "null",
+                "raylib"
+            ],
+            "default": "null"
+        }
+    ]
+}

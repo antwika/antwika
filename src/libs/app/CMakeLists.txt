@@ -1,0 +1,34 @@
+antwika_add_library(
+    NAME app
+    SOURCES
+        src/AppRuntime.cpp
+        src/ConsoleLogging.cpp
+        src/FramePacedSource.cpp
+        src/FramePacingStats.cpp
+        src/FullscreenToggleSource.cpp
+        src/ParseMaxTicks.cpp
+        src/PointerReading.cpp
+        src/RunCatchingErrors.cpp
+        src/RunRecorded.cpp
+        src/SpawnDetached.cpp
+        src/TickLimitSource.cpp
+        src/WavFile.cpp
+        src/WindowCloseSource.cpp
+        src/WindowEvents.cpp
+        src/WindowInputSource.cpp
+        src/WindowPointerMapping.cpp
+        src/WindowedSession.cpp
+    DEPENDS
+        antwika::animation
+        antwika::cli
+        antwika::engine
+        antwika::event
+        antwika::gfx
+        antwika::input
+        antwika::io
+        antwika::log
+        antwika::replay
+        antwika::sound
+        antwika::time
+        antwika::ui
+)

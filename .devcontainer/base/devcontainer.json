@@ -1,0 +1,21 @@
+{
+    "name": "Base Dev Container",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "../.."
+    },
+    "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+    "remoteUser": "ubuntu",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "terminal.integrated.shellArgs.linux": [
+                    "-l"
+                ]
+            },
+            "extensions": [
+                "ms-vscode.cmake-tools"
+            ]
+        }
+    }
+}

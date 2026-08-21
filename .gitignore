@@ -1,0 +1,14 @@
+/build
+/build-*
+/CMakeUserPresets.json
+__pycache__
+/.claude/
+/.worktrees/
+core.*
+*.gcov
+/coverage-detail.json
+/coverage-summary.json
+/STATUS.md
+/.vscode/*-backend
+
+Testing
