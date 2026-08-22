@@ -253,77 +253,86 @@ namespace antwika::editor
             return;
         }
 
-        if (downPressed.button == input::MouseButton::Left
-            && activeView == map::View::Atlases)
+        if (downPressed.button != input::MouseButton::Left
+            || activeView != map::View::Atlases)
         {
-            const auto projectToScreen =
-                viewportRenderer.viewport().toCanvas(
-                    antwika::gfx::Point{
-                        .x = downPressed.position.x,
-                        .y = downPressed.position.y});
-
-            pointer.pointerOnCanvas = antwika::gfx::PointF{
-                static_cast<float>(projectToScreen.x),
-                static_cast<float>(projectToScreen.y)};
-
-            if (selectedTile.has_value())
-            {
-                const auto editedTileValue = editedTile();
-                const auto pixel = tile::pixelAt(
-                    editedTileValue,
-                    inspectedTileRect(frameRect(), editedTileValue),
-                    pointer.pointerOnCanvas);
-
-                if (pixel.has_value())
-                {
-                    if (blockedAsTransitionSlot())
-                    {
-                        return;
-                    }
-
-                    auto &sheet =
-                        atlasSheets.sheet(editedTileValue.atlas);
-
-                    if (paintMode == map::Paint::Line
-                        || paintMode == map::Paint::Rect
-                        || paintMode
-                               == map::Paint::Circle)
-                    {
-                        lineFromCell = pixel;
-                        return;
-                    }
-
-                    pushUndo();
-
-                    if (paintMode == map::Paint::Fill)
-                    {
-                        tile::paintFill(
-                            sheet,
-                            editedTileValue,
-                            *pixel,
-                            map.paletteColors.at(inkPicker.activeInk));
-                    }
-                    else
-                    {
-                        tile::paint(
-                            sheet,
-                            editedTileValue,
-                            *pixel,
-                            map.paletteColors.at(inkPicker.activeInk));
-                        brushAtCell = pixel;
-                        strokeActive = true;
-                    }
-
-                    atlasSheets.touch();
-                    return;
-                }
-            }
-
-            dragFromPoint = pointer.pointerOnCanvas;
-            dragFromCell = cellUnderPointer();
+            return;
         }
 
-        return;
+        const auto projectToScreen = viewportRenderer.viewport().toCanvas(
+            antwika::gfx::Point{
+                .x = downPressed.position.x, .y = downPressed.position.y});
+
+        pointer.pointerOnCanvas = antwika::gfx::PointF{
+            static_cast<float>(projectToScreen.x),
+            static_cast<float>(projectToScreen.y)};
+
+        if (paintedOnAtlasPixel())
+        {
+            return;
+        }
+
+        dragFromPoint = pointer.pointerOnCanvas;
+        dragFromCell = cellUnderPointer();
+    }
+
+    bool Editor::paintedOnAtlasPixel()
+    {
+        if (!selectedTile.has_value())
+        {
+            return false;
+        }
+
+        const auto editedTileValue = editedTile();
+        const auto pixel = tile::pixelAt(
+            editedTileValue,
+            inspectedTileRect(frameRect(), editedTileValue),
+            pointer.pointerOnCanvas);
+
+        if (!pixel.has_value())
+        {
+            return false;
+        }
+
+        if (blockedAsTransitionSlot())
+        {
+            return true;
+        }
+
+        if (paintMode == map::Paint::Line || paintMode == map::Paint::Rect
+            || paintMode == map::Paint::Circle)
+        {
+            lineFromCell = pixel;
+
+            return true;
+        }
+
+        auto &sheet = atlasSheets.sheet(editedTileValue.atlas);
+
+        pushUndo();
+
+        if (paintMode == map::Paint::Fill)
+        {
+            tile::paintFill(
+                sheet,
+                editedTileValue,
+                *pixel,
+                map.paletteColors.at(inkPicker.activeInk));
+        }
+        else
+        {
+            tile::paint(
+                sheet,
+                editedTileValue,
+                *pixel,
+                map.paletteColors.at(inkPicker.activeInk));
+            brushAtCell = pixel;
+            strokeActive = true;
+        }
+
+        atlasSheets.touch();
+
+        return true;
     }
 
 }

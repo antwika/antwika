@@ -417,6 +417,7 @@ namespace antwika::editor
             ui::Context &context, const decor::DecorTile &decor);
         void layoutFlipRail(ui::Context &context);
         void layoutTransitionRail(ui::Context &context);
+        [[nodiscard]] bool paintedOnAtlasPixel();
         void pressedOnSheets(
             const input::PointerButtonPressed &downPressed);
         void pressGate(
