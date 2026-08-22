@@ -1,6 +1,7 @@
 #include "antwika/wfc/Solver.hpp"
 
 #include <algorithm>
+#include <iterator>
 #include <cstdint>
 #include <numeric>
 #include <optional>
@@ -150,19 +151,11 @@ namespace antwika::wfc
                 const std::span<const std::size_t> cells =
                     constraint.cells();
 
-                std::size_t snapshot = 0;
-                for (const std::size_t cell : cells)
-                {
-                    if (snapshot < beforeDomains.size())
-                    {
-                        beforeDomains[snapshot] = waveDomains[cell];
-                    }
-                    else
-                    {
-                        beforeDomains.push_back(waveDomains[cell]);
-                    }
-                    ++snapshot;
-                }
+                beforeDomains.clear();
+                std::ranges::transform(
+                    cells,
+                    std::back_inserter(beforeDomains),
+                    [&](const std::size_t cell) { return waveDomains[cell]; });
 
                 const bool pruned = constraint.prune(waveDomains);
 
