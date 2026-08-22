@@ -9,6 +9,7 @@
 
 #include <antwika/tilemap/Tilemap.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
+#include <antwika/voxel/VoxelStairs.hpp>
 #include <antwika/tilemap/TileEdges.hpp>
 
 #include "antwika/tile/TileRule.hpp"
