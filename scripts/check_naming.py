@@ -1359,7 +1359,7 @@ def main() -> int:
     print()
     print(
         "Name a value for the thing it is, not for a preposition, "
-        "an adjective or a tense; see docs/STYLE_GUIDE.md."
+        "an adjective or a tense."
     )
 
     return 1

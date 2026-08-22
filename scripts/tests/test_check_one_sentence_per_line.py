@@ -206,7 +206,7 @@ def it_does_not_flag_a_table_row_as_a_wrapped_sentence() -> None:
         assert m.check_markdown_file(path) == []
 
 
-def it_checks_the_readme_and_the_docs_directory() -> None:
+def it_checks_the_readme_and_no_other_markdown() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         write(root / "README.md", "This wraps\nonto a second line.\n")
@@ -218,10 +218,7 @@ def it_checks_the_readme_and_the_docs_directory() -> None:
 
         violations = m.find_violations(root)
 
-        assert {v.path for v in violations} == {
-            root / "README.md",
-            root / "docs/STYLE_GUIDE.md",
-        }
+        assert {v.path for v in violations} == {root / "README.md"}
 
 
 def it_allows_a_multi_sentence_list_item_split_across_its_own_lines() -> None:
@@ -334,7 +331,7 @@ def main() -> None:
         it_does_not_scan_inside_fenced_code_blocks,
         it_does_not_scan_markdown_table_rows,
         it_does_not_flag_a_table_row_as_a_wrapped_sentence,
-        it_checks_the_readme_and_the_docs_directory,
+        it_checks_the_readme_and_no_other_markdown,
         it_allows_a_multi_sentence_list_item_split_across_its_own_lines,
         it_keeps_every_comment_at_or_under_eighty_characters,
         it_finds_violations_across_the_configured_file_globs,
