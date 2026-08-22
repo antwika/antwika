@@ -501,3 +501,85 @@ TEST(TilePaintTest, RepaintAt_CarriesEveryPixelToTheColor)
         otherTile);
     EXPECT_TRUE(antwika::tile::paintedWith(atlas, kRedColor).empty());
 }
+
+TEST(TilePaintTest, RectPixels_TracesTheEdgeAndLeavesTheMiddle)
+{
+    const auto cells = antwika::tile::rectPixels(
+        GridCell{.column = 1, .row = 1}, GridCell{.column = 4, .row = 3});
+    const std::set<std::pair<std::uint32_t, std::uint32_t>> seenCells(
+        [&cells]
+        {
+            std::set<std::pair<std::uint32_t, std::uint32_t>> gathered;
+
+            for (const auto cell : cells)
+            {
+                gathered.insert({cell.column, cell.row});
+            }
+
+            return gathered;
+        }());
+
+    EXPECT_EQ(cells.size(), 10U);
+    EXPECT_EQ(seenCells.size(), cells.size());
+    EXPECT_TRUE(seenCells.contains({1, 1}));
+    EXPECT_TRUE(seenCells.contains({4, 3}));
+    EXPECT_FALSE(seenCells.contains({2, 2}));
+}
+
+TEST(TilePaintTest, RectPixels_GivesOneCellForAnEdgeOfNoLength)
+{
+    const auto cells = antwika::tile::rectPixels(
+        GridCell{.column = 2, .row = 5}, GridCell{.column = 2, .row = 5});
+
+    ASSERT_EQ(cells.size(), 1U);
+    EXPECT_EQ(cells[0].column, 2U);
+    EXPECT_EQ(cells[0].row, 5U);
+}
+
+TEST(TilePaintTest, CirclePixels_KeepsTheRingInsideTheBox)
+{
+    const auto cells = antwika::tile::circlePixels(
+        GridCell{.column = 2, .row = 1}, GridCell{.column = 10, .row = 9});
+
+    EXPECT_FALSE(cells.empty());
+
+    for (const auto cell : cells)
+    {
+        EXPECT_GE(cell.column, 2U);
+        EXPECT_LE(cell.column, 10U);
+        EXPECT_GE(cell.row, 1U);
+        EXPECT_LE(cell.row, 9U);
+        EXPECT_FALSE(cell == (GridCell{.column = 6, .row = 5}));
+    }
+}
+
+TEST(TilePaintTest, CirclePixels_GivesOneCellForACircleOfNoWidth)
+{
+    const auto cells = antwika::tile::circlePixels(
+        GridCell{.column = 3, .row = 4}, GridCell{.column = 3, .row = 4});
+
+    ASSERT_EQ(cells.size(), 1U);
+    EXPECT_EQ(cells[0].column, 3U);
+    EXPECT_EQ(cells[0].row, 4U);
+}
+
+TEST(TilePaintTest, PaintPixels_CarriesTheColorToEveryCellGiven)
+{
+    auto atlas = blankAtlas(Atlas::Floor);
+    constexpr Tile tile{.atlas = Atlas::Floor, .index = 0};
+    const std::vector<GridCell> pixelCells{
+        GridCell{.column = 0, .row = 0},
+        GridCell{.column = 2, .row = 1},
+        GridCell{.column = 4, .row = 3}};
+
+    antwika::tile::paintPixels(atlas, tile, pixelCells, kRedColor);
+
+    for (const auto cell : pixelCells)
+    {
+        EXPECT_EQ(paintedAt(atlas, tile, cell), kRedColor);
+    }
+
+    EXPECT_EQ(
+        paintedAt(atlas, tile, GridCell{.column = 1, .row = 0}),
+        (Color{.red = 0, .green = 0, .blue = 0, .alpha = 0}));
+}
