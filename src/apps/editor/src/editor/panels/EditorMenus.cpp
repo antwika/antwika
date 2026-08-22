@@ -1,3 +1,7 @@
+#include <algorithm>
+#include <array>
+#include <optional>
+
 #include <antwika/geometry/Grid.hpp>
 #include <antwika/input/Key.hpp>
 #include <antwika/light/PointLight.hpp>
@@ -9,87 +13,129 @@
 namespace antwika::editor
 {
 
+    namespace
+    {
+        struct ToolButtonRow final
+        {
+            ToolButton button;
+            std::optional<map::Tool> tool;
+        };
+
+        constexpr std::array<ToolButtonRow, enums::kCount<ToolButton>>
+            kToolButtonRows{{
+            {ToolButton::Brush, map::Tool::Brush},
+            {ToolButton::Picker, map::Tool::Picker},
+            {ToolButton::FreeLook, std::nullopt},
+            {ToolButton::Lighting, std::nullopt},
+            {ToolButton::Lamp, map::Tool::Lamp},
+            {ToolButton::RuleLines, std::nullopt},
+            {ToolButton::Start, map::Tool::Start},
+            {ToolButton::Exit, map::Tool::Exit},
+            {ToolButton::Stamp, map::Tool::Stamp},
+            {ToolButton::Figure, map::Tool::Figure},
+            {ToolButton::PressurePlate, map::Tool::PressurePlate},
+            {ToolButton::Key, map::Tool::Key},
+            {ToolButton::Door, map::Tool::Door},
+            {ToolButton::Checkpoint, map::Tool::Checkpoint},
+            {ToolButton::Food, map::Tool::Food},
+            {ToolButton::Water, map::Tool::Water},
+            {ToolButton::Eraser, map::Tool::Eraser}}};
+
+        static_assert(
+            enums::tagsInOrder(kToolButtonRows, &ToolButtonRow::button));
+    }
+
     void Editor::pressTool(const ToolButton whichButton)
     {
-        switch (whichButton)
+        const auto chosenTool =
+            enums::lookup(kToolButtonRows, whichButton).tool;
+
+        if (chosenTool.has_value())
         {
-        case ToolButton::Brush:
-            tool = map::Tool::Brush;
-            break;
-        case ToolButton::Picker:
-            tool = map::Tool::Picker;
-            break;
-        case ToolButton::FreeLook:
-            freeLook = !freeLook;
+            tool = *chosenTool;
 
-            if (!freeLook)
-            {
-                cameraView.transform =
-                    camera::resetToIsometric(cameraView.transform);
-            }
-
-            break;
-        case ToolButton::Lighting:
-            lighting = !lighting;
-            break;
-        case ToolButton::Lamp:
-            tool = map::Tool::Lamp;
-            break;
-        case ToolButton::RuleLines:
-            showRuleLines = !showRuleLines;
-            break;
-        case ToolButton::Start:
-            tool = map::Tool::Start;
-            break;
-        case ToolButton::Exit:
-            tool = map::Tool::Exit;
-            break;
-        case ToolButton::Stamp:
-            tool = map::Tool::Stamp;
-            break;
-        case ToolButton::Figure:
-            tool = map::Tool::Figure;
-            break;
-        case ToolButton::PressurePlate:
-            tool = map::Tool::PressurePlate;
-            break;
-        case ToolButton::Key:
-            tool = map::Tool::Key;
-            break;
-        case ToolButton::Door:
-            tool = map::Tool::Door;
-            break;
-        case ToolButton::Checkpoint:
-            tool = map::Tool::Checkpoint;
-            break;
-        case ToolButton::Food:
-            tool = map::Tool::Food;
-            break;
-        case ToolButton::Water:
-            tool = map::Tool::Water;
-            break;
-        case ToolButton::Eraser:
-            tool = map::Tool::Eraser;
-            break;
+            return;
         }
+
+        if (whichButton == ToolButton::Lighting)
+        {
+            lighting = !lighting;
+
+            return;
+        }
+
+        if (whichButton == ToolButton::RuleLines)
+        {
+            showRuleLines = !showRuleLines;
+
+            return;
+        }
+
+        freeLook = !freeLook;
+
+        if (!freeLook)
+        {
+            cameraView.transform =
+                camera::resetToIsometric(cameraView.transform);
+        }
+    }
+
+    Editor::MenuFlag Editor::toggledFlag(const MenuItem item)
+    {
+        struct FlagRow final
+        {
+            MenuItem item;
+            MenuFlag flag;
+        };
+
+        constexpr std::array kFlagRows{
+            FlagRow{MenuItem::Grid, &Editor::grid},
+            FlagRow{MenuItem::Marker, &Editor::showPlacementGhost},
+            FlagRow{MenuItem::RuleLines, &Editor::showRuleLines},
+            FlagRow{MenuItem::Lighting, &Editor::lighting},
+            FlagRow{MenuItem::Sight, &Editor::lampSight},
+            FlagRow{MenuItem::LowerSight, &Editor::lowerSight},
+            FlagRow{MenuItem::LowerLight, &Editor::lowerLight},
+            FlagRow{MenuItem::Follow, &Editor::cameraFollows},
+            FlagRow{MenuItem::AboveHidden, &Editor::hideAboveLevel}};
+
+        const auto foundRow =
+            std::ranges::find(kFlagRows, item, &FlagRow::item);
+
+        if (foundRow == kFlagRows.end())
+        {
+            return nullptr;
+        }
+
+        return foundRow->flag;
     }
 
     void Editor::onMenuItem(const MenuItem item)
     {
+        if (const auto flag = toggledFlag(item); flag != nullptr)
+        {
+            this->*flag = !(this->*flag);
+
+            if (item == MenuItem::AboveHidden)
+            {
+                rebuildWorld();
+            }
+
+            return;
+        }
+
         switch (item)
         {
-        case antwika::editor::MenuItem::New:
+        case MenuItem::New:
             startNewMap();
             break;
-        case antwika::editor::MenuItem::Save:
+        case MenuItem::Save:
             openFileDialog(true);
             break;
-        case antwika::editor::MenuItem::Load:
+        case MenuItem::Load:
             openFileDialog(false);
             break;
-        case antwika::editor::MenuItem::Settings:
-            break;
-        case antwika::editor::MenuItem::Quit:
+        case MenuItem::Quit:
             if (dirty)
             {
                 dialogs.quitConfirmOpen = true;
@@ -99,92 +145,56 @@ namespace antwika::editor
                 running = false;
             }
             break;
-        case antwika::editor::MenuItem::Keys:
+        case MenuItem::Keys:
             keysOpen = true;
             break;
-        case antwika::editor::MenuItem::Undo:
+        case MenuItem::Undo:
             undo();
             break;
-        case antwika::editor::MenuItem::Redo:
+        case MenuItem::Redo:
             redo();
             break;
-        case antwika::editor::MenuItem::Grow:
+        case MenuItem::Grow:
             growChunk();
             break;
-        case antwika::editor::MenuItem::FreeLook:
+        case MenuItem::FreeLook:
             pressTool(ToolButton::FreeLook);
             break;
-        case antwika::editor::MenuItem::Grid:
-            grid = !grid;
-            break;
-        case antwika::editor::MenuItem::Marker:
-            showPlacementGhost = !showPlacementGhost;
-            break;
-        case antwika::editor::MenuItem::RuleLines:
-            showRuleLines = !showRuleLines;
-            break;
-        case antwika::editor::MenuItem::Lighting:
-            lighting = !lighting;
-            break;
-        case antwika::editor::MenuItem::Sight:
-            lampSight = !lampSight;
-            break;
-        case antwika::editor::MenuItem::LowerSight:
-            lowerSight = !lowerSight;
-            break;
-        case antwika::editor::MenuItem::LowerLight:
-            lowerLight = !lowerLight;
-            break;
-        case antwika::editor::MenuItem::Follow:
-            cameraFollows = !cameraFollows;
-            break;
-        case antwika::editor::MenuItem::Corners:
+        case MenuItem::Corners:
             cornerJoining =
-                cornerJoining
-                        == solver::CornerSeams::Included
-                         ? solver::CornerSeams::Ignored
-                         : solver::CornerSeams::Included;
+                cornerJoining == solver::CornerSeams::Included
+                    ? solver::CornerSeams::Ignored
+                    : solver::CornerSeams::Included;
             rebuildWorld();
             break;
-        case antwika::editor::MenuItem::AboveHidden:
-            hideAboveLevel = !hideAboveLevel;
-            rebuildWorld();
+        case MenuItem::Settings:
+        case MenuItem::Grid:
+        case MenuItem::Marker:
+        case MenuItem::RuleLines:
+        case MenuItem::Lighting:
+        case MenuItem::Sight:
+        case MenuItem::LowerSight:
+        case MenuItem::LowerLight:
+        case MenuItem::Follow:
+        case MenuItem::AboveHidden:
             break;
         }
     }
 
     bool Editor::isChecked(const MenuItem item)
     {
-        switch (item)
+        if (const auto flag = toggledFlag(item); flag != nullptr)
         {
-        case antwika::editor::MenuItem::FreeLook:
-            return freeLook;
-        case antwika::editor::MenuItem::Grid:
-            return grid;
-        case antwika::editor::MenuItem::Marker:
-            return showPlacementGhost;
-        case antwika::editor::MenuItem::RuleLines:
-            return showRuleLines;
-        case antwika::editor::MenuItem::Lighting:
-            return lighting;
-        case antwika::editor::MenuItem::Sight:
-            return lampSight;
-        case antwika::editor::MenuItem::LowerSight:
-            return lowerSight;
-        case antwika::editor::MenuItem::LowerLight:
-            return lowerLight;
-        case antwika::editor::MenuItem::Follow:
-            return cameraFollows;
-        case antwika::editor::MenuItem::AboveHidden:
-            return hideAboveLevel;
-        case antwika::editor::MenuItem::Corners:
-            return cornerJoining
-                   == solver::CornerSeams::Included;
-        default:
-            break;
+            return this->*flag;
         }
 
-        return false;
+        if (item == MenuItem::FreeLook)
+        {
+            return freeLook;
+        }
+
+        return item == MenuItem::Corners
+               && cornerJoining == solver::CornerSeams::Included;
     }
 
 }
