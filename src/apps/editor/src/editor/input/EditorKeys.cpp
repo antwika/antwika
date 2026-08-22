@@ -1,3 +1,5 @@
+#include <array>
+
 #include <antwika/component/Item.hpp>
 #include <antwika/editor/ui/AtlasView.hpp>
 #include <antwika/input/InputEvent.hpp>
@@ -41,6 +43,72 @@ namespace
 namespace antwika::editor
 {
 
+    namespace
+    {
+        struct ToolKeyRow final
+        {
+            Action action;
+            ToolButton button;
+        };
+
+        constexpr std::array kToolKeyRows{
+            ToolKeyRow{Action::ToolBrush, ToolButton::Brush},
+            ToolKeyRow{Action::ToolPicker, ToolButton::Picker},
+            ToolKeyRow{Action::ToolFreeLook, ToolButton::FreeLook},
+            ToolKeyRow{Action::ToolLighting, ToolButton::Lighting},
+            ToolKeyRow{Action::ToolLamp, ToolButton::Lamp},
+            ToolKeyRow{Action::ToolRuleLines, ToolButton::RuleLines},
+            ToolKeyRow{Action::ToolStart, ToolButton::Start},
+            ToolKeyRow{Action::ToolExit, ToolButton::Exit},
+            ToolKeyRow{Action::ToolStamp, ToolButton::Stamp},
+            ToolKeyRow{Action::ToolFigure, ToolButton::Figure},
+            ToolKeyRow{Action::ToolPlate, ToolButton::PressurePlate}};
+
+        struct KindKeyRow final
+        {
+            Action action;
+            voxel::Kind kind;
+        };
+
+        constexpr std::array kKindKeyRows{
+            KindKeyRow{Action::KindStone, voxel::Kind::Normal},
+            KindKeyRow{Action::KindWater, voxel::Kind::Water},
+            KindKeyRow{Action::KindRamp, voxel::Kind::Ramp}};
+
+        struct PaintKeyRow final
+        {
+            Action action;
+            map::Paint paint;
+        };
+
+        constexpr std::array<PaintKeyRow, enums::kCount<map::Paint>>
+            kPaintKeyRows{{
+            {Action::PaintBrush, map::Paint::Brush},
+            {Action::PaintLine, map::Paint::Line},
+            {Action::PaintFill, map::Paint::Fill},
+            {Action::PaintSelect, map::Paint::Select},
+            {Action::PaintRect, map::Paint::Rect},
+            {Action::PaintCircle, map::Paint::Circle}}};
+
+        static_assert(enums::tagsInOrder(kPaintKeyRows, &PaintKeyRow::paint));
+
+        struct ViewKeyRow final
+        {
+            Action action;
+            map::View view;
+        };
+
+        constexpr std::array<ViewKeyRow, enums::kCount<map::View>>
+            kViewKeyRows{{
+            {Action::ViewWorld, map::View::World},
+            {Action::ViewAtlases, map::View::Atlases},
+            {Action::ViewCharacter, map::View::Character},
+            {Action::ViewIcons, map::View::Icons},
+            {Action::ViewPlan, map::View::Plan}}};
+
+        static_assert(enums::tagsInOrder(kViewKeyRows, &ViewKeyRow::view));
+    }
+
     void Editor::setView(const map::View nextView)
     {
         if (nextView != activeView)
@@ -80,6 +148,11 @@ namespace antwika::editor
 
     void Editor::onKeyPressed(const input::KeyPressed &pressedKey)
     {
+        const auto fresh = [&](const Action action) {
+            return !pressedKey.repeat
+                   && matchesChord(action, pressedKey.key);
+        };
+
         if (playing)
         {
             if (titleScreenUp && !pressedKey.repeat)
@@ -89,9 +162,7 @@ namespace antwika::editor
                 return;
             }
 
-            if ((matchesChord(Action::Play, pressedKey.key)
-                 || matchesChord(Action::Cancel, pressedKey.key))
-                && !pressedKey.repeat)
+            if (fresh(Action::Play) || fresh(Action::Cancel))
             {
                 if (playOnly)
                 {
@@ -111,40 +182,34 @@ namespace antwika::editor
                 }
             }
 
-            if (matchesChord(Action::Fullscreen, pressedKey.key)
-                && !pressedKey.repeat)
+            if (fresh(Action::Fullscreen))
             {
                 window->setFullscreen(
                     !window->isFullscreen());
                 viewportRenderer.resize(window->size());
             }
 
-            if (matchesChord(Action::Respawn, pressedKey.key)
-                && !pressedKey.repeat)
+            if (fresh(Action::Respawn))
             {
                 standPlayer();
             }
 
-            if (matchesChord(Action::Talk, pressedKey.key)
-                && !pressedKey.repeat)
+            if (fresh(Action::Talk))
             {
                 interact();
             }
 
-            if (matchesChord(Action::Eat, pressedKey.key)
-                && !pressedKey.repeat)
+            if (fresh(Action::Eat))
             {
                 consumeItem(component::ItemKind::Food);
             }
 
-            if (matchesChord(Action::Drink, pressedKey.key)
-                && !pressedKey.repeat)
+            if (fresh(Action::Drink))
             {
                 consumeItem(component::ItemKind::Water);
             }
 
-            if (!pressedKey.repeat
-                && matchesChord(Action::Save, pressedKey.key))
+            if (fresh(Action::Save))
             {
                 saveCurrentMap();
             }
@@ -215,36 +280,19 @@ namespace antwika::editor
 
         if (!pressedKey.repeat && activeView == map::View::World)
         {
-            for (const auto &[act, button] :
-                 {std::pair{Action::ToolBrush, ToolButton::Brush},
-                  std::pair{Action::ToolPicker, ToolButton::Picker},
-                  std::pair{Action::ToolFreeLook, ToolButton::FreeLook},
-                  std::pair{Action::ToolLighting, ToolButton::Lighting},
-                  std::pair{Action::ToolLamp, ToolButton::Lamp},
-                  std::pair{Action::ToolRuleLines, ToolButton::RuleLines},
-                  std::pair{Action::ToolStart, ToolButton::Start},
-                  std::pair{Action::ToolExit, ToolButton::Exit},
-                  std::pair{Action::ToolStamp,
-                            ToolButton::Stamp},
-                  std::pair{Action::ToolFigure,
-                            ToolButton::Figure},
-                  std::pair{Action::ToolPlate,
-                            ToolButton::PressurePlate}})
+            for (const auto &row : kToolKeyRows)
             {
-                if (matchesChord(act, pressedKey.key))
+                if (matchesChord(row.action, pressedKey.key))
                 {
-                    pressTool(button);
+                    pressTool(row.button);
                 }
             }
 
-            for (const auto &[act, kind] :
-                 {std::pair{Action::KindStone, voxel::Kind::Normal},
-                  std::pair{Action::KindWater, voxel::Kind::Water},
-                  std::pair{Action::KindRamp, voxel::Kind::Ramp}})
+            for (const auto &row : kKindKeyRows)
             {
-                if (matchesChord(act, pressedKey.key))
+                if (matchesChord(row.action, pressedKey.key))
                 {
-                    brushKind = kind;
+                    brushKind = row.kind;
                 }
             }
         }
@@ -253,13 +301,7 @@ namespace antwika::editor
             && (activeView == map::View::Atlases
                 || activeView == map::View::Character))
         {
-            for (const auto &[act, paint] :
-                 {std::pair{Action::PaintBrush, map::Paint::Brush},
-                  std::pair{Action::PaintLine, map::Paint::Line},
-                  std::pair{Action::PaintFill, map::Paint::Fill},
-                  std::pair{Action::PaintSelect, map::Paint::Select},
-                  std::pair{Action::PaintRect, map::Paint::Rect},
-                  std::pair{Action::PaintCircle, map::Paint::Circle}})
+            for (const auto &[act, paint] : kPaintKeyRows)
             {
                 if (!matchesChord(act, pressedKey.key))
                 {
@@ -381,25 +423,23 @@ namespace antwika::editor
             }
         }
 
-        if (!pressedKey.repeat
-            && matchesChord(Action::Mirror, pressedKey.key)
+        if (fresh(Action::Mirror)
             && activeView == map::View::Character)
         {
             mirrorSelection();
         }
 
-        if (!pressedKey.repeat && matchesChord(Action::Undo, pressedKey.key))
+        if (fresh(Action::Undo))
         {
             undo();
         }
 
-        if (!pressedKey.repeat && matchesChord(Action::Redo, pressedKey.key))
+        if (fresh(Action::Redo))
         {
             redo();
         }
 
-        if (!pressedKey.repeat
-            && matchesChord(Action::Corners, pressedKey.key))
+        if (fresh(Action::Corners))
         {
             cornerJoining =
                 cornerJoining
@@ -424,29 +464,12 @@ namespace antwika::editor
 
         auto nextView = activeView;
 
-        if (matchesChord(Action::ViewWorld, pressedKey.key))
+        for (const auto &row : kViewKeyRows)
         {
-            nextView = map::View::World;
-        }
-
-        if (matchesChord(Action::ViewAtlases, pressedKey.key))
-        {
-            nextView = map::View::Atlases;
-        }
-
-        if (matchesChord(Action::ViewCharacter, pressedKey.key))
-        {
-            nextView = map::View::Character;
-        }
-
-        if (matchesChord(Action::ViewIcons, pressedKey.key))
-        {
-            nextView = map::View::Icons;
-        }
-
-        if (matchesChord(Action::ViewPlan, pressedKey.key))
-        {
-            nextView = map::View::Plan;
+            if (matchesChord(row.action, pressedKey.key))
+            {
+                nextView = row.view;
+            }
         }
 
         if (matchesChord(Action::ViewNext, pressedKey.key))
@@ -461,22 +484,19 @@ namespace antwika::editor
 
         setView(nextView);
 
-        if (!pressedKey.repeat && matchesChord(Action::Save, pressedKey.key))
+        if (fresh(Action::Save))
         {
             saveCurrentMap();
         }
 
-        if (!pressedKey.repeat && !playing
-            && matchesChord(Action::PlayApart, pressedKey.key))
+        if (!playing && fresh(Action::PlayApart))
         {
             playApart();
 
             return;
         }
 
-        if (!pressedKey.repeat
-            && (matchesChord(Action::Play, pressedKey.key)
-                || matchesChord(Action::PlayHere, pressedKey.key)))
+        if (fresh(Action::Play) || fresh(Action::PlayHere))
         {
             const auto playHere =
                 matchesChord(Action::PlayHere, pressedKey.key);
@@ -508,13 +528,12 @@ namespace antwika::editor
             aimPlayCamera();
         }
 
-        if (!pressedKey.repeat && matchesChord(Action::Load, pressedKey.key))
+        if (fresh(Action::Load))
         {
             loadCurrentMap();
         }
 
-        if (!pressedKey.repeat
-            && matchesChord(Action::Fullscreen, pressedKey.key))
+        if (fresh(Action::Fullscreen))
         {
             window->setFullscreen(
                 !window->isFullscreen());
