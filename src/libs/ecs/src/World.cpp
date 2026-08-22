@@ -38,7 +38,10 @@ namespace antwika::ecs
 
     World::World(ILogger &logger, std::uint64_t maxEntities)
         : entityManager(
-              std::make_unique<detail::EntityManager>(logger, maxEntities))
+              std::make_unique<detail::EntityManager>(logger, maxEntities)),
+          keys(kSeedSlots),
+          pools(kSeedSlots),
+          pendingBuffers(kSeedSlots)
     {
     }
 
@@ -100,24 +103,60 @@ namespace antwika::ecs
             return foundSlot;
         }
 
-        if (filledSlots.size() == kMaxComponents)
-        {
-            throw EcsError("World: too many component types");
-        }
-
         detail::claimComponentKey(key, name);
 
-        auto slotIndex = static_cast<std::size_t>(key) & kSlotMask;
+        if (filledSlots.size() >= slotCapacity())
+        {
+            growSlots();
+        }
+
+        const auto slotMask = keys.size() - 1;
+        auto slotIndex = static_cast<std::size_t>(key) & slotMask;
 
         while (keys[slotIndex] != 0)
         {
-            slotIndex = (slotIndex + 1) & kSlotMask;
+            slotIndex = (slotIndex + 1) & slotMask;
         }
 
         keys[slotIndex] = key;
         filledSlots.push_back(slotIndex);
 
         return slotIndex;
+    }
+
+    void World::growSlots()
+    {
+        const auto grownCount = keys.size() * 2;
+        const auto grownMask = grownCount - 1;
+
+        std::vector<ComponentKey> grownKeys(grownCount);
+        std::vector<std::unique_ptr<detail::IComponentPool>> grownPools(
+            grownCount);
+        std::vector<std::unique_ptr<detail::IPendingComponents>>
+            grownPendingBuffers(grownCount);
+        std::vector<std::size_t> grownFilledSlots;
+        grownFilledSlots.reserve(filledSlots.size());
+
+        for (const auto index : filledSlots)
+        {
+            auto slotIndex =
+                static_cast<std::size_t>(keys[index]) & grownMask;
+
+            while (grownKeys[slotIndex] != 0)
+            {
+                slotIndex = (slotIndex + 1) & grownMask;
+            }
+
+            grownKeys[slotIndex] = keys[index];
+            grownPools[slotIndex] = std::move(pools[index]);
+            grownPendingBuffers[slotIndex] = std::move(pendingBuffers[index]);
+            grownFilledSlots.push_back(slotIndex);
+        }
+
+        keys = std::move(grownKeys);
+        pools = std::move(grownPools);
+        pendingBuffers = std::move(grownPendingBuffers);
+        filledSlots = std::move(grownFilledSlots);
     }
 
     void World::forgetComponents() noexcept

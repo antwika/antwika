@@ -39,6 +39,8 @@ namespace
         int value{};
     };
 
+    constexpr std::size_t kManyComponents = 20;
+
     template <std::size_t... Ats>
     void addFillers(
         World &world, Entity entity, std::index_sequence<Ats...>)
@@ -669,23 +671,6 @@ TEST(WorldTest, Destroy_ClearsBothPoolsOfATypePairSharedAcrossWorlds)
     EXPECT_FALSE(world.has<Registered>(entity));
 }
 
-TEST(WorldTest, Add_RefusesMoreComponentTypesThanAWorldHolds)
-{
-    NiceMock<MockLogger> logger;
-    World world(logger);
-    const auto entity = world.create();
-
-    addFillers(
-        world,
-        entity,
-        std::make_index_sequence<World::kMaxComponents>{});
-
-    EXPECT_THROW(
-        (world.add<Padding<World::kMaxComponents>>(
-            entity, Padding<World::kMaxComponents>{})),
-        EcsError);
-}
-
 TEST(WorldTest, Claim_GivesNoEntityAComponent)
 {
     NiceMock<MockLogger> logger;
@@ -782,36 +767,30 @@ TEST(WorldTest, ForgetComponents_DropsWhatWasStagedAndNotYetCommitted)
     EXPECT_FALSE(world.has<Position>(entity));
 }
 
-TEST(WorldTest, Commit_KeepsEveryComponentTypeAWorldHolds)
+TEST(WorldTest, Commit_KeepsEveryComponentTypeThroughSeveralGrowths)
 {
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
 
     addFillers(
-        world,
-        entity,
-        std::make_index_sequence<World::kMaxComponents>{});
+        world, entity, std::make_index_sequence<kManyComponents>{});
     world.commit();
 
     EXPECT_TRUE(
         holdsFillers(
-            world,
-            entity,
-            std::make_index_sequence<World::kMaxComponents>{}));
+            world, entity, std::make_index_sequence<kManyComponents>{}));
     EXPECT_EQ(world.get<Padding<7>>(entity).value, 0);
 }
 
-TEST(WorldTest, Destroy_LetsGoOfEveryComponentTypeAWorldHolds)
+TEST(WorldTest, Destroy_LetsGoOfEveryComponentTypeThroughSeveralGrowths)
 {
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
 
     addFillers(
-        world,
-        entity,
-        std::make_index_sequence<World::kMaxComponents>{});
+        world, entity, std::make_index_sequence<kManyComponents>{});
     world.commit();
 
     world.destroy(entity);
@@ -825,5 +804,68 @@ TEST(WorldTest, Destroy_LetsGoOfEveryComponentTypeAWorldHolds)
         holdsNoFiller(
             world,
             laterEntity,
-            std::make_index_sequence<World::kMaxComponents>{}));
+            std::make_index_sequence<kManyComponents>{}));
+}
+
+TEST(WorldTest, Add_KeepsEarlierComponentsWhenTheSlotTableGrows)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+
+    world.add<Padding<100>>(entity, Padding<100>{1});
+    world.add<Padding<101>>(entity, Padding<101>{2});
+    world.commit();
+
+    addFillers(
+        world, entity, std::make_index_sequence<kManyComponents>{});
+    world.commit();
+
+    ASSERT_TRUE(world.has<Padding<100>>(entity));
+    EXPECT_EQ(world.get<Padding<100>>(entity).value, 1);
+    EXPECT_EQ(world.get<Padding<101>>(entity).value, 2);
+    EXPECT_TRUE(
+        holdsFillers(
+            world, entity, std::make_index_sequence<kManyComponents>{}));
+}
+
+TEST(WorldTest, Commit_AppliesWhatWasStagedBeforeTheSlotTableGrew)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+
+    world.add<Padding<100>>(entity, Padding<100>{5});
+    world.add<Padding<101>>(entity, Padding<101>{6});
+
+    addFillers(
+        world, entity, std::make_index_sequence<kManyComponents>{});
+
+    world.commit();
+
+    ASSERT_TRUE(world.has<Padding<100>>(entity));
+    EXPECT_EQ(world.get<Padding<100>>(entity).value, 5);
+    EXPECT_EQ(world.get<Padding<101>>(entity).value, 6);
+    EXPECT_TRUE(
+        holdsFillers(
+            world, entity, std::make_index_sequence<kManyComponents>{}));
+}
+
+TEST(WorldTest, ForgetComponents_LetsTypesBeTakenUpAfreshAfterAGrowth)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+
+    addFillers(
+        world, entity, std::make_index_sequence<kManyComponents>{});
+    world.commit();
+    world.forgetComponents();
+
+    world.add<Padding<0>>(entity, Padding<0>{9});
+    world.commit();
+
+    ASSERT_TRUE(world.has<Padding<0>>(entity));
+    EXPECT_EQ(world.get<Padding<0>>(entity).value, 9);
+    EXPECT_FALSE(world.has<Padding<1>>(entity));
 }
