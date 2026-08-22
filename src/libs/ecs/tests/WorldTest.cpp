@@ -46,6 +46,20 @@ namespace
         (world.add<Padding<Ats>>(entity, Padding<Ats>{}), ...);
     }
 
+    template <std::size_t... Ats>
+    [[nodiscard]] bool holdsFillers(
+        const World &world, Entity entity, std::index_sequence<Ats...>)
+    {
+        return (world.has<Padding<Ats>>(entity) && ...);
+    }
+
+    template <std::size_t... Ats>
+    [[nodiscard]] bool holdsNoFiller(
+        const World &world, Entity entity, std::index_sequence<Ats...>)
+    {
+        return (!world.has<Padding<Ats>>(entity) && ...);
+    }
+
 }
 
 TEST(WorldTest, Create_ReturnsALiveEntity)
@@ -768,3 +782,48 @@ TEST(WorldTest, ForgetComponents_DropsWhatWasStagedAndNotYetCommitted)
     EXPECT_FALSE(world.has<Position>(entity));
 }
 
+TEST(WorldTest, Commit_KeepsEveryComponentTypeAWorldHolds)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+
+    addFillers(
+        world,
+        entity,
+        std::make_index_sequence<World::kMaxComponents>{});
+    world.commit();
+
+    EXPECT_TRUE(
+        holdsFillers(
+            world,
+            entity,
+            std::make_index_sequence<World::kMaxComponents>{}));
+    EXPECT_EQ(world.get<Padding<7>>(entity).value, 0);
+}
+
+TEST(WorldTest, Destroy_LetsGoOfEveryComponentTypeAWorldHolds)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+
+    addFillers(
+        world,
+        entity,
+        std::make_index_sequence<World::kMaxComponents>{});
+    world.commit();
+
+    world.destroy(entity);
+    world.commit();
+
+    const auto laterEntity = world.create();
+
+    world.commit();
+
+    EXPECT_TRUE(
+        holdsNoFiller(
+            world,
+            laterEntity,
+            std::make_index_sequence<World::kMaxComponents>{}));
+}
