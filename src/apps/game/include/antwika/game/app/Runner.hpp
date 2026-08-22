@@ -66,7 +66,6 @@ namespace antwika::game
 
         [[nodiscard]] gfx::Camera3D worldCamera() const;
 
-        log::ILogger &logger;
         std::string mapPath;
         std::unique_ptr<gfx::IGfxBackend> backend;
         std::unique_ptr<input::IInputBackend> inputs;

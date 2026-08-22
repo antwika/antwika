@@ -49,10 +49,6 @@ using testing::NiceMock;
 namespace
 {
 
-    constexpr float kTolerance = 1e-4F;
-
-    constexpr std::array<std::size_t, 2> kGroundBars{0U, 2U};
-
     [[nodiscard]] Inventory carrying(const ItemKind kind)
     {
         return *inventoryWith(Inventory{}, kind);

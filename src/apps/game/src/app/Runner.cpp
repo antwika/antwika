@@ -86,8 +86,7 @@ namespace antwika::game
     }
 
     Runner::Runner(log::ILogger &logger, std::string mapPath)
-        : logger(logger),
-          mapPath(std::move(mapPath)),
+        : mapPath(std::move(mapPath)),
           backend(gfx::makeSelectedBackend(logger)),
           inputs(input::makeSelectedInputBackend(logger)),
           window(

@@ -60,7 +60,6 @@ namespace antwika::editor
         [[nodiscard]] std::optional<std::string> copied();
 
         static void sweep();
-#endif
 
         std::filesystem::file_time_type loadedAt{};
 
@@ -72,6 +71,8 @@ namespace antwika::editor
         const std::vector<std::vector<voxel::VoxelCell>> *patrolCells =
             nullptr;
         void *library = nullptr;
+#endif
+
         gameplay::IGame *(*setUp)(
             log::ILogger *,
             ecs::World *,

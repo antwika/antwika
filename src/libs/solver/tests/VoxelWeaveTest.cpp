@@ -368,9 +368,6 @@ namespace
 
     constexpr Tile kSideTile{.atlas = Atlas::Wall, .index = 3};
 
-    constexpr TileEdge kRightInwardEdge{
-        .side = Side::Right, .edge = EdgeKind::Interior};
-
     [[nodiscard]] TileRules onlyTheTops()
     {
         TileRules rules;
