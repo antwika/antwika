@@ -1,3 +1,5 @@
+#include <utility>
+
 #include <antwika/gfx/PngFile.hpp>
 #include <antwika/component/AnimationState.hpp>
 #include <antwika/component/Orientation.hpp>
@@ -13,6 +15,7 @@
 #include <antwika/gameplay/Roster.hpp>
 #include <antwika/rules/Orientation.hpp>
 #include <antwika/solver/VoxelWeave.hpp>
+#include <antwika/tilemap/AtlasLayout.hpp>
 #include <antwika/voxel/VoxelCell.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 
@@ -344,12 +347,12 @@ namespace antwika::editor
                           ? solver::CornerSeams::Included
                           : solver::CornerSeams::Ignored;
             atlasSheets.take(
-                {map::loadAtlas(
+                {map::loadAtlasOrBlank(
                      mapPath,
                      "atlas-15x9.png",
                      tilemap::kWallTileSize,
                      kAppName),
-                 map::loadAtlas(
+                 map::loadAtlasOrBlank(
                      mapPath,
                      "atlas-15x12.png",
                      tilemap::kFloorTileSize,
@@ -387,6 +390,29 @@ namespace antwika::editor
         }
 
         return true;
+    }
+
+    void Editor::startNewMap()
+    {
+        pushUndo();
+
+        map::Map emptyMap;
+
+        map = std::move(emptyMap);
+        atlasSheets.take(
+            {tilemap::blankAtlas(tilemap::kWallTileSize),
+             tilemap::blankAtlas(tilemap::kFloorTileSize)});
+        atlasSheets.touch();
+        characterView.editFirst();
+        figurePicked.reset();
+        editLevel =
+            antwika::voxel::cubeIndexOfLevel(voxelmap::topLevel(map.voxels));
+        rebuildWorld();
+        resetGates();
+        spawnRoster();
+        standPlayer();
+        loadCharacterSkins();
+        dirty = true;
     }
 
     void Editor::listFolder(const std::string &folder)

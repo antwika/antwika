@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/RectF.hpp>
 #include <antwika/gfx/Size.hpp>
 
@@ -21,6 +22,8 @@ namespace antwika::tilemap
         .width = 15, .height = 9};
 
     [[nodiscard]] gfx::Size atlasSize(gfx::Size tileSize);
+
+    [[nodiscard]] gfx::Bitmap blankAtlas(gfx::Size tileSize);
 
     [[nodiscard]] gfx::RectF tilePixels(
         std::size_t index, gfx::Size tileSize);

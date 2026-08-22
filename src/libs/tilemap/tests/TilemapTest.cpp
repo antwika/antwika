@@ -1,11 +1,13 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <set>
 #include <utility>
 
 #include <antwika/geometry/Grid.hpp>
+#include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/RectF.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/tilemap/AtlasLayout.hpp>
@@ -13,6 +15,7 @@
 
 using antwika::tilemap::Atlas;
 using antwika::tilemap::atlasSize;
+using antwika::tilemap::blankAtlas;
 using antwika::tilemap::cellHoldingTile;
 using antwika::tilemap::clearTile;
 using antwika::tilemap::defaultTilemap;
@@ -381,4 +384,30 @@ TEST(TilemapTest, PutTile_AndClearComeBackToWhereItWas)
     putTile(map, {.column = 4, .row = 1}, *tile);
 
     EXPECT_EQ(map, was);
+}
+
+TEST(TilemapTest, BlankAtlas_IsTheSizeTheTilesGridUpTo)
+{
+    EXPECT_EQ(blankAtlas(kWallTileSize).size, atlasSize(kWallTileSize));
+    EXPECT_EQ(blankAtlas(kFloorTileSize).size, atlasSize(kFloorTileSize));
+}
+
+TEST(TilemapTest, BlankAtlas_HoldsNothingButTransparentPixels)
+{
+    for (const auto tileSize : {kWallTileSize, kFloorTileSize})
+    {
+        const auto atlasBitmap = blankAtlas(tileSize);
+        const auto wholeSize = atlasSize(tileSize);
+
+        EXPECT_EQ(
+            atlasBitmap.pixels.size(),
+            static_cast<std::size_t>(wholeSize.width) * wholeSize.height
+                * antwika::gfx::kBytesPerPixel);
+        EXPECT_TRUE(atlasBitmap.isValid());
+        EXPECT_TRUE(
+            std::all_of(
+                atlasBitmap.pixels.begin(),
+                atlasBitmap.pixels.end(),
+                [](const std::uint8_t channel) { return channel == 0; }));
+    }
 }
