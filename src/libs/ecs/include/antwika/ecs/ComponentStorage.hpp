@@ -59,7 +59,7 @@ namespace antwika::ecs
                 return;
             }
 
-            writtenIndices.clear();
+            keptWrittenIndices.clear();
             std::size_t count = 0;
 
             for (std::size_t index = 0; index < denseEntities.size(); ++index)
@@ -80,7 +80,7 @@ namespace antwika::ecs
 
                 if (writtenFlags[count] == 1)
                 {
-                    writtenIndices.push_back(count);
+                    keptWrittenIndices.push_back(count);
                 }
 
                 ++count;
@@ -90,6 +90,8 @@ namespace antwika::ecs
             front.resize(count);
             dense.resize(count);
             writtenFlags.resize(count);
+
+            writtenIndices.swap(keptWrittenIndices);
         }
 
         [[nodiscard]] bool contains(Entity entity) const noexcept
@@ -174,6 +176,7 @@ namespace antwika::ecs
         std::vector<std::size_t> sparse;
         std::vector<std::uint8_t> writtenFlags;
         std::vector<std::size_t> writtenIndices;
+        std::vector<std::size_t> keptWrittenIndices;
         std::vector<std::uint8_t> toRemove;
     };
 

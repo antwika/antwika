@@ -495,6 +495,27 @@ TEST(WorldTest, Destroy_KeepsTheOrderOfTheSurvivorsInAView)
             entities[0], entities[2], entities[3], entities[5]}));
 }
 
+TEST(WorldTest, Destroy_KeepsAWriteToAPoolTheDoomedEntityIsNotIn)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto doomedEntity = world.create();
+    const auto standingEntity = world.create();
+
+    world.add<Position>(doomedEntity, Position{1, 2});
+    world.add<Velocity>(standingEntity, Velocity{3});
+    world.commit();
+
+    world.set<Velocity>(standingEntity, Velocity{9});
+    world.destroy(doomedEntity);
+    world.commit();
+    world.commit();
+
+    EXPECT_FALSE(world.alive(doomedEntity));
+    ASSERT_TRUE(world.has<Velocity>(standingEntity));
+    EXPECT_EQ(world.get<Velocity>(standingEntity), (Velocity{9}));
+}
+
 TEST(WorldTest, Destroy_ClearsEveryPoolOfABatchInOneCommit)
 {
     NiceMock<MockLogger> logger;
