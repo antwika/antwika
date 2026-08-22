@@ -244,6 +244,14 @@ namespace antwika::editor
 
     void Editor::saveCurrentMap()
     {
+        if (mapPath.empty())
+        {
+            dialogs.quitConfirmOpen = false;
+            openFileDialog(true);
+
+            return;
+        }
+
         try
         {
             map.camera = cameraView;
@@ -399,6 +407,7 @@ namespace antwika::editor
         map::Map emptyMap;
 
         map = std::move(emptyMap);
+        mapPath.clear();
         atlasSheets.take(
             {tilemap::blankAtlas(tilemap::kWallTileSize),
              tilemap::blankAtlas(tilemap::kFloorTileSize)});
@@ -458,14 +467,15 @@ namespace antwika::editor
 
     void Editor::openFileDialog(const bool forSave)
     {
-        const auto path =
-            std::filesystem::absolute(mapPath);
+        const auto path = std::filesystem::absolute(
+            mapPath.empty() ? startMapPath : mapPath);
         const auto folder = path.parent_path().string();
 
         dialogs.fileDialog = FileDialog{
             .isSaveMode = forSave,
             .folder = folder,
-            .fileName = path.filename().string()};
+            .fileName =
+                mapPath.empty() ? std::string{} : path.filename().string()};
         listFolder(folder);
     }
 
@@ -473,6 +483,13 @@ namespace antwika::editor
     {
         if (!dialogs.fileDialog.has_value())
         {
+            return;
+        }
+
+        if (dialogs.fileDialog->fileName.empty())
+        {
+            showStatus("the map needs a name", true, 180);
+
             return;
         }
 
