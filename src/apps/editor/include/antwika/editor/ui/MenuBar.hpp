@@ -8,6 +8,7 @@
 
 #include <cstddef>
 
+#include <antwika/enums/Enumeration.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
 namespace antwika::editor
@@ -20,6 +21,11 @@ namespace antwika::editor
         View,
         Settings,
     };
+
+    [[nodiscard]] constexpr Menu lastEnumerator(Menu) noexcept
+    {
+        return Menu::Settings;
+    }
 
     enum class MenuItem : std::uint8_t
     {
@@ -47,6 +53,11 @@ namespace antwika::editor
 
         AboveHidden,
     };
+
+    [[nodiscard]] constexpr MenuItem lastEnumerator(MenuItem) noexcept
+    {
+        return MenuItem::AboveHidden;
+    }
 
     inline constexpr std::array<Menu, 3> kBarMenus{
         Menu::File, Menu::Edit, Menu::View};
