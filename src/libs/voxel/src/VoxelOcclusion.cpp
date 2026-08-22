@@ -49,7 +49,7 @@ namespace antwika::voxel
             const auto arm =
                 static_cast<std::int32_t>(kOcclusionMaskWidth) / 2;
 
-            const auto withinWindow = [columnPosition, lowest, roofLevel, arm](
+            const auto withinWindow = [columnPosition, lowest, roofLevel](
                                           const VoxelPosition position)
             {
                 return position.y >= lowest && position.y < roofLevel
