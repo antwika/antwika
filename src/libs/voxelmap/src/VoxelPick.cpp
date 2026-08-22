@@ -317,7 +317,7 @@ namespace antwika::voxelmap
 
     gfx::Vec3 faceMiddle(const FaceRef face)
     {
-        return cellMiddle(face.cell.position()) + (faceNormal(
+        return cellMiddle(face.cell.position) + (faceNormal(
             face.side) * kHalf);
     }
 
@@ -424,7 +424,9 @@ namespace antwika::voxelmap
 
             nearest = hit.awayDistance;
             pickedRef = FaceRef{
-                .cell = voxel::voxelCellAt(position, material),
+                .cell = voxel::VoxelCell{
+                        .position = position,
+                        .material = material},
                 .side = sideFacing(direction)};
         }
 
@@ -482,7 +484,7 @@ namespace antwika::voxelmap
         return tilemap::Tile{
             .atlas = lies ? tilemap::Atlas::Floor : tilemap::Atlas::Wall,
             .index = static_cast<std::uint16_t>(
-                defaultTileIndex(pickRef.cell.position(), pickRef.side))};
+                defaultTileIndex(pickRef.cell.position, pickRef.side))};
     }
 
     std::optional<tilemap::Tile> tilePicked(

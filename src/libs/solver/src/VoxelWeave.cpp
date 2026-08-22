@@ -91,7 +91,8 @@ namespace antwika::solver
         for (std::size_t which = 0; which < faces.size(); ++which)
         {
             const auto atlas = atlasOf(faces[which].side);
-            const auto wantedKey = DomainKey{atlas, faces[which].cell.kind};
+            const auto wantedKey = DomainKey{atlas,
+                faces[which].cell.material.kind};
 
             if (!tilesByDomain.contains(wantedKey))
             {

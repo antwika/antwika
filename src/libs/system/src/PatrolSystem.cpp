@@ -103,9 +103,14 @@ namespace antwika::system
                 const auto walk = pathfinding::pathBetween(
                     collision::VoxelWalkGraph(*solidVoxels),
                     pathfinding::GridPos{
-                        .x = fromCell->x, .y = fromCell->y, .z = fromCell->z},
+                        .x =
+                            fromCell->position.x, .y =
+                                fromCell->position.y, .z =
+                                    fromCell->position.z},
                     pathfinding::GridPos{
-                        .x = toCell->x, .y = toCell->y, .z = toCell->z},
+                        .x =
+                            toCell->position.x, .y =
+                                toCell->position.y, .z = toCell->position.z},
                     component::kMaxPatrolSteps);
 
                 if (!walk.has_value())

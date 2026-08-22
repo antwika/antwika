@@ -100,7 +100,8 @@ using antwika::voxel::VoxelPosition;
 
     TEST(GatesTest, CubeOccupied_SeesAnyVoxelOfTheCube)
     {
-        const auto voxels = voxelsOf({VoxelCell{.x = 3, .y = 1, .z = 3}});
+        const auto voxels = voxelsOf({VoxelCell{.position = {.x = 3, .y = 1,
+            .z = 3}}});
 
         EXPECT_TRUE(
             cubeOccupied(voxels, VoxelPosition{.x = 2, .z = 2}));

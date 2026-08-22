@@ -51,8 +51,9 @@ namespace antwika::editor
                 std::floor(standing.z / antwika::voxel::kVoxelSide)),
             standing.y);
         const auto landing =
-            collision::restPositionOverColumn(worldMeshes.cells(), hit->cell.x,
-                hit->cell.z);
+            collision::restPositionOverColumn(worldMeshes.cells(),
+                hit->cell.position.x,
+                hit->cell.position.z);
 
         if (!fromStood.has_value() || !landing.has_value())
         {
@@ -60,7 +61,8 @@ namespace antwika::editor
         }
 
         const auto toStood = collision::supportingVoxel(
-            worldMeshes.cells(), hit->cell.x, hit->cell.z, landing->y);
+            worldMeshes.cells(
+                ), hit->cell.position.x, hit->cell.position.z, landing->y);
 
         if (!toStood.has_value())
         {
@@ -71,13 +73,13 @@ namespace antwika::editor
         const auto walk = antwika::pathfinding::pathBetween(
             walkGraph,
             antwika::pathfinding::GridPos{
-                .x = fromStood->x,
-                .y = fromStood->y,
-                .z = fromStood->z},
+                .x = fromStood->position.x,
+                .y = fromStood->position.y,
+                .z = fromStood->position.z},
             antwika::pathfinding::GridPos{
-                .x = toStood->x,
-                .y = toStood->y,
-                .z = toStood->z},
+                .x = toStood->position.x,
+                .y = toStood->position.y,
+                .z = toStood->position.z},
             kMaxGuideSteps);
 
         if (!walk.has_value())
@@ -96,7 +98,7 @@ namespace antwika::editor
                     static_cast<float>(stop.z)});
         }
 
-        game->followPath(std::move(stopPositions), toStood->position());
+        game->followPath(std::move(stopPositions), toStood->position);
     }
 
 }

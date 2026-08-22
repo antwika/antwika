@@ -58,12 +58,11 @@ namespace
             faces.push_back(
                 FaceRef{
                     .cell =
-                        VoxelCell{
-                            .x = static_cast<std::int32_t>(
+                        VoxelCell{.position = {.x = static_cast<std::int32_t>(
                                 tileIndex % 64),
                             .y = 0,
                             .z = static_cast<std::int32_t>(
-                                tileIndex / 64)},
+                                tileIndex / 64)}},
                     .side = 4});
         }
 

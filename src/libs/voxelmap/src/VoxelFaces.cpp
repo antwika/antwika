@@ -71,7 +71,9 @@ namespace antwika::voxelmap
 
                 faces.push_back(
                     FaceRef{
-                        .cell = voxel::voxelCellAt(position, material),
+                        .cell = voxel::VoxelCell{
+                        .position = position,
+                        .material = material},
                         .side = side,
                         .climbPosition = climb,
                         .levelHalf = level});

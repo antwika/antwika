@@ -232,7 +232,7 @@ namespace antwika::decor
                 if (fits && !decorSpanned(record)
                     && record.tile.atlas == drawnTiles[index].atlas
                     && frequencyRollFor(
-                           faces[index].cell.position(),
+                           faces[index].cell.position,
                            which,
                            seed,
                            upward ? 0U
@@ -269,8 +269,9 @@ namespace antwika::decor
             }
 
             auto rollValue = choiceRollFor(
-                              faces[index].cell.position(
-                                  ), faces[index].side, seed)
+                              faces[index].cell.position,
+                              faces[index].side,
+                              seed)
                           % total;
             auto likedTile = offeredTiles.front().first;
 
@@ -294,8 +295,8 @@ namespace antwika::decor
             {
                 byGround.emplace(
                     std::pair{
-                        faces[index].cell.position().x,
-                        faces[index].cell.position().z},
+                        faces[index].cell.position.x,
+                        faces[index].cell.position.z},
                     decorPlacements.size());
             }
             else
@@ -303,14 +304,14 @@ namespace antwika::decor
                 byWall.emplace(
                     std::pair{
                         faces[index].side,
-                        faces[index].cell.position()},
+                        faces[index].cell.position},
                     decorPlacements.size());
             }
 
             decorPlacements.push_back(
                 DecorPlacement{
                     .face = index,
-                    .position = faces[index].cell.position(),
+                    .position = faces[index].cell.position,
                     .side = faces[index].side});
             waveDomains.push_back(mayDomain);
         }

@@ -115,7 +115,8 @@ TEST(LightPassesTest, Hide_DrawsTheMaskOnceForTheSameCubesAndPlace)
     handsOutResources(innerRenderer);
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     LightPasses passes;
-    const auto behindCells = voxelsOf({VoxelCell{.x = 1, .z = 2}});
+    const auto behindCells = voxelsOf({VoxelCell{.position = {.x = 1,
+        .z = 2}}});
 
     passes.open(viewportRenderer, ShaderSource{});
     passes.hide(viewportRenderer, behindCells, VoxelPosition{});
@@ -137,12 +138,14 @@ TEST(LightPassesTest, Hide_DrawsTheMaskAfreshWhereTheCubesChanged)
     LightPasses passes;
 
     passes.open(viewportRenderer, ShaderSource{});
-    passes.hide(viewportRenderer, voxelsOf({VoxelCell{.x = 1, .z = 2}}),
+    passes.hide(viewportRenderer, voxelsOf({VoxelCell{.position = {.x = 1,
+        .z = 2}}}),
         VoxelPosition{});
 
     EXPECT_CALL(innerRenderer, updateTexture).Times(1);
 
-    passes.hide(viewportRenderer, voxelsOf({VoxelCell{.x = 3, .z = 4}}),
+    passes.hide(viewportRenderer, voxelsOf({VoxelCell{.position = {.x = 3,
+        .z = 4}}}),
         VoxelPosition{});
 
     EXPECT_EQ(passes.hidden().size(), 1U);

@@ -71,9 +71,12 @@ namespace antwika::solver
                 message += index == 0 ? "" : ", the ";
                 message += std::string(facingNamed(conflictFaces[index].side))
                         + " of ("
-                        + std::to_string(conflictFaces[index].cell.x) + ","
-                        + std::to_string(conflictFaces[index].cell.y) + ","
-                        + std::to_string(conflictFaces[index].cell.z) + ")";
+                        + std::to_string(
+                            conflictFaces[index].cell.position.x) + ","
+                        + std::to_string(
+                            conflictFaces[index].cell.position.y) + ","
+                        + std::to_string(
+                            conflictFaces[index].cell.position.z) + ")";
             }
 
             return message;
@@ -127,10 +130,10 @@ namespace antwika::solver
         {
             const auto asks = DomainKey{
                 atlasOf(faces[seam.faceA].side),
-                faces[seam.faceA].cell.kind};
+                faces[seam.faceA].cell.material.kind};
             const auto meets = DomainKey{
                 atlasOf(faces[seam.faceB].side),
-                faces[seam.faceB].cell.kind};
+                faces[seam.faceB].cell.material.kind};
 
             if (!tilesByDomain.contains(asks) || !tilesByDomain.contains(meets)
                 || namedEdges.contains(seam.edgeA))

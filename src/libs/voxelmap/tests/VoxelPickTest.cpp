@@ -85,14 +85,14 @@ TEST(VoxelPickTest, RaycastFace_TakesTheSideTheRayComesAt)
 TEST(VoxelPickTest, RaycastFace_TakesTheNearerOfTwoVoxels)
 {
     const auto pairCells = voxelsOf({
-        VoxelCell{.z = 0}, VoxelCell{.z = 1}});
+        VoxelCell{.position = {.z = 0}}, VoxelCell{.position = {.z = 1}}});
     const Ray ray{
         .fromPosition = Vec3{0.0F, 0.0F, 9.0F},
         .direction = Vec3{0.0F, 0.0F, -1.0F}};
     const auto pickedFace = raycastFace(pairCells, ray);
 
     ASSERT_TRUE(pickedFace.has_value());
-    EXPECT_EQ(pickedFace->cell, (VoxelCell{.z = 1}));
+    EXPECT_EQ(pickedFace->cell, (VoxelCell{.position = {.z = 1}}));
 }
 
 TEST(VoxelPickTest, RaycastFace_FollowsARayOnlyForwards)
@@ -113,7 +113,8 @@ TEST(VoxelPickTest, RaycastFace_TakesATopOfThePyramidFromAbove)
     const auto pickedFace = raycastFace(cells, ray);
 
     ASSERT_TRUE(pickedFace.has_value());
-    EXPECT_EQ(pickedFace->cell, (VoxelCell{.x = 0, .y = 1, .z = 0}));
+    EXPECT_EQ(pickedFace->cell, (VoxelCell{.position = {.x = 0, .y = 1,
+        .z = 0}}));
     EXPECT_FLOAT_EQ(faceNormal(pickedFace->side).y, 1.0F);
 }
 
@@ -134,7 +135,7 @@ TEST(VoxelPickTest, FaceTile_DrawsFloorSidesFromTheFloorAtlas)
 
 TEST(VoxelPickTest, FaceTile_MatchesWhatTheMeshDrawsThere)
 {
-    constexpr VoxelCell cell{.x = 2, .y = -1, .z = 3};
+    constexpr VoxelCell cell{.position = {.x = 2, .y = -1, .z = 3}};
 
     for (std::size_t side = 0;
          side < antwika::voxelmap::kVoxelFaceCount;
@@ -142,7 +143,7 @@ TEST(VoxelPickTest, FaceTile_MatchesWhatTheMeshDrawsThere)
     {
         EXPECT_EQ(
             faceTile({.cell = cell, .side = side}).index,
-            antwika::voxelmap::defaultTileIndex(cell.position(), side));
+            antwika::voxelmap::defaultTileIndex(cell.position, side));
     }
 }
 
@@ -655,8 +656,8 @@ TEST(VoxelPickTest, OcclusionMask_MarksAPlaceAtItsOwnLevelsBit)
     const VoxelPosition cornerPosition{.x = -4, .z = -4};
     const auto mask = occlusionMask(
         voxelsOf({
-            VoxelCell{.x = 0, .y = 9, .z = 0},
-            VoxelCell{.x = 1, .y = 0, .z = 0}}),
+            VoxelCell{.position = {.x = 0, .y = 9, .z = 0}},
+            VoxelCell{.position = {.x = 1, .y = 0, .z = 0}}}),
         cornerPosition);
 
     const auto faceAt = [&cornerPosition](const VoxelPosition cell)
@@ -681,8 +682,8 @@ TEST(VoxelPickTest, OcclusionMask_LeavesOutWhatFallsOffTheSquare)
 
     const auto mask = occlusionMask(
         voxelsOf({
-            VoxelCell{.x = 90, .y = 0, .z = 0},
-            VoxelCell{.x = 0, .y = 90, .z = 0}}),
+            VoxelCell{.position = {.x = 90, .y = 0, .z = 0}},
+            VoxelCell{.position = {.x = 0, .y = 90, .z = 0}}}),
         VoxelPosition{});
 
     for (const auto pixel : mask.pixels)

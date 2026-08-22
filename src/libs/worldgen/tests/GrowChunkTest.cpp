@@ -108,8 +108,10 @@ TEST(GrowChunkTest, Grow_DrawsItsWaysAndItsFillFromSeparateStreams)
 TEST(GrowChunkTest, Grow_StandsEveryCubeAHintAsked)
 {
     const auto hintVoxels = voxelsOf({
-        VoxelCell{.x = 2, .y = 5, .z = 2, .kind = Kind::Normal},
-        VoxelCell{.x = 3, .y = 5, .z = 2, .kind = Kind::Normal}});
+        VoxelCell{.position = {.x = 2, .y = 5, .z = 2},
+            .material = {.kind = Kind::Normal}},
+        VoxelCell{.position = {.x = 3, .y = 5, .z = 2},
+            .material = {.kind = Kind::Normal}}});
 
     const auto result = growChunk(
         city(),
@@ -130,12 +132,8 @@ TEST(GrowChunkTest, Grow_StandsEveryCubeAHintAsked)
 TEST(GrowChunkTest, Grow_StandsAStairTheWayTheArtistPaintedIt)
 {
     const auto hintVoxels = voxelsOf({
-        VoxelCell{
-            .x = 2,
-            .y = 5,
-            .z = 2,
-            .kind = Kind::Ramp,
-            .facing = Facing::East}});
+        VoxelCell{.position = {.x = 2, .y = 5, .z = 2},
+            .material = {.kind = Kind::Ramp, .facing = Facing::East}}});
 
     const auto result = growChunk(
         city(),
@@ -157,7 +155,8 @@ TEST(GrowChunkTest, Grow_NamesAHintOutsideTheChunk)
         city(),
         ChunkRequest{
             .shape = kSmallShape,
-            .hintVoxels = voxelsOf({VoxelCell{.x = 99, .y = 1, .z = 1}})});
+            .hintVoxels = voxelsOf({VoxelCell{.position = {.x = 99, .y = 1,
+                .z = 1}}})});
 
     EXPECT_EQ(result.outcome, ChunkOutcome::HintOutside);
     ASSERT_EQ(result.culpritPositions.size(), 1U);
@@ -184,8 +183,8 @@ TEST(GrowChunkTest, Grow_NamesAHintNoPieceIsLaidOutAs)
         ChunkRequest{
             .shape = kSmallShape,
             .hintVoxels = voxelsOf({
-                VoxelCell{
-                    .x = 2, .y = 5, .z = 2, .kind = Kind::Water}})});
+                VoxelCell{.position = {.x = 2, .y = 5, .z = 2},
+                    .material = {.kind = Kind::Water}}})});
 
     EXPECT_EQ(result.outcome, ChunkOutcome::HintUnknown);
 }
@@ -197,7 +196,8 @@ TEST(GrowChunkTest, Grow_NamesAHintTheDistrictItStandsInRefuses)
         ChunkRequest{
             .shape = kSmallShape,
             .hintVoxels = voxelsOf({
-                VoxelCell{.x = 2, .y = 13, .z = 2, .kind = Kind::Water}})});
+                VoxelCell{.position = {.x = 2, .y = 13, .z = 2},
+                    .material = {.kind = Kind::Water}}})});
 
     EXPECT_EQ(result.outcome, ChunkOutcome::HintsConflict);
     ASSERT_EQ(result.culpritPositions.size(), 1U);
@@ -210,13 +210,10 @@ TEST(GrowChunkTest, Grow_NamesBothCubesWhereTwoHintsStandAgainstOneAnother)
         ChunkRequest{
             .shape = kSmallShape,
             .hintVoxels = voxelsOf(
-                {VoxelCell{
-                     .x = 2,
-                     .y = 1,
-                     .z = 2,
-                     .kind = Kind::Ramp,
-                     .facing = Facing::East},
-                 VoxelCell{.x = 3, .y = 1, .z = 2, .kind = Kind::Water}}),
+                {VoxelCell{.position = {.x = 2, .y = 1, .z = 2},
+                    .material = {.kind = Kind::Ramp, .facing = Facing::East}},
+                 VoxelCell{.position = {.x = 3, .y = 1, .z = 2},
+                     .material = {.kind = Kind::Water}}}),
             .ways = 0});
 
     EXPECT_EQ(result.outcome, ChunkOutcome::HintsConflict);
@@ -345,13 +342,10 @@ TEST(GrowChunkTest, Grow_NamesHintsThatFallOutOnlyOnceTheyHaveSpread)
         ChunkRequest{
             .shape = shape,
             .hintVoxels = voxelsOf(
-                {VoxelCell{
-                     .x = 1,
-                     .y = 1,
-                     .z = 1,
-                     .kind = Kind::Ramp,
-                     .facing = Facing::East},
-                 VoxelCell{.x = 2, .y = 2, .z = 1, .kind = Kind::Water}}),
+                {VoxelCell{.position = {.x = 1, .y = 1, .z = 1},
+                    .material = {.kind = Kind::Ramp, .facing = Facing::East}},
+                 VoxelCell{.position = {.x = 2, .y = 2, .z = 1},
+                     .material = {.kind = Kind::Water}}}),
             .ways = 0});
 
     EXPECT_EQ(result.outcome, ChunkOutcome::HintsConflict);

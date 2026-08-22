@@ -50,11 +50,8 @@ namespace
         {
             for (auto z = -reach; z <= reach; ++z)
             {
-                voxels.merge(voxelsOf({VoxelCell{
-                        .x = x,
-                        .y = 0,
-                        .z = z,
-                        .kind = Kind::Normal}}));
+                voxels.merge(voxelsOf({VoxelCell{.position = {.x = x, .y = 0,
+                    .z = z}, .material = {.kind = Kind::Normal}}}));
             }
         }
 

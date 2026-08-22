@@ -1,6 +1,7 @@
 find_package(GTest REQUIRED)
 
 add_executable(antwika_voxel_tests
+    VoxelCellTest.cpp
     VoxelCubeTest.cpp
     VoxelMaterialTest.cpp
     VoxelOcclusionTest.cpp

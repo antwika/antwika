@@ -43,10 +43,10 @@ namespace antwika::voxelmap
             const voxel::VoxelPosition wayPosition)
         {
             const auto besidePosition =
-                offsetBy(face.cell.position(), wayPosition);
+                offsetBy(face.cell.position, wayPosition);
             const auto besideKind = kindAt(voxels, besidePosition);
 
-            if (besideKind != face.cell.kind)
+            if (besideKind != face.cell.material.kind)
             {
                 return false;
             }
@@ -58,7 +58,7 @@ namespace antwika::voxelmap
                     kVoxelFaces[face.side].neighbourOffsetPosition));
 
             return !neighbourKind.has_value()
-                   || !voxel::occludes(*neighbourKind, face.cell.kind);
+                   || !voxel::occludes(*neighbourKind, face.cell.material.kind);
         }
 
         [[nodiscard]] bool mirroredWithin(
@@ -190,7 +190,8 @@ namespace antwika::voxelmap
         for (std::size_t index = 0; index < faces.size(); ++index)
         {
             const auto faceRef = faces[index];
-            const auto watery = faceRef.cell.kind == voxel::Kind::Water;
+            const auto watery =
+                faceRef.cell.material.kind == voxel::Kind::Water;
 
             if (watery != (pass == Pass::Water))
             {
@@ -198,7 +199,7 @@ namespace antwika::voxelmap
             }
 
             const auto &face = kVoxelFaces[faceRef.side];
-            const auto middlePoint = cellMiddle(faceRef.cell.position());
+            const auto middlePoint = cellMiddle(faceRef.cell.position);
             const auto wovenTile = wovenTiles[index];
             const auto tile = tilemap::tileCoords(
                 wovenTile.index, tilemap::tileSizeOf(wovenTile.atlas));
@@ -210,7 +211,7 @@ namespace antwika::voxelmap
                                         .alpha = kWaterAlpha}
                                                : kNoTintColor;
             const auto flight =
-                isRampStep(voxels, faceRef.cell.position())
+                isRampStep(voxels, faceRef.cell.position)
                     ? voxel::stairQuads(faceRef.climbPosition)
                     : std::vector<voxel::StairQuad>{};
 

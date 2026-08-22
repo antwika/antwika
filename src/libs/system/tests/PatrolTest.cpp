@@ -46,7 +46,8 @@ namespace
         {
             for (auto z = -reach; z <= reach; ++z)
             {
-                voxels.merge(voxelsOf({VoxelCell{.x = x, .y = 0, .z = z}}));
+                voxels.merge(voxelsOf({VoxelCell{.position = {.x = x, .y = 0,
+                    .z = z}}}));
             }
         }
 
@@ -216,7 +217,8 @@ TEST(PatrolTest, Update_LeavesACharacterStoodWhereNoWalkReachesItsStop)
     PatrolHarness harness;
 
     harness.solidVoxels = floorOver(1);
-    harness.solidVoxels.merge(voxelsOf({VoxelCell{.x = 8, .y = 0, .z = 8}}));
+    harness.solidVoxels.merge(voxelsOf({VoxelCell{.position = {.x = 8, .y = 0,
+        .z = 8}}}));
     harness.stopPositions = {{groundAt(8, 8)}};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);

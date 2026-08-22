@@ -111,7 +111,8 @@ TEST(VoxelWeaveTest, FaceAdjacency_JoinsTheSidesOfALoneVoxelAtItsEdges)
 
 TEST(VoxelWeaveTest, FaceAdjacency_JoinsTheTopsOfTwoVoxelsSideBySide)
 {
-    const auto pairCells = voxelsOf({VoxelCell{}, VoxelCell{.x = 1}});
+    const auto pairCells = voxelsOf({VoxelCell{},
+        VoxelCell{.position = {.x = 1}}});
     const auto faces = visibleFacesOf(pairCells);
     auto joinedCount = 0;
 
@@ -187,7 +188,8 @@ TEST(VoxelWeaveTest, FaceAdjacency_JoinsATopFaceToTheSideBesideIt)
 
 TEST(VoxelWeaveTest, FaceAdjacency_CallsAFlatSeamInsideOneCubeInterior)
 {
-    const auto pairCells = voxelsOf({VoxelCell{}, VoxelCell{.x = 1}});
+    const auto pairCells = voxelsOf({VoxelCell{},
+        VoxelCell{.position = {.x = 1}}});
     const auto faces = visibleFacesOf(pairCells);
 
     for (const auto &seam : faceAdjacency(faces))
@@ -202,7 +204,7 @@ TEST(VoxelWeaveTest, FaceAdjacency_CallsAFlatSeamInsideOneCubeInterior)
 TEST(VoxelWeaveTest, FaceAdjacency_CallsAFlatSeamBetweenTwoCubesBoundary)
 {
     const auto pairCells = voxelsOf({
-        VoxelCell{.x = 1}, VoxelCell{.x = 2}});
+        VoxelCell{.position = {.x = 1}}, VoxelCell{.position = {.x = 2}}});
     const auto faces = visibleFacesOf(pairCells);
 
     for (const auto &seam : faceAdjacency(faces))
@@ -566,9 +568,9 @@ TEST(VoxelWeaveTest, SameLevelSeams_KeepsOnlySeamsWhollyAtThatLevel)
 
     for (const auto &seam : levelSeams)
     {
-        EXPECT_EQ(antwika::voxelmap::levelOf(faces[seam.faceA].cell.position()),
+        EXPECT_EQ(antwika::voxelmap::levelOf(faces[seam.faceA].cell.position),
             1);
-        EXPECT_EQ(antwika::voxelmap::levelOf(faces[seam.faceB].cell.position()),
+        EXPECT_EQ(antwika::voxelmap::levelOf(faces[seam.faceB].cell.position),
             1);
     }
 }
@@ -611,9 +613,9 @@ TEST(VoxelWeaveTest, CrossLevelSeams_KeepsOnlySeamsLeavingThatLevel)
     for (const auto &seam : crossSeams)
     {
         const auto hereLevel =
-        antwika::voxelmap::levelOf(faces[seam.faceA].cell.position());
+        antwika::voxelmap::levelOf(faces[seam.faceA].cell.position);
         const auto thereLevel =
-            antwika::voxelmap::levelOf(faces[seam.faceB].cell.position());
+            antwika::voxelmap::levelOf(faces[seam.faceB].cell.position);
 
         EXPECT_NE(hereLevel, thereLevel);
         EXPECT_TRUE(hereLevel == 1 || thereLevel == 1);
@@ -647,10 +649,10 @@ TEST(VoxelWeaveTest, CrossLevelSeams_LeavesNoSeamOfALevelUnaccountedFor)
         seams.end(),
         [&](const antwika::solver::FaceSeam &seam)
         {
-            return antwika::voxelmap::levelOf(faces[seam.faceA].cell.position(
-                )) == 1
+            return antwika::voxelmap::levelOf(
+                faces[seam.faceA].cell.position) == 1
                    || antwika::voxelmap::levelOf(
-                       faces[seam.faceB].cell.position())
+                       faces[seam.faceB].cell.position)
                           == 1;
         });
 
@@ -790,7 +792,8 @@ TEST(VoxelWeaveTest, SolveTiles_TakesATileByWhatStandsBeyondItsCorner)
             }
 
             for (const auto &[position, material] :
-                 expandCubesToVoxels(voxelsOf({VoxelCell{.x = x, .z = z}})))
+                 expandCubesToVoxels(voxelsOf({VoxelCell{.position = {.x = x,
+                     .z = z}}})))
             {
                 ringVoxels[position] = material;
             }
@@ -840,11 +843,11 @@ TEST(VoxelWeaveTest, SolveTiles_TakesATileByWhatStandsBeyondItsCorner)
 
         ++flatTile;
 
-        const auto cell = faces[index].cell.position();
+        const auto cell = faces[index].cell.position;
         const auto standingBeyond = standingRefs.contains(
             antwika::voxelmap::FaceRef{
-                .cell = VoxelCell{
-                    .x = cell.x - 1, .y = cell.y, .z = cell.z - 1},
+                .cell = VoxelCell{.position = {.x = cell.x - 1, .y = cell.y,
+                    .z = cell.z - 1}},
                 .side = faces[index].side});
 
         EXPECT_EQ(
@@ -859,8 +862,10 @@ TEST(VoxelWeaveTest, SolveTiles_DrawsAFaceFromTheTilesGivenToItsKind)
     using antwika::voxel::Kind;
 
     const auto voxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Normal},
-        VoxelCell{.x = 4, .y = 0, .z = 0, .kind = Kind::Water}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Normal}},
+        VoxelCell{.position = {.x = 4, .y = 0, .z = 0},
+            .material = {.kind = Kind::Water}}});
     const Tile stoneTile{.atlas = Atlas::Floor, .index = 0};
     const Tile poolTile{.atlas = Atlas::Floor, .index = 1};
     const Tile wallTile{.atlas = Atlas::Wall, .index = 0};
@@ -881,7 +886,7 @@ TEST(VoxelWeaveTest, SolveTiles_DrawsAFaceFromTheTilesGivenToItsKind)
     {
         const auto tileKind = rules.kindOf((*solution.tiles)[index]);
 
-        EXPECT_EQ(tileKind, faces[index].cell.kind);
+        EXPECT_EQ(tileKind, faces[index].cell.material.kind);
     }
 }
 
@@ -890,8 +895,10 @@ TEST(VoxelWeaveTest, SolveTiles_LeavesAFaceAloneWithNoTileGivenToItsKind)
     using antwika::voxel::Kind;
 
     const auto voxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Normal},
-        VoxelCell{.x = 4, .y = 0, .z = 0, .kind = Kind::Water}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Normal}},
+        VoxelCell{.position = {.x = 4, .y = 0, .z = 0},
+            .material = {.kind = Kind::Water}}});
     const auto faces = visibleFacesOf(voxels);
     const auto solution =
         solveTiles(faces, allowingAFew(), CornerSeams::Ignored);
@@ -905,14 +912,17 @@ TEST(VoxelWeaveTest, FaceAdjacency_BreaksWhereOneKindMeetsAnother)
     using antwika::voxel::Kind;
 
     const auto voxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Normal},
-        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Water}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Normal}},
+        VoxelCell{.position = {.x = 1, .y = 0, .z = 0},
+            .material = {.kind = Kind::Water}}});
     const auto faces = visibleFacesOf(voxels);
 
     for (const auto &seam : faceAdjacency(faces, CornerSeams::Ignored))
     {
         EXPECT_EQ(
-            faces[seam.faceA].cell.kind, faces[seam.faceB].cell.kind);
+            faces[seam.faceA].cell.material.kind,
+            faces[seam.faceB].cell.material.kind);
     }
 }
 
@@ -921,8 +931,10 @@ TEST(VoxelWeaveTest, FaceAdjacency_HoldsASurfaceOfOneKindTogether)
     using antwika::voxel::Kind;
 
     const auto voxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Water},
-        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Water}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Water}},
+        VoxelCell{.position = {.x = 1, .y = 0, .z = 0},
+            .material = {.kind = Kind::Water}}});
     const auto faces = visibleFacesOf(voxels);
     const auto seams = faceAdjacency(faces, CornerSeams::Ignored);
 
@@ -959,8 +971,10 @@ TEST(VoxelWeaveTest, SolveTiles_EndsASurfaceWhereAnotherKindBegins)
     rules.setKind(brinkTile, Kind::Water);
 
     const auto voxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Normal},
-        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Water}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Normal}},
+        VoxelCell{.position = {.x = 1, .y = 0, .z = 0},
+            .material = {.kind = Kind::Water}}});
     const auto faces = visibleFacesOf(voxels);
     const auto solution =
         solveTiles(faces, rules, CornerSeams::Ignored);
@@ -972,7 +986,7 @@ TEST(VoxelWeaveTest, SolveTiles_EndsASurfaceWhereAnotherKindBegins)
     {
         EXPECT_EQ(
             rules.kindOf((*solution.tiles)[index]),
-            faces[index].cell.kind);
+            faces[index].cell.material.kind);
     }
 }
 
@@ -1114,8 +1128,10 @@ TEST(VoxelWeaveTest, SolveTiles_TakesNoTileDrawnForAnotherFlight)
     rules.setLevel(westlyFootTile, StairHalf::Lower);
 
     const auto voxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Ramp},
-        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Normal}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Ramp}},
+        VoxelCell{.position = {.x = 1, .y = 0, .z = 0},
+            .material = {.kind = Kind::Normal}}});
     const auto faces = visibleFacesOf(voxels);
     const auto solution =
         solveTiles(faces, rules, CornerSeams::Ignored);
@@ -1124,7 +1140,7 @@ TEST(VoxelWeaveTest, SolveTiles_TakesNoTileDrawnForAnotherFlight)
 
     for (std::size_t index = 0; index < faces.size(); ++index)
     {
-        if (faces[index].cell.kind != Kind::Ramp
+        if (faces[index].cell.material.kind != Kind::Ramp
             || (*solution.tiles)[index].atlas != Atlas::Wall)
         {
             continue;
@@ -1154,8 +1170,10 @@ TEST(VoxelWeaveTest, SolveTiles_DrawsAFlightFromTheTilesDrawnForItsWay)
     rules.setFacing(westlyTile, Facing::West);
 
     const auto voxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Ramp},
-        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Normal}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Ramp}},
+        VoxelCell{.position = {.x = 1, .y = 0, .z = 0},
+            .material = {.kind = Kind::Normal}}});
     const auto faces = visibleFacesOf(voxels);
     const auto solution =
         solveTiles(faces, rules, CornerSeams::Ignored);
@@ -1164,7 +1182,7 @@ TEST(VoxelWeaveTest, SolveTiles_DrawsAFlightFromTheTilesDrawnForItsWay)
 
     for (std::size_t index = 0; index < faces.size(); ++index)
     {
-        if (faces[index].cell.kind != Kind::Ramp
+        if (faces[index].cell.material.kind != Kind::Ramp
             || (*solution.tiles)[index].atlas != Atlas::Wall)
         {
             continue;
@@ -1192,8 +1210,10 @@ TEST(VoxelWeaveTest, SolveTiles_LeavesAFlightAloneWithNoTileDrawnForItsWay)
     rules.setFacing(westlyTile, Facing::West);
 
     const auto voxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Ramp},
-        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Normal}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Ramp}},
+        VoxelCell{.position = {.x = 1, .y = 0, .z = 0},
+            .material = {.kind = Kind::Normal}}});
     const auto solution =
         solveTiles(visibleFacesOf(voxels), rules, CornerSeams::Ignored);
 
@@ -1220,8 +1240,10 @@ TEST(VoxelWeaveTest, SolveTiles_KeepsAFlightOffTheTilesOfAnotherWayAbout)
     rules.setFacing(eastlyTile, Facing::East);
 
     const auto voxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Ramp},
-        VoxelCell{.x = 0, .y = 0, .z = -1, .kind = Kind::Normal}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Ramp}},
+        VoxelCell{.position = {.x = 0, .y = 0, .z = -1},
+            .material = {.kind = Kind::Normal}}});
     const auto faces = visibleFacesOf(voxels);
     const auto solution =
         solveTiles(faces, rules, CornerSeams::Ignored);
@@ -1230,7 +1252,7 @@ TEST(VoxelWeaveTest, SolveTiles_KeepsAFlightOffTheTilesOfAnotherWayAbout)
 
     for (std::size_t index = 0; index < faces.size(); ++index)
     {
-        if (faces[index].cell.kind != Kind::Ramp
+        if (faces[index].cell.material.kind != Kind::Ramp
             || (*solution.tiles)[index].atlas != Atlas::Wall)
         {
             continue;
@@ -1247,18 +1269,10 @@ TEST(VoxelWeaveTest, FaceAdjacency_BreaksWhereOneFlightMeetsAnother)
     using antwika::voxel::Kind;
 
     const auto voxels = voxelsOf({
-        VoxelCell{
-            .x = 0,
-            .y = 0,
-            .z = 0,
-            .kind = Kind::Ramp,
-            .facing = Facing::East},
-        VoxelCell{
-            .x = 1,
-            .y = 0,
-            .z = 0,
-            .kind = Kind::Ramp,
-            .facing = Facing::North}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Ramp, .facing = Facing::East}},
+        VoxelCell{.position = {.x = 1, .y = 0, .z = 0},
+            .material = {.kind = Kind::Ramp, .facing = Facing::North}}});
     const auto faces = visibleFacesOf(voxels);
 
     for (const auto &seam : faceAdjacency(faces, CornerSeams::Ignored))
@@ -1275,18 +1289,10 @@ TEST(VoxelWeaveTest, FaceAdjacency_HoldsOneFlightTogether)
     using antwika::voxel::Kind;
 
     const auto voxels = voxelsOf({
-        VoxelCell{
-            .x = 0,
-            .y = 0,
-            .z = 0,
-            .kind = Kind::Ramp,
-            .facing = Facing::East},
-        VoxelCell{
-            .x = 0,
-            .y = 0,
-            .z = 1,
-            .kind = Kind::Ramp,
-            .facing = Facing::East}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Ramp, .facing = Facing::East}},
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 1},
+            .material = {.kind = Kind::Ramp, .facing = Facing::East}}});
 
     EXPECT_GT(
         faceAdjacency(visibleFacesOf(voxels), CornerSeams::Ignored)
@@ -1314,18 +1320,10 @@ TEST(VoxelWeaveTest, SolveTiles_LaysTwoFlightsThatMeetWithNoRuleBetween)
     rules.setFacing(northlyTile, Facing::North);
 
     const auto voxels = voxelsOf({
-        VoxelCell{
-            .x = 0,
-            .y = 0,
-            .z = 0,
-            .kind = Kind::Ramp,
-            .facing = Facing::East},
-        VoxelCell{
-            .x = 1,
-            .y = 0,
-            .z = 0,
-            .kind = Kind::Ramp,
-            .facing = Facing::North}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Ramp, .facing = Facing::East}},
+        VoxelCell{.position = {.x = 1, .y = 0, .z = 0},
+            .material = {.kind = Kind::Ramp, .facing = Facing::North}}});
 
     EXPECT_TRUE(
         solveTiles(visibleFacesOf(voxels), rules, CornerSeams::Ignored)
@@ -1353,8 +1351,7 @@ TEST(VoxelWeaveTest, SolveTiles_DressesTheSideOfAFlightApartFromItsFronts)
     rules.setPart(flankTile, StairPart::Side);
 
     const auto voxels = voxelsOf({
-        VoxelCell{
-            .kind = Kind::Ramp, .facing = Facing::East}});
+        VoxelCell{.material = {.kind = Kind::Ramp, .facing = Facing::East}}});
     const auto faces = visibleFacesOf(voxels);
     const auto solvedTiles =
         solveTiles(faces, rules, CornerSeams::Ignored);
@@ -1399,8 +1396,7 @@ TEST(VoxelWeaveTest, SolveTiles_OffersASideTileWithNoRuleAgainstItsEdges)
     rules.setPart(flankTile, StairPart::Side);
 
     const auto voxels = voxelsOf({
-        VoxelCell{
-            .kind = Kind::Ramp, .facing = Facing::East}});
+        VoxelCell{.material = {.kind = Kind::Ramp, .facing = Facing::East}}});
     const auto faces = visibleFacesOf(voxels);
     const auto solvedTiles =
         solveTiles(faces, rules, CornerSeams::Ignored);
@@ -1442,8 +1438,7 @@ TEST(VoxelWeaveTest, SolveTiles_LetsOneTileServeAWholeFlightUnasked)
     }
 
     const auto voxels = voxelsOf({
-        VoxelCell{
-            .kind = Kind::Ramp, .facing = Facing::East}});
+        VoxelCell{.material = {.kind = Kind::Ramp, .facing = Facing::East}}});
     const auto faces = visibleFacesOf(voxels);
     const auto solvedTiles =
         solveTiles(faces, rules, CornerSeams::Ignored);
@@ -1556,13 +1551,10 @@ TEST(VoxelWeaveTest, SolveTiles_StopsAWallWhereAFlightStepsAcrossIt)
     }
 
     const auto voxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Normal},
-        VoxelCell{
-            .x = 1,
-            .y = 0,
-            .z = 0,
-            .kind = Kind::Ramp,
-            .facing = Facing::East}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Normal}},
+        VoxelCell{.position = {.x = 1, .y = 0, .z = 0},
+            .material = {.kind = Kind::Ramp, .facing = Facing::East}}});
     const auto faces = visibleFacesOf(voxels);
     const auto solution =
         solveTiles(faces, rules, CornerSeams::Ignored);
@@ -1573,7 +1565,7 @@ TEST(VoxelWeaveTest, SolveTiles_StopsAWallWhereAFlightStepsAcrossIt)
 
     for (std::size_t index = 0; index < faces.size(); ++index)
     {
-        if (faces[index].cell.kind != Kind::Normal
+        if (faces[index].cell.material.kind != Kind::Normal
             || (*solution.tiles)[index].atlas != Atlas::Wall)
         {
             continue;
@@ -1606,8 +1598,10 @@ TEST(VoxelWeaveTest, SolveTiles_LeavesAFlightsOwnShapeToTheSetItWasDrawnFor)
     }
 
     const auto voxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Ramp},
-        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Normal}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Ramp}},
+        VoxelCell{.position = {.x = 1, .y = 0, .z = 0},
+            .material = {.kind = Kind::Normal}}});
     const auto faces = visibleFacesOf(voxels);
     const auto solution =
         solveTiles(faces, rules, CornerSeams::Ignored);
@@ -1618,7 +1612,7 @@ TEST(VoxelWeaveTest, SolveTiles_LeavesAFlightsOwnShapeToTheSetItWasDrawnFor)
 
     for (std::size_t index = 0; index < faces.size(); ++index)
     {
-        if (faces[index].cell.kind != Kind::Ramp
+        if (faces[index].cell.material.kind != Kind::Ramp
             || (*solution.tiles)[index].atlas != Atlas::Wall)
         {
             continue;
@@ -1673,8 +1667,8 @@ TEST(VoxelWeaveTest, SolveTiles_SaysWhichSeamTheTilesLeftCannotMeetAlong)
     }
 
     const auto voxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0},
-        VoxelCell{.x = 1, .y = 0, .z = 0}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0}},
+        VoxelCell{.position = {.x = 1, .y = 0, .z = 0}}});
     const auto faces = visibleFacesOf(voxels);
     const auto solution =
         solveTiles(faces, rules, CornerSeams::Ignored);
@@ -1708,10 +1702,14 @@ TEST(VoxelWeaveTest, SolveTiles_TurnsACornerWhereTheOnlyWayRoundIsPastRamps)
     }
 
     const auto voxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Normal},
-        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Ramp},
-        VoxelCell{.x = 0, .y = 0, .z = 1, .kind = Kind::Ramp},
-        VoxelCell{.x = 1, .y = 0, .z = 1, .kind = Kind::Normal}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Normal}},
+        VoxelCell{.position = {.x = 1, .y = 0, .z = 0},
+            .material = {.kind = Kind::Ramp}},
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 1},
+            .material = {.kind = Kind::Ramp}},
+        VoxelCell{.position = {.x = 1, .y = 0, .z = 1},
+            .material = {.kind = Kind::Normal}}});
     const auto solution =
         solveTiles(visibleFacesOf(voxels), rules, CornerSeams::Ignored);
 
@@ -1734,10 +1732,14 @@ TEST(VoxelWeaveTest, SolveTiles_RunsOnRoundACornerTheGroundItselfReaches)
     }
 
     const auto voxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Normal},
-        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Normal},
-        VoxelCell{.x = 0, .y = 0, .z = 1, .kind = Kind::Normal},
-        VoxelCell{.x = 1, .y = 0, .z = 1, .kind = Kind::Normal}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Normal}},
+        VoxelCell{.position = {.x = 1, .y = 0, .z = 0},
+            .material = {.kind = Kind::Normal}},
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 1},
+            .material = {.kind = Kind::Normal}},
+        VoxelCell{.position = {.x = 1, .y = 0, .z = 1},
+            .material = {.kind = Kind::Normal}}});
     const auto solution =
         solveTiles(visibleFacesOf(voxels), rules, CornerSeams::Ignored);
 
@@ -1760,8 +1762,10 @@ TEST(VoxelWeaveTest, SolveTiles_StopsAFloorAtTheHeadOfAStair)
     }
 
     const auto voxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Normal},
-        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Ramp}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Normal}},
+        VoxelCell{.position = {.x = 1, .y = 0, .z = 0},
+            .material = {.kind = Kind::Ramp}}});
     const auto faces = visibleFacesOf(voxels);
     const auto solution =
         solveTiles(faces, rules, CornerSeams::Ignored);
@@ -1770,7 +1774,7 @@ TEST(VoxelWeaveTest, SolveTiles_StopsAFloorAtTheHeadOfAStair)
 
     for (std::size_t index = 0; index < faces.size(); ++index)
     {
-        if (faces[index].cell.kind == Kind::Normal
+        if (faces[index].cell.material.kind == Kind::Normal
             && (*solution.tiles)[index].atlas == Atlas::Floor)
         {
             EXPECT_EQ((*solution.tiles)[index], borderedTile);

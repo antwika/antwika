@@ -2,7 +2,7 @@
 
 #include <antwika/voxel/VoxelMaterial.hpp>
 
-TEST(VoxelCellTest, Occludes_LetsWaterShowWhatStandsInIt)
+TEST(VoxelMaterialTest, Occludes_LetsWaterShowWhatStandsInIt)
 {
     using antwika::voxel::occludes;
     using antwika::voxel::Kind;
