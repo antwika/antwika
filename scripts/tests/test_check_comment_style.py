@@ -383,14 +383,39 @@ def stray(root: Path) -> list[str]:
     ]
 
 
-def it_allows_the_readme_and_the_docs_directory() -> None:
+def it_allows_the_readme() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         write(root / "README.md", "# antwika\n")
-        write(root / "docs/STYLE_GUIDE.md", "# Style\n")
-        write(root / "docs/nested/Other.md", "# Other\n")
 
         assert stray(root) == []
+
+
+def it_counts_a_docs_page_as_stray_markdown() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        write(root / "docs/STYLE_GUIDE.md", "# Style\n")
+
+        assert stray(root) == ["docs/STYLE_GUIDE.md"]
+
+
+def it_fails_on_a_docs_directory() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        write(root / "docs/STYLE_GUIDE.md", "# Style\n")
+
+        assert [
+            p.relative_to(root).as_posix()
+            for p in m.find_docs_directory(root)
+        ] == ["docs"]
+
+
+def it_passes_a_tree_with_no_docs_directory() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        write(root / "README.md", "# antwika\n")
+
+        assert m.find_docs_directory(root) == []
 
 
 def it_allows_the_generated_changelog() -> None:
@@ -449,6 +474,7 @@ def it_does_not_treat_a_docs_lookalike_as_the_docs_directory() -> None:
         write(root / "docsite/Guide.md", "# Guide\n")
 
         assert stray(root) == ["docsite/Guide.md"]
+        assert m.find_docs_directory(root) == []
 
 
 def it_fails_on_a_stray_markdown_file() -> None:
@@ -2252,7 +2278,10 @@ def main() -> None:
         it_accepts_a_method_does_x_name,
         it_fails_on_a_test_name_that_is_not_method_does_x,
         it_has_no_rule_left_under_migration,
-        it_allows_the_readme_and_the_docs_directory,
+        it_allows_the_readme,
+        it_counts_a_docs_page_as_stray_markdown,
+        it_fails_on_a_docs_directory,
+        it_passes_a_tree_with_no_docs_directory,
         it_allows_the_generated_changelog,
         it_flags_a_changelog_that_is_not_the_root_one,
         it_flags_a_markdown_file_beside_an_asset,

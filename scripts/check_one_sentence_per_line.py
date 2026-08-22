@@ -10,7 +10,6 @@ DEFAULT_ROOT = Path(__file__).resolve().parent.parent
 
 MARKDOWN_GLOBS = (
     "README.md",
-    "docs/**/*.md",
 )
 
 CPP_GLOBS = (

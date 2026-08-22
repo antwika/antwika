@@ -40,11 +40,12 @@ MARKDOWN_GLOB = "**/*.md"
 
 PERMITTED_MARKDOWN = ("README.md", "CHANGELOG.md")
 
-MARKDOWN_DIR = "docs"
+FORBIDDEN_DIR = "docs"
 
 EXCLUDED_DIRS = (".claude", ".git")
 
-STRAY_MARKDOWN = "markdown outside README.md, CHANGELOG.md and docs/"
+STRAY_MARKDOWN = "markdown outside README.md and CHANGELOG.md"
+FORBIDDEN_DOCS = "a docs directory, which this project does not keep"
 
 PERMITTED_MARKERS = (
     "GCOVR_EXCL_LINE",
@@ -1097,12 +1098,15 @@ def find_stray_markdown(root: Path) -> list[Path]:
         if relative.as_posix() in PERMITTED_MARKDOWN:
             continue
 
-        if relative.parts[0] == MARKDOWN_DIR:
-            continue
-
         stray.append(path)
 
     return stray
+
+
+def find_docs_directory(root: Path) -> list[Path]:
+    found = root / FORBIDDEN_DIR
+
+    return [found] if found.is_dir() else []
 
 
 def find_violations(root: Path) -> list[Violation]:
@@ -1218,6 +1222,9 @@ def find_violations(root: Path) -> list[Violation]:
     for path in find_stray_markdown(root):
         violations.append(Violation(path, 1, STRAY_MARKDOWN))
 
+    for path in find_docs_directory(root):
+        violations.append(Violation(path, 1, FORBIDDEN_DOCS))
+
     globs = CMAKE_GLOBS + YAML_GLOBS + SHELL_GLOBS + DOCKER_GLOBS
 
     for pattern in globs:
@@ -1288,7 +1295,7 @@ def main() -> int:
         for violation in failing:
             print(f"{violation.path}:{violation.line}: {violation.rule}")
         print()
-        print("See docs/STYLE_GUIDE.md.")
+        print("See the comment rules this script encodes.")
 
         if args.warn_only:
             print("Warning only: a migration is in progress.")
@@ -1296,7 +1303,7 @@ def main() -> int:
 
         return 1
 
-    print("OK: every comment follows docs/STYLE_GUIDE.md.")
+    print("OK: every comment follows the style this script encodes.")
     return 0
 
 
