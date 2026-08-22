@@ -1,3 +1,7 @@
+#include <algorithm>
+#include <array>
+#include <optional>
+
 #include <antwika/editor/ui/EditorLook.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/Key.hpp>
@@ -230,39 +234,49 @@ namespace antwika::editor
 
     namespace
     {
-        [[nodiscard]] std::optional<antwika::ui::Key> movingKey(
+        struct MovingRow final
+        {
+            input::Key pressedKey;
+            ui::Key plainKey;
+            ui::Key shiftedKey;
+        };
+
+        constexpr std::array kMovingRows{
+            MovingRow{
+                input::Key::Backspace, ui::Key::Backspace,
+                ui::Key::Backspace},
+            MovingRow{
+                input::Key::Delete, ui::Key::Delete, ui::Key::Delete},
+            MovingRow{
+                input::Key::ArrowLeft, ui::Key::MoveLeft,
+                ui::Key::SelectLeft},
+            MovingRow{
+                input::Key::ArrowRight, ui::Key::MoveRight,
+                ui::Key::SelectRight},
+            MovingRow{
+                input::Key::ArrowUp, ui::Key::MoveUp, ui::Key::SelectUp},
+            MovingRow{
+                input::Key::ArrowDown, ui::Key::MoveDown,
+                ui::Key::SelectDown},
+            MovingRow{
+                input::Key::Home, ui::Key::MoveLineStart,
+                ui::Key::SelectLineStart},
+            MovingRow{
+                input::Key::End, ui::Key::MoveLineEnd,
+                ui::Key::SelectLineEnd}};
+
+        [[nodiscard]] std::optional<ui::Key> movingKey(
             const input::Key key, const bool shiftHeld)
         {
-            switch (key)
+            const auto foundRow =
+                std::ranges::find(kMovingRows, key, &MovingRow::pressedKey);
+
+            if (foundRow == kMovingRows.end())
             {
-            case input::Key::Backspace:
-                return antwika::ui::Key::Backspace;
-            case input::Key::Delete:
-                return antwika::ui::Key::Delete;
-            case input::Key::ArrowLeft:
-                return shiftHeld ? antwika::ui::Key::SelectLeft
-                                 : antwika::ui::Key::MoveLeft;
-            case input::Key::ArrowRight:
-                return shiftHeld ? antwika::ui::Key::SelectRight
-                                 : antwika::ui::Key::MoveRight;
-            case input::Key::ArrowUp:
-                return shiftHeld ? antwika::ui::Key::SelectUp
-                                 : antwika::ui::Key::MoveUp;
-            case input::Key::ArrowDown:
-                return shiftHeld ? antwika::ui::Key::SelectDown
-                                 : antwika::ui::Key::MoveDown;
-            case input::Key::Home:
-                return shiftHeld
-                           ? antwika::ui::Key::SelectLineStart
-                           : antwika::ui::Key::MoveLineStart;
-            case input::Key::End:
-                return shiftHeld ? antwika::ui::Key::SelectLineEnd
-                                 : antwika::ui::Key::MoveLineEnd;
-            default:
-                break;
+                return std::nullopt;
             }
 
-            return std::nullopt;
+            return shiftHeld ? foundRow->shiftedKey : foundRow->plainKey;
         }
     }
 
