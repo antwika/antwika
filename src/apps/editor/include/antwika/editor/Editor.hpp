@@ -317,6 +317,9 @@ namespace antwika::editor
         [[nodiscard]] gfx::RectF frameRect();
         [[nodiscard]] std::optional<geometry::GridCell> cellUnderPointer();
         void drawColorPicker();
+        using MenuFlag = bool Editor::*;
+
+        [[nodiscard]] static MenuFlag toggledFlag(MenuItem item);
         void onMenuItem(MenuItem item);
         [[nodiscard]] bool isChecked(MenuItem item);
         [[nodiscard]] std::string statusText();
