@@ -18,6 +18,7 @@ antwika_add_library(
         src/PlayerProgress.cpp
     DEPENDS
         antwika::camera
+        antwika::enums
         antwika::character
         antwika::decor
         antwika::schema

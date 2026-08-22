@@ -9,5 +9,6 @@ antwika_add_library(
         src/VoxelOcclusion.cpp
         src/VoxelStairs.cpp
     DEPENDS
+        antwika::enums
         glm::glm
 )

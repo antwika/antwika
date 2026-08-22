@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdint>
 
+#include <antwika/enums/Enumeration.hpp>
 #include <antwika/voxel/VoxelCell.hpp>
 
 namespace antwika::map
@@ -39,6 +40,11 @@ namespace antwika::map
         Circle,
     };
 
+    [[nodiscard]] constexpr Paint lastEnumerator(Paint) noexcept
+    {
+        return Paint::Circle;
+    }
+
     enum class View : std::uint8_t
     {
         World,
@@ -53,12 +59,8 @@ namespace antwika::map
         return View::Plan;
     }
 
-    inline constexpr std::array<View, 5> kEveryView{
-        View::World,
-        View::Atlases,
-        View::Character,
-        View::Icons,
-        View::Plan};
+    inline constexpr std::array<View, enums::kCount<View>> kEveryView =
+        enums::kAll<View>;
 
     struct Settings final
     {

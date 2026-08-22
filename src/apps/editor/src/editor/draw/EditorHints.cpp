@@ -24,137 +24,130 @@ namespace antwika::editor
     namespace
     {
 
+        template <typename Enum>
+        struct HintRow final
+        {
+            Enum value;
+            std::string_view hint;
+        };
+
+        constexpr std::array<HintRow<ToolButton>, enums::kCount<ToolButton>>
+            kToolHints{{
+            {ToolButton::Brush, "brush - lays cubes, right press takes them"},
+            {ToolButton::Picker,
+             "picker - lifts what stands under the pointer"},
+            {ToolButton::FreeLook, "free look - drag turns the view about"},
+            {ToolButton::Lighting, "lighting on and off"},
+            {ToolButton::Lamp, "lamp - sets a light of the chosen ink"},
+            {ToolButton::RuleLines, "rule lines on and off"},
+            {ToolButton::Start, "start cube - the character begins on it"},
+            {ToolButton::Exit, "exit cube - reaching it closes the game"},
+            {ToolButton::Stamp, "stamp - drag copies cubes to set down again"},
+            {ToolButton::Figure, "figure - sets a walker of the world down"},
+            {ToolButton::PressurePlate, "plate - stood on, it sways cubes"},
+            {ToolButton::Key, "key - a cube the player picks a key from"},
+            {ToolButton::Door, "door - a cube a carried key dissolves"},
+            {ToolButton::Checkpoint,
+             "checkpoint - stood on, it sets the respawn"},
+            {ToolButton::Food, "food - a cube a character picks food from"},
+            {ToolButton::Water, "water - a cube a character picks water from"},
+            {ToolButton::Eraser,
+             "rubber - clears cubes, drag sweeps them away"}}};
+
+        static_assert(
+            enums::tagsInOrder(kToolHints, &HintRow<ToolButton>::value));
+
         [[nodiscard]] std::string_view toolHint(const ToolButton whichButton)
         {
-            switch (whichButton)
-            {
-            case ToolButton::Brush:
-                return "brush - lays cubes, right press takes them";
-            case ToolButton::Picker:
-                return "picker - lifts what stands under the pointer";
-            case ToolButton::FreeLook:
-                return "free look - drag turns the view about";
-            case ToolButton::Lighting:
-                return "lighting on and off";
-            case ToolButton::Lamp:
-                return "lamp - sets a light of the chosen ink";
-            case ToolButton::RuleLines:
-                return "rule lines on and off";
-            case ToolButton::Start:
-                return "start cube - the character begins on it";
-            case ToolButton::Exit:
-                return "exit cube - reaching it closes the game";
-            case ToolButton::Stamp:
-                return "stamp - drag copies cubes to set down again";
-            case ToolButton::Figure:
-                return "figure - sets a walker of the world down";
-            case ToolButton::PressurePlate:
-                return "plate - stood on, it sways cubes";
-            case ToolButton::Key:
-                return "key - a cube the player picks a key from";
-            case ToolButton::Door:
-                return "door - a cube a carried key dissolves";
-            case ToolButton::Checkpoint:
-                return "checkpoint - stood on, it sets the respawn";
-            case ToolButton::Food:
-                return "food - a cube a character picks food from";
-            case ToolButton::Water:
-                return "water - a cube a character picks water from";
-            case ToolButton::Eraser:
-                return "rubber - clears cubes, drag sweeps them away";
-            }
-
-            return "";
+            return enums::lookup(kToolHints, whichButton).hint;
         }
 
-        [[nodiscard]] std::string_view paintHint(
-            const antwika::map::Paint whichPaint)
+        constexpr std::array<HintRow<map::Paint>, enums::kCount<map::Paint>>
+            kPaintHints{{
+            {map::Paint::Brush, "brush - draws pixel by pixel"},
+            {map::Paint::Line, "line - drags a straight run"},
+            {map::Paint::Fill, "fill - floods a patch of one colour"},
+            {map::Paint::Select, "mark - drags a rectangle to lift"},
+            {map::Paint::Rect, "rectangle - drags an outline"},
+            {map::Paint::Circle, "circle - drags a ring"}}};
+
+        static_assert(
+            enums::tagsInOrder(kPaintHints, &HintRow<map::Paint>::value));
+
+        [[nodiscard]] std::string_view paintHint(const map::Paint whichPaint)
         {
-            switch (whichPaint)
-            {
-            case antwika::map::Paint::Brush:
-                return "brush - draws pixel by pixel";
-            case antwika::map::Paint::Line:
-                return "line - drags a straight run";
-            case antwika::map::Paint::Fill:
-                return "fill - floods a patch of one colour";
-            case antwika::map::Paint::Select:
-                return "mark - drags a rectangle to lift";
-            case antwika::map::Paint::Rect:
-                return "rectangle - drags an outline";
-            case antwika::map::Paint::Circle:
-                return "circle - drags a ring";
-            }
-
-            return "";
+            return enums::lookup(kPaintHints, whichPaint).hint;
         }
 
-        [[nodiscard]] std::string_view kindHint(
-            const antwika::voxel::Kind whichKind)
+        constexpr std::array<HintRow<voxel::Kind>, enums::kCount<voxel::Kind>>
+            kKindHints{{
+            {voxel::Kind::Normal, "stone - stood on and built with"},
+            {voxel::Kind::Water,
+             "water - waded through, never stood on"},
+            {voxel::Kind::Ramp,
+             "ramp - a flight climbed at half pace"},
+            {voxel::Kind::Ladder,
+             "ladder - climbed straight up and down"}}};
+
+        static_assert(
+            enums::tagsInOrder(kKindHints, &HintRow<voxel::Kind>::value));
+
+        [[nodiscard]] std::string_view kindHint(const voxel::Kind whichKind)
         {
-            switch (whichKind)
-            {
-            case antwika::voxel::Kind::Normal:
-                return "stone - stood on and built with";
-            case antwika::voxel::Kind::Water:
-                return "water - waded through, never stood on";
-            case antwika::voxel::Kind::Ramp:
-                return "ramp - a flight climbed at half pace";
-            case antwika::voxel::Kind::Ladder:
-                return "ladder - climbed straight up and down";
-            }
-
-            return "";
+            return enums::lookup(kKindHints, whichKind).hint;
         }
+
+        constexpr std::array<HintRow<voxel::Facing>,
+            enums::kCount<voxel::Facing>>
+            kFacingHints{{
+            {voxel::Facing::Any,
+             "climbs whichever way the ground asks"},
+            {voxel::Facing::East, "climbs east"},
+            {voxel::Facing::West, "climbs west"},
+            {voxel::Facing::North, "climbs north"},
+            {voxel::Facing::South, "climbs south"}}};
+
+        static_assert(
+            enums::tagsInOrder(kFacingHints, &HintRow<voxel::Facing>::value));
 
         [[nodiscard]] std::string_view facingHint(
-            const antwika::voxel::Facing whichFacing)
+            const voxel::Facing whichFacing)
         {
-            switch (whichFacing)
-            {
-            case antwika::voxel::Facing::West:
-                return "climbs west";
-            case antwika::voxel::Facing::East:
-                return "climbs east";
-            case antwika::voxel::Facing::North:
-                return "climbs north";
-            case antwika::voxel::Facing::South:
-                return "climbs south";
-            case antwika::voxel::Facing::Any:
-                return "climbs whichever way the ground asks";
-            }
-
-            return "";
+            return enums::lookup(kFacingHints, whichFacing).hint;
         }
+
+        constexpr std::array<HintRow<voxel::StairHalf>,
+            enums::kCount<voxel::StairHalf>>
+            kStairHalfHints{{
+            {voxel::StairHalf::Any,
+             "drawn for either step of a flight"},
+            {voxel::StairHalf::Lower,
+             "drawn for the lower step of a flight"},
+            {voxel::StairHalf::Upper,
+             "drawn for the upper step of a flight"}}};
+
+        static_assert(
+            enums::tagsInOrder(kStairHalfHints,
+                &HintRow<voxel::StairHalf>::value));
 
         [[nodiscard]] std::string_view levelHint(
-            const antwika::voxel::StairHalf whichHalf)
+            const voxel::StairHalf whichHalf)
         {
-            switch (whichHalf)
-            {
-            case antwika::voxel::StairHalf::Lower:
-                return "drawn for the lower step of a flight";
-            case antwika::voxel::StairHalf::Upper:
-                return "drawn for the upper step of a flight";
-            case antwika::voxel::StairHalf::Any:
-                return "drawn for either step of a flight";
-            }
-
-            return "";
+            return enums::lookup(kStairHalfHints, whichHalf).hint;
         }
+
+        constexpr std::array<HintRow<EdgeToggle>, enums::kCount<EdgeToggle>>
+            kEdgeToggleHints{{
+            {EdgeToggle::Boundary, "rim - this edge may lie against the air"},
+            {EdgeToggle::Forbidden, "shut - this edge meets nothing at all"}}};
+
+        static_assert(
+            enums::tagsInOrder(kEdgeToggleHints, &HintRow<EdgeToggle>::value));
 
         [[nodiscard]] std::string_view edgeToggleHint(
             const EdgeToggle whichToggle)
         {
-            switch (whichToggle)
-            {
-            case EdgeToggle::Boundary:
-                return "rim - this edge may lie against the air";
-            case EdgeToggle::Forbidden:
-                return "shut - this edge meets nothing at all";
-            }
-
-            return "";
+            return enums::lookup(kEdgeToggleHints, whichToggle).hint;
         }
 
     }
@@ -162,7 +155,7 @@ namespace antwika::editor
     namespace
     {
 
-        [[nodiscard]] bool onToolPanel(const antwika::ui::WidgetId whichWidget)
+        [[nodiscard]] bool onToolPanel(const ui::WidgetId whichWidget)
         {
             for (const auto button : kEveryToolButton)
             {
@@ -180,7 +173,7 @@ namespace antwika::editor
                 }
             }
 
-            for (const auto kind : antwika::voxel::kEveryKind)
+            for (const auto kind : voxel::kEveryKind)
             {
                 if (whichWidget == kindWidget(kind))
                 {
@@ -319,7 +312,7 @@ namespace antwika::editor
     void Editor::drawCanvasHint()
     {
         if (tick - pointer.canvasRest.sinceTick
-                < antwika::ui::kTooltipDelayFrames
+                < ui::kTooltipDelayFrames
             || !pointer.pointerInWindow.has_value())
         {
             return;
