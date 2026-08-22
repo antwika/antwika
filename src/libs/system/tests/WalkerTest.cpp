@@ -59,7 +59,8 @@ namespace
         {
             for (auto z = -reach; z <= reach; ++z)
             {
-                voxels.merge(voxelsOf({VoxelCell{.x = x, .y = 0, .z = z}}));
+                voxels.merge(voxelsOf({VoxelCell{.position = {.x = x, .y = 0,
+                    .z = z}}}));
             }
         }
 
@@ -92,9 +93,12 @@ TEST(WalkerTest, PositionFrom_TakesBackWhatPositionOfGave)
 TEST(WalkerTest, IsSolid_TakesStoneAndStairsAndNotWaterOrAir)
 {
     const auto filledVoxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Normal},
-        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Ramp},
-        VoxelCell{.x = 2, .y = 0, .z = 0, .kind = Kind::Water}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Normal}},
+        VoxelCell{.position = {.x = 1, .y = 0, .z = 0},
+            .material = {.kind = Kind::Ramp}},
+        VoxelCell{.position = {.x = 2, .y = 0, .z = 0},
+            .material = {.kind = Kind::Water}}});
 
     EXPECT_TRUE(isSolid(filledVoxels, VoxelPosition{.x = 0, .y = 0, .z = 0}));
     EXPECT_TRUE(isSolid(filledVoxels, VoxelPosition{.x = 1, .y = 0, .z = 0}));
@@ -105,8 +109,8 @@ TEST(WalkerTest, IsSolid_TakesStoneAndStairsAndNotWaterOrAir)
 TEST(WalkerTest, HasHeadroom_IsDeniedByWhateverStandsWithinAWalker)
 {
     const auto filledVoxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0},
-        VoxelCell{.x = 0, .y = 2, .z = 0}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0}},
+        VoxelCell{.position = {.x = 0, .y = 2, .z = 0}}});
 
     EXPECT_FALSE(hasHeadroom(filledVoxels, VoxelPosition{.x = 0, .y = 0,
         .z = 0}));
@@ -126,7 +130,8 @@ TEST(WalkerTest, GroundHeightAtColumn_GivesTheTopOfWhatBearsUnderneath)
 TEST(WalkerTest, GroundHeightAtColumn_TakesAStepUpOfOneVoxel)
 {
     auto filledVoxels = filledOver(1);
-    filledVoxels.merge(voxelsOf({VoxelCell{.x = 1, .y = 1, .z = 0}}));
+    filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = 1, .y = 1,
+        .z = 0}}}));
 
     const auto footing = groundHeightAtColumn(filledVoxels, 1, 0, 1.0F);
 
@@ -137,8 +142,8 @@ TEST(WalkerTest, GroundHeightAtColumn_TakesAStepUpOfOneVoxel)
 TEST(WalkerTest, GroundHeightAtColumn_TakesAStepDownOfOneVoxel)
 {
     const auto filledVoxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0},
-        VoxelCell{.x = 1, .y = -1, .z = 0}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0}},
+        VoxelCell{.position = {.x = 1, .y = -1, .z = 0}}});
 
     const auto footing = groundHeightAtColumn(filledVoxels, 1, 0, 1.0F);
 
@@ -149,8 +154,8 @@ TEST(WalkerTest, GroundHeightAtColumn_TakesAStepDownOfOneVoxel)
 TEST(WalkerTest, GroundHeightAtColumn_DropsToGroundFarBelow)
 {
     const auto filledVoxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0},
-        VoxelCell{.x = 1, .y = -2, .z = 0}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0}},
+        VoxelCell{.position = {.x = 1, .y = -2, .z = 0}}});
 
     const auto footing = groundHeightAtColumn(filledVoxels, 1, 0, 1.0F);
 
@@ -162,11 +167,9 @@ TEST(WalkerTest, GroundHeightAtColumn_DropsToGroundFarBelow)
 TEST(WalkerTest, GroundHeightAtColumn_GivesUpPastTheMaxFallDepth)
 {
     const auto filledVoxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0},
-        VoxelCell{
-            .x = 1,
-            .y = -antwika::collision::kMaxFallDepth - 2,
-            .z = 0}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0}},
+        VoxelCell{.position = {.x = 1,
+            .y = -antwika::collision::kMaxFallDepth - 2, .z = 0}}});
 
     EXPECT_FALSE(groundHeightAtColumn(filledVoxels, 1, 0, 1.0F).has_value());
 }
@@ -174,8 +177,9 @@ TEST(WalkerTest, GroundHeightAtColumn_GivesUpPastTheMaxFallDepth)
 TEST(WalkerTest, GroundHeightAtColumn_StandsInWaterSunkToTheWaist)
 {
     const auto filledVoxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0},
-        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Water}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0}},
+        VoxelCell{.position = {.x = 1, .y = 0, .z = 0},
+            .material = {.kind = Kind::Water}}});
 
     const auto footing = groundHeightAtColumn(filledVoxels, 1, 0, 1.0F);
 
@@ -189,14 +193,20 @@ TEST(WalkerTest, MovedWithCollision_FallsNoFasterThanTheFallSpeed)
 
     for (std::int32_t x = 0; x <= 8; ++x)
     {
-        filledVoxels.merge(voxelsOf({VoxelCell{.x = x, .y = 0, .z = 0}}));
-        filledVoxels.merge(voxelsOf({VoxelCell{.x = x, .y = 0, .z = 1}}));
-        filledVoxels.merge(voxelsOf({VoxelCell{.x = x, .y = 0, .z = -1}}));
+        filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = x, .y = 0,
+            .z = 0}}}));
+        filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = x, .y = 0,
+            .z = 1}}}));
+        filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = x, .y = 0,
+            .z = -1}}}));
     }
 
-    filledVoxels.merge(voxelsOf({VoxelCell{.x = 0, .y = 1, .z = 0}}));
-    filledVoxels.merge(voxelsOf({VoxelCell{.x = 0, .y = 2, .z = 0}}));
-    filledVoxels.merge(voxelsOf({VoxelCell{.x = 0, .y = 3, .z = 0}}));
+    filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = 0, .y = 1,
+        .z = 0}}}));
+    filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = 0, .y = 2,
+        .z = 0}}}));
+    filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = 0, .y = 3,
+        .z = 0}}}));
 
     auto stoodPosition = Position{.x = 0.5F, .y = 4.0F, .z = 0.5F};
     auto sankMost = 0.0F;
@@ -220,7 +230,7 @@ TEST(WalkerTest, MovedWithCollision_FallsNoFasterThanTheFallSpeed)
 TEST(WalkerTest, MovedWithCollision_SinksWhereItStandsOverAHole)
 {
     const auto filledVoxels = voxelsOf({
-        VoxelCell{.x = 0, .y = -3, .z = 0}});
+        VoxelCell{.position = {.x = 0, .y = -3, .z = 0}}});
 
     auto stoodPosition = Position{.x = 0.5F, .y = 3.0F, .z = 0.5F};
 
@@ -242,12 +252,10 @@ TEST(WalkerTest, MovedWithCollision_WadesAtTheWadersPace)
     {
         for (std::int32_t z = -1; z <= 1; ++z)
         {
-            landVoxels.merge(voxelsOf({VoxelCell{.x = x, .y = 0, .z = z}}));
-            poolVoxels.merge(voxelsOf({VoxelCell{
-                    .x = x,
-                    .y = 0,
-                    .z = z,
-                    .kind = Kind::Water}}));
+            landVoxels.merge(voxelsOf({VoxelCell{.position = {.x = x, .y = 0,
+                .z = z}}}));
+            poolVoxels.merge(voxelsOf({VoxelCell{.position = {.x = x, .y = 0,
+                .z = z}, .material = {.kind = Kind::Water}}}));
         }
     }
 
@@ -271,13 +279,13 @@ TEST(WalkerTest, MovedWithCollision_WadesAtTheWadersPace)
 TEST(WalkerTest, MovedWithCollision_ClimbsALadderNorthAndDownAgain)
 {
     auto filledVoxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0},
-        VoxelCell{.x = 0, .y = 0, .z = 1}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0}},
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 1}}});
 
     for (std::int32_t y = 1; y <= 4; ++y)
     {
-        filledVoxels.merge(voxelsOf({VoxelCell{
-                .x = 0, .y = y, .z = 0, .kind = Kind::Ladder}}));
+        filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = 0, .y = y,
+            .z = 0}, .material = {.kind = Kind::Ladder}}}));
     }
 
     auto stoodPosition = Position{.x = 0.5F, .y = 1.0F, .z = 0.5F};
@@ -303,16 +311,18 @@ TEST(WalkerTest, MovedWithCollision_ClimbsALadderNorthAndDownAgain)
 TEST(WalkerTest, MovedWithCollision_StepsOffTheTopOfALadder)
 {
     auto filledVoxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0}}});
 
     for (std::int32_t y = 1; y <= 3; ++y)
     {
-        filledVoxels.merge(voxelsOf({VoxelCell{
-                .x = 0, .y = y, .z = 0, .kind = Kind::Ladder}}));
+        filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = 0, .y = y,
+            .z = 0}, .material = {.kind = Kind::Ladder}}}));
     }
 
-    filledVoxels.merge(voxelsOf({VoxelCell{.x = 0, .y = 3, .z = -1}}));
-    filledVoxels.merge(voxelsOf({VoxelCell{.x = 0, .y = 3, .z = -2}}));
+    filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = 0, .y = 3,
+        .z = -1}}}));
+    filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = 0, .y = 3,
+        .z = -2}}}));
 
     auto stoodPosition = Position{.x = 0.5F, .y = 1.0F, .z = 0.5F};
 
@@ -329,12 +339,12 @@ TEST(WalkerTest, MovedWithCollision_StepsOffTheTopOfALadder)
 TEST(WalkerTest, MovedWithCollision_HoldsToTheRungsWithoutFalling)
 {
     auto filledVoxels = voxelsOf({
-        VoxelCell{.x = 0, .y = -4, .z = 0}});
+        VoxelCell{.position = {.x = 0, .y = -4, .z = 0}}});
 
     for (std::int32_t y = 0; y <= 3; ++y)
     {
-        filledVoxels.merge(voxelsOf({VoxelCell{
-                .x = 0, .y = y, .z = 0, .kind = Kind::Ladder}}));
+        filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = 0, .y = y,
+            .z = 0}, .material = {.kind = Kind::Ladder}}}));
     }
 
     auto stoodPosition = Position{.x = 0.5F, .y = 2.5F, .z = 0.5F};
@@ -351,8 +361,9 @@ TEST(WalkerTest, MovedWithCollision_HoldsToTheRungsWithoutFalling)
 TEST(WalkerTest, GroundHeightAtColumn_FallsPastALadderItDoesNotHold)
 {
     const auto filledVoxels = voxelsOf({
-        VoxelCell{.x = 0, .y = -3, .z = 0},
-        VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Ladder}});
+        VoxelCell{.position = {.x = 0, .y = -3, .z = 0}},
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Ladder}}});
 
     const auto footing = groundHeightAtColumn(filledVoxels, 0, 0, 3.0F);
 
@@ -368,7 +379,8 @@ TEST(WalkerTest, MovedWithCollision_RunsByTheMultiplierItIsSent)
     {
         for (std::int32_t z = -1; z <= 1; ++z)
         {
-            filledVoxels.merge(voxelsOf({VoxelCell{.x = x, .y = 0, .z = z}}));
+            filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = x, .y = 0,
+                .z = z}}}));
         }
     }
 
@@ -397,9 +409,9 @@ TEST(WalkerTest, MovedWithCollision_RunsByTheMultiplierItIsSent)
 TEST(WalkerTest, GroundHeightAtColumn_RefusesGroundWithNoRoomOverIt)
 {
     const auto filledVoxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0},
-        VoxelCell{.x = 1, .y = 1, .z = 0},
-        VoxelCell{.x = 1, .y = 2, .z = 0}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0}},
+        VoxelCell{.position = {.x = 1, .y = 1, .z = 0}},
+        VoxelCell{.position = {.x = 1, .y = 2, .z = 0}}});
 
     EXPECT_FALSE(groundHeightAtColumn(filledVoxels, 1, 0, 1.0F).has_value());
 }
@@ -407,9 +419,9 @@ TEST(WalkerTest, GroundHeightAtColumn_RefusesGroundWithNoRoomOverIt)
 TEST(WalkerTest, RestPositionOverColumn_TakesTheHighestOfAColumnWithRoom)
 {
     const auto filledVoxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0},
-        VoxelCell{.x = 0, .y = 1, .z = 0},
-        VoxelCell{.x = 0, .y = 4, .z = 0}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0}},
+        VoxelCell{.position = {.x = 0, .y = 1, .z = 0}},
+        VoxelCell{.position = {.x = 0, .y = 4, .z = 0}}});
 
     const auto foothold = restPositionOverColumn(filledVoxels, 0, 0);
 
@@ -455,8 +467,8 @@ TEST(WalkerTest, MovedWithCollision_CrossesARampAtHalfItsPace)
     auto filledVoxels = filledOver(2);
 
     filledVoxels.erase(VoxelPosition{.x = 0, .y = 0, .z = 0});
-    filledVoxels.merge(voxelsOf({VoxelCell{
-            .x = 0, .y = 0, .z = 0, .kind = Kind::Ramp}}));
+    filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+        .material = {.kind = Kind::Ramp}}}));
 
     const auto stoodPosition = movedWithCollision(
         filledVoxels,
@@ -484,7 +496,8 @@ TEST(WalkerTest, MovedWithCollision_LeavesAWalkerSentNowhereWhereItStood)
 TEST(WalkerTest, MovedWithCollision_ClimbsAStepOfOneVoxel)
 {
     auto filledVoxels = filledOver(2);
-    filledVoxels.merge(voxelsOf({VoxelCell{.x = 1, .y = 1, .z = 0}}));
+    filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = 1, .y = 1,
+        .z = 0}}}));
 
     const auto stoodPosition = movedWithCollision(
         filledVoxels,
@@ -497,8 +510,10 @@ TEST(WalkerTest, MovedWithCollision_ClimbsAStepOfOneVoxel)
 TEST(WalkerTest, MovedWithCollision_IsStoppedByASideTallerThanAStep)
 {
     auto filledVoxels = filledOver(2);
-    filledVoxels.merge(voxelsOf({VoxelCell{.x = 1, .y = 1, .z = 0}}));
-    filledVoxels.merge(voxelsOf({VoxelCell{.x = 1, .y = 2, .z = 0}}));
+    filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = 1, .y = 1,
+        .z = 0}}}));
+    filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = 1, .y = 2,
+        .z = 0}}}));
 
     const Position stoodPosition{.x = 0.95F, .y = 1.0F, .z = 0.5F};
     const auto walkedTo =
@@ -521,8 +536,8 @@ TEST(
     {
         for (const auto upLevel : {1, 2})
         {
-            filledVoxels.merge(voxelsOf({VoxelCell{.x = 1, .y = upLevel,
-                .z = alongIndex}}));
+            filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = 1,
+                .y = upLevel, .z = alongIndex}}}));
         }
     }
 
@@ -562,7 +577,7 @@ TEST(
     MovedWithCollision_SettlesAWalkerLeftOverGroundThatFellAway)
 {
     const auto filledVoxels = voxelsOf({
-        VoxelCell{.x = 0, .y = -1, .z = 0}});
+        VoxelCell{.position = {.x = 0, .y = -1, .z = 0}}});
     auto stoodPosition = Position{.x = 0.5F, .y = 1.0F, .z = 0.5F};
 
     for (std::size_t step = 0; step < 10; ++step)
@@ -734,10 +749,10 @@ TEST(
     GroundHeightUnderFootprint_HoldsEveryColumnItsFootprintCovers)
 {
     const auto filledVoxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0},
-        VoxelCell{.x = 1, .y = 0, .z = 0},
-        VoxelCell{.x = 0, .y = 0, .z = 1},
-        VoxelCell{.x = 1, .y = 0, .z = 1}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0}},
+        VoxelCell{.position = {.x = 1, .y = 0, .z = 0}},
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 1}},
+        VoxelCell{.position = {.x = 1, .y = 0, .z = 1}}});
 
     EXPECT_TRUE(
         antwika::collision::groundHeightUnderFootprint(
@@ -760,7 +775,8 @@ TEST(
     GroundHeightUnderFootprint_RestsOnTheHighestUnderItsFootprint)
 {
     auto filledVoxels = filledOver(2);
-    filledVoxels.merge(voxelsOf({VoxelCell{.x = 1, .y = 1, .z = 0}}));
+    filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = 1, .y = 1,
+        .z = 0}}}));
 
     const auto footing =
         antwika::collision::groundHeightUnderFootprint(
@@ -775,9 +791,9 @@ TEST(
     MovedWithCollision_KeepsAWalkersFootprintOffTheEdgeOfADrop)
 {
     const auto filledVoxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0},
-        VoxelCell{.x = 0, .y = 0, .z = 1},
-        VoxelCell{.x = 0, .y = 0, .z = -1}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0}},
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 1}},
+        VoxelCell{.position = {.x = 0, .y = 0, .z = -1}}});
 
     auto stoodPosition = Position{.x = 0.5F, .y = 1.0F, .z = 0.5F};
 
@@ -818,24 +834,23 @@ namespace
         {
             for (std::int32_t x = -3; x <= 0; ++x)
             {
-                filledVoxels.merge(voxelsOf({VoxelCell{.x = x, .y = 0,
-                    .z = z}}));
+                filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = x,
+                    .y = 0, .z = z}}}));
             }
 
-            filledVoxels.merge(voxelsOf({VoxelCell{
-                    .x = 1,
-                    .y = 1,
-                    .z = z,
-                    .kind = Kind::Ramp,
-                    .facing = antwika::voxel::Facing::East}}));
-            filledVoxels.merge(voxelsOf({VoxelCell{.x = 1, .y = 0, .z = z}}));
+            filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = 1, .y = 1,
+                .z =
+                    z}, .material = {.kind =
+                        Kind::Ramp, .facing = antwika::voxel::Facing::East}}}));
+            filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = 1, .y = 0,
+                .z = z}}}));
 
             for (std::int32_t x = 2; x <= 4; ++x)
             {
-                filledVoxels.merge(voxelsOf({VoxelCell{.x = x, .y = 0,
-                    .z = z}}));
-                filledVoxels.merge(voxelsOf({VoxelCell{.x = x, .y = 1,
-                    .z = z}}));
+                filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = x,
+                    .y = 0, .z = z}}}));
+                filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = x,
+                    .y = 1, .z = z}}}));
             }
         }
 
@@ -848,8 +863,10 @@ namespace
 
         for (std::int32_t x = -3; x <= 4; ++x)
         {
-            filledVoxels.merge(voxelsOf({VoxelCell{.x = x, .y = 1, .z = 3}}));
-            filledVoxels.merge(voxelsOf({VoxelCell{.x = x, .y = 2, .z = 3}}));
+            filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = x, .y = 1,
+                .z = 3}}}));
+            filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = x, .y = 2,
+                .z = 3}}}));
         }
 
         return filledVoxels;
@@ -860,7 +877,7 @@ namespace
 TEST(WalkerTest, GroundHeightOn_StandsAPlainVoxelAtItsTopThroughout)
 {
     const auto filledVoxels = filledOver(2);
-    const VoxelCell groundCell{.x = 0, .y = 0, .z = 0};
+    const VoxelCell groundCell{.position = {.x = 0, .y = 0, .z = 0}};
 
     for (const auto index : {0.1F, 0.5F, 0.9F})
     {
@@ -876,11 +893,10 @@ TEST(WalkerTest, GroundHeightOn_RisesEvenlyAcrossARamp)
 {
     const auto filledVoxels = rampEastward();
     const VoxelCell rampCell{
-        .x = 1,
-        .y = 1,
-        .z = 0,
-        .kind = Kind::Ramp,
-        .facing = antwika::voxel::Facing::East};
+        .position = {.x = 1, .y = 1, .z = 0},
+        .material = {
+            .kind = Kind::Ramp,
+            .facing = antwika::voxel::Facing::East}};
 
     EXPECT_NEAR(
         antwika::collision::groundHeightOn(filledVoxels, rampCell, 1.0F, 0.5F),
@@ -900,11 +916,10 @@ TEST(WalkerTest, GroundHeightOn_HoldsToTheEndsOfARampBeyondIt)
 {
     const auto filledVoxels = rampEastward();
     const VoxelCell rampCell{
-        .x = 1,
-        .y = 1,
-        .z = 0,
-        .kind = Kind::Ramp,
-        .facing = antwika::voxel::Facing::East};
+        .position = {.x = 1, .y = 1, .z = 0},
+        .material = {
+            .kind = Kind::Ramp,
+            .facing = antwika::voxel::Facing::East}};
 
     EXPECT_NEAR(
         antwika::collision::groundHeightOn(filledVoxels, rampCell, -1.5F, 0.5F),

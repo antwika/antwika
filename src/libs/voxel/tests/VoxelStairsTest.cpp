@@ -23,8 +23,10 @@ TEST(VoxelStairsTest, InferredRampDirection_RisesTowardsWhatStandsBesideIt)
     using antwika::voxel::inferredRampDirection;
 
     const auto voxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Ramp},
-        VoxelCell{.x = 0, .y = 0, .z = 1, .kind = Kind::Normal}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Ramp}},
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 1},
+            .material = {.kind = Kind::Normal}}});
     const auto climb = inferredRampDirection(voxels, voxels.begin()->first);
 
     EXPECT_EQ(climb.x, 0);
@@ -42,9 +44,12 @@ TEST(
     using antwika::voxel::inferredRampDirection;
 
     const auto voxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Ramp},
-        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Normal},
-        VoxelCell{.x = 1, .y = 1, .z = 0, .kind = Kind::Ramp}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Ramp}},
+        VoxelCell{.position = {.x = 1, .y = 0, .z = 0},
+            .material = {.kind = Kind::Normal}},
+        VoxelCell{.position = {.x = 1, .y = 1, .z = 0},
+            .material = {.kind = Kind::Ramp}}});
     const auto climb = inferredRampDirection(voxels,
         std::prev(voxels.end())->first);
 
@@ -349,8 +354,10 @@ TEST(VoxelStairsTest, StairHalfOf_StandsAStepOnAnotherAtTheUpperLevel)
     using antwika::voxel::StairHalf;
 
     const auto voxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Ramp},
-        VoxelCell{.x = 0, .y = 1, .z = 0, .kind = Kind::Ramp}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Ramp}},
+        VoxelCell{.position = {.x = 0, .y = 1, .z = 0},
+            .material = {.kind = Kind::Ramp}}});
 
     EXPECT_EQ(stairHalfOf(voxels, voxels.begin()->first), StairHalf::Lower);
     EXPECT_EQ(stairHalfOf(voxels, std::next(voxels.begin())->first),
@@ -382,13 +389,10 @@ TEST(VoxelStairsTest, InferredRampDirection_TakesTheWayAVoxelWasTold)
          {Facing::East, Facing::West, Facing::North, Facing::South})
     {
         const auto voxels = voxelsOf({
-            VoxelCell{
-                .x = 0,
-                .y = 0,
-                .z = 0,
-                .kind = Kind::Ramp,
-                .facing = told},
-            VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Normal}});
+            VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+                .material = {.kind = Kind::Ramp, .facing = told}},
+            VoxelCell{.position = {.x = 1, .y = 0, .z = 0},
+                .material = {.kind = Kind::Normal}}});
 
         EXPECT_EQ(
             inferredRampDirection(voxels, voxels.begin()->first),
@@ -404,8 +408,10 @@ TEST(VoxelStairsTest, InferredRampDirection_ReckonsAVoxelToldNothing)
     using antwika::voxel::inferredRampDirection;
 
     const auto voxels = voxelsOf({
-        VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Ramp},
-        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Normal}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Ramp}},
+        VoxelCell{.position = {.x = 1, .y = 0, .z = 0},
+            .material = {.kind = Kind::Normal}}});
 
     EXPECT_EQ(
         inferredRampDirection(voxels,
@@ -422,12 +428,8 @@ TEST(VoxelStairsTest, InferredRampDirection_HoldsAToldWayWithNothingBesideIt)
     using antwika::voxel::stepVectorFor;
 
     const auto voxels = voxelsOf({
-        VoxelCell{
-            .x = 0,
-            .y = 0,
-            .z = 0,
-            .kind = Kind::Ramp,
-            .facing = Facing::North}});
+        VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = Kind::Ramp, .facing = Facing::North}}});
 
     EXPECT_EQ(
         inferredRampDirection(voxels, voxels.begin()->first),

@@ -19,7 +19,7 @@ namespace antwika::voxel
 
         for (const auto cell : cells)
         {
-            voxels[cell.position()] = cell.material();
+            voxels[cell.position] = cell.material;
         }
 
         return voxels;

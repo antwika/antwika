@@ -133,7 +133,7 @@ namespace antwika::voxel
         TEST(VoxelCubeTest, ExpandCubesToVoxels_GivesAWholeCubePerCell)
         {
             const auto voxels =
-                voxelsOf({VoxelCell{}, VoxelCell{.x = 1}});
+                voxelsOf({VoxelCell{}, VoxelCell{.position = {.x = 1}}});
 
             EXPECT_EQ(
                 expandCubesToVoxels(voxels).size(),
@@ -144,9 +144,9 @@ namespace antwika::voxel
         {
             const auto cubeVoxels = voxelsOf({
                 VoxelCell{},
-                VoxelCell{.x = 1},
-                VoxelCell{.y = 1},
-                VoxelCell{.x = -1, .z = 2}});
+                VoxelCell{.position = {.x = 1}},
+                VoxelCell{.position = {.y = 1}},
+                VoxelCell{.position = {.x = -1, .z = 2}}});
             const auto voxels = expandCubesToVoxels(cubeVoxels);
 
             EXPECT_EQ(voxels.size(), cubeVoxels.size() * kCubeVoxels);
@@ -154,7 +154,8 @@ namespace antwika::voxel
 
         TEST(VoxelCubeTest, ExpandCubesToVoxels_LaysEveryVoxelOfACellInOneCube)
         {
-            const auto cubeVoxels = voxelsOf({VoxelCell{.x = 2, .y = -1}});
+            const auto cubeVoxels = voxelsOf({VoxelCell{.position = {.x = 2,
+                .y = -1}}});
             const auto voxels = expandCubesToVoxels(cubeVoxels);
             std::set<VoxelPosition> cubePositions;
 
@@ -171,7 +172,7 @@ namespace antwika::voxel
     ExpandCubesToVoxels_KeepsNeighbouringCellsNeighbours)
         {
             const auto voxels = expandCubesToVoxels(
-                voxelsOf({VoxelCell{}, VoxelCell{.x = 1}}));
+                voxelsOf({VoxelCell{}, VoxelCell{.position = {.x = 1}}}));
 
             EXPECT_TRUE(voxels.contains(VoxelPosition{.x = 1}));
             EXPECT_TRUE(
@@ -238,7 +239,8 @@ namespace antwika::voxel
         TEST(VoxelCubeTest, WithBlockAt_LeavesTheRestOfThePileAlone)
         {
             const auto beforeCells = voxelsOf(
-                {VoxelCell{.x = 100}, VoxelCell{.x = 101}});
+                {VoxelCell{.position = {.x = 100}},
+                    VoxelCell{.position = {.x = 101}}});
             const auto updatedCells = withBlockAt(beforeCells, VoxelPosition{});
 
             EXPECT_EQ(updatedCells.size(), beforeCells.size() + kCubeVoxels);
@@ -282,7 +284,7 @@ namespace antwika::voxel
         TEST(VoxelCubeTest, WithBlockAt_AndWithoutComeBackToWhereItWas)
         {
             const auto beforeCells = expandCubesToVoxels(
-                voxelsOf({VoxelCell{}, VoxelCell{.x = 1}}));
+                voxelsOf({VoxelCell{}, VoxelCell{.position = {.x = 1}}}));
             const auto updatedCells = withoutBlockAt(
                 withBlockAt(beforeCells, VoxelPosition{.x = 40}),
                 VoxelPosition{.x = 40});

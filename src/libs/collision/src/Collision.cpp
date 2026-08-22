@@ -190,8 +190,9 @@ namespace antwika::collision
 
             return hasHeadroom(filledVoxels, groundPosition)
                        ? std::optional<voxel::VoxelCell>{
-                             voxel::voxelCellAt(
-                                 foundVoxel->first, foundVoxel->second)}
+                             voxel::VoxelCell{
+                        .position = foundVoxel->first,
+                        .material = foundVoxel->second}}
                        : std::nullopt;
         }
 
@@ -211,9 +212,9 @@ namespace antwika::collision
             return std::nullopt;
         }
 
-        const auto top = topOf(groundCell->y);
+        const auto top = topOf(groundCell->position.y);
 
-        return groundCell->kind == voxel::Kind::Water
+        return groundCell->material.kind == voxel::Kind::Water
                                  ? top - (voxel::kVoxelSide / 2.0F)
                                  : top;
     }
@@ -224,30 +225,30 @@ namespace antwika::collision
         const float x,
         const float z)
     {
-        const auto top = topOf(groundCell.y);
+        const auto top = topOf(groundCell.position.y);
 
-        if (groundCell.kind == voxel::Kind::Water)
+        if (groundCell.material.kind == voxel::Kind::Water)
         {
             return top - (voxel::kVoxelSide / 2.0F);
         }
 
-        if (groundCell.kind != voxel::Kind::Ramp)
+        if (groundCell.material.kind != voxel::Kind::Ramp)
         {
             return top;
         }
 
         const auto climb = voxel::inferredRampDirection(
             filledVoxels,
-            groundCell.position());
+            groundCell.position);
         const auto rising = climb.x != 0;
         const auto way = static_cast<float>(
             rising ? climb.x : climb.z);
         const auto alongOffset =
             rising ? x
-                         - ((static_cast<float>(groundCell.x) + 0.5F)
+                         - ((static_cast<float>(groundCell.position.x) + 0.5F)
                             * voxel::kVoxelSide)
                    : z
-                         - ((static_cast<float>(groundCell.z) + 0.5F)
+                         - ((static_cast<float>(groundCell.position.z) + 0.5F)
                             * voxel::kVoxelSide);
         const auto part = std::clamp(
             ((alongOffset * way) / voxel::kVoxelSide) + 0.5F, 0.0F, 1.0F);
@@ -426,10 +427,10 @@ namespace antwika::collision
             position.y);
         const auto climbing =
             stoodPosition.has_value()
-            && stoodPosition->kind == voxel::Kind::Ramp;
+            && stoodPosition->material.kind == voxel::Kind::Ramp;
         const auto wading =
             stoodPosition.has_value()
-            && stoodPosition->kind == voxel::Kind::Water;
+            && stoodPosition->material.kind == voxel::Kind::Water;
         const auto pace = kWalkSpeed * velocity.speedMultiplier
                           * (climbing ? kRampSpeedFactor : 1.0F)
                           * (wading ? kWaterSpeedFactor : 1.0F)

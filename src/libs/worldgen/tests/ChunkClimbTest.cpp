@@ -88,9 +88,12 @@ TEST(ChunkClimbTest, Grow_LeavesAWayFromTheStreetToTheHighestTerrace)
 TEST(ChunkClimbTest, Grow_LeavesAWayUpAroundTheCubesTheArtistPainted)
 {
     const auto hintVoxels = voxelsOf({
-        VoxelCell{.x = 2, .y = 4, .z = 2, .kind = Kind::Normal},
-        VoxelCell{.x = 3, .y = 4, .z = 2, .kind = Kind::Normal},
-        VoxelCell{.x = 2, .y = 4, .z = 3, .kind = Kind::Normal}});
+        VoxelCell{.position = {.x = 2, .y = 4, .z = 2},
+            .material = {.kind = Kind::Normal}},
+        VoxelCell{.position = {.x = 3, .y = 4, .z = 2},
+            .material = {.kind = Kind::Normal}},
+        VoxelCell{.position = {.x = 2, .y = 4, .z = 3},
+            .material = {.kind = Kind::Normal}}});
 
     const auto result = growChunk(
         city(),

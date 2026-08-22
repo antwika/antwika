@@ -57,14 +57,14 @@ namespace antwika::voxelmap
 
         [[nodiscard]] bool operator==(const FaceRef &other) const
         {
-            return cell.position() == other.cell.position()
+            return cell.position == other.cell.position
                    && side == other.side;
         }
 
         [[nodiscard]] std::strong_ordering operator<=>(
             const FaceRef &other) const
         {
-            if (const auto where = cell.position() <=> other.cell.position();
+            if (const auto where = cell.position <=> other.cell.position;
                 where != 0)
             {
                 return where;

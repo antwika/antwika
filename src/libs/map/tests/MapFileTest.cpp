@@ -183,8 +183,9 @@ TEST(MapFileTest, Map_KeepsThePlacesItWasGiven)
     Map map;
 
     map.voxels = voxelsOf({
-        VoxelCell{.x = -kMaxCellCoord, .y = 0, .z = kMaxCellCoord},
-        VoxelCell{.x = 7, .y = -3, .z = 11}});
+        VoxelCell{.position = {.x = -kMaxCellCoord, .y = 0,
+            .z = kMaxCellCoord}},
+        VoxelCell{.position = {.x = 7, .y = -3, .z = 11}}});
 
     EXPECT_EQ(readText(serializeMap(map)).voxels, map.voxels);
 }
@@ -940,12 +941,10 @@ TEST(MapFileTest, WriteMap_KeepsWhatEachVoxelIsMadeOf)
     Map map{.tilemap = defaultTilemap()};
 
     map.voxels = antwika::voxel::voxelsOf({
-        antwika::voxel::VoxelCell{
-            .x = 0, .y = 0, .z = 0,
-            .kind = antwika::voxel::Kind::Water},
-        antwika::voxel::VoxelCell{
-            .x = 1, .y = 0, .z = 0,
-            .kind = antwika::voxel::Kind::Ramp}});
+        antwika::voxel::VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
+            .material = {.kind = antwika::voxel::Kind::Water}},
+        antwika::voxel::VoxelCell{.position = {.x = 1, .y = 0, .z = 0},
+            .material = {.kind = antwika::voxel::Kind::Ramp}}});
     map.settings.kind = antwika::voxel::Kind::Ramp;
 
     const auto loadedMap = readText(serializeMap(map));
@@ -968,7 +967,8 @@ TEST(MapFileTest, ReadMap_MakesEveryVoxelKeptBeforeTheKindsASolidOne)
 {
     Map map{.tilemap = defaultTilemap()};
 
-    map.voxels = voxelsOf({antwika::voxel::VoxelCell{.x = 3, .y = 2, .z = 1}});
+    map.voxels = voxelsOf({antwika::voxel::VoxelCell{.position = {.x = 3,
+        .y = 2, .z = 1}}});
 
     auto document = nlohmann::json::parse(serializeMap(map));
 
@@ -1249,12 +1249,10 @@ TEST(MapFileTest, WriteMap_KeepsWhichWayARampWasToldToClimb)
 {
     Map map{.tilemap = defaultTilemap()};
 
-    map.voxels.merge(antwika::voxel::voxelsOf({antwika::voxel::VoxelCell{
-            .x = 1,
-            .y = 0,
-            .z = 2,
-            .kind = antwika::voxel::Kind::Ramp,
-            .facing = antwika::voxel::Facing::North}}));
+    map.voxels.merge(antwika::voxel::voxelsOf(
+        {antwika::voxel::VoxelCell{.position = {.x = 1, .y = 0, .z = 2},
+            .material = {.kind = antwika::voxel::Kind::Ramp,
+                .facing = antwika::voxel::Facing::North}}}));
 
     const auto loadedMap = readText(serializeMap(map));
 
@@ -1271,8 +1269,9 @@ TEST(MapFileTest, WriteMap_SaysNothingOfARampToldNothing)
 {
     Map map{.tilemap = defaultTilemap()};
 
-    map.voxels.merge(antwika::voxel::voxelsOf({antwika::voxel::VoxelCell{
-            .kind = antwika::voxel::Kind::Ramp}}));
+    map.voxels.merge(antwika::voxel::voxelsOf(
+        {antwika::voxel::VoxelCell{
+            .material = {.kind = antwika::voxel::Kind::Ramp}}}));
 
     const auto document = nlohmann::json::parse(serializeMap(map));
 

@@ -389,7 +389,7 @@ namespace
     {
         const auto voxels = antwika::voxel::voxelsOf({
             antwika::voxel::VoxelCell{},
-            antwika::voxel::VoxelCell{.x = 1}});
+            antwika::voxel::VoxelCell{.position = {.x = 1}}});
         const auto faces = visibleFacesOf(voxels);
         const auto drawnTiles = facedWith(faces, kBrickTile, kOneTile);
         auto decor = withDecorToggled({}, kMossTile);
@@ -538,7 +538,7 @@ namespace
     {
         const auto voxels = antwika::voxel::voxelsOf({
             antwika::voxel::VoxelCell{},
-            antwika::voxel::VoxelCell{.x = 1}});
+            antwika::voxel::VoxelCell{.position = {.x = 1}}});
         const auto faces = visibleFacesOf(voxels);
         const auto drawnTiles = facedWith(faces, kBrickTile, kOneTile);
         auto decor = withDecorToggled({}, kMossTile);
@@ -630,7 +630,7 @@ namespace
     {
         const auto voxels = antwika::voxel::voxelsOf({
             antwika::voxel::VoxelCell{
-                .kind = antwika::voxel::Kind::Water}});
+                .material = {.kind = antwika::voxel::Kind::Water}}});
         const auto faces = visibleFacesOf(voxels);
         const auto drawnTiles = facedWith(faces, kBrickTile, kOneTile);
         auto decor = withDecorToggled({}, kOtherTile);
@@ -657,7 +657,7 @@ namespace
     {
         const auto voxels = antwika::voxel::voxelsOf({
             antwika::voxel::VoxelCell{
-                .kind = antwika::voxel::Kind::Ladder}});
+                .material = {.kind = antwika::voxel::Kind::Ladder}}});
         const auto faces = visibleFacesOf(voxels);
         const auto drawnTiles = facedWith(faces, kBrickTile, kOneTile);
         auto decor = withDecorToggled({}, kMossTile);
@@ -675,7 +675,7 @@ namespace
             antwika::voxelmap::FaceRef{
                 .cell =
                     antwika::voxel::VoxelCell{
-                        .kind = antwika::voxel::Kind::Ramp},
+                        .material = {.kind = antwika::voxel::Kind::Ramp}},
                 .side = 4,
                 .climbPosition = antwika::voxel::VoxelPosition{.x = 1}}};
         const std::map<std::size_t, Tile> placedTiles{{0, kOneTile}};

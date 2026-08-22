@@ -15,12 +15,12 @@ namespace antwika::decor
         [[nodiscard]] std::uint32_t rolledAt(
             const voxelmap::FaceRef &face, const std::uint32_t seed)
         {
-            auto mixedSeed = static_cast<std::uint32_t>(face.cell.position().x)
+            auto mixedSeed = static_cast<std::uint32_t>(face.cell.position.x)
                          * 73856093U;
 
-            mixedSeed ^= static_cast<std::uint32_t>(face.cell.position().y)
+            mixedSeed ^= static_cast<std::uint32_t>(face.cell.position.y)
                      * 19349663U;
-            mixedSeed ^= static_cast<std::uint32_t>(face.cell.position().z)
+            mixedSeed ^= static_cast<std::uint32_t>(face.cell.position.z)
                      * 83492791U;
             mixedSeed ^= (static_cast<std::uint32_t>(face.side) + 1U)
                      * 2654435761U;

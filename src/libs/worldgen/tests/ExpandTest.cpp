@@ -18,7 +18,8 @@ using antwika::worldgen::chunkVoxels;
 TEST(ExpandTest, ChunkVoxels_LaysEightVoxelsForASolidCube)
 {
     const auto chunkCells = chunkVoxels(
-        voxelsOf({VoxelCell{.x = 1, .y = 2, .z = 3, .kind = Kind::Normal}}));
+        voxelsOf({VoxelCell{.position = {.x = 1, .y = 2, .z = 3},
+            .material = {.kind = Kind::Normal}}}));
 
     ASSERT_EQ(chunkCells.size(), kCubeVoxels);
 
@@ -37,9 +38,11 @@ TEST(ExpandTest, ChunkVoxels_LaysEightVoxelsForASolidCube)
 TEST(ExpandTest, ChunkVoxels_StepsARampTheWayItFaces)
 {
     const auto east = chunkVoxels(
-        voxelsOf({VoxelCell{.kind = Kind::Ramp, .facing = Facing::East}}));
+        voxelsOf({VoxelCell{.material = {.kind = Kind::Ramp,
+            .facing = Facing::East}}}));
     const auto west = chunkVoxels(
-        voxelsOf({VoxelCell{.kind = Kind::Ramp, .facing = Facing::West}}));
+        voxelsOf({VoxelCell{.material = {.kind = Kind::Ramp,
+            .facing = Facing::West}}}));
 
     EXPECT_LT(east.size(), kCubeVoxels);
     EXPECT_EQ(east.size(), west.size());
@@ -49,7 +52,8 @@ TEST(ExpandTest, ChunkVoxels_StepsARampTheWayItFaces)
 TEST(ExpandTest, ChunkVoxels_KeepsTheFacingOnlyOnARamp)
 {
     const auto ramp = chunkVoxels(
-        voxelsOf({VoxelCell{.kind = Kind::Ramp, .facing = Facing::North}}));
+        voxelsOf({VoxelCell{.material = {.kind = Kind::Ramp,
+            .facing = Facing::North}}}));
 
     for (const auto &[position, material] : ramp)
     {
@@ -57,7 +61,8 @@ TEST(ExpandTest, ChunkVoxels_KeepsTheFacingOnlyOnARamp)
     }
 
     const auto ladder = chunkVoxels(
-        voxelsOf({VoxelCell{.kind = Kind::Ladder, .facing = Facing::North}}));
+        voxelsOf({VoxelCell{.material = {.kind = Kind::Ladder,
+            .facing = Facing::North}}}));
 
     for (const auto &[position, material] : ladder)
     {
@@ -68,7 +73,7 @@ TEST(ExpandTest, ChunkVoxels_KeepsTheFacingOnlyOnARamp)
 TEST(ExpandTest, ChunkVoxels_WorksOutTheWayARampToldNothingClimbs)
 {
     const auto chunkCells = chunkVoxels(
-        voxelsOf({VoxelCell{.kind = Kind::Ramp}}));
+        voxelsOf({VoxelCell{.material = {.kind = Kind::Ramp}}}));
 
     EXPECT_FALSE(chunkCells.empty());
     EXPECT_LT(chunkCells.size(), kCubeVoxels);
@@ -77,11 +82,14 @@ TEST(ExpandTest, ChunkVoxels_WorksOutTheWayARampToldNothingClimbs)
 TEST(ExpandTest, ChunkVoxels_ClimbsARampTowardsTheGroundBesideIt)
 {
     const auto chunkCells = chunkVoxels(
-        voxelsOf({VoxelCell{.kind = Kind::Ramp},
-                  VoxelCell{.x = 1, .kind = Kind::Normal}}));
+        voxelsOf({VoxelCell{.material = {.kind = Kind::Ramp}},
+                  VoxelCell{.position = {.x = 1},
+                      .material = {.kind = Kind::Normal}}}));
     const auto east = chunkVoxels(
-        voxelsOf({VoxelCell{.kind = Kind::Ramp, .facing = Facing::East},
-                  VoxelCell{.x = 1, .kind = Kind::Normal}}));
+        voxelsOf({VoxelCell{.material = {.kind = Kind::Ramp,
+            .facing = Facing::East}},
+                  VoxelCell{.position = {.x = 1},
+                      .material = {.kind = Kind::Normal}}}));
 
     EXPECT_EQ(chunkCells.size(), east.size());
 }
@@ -94,8 +102,9 @@ TEST(ExpandTest, ChunkVoxels_LaysNothingForNoCubeAtAll)
 TEST(ExpandTest, ChunkVoxels_LaysEveryCubeBesideTheLastRatherThanOverIt)
 {
     const auto chunkCells = chunkVoxels(
-        voxelsOf({VoxelCell{.kind = Kind::Normal},
-                  VoxelCell{.x = 1, .kind = Kind::Water}}));
+        voxelsOf({VoxelCell{.material = {.kind = Kind::Normal}},
+                  VoxelCell{.position = {.x = 1},
+                      .material = {.kind = Kind::Water}}}));
 
     ASSERT_EQ(chunkCells.size(), kCubeVoxels * 2);
 

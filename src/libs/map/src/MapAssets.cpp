@@ -63,7 +63,7 @@ namespace antwika::map
                 gfx::Vec3(voxelmap::faceNormal(faces[index].side)).y != 0.0F
                     ? tilemap::Atlas::Floor
                     : tilemap::Atlas::Wall,
-                faces[index].cell.kind};
+                faces[index].cell.material.kind};
             const auto foundTile = firstTiles.find(want);
 
             tiles.push_back(

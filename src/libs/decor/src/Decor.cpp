@@ -310,7 +310,7 @@ namespace antwika::decor
             const auto tile = tilemap::tileCoords(
                 frame.index, tilemap::tileSizeOf(frame.atlas));
             const auto &face = faces[faceIndex];
-            const auto middlePoint = voxelmap::cellMiddle(face.cell.position());
+            const auto middlePoint = voxelmap::cellMiddle(face.cell.position);
             const auto liftedPoint =
                 gfx::Vec3(voxelmap::faceNormal(face.side)) * lift;
             const auto climbs =

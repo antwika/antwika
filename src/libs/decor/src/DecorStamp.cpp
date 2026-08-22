@@ -60,7 +60,7 @@ namespace antwika::decor::decordetail
 
             index.emplace(
                 std::pair{
-                    faces[faceIndex].side, faces[faceIndex].cell.position()},
+                    faces[faceIndex].side, faces[faceIndex].cell.position},
                 faceIndex);
         }
 
@@ -82,11 +82,11 @@ namespace antwika::decor::decordetail
 
                 if (!index.contains(
                         std::pair{
-                            side, faces[faceIndex].cell.position()})
+                            side, faces[faceIndex].cell.position})
                     || tile.contains(faceIndex)
                     || !takes(record, drawnTiles[faceIndex])
                     || frequencyRollFor(
-                           faces[faceIndex].cell.position(),
+                           faces[faceIndex].cell.position,
                            which,
                            seed,
                            upward
@@ -112,7 +112,7 @@ namespace antwika::decor::decordetail
                          ++column)
                     {
                         const auto position =
-                            faces[faceIndex].cell.position();
+                            faces[faceIndex].cell.position;
                         const auto overPosition = voxel::VoxelPosition{
                             .x = position.x + (right.x * column)
                                  + (downSpan.x * row),

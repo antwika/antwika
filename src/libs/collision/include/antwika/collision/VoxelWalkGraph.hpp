@@ -37,9 +37,9 @@ namespace antwika::collision
                 {
                     gridPositions.push_back(
                         pathfinding::GridPos{
-                            .x = supportingCell->x,
-                            .y = supportingCell->y,
-                            .z = supportingCell->z});
+                            .x = supportingCell->position.x,
+                            .y = supportingCell->position.y,
+                            .z = supportingCell->position.z});
                 }
             }
 

@@ -112,7 +112,7 @@ namespace antwika::voxelmap
                            ? tilemap::Atlas::Floor
                            : tilemap::Atlas::Wall,
                     .index = static_cast<std::uint16_t>(
-                        defaultTileIndex(face.cell.position(), face.side))});
+                        defaultTileIndex(face.cell.position, face.side))});
         }
 
         return tiles;
