@@ -383,6 +383,8 @@ namespace antwika::editor
         void drawSightPoints(const gfx::Mat4 &clipMatrix);
 
         void consumeItem(component::ItemKind kind);
+        void sayConsumeReport();
+        void sayDialogueLine();
 
         void interact();
 

@@ -5,6 +5,7 @@
 
 #include <antwika/component/Health.hpp>
 #include <antwika/component/Inventory.hpp>
+#include <antwika/ecs/OpenPhase.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/voxel/VoxelCell.hpp>
 
@@ -14,6 +15,7 @@
 
 #include "antwika/editor/editor/GameModule.hpp"
 
+using antwika::ecs::OpenPhase;
 using antwika::ecs::World;
 using antwika::voxel::VoxelPosition;
 using antwika::voxel::Voxels;
@@ -61,8 +63,11 @@ TEST_F(GameModuleTest, GameModule_ClaimsThePlayForTheImageThatHoldsIt)
     GameModule module(logger, world, solidVoxels, patrolPositions);
     const auto entity = world.create();
 
-    world.add<Health>(entity, Health{.food = 7});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Health>(entity, Health{.food = 7});
+    }
 
     EXPECT_TRUE(world.has<Health>(entity));
 }
@@ -74,9 +79,12 @@ TEST_F(GameModuleTest, Reload_LeavesWhatWasPlayedStandingInTheWorld)
     GameModule module(logger, world, solidVoxels, patrolPositions);
     const auto entity = world.create();
 
-    world.add<Health>(entity, Health{.food = 7});
-    world.add<Inventory>(entity, Inventory{});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Health>(entity, Health{.food = 7});
+        world.add<Inventory>(entity, Inventory{});
+    }
 
     ASSERT_TRUE(module.reload());
 

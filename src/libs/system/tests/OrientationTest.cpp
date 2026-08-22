@@ -1,12 +1,14 @@
 #include <gtest/gtest.h>
 
 #include <antwika/component/Orientation.hpp>
+#include <antwika/ecs/OpenPhase.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/rules/Orientation.hpp>
 
 #include "antwika/system/OrientationSystem.hpp"
 #include "antwika/gameplay/GameLoop.hpp"
 
+using antwika::ecs::OpenPhase;
 using antwika::ecs::World;
 using antwika::gameplay::Phase;
 using antwika::system::OrientationSystem;
@@ -61,8 +63,11 @@ TEST(OrientationTest, Update_TurnsEveryOrientationOfTheWorld)
 
     const auto entity = gameLoop.world().create();
 
-    gameLoop.world().add<Orientation>(entity, Orientation{});
-    gameLoop.world().commit();
+    {
+        const OpenPhase phase(gameLoop.world());
+
+        gameLoop.world().add<Orientation>(entity, Orientation{});
+    }
 
     lookKeys.east = true;
     gameLoop.run(0);

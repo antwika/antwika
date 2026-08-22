@@ -4,6 +4,7 @@
 #include <antwika/component/AnimationState.hpp>
 #include <antwika/component/Orientation.hpp>
 #include <antwika/component/Position.hpp>
+#include <antwika/ecs/OpenPhase.hpp>
 #include <antwika/decor/Decor.hpp>
 #include <antwika/editor/ui/IconSheet.hpp>
 #include <antwika/editor/ui/MapPicker.hpp>
@@ -103,11 +104,16 @@ namespace antwika::editor
         }
 
         spawnRoster();
-        game->world().set<component::Position>(game->player(), stoodPosition);
-        game->world().set<component::AnimationState>(
-            game->player(),
-            component::AnimationState{.direction = startPlacement.way});
-        game->world().commit();
+
+        {
+            const ecs::OpenPhase phase(game->world());
+
+            game->world().set<component::Position>(
+                game->player(), stoodPosition);
+            game->world().set<component::AnimationState>(
+                game->player(),
+                component::AnimationState{.direction = startPlacement.way});
+        }
 
         game->cameraTarget() =
             antwika::gfx::Vec3{stoodPosition.x, stoodPosition.y,
@@ -126,9 +132,13 @@ namespace antwika::editor
 
         if (restPosition.has_value())
         {
-            game->world().set<component::Position>(
-                game->player(), *restPosition);
-            game->world().commit();
+            {
+                const ecs::OpenPhase phase(game->world());
+
+                game->world().set<component::Position>(
+                    game->player(), *restPosition);
+            }
+
             game->cameraTarget() = antwika::gfx::Vec3{
                 restPosition->x, restPosition->y, restPosition->z};
         }

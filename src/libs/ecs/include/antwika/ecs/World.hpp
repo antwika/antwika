@@ -127,8 +127,6 @@ namespace antwika::ecs
             return View<Ts...>(findStorage<Ts>()...);
         }
 
-        void commit();
-
         template <Component T>
         void claim()
         {
@@ -139,6 +137,10 @@ namespace antwika::ecs
         void forgetComponents() noexcept;
 
     private:
+        friend class OpenPhase;
+
+        void commit();
+
         static constexpr std::size_t kSeedSlots = 8;
 
         static_assert((kSeedSlots & (kSeedSlots - 1)) == 0);

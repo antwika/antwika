@@ -7,6 +7,7 @@
 
 #include <antwika/camera/FlyCamera.hpp>
 #include <antwika/character/Character.hpp>
+#include <antwika/ecs/OpenPhase.hpp>
 #include <antwika/gameplay/GateState.hpp>
 #include <antwika/component/AnimationState.hpp>
 #include <antwika/component/Orientation.hpp>
@@ -20,6 +21,7 @@
 
 #include "antwika/gameplay/Game.hpp"
 
+using antwika::ecs::OpenPhase;
 using antwika::ecs::World;
 using antwika::voxel::VoxelPosition;
 using antwika::voxel::Voxels;
@@ -65,18 +67,21 @@ namespace
         {
             const auto entity = game.world().create();
 
-            game.setPlayer(entity);
-            game.world().add<Player>(entity, Player{});
-            game.world().add<Velocity>(entity, Velocity{});
-            game.world().add<Position>(
-                entity,
-                Position{
-                    .x = x,
-                    .y = antwika::voxel::kVoxelSide,
-                    .z = z});
-            game.world().add<AnimationState>(
-                entity, AnimationState{.direction = 3});
-            game.world().commit();
+            {
+                const OpenPhase phase(game.world());
+
+                game.setPlayer(entity);
+                game.world().add<Player>(entity, Player{});
+                game.world().add<Velocity>(entity, Velocity{});
+                game.world().add<Position>(
+                    entity,
+                    Position{
+                        .x = x,
+                        .y = antwika::voxel::kVoxelSide,
+                        .z = z});
+                game.world().add<AnimationState>(
+                    entity, AnimationState{.direction = 3});
+            }
         }
 
         NiceMock<MockLogger> logger;

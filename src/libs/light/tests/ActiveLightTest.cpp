@@ -7,11 +7,13 @@
 #include <antwika/component/FillLight.hpp>
 #include <antwika/component/Lamplight.hpp>
 #include <antwika/component/Position.hpp>
+#include <antwika/ecs/OpenPhase.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
 #include <antwika/light/ActiveLight.hpp>
 
+using antwika::ecs::OpenPhase;
 using antwika::ecs::World;
 using antwika::component::kCarriedLightHeight;
 using antwika::light::kMaxLamps;
@@ -62,10 +64,13 @@ TEST(
     World world(logger);
     const auto entity = world.create();
 
-    world.add<Position>(
-        entity, Position{.x = 4.0F, .y = 0.5F, .z = -2.0F});
-    world.add<CarriedLight>(entity, CarriedLight{.tintColor = kRedColor});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(
+            entity, Position{.x = 4.0F, .y = 0.5F, .z = -2.0F});
+        world.add<CarriedLight>(entity, CarriedLight{.tintColor = kRedColor});
+    }
 
     const auto lights = activeLights(world, {});
 
@@ -86,9 +91,12 @@ TEST(
     World world(logger);
     const auto entity = world.create();
 
-    world.add<Position>(entity, Position{});
-    world.add<CarriedLight>(entity, CarriedLight{.tintColor = kRedColor});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(entity, Position{});
+        world.add<CarriedLight>(entity, CarriedLight{.tintColor = kRedColor});
+    }
 
     std::vector<Lamp> lamps;
 
@@ -113,15 +121,17 @@ TEST(
     NiceMock<MockLogger> logger;
     World world(logger);
 
-    for (std::size_t index = 0; index <= kMaxLamps; ++index)
     {
-        const auto entity = world.create();
+        const OpenPhase phase(world);
 
-        world.add<Position>(entity, Position{});
-        world.add<CarriedLight>(entity, CarriedLight{});
+        for (std::size_t index = 0; index <= kMaxLamps; ++index)
+        {
+            const auto entity = world.create();
+
+            world.add<Position>(entity, Position{});
+            world.add<CarriedLight>(entity, CarriedLight{});
+        }
     }
-
-    world.commit();
 
     EXPECT_EQ(activeLights(world, {}).size(), kMaxLamps);
 }
@@ -251,8 +261,11 @@ TEST(
     World world(logger);
     const auto bareEntity = world.create();
 
-    world.add<Position>(bareEntity, Position{});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(bareEntity, Position{});
+    }
 
     EXPECT_FALSE(carriedLightSlot(world, bareEntity).has_value());
 }
@@ -266,13 +279,16 @@ TEST(
     const auto first = world.create();
     const auto second = world.create();
 
-    for (const auto entity : {first, second})
     {
-        world.add<Position>(entity, Position{.x = 1.0F});
-        world.add<CarriedLight>(entity, CarriedLight{.tintColor = kRedColor});
-    }
+        const OpenPhase phase(world);
 
-    world.commit();
+        for (const auto entity : {first, second})
+        {
+            world.add<Position>(entity, Position{.x = 1.0F});
+            world.add<CarriedLight>(
+                entity, CarriedLight{.tintColor = kRedColor});
+        }
+    }
 
     const auto slot = carriedLightSlot(world, second);
     const auto lights = activeLights(world, {});
@@ -293,16 +309,18 @@ TEST(
     World world(logger);
     std::vector<antwika::ecs::Entity> litEntities;
 
-    for (std::size_t index = 0; index <= kMaxLamps; ++index)
     {
-        const auto entity = world.create();
+        const OpenPhase phase(world);
 
-        world.add<Position>(entity, Position{});
-        world.add<CarriedLight>(entity, CarriedLight{});
-        litEntities.push_back(entity);
+        for (std::size_t index = 0; index <= kMaxLamps; ++index)
+        {
+            const auto entity = world.create();
+
+            world.add<Position>(entity, Position{});
+            world.add<CarriedLight>(entity, CarriedLight{});
+            litEntities.push_back(entity);
+        }
     }
-
-    world.commit();
 
     EXPECT_FALSE(carriedLightSlot(world, litEntities.back()).has_value());
 }
@@ -316,9 +334,12 @@ TEST(
     const auto entity = world.create();
     const auto top = 0.5F * antwika::voxel::kVoxelSide;
 
-    world.add<Position>(entity, Position{.x = 0.0F, .y = top});
-    world.add<CarriedLight>(entity, CarriedLight{});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(entity, Position{.x = 0.0F, .y = top});
+        world.add<CarriedLight>(entity, CarriedLight{});
+    }
 
     const auto lights = activeLights(world, {});
 
@@ -341,9 +362,12 @@ TEST(
     World world(logger);
     const auto entity = world.create();
 
-    world.add<Position>(entity, Position{});
-    world.add<CarriedLight>(entity, CarriedLight{});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(entity, Position{});
+        world.add<CarriedLight>(entity, CarriedLight{});
+    }
 
     const std::vector<Lamp> lamps{
         Lamp{.position = VoxelPosition{.x = 6, .y = 0, .z = 0}}};
@@ -378,9 +402,12 @@ TEST(ActiveLightTest, ActiveLights_CountsFolkAfterTheCarriedLight)
     World world(logger);
     const auto entity = world.create();
 
-    world.add<Position>(entity, Position{});
-    world.add<CarriedLight>(entity, CarriedLight{.tintColor = kRedColor});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(entity, Position{});
+        world.add<CarriedLight>(entity, CarriedLight{.tintColor = kRedColor});
+    }
 
     const std::vector<ActiveLight> folkLights{
         ActiveLight{.position = {1.0F, 2.0F, 3.0F}}};
@@ -417,9 +444,12 @@ TEST(ActiveLightTest, ActiveLights_MatchesItsOldWaysWithNoFolk)
     World world(logger);
     const auto entity = world.create();
 
-    world.add<Position>(entity, Position{});
-    world.add<CarriedLight>(entity, CarriedLight{});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(entity, Position{});
+        world.add<CarriedLight>(entity, CarriedLight{});
+    }
 
     const std::vector<Lamp> lamps{
         Lamp{.position = VoxelPosition{.x = 4}}};
@@ -439,10 +469,13 @@ TEST(
     World world(logger);
     const auto entity = world.create();
 
-    world.add<Position>(
-        entity, Position{.x = 4.0F, .y = 0.5F, .z = -2.0F});
-    world.add<FillLight>(entity, FillLight{});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(
+            entity, Position{.x = 4.0F, .y = 0.5F, .z = -2.0F});
+        world.add<FillLight>(entity, FillLight{});
+    }
 
     const auto lights = activeLights(world, {});
 
@@ -462,10 +495,13 @@ TEST(ActiveLightTest, ActiveLights_HangsAFillLightOverACarriedOne)
     World world(logger);
     const auto entity = world.create();
 
-    world.add<Position>(entity, Position{});
-    world.add<CarriedLight>(entity, CarriedLight{});
-    world.add<FillLight>(entity, FillLight{});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(entity, Position{});
+        world.add<CarriedLight>(entity, CarriedLight{});
+        world.add<FillLight>(entity, FillLight{});
+    }
 
     const auto lights = activeLights(world, {});
 
@@ -521,11 +557,14 @@ TEST(
     const auto first = world.create();
     const auto second = world.create();
 
-    world.add<Position>(first, Position{});
-    world.add<FillLight>(first, FillLight{});
-    world.add<Position>(second, Position{});
-    world.add<CarriedLight>(second, CarriedLight{.tintColor = kRedColor});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(first, Position{});
+        world.add<FillLight>(first, FillLight{});
+        world.add<Position>(second, Position{});
+        world.add<CarriedLight>(second, CarriedLight{.tintColor = kRedColor});
+    }
 
     const auto lights = activeLights(world, {});
 
@@ -542,9 +581,12 @@ TEST(ActiveLightTest, ActiveLights_CountsAFillLightBeforeTheFolk)
     World world(logger);
     const auto entity = world.create();
 
-    world.add<Position>(entity, Position{});
-    world.add<FillLight>(entity, FillLight{});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(entity, Position{});
+        world.add<FillLight>(entity, FillLight{});
+    }
 
     const std::vector<ActiveLight> folkLights{
         ActiveLight{.position = {1.0F, 2.0F, 3.0F}, .tintColor = kRedColor}};
@@ -562,16 +604,18 @@ TEST(
     NiceMock<MockLogger> logger;
     World world(logger);
 
-    for (std::size_t index = 0; index <= kMaxLamps; ++index)
     {
-        const auto entity = world.create();
+        const OpenPhase phase(world);
 
-        world.add<Position>(entity, Position{});
-        world.add<CarriedLight>(entity, CarriedLight{});
-        world.add<FillLight>(entity, FillLight{});
+        for (std::size_t index = 0; index <= kMaxLamps; ++index)
+        {
+            const auto entity = world.create();
+
+            world.add<Position>(entity, Position{});
+            world.add<CarriedLight>(entity, CarriedLight{});
+            world.add<FillLight>(entity, FillLight{});
+        }
     }
-
-    world.commit();
 
     EXPECT_EQ(activeLights(world, {}).size(), kMaxLamps);
 }
@@ -613,13 +657,16 @@ TEST(
     const auto carrying = world.create();
     const auto hanging = world.create();
 
-    world.add<Position>(carrying, Position{.x = 1.0F});
-    world.add<CarriedLight>(
-        carrying, CarriedLight{.tintColor = kRedColor});
-    world.add<Position>(hanging, Position{.x = 2.0F});
-    world.add<FillLight>(hanging, FillLight{});
-    world.add<CarriedLight>(hanging, CarriedLight{});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(carrying, Position{.x = 1.0F});
+        world.add<CarriedLight>(
+            carrying, CarriedLight{.tintColor = kRedColor});
+        world.add<Position>(hanging, Position{.x = 2.0F});
+        world.add<FillLight>(hanging, FillLight{});
+        world.add<CarriedLight>(hanging, CarriedLight{});
+    }
 
     const auto lights = activeLights(world, {});
 
@@ -639,15 +686,21 @@ TEST(
     const auto second = world.create();
     const auto third = world.create();
 
-    for (const auto entity : {first, second, third})
     {
-        world.add<Position>(entity, Position{});
-        world.add<CarriedLight>(entity, CarriedLight{});
+        const OpenPhase phase(world);
+
+        for (const auto entity : {first, second, third})
+        {
+            world.add<Position>(entity, Position{});
+            world.add<CarriedLight>(entity, CarriedLight{});
+        }
     }
 
-    world.commit();
-    world.destroy(second);
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.destroy(second);
+    }
 
     EXPECT_EQ(
         carriedLightSlot(world, first),

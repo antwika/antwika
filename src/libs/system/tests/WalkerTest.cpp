@@ -7,12 +7,14 @@
 #include <antwika/component/Player.hpp>
 #include <antwika/component/Position.hpp>
 #include <antwika/component/Velocity.hpp>
+#include <antwika/ecs/OpenPhase.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/collision/Collision.hpp>
 
 #include "antwika/system/WalkerSystems.hpp"
 #include "antwika/gameplay/GameLoop.hpp"
 
+using antwika::ecs::OpenPhase;
 using antwika::ecs::World;
 using antwika::voxel::Voxels;
 using antwika::gameplay::Phase;
@@ -602,9 +604,12 @@ TEST(WalkerTest, Update_SendsAPlayerTheWayThatIsHeld)
 
     const auto entity = gameLoop.world().create();
 
-    gameLoop.world().add<Player>(entity, Player{});
-    gameLoop.world().add<Velocity>(entity, Velocity{});
-    gameLoop.world().commit();
+    {
+        const OpenPhase phase(gameLoop.world());
+
+        gameLoop.world().add<Player>(entity, Player{});
+        gameLoop.world().add<Velocity>(entity, Velocity{});
+    }
 
     wasdKeys.east = true;
     wasdKeys.north = true;
@@ -629,8 +634,11 @@ TEST(WalkerTest, Update_LeavesACharacterWithNoPlayerTagUnsent)
 
     const auto entity = gameLoop.world().create();
 
-    gameLoop.world().add<Velocity>(entity, Velocity{});
-    gameLoop.world().commit();
+    {
+        const OpenPhase phase(gameLoop.world());
+
+        gameLoop.world().add<Velocity>(entity, Velocity{});
+    }
 
     wasdKeys.east = true;
     gameLoop.run(0);
@@ -654,15 +662,18 @@ TEST(WalkerTest, Update_WalksTwoWalkersOverThePileAtOnce)
     const auto east = gameLoop.world().create();
     const auto west = gameLoop.world().create();
 
-    gameLoop.world().add<Position>(
-        east, Position{.x = 0.5F, .y = 1.0F, .z = 0.5F});
-    gameLoop.world().add<Velocity>(
-        east, Velocity{.velocityX = 1.0F});
-    gameLoop.world().add<Position>(
-        west, Position{.x = 0.5F, .y = 1.0F, .z = 0.5F});
-    gameLoop.world().add<Velocity>(
-        west, Velocity{.velocityX = -1.0F});
-    gameLoop.world().commit();
+    {
+        const OpenPhase phase(gameLoop.world());
+
+        gameLoop.world().add<Position>(
+            east, Position{.x = 0.5F, .y = 1.0F, .z = 0.5F});
+        gameLoop.world().add<Velocity>(
+            east, Velocity{.velocityX = 1.0F});
+        gameLoop.world().add<Position>(
+            west, Position{.x = 0.5F, .y = 1.0F, .z = 0.5F});
+        gameLoop.world().add<Velocity>(
+            west, Velocity{.velocityX = -1.0F});
+    }
 
     gameLoop.run(0);
 
@@ -688,11 +699,14 @@ TEST(WalkerTest, Update_WalksEveryWalkerOverThePileAsItStands)
 
     const auto entity = gameLoop.world().create();
 
-    gameLoop.world().add<Position>(
-        entity, Position{.x = 0.5F, .y = 1.0F, .z = 0.5F});
-    gameLoop.world().add<Velocity>(
-        entity, Velocity{.velocityX = 1.0F, .velocityZ = 0.0F});
-    gameLoop.world().commit();
+    {
+        const OpenPhase phase(gameLoop.world());
+
+        gameLoop.world().add<Position>(
+            entity, Position{.x = 0.5F, .y = 1.0F, .z = 0.5F});
+        gameLoop.world().add<Velocity>(
+            entity, Velocity{.velocityX = 1.0F, .velocityZ = 0.0F});
+    }
 
     gameLoop.run(0);
 

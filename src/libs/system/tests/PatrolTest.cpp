@@ -8,12 +8,14 @@
 #include <antwika/component/Position.hpp>
 #include <antwika/component/RosterIndex.hpp>
 #include <antwika/component/Velocity.hpp>
+#include <antwika/ecs/OpenPhase.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/collision/Collision.hpp>
 
 #include "antwika/gameplay/GameLoop.hpp"
 #include "antwika/system/PatrolSystem.hpp"
 
+using antwika::ecs::OpenPhase;
 using antwika::ecs::World;
 using antwika::voxel::VoxelPosition;
 using antwika::voxel::Voxels;
@@ -66,6 +68,8 @@ namespace
 
         void begin(const Position stoodPosition)
         {
+            const OpenPhase phase(gameLoop.world());
+
             gameLoop.addSystem(Phase::Sending, system);
             entity = gameLoop.world().create();
             gameLoop.world().add<Position>(entity, stoodPosition);
@@ -73,7 +77,6 @@ namespace
             gameLoop.world().add<Patrol>(entity, Patrol{});
             gameLoop.world().add<RosterIndex>(
                 entity, RosterIndex{.index = 0});
-            gameLoop.world().commit();
         }
 
         [[nodiscard]] Velocity sent() const
@@ -308,20 +311,23 @@ TEST(PatrolTest, Update_StrollsEveryCharacterOfTheRoster)
 
     std::vector<Entity> folkEntities;
 
-    for (std::uint32_t index = 0; index < 2U; ++index)
     {
-        const auto entity = gameLoop.world().create();
+        const OpenPhase phase(gameLoop.world());
 
-        gameLoop.world().add<Position>(
-            entity, Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
-        gameLoop.world().add<Velocity>(entity, Velocity{});
-        gameLoop.world().add<Patrol>(entity, Patrol{});
-        gameLoop.world().add<RosterIndex>(
-            entity, RosterIndex{.index = index});
-        folkEntities.push_back(entity);
+        for (std::uint32_t index = 0; index < 2U; ++index)
+        {
+            const auto entity = gameLoop.world().create();
+
+            gameLoop.world().add<Position>(
+                entity, Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
+            gameLoop.world().add<Velocity>(entity, Velocity{});
+            gameLoop.world().add<Patrol>(entity, Patrol{});
+            gameLoop.world().add<RosterIndex>(
+                entity, RosterIndex{.index = index});
+            folkEntities.push_back(entity);
+        }
     }
 
-    gameLoop.world().commit();
     gameLoop.run(0);
 
     EXPECT_NEAR(

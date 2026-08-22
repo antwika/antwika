@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <set>
@@ -24,9 +25,11 @@
 #include "antwika/rules/Gates.hpp"
 #include "antwika/system/AnimationSystem.hpp"
 #include "antwika/system/OrientationSystem.hpp"
+#include "antwika/system/ConsumeSystem.hpp"
 #include "antwika/system/HealthSystem.hpp"
 #include "antwika/gameplay/IGame.hpp"
 #include "antwika/system/PatrolSystem.hpp"
+#include "antwika/system/TalkSystem.hpp"
 #include "antwika/system/WalkerSystems.hpp"
 
 namespace antwika::gameplay
@@ -65,6 +68,8 @@ namespace antwika::gameplay
         void setWorldFrozen(bool frozen) noexcept override;
 
         void setRunning(bool running) noexcept override;
+
+        void setRosterCount(std::size_t rosterCount) noexcept override;
 
         void forgetPatrols() override;
 
@@ -120,6 +125,8 @@ namespace antwika::gameplay
         system::WalkSystem walkSystem;
         system::AnimationSystem animationSystem;
         system::HealthSystem healthSystem;
+        system::ConsumeSystem consumeSystem;
+        system::TalkSystem talkSystem;
         input::DirectionKeys wasdDirectionKeys;
         input::DirectionKeys arrowDirectionKeys;
         ecs::Entity eyeEntity{};

@@ -14,12 +14,14 @@
 #include <antwika/component/RosterIndex.hpp>
 #include <antwika/component/Speaker.hpp>
 #include <antwika/component/Velocity.hpp>
+#include <antwika/ecs/OpenPhase.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/map/MapFileError.hpp>
 
 #include "antwika/gameplay/ComponentNames.hpp"
 
+using antwika::ecs::OpenPhase;
 using antwika::gameplay::addComponentsNamed;
 using antwika::gameplay::componentNamed;
 using antwika::gameplay::componentNames;
@@ -78,10 +80,12 @@ namespace
         World world(logger);
         const auto entity = world.create();
 
-        world.commit();
-        addComponentsNamed(
-            world, entity, spawnContextOf(), everyName());
-        world.commit();
+        {
+            const OpenPhase phase(world);
+
+            addComponentsNamed(
+                world, entity, spawnContextOf(), everyName());
+        }
 
         EXPECT_TRUE(world.has<antwika::component::Position>(entity));
         EXPECT_TRUE(
@@ -103,16 +107,18 @@ namespace
         World world(logger);
         const auto entity = world.create();
 
-        world.commit();
-        addComponentsNamed(
-            world,
-            entity,
-            spawnContextOf(),
-            std::vector<std::string>{
-                "component::Position",
-                "component::AnimationState",
-                "component::RosterIndex"});
-        world.commit();
+        {
+            const OpenPhase phase(world);
+
+            addComponentsNamed(
+                world,
+                entity,
+                spawnContextOf(),
+                std::vector<std::string>{
+                    "component::Position",
+                    "component::AnimationState",
+                    "component::RosterIndex"});
+        }
 
         EXPECT_FLOAT_EQ(
             world.get<antwika::component::Position>(entity).x, 1.0F);
@@ -132,8 +138,6 @@ namespace
         NiceMock<MockLogger> logger;
         World world(logger);
         const auto entity = world.create();
-
-        world.commit();
 
         EXPECT_THROW(
             addComponentsNamed(

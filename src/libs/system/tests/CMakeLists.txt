@@ -1,9 +1,11 @@
 find_package(GTest REQUIRED)
 
 add_executable(antwika_system_tests
+    ConsumeTest.cpp
     HealthTest.cpp
     OrientationTest.cpp
     PatrolTest.cpp
+    TalkTest.cpp
     TickPacerTest.cpp
     WalkerTest.cpp
 )

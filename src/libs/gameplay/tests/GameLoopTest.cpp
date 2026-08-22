@@ -3,6 +3,7 @@
 #include <vector>
 
 #include <antwika/ecs/ISystem.hpp>
+#include <antwika/ecs/OpenPhase.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
@@ -12,6 +13,7 @@
 #include "antwika/gameplay/fakes/UpdateCount.hpp"
 #include "antwika/gameplay/GameLoop.hpp"
 
+using antwika::ecs::OpenPhase;
 using antwika::ecs::World;
 namespace fakes = antwika::gameplay::fakes;
 
@@ -69,8 +71,11 @@ TEST(GameLoopTest, Run_SettlesAPhaseBeforeTheNextBegins)
     GameLoop gameLoop(world);
     const auto entity = gameLoop.world().create();
 
-    gameLoop.world().add<fakes::UpdateCount>(entity, fakes::UpdateCount{});
-    gameLoop.world().commit();
+    {
+        const OpenPhase phase(gameLoop.world());
+
+        gameLoop.world().add<fakes::UpdateCount>(entity, fakes::UpdateCount{});
+    }
 
     std::vector<int> seenOrder;
     fakes::FakeRaisingSystem raising(entity);
@@ -90,8 +95,11 @@ TEST(GameLoopTest, Run_HidesWhatItsOwnPhaseIsStillWriting)
     GameLoop gameLoop(world);
     const auto entity = gameLoop.world().create();
 
-    gameLoop.world().add<fakes::UpdateCount>(entity, fakes::UpdateCount{});
-    gameLoop.world().commit();
+    {
+        const OpenPhase phase(gameLoop.world());
+
+        gameLoop.world().add<fakes::UpdateCount>(entity, fakes::UpdateCount{});
+    }
 
     std::vector<int> seenOrder;
     fakes::FakeRaisingSystem raising(entity);
