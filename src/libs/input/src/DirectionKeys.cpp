@@ -1,35 +1,47 @@
 #include "antwika/input/DirectionKeys.hpp"
 
+#include <algorithm>
+#include <array>
+#include <span>
+
 namespace antwika::input
 {
 
     namespace
     {
+        struct DirectionRow final
+        {
+            Key pressedKey;
+            bool DirectionKeys::*heldFlag;
+        };
+
+        constexpr std::array kArrowRows{
+            DirectionRow{Key::ArrowUp, &DirectionKeys::north},
+            DirectionRow{Key::ArrowDown, &DirectionKeys::south},
+            DirectionRow{Key::ArrowLeft, &DirectionKeys::west},
+            DirectionRow{Key::ArrowRight, &DirectionKeys::east}};
+
+        constexpr std::array kWasdRows{
+            DirectionRow{Key::W, &DirectionKeys::north},
+            DirectionRow{Key::S, &DirectionKeys::south},
+            DirectionRow{Key::A, &DirectionKeys::west},
+            DirectionRow{Key::D, &DirectionKeys::east}};
+
         void hold(
             DirectionKeys &keys,
+            const std::span<const DirectionRow> rows,
             const Key key,
-            const bool down,
-            const Key northKey,
-            const Key southKey,
-            const Key westKey,
-            const Key eastKey) noexcept
+            const bool down) noexcept
         {
-            if (key == northKey)
+            const auto foundRow =
+                std::ranges::find(rows, key, &DirectionRow::pressedKey);
+
+            if (foundRow == rows.end())
             {
-                keys.north = down;
+                return;
             }
-            else if (key == southKey)
-            {
-                keys.south = down;
-            }
-            else if (key == westKey)
-            {
-                keys.west = down;
-            }
-            else if (key == eastKey)
-            {
-                keys.east = down;
-            }
+
+            keys.*(foundRow->heldFlag) = down;
         }
     }
 
@@ -48,14 +60,7 @@ namespace antwika::input
         const Key key,
         const bool down) noexcept
     {
-        hold(
-            keys,
-            key,
-            down,
-            Key::ArrowUp,
-            Key::ArrowDown,
-            Key::ArrowLeft,
-            Key::ArrowRight);
+        hold(keys, kArrowRows, key, down);
     }
 
     void applyWasdKey(
@@ -63,14 +68,7 @@ namespace antwika::input
         const Key key,
         const bool down) noexcept
     {
-        hold(
-            keys,
-            key,
-            down,
-            Key::W,
-            Key::S,
-            Key::A,
-            Key::D);
+        hold(keys, kWasdRows, key, down);
     }
 
 }
