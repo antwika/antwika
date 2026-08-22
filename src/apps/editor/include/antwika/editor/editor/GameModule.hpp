@@ -3,14 +3,13 @@
 #include <cstddef>
 #include <filesystem>
 #include <optional>
-#include <set>
 #include <string>
 #include <vector>
 
 #include <antwika/ecs/World.hpp>
 #include <antwika/gameplay/IGame.hpp>
 #include <antwika/log/ILogger.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 
 namespace antwika::editor
 {
@@ -21,9 +20,9 @@ namespace antwika::editor
         GameModule(
             log::ILogger &logger,
             ecs::World &world,
-            const std::set<voxel::VoxelCell> &solidCells,
-            const std::vector<std::vector<voxel::VoxelCell>>
-                &patrolCells);
+            const voxel::Voxels &solidVoxels,
+            const std::vector<std::vector<voxel::VoxelPosition>>
+                &patrolPositions);
 
         ~GameModule();
 
@@ -53,8 +52,8 @@ namespace antwika::editor
             gameplay::IGame *(**setUp)(
                 log::ILogger *,
                 ecs::World *,
-                const std::set<voxel::VoxelCell> *,
-                const std::vector<std::vector<voxel::VoxelCell>> *),
+                const voxel::Voxels *,
+                const std::vector<std::vector<voxel::VoxelPosition>> *),
             void (**takeDown)(gameplay::IGame *));
 
         [[nodiscard]] std::optional<std::string> copied();
@@ -67,8 +66,8 @@ namespace antwika::editor
 
         log::ILogger *logger = nullptr;
         ecs::World *world = nullptr;
-        const std::set<voxel::VoxelCell> *solidCells = nullptr;
-        const std::vector<std::vector<voxel::VoxelCell>> *patrolCells =
+        const voxel::Voxels *solidVoxels = nullptr;
+        const std::vector<std::vector<voxel::VoxelPosition>> *patrolPositions =
             nullptr;
         void *library = nullptr;
 #endif
@@ -76,8 +75,8 @@ namespace antwika::editor
         gameplay::IGame *(*setUp)(
             log::ILogger *,
             ecs::World *,
-            const std::set<voxel::VoxelCell> *,
-            const std::vector<std::vector<voxel::VoxelCell>> *)
+            const voxel::Voxels *,
+            const std::vector<std::vector<voxel::VoxelPosition>> *)
             = nullptr;
         void (*takeDown)(gameplay::IGame *) = nullptr;
         gameplay::IGame *madeGame = nullptr;

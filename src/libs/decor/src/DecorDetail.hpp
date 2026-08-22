@@ -40,14 +40,13 @@ namespace antwika::decor::decordetail
     [[nodiscard]] std::uint32_t hashMix(std::uint32_t value);
 
     [[nodiscard]] std::uint8_t frequencyRollFor(
-        voxel::VoxelCell cell,
+        voxel::VoxelPosition position,
         std::size_t which,
         std::uint32_t seed,
         std::uint32_t stir);
 
-    [[nodiscard]] voxel::VoxelCell wallTangent(std::size_t side);
+    [[nodiscard]] voxel::VoxelPosition wallTangent(std::size_t side);
 
-    [[nodiscard]] voxel::VoxelCell positionOnly(voxel::VoxelCell cell);
 
     [[nodiscard]] std::map<std::size_t, tilemap::Tile> placeSpannedDecor(
         const std::vector<voxelmap::FaceRef> &faces,

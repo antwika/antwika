@@ -22,30 +22,32 @@ namespace
 
 TEST(PointLightTest, WithLampAt_SetsOneDownWhereItIsAsked)
 {
-    using antwika::voxel::VoxelCell;
+    using antwika::voxel::VoxelPosition;
+using antwika::voxel::VoxelPosition;
     using antwika::light::withLampAt;
 
-    constexpr VoxelCell whereCell{.x = 1, .y = 2, .z = 3};
+    constexpr VoxelPosition wherePosition{.x = 1, .y = 2, .z = 3};
     constexpr antwika::gfx::Color tintColor{
         .red = 10, .green = 20, .blue = 30, .alpha = 40};
 
-    const auto lamps = withLampAt({}, whereCell, tintColor);
+    const auto lamps = withLampAt({}, wherePosition, tintColor);
 
     ASSERT_EQ(lamps.size(), 1U);
-    EXPECT_EQ(lamps.front().cell, whereCell);
+    EXPECT_EQ(lamps.front().position, wherePosition);
     EXPECT_EQ(lamps.front().tintColor, tintColor);
 }
 
 TEST(PointLightTest, WithLampAt_ColorsAfreshTheLampAlreadyThere)
 {
-    using antwika::voxel::VoxelCell;
+    using antwika::voxel::VoxelPosition;
+using antwika::voxel::VoxelPosition;
     using antwika::light::withLampAt;
 
-    constexpr VoxelCell whereCell{.x = 4};
+    constexpr VoxelPosition wherePosition{.x = 4};
     constexpr antwika::gfx::Color mineColor{.red = 200};
 
     const auto lamps =
-        withLampAt(withLampAt({}, whereCell, {}), whereCell, mineColor);
+        withLampAt(withLampAt({}, wherePosition, {}), wherePosition, mineColor);
 
     ASSERT_EQ(lamps.size(), 1U);
     EXPECT_EQ(lamps.front().tintColor, mineColor);
@@ -54,7 +56,8 @@ TEST(PointLightTest, WithLampAt_ColorsAfreshTheLampAlreadyThere)
 TEST(PointLightTest, WithLampAt_SetsNoMoreDownThanTheWorldDrawsBy)
 {
     using antwika::light::kMaxLamps;
-    using antwika::voxel::VoxelCell;
+    using antwika::voxel::VoxelPosition;
+using antwika::voxel::VoxelPosition;
     using antwika::light::withLampAt;
 
     std::vector<antwika::light::Lamp> lamps;
@@ -63,7 +66,7 @@ TEST(PointLightTest, WithLampAt_SetsNoMoreDownThanTheWorldDrawsBy)
          index < static_cast<std::int32_t>(kMaxLamps) + 3;
          ++index)
     {
-        lamps = withLampAt(lamps, VoxelCell{.x = index}, {});
+        lamps = withLampAt(lamps, VoxelPosition{.x = index}, {});
     }
 
     EXPECT_EQ(lamps.size(), kMaxLamps);
@@ -71,20 +74,21 @@ TEST(PointLightTest, WithLampAt_SetsNoMoreDownThanTheWorldDrawsBy)
 
 TEST(PointLightTest, WithoutLampAt_TakesAwayOnlyTheOneAsked)
 {
-    using antwika::voxel::VoxelCell;
+    using antwika::voxel::VoxelPosition;
+using antwika::voxel::VoxelPosition;
     using antwika::light::withLampAt;
     using antwika::light::withoutLampAt;
 
-    constexpr VoxelCell mineCell{.x = 1};
-    constexpr VoxelCell theirsCell{.x = 2};
+    constexpr VoxelPosition minePosition{.x = 1};
+    constexpr VoxelPosition theirsPosition{.x = 2};
 
     const auto lamps =
-        withoutLampAt(withLampAt(withLampAt({}, mineCell, {}),
-                                 theirsCell, {}),
-                      mineCell);
+        withoutLampAt(withLampAt(withLampAt({}, minePosition, {}),
+                                 theirsPosition, {}),
+                      minePosition);
 
     ASSERT_EQ(lamps.size(), 1U);
-    EXPECT_EQ(lamps.front().cell, theirsCell);
+    EXPECT_EQ(lamps.front().position, theirsPosition);
 }
 
 TEST(PointLightTest, LampGizmoSpans_CrossesTheMiddleOfItsOwnPlace)
@@ -92,11 +96,12 @@ TEST(PointLightTest, LampGizmoSpans_CrossesTheMiddleOfItsOwnPlace)
     using antwika::voxelmap::cellMiddle;
     using antwika::light::Lamp;
     using antwika::light::lampGizmoSpans;
-    using antwika::voxel::VoxelCell;
+    using antwika::voxel::VoxelPosition;
+using antwika::voxel::VoxelPosition;
 
-    constexpr Lamp lamp{.cell = VoxelCell{.x = 2, .y = -1, .z = 5}};
+    constexpr Lamp lamp{.position = VoxelPosition{.x = 2, .y = -1, .z = 5}};
 
-    const auto middle = cellMiddle(lamp.cell);
+    const auto middle = cellMiddle(lamp.position);
     const auto spans = lampGizmoSpans(lamp);
 
     EXPECT_FALSE(spans.empty());
@@ -239,24 +244,28 @@ TEST(PointLightTest, LampNearPlane_ClearsTheWallAWalkerPressesInto)
     using antwika::voxel::kVoxelSide;
     using antwika::collision::kWalkSpeed;
     using antwika::component::Position;
-    using antwika::voxel::VoxelCell;
+    using antwika::voxel::VoxelPosition;
+using antwika::voxel::VoxelPosition;
     using antwika::collision::movedWithCollision;
     using antwika::component::Velocity;
 
     constexpr std::int32_t kWall = 2;
     constexpr auto kFace = static_cast<float>(kWall) * kVoxelSide;
 
-    std::set<VoxelCell> filledCells;
+    antwika::voxel::Voxels filledVoxels;
 
     for (std::int32_t x = -2; x <= 2; ++x)
     {
         for (std::int32_t z = -3; z <= kWall; ++z)
         {
-            filledCells.insert(VoxelCell{.x = x, .y = 0, .z = z});
+            filledVoxels[VoxelPosition{.x = x, .y = 0, .z = z}] =
+            antwika::voxel::VoxelMaterial{};
         }
 
-        filledCells.insert(VoxelCell{.x = x, .y = 1, .z = kWall});
-        filledCells.insert(VoxelCell{.x = x, .y = 2, .z = kWall});
+        filledVoxels[VoxelPosition{.x = x, .y = 1, .z = kWall}] =
+            antwika::voxel::VoxelMaterial{};
+        filledVoxels[VoxelPosition{.x = x, .y = 2, .z = kWall}] =
+            antwika::voxel::VoxelMaterial{};
     }
 
     for (const auto depth : {-1.0F, -1.03F, -1.05F, -1.07F})
@@ -266,7 +275,7 @@ TEST(PointLightTest, LampNearPlane_ClearsTheWallAWalkerPressesInto)
         for (std::size_t step = 0; step < 200; ++step)
         {
             stoodPosition = movedWithCollision(
-                filledCells, stoodPosition, Velocity{.velocityZ = 1.0F});
+                filledVoxels, stoodPosition, Velocity{.velocityZ = 1.0F});
         }
 
         const auto gap = kFace - stoodPosition.z;

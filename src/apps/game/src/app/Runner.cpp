@@ -27,7 +27,7 @@
 #include <antwika/gameplay/Roster.hpp>
 #include <antwika/solver/VoxelWeave.hpp>
 #include <antwika/tilemap/AtlasLayout.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxel/VoxelOcclusion.hpp>
 #include <antwika/voxelmap/Voxel.hpp>
 #include <antwika/collision/Collision.hpp>
@@ -99,9 +99,9 @@ namespace antwika::game
               window->renderer(), window->size(), camera::kCanvasSize),
           map(map::loadMap(this->mapPath)),
           world(logger),
-          playGame(logger, world, meshes.cells(), patrolCells)
+          playGame(logger, world, meshes.cells(), patrolPositions)
     {
-        patrolCells = patrolStopsOf(map);
+        patrolPositions = patrolStopsOf(map);
         meshes.rebuild(
             viewportRenderer,
             map,
@@ -361,7 +361,7 @@ namespace antwika::game
         lightPasses.hide(
             viewportRenderer,
             voxel::occludingVoxels(meshes.cells(), walkerPosition),
-            voxel::VoxelCell{
+            voxel::VoxelPosition{
                 .x = static_cast<std::int32_t>(
                     std::floor(walkerPosition.x / voxel::kVoxelSide)),
                 .z = static_cast<std::int32_t>(
@@ -390,8 +390,8 @@ namespace antwika::game
                 .fadeAbove = stoodPosition.y,
                 .carrying =
                     light::carriedLightSlot(world, playGame.player()),
-                .hidingCornerCell = voxelmap::occlusionMaskOrigin(
-                    voxel::VoxelCell{
+                .hidingCornerPosition = voxelmap::occlusionMaskOrigin(
+                    voxel::VoxelPosition{
                         .x = static_cast<std::int32_t>(
                             std::floor(
                                 walkerPosition.x / voxel::kVoxelSide)),

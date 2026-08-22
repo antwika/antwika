@@ -16,15 +16,15 @@ namespace antwika::decor::decordetail
 
     namespace
     {
-        [[nodiscard]] voxel::VoxelCell spanDown(const std::size_t side)
+        [[nodiscard]] voxel::VoxelPosition spanDown(const std::size_t side)
         {
-            return side == 4 ? voxel::VoxelCell{.z = 1}
-                         : voxel::VoxelCell{.y = -1};
+            return side == 4 ? voxel::VoxelPosition{.z = 1}
+                         : voxel::VoxelPosition{.y = -1};
         }
 
-        [[nodiscard]] voxel::VoxelCell spanRight(const std::size_t side)
+        [[nodiscard]] voxel::VoxelPosition spanRight(const std::size_t side)
         {
-            return side == 4 ? voxel::VoxelCell{.x = 1}
+            return side == 4 ? voxel::VoxelPosition{.x = 1}
                          : wallTangent(side);
         }
 
@@ -47,7 +47,7 @@ namespace antwika::decor::decordetail
         const std::uint32_t seed)
     {
         std::map<std::size_t, tilemap::Tile> tile;
-        std::map<std::pair<std::size_t, voxel::VoxelCell>, std::size_t>
+        std::map<std::pair<std::size_t, voxel::VoxelPosition>, std::size_t>
             index;
 
         for (std::size_t faceIndex = 0; faceIndex < faces.size(); ++faceIndex)
@@ -60,7 +60,7 @@ namespace antwika::decor::decordetail
 
             index.emplace(
                 std::pair{
-                    faces[faceIndex].side, positionOnly(faces[faceIndex].cell)},
+                    faces[faceIndex].side, faces[faceIndex].cell.position()},
                 faceIndex);
         }
 
@@ -82,11 +82,11 @@ namespace antwika::decor::decordetail
 
                 if (!index.contains(
                         std::pair{
-                            side, positionOnly(faces[faceIndex].cell)})
+                            side, faces[faceIndex].cell.position()})
                     || tile.contains(faceIndex)
                     || !takes(record, drawnTiles[faceIndex])
                     || frequencyRollFor(
-                           faces[faceIndex].cell,
+                           faces[faceIndex].cell.position(),
                            which,
                            seed,
                            upward
@@ -111,17 +111,17 @@ namespace antwika::decor::decordetail
                          allCovered && column < record.width;
                          ++column)
                     {
-                        const auto cell = positionOnly(
-                            faces[faceIndex].cell);
-                        const auto overCell = voxel::VoxelCell{
-                            .x = cell.x + (right.x * column)
+                        const auto position =
+                            faces[faceIndex].cell.position();
+                        const auto overPosition = voxel::VoxelPosition{
+                            .x = position.x + (right.x * column)
                                  + (downSpan.x * row),
-                            .y = cell.y + (right.y * column)
+                            .y = position.y + (right.y * column)
                                  + (downSpan.y * row),
-                            .z = cell.z + (right.z * column)
+                            .z = position.z + (right.z * column)
                                  + (downSpan.z * row)};
                         const auto foundEntry = index.find(
-                            std::pair{side, overCell});
+                            std::pair{side, overPosition});
 
                         if (foundEntry == index.end()
                             || tile.contains(foundEntry->second)

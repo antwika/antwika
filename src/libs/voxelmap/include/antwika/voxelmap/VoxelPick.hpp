@@ -3,7 +3,6 @@
 #include <array>
 #include <cstddef>
 #include <optional>
-#include <set>
 #include <span>
 #include <vector>
 
@@ -32,13 +31,13 @@ namespace antwika::voxelmap
     inline constexpr std::int32_t kGridMarginCubes = 2;
 
     [[nodiscard]] std::vector<LineSegment> levelGridLines(
-        const std::vector<voxel::VoxelCell> &cells, std::int32_t level);
+        const voxel::Voxels &voxels, std::int32_t level);
 
     [[nodiscard]] std::array<LineSegment, 12> cubeWireframe(
-        voxel::VoxelCell cell);
+        voxel::VoxelPosition position);
 
     [[nodiscard]] std::vector<LineSegment> buildableTopOutlines(
-        const std::vector<voxel::VoxelCell> &cells, std::int32_t level);
+        const voxel::Voxels &voxels, std::int32_t level);
 
     [[nodiscard]] gfx::Vec3 faceMiddle(FaceRef face);
 
@@ -63,14 +62,14 @@ namespace antwika::voxelmap
         const Ray &ray, float height);
 
     [[nodiscard]] std::optional<FaceRef> raycastFace(
-        const std::vector<voxel::VoxelCell> &cells, const Ray &ray);
+        const voxel::Voxels &voxels, const Ray &ray);
 
     [[nodiscard]] tilemap::Tile faceTile(FaceRef pickRef);
 
-    [[nodiscard]] std::optional<voxel::VoxelCell> cellAtLevel(
+    [[nodiscard]] std::optional<voxel::VoxelPosition> cellAtLevel(
         const Ray &ray, std::int32_t level);
 
-    [[nodiscard]] std::optional<voxel::VoxelCell> cellUnder(
+    [[nodiscard]] std::optional<voxel::VoxelPosition> cellUnder(
         const gfx::Camera3D &camera,
         const gfx::Mat4 &modelMatrix,
         gfx::Size canvasSize,
@@ -85,18 +84,18 @@ namespace antwika::voxelmap
 
     using voxel::kOcclusionMaskLevels;
 
-    [[nodiscard]] voxel::VoxelCell occlusionMaskOrigin(
-        voxel::VoxelCell aboutCell);
+    [[nodiscard]] voxel::VoxelPosition occlusionMaskOrigin(
+        voxel::VoxelPosition aboutPosition);
 
     [[nodiscard]] gfx::Bitmap occlusionMask(
-        const std::set<voxel::VoxelCell> &hiddenCells,
-        voxel::VoxelCell cornerCell);
+        const voxel::Voxels &hiddenVoxels,
+        voxel::VoxelPosition cornerPosition);
 
     [[nodiscard]] std::vector<LineSegment> occluderFootprints(
-        const std::set<voxel::VoxelCell> &hiddenCells);
+        const voxel::Voxels &hiddenVoxels);
 
     [[nodiscard]] std::optional<tilemap::Tile> tilePicked(
-        const std::vector<voxel::VoxelCell> &cells,
+        const voxel::Voxels &voxels,
         std::span<const tilemap::Tile> drawnTiles,
         const gfx::Camera3D &camera,
         const gfx::Mat4 &modelMatrix,
@@ -104,7 +103,7 @@ namespace antwika::voxelmap
         gfx::PointF point);
 
     [[nodiscard]] std::optional<tilemap::Tile> tilePicked(
-        const std::vector<voxel::VoxelCell> &cells,
+        const voxel::Voxels &voxels,
         std::span<const FaceRef> faces,
         std::span<const tilemap::Tile> drawnTiles,
         const gfx::Camera3D &camera,
@@ -113,7 +112,7 @@ namespace antwika::voxelmap
         gfx::PointF point);
 
     [[nodiscard]] std::optional<std::size_t> facePicked(
-        const std::vector<voxel::VoxelCell> &cells,
+        const voxel::Voxels &voxels,
         std::span<const FaceRef> faces,
         const gfx::Camera3D &camera,
         const gfx::Mat4 &modelMatrix,

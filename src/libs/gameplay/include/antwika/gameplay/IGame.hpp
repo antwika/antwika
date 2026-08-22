@@ -13,7 +13,8 @@
 #include <antwika/input/DirectionKeys.hpp>
 #include <antwika/map/PlayerProgress.hpp>
 #include <antwika/time/Tick.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
+#include <antwika/voxel/Voxels.hpp>
 
 #include "antwika/rules/Gates.hpp"
 
@@ -90,12 +91,12 @@ namespace antwika::gameplay
 
         virtual void followPath(
             std::vector<gfx::Vec3> stopPositions,
-            voxel::VoxelCell goalCell) = 0;
+            voxel::VoxelPosition goalPosition) = 0;
 
         [[nodiscard]] virtual const std::vector<gfx::Vec3> &path()
             const noexcept = 0;
 
-        [[nodiscard]] virtual const std::optional<voxel::VoxelCell> &
+        [[nodiscard]] virtual const std::optional<voxel::VoxelPosition> &
         pathGoal() const noexcept = 0;
 
         virtual void stepAlongPath(bool playing) = 0;

@@ -17,7 +17,8 @@
 #include <antwika/solver/VoxelWeave.hpp>
 #include <antwika/tilemap/Tilemap.hpp>
 #include <antwika/tile/TileRules.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
+#include <antwika/voxel/Voxels.hpp>
 #include <antwika/voxelmap/Voxel.hpp>
 
 namespace antwika::render
@@ -29,7 +30,7 @@ namespace antwika::render
         void rebuild(
             gfx::ViewportRenderer &viewportRenderer,
             const map::Map &drawnMap,
-            std::vector<voxel::VoxelCell> shownCells,
+            voxel::Voxels shownVoxels,
             solver::CornerSeams joiningSeams,
             const std::array<gfx::Bitmap, 2> &sheetBitmaps,
             std::uint32_t tick);
@@ -47,7 +48,7 @@ namespace antwika::render
 
         [[nodiscard]] const gfx::IMesh *decor() const noexcept;
 
-        [[nodiscard]] const std::set<voxel::VoxelCell> &cells()
+        [[nodiscard]] const voxel::Voxels &cells()
             const noexcept;
 
         [[nodiscard]] const std::vector<voxelmap::FaceRef> &faces()
@@ -77,7 +78,7 @@ namespace antwika::render
         std::vector<std::unique_ptr<gfx::IMesh>> solidMesh;
         std::vector<std::unique_ptr<gfx::IMesh>> waterMesh;
         std::unique_ptr<gfx::IMesh> decorMesh;
-        std::set<voxel::VoxelCell> solidCells;
+        voxel::Voxels solidVoxels;
     };
 
 }

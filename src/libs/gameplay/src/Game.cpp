@@ -15,13 +15,13 @@ namespace antwika::gameplay
     Game::Game(
         [[maybe_unused]] log::ILogger &logger,
         ecs::World &world,
-        const std::set<voxel::VoxelCell> &solidCells,
-        const std::vector<std::vector<voxel::VoxelCell>>
-            &patrolCells)
+        const voxel::Voxels &solidVoxels,
+        const std::vector<std::vector<voxel::VoxelPosition>>
+            &patrolPositions)
         : loop(world),
           intentSystem(wasdDirectionKeys, arrowDirectionKeys),
-          patrolSystem(solidCells, patrolCells),
-          walkSystem(solidCells)
+          patrolSystem(solidVoxels, patrolPositions),
+          walkSystem(solidVoxels)
     {
         loop.addSystem(Phase::Sending, intentSystem);
         loop.addSystem(Phase::Sending, patrolSystem);
@@ -170,11 +170,12 @@ namespace antwika::gameplay
     }
 
     void Game::followPath(
-        std::vector<gfx::Vec3> walkPositions, const voxel::VoxelCell goalCell)
+        std::vector<gfx::Vec3> walkPositions,
+        const voxel::VoxelPosition goalPosition)
     {
         stopPositions = std::move(walkPositions);
         stopIndex = 0;
-        stopsGoalCell = goalCell;
+        stopsGoalPosition = goalPosition;
     }
 
     const std::vector<gfx::Vec3> &Game::path() const noexcept
@@ -182,16 +183,16 @@ namespace antwika::gameplay
         return stopPositions;
     }
 
-    const std::optional<voxel::VoxelCell> &
+    const std::optional<voxel::VoxelPosition> &
     Game::pathGoal() const noexcept
     {
-        return stopsGoalCell;
+        return stopsGoalPosition;
     }
 
     void Game::clearPath() noexcept
     {
         stopPositions.clear();
-        stopsGoalCell.reset();
+        stopsGoalPosition.reset();
     }
 
     void Game::stepAlongPath(const bool playing)
@@ -228,7 +229,7 @@ namespace antwika::gameplay
         }
 
         stopPositions.clear();
-        stopsGoalCell.reset();
+        stopsGoalPosition.reset();
         intentSystem.clearSteering();
     }
 

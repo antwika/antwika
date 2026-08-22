@@ -285,7 +285,7 @@ namespace antwika::editor
                           rampFacing),
                 *cell);
             dragPaintButton = downPressed.button;
-            lastPaintedCell = cell;
+            lastPaintedPosition = cell;
             rebuildWorld();
 
             return;

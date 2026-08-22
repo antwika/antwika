@@ -96,7 +96,7 @@ namespace antwika::editor
                     static_cast<float>(stop.z)});
         }
 
-        game->followPath(std::move(stopPositions), *toStood);
+        game->followPath(std::move(stopPositions), toStood->position());
     }
 
 }

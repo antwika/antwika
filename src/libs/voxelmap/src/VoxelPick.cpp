@@ -137,43 +137,43 @@ namespace antwika::voxelmap
             const std::int32_t y,
             const std::int32_t z)
         {
-            return cellMiddle(voxel::VoxelCell{.x = x, .y = y, .z = z})
+            return cellMiddle(voxel::VoxelPosition{.x = x, .y = y, .z = z})
                    - gfx::Vec3{kHalf, kHalf, kHalf};
         }
 
         [[nodiscard]] std::int32_t lowestOf(
-            const std::vector<voxel::VoxelCell> &cells,
-            const std::int32_t voxel::VoxelCell::*way)
+            const voxel::Voxels &voxels,
+            const std::int32_t voxel::VoxelPosition::*way)
         {
-            if (cells.empty())
+            if (voxels.empty())
             {
                 return 0;
             }
 
-            auto least = cells.front().*way;
+            auto least = voxels.begin()->first.*way;
 
-            for (const auto cell : cells)
+            for (const auto &[position, material] : voxels)
             {
-                least = std::min(least, cell.*way);
+                least = std::min(least, position.*way);
             }
 
             return least;
         }
 
         [[nodiscard]] std::int32_t highestOf(
-            const std::vector<voxel::VoxelCell> &cells,
-            const std::int32_t voxel::VoxelCell::*way)
+            const voxel::Voxels &voxels,
+            const std::int32_t voxel::VoxelPosition::*way)
         {
-            if (cells.empty())
+            if (voxels.empty())
             {
                 return 0;
             }
 
-            auto most = cells.front().*way;
+            auto most = voxels.begin()->first.*way;
 
-            for (const auto cell : cells)
+            for (const auto &[position, material] : voxels)
             {
-                most = std::max(most, cell.*way);
+                most = std::max(most, position.*way);
             }
 
             return most;
@@ -181,23 +181,27 @@ namespace antwika::voxelmap
     }
 
     std::vector<LineSegment> levelGridLines(
-        const std::vector<voxel::VoxelCell> &cells,
-        const std::int32_t level)
+        const voxel::Voxels &voxels, const std::int32_t level)
     {
         const auto reach = kGridMarginCubes * voxel::kCubeSide;
         const auto lowX = voxel::cubeCornerOf(
-            voxel::VoxelCell{.x = lowestOf(cells, &voxel::VoxelCell::x)});
+            voxel::VoxelPosition{
+                .x = lowestOf(voxels, &voxel::VoxelPosition::x)});
         const auto highX = voxel::cubeCornerOf(
-            voxel::VoxelCell{.x = highestOf(cells, &voxel::VoxelCell::x)});
+            voxel::VoxelPosition{
+                .x = highestOf(voxels, &voxel::VoxelPosition::x)});
         const auto lowZ = voxel::cubeCornerOf(
-            voxel::VoxelCell{.z = lowestOf(cells, &voxel::VoxelCell::z)});
+            voxel::VoxelPosition{
+                .z = lowestOf(voxels, &voxel::VoxelPosition::z)});
         const auto highZ = voxel::cubeCornerOf(
-            voxel::VoxelCell{.z = highestOf(cells, &voxel::VoxelCell::z)});
+            voxel::VoxelPosition{
+                .z = highestOf(voxels, &voxel::VoxelPosition::z)});
         const auto fromX = lowX.x - reach;
         const auto toX = highX.x + reach + voxel::kCubeSide;
         const auto fromZ = lowZ.z - reach;
         const auto toZ = highZ.z + reach + voxel::kCubeSide;
-        const auto foot = voxel::cubeCornerOf(voxel::VoxelCell{.y = level}).y;
+        const auto foot = voxel::cubeCornerOf(
+            voxel::VoxelPosition{.y = level}).y;
 
         std::vector<LineSegment> ruledSegments;
 
@@ -220,10 +224,11 @@ namespace antwika::voxelmap
         return ruledSegments;
     } // GCOVR_EXCL_LINE
 
-    std::array<LineSegment, 12> cubeWireframe(const voxel::VoxelCell cell)
+    std::array<LineSegment, 12> cubeWireframe(
+        const voxel::VoxelPosition position)
     {
-        const auto cornerCell = voxel::cubeCornerOf(cell);
-        const auto toCell = voxel::VoxelCell{
+        const auto cornerCell = voxel::cubeCornerOf(position);
+        const auto toCell = voxel::VoxelPosition{
             .x = cornerCell.x + voxel::kCubeSide,
             .y = cornerCell.y + voxel::kCubeSide,
             .z = cornerCell.z + voxel::kCubeSide};
@@ -262,31 +267,32 @@ namespace antwika::voxelmap
     } // GCOVR_EXCL_LINE
 
     std::vector<LineSegment> buildableTopOutlines(
-        const std::vector<voxel::VoxelCell> &cells, const std::int32_t level)
+        const voxel::Voxels &voxels, const std::int32_t level)
     {
-        const auto foot = voxel::cubeCornerOf(voxel::VoxelCell{.y = level}).y;
-        const std::set<voxel::VoxelCell> filledCells(
-            cells.begin(),
-            cells.end());
+        const auto foot =
+            voxel::cubeCornerOf(voxel::VoxelPosition{.y = level}).y;
 
         std::vector<LineSegment> rimSegments;
 
-        for (const auto cell : cells)
+        for (const auto &[position, material] : voxels)
         {
-            const voxel::VoxelCell overCell{
-                .x = cell.x, .y = cell.y + 1, .z = cell.z};
+            const voxel::VoxelPosition overPosition{
+                .x = position.x, .y = position.y + 1, .z = position.z};
 
-            if (cell.y != foot - 1 || cell.kind != voxel::Kind::Normal
-                || filledCells.contains(overCell))
+            if (position.y != foot - 1
+                || material.kind != voxel::Kind::Normal
+                || voxels.contains(overPosition))
             {
                 continue;
             }
 
-            const auto corner = latticeAt(cell.x, foot, cell.z);
-            const auto acrossCell = latticeAt(cell.x + 1, foot, cell.z);
-            const auto alongCell = latticeAt(cell.x, foot, cell.z + 1);
+            const auto corner = latticeAt(position.x, foot, position.z);
+            const auto acrossCell =
+                latticeAt(position.x + 1, foot, position.z);
+            const auto alongCell =
+                latticeAt(position.x, foot, position.z + 1);
             const auto both =
-                latticeAt(cell.x + 1, foot, cell.z + 1);
+                latticeAt(position.x + 1, foot, position.z + 1);
 
             rimSegments.push_back(
                 LineSegment{
@@ -311,7 +317,8 @@ namespace antwika::voxelmap
 
     gfx::Vec3 faceMiddle(const FaceRef face)
     {
-        return cellMiddle(face.cell) + (faceNormal(face.side) * kHalf);
+        return cellMiddle(face.cell.position()) + (faceNormal(
+            face.side) * kHalf);
     }
 
     bool isFrontFacing(
@@ -390,14 +397,14 @@ namespace antwika::voxelmap
     }
 
     std::optional<FaceRef> raycastFace(
-        const std::vector<voxel::VoxelCell> &cells, const Ray &ray)
+        const voxel::Voxels &voxels, const Ray &ray)
     {
         std::optional<FaceRef> pickedRef;
         auto nearest = std::numeric_limits<float>::infinity();
 
-        for (const auto cell : cells)
+        for (const auto &[position, material] : voxels)
         {
-            const auto middlePoint = cellMiddle(cell);
+            const auto middlePoint = cellMiddle(position);
             const auto hit = metBy(
                 ray,
                 middlePoint - gfx::Vec3{kHalf, kHalf, kHalf},
@@ -416,14 +423,15 @@ namespace antwika::voxelmap
                                                              : -1.0F;
 
             nearest = hit.awayDistance;
-            pickedRef =
-                FaceRef{.cell = cell, .side = sideFacing(direction)};
+            pickedRef = FaceRef{
+                .cell = voxel::voxelCellAt(position, material),
+                .side = sideFacing(direction)};
         }
 
         return pickedRef;
     }
 
-    std::optional<voxel::VoxelCell> cellAtLevel(
+    std::optional<voxel::VoxelPosition> cellAtLevel(
         const Ray &ray, const std::int32_t level)
     {
         if (std::abs(ray.direction.y)
@@ -432,7 +440,8 @@ namespace antwika::voxelmap
             return std::nullopt;
         }
 
-        const auto foot = voxel::cubeCornerOf(voxel::VoxelCell{.y = level}).y;
+        const auto foot =
+            voxel::cubeCornerOf(voxel::VoxelPosition{.y = level}).y;
         const auto lying =
             (static_cast<float>(foot) * voxel::kVoxelSide)
             - (voxel::kVoxelSide / 2.0F);
@@ -446,7 +455,7 @@ namespace antwika::voxelmap
 
         const auto point = ray.fromPosition + (ray.direction * awayFraction);
 
-        return voxel::VoxelCell{
+        return voxel::VoxelPosition{
             .x = static_cast<std::int32_t>(
                 std::floor(point.x / voxel::kVoxelSide)),
             .y = foot,
@@ -454,7 +463,7 @@ namespace antwika::voxelmap
                 std::floor(point.z / voxel::kVoxelSide))};
     }
 
-    std::optional<voxel::VoxelCell> cellUnder(
+    std::optional<voxel::VoxelPosition> cellUnder(
         const gfx::Camera3D &camera,
         const gfx::Mat4 &modelMatrix,
         const gfx::Size canvasSize,
@@ -473,11 +482,11 @@ namespace antwika::voxelmap
         return tilemap::Tile{
             .atlas = lies ? tilemap::Atlas::Floor : tilemap::Atlas::Wall,
             .index = static_cast<std::uint16_t>(
-                defaultTileIndex(pickRef.cell, pickRef.side))};
+                defaultTileIndex(pickRef.cell.position(), pickRef.side))};
     }
 
     std::optional<tilemap::Tile> tilePicked(
-        const std::vector<voxel::VoxelCell> &cells,
+        const voxel::Voxels &voxels,
         const std::span<const tilemap::Tile> drawnTiles,
         const gfx::Camera3D &camera,
         const gfx::Mat4 &modelMatrix,
@@ -486,14 +495,14 @@ namespace antwika::voxelmap
     {
         const auto faces = drawnTiles.empty()
                          ? std::vector<FaceRef>{}
-                         : visibleFacesOf(cells);
+                         : visibleFacesOf(voxels);
 
         return tilePicked(
-            cells, faces, drawnTiles, camera, modelMatrix, canvasSize, point);
+            voxels, faces, drawnTiles, camera, modelMatrix, canvasSize, point);
     } // GCOVR_EXCL_LINE
 
     std::optional<tilemap::Tile> tilePicked(
-        const std::vector<voxel::VoxelCell> &cells,
+        const voxel::Voxels &voxels,
         const std::span<const FaceRef> faces,
         const std::span<const tilemap::Tile> drawnTiles,
         const gfx::Camera3D &camera,
@@ -502,7 +511,7 @@ namespace antwika::voxelmap
         const gfx::PointF point)
     {
         const auto pickedRef = raycastFace(
-            cells,
+            voxels,
             rayInModelSpace(
                 rayThrough(camera, canvasSize, point),
                 modelMatrix));
@@ -529,7 +538,7 @@ namespace antwika::voxelmap
     }
 
     std::optional<std::size_t> facePicked(
-        const std::vector<voxel::VoxelCell> &cells,
+        const voxel::Voxels &voxels,
         const std::span<const FaceRef> faces,
         const gfx::Camera3D &camera,
         const gfx::Mat4 &modelMatrix,
@@ -537,7 +546,7 @@ namespace antwika::voxelmap
         const gfx::PointF point)
     {
         const auto pickedRef = raycastFace(
-            cells,
+            voxels,
             rayInModelSpace(
                 rayThrough(camera, canvasSize, point),
                 modelMatrix));

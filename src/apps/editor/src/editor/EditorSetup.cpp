@@ -59,7 +59,7 @@ namespace antwika::editor
           map{.voxels = voxel::expandCubesToVoxels(voxelmap::demoCells()),
               .tilemap = tilemap::defaultTilemap()},
           world(logger),
-          game(logger, world, worldMeshes.cells(), patrolCells)
+          game(logger, world, worldMeshes.cells(), patrolPositions)
     {
         worldShader.open(viewportRenderer, map::loadShader("voxel"));
         setBindings(loadChords(chordsPath()));

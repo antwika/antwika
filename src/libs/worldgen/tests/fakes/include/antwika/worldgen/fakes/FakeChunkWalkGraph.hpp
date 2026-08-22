@@ -7,7 +7,8 @@
 
 #include <antwika/pathfinding/GridPos.hpp>
 #include <antwika/pathfinding/IWalkGraph.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelMaterial.hpp>
+#include <antwika/voxel/Voxels.hpp>
 #include <antwika/voxel/VoxelStairs.hpp>
 #include <antwika/worldgen/ChunkShape.hpp>
 
@@ -18,7 +19,8 @@ namespace antwika::worldgen::fakes
     using antwika::pathfinding::IWalkGraph;
     using antwika::voxel::Facing;
     using antwika::voxel::Kind;
-    using antwika::voxel::VoxelCell;
+    using antwika::voxel::VoxelMaterial;
+    using antwika::voxel::Voxels;
 
     inline constexpr std::array<Facing, 4> kEveryWayAboutFacings{
         Facing::East, Facing::West, Facing::North, Facing::South};
@@ -27,13 +29,15 @@ namespace antwika::worldgen::fakes
     {
     public:
         FakeChunkWalkGraph(
-            const ChunkShape shape, const std::vector<VoxelCell> &cubeCells)
+            const ChunkShape shape, const Voxels &cubeVoxels)
             : shape(shape)
         {
-            for (const VoxelCell cube : cubeCells)
+            for (const auto &[position, material] : cubeVoxels)
             {
-                stoodCells[GridPos{
-                    .x = cube.x, .y = cube.y, .z = cube.z}] = cube;
+                stoodMaterials[GridPos{
+                    .x = position.x,
+                    .y = position.y,
+                    .z = position.z}] = material;
             }
         }
 
@@ -53,17 +57,17 @@ namespace antwika::worldgen::fakes
                 return false;
             }
 
-            const auto foundCell = stoodCells.find(gridPosition);
+            const auto foundCell = stoodMaterials.find(gridPosition);
 
-            return foundCell == stoodCells.end()
+            return foundCell == stoodMaterials.end()
                    || foundCell->second.kind == Kind::Ladder;
         }
 
         [[nodiscard]] bool bears(const GridPos gridPosition) const
         {
-            const auto foundCell = stoodCells.find(gridPosition);
+            const auto foundCell = stoodMaterials.find(gridPosition);
 
-            return foundCell != stoodCells.end()
+            return foundCell != stoodMaterials.end()
                    && foundCell->second.kind == Kind::Normal;
         }
 
@@ -125,22 +129,22 @@ namespace antwika::worldgen::fakes
 
     private:
         ChunkShape shape;
-        std::map<GridPos, VoxelCell> stoodCells{};
+        std::map<GridPos, VoxelMaterial> stoodMaterials{};
 
         [[nodiscard]] bool laddered(const GridPos gridPosition) const
         {
-            const auto foundPoses = stoodCells.find(gridPosition);
+            const auto foundPoses = stoodMaterials.find(gridPosition);
 
-            return foundPoses != stoodCells.end()
+            return foundPoses != stoodMaterials.end()
                    && foundPoses->second.kind == Kind::Ladder;
         }
 
         [[nodiscard]] bool climbs(
             const GridPos gridPosition, const Facing facing) const
         {
-            const auto foundPoses = stoodCells.find(gridPosition);
+            const auto foundPoses = stoodMaterials.find(gridPosition);
 
-            return foundPoses != stoodCells.end()
+            return foundPoses != stoodMaterials.end()
                    && foundPoses->second.kind == Kind::Ramp
                    && foundPoses->second.facing == facing;
         }

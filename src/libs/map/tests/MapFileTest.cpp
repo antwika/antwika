@@ -22,6 +22,7 @@
 using antwika::tilemap::Atlas;
 using antwika::tilemap::defaultTilemap;
 using antwika::voxel::EdgeKind;
+using antwika::voxel::voxelsOf;
 using antwika::tilemap::kEveryTileEdge;
 using antwika::map::kMaxCellCoord;
 using antwika::map::loadMap;
@@ -36,6 +37,7 @@ using antwika::tilemap::swapTiles;
 using antwika::tilemap::Tile;
 using antwika::tilemap::TileEdge;
 using antwika::voxel::VoxelCell;
+using antwika::voxel::VoxelPosition;
 
 namespace
 {
@@ -164,25 +166,25 @@ TEST(MapFileTest, Map_KeepsItsDecorAndItsSpawnCubeAndItsExitCube)
         decor.tile,
         antwika::tilemap::TileEdge{},
         {.atlas = antwika::tilemap::Atlas::Floor, .index = 9});
-    map.spawnCubeCell = VoxelCell{.x = 2, .y = 0, .z = -2};
-    map.exitCubeCell = VoxelCell{.x = -4, .y = 2, .z = 6};
+    map.spawnCubePosition = VoxelPosition{.x = 2, .y = 0, .z = -2};
+    map.exitCubePosition = VoxelPosition{.x = -4, .y = 2, .z = 6};
 
     const auto reloadedMap = readText(serializeMap(map));
 
     EXPECT_EQ(reloadedMap, map);
     EXPECT_EQ(reloadedMap.decor, map.decor);
     EXPECT_EQ(reloadedMap.decorRules, map.decorRules);
-    EXPECT_EQ(reloadedMap.spawnCubeCell, map.spawnCubeCell);
-    EXPECT_EQ(reloadedMap.exitCubeCell, map.exitCubeCell);
+    EXPECT_EQ(reloadedMap.spawnCubePosition, map.spawnCubePosition);
+    EXPECT_EQ(reloadedMap.exitCubePosition, map.exitCubePosition);
 }
 
 TEST(MapFileTest, Map_KeepsThePlacesItWasGiven)
 {
     Map map;
 
-    map.voxels = {
+    map.voxels = voxelsOf({
         VoxelCell{.x = -kMaxCellCoord, .y = 0, .z = kMaxCellCoord},
-        VoxelCell{.x = 7, .y = -3, .z = 11}};
+        VoxelCell{.x = 7, .y = -3, .z = 11}});
 
     EXPECT_EQ(readText(serializeMap(map)).voxels, map.voxels);
 }
@@ -262,6 +264,26 @@ TEST(MapFileTest, ReadMap_TurnsAwayAPlaceOfTheWrongLength)
                 "voxels": [[1, 2]], "tilemap":
                 {"columns": 0, "rows": 0, "tiles": []}})"),
         MapFileError);
+}
+
+TEST(MapFileTest, ReadMap_TurnsAwayTwoVoxelsStandingInOnePlace)
+{
+    EXPECT_THROW(
+        (void)readText(
+            R"({"magic": "antwika.map", "version": 1,
+                "voxels": [[1, 2, 3], [1, 2, 3]], "tilemap":
+                {"columns": 0, "rows": 0, "tiles": []}})"),
+        MapFileError);
+}
+
+TEST(MapFileTest, ReadMap_TakesTwoVoxelsThatStandApart)
+{
+    const auto loadedMap = readText(
+        R"({"magic": "antwika.map", "version": 1,
+            "voxels": [[1, 2, 3], [1, 2, 4]], "tilemap":
+            {"columns": 0, "rows": 0, "tiles": []}})");
+
+    EXPECT_EQ(loadedMap.voxels.size(), 2U);
 }
 
 TEST(MapFileTest, ReadMap_TurnsAwayAPlaceThatIsNotAWholeNumber)
@@ -917,20 +939,23 @@ TEST(MapFileTest, WriteMap_KeepsWhatEachVoxelIsMadeOf)
 {
     Map map{.tilemap = defaultTilemap()};
 
-    map.voxels = {
+    map.voxels = antwika::voxel::voxelsOf({
         antwika::voxel::VoxelCell{
             .x = 0, .y = 0, .z = 0,
             .kind = antwika::voxel::Kind::Water},
         antwika::voxel::VoxelCell{
             .x = 1, .y = 0, .z = 0,
-            .kind = antwika::voxel::Kind::Ramp}};
+            .kind = antwika::voxel::Kind::Ramp}});
     map.settings.kind = antwika::voxel::Kind::Ramp;
 
     const auto loadedMap = readText(serializeMap(map));
 
     ASSERT_EQ(loadedMap.voxels.size(), 2U);
-    EXPECT_EQ(loadedMap.voxels[0].kind, antwika::voxel::Kind::Water);
-    EXPECT_EQ(loadedMap.voxels[1].kind, antwika::voxel::Kind::Ramp);
+    EXPECT_EQ(
+        loadedMap.voxels.begin()->second.kind, antwika::voxel::Kind::Water);
+    EXPECT_EQ(
+        std::next(loadedMap.voxels.begin())->second.kind,
+        antwika::voxel::Kind::Ramp);
     EXPECT_EQ(loadedMap.settings.kind, antwika::voxel::Kind::Ramp);
 
     const auto document = nlohmann::json::parse(serializeMap(map));
@@ -943,7 +968,7 @@ TEST(MapFileTest, ReadMap_MakesEveryVoxelKeptBeforeTheKindsASolidOne)
 {
     Map map{.tilemap = defaultTilemap()};
 
-    map.voxels = {antwika::voxel::VoxelCell{.x = 3, .y = 2, .z = 1}};
+    map.voxels = voxelsOf({antwika::voxel::VoxelCell{.x = 3, .y = 2, .z = 1}});
 
     auto document = nlohmann::json::parse(serializeMap(map));
 
@@ -954,8 +979,9 @@ TEST(MapFileTest, ReadMap_MakesEveryVoxelKeptBeforeTheKindsASolidOne)
     const auto loadedMap = readText(document.dump());
 
     ASSERT_EQ(loadedMap.voxels.size(), 1U);
-    EXPECT_EQ(loadedMap.voxels[0].x, 3);
-    EXPECT_EQ(loadedMap.voxels[0].kind, antwika::voxel::Kind::Normal);
+    EXPECT_EQ(loadedMap.voxels.begin()->first.x, 3);
+    EXPECT_EQ(
+        loadedMap.voxels.begin()->second.kind, antwika::voxel::Kind::Normal);
     EXPECT_EQ(loadedMap.settings.kind, antwika::voxel::Kind::Normal);
 }
 
@@ -963,7 +989,7 @@ TEST(MapFileTest, ReadMap_RefusesAKindItDoesNotKnow)
 {
     Map map{.tilemap = defaultTilemap()};
 
-    map.voxels = {antwika::voxel::VoxelCell{}};
+    map.voxels = voxelsOf({antwika::voxel::VoxelCell{}});
 
     auto document = nlohmann::json::parse(serializeMap(map));
 
@@ -1223,19 +1249,18 @@ TEST(MapFileTest, WriteMap_KeepsWhichWayARampWasToldToClimb)
 {
     Map map{.tilemap = defaultTilemap()};
 
-    map.voxels.push_back(
-        antwika::voxel::VoxelCell{
+    map.voxels.merge(antwika::voxel::voxelsOf({antwika::voxel::VoxelCell{
             .x = 1,
             .y = 0,
             .z = 2,
             .kind = antwika::voxel::Kind::Ramp,
-            .facing = antwika::voxel::Facing::North});
+            .facing = antwika::voxel::Facing::North}}));
 
     const auto loadedMap = readText(serializeMap(map));
 
     ASSERT_EQ(loadedMap.voxels.size(), 1U);
     EXPECT_EQ(
-        loadedMap.voxels.front().facing, antwika::voxel::Facing::North);
+        loadedMap.voxels.begin()->second.facing, antwika::voxel::Facing::North);
 
     const auto document = nlohmann::json::parse(serializeMap(map));
 
@@ -1246,9 +1271,8 @@ TEST(MapFileTest, WriteMap_SaysNothingOfARampToldNothing)
 {
     Map map{.tilemap = defaultTilemap()};
 
-    map.voxels.push_back(
-        antwika::voxel::VoxelCell{
-            .kind = antwika::voxel::Kind::Ramp});
+    map.voxels.merge(antwika::voxel::voxelsOf({antwika::voxel::VoxelCell{
+            .kind = antwika::voxel::Kind::Ramp}}));
 
     const auto document = nlohmann::json::parse(serializeMap(map));
 
@@ -1257,7 +1281,8 @@ TEST(MapFileTest, WriteMap_SaysNothingOfARampToldNothing)
     const auto loadedMap = readText(serializeMap(map));
 
     ASSERT_EQ(loadedMap.voxels.size(), 1U);
-    EXPECT_EQ(loadedMap.voxels.front().facing, antwika::voxel::Facing::Any);
+    EXPECT_EQ(loadedMap.voxels.begin()->second.facing,
+        antwika::voxel::Facing::Any);
 }
 
 TEST(MapFileTest, ReadMap_MakesASquaredPitchExactAgain)
@@ -1311,7 +1336,7 @@ TEST(MapFileTest, WriteMap_CarriesTheLampsSetDownAboutThePile)
 
     map.lamps.push_back(
         Lamp{
-            .cell = VoxelCell{.x = 2, .y = 3, .z = -4},
+            .position = VoxelPosition{.x = 2, .y = 3, .z = -4},
             .tintColor =
                 antwika::gfx::Color{
                     .red = 12,
@@ -1331,7 +1356,7 @@ TEST(MapFileTest, WriteMap_WritesALampInWholeNumbers)
 
     Map map{.tilemap = defaultTilemap()};
 
-    map.lamps.push_back(Lamp{.cell = VoxelCell{.x = -1, .y = 5}});
+    map.lamps.push_back(Lamp{.position = VoxelPosition{.x = -1, .y = 5}});
 
     EXPECT_FALSE(
         holdsAFloat(nlohmann::json::parse(serializeMap(map))));
@@ -1780,18 +1805,18 @@ TEST(MapFileTest, WriteMap_CarriesTheGatesItHolds)
 {
     auto map = demoMap();
 
-    map.keyCells = {VoxelCell{.x = 1, .y = 0, .z = 2}};
-    map.doorCells = {
-        VoxelCell{.x = 3, .y = 0, .z = 2},
-        VoxelCell{.x = 3, .y = 1, .z = 2}};
-    map.checkpointCells = {VoxelCell{.x = 5, .y = 0, .z = 5}};
+    map.keyPositions = {VoxelPosition{.x = 1, .y = 0, .z = 2}};
+    map.doorPositions = {
+        VoxelPosition{.x = 3, .y = 0, .z = 2},
+        VoxelPosition{.x = 3, .y = 1, .z = 2}};
+    map.checkpointPositions = {VoxelPosition{.x = 5, .y = 0, .z = 5}};
     map.exitLocked = true;
 
     const auto reloadedMap = readText(serializeMap(map));
 
-    EXPECT_EQ(reloadedMap.keyCells, map.keyCells);
-    EXPECT_EQ(reloadedMap.doorCells, map.doorCells);
-    EXPECT_EQ(reloadedMap.checkpointCells, map.checkpointCells);
+    EXPECT_EQ(reloadedMap.keyPositions, map.keyPositions);
+    EXPECT_EQ(reloadedMap.doorPositions, map.doorPositions);
+    EXPECT_EQ(reloadedMap.checkpointPositions, map.checkpointPositions);
     EXPECT_TRUE(reloadedMap.exitLocked);
 }
 
@@ -1808,9 +1833,9 @@ TEST(MapFileTest, ReadMap_LeavesAMapDrawnBeforeGatesBare)
 
     const auto reloadedMap = readText(document.dump());
 
-    EXPECT_TRUE(reloadedMap.keyCells.empty());
-    EXPECT_TRUE(reloadedMap.doorCells.empty());
-    EXPECT_TRUE(reloadedMap.checkpointCells.empty());
+    EXPECT_TRUE(reloadedMap.keyPositions.empty());
+    EXPECT_TRUE(reloadedMap.doorPositions.empty());
+    EXPECT_TRUE(reloadedMap.checkpointPositions.empty());
     EXPECT_FALSE(reloadedMap.exitLocked);
 }
 
@@ -1818,15 +1843,15 @@ TEST(MapFileTest, WriteMap_CarriesTheItemsItHolds)
 {
     auto map = demoMap();
 
-    map.foodCells = {VoxelCell{.x = 1, .y = 0, .z = 2}};
-    map.waterCells = {
-        VoxelCell{.x = 3, .y = 0, .z = 2},
-        VoxelCell{.x = 3, .y = 1, .z = 2}};
+    map.foodPositions = {VoxelPosition{.x = 1, .y = 0, .z = 2}};
+    map.waterPositions = {
+        VoxelPosition{.x = 3, .y = 0, .z = 2},
+        VoxelPosition{.x = 3, .y = 1, .z = 2}};
 
     const auto reloadedMap = readText(serializeMap(map));
 
-    EXPECT_EQ(reloadedMap.foodCells, map.foodCells);
-    EXPECT_EQ(reloadedMap.waterCells, map.waterCells);
+    EXPECT_EQ(reloadedMap.foodPositions, map.foodPositions);
+    EXPECT_EQ(reloadedMap.waterPositions, map.waterPositions);
 }
 
 TEST(MapFileTest, ReadMap_LeavesAMapDrawnBeforeItemsBare)
@@ -1838,8 +1863,8 @@ TEST(MapFileTest, ReadMap_LeavesAMapDrawnBeforeItemsBare)
 
     const auto reloadedMap = readText(document.dump());
 
-    EXPECT_TRUE(reloadedMap.foodCells.empty());
-    EXPECT_TRUE(reloadedMap.waterCells.empty());
+    EXPECT_TRUE(reloadedMap.foodPositions.empty());
+    EXPECT_TRUE(reloadedMap.waterPositions.empty());
 }
 
 TEST(MapFileTest, ReadMap_RefusesAnItemBeyondTheLattice)
@@ -2348,7 +2373,7 @@ TEST(MapFileTest, PatrolStopsOf_GivesEveryCharacterItsStopsInOrder)
 
     map.characters = {
         antwika::map::Character{
-            .patrolPathCells = {VoxelCell{.x = 1, .y = 2, .z = 3}}},
+            .patrolPathPositions = {VoxelPosition{.x = 1, .y = 2, .z = 3}}},
         antwika::map::Character{}};
 
     const auto stops = antwika::map::patrolStopsOf(map);

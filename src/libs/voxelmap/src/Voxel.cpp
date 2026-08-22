@@ -31,25 +31,24 @@ namespace antwika::voxelmap
             return face.normal.y != 0.0F;
         }
 
-        [[nodiscard]] gfx::Vec3 middleOf(
-            const std::vector<voxel::VoxelCell> &cells)
+        [[nodiscard]] gfx::Vec3 middleOf(const voxel::Voxels &voxels)
         {
-            if (cells.empty())
+            if (voxels.empty())
             {
                 return gfx::Vec3{0.0F, 0.0F, 0.0F};
             }
 
-            auto lowest = cells.front();
-            auto highest = cells.front();
+            auto lowest = voxels.begin()->first;
+            auto highest = voxels.begin()->first;
 
-            for (const auto cell : cells)
+            for (const auto &[position, material] : voxels)
             {
-                lowest.x = std::min(lowest.x, cell.x);
-                lowest.y = std::min(lowest.y, cell.y);
-                lowest.z = std::min(lowest.z, cell.z);
-                highest.x = std::max(highest.x, cell.x);
-                highest.y = std::max(highest.y, cell.y);
-                highest.z = std::max(highest.z, cell.z);
+                lowest.x = std::min(lowest.x, position.x);
+                lowest.y = std::min(lowest.y, position.y);
+                lowest.z = std::min(lowest.z, position.z);
+                highest.x = std::max(highest.x, position.x);
+                highest.y = std::max(highest.y, position.y);
+                highest.z = std::max(highest.z, position.z);
             }
 
             return gfx::Vec3{
@@ -59,40 +58,40 @@ namespace antwika::voxelmap
         }
     }
 
-    std::int32_t levelOf(const voxel::VoxelCell cell)
+    std::int32_t levelOf(const voxel::VoxelPosition position)
     {
-        return cell.y;
+        return position.y;
     }
 
-    std::int32_t topLevel(const std::vector<voxel::VoxelCell> &cells)
+    std::int32_t topLevel(const voxel::Voxels &voxels)
     {
-        if (cells.empty())
+        if (voxels.empty())
         {
             return 0;
         }
 
-        auto highest = levelOf(cells.front());
+        auto highest = levelOf(voxels.begin()->first);
 
-        for (const auto cell : cells)
+        for (const auto &[position, material] : voxels)
         {
-            highest = std::max(highest, levelOf(cell));
+            highest = std::max(highest, levelOf(position));
         }
 
         return highest;
     }
 
-    std::int32_t bottomLevel(const std::vector<voxel::VoxelCell> &cells)
+    std::int32_t bottomLevel(const voxel::Voxels &voxels)
     {
-        if (cells.empty())
+        if (voxels.empty())
         {
             return 0;
         }
 
-        auto lowest = levelOf(cells.front());
+        auto lowest = levelOf(voxels.begin()->first);
 
-        for (const auto cell : cells)
+        for (const auto &[position, material] : voxels)
         {
-            lowest = std::min(lowest, levelOf(cell));
+            lowest = std::min(lowest, levelOf(position));
         }
 
         return lowest;
@@ -113,29 +112,30 @@ namespace antwika::voxelmap
                            ? tilemap::Atlas::Floor
                            : tilemap::Atlas::Wall,
                     .index = static_cast<std::uint16_t>(
-                        defaultTileIndex(face.cell, face.side))});
+                        defaultTileIndex(face.cell.position(), face.side))});
         }
 
         return tiles;
     } // GCOVR_EXCL_LINE
 
-    gfx::Vec3 voxelsCenter(const std::vector<voxel::VoxelCell> &cells)
+    gfx::Vec3 voxelsCenter(const voxel::Voxels &voxels)
     {
-        return middleOf(cells) * voxel::kVoxelSide;
+        return middleOf(voxels) * voxel::kVoxelSide;
     }
 
-    gfx::Vec3 cellMiddle(const voxel::VoxelCell cell)
+    gfx::Vec3 cellMiddle(const voxel::VoxelPosition position)
     {
         return gfx::Vec3{
-            (static_cast<float>(cell.x) + 0.5F) * voxel::kVoxelSide,
-            (static_cast<float>(cell.y) + 0.5F) * voxel::kVoxelSide,
-            (static_cast<float>(cell.z) + 0.5F) * voxel::kVoxelSide};
+            (static_cast<float>(position.x) + 0.5F) * voxel::kVoxelSide,
+            (static_cast<float>(position.y) + 0.5F) * voxel::kVoxelSide,
+            (static_cast<float>(position.z) + 0.5F) * voxel::kVoxelSide};
     }
 
     std::size_t defaultTileIndex(
-        const voxel::VoxelCell cell, const std::size_t face)
+        const voxel::VoxelPosition position, const std::size_t face)
     {
-        const auto apart = (cell.x * 3) + (cell.y * 5) + (cell.z * 7);
+        const auto apart =
+            (position.x * 3) + (position.y * 5) + (position.z * 7);
         const auto walkedIndex =
             (apart * static_cast<std::int32_t>(kFaces))
             + static_cast<std::int32_t>(face);
@@ -147,23 +147,23 @@ namespace antwika::voxelmap
                        : wrappedIndex);
     }
 
-    std::vector<voxel::VoxelCell> demoCells()
+    voxel::Voxels demoCells()
     {
-        std::vector<voxel::VoxelCell> cells;
-
-        cells.reserve(10);
+        voxel::Voxels voxels;
 
         for (std::int32_t z = -1; z <= 1; ++z)
         {
             for (std::int32_t x = -1; x <= 1; ++x)
             {
-                cells.push_back(voxel::VoxelCell{.x = x, .y = 0, .z = z});
+                voxels[voxel::VoxelPosition{.x = x, .y = 0, .z = z}] =
+                    voxel::VoxelMaterial{};
             }
         }
 
-        cells.push_back(voxel::VoxelCell{.x = 0, .y = 1, .z = 0});
+        voxels[voxel::VoxelPosition{.x = 0, .y = 1, .z = 0}] =
+            voxel::VoxelMaterial{};
 
-        return cells;
+        return voxels;
     } // GCOVR_EXCL_LINE
 
     gfx::Mat4 modelRotation(

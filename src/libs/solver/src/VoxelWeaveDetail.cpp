@@ -28,15 +28,15 @@ namespace antwika::solver
     namespace weavedetail
     {
 
-        [[nodiscard]] voxel::VoxelCell offsetBy(
-            const voxel::VoxelCell fromCell, const gfx::Vec3 offset)
+        [[nodiscard]] voxel::VoxelPosition offsetBy(
+            const voxel::VoxelPosition fromPosition, const gfx::Vec3 offset)
         {
-            return voxel::VoxelCell{
-                .x = fromCell.x + static_cast<std::int32_t>(
+            return voxel::VoxelPosition{
+                .x = fromPosition.x + static_cast<std::int32_t>(
                                   std::lround(offset.x)),
-                .y = fromCell.y + static_cast<std::int32_t>(
+                .y = fromPosition.y + static_cast<std::int32_t>(
                                   std::lround(offset.y)),
-                .z = fromCell.z + static_cast<std::int32_t>(
+                .z = fromPosition.z + static_cast<std::int32_t>(
                                   std::lround(offset.z))};
         }
 
@@ -125,13 +125,13 @@ namespace antwika::solver
         {
             const auto taggedTiles = filteredByTag(
                 spokenTiles,
-                voxel::facingOfStep(face.climbCell),
+                voxel::facingOfStep(face.climbPosition),
                 [&rules](const tilemap::Tile tile)
                 { return rules.facingOf(tile); });
 
             const auto dressedTiles = filteredByTag(
                 taggedTiles,
-                voxelmap::stairPartOf(face.climbCell, face.side),
+                voxelmap::stairPartOf(face.climbPosition, face.side),
                 [&rules](const tilemap::Tile tile)
                 { return rules.partOf(tile); });
 
@@ -190,12 +190,12 @@ namespace antwika::solver
         }
 
         [[nodiscard]] bool atCubeFace(
-            const voxel::VoxelCell cell, const gfx::Vec3 direction)
+            const voxel::VoxelPosition position, const gfx::Vec3 direction)
         {
-            const auto corner = voxel::cubeCornerOf(cell);
+            const auto corner = voxel::cubeCornerOf(position);
             const std::array<std::int32_t, kAxisCount> cubeOffsets{
-                cell.x - corner.x, cell.y - corner.y,
-                cell.z - corner.z};
+                position.x - corner.x, position.y - corner.y,
+                position.z - corner.z};
 
             for (std::size_t axis = 0; axis < kAxisCount; ++axis)
             {
@@ -218,7 +218,7 @@ namespace antwika::solver
             const voxelmap::FaceRef &otherFace)
         {
             return oneFace.cell.kind == otherFace.cell.kind
-                   && oneFace.climbCell == otherFace.climbCell;
+                   && oneFace.climbPosition == otherFace.climbPosition;
         }
 
         [[nodiscard]] bool sameSurface(
@@ -247,7 +247,9 @@ namespace antwika::solver
                   -downOf(face.side)})
             {
                 const voxelmap::FaceRef besideRef{
-                    .cell = offsetBy(face.cell, way),
+                    .cell = voxel::voxelCellAt(
+                            offsetBy(face.cell.position(), way),
+                            voxel::VoxelMaterial{}),
                     .side = face.side};
 
                 edges.push_back(
@@ -257,9 +259,9 @@ namespace antwika::solver
                                 .side =
                                     sideTowards(face.side, way),
                                 .edge =
-                                    voxel::cubeCornerOf(face.cell)
+                                    voxel::cubeCornerOf(face.cell.position())
                                             == voxel::cubeCornerOf(
-                                                besideRef.cell)
+                                                besideRef.cell.position())
                                         ? voxel::EdgeKind::Interior
                                         : voxel::EdgeKind::Boundary},
                         .atRim =
@@ -303,7 +305,9 @@ namespace antwika::solver
             {
                 const auto foundFace = faceIndexes.find(
                     voxelmap::FaceRef{
-                        .cell = offsetBy(face.cell, way),
+                        .cell = voxel::voxelCellAt(
+                            offsetBy(face.cell.position(), way),
+                            voxel::VoxelMaterial{}),
                         .side = face.side});
 
                 if (foundFace != faceIndexes.end()
@@ -331,9 +335,11 @@ namespace antwika::solver
                         faceIndexes,
                         faces,
                         voxelmap::FaceRef{
-                            .cell = offsetBy(
-                                face.cell,
+                            .cell = voxel::voxelCellAt(
+                            offsetBy(
+                                face.cell.position(),
                                 cornerWay(face.side, corner)),
+                            voxel::VoxelMaterial{}),
                             .side = face.side},
                         face)
                         && wrapsAroundCorner(faceIndexes, faces, face, corner));

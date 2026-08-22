@@ -5,12 +5,13 @@
 #include <array>
 #include <cstddef>
 #include <optional>
-#include <set>
 
 #include "antwika/voxel/Face.hpp"
 #include "antwika/voxel/FaceUv.hpp"
-#include "antwika/voxel/VoxelCell.hpp"
+#include "antwika/voxel/VoxelMaterial.hpp"
+#include "antwika/voxel/VoxelPosition.hpp"
 #include "antwika/voxel/VoxelStairs.hpp"
+#include "antwika/voxel/Voxels.hpp"
 
 namespace antwika::voxel::detail
 {
@@ -21,7 +22,7 @@ namespace antwika::voxel::detail
 
     constexpr std::array<Face, kFaces> kVoxelFaces{
         Face{
-            .neighbourOffsetCell = {.z = 1},
+            .neighbourOffsetPosition = {.z = 1},
             .normal = {0.0F, 0.0F, 1.0F},
             .corners =
                 {glm::vec3{-kHalf, -kHalf, kHalf},
@@ -29,7 +30,7 @@ namespace antwika::voxel::detail
                  glm::vec3{kHalf, kHalf, kHalf},
                  glm::vec3{-kHalf, kHalf, kHalf}}},
         Face{
-            .neighbourOffsetCell = {.z = -1},
+            .neighbourOffsetPosition = {.z = -1},
             .normal = {0.0F, 0.0F, -1.0F},
             .corners =
                 {glm::vec3{kHalf, -kHalf, -kHalf},
@@ -37,7 +38,7 @@ namespace antwika::voxel::detail
                  glm::vec3{-kHalf, kHalf, -kHalf},
                  glm::vec3{kHalf, kHalf, -kHalf}}},
         Face{
-            .neighbourOffsetCell = {.x = 1},
+            .neighbourOffsetPosition = {.x = 1},
             .normal = {1.0F, 0.0F, 0.0F},
             .corners =
                 {glm::vec3{kHalf, -kHalf, kHalf},
@@ -45,7 +46,7 @@ namespace antwika::voxel::detail
                  glm::vec3{kHalf, kHalf, -kHalf},
                  glm::vec3{kHalf, kHalf, kHalf}}},
         Face{
-            .neighbourOffsetCell = {.x = -1},
+            .neighbourOffsetPosition = {.x = -1},
             .normal = {-1.0F, 0.0F, 0.0F},
             .corners =
                 {glm::vec3{-kHalf, -kHalf, -kHalf},
@@ -53,7 +54,7 @@ namespace antwika::voxel::detail
                  glm::vec3{-kHalf, kHalf, kHalf},
                  glm::vec3{-kHalf, kHalf, -kHalf}}},
         Face{
-            .neighbourOffsetCell = {.y = 1},
+            .neighbourOffsetPosition = {.y = 1},
             .normal = {0.0F, 1.0F, 0.0F},
             .corners =
                 {glm::vec3{-kHalf, kHalf, kHalf},
@@ -61,7 +62,7 @@ namespace antwika::voxel::detail
                  glm::vec3{kHalf, kHalf, -kHalf},
                  glm::vec3{-kHalf, kHalf, -kHalf}}},
         Face{
-            .neighbourOffsetCell = {.y = -1},
+            .neighbourOffsetPosition = {.y = -1},
             .normal = {0.0F, -1.0F, 0.0F},
             .corners =
                 {glm::vec3{-kHalf, -kHalf, -kHalf},
@@ -69,25 +70,27 @@ namespace antwika::voxel::detail
                  glm::vec3{kHalf, -kHalf, kHalf},
                  glm::vec3{-kHalf, -kHalf, kHalf}}}};
 
-        [[nodiscard]] VoxelCell offsetBy(
-            const VoxelCell fromCell, const VoxelCell byCell);
+    [[nodiscard]] VoxelPosition offsetBy(
+        VoxelPosition fromPosition, VoxelPosition byPosition);
 
-        [[nodiscard]] std::optional<Kind> kindAt(
-            const std::set<VoxelCell> &filledCells, const VoxelCell cell);
+    [[nodiscard]] VoxelPosition opposite(VoxelPosition stepPosition);
 
-        [[nodiscard]] std::optional<Kind> effectiveKindAt(
-            const std::set<VoxelCell> &filledCells, VoxelCell cell);
+    [[nodiscard]] std::optional<Kind> kindAt(
+        const Voxels &filledVoxels, VoxelPosition position);
 
-        [[nodiscard]] std::optional<VoxelCell> voxelAt(
-            const std::set<VoxelCell> &filledCells, const VoxelCell cell);
+    [[nodiscard]] std::optional<Kind> effectiveKindAt(
+        const Voxels &filledVoxels, VoxelPosition position);
 
-        [[nodiscard]] bool isRampStep(
-            const std::set<VoxelCell> &filledCells, const VoxelCell cell);
+    [[nodiscard]] std::optional<VoxelMaterial> materialAt(
+        const Voxels &filledVoxels, VoxelPosition position);
+
+    [[nodiscard]] bool isRampStep(
+        const Voxels &filledVoxels, VoxelPosition position);
 
     constexpr float kStepHeightFraction =
         1.0F / static_cast<float>(kStepsPerVoxel);
 
     [[nodiscard]] FaceUv uvWithinFace(
-        const Face &face, const glm::vec3 one, const glm::vec3 two);
+        const Face &face, glm::vec3 one, glm::vec3 two);
 
 }

@@ -49,11 +49,11 @@ namespace antwika::system
                 }
 
                 const auto item = world.get<component::Item>(lying);
-                const auto corner = voxel::cubeCornerOf(item.cell);
+                const auto corner = voxel::cubeCornerOf(item.position);
                 const auto underfoot = std::ranges::any_of(
                     standing,
-                    [corner](const voxel::VoxelCell cell)
-                    { return voxel::cubeCornerOf(cell) == corner; });
+                    [corner](const voxel::VoxelPosition position)
+                    { return voxel::cubeCornerOf(position) == corner; });
 
                 if (!underfoot)
                 {

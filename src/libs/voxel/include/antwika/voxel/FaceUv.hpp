@@ -1,9 +1,5 @@
 #pragma once
 
-#include <glm/vec3.hpp>
-#include "antwika/voxel/VoxelCell.hpp"
-#include "antwika/voxel/VoxelStairs.hpp"
-
 namespace antwika::voxel::detail
 {
 

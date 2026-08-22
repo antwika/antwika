@@ -30,7 +30,7 @@ namespace antwika::voxelmap::voxeldetail
 
     using voxel::detail::effectiveKindAt;
 
-    using voxel::detail::voxelAt;
+    using voxel::detail::materialAt;
 
     using voxel::detail::isRampStep;
 

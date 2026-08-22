@@ -126,9 +126,9 @@ namespace antwika::render
             *voxelShader,
             "hidingCorner",
             gfx::Vec3{
-                static_cast<float>(shaderInputs.hidingCornerCell.x),
+                static_cast<float>(shaderInputs.hidingCornerPosition.x),
                 0.0F,
-                static_cast<float>(shaderInputs.hidingCornerCell.z)});
+                static_cast<float>(shaderInputs.hidingCornerPosition.z)});
         const auto sightSlot = shaderInputs.sightSlot;
         const auto upperSightSlot = shaderInputs.upperSightSlot;
 

@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstdint>
 #include <optional>
+#include <set>
 #include <vector>
 
 namespace antwika::voxel
@@ -14,115 +15,117 @@ namespace antwika::voxel
     namespace
     {
 
-        [[nodiscard]] std::optional<VoxelCell> roofOver(
-            const std::set<VoxelCell> &filledCells,
-            const VoxelCell cell,
+        [[nodiscard]] std::optional<VoxelPosition> roofOver(
+            const Voxels &filledVoxels,
+            const VoxelPosition columnPosition,
             const std::int32_t lowest)
         {
             for (std::int32_t level = lowest;
                  level < lowest + kRoofSearchLevels;
                  ++level)
             {
-                const VoxelCell overheadCell{
-                    .x = cell.x, .y = level, .z = cell.z};
-                const auto foundCell = filledCells.find(overheadCell);
+                const VoxelPosition overheadPosition{
+                    .x = columnPosition.x,
+                    .y = level,
+                    .z = columnPosition.z};
+                const auto foundVoxel = filledVoxels.find(overheadPosition);
 
-                if (foundCell != filledCells.end()
-                    && foundCell->kind != Kind::Water)
+                if (foundVoxel != filledVoxels.end()
+                    && foundVoxel->second.kind != Kind::Water)
                 {
-                    return overheadCell;
+                    return overheadPosition;
                 }
             }
 
             return std::nullopt;
         }
 
-        [[nodiscard]] std::set<VoxelCell> shellAbout(
-            const std::set<VoxelCell> &filledCells,
-            const VoxelCell columnCell,
+        [[nodiscard]] std::set<VoxelPosition> shellAbout(
+            const Voxels &filledVoxels,
+            const VoxelPosition columnPosition,
             const std::int32_t lowest,
             const std::int32_t roofLevel)
         {
             const auto arm =
                 static_cast<std::int32_t>(kOcclusionMaskWidth) / 2;
 
-            const auto withinWindow = [columnCell, lowest, roofLevel](
-                                          const VoxelCell cell)
+            const auto withinWindow = [columnPosition, lowest, roofLevel, arm](
+                                          const VoxelPosition position)
             {
-                return cell.y >= lowest && cell.y < roofLevel
-                       && std::abs(cell.x - columnCell.x) <= arm
-                       && std::abs(cell.z - columnCell.z) <= arm;
+                return position.y >= lowest && position.y < roofLevel
+                       && std::abs(position.x - columnPosition.x) <= arm
+                       && std::abs(position.z - columnPosition.z) <= arm;
             };
 
-            const auto standsIn = [&filledCells](const VoxelCell cell)
+            const auto standsIn = [&filledVoxels](const VoxelPosition position)
             {
-                const auto foundCell = filledCells.find(cell);
+                const auto foundVoxel = filledVoxels.find(position);
 
-                return foundCell != filledCells.end()
-                       && foundCell->kind != Kind::Water;
+                return foundVoxel != filledVoxels.end()
+                       && foundVoxel->second.kind != Kind::Water;
             };
 
-            std::set<VoxelCell> shellCells;
-            const VoxelCell fromCell{
-                .x = columnCell.x, .y = lowest, .z = columnCell.z};
+            std::set<VoxelPosition> shellPositions;
+            const VoxelPosition fromPosition{
+                .x = columnPosition.x, .y = lowest, .z = columnPosition.z};
 
-            if (!withinWindow(fromCell) || standsIn(fromCell))
+            if (!withinWindow(fromPosition) || standsIn(fromPosition))
             {
-                return shellCells;
+                return shellPositions;
             }
 
-            std::set<VoxelCell> airCells{fromCell};
-            std::vector<VoxelCell> askingCells{fromCell};
+            std::set<VoxelPosition> airPositions{fromPosition};
+            std::vector<VoxelPosition> askingPositions{fromPosition};
 
-            while (!askingCells.empty())
+            while (!askingPositions.empty())
             {
-                const auto nextCell = askingCells.back();
+                const auto nextPosition = askingPositions.back();
 
-                askingCells.pop_back();
+                askingPositions.pop_back();
 
                 for (const auto way :
-                     {VoxelCell{.x = 1}, VoxelCell{.x = -1},
-                      VoxelCell{.y = 1}, VoxelCell{.y = -1},
-                      VoxelCell{.z = 1}, VoxelCell{.z = -1}})
+                     {VoxelPosition{.x = 1}, VoxelPosition{.x = -1},
+                      VoxelPosition{.y = 1}, VoxelPosition{.y = -1},
+                      VoxelPosition{.z = 1}, VoxelPosition{.z = -1}})
                 {
-                    const VoxelCell besideCell{
-                        .x = nextCell.x + way.x,
-                        .y = nextCell.y + way.y,
-                        .z = nextCell.z + way.z};
+                    const VoxelPosition besidePosition{
+                        .x = nextPosition.x + way.x,
+                        .y = nextPosition.y + way.y,
+                        .z = nextPosition.z + way.z};
 
-                    if (!withinWindow(besideCell))
+                    if (!withinWindow(besidePosition))
                     {
                         continue;
                     }
 
-                    if (standsIn(besideCell))
+                    if (standsIn(besidePosition))
                     {
-                        shellCells.insert(besideCell);
+                        shellPositions.insert(besidePosition);
 
                         continue;
                     }
 
-                    if (airCells.insert(besideCell).second)
+                    if (airPositions.insert(besidePosition).second)
                     {
-                        askingCells.push_back(besideCell);
+                        askingPositions.push_back(besidePosition);
                     }
                 }
             }
 
-            return shellCells;
+            return shellPositions;
         } // GCOVR_EXCL_LINE
 
         void liftWhatIsNotTheRoom(
-            const std::set<VoxelCell> &filledCells,
-            const VoxelCell columnCell,
+            const Voxels &filledVoxels,
+            const VoxelPosition columnPosition,
             const std::int32_t lowest,
             const std::int32_t roofLevel,
-            std::set<VoxelCell> &cells)
+            Voxels &voxels)
         {
-            const auto shellCells =
-                shellAbout(filledCells, columnCell, lowest, roofLevel);
+            const auto shellPositions =
+                shellAbout(filledVoxels, columnPosition, lowest, roofLevel);
 
-            if (shellCells.empty())
+            if (shellPositions.empty())
             {
                 return;
             }
@@ -130,51 +133,52 @@ namespace antwika::voxel
             const auto arm =
                 static_cast<std::int32_t>(kOcclusionMaskWidth) / 2;
 
-            for (const auto &besideCell : filledCells)
+            for (const auto &[besidePosition, material] : filledVoxels)
             {
-                if (cells.size() >= kMaxOccludedVoxels)
+                if (voxels.size() >= kMaxOccludedVoxels)
                 {
                     break;
                 }
 
-                if (besideCell.y < lowest || besideCell.y >= roofLevel
-                    || besideCell.kind == Kind::Water
-                    || std::abs(besideCell.x - columnCell.x) > arm
-                    || std::abs(besideCell.z - columnCell.z) > arm
-                    || shellCells.contains(besideCell))
+                if (besidePosition.y < lowest
+                    || besidePosition.y >= roofLevel
+                    || material.kind == Kind::Water
+                    || std::abs(besidePosition.x - columnPosition.x) > arm
+                    || std::abs(besidePosition.z - columnPosition.z) > arm
+                    || shellPositions.contains(besidePosition))
                 {
                     continue;
                 }
 
-                cells.insert(besideCell);
+                voxels[besidePosition] = material;
             }
         }
 
         void liftTheRoof(
-            const std::set<VoxelCell> &filledCells,
-            const VoxelCell columnCell,
+            const Voxels &filledVoxels,
+            const VoxelPosition columnPosition,
             const std::int32_t roofLevel,
-            std::set<VoxelCell> &cells)
+            Voxels &voxels)
         {
             const auto arm =
                 static_cast<std::int32_t>(kOcclusionMaskWidth) / 2;
 
-            for (const auto &overheadCell : filledCells)
+            for (const auto &[overheadPosition, material] : filledVoxels)
             {
-                if (cells.size() >= kMaxOccludedVoxels)
+                if (voxels.size() >= kMaxOccludedVoxels)
                 {
                     break;
                 }
 
-                if (overheadCell.y < roofLevel
-                    || overheadCell.kind == Kind::Water
-                    || std::abs(overheadCell.x - columnCell.x) > arm
-                    || std::abs(overheadCell.z - columnCell.z) > arm)
+                if (overheadPosition.y < roofLevel
+                    || material.kind == Kind::Water
+                    || std::abs(overheadPosition.x - columnPosition.x) > arm
+                    || std::abs(overheadPosition.z - columnPosition.z) > arm)
                 {
                     continue;
                 }
 
-                cells.insert(overheadCell);
+                voxels[overheadPosition] = material;
             }
         }
 
@@ -190,31 +194,36 @@ namespace antwika::voxel
         return standing + glm::vec3{0.0F, kUpperSightRise, 0.0F};
     }
 
-    std::set<VoxelCell> occludingVoxels(
-        const std::set<VoxelCell> &filledCells, const glm::vec3 standing)
+    Voxels occludingVoxels(
+        const Voxels &filledVoxels, const glm::vec3 standing)
     {
-        std::set<VoxelCell> cells;
+        Voxels voxels;
         const auto sightPoint = lineOfSight(standing);
-        const VoxelCell columnCell{
+        const VoxelPosition columnPosition{
             .x = static_cast<std::int32_t>(
                 std::floor(sightPoint.x / kVoxelSide)),
             .y = static_cast<std::int32_t>(
                 std::floor(sightPoint.y / kVoxelSide)),
             .z = static_cast<std::int32_t>(
                 std::floor(sightPoint.z / kVoxelSide))};
-        const auto overheadCell =
-            roofOver(filledCells, columnCell, columnCell.y);
+        const auto overheadPosition =
+            roofOver(filledVoxels, columnPosition, columnPosition.y);
 
-        if (!overheadCell.has_value())
+        if (!overheadPosition.has_value())
         {
-            return cells;
+            return voxels;
         }
 
-        liftTheRoof(filledCells, columnCell, overheadCell->y, cells);
+        liftTheRoof(
+            filledVoxels, columnPosition, overheadPosition->y, voxels);
         liftWhatIsNotTheRoom(
-            filledCells, columnCell, columnCell.y, overheadCell->y, cells);
+            filledVoxels,
+            columnPosition,
+            columnPosition.y,
+            overheadPosition->y,
+            voxels);
 
-        return cells;
+        return voxels;
     } // GCOVR_EXCL_LINE
 
 }

@@ -8,7 +8,7 @@
 #include <antwika/tilemap/TileEdges.hpp>
 #include <antwika/tilemap/Tilemap.hpp>
 #include <antwika/tile/TilePaint.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/gfx/SizeF.hpp>
 

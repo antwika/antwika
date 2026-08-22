@@ -18,7 +18,7 @@
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/map/MapAssets.hpp>
 #include <antwika/gameplay/Roster.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxel/VoxelOcclusion.hpp>
 
 #include "antwika/editor/Editor.hpp"
@@ -108,7 +108,7 @@ namespace antwika::editor
     }
 
     void Editor::pressFigure(
-        const voxel::VoxelCell cell, const input::MouseButton button)
+        const voxel::VoxelPosition position, const input::MouseButton button)
     {
         if (!figurePicked.has_value()
             || *figurePicked >= map.characters.size())
@@ -122,9 +122,9 @@ namespace antwika::editor
         {
             pushUndo();
 
-            if (!figure.patrolPathCells.empty() || figure.player)
+            if (!figure.patrolPathPositions.empty() || figure.player)
             {
-                figure.patrolPathCells.clear();
+                figure.patrolPathPositions.clear();
 
                 return;
             }
@@ -144,11 +144,11 @@ namespace antwika::editor
         if (!figurePlaced)
         {
             const auto feet =
-                (static_cast<float>(cell.y) + 0.5F)
+                (static_cast<float>(position.y) + 0.5F)
                 * voxel::kVoxelSide;
             const auto groundHeight =
                 collision::groundHeightAtColumn(
-                    worldMeshes.cells(), cell.x, cell.z, feet);
+                    worldMeshes.cells(), position.x, position.z, feet);
 
             if (!groundHeight.has_value())
             {
@@ -158,9 +158,9 @@ namespace antwika::editor
             pushUndo();
             figure.idlePlacement = map::Placement{
                 .position = antwika::gfx::Vec3{
-                    static_cast<float>(cell.x) * voxel::kVoxelSide,
+                    static_cast<float>(position.x) * voxel::kVoxelSide,
                     *groundHeight,
-                    static_cast<float>(cell.z)
+                    static_cast<float>(position.z)
                         * voxel::kVoxelSide}};
             figurePlaced = true;
 
@@ -168,8 +168,9 @@ namespace antwika::editor
         }
 
         pushUndo();
-        figure.patrolPathCells.push_back(
-            voxel::VoxelCell{.x = cell.x, .y = cell.y, .z = cell.z});
+        figure.patrolPathPositions.push_back(
+            voxel::VoxelPosition{.x = position.x, .y = position.y,
+                .z = position.z});
     }
 
     std::vector<light::ActiveLight> Editor::currentLights()
@@ -239,7 +240,7 @@ namespace antwika::editor
     {
         game->forgetPatrols();
         ensurePlayerInRoster();
-        patrolCells = patrolStopsOf(map);
+        patrolPositions = patrolStopsOf(map);
         game->setPlayer(
             gameplay::spawnRoster(
                 game->world(),

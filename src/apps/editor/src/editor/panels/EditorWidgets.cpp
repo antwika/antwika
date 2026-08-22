@@ -2,7 +2,7 @@
 #include <antwika/editor/ui/AtlasView.hpp>
 #include <antwika/editor/ui/MapPicker.hpp>
 #include <antwika/map/Layers.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 
 #include "antwika/editor/Editor.hpp"

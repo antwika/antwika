@@ -11,7 +11,7 @@
 #include <antwika/tilemap/Tilemap.hpp>
 #include <antwika/tile/TilePaint.hpp>
 #include <antwika/ui/HoverHint.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/voxelmap/VoxelPick.hpp>
 #include <antwika/gfx/TextLayout.hpp>

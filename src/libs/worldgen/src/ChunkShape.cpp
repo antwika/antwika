@@ -28,32 +28,34 @@ namespace antwika::worldgen
                * static_cast<std::size_t>(shape.height);
     }
 
-    bool within(const ChunkShape shape, const voxel::VoxelCell cubeCell)
+    bool within(const ChunkShape shape, const voxel::VoxelPosition cubePosition)
     {
-        return cubeCell.x >= 0 && cubeCell.x < shape.width && cubeCell.y >= 0
-               && cubeCell.y < shape.height && cubeCell.z >= 0
-               && cubeCell.z < shape.depth;
+        return cubePosition.x >=
+            0 && cubePosition.x < shape.width && cubePosition.y >= 0
+               && cubePosition.y < shape.height && cubePosition.z >= 0
+               && cubePosition.z < shape.depth;
     }
 
-    std::size_t cellOf(const ChunkShape shape, const voxel::VoxelCell cubeCell)
+    std::size_t cellOf(const ChunkShape shape,
+        const voxel::VoxelPosition cubePosition)
     {
         requireASide(shape);
 
-        if (!within(shape, cubeCell))
+        if (!within(shape, cubePosition))
         {
             throw WorldgenError("cellOf: the cube lies outside the chunk");
         }
 
-        const auto levelIndex = static_cast<std::size_t>(cubeCell.y);
-        const auto rowIndex = static_cast<std::size_t>(cubeCell.z);
-        const auto columnIndex = static_cast<std::size_t>(cubeCell.x);
+        const auto levelIndex = static_cast<std::size_t>(cubePosition.y);
+        const auto rowIndex = static_cast<std::size_t>(cubePosition.z);
+        const auto columnIndex = static_cast<std::size_t>(cubePosition.x);
 
         return ((levelIndex * static_cast<std::size_t>(shape.depth)) + rowIndex)
                    * static_cast<std::size_t>(shape.width)
                + columnIndex;
     }
 
-    voxel::VoxelCell cubeAt(const ChunkShape shape, const std::size_t cell)
+    voxel::VoxelPosition cubeAt(const ChunkShape shape, const std::size_t cell)
     {
         if (cell >= cubeCount(shape))
         {
@@ -63,33 +65,34 @@ namespace antwika::worldgen
         const auto width = static_cast<std::size_t>(shape.width);
         const auto depth = static_cast<std::size_t>(shape.depth);
 
-        return voxel::VoxelCell{
+        return voxel::VoxelPosition{
             .x = static_cast<std::int32_t>(cell % width),
             .y = static_cast<std::int32_t>(cell / (width * depth)),
             .z = static_cast<std::int32_t>((cell / width) % depth)};
     }
 
-    VoxelBox chunkBox(const ChunkShape shape, const voxel::VoxelCell originCell)
+    VoxelBox chunkBox(const ChunkShape shape,
+        const voxel::VoxelPosition originPosition)
     {
         requireASide(shape);
 
         return VoxelBox{
-            .lowCell =
-                voxel::VoxelCell{
-                    .x = originCell.x * voxel::kCubeSide,
-                    .y = originCell.y * voxel::kCubeSide,
-                    .z = originCell.z * voxel::kCubeSide},
-            .highCell = voxel::VoxelCell{
-                .x = (originCell.x + shape.width) * voxel::kCubeSide,
-                .y = (originCell.y + shape.height) * voxel::kCubeSide,
-                .z = (originCell.z + shape.depth) * voxel::kCubeSide}};
+            .lowPosition =
+                voxel::VoxelPosition{
+                    .x = originPosition.x * voxel::kCubeSide,
+                    .y = originPosition.y * voxel::kCubeSide,
+                    .z = originPosition.z * voxel::kCubeSide},
+            .highPosition = voxel::VoxelPosition{
+                .x = (originPosition.x + shape.width) * voxel::kCubeSide,
+                .y = (originPosition.y + shape.height) * voxel::kCubeSide,
+                .z = (originPosition.z + shape.depth) * voxel::kCubeSide}};
     }
 
-    bool holds(const VoxelBox box, const voxel::VoxelCell voxel)
+    bool holds(const VoxelBox box, const voxel::VoxelPosition voxel)
     {
-        return voxel.x >= box.lowCell.x && voxel.x < box.highCell.x
-               && voxel.y >= box.lowCell.y && voxel.y < box.highCell.y
-               && voxel.z >= box.lowCell.z && voxel.z < box.highCell.z;
+        return voxel.x >= box.lowPosition.x && voxel.x < box.highPosition.x
+               && voxel.y >= box.lowPosition.y && voxel.y < box.highPosition.y
+               && voxel.z >= box.lowPosition.z && voxel.z < box.highPosition.z;
     }
 
 }

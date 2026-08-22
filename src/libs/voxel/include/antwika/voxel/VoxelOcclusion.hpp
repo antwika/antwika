@@ -4,9 +4,9 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <set>
 
-#include "antwika/voxel/VoxelCell.hpp"
+#include "antwika/voxel/VoxelPosition.hpp"
+#include "antwika/voxel/Voxels.hpp"
 
 namespace antwika::voxel
 {
@@ -28,7 +28,7 @@ namespace antwika::voxel
 
     [[nodiscard]] glm::vec3 upperLineOfSight(glm::vec3 standing);
 
-    [[nodiscard]] std::set<VoxelCell> occludingVoxels(
-        const std::set<VoxelCell> &filledCells, glm::vec3 standing);
+    [[nodiscard]] Voxels occludingVoxels(
+        const Voxels &filledVoxels, glm::vec3 standing);
 
 }

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <set>
 #include <vector>
 
 #include <antwika/pathfinding/IWalkGraph.hpp>
@@ -12,8 +11,8 @@ namespace antwika::collision
     class VoxelWalkGraph final : public pathfinding::IWalkGraph
     {
     public:
-        explicit VoxelWalkGraph(const std::set<voxel::VoxelCell> &filledCells)
-            : filledCells(&filledCells)
+        explicit VoxelWalkGraph(const voxel::Voxels &filledVoxels)
+            : filledVoxels(&filledVoxels)
         {
         }
 
@@ -32,7 +31,7 @@ namespace antwika::collision
                   std::pair{0, -1}})
             {
                 const auto supportingCell = supportingVoxel(
-                    *filledCells, fromPos.x + byX, fromPos.z + byZ, feet);
+                    *filledVoxels, fromPos.x + byX, fromPos.z + byZ, feet);
 
                 if (supportingCell.has_value())
                 {
@@ -48,7 +47,7 @@ namespace antwika::collision
         } // GCOVR_EXCL_LINE
 
     private:
-        const std::set<voxel::VoxelCell> *filledCells;
+        const voxel::Voxels *filledVoxels;
     };
 
 }

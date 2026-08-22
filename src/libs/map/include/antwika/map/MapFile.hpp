@@ -45,7 +45,7 @@ namespace antwika::map
     [[nodiscard]] std::optional<std::size_t> playerIndex(
         const Map &map);
 
-    [[nodiscard]] std::vector<std::vector<voxel::VoxelCell>> patrolStopsOf(
+    [[nodiscard]] std::vector<std::vector<voxel::VoxelPosition>> patrolStopsOf(
         const Map &map);
 
     [[nodiscard]] std::string sidecarPath(

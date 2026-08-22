@@ -5,7 +5,8 @@
 #include <set>
 
 #include <antwika/map/MapFile.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
+#include <antwika/voxel/Voxels.hpp>
 
 namespace antwika::gameplay
 {
@@ -14,15 +15,15 @@ namespace antwika::gameplay
     {
         std::size_t keysHeld = 0;
 
-        std::set<voxel::VoxelCell> collectedKeyCells;
+        std::set<voxel::VoxelPosition> collectedKeyPositions;
 
         std::optional<map::Placement> checkpointPlacement;
 
-        std::optional<voxel::VoxelCell> checkpointOnCell;
+        std::optional<voxel::VoxelPosition> checkpointOnPosition;
 
-        std::optional<voxel::VoxelCell> announcedDoorCell;
+        std::optional<voxel::VoxelPosition> announcedDoorPosition;
 
-        std::optional<voxel::VoxelCell> lockedExitAnnouncedCell;
+        std::optional<voxel::VoxelPosition> lockedExitAnnouncedPosition;
     };
 
 }

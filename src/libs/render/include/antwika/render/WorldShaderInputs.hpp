@@ -7,7 +7,7 @@
 #include <antwika/gfx/ShaderSource.hpp>
 #include <antwika/gfx/ViewportRenderer.hpp>
 #include <antwika/light/ActiveLight.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 
 namespace antwika::render
 {
@@ -28,7 +28,7 @@ namespace antwika::render
 
         std::optional<std::size_t> carrying;
 
-        voxel::VoxelCell hidingCornerCell{};
+        voxel::VoxelPosition hidingCornerPosition{};
 
         gfx::Vec3 sightPoint{};
 

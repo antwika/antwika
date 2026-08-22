@@ -88,16 +88,16 @@ namespace antwika::editor
 
             if (playing)
             {
-                for (const auto keyCell : map.keyCells)
+                for (const auto keyCell : map.keyPositions)
                 {
-                    if (!game->gates().collectedKeyCells.contains(
+                    if (!game->gates().collectedKeyPositions.contains(
                             antwika::voxel::cubeCornerOf(keyCell)))
                     {
                         ruled(voxelmap::cubeWireframe(keyCell), kRuleLineColor);
                     }
                 }
 
-                for (const auto doorCell : map.doorCells)
+                for (const auto doorCell : map.doorPositions)
                 {
                     ruled(
                         voxelmap::cubeWireframe(doorCell),
@@ -111,7 +111,7 @@ namespace antwika::editor
                         game->world().get<antwika::component::Item>(entity);
 
                     ruled(
-                        voxelmap::cubeWireframe(item.cell),
+                        voxelmap::cubeWireframe(item.position),
                         static_cast<component::ItemKind>(item.kind)
                                 == component::ItemKind::Food
                                  ? kFoodBarColor
@@ -119,7 +119,7 @@ namespace antwika::editor
                 }
             }
 
-            for (const auto troubleCell : growTroubleCells)
+            for (const auto troubleCell : growTroublePositions)
             {
                 ruled(voxelmap::cubeWireframe(troubleCell),
                 kForbiddenMarkerColor);
@@ -172,8 +172,8 @@ namespace antwika::editor
                     && !frame.interactions.pointerOverUi)
                 {
                     if (tool == map::Tool::Stamp
-                        && (stampFromCell.has_value()
-                            || !stampCells.empty()))
+                        && (stampFromPosition.has_value()
+                            || !stampVoxels.empty()))
                     {
                         for (const auto cube :
                              stampGhost(*going))
@@ -183,10 +183,10 @@ namespace antwika::editor
                                     kPlacementPreviewColor);
                         }
                     }
-                    else if (shapeFromCell.has_value())
+                    else if (shapeFromPosition.has_value())
                     {
                         for (const auto cube : shapedCubes(
-                                 *shapeFromCell, *going))
+                                 *shapeFromPosition, *going))
                         {
                             ruled(
                                 voxelmap::cubeWireframe(cube),
@@ -205,45 +205,45 @@ namespace antwika::editor
                     ruled(light::lampGizmoSpans(lamp), lamp.tintColor);
                 }
 
-                if (map.spawnCubeCell.has_value())
+                if (map.spawnCubePosition.has_value())
                 {
                     ruled(
-                        voxelmap::cubeWireframe(*map.spawnCubeCell),
+                        voxelmap::cubeWireframe(*map.spawnCubePosition),
                         kCornerFilledMarkerColor);
                 }
 
-                if (map.exitCubeCell.has_value())
+                if (map.exitCubePosition.has_value())
                 {
-                    ruled(voxelmap::cubeWireframe(*map.exitCubeCell),
+                    ruled(voxelmap::cubeWireframe(*map.exitCubePosition),
                         kForbiddenMarkerColor);
                 }
 
-                for (const auto keyCell : map.keyCells)
+                for (const auto keyCell : map.keyPositions)
                 {
                     ruled(voxelmap::cubeWireframe(keyCell), kRuleLineColor);
                 }
 
                 for (
-                    const auto doorCell : map.doorCells)
+                    const auto doorCell : map.doorPositions)
                 {
                     ruled(
                         voxelmap::cubeWireframe(doorCell),
                         kCornerSeamLineColor);
                 }
 
-                for (const auto checkpointCell : map.checkpointCells)
+                for (const auto checkpointCell : map.checkpointPositions)
                 {
                     ruled(
                         voxelmap::cubeWireframe(checkpointCell),
                         kRuleLineCrossLevelColor);
                 }
 
-                for (const auto foodCell : map.foodCells)
+                for (const auto foodCell : map.foodPositions)
                 {
                     ruled(voxelmap::cubeWireframe(foodCell), kFoodBarColor);
                 }
 
-                for (const auto waterCell : map.waterCells)
+                for (const auto waterCell : map.waterPositions)
                 {
                     ruled(voxelmap::cubeWireframe(waterCell), kWaterBarColor);
                 }
@@ -254,7 +254,7 @@ namespace antwika::editor
                 {
                     for (const auto stop :
                          map.characters.at(
-                             *figurePicked).patrolPathCells)
+                             *figurePicked).patrolPathPositions)
                     {
                         ruled(
                             voxelmap::cubeWireframe(stop),
@@ -269,13 +269,14 @@ namespace antwika::editor
                          ++index)
                     {
                         ruled(
-                            voxelmap::cubeWireframe(map.plates.at(index).cell),
+                            voxelmap::cubeWireframe(map.plates.at(
+                                index).position),
                             kCursorColor);
 
                         if (platePicked == index)
                         {
                             for (const auto sway :
-                                 map.plates.at(index).toggleCells)
+                                 map.plates.at(index).togglePositions)
                             {
                                 ruled(
                                     voxelmap::cubeWireframe(sway),

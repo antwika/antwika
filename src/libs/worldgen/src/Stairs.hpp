@@ -6,7 +6,7 @@
 #include <vector>
 
 #include <antwika/rng/IRng.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/worldgen/ruleset/CompiledRuleset.hpp>
 
 #include "Lattice.hpp"
@@ -26,7 +26,7 @@ namespace antwika::worldgen::detail
 
         std::vector<std::size_t> landings{};
 
-        voxel::VoxelCell stuckCell{};
+        voxel::VoxelPosition stuckPosition{};
     };
 
     [[nodiscard]] bool fits(

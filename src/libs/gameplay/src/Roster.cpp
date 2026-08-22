@@ -10,7 +10,8 @@
 #include <antwika/component/RosterIndex.hpp>
 #include <antwika/component/Speaker.hpp>
 #include <antwika/light/ActiveLight.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
+#include <antwika/voxel/Voxels.hpp>
 #include <antwika/collision/Collision.hpp>
 
 #include "antwika/gameplay/ComponentNames.hpp"
@@ -79,7 +80,7 @@ namespace antwika::gameplay
                 player = entity;
             }
             else if (
-                !spawnedCharacter.patrolPathCells.empty()
+                !spawnedCharacter.patrolPathPositions.empty()
                 && !world.has<component::Patrol>(entity))
             {
                 world.add<component::Patrol>(
@@ -102,7 +103,7 @@ namespace antwika::gameplay
 
     map::Placement startingPlacement(
         const map::Map &laidMap,
-        const std::set<voxel::VoxelCell> &cells,
+        const voxel::Voxels &voxels,
         const std::optional<map::Placement> checkpointPlacement)
     {
         if (checkpointPlacement.has_value())
@@ -110,10 +111,10 @@ namespace antwika::gameplay
             return *checkpointPlacement;
         }
 
-        if (laidMap.spawnCubeCell.has_value())
+        if (laidMap.spawnCubePosition.has_value())
         {
             const auto corner =
-                voxel::cubeCornerOf(*laidMap.spawnCubeCell);
+                voxel::cubeCornerOf(*laidMap.spawnCubePosition);
             const auto middleStep = voxel::kCubeSide / 2;
             const auto middleX = corner.x + middleStep;
             const auto middleZ = corner.z + middleStep;
@@ -123,7 +124,7 @@ namespace antwika::gameplay
                  + 0.5F)
                 * voxel::kVoxelSide;
             const auto groundHeight = collision::groundHeightAtColumn(
-                cells, middleX, middleZ, feet);
+                voxels, middleX, middleZ, feet);
 
             if (groundHeight.has_value())
             {
@@ -136,7 +137,7 @@ namespace antwika::gameplay
             }
 
             const auto restPosition = collision::restPositionOverColumn(
-                cells, middleX, middleZ);
+                voxels, middleX, middleZ);
 
             if (restPosition.has_value())
             {
@@ -162,24 +163,24 @@ namespace antwika::gameplay
     {
         const auto lay =
             [&world](
-                const std::vector<voxel::VoxelCell> &cells,
+                const std::vector<voxel::VoxelPosition> &positions,
                 const component::ItemKind kind)
         {
-            for (const auto cell : cells)
+            for (const auto position : positions)
             {
                 const auto entity = world.create();
 
                 world.add<component::Item>(
                     entity,
                     component::Item{
-                        .cell = cell,
+                        .position = position,
                         .kind =
                             static_cast<std::uint8_t>(kind)});
             }
         };
 
-        lay(laidMap.foodCells, component::ItemKind::Food);
-        lay(laidMap.waterCells, component::ItemKind::Water);
+        lay(laidMap.foodPositions, component::ItemKind::Food);
+        lay(laidMap.waterPositions, component::ItemKind::Water);
     }
 
 }

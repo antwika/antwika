@@ -8,7 +8,8 @@
 #include <antwika/ecs/World.hpp>
 #include <antwika/map/MapFile.hpp>
 #include <antwika/map/PlayerProgress.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
+#include <antwika/voxel/Voxels.hpp>
 
 namespace antwika::gameplay
 {
@@ -21,7 +22,7 @@ namespace antwika::gameplay
 
     [[nodiscard]] map::Placement startingPlacement(
         const map::Map &laidMap,
-        const std::set<voxel::VoxelCell> &cells,
+        const voxel::Voxels &voxels,
         std::optional<map::Placement> checkpointPlacement);
 
     void spawnItems(ecs::World &world, const map::Map &laidMap);

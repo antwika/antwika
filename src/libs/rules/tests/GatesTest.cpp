@@ -17,11 +17,13 @@ namespace
     using antwika::rules::gateCubeContaining;
     using antwika::voxel::kCubeSide;
     using antwika::voxel::VoxelCell;
+using antwika::voxel::voxelsOf;
+using antwika::voxel::VoxelPosition;
 
     TEST(GatesTest, GateCubeContaining_AnswersByTheWholeCube)
     {
-        const std::vector<VoxelCell> cells{
-            VoxelCell{.x = 3, .y = 1, .z = 3}};
+        const std::vector<VoxelPosition> positions{
+            VoxelPosition{.x = 3, .y = 1, .z = 3}};
 
         for (std::int32_t x = 2; x <= 3; ++x)
         {
@@ -29,85 +31,84 @@ namespace
             {
                 EXPECT_TRUE(
                     gateCubeContaining(
-                        cells,
-                        VoxelCell{.x = x, .y = y, .z = 2})
+                        positions,
+                        VoxelPosition{.x = x, .y = y, .z = 2})
                         .has_value());
             }
         }
 
         EXPECT_EQ(
             gateCubeContaining(
-                cells, VoxelCell{.x = 2, .y = 0, .z = 2}),
-            antwika::voxel::cubeCornerOf(cells.front()));
+                positions, VoxelPosition{.x = 2, .y = 0, .z = 2}),
+            antwika::voxel::cubeCornerOf(positions.front()));
         EXPECT_FALSE(
             gateCubeContaining(
-                cells, VoxelCell{.x = 4, .y = 0, .z = 2})
+                positions, VoxelPosition{.x = 4, .y = 0, .z = 2})
                 .has_value());
         EXPECT_FALSE(
             gateCubeContaining(
-                cells, VoxelCell{.x = 2, .y = 2, .z = 2})
+                positions, VoxelPosition{.x = 2, .y = 2, .z = 2})
                 .has_value());
     }
 
     TEST(GatesTest, AdjacentDoor_LooksAStepOutEachWay)
     {
-        const std::vector<VoxelCell> doorCells{
-            VoxelCell{.x = 4, .y = 0, .z = 2}};
-        const VoxelCell middleCell{.x = 2, .y = 0, .z = 2};
+        const std::vector<VoxelPosition> doorPositions{
+            VoxelPosition{.x = 4, .y = 0, .z = 2}};
+        const VoxelPosition middlePosition{.x = 2, .y = 0, .z = 2};
 
-        EXPECT_TRUE(adjacentDoor(doorCells, middleCell).has_value());
+        EXPECT_TRUE(adjacentDoor(doorPositions, middlePosition).has_value());
         EXPECT_TRUE(
             adjacentDoor(
-                doorCells, VoxelCell{.x = 6, .y = 1, .z = 3})
+                doorPositions, VoxelPosition{.x = 6, .y = 1, .z = 3})
                 .has_value());
         EXPECT_TRUE(
             adjacentDoor(
-                doorCells, VoxelCell{.x = 4, .y = 0, .z = 0})
+                doorPositions, VoxelPosition{.x = 4, .y = 0, .z = 0})
                 .has_value());
         EXPECT_TRUE(
             adjacentDoor(
-                doorCells, VoxelCell{.x = 5, .y = 0, .z = 4})
+                doorPositions, VoxelPosition{.x = 5, .y = 0, .z = 4})
                 .has_value());
         EXPECT_FALSE(
             adjacentDoor(
-                doorCells, VoxelCell{.x = 0, .y = 0, .z = 0})
+                doorPositions, VoxelPosition{.x = 0, .y = 0, .z = 0})
                 .has_value());
         EXPECT_FALSE(
             adjacentDoor(
-                doorCells, VoxelCell{.x = 6, .y = 0, .z = 4})
+                doorPositions, VoxelPosition{.x = 6, .y = 0, .z = 4})
                 .has_value());
     }
 
     TEST(GatesTest, DoorwayCells_GathersOneDoorwayWhole)
     {
-        const std::vector<VoxelCell> doorCells{
-            VoxelCell{.x = 4, .y = 0, .z = 2},
-            VoxelCell{.x = 4, .y = 1, .z = 2},
-            VoxelCell{.x = 5, .y = 2, .z = 3},
-            VoxelCell{.x = 8, .y = 0, .z = 2}};
+        const std::vector<VoxelPosition> doorPositions{
+            VoxelPosition{.x = 4, .y = 0, .z = 2},
+            VoxelPosition{.x = 4, .y = 1, .z = 2},
+            VoxelPosition{.x = 5, .y = 2, .z = 3},
+            VoxelPosition{.x = 8, .y = 0, .z = 2}};
         const auto corner =
-            antwika::voxel::cubeCornerOf(doorCells.front());
-        const auto column = doorwayCells(doorCells, corner);
+            antwika::voxel::cubeCornerOf(doorPositions.front());
+        const auto column = doorwayCells(doorPositions, corner);
 
         ASSERT_EQ(column.size(), 3U);
         EXPECT_EQ(
-            doorwayCells(doorCells, VoxelCell{.x = 0, .z = 0})
+            doorwayCells(doorPositions, VoxelPosition{.x = 0, .z = 0})
                 .size(),
             0U);
     }
 
     TEST(GatesTest, CubeOccupied_SeesAnyVoxelOfTheCube)
     {
-        const std::vector<VoxelCell> voxels{
-            VoxelCell{.x = 3, .y = 1, .z = 3}};
+        const auto voxels = voxelsOf({VoxelCell{.x = 3, .y = 1, .z = 3}});
 
         EXPECT_TRUE(
-            cubeOccupied(voxels, VoxelCell{.x = 2, .z = 2}));
+            cubeOccupied(voxels, VoxelPosition{.x = 2, .z = 2}));
         EXPECT_FALSE(
-            cubeOccupied(voxels, VoxelCell{.x = 4, .z = 2}));
+            cubeOccupied(voxels, VoxelPosition{.x = 4, .z = 2}));
         EXPECT_FALSE(
             cubeOccupied(
-                voxels, VoxelCell{.x = 2, .y = 2, .z = 2}));
+                voxels, VoxelPosition{.x = 2, .y = 2, .z = 2}));
     }
 
 }

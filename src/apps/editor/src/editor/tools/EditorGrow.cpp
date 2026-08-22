@@ -1,7 +1,7 @@
 #include <string>
 #include <utility>
 
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/solver/ChunkGrow.hpp>
 #include <antwika/worldgen/CityRuleset.hpp>
@@ -31,20 +31,20 @@ namespace antwika::editor
         const worldgen::ChunkRequest request{
             .seed = growSeed++,
             .shape = growShape,
-            .originCell = voxel::VoxelCell{},
-            .hintCells = solver::hintsFrom(map.voxels, growShape,
-                voxel::VoxelCell{})};
+            .originPosition = voxel::VoxelPosition{},
+            .hintVoxels = solver::hintsFrom(map.voxels, growShape,
+                voxel::VoxelPosition{})};
 
         const auto result = worldgen::growChunk(shippedRules(), request);
 
-        growTroubleCells.clear();
+        growTroublePositions.clear();
 
         if (result.outcome != worldgen::ChunkOutcome::Grown)
         {
-            for (const voxel::VoxelCell cube : result.culpritCells)
+            for (const voxel::VoxelPosition cube : result.culpritPositions)
             {
-                growTroubleCells.push_back(
-                    voxel::VoxelCell{
+                growTroublePositions.push_back(
+                    voxel::VoxelPosition{
                         .x = cube.x * voxel::kCubeSide,
                         .y = cube.y * voxel::kCubeSide,
                         .z = cube.z * voxel::kCubeSide});
@@ -59,14 +59,14 @@ namespace antwika::editor
 
         map.voxels = solver::withChunkSpliced(
             std::move(map.voxels),
-            worldgen::chunkBox(request.shape, request.originCell),
-            worldgen::chunkVoxels(result.cubeCells));
+            worldgen::chunkBox(request.shape, request.originPosition),
+            worldgen::chunkVoxels(result.cubeVoxels));
 
         dirty = true;
         rebuildWorld();
 
         showStatus(
-            "a block of " + std::to_string(result.cubeCells.size())
+            "a block of " + std::to_string(result.cubeVoxels.size())
                 + " cubes stands",
             false);
     }

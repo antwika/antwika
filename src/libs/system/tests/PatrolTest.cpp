@@ -15,6 +15,8 @@
 #include "antwika/system/PatrolSystem.hpp"
 
 using antwika::ecs::World;
+using antwika::voxel::VoxelPosition;
+using antwika::voxel::Voxels;
 using antwika::ecs::Entity;
 using antwika::gameplay::GameLoop;
 using antwika::component::Patrol;
@@ -24,6 +26,7 @@ using antwika::component::Position;
 using antwika::component::RosterIndex;
 using antwika::component::Velocity;
 using antwika::voxel::VoxelCell;
+using antwika::voxel::voxelsOf;
 using antwika::component::kStrollSpeedFactor;
 using antwika::voxel::kVoxelSide;
 using antwika::log::mocks::MockLogger;
@@ -34,30 +37,30 @@ namespace
 
     constexpr float kTolerance = 1e-4F;
 
-    [[nodiscard]] std::set<VoxelCell> floorOver(
+    [[nodiscard]] Voxels floorOver(
         const std::int32_t reach)
     {
-        std::set<VoxelCell> cells;
+        Voxels voxels;
 
         for (auto x = -reach; x <= reach; ++x)
         {
             for (auto z = -reach; z <= reach; ++z)
             {
-                cells.insert(VoxelCell{.x = x, .y = 0, .z = z});
+                voxels.merge(voxelsOf({VoxelCell{.x = x, .y = 0, .z = z}}));
             }
         }
 
-        return cells;
+        return voxels;
     }
 
     struct PatrolHarness final
     {
         NiceMock<MockLogger> logger{};
-        std::set<VoxelCell> solidCells{};
-        std::vector<std::vector<VoxelCell>> stopCells{};
+        Voxels solidVoxels{};
+        std::vector<std::vector<VoxelPosition>> stopPositions{};
         World world{logger};
         GameLoop gameLoop{world};
-        PatrolSystem system{solidCells, stopCells};
+        PatrolSystem system{solidVoxels, stopPositions};
         Entity entity{};
 
         void begin(const Position stoodPosition)
@@ -78,10 +81,10 @@ namespace
         }
     };
 
-    [[nodiscard]] VoxelCell groundAt(
+    [[nodiscard]] VoxelPosition groundAt(
         const std::int32_t x, const std::int32_t z)
     {
-        return VoxelCell{.x = x, .y = 0, .z = z};
+        return VoxelPosition{.x = x, .y = 0, .z = z};
     }
 
 }
@@ -90,8 +93,8 @@ TEST(PatrolTest, Update_LeavesACharacterWithNoStopsStandingStill)
 {
     PatrolHarness harness;
 
-    harness.solidCells = floorOver(2);
-    harness.stopCells = {{}};
+    harness.solidVoxels = floorOver(2);
+    harness.stopPositions = {{}};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
 
@@ -103,8 +106,8 @@ TEST(PatrolTest, Update_SendsACharacterTowardItsFirstStop)
 {
     PatrolHarness harness;
 
-    harness.solidCells = floorOver(3);
-    harness.stopCells = {{groundAt(3, 0)}};
+    harness.solidVoxels = floorOver(3);
+    harness.stopPositions = {{groundAt(3, 0)}};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
 
@@ -116,8 +119,8 @@ TEST(PatrolTest, Update_StrollsAtHalfAWalkersPace)
 {
     PatrolHarness harness;
 
-    harness.solidCells = floorOver(3);
-    harness.stopCells = {{groundAt(3, 0)}};
+    harness.solidVoxels = floorOver(3);
+    harness.stopPositions = {{groundAt(3, 0)}};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
 
@@ -131,8 +134,8 @@ TEST(PatrolTest, Update_TurnsForTheNextStopOnceItArrives)
 {
     PatrolHarness harness;
 
-    harness.solidCells = floorOver(3);
-    harness.stopCells = {{groundAt(1, 0), groundAt(-1, 0)}};
+    harness.solidVoxels = floorOver(3);
+    harness.stopPositions = {{groundAt(1, 0), groundAt(-1, 0)}};
     harness.begin(Position{.x = 1.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
     harness.gameLoop.run(1);
@@ -144,8 +147,8 @@ TEST(PatrolTest, Update_WrapsBackToTheFirstStopAfterTheLast)
 {
     PatrolHarness harness;
 
-    harness.solidCells = floorOver(3);
-    harness.stopCells = {{groundAt(1, 0), groundAt(-1, 0)}};
+    harness.solidVoxels = floorOver(3);
+    harness.stopPositions = {{groundAt(1, 0), groundAt(-1, 0)}};
     harness.begin(Position{.x = 1.0F, .y = 0.5F, .z = 0.0F});
 
     for (antwika::time::Tick tick = 0; tick < 4; ++tick)
@@ -164,8 +167,8 @@ TEST(PatrolTest, Update_ReplansOnceItsRouteRunsOut)
 {
     PatrolHarness harness;
 
-    harness.solidCells = floorOver(3);
-    harness.stopCells = {{groundAt(1, 0)}};
+    harness.solidVoxels = floorOver(3);
+    harness.stopPositions = {{groundAt(1, 0)}};
     harness.begin(Position{.x = 1.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
 
@@ -186,8 +189,8 @@ TEST(PatrolTest, Update_LeavesACharacterStoodWhereItStandsOnNothing)
 {
     PatrolHarness harness;
 
-    harness.solidCells = floorOver(1);
-    harness.stopCells = {{groundAt(0, 0)}};
+    harness.solidVoxels = floorOver(1);
+    harness.stopPositions = {{groundAt(0, 0)}};
     harness.begin(Position{.x = 40.0F, .y = 0.5F, .z = 40.0F});
     harness.gameLoop.run(0);
 
@@ -199,8 +202,8 @@ TEST(PatrolTest, Update_LeavesACharacterStoodWhereItsStopStandsOnNothing)
 {
     PatrolHarness harness;
 
-    harness.solidCells = floorOver(1);
-    harness.stopCells = {{groundAt(40, 40)}};
+    harness.solidVoxels = floorOver(1);
+    harness.stopPositions = {{groundAt(40, 40)}};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
 
@@ -212,9 +215,9 @@ TEST(PatrolTest, Update_LeavesACharacterStoodWhereNoWalkReachesItsStop)
 {
     PatrolHarness harness;
 
-    harness.solidCells = floorOver(1);
-    harness.solidCells.insert(VoxelCell{.x = 8, .y = 0, .z = 8});
-    harness.stopCells = {{groundAt(8, 8)}};
+    harness.solidVoxels = floorOver(1);
+    harness.solidVoxels.merge(voxelsOf({VoxelCell{.x = 8, .y = 0, .z = 8}}));
+    harness.stopPositions = {{groundAt(8, 8)}};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
 
@@ -226,8 +229,8 @@ TEST(PatrolTest, Update_HoldsACharacterStillWhileItSpeaks)
 {
     PatrolHarness harness;
 
-    harness.solidCells = floorOver(3);
-    harness.stopCells = {{groundAt(3, 0)}};
+    harness.solidVoxels = floorOver(3);
+    harness.stopPositions = {{groundAt(3, 0)}};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.system.setSpeaking(0U);
     harness.gameLoop.run(0);
@@ -239,8 +242,8 @@ TEST(PatrolTest, Update_LetsACharacterStrollAgainOnceItIsDone)
 {
     PatrolHarness harness;
 
-    harness.solidCells = floorOver(3);
-    harness.stopCells = {{groundAt(3, 0)}};
+    harness.solidVoxels = floorOver(3);
+    harness.stopPositions = {{groundAt(3, 0)}};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.system.setSpeaking(0U);
     harness.gameLoop.run(0);
@@ -254,8 +257,8 @@ TEST(PatrolTest, Update_HoldsEveryCharacterStillWhileFrozen)
 {
     PatrolHarness harness;
 
-    harness.solidCells = floorOver(3);
-    harness.stopCells = {{groundAt(3, 0)}};
+    harness.solidVoxels = floorOver(3);
+    harness.stopPositions = {{groundAt(3, 0)}};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.system.setFrozen(true);
     harness.gameLoop.run(0);
@@ -267,8 +270,8 @@ TEST(PatrolTest, Update_LeavesACharacterWithNoRosterEntryStandingStill)
 {
     PatrolHarness harness;
 
-    harness.solidCells = floorOver(3);
-    harness.stopCells = {};
+    harness.solidVoxels = floorOver(3);
+    harness.stopPositions = {};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
 
@@ -279,8 +282,8 @@ TEST(PatrolTest, Forget_LetsGoOfTheRoutesItPlanned)
 {
     PatrolHarness harness;
 
-    harness.solidCells = floorOver(3);
-    harness.stopCells = {{groundAt(3, 0)}};
+    harness.solidVoxels = floorOver(3);
+    harness.stopPositions = {{groundAt(3, 0)}};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
     harness.system.forget();
@@ -292,12 +295,12 @@ TEST(PatrolTest, Forget_LetsGoOfTheRoutesItPlanned)
 TEST(PatrolTest, Update_StrollsEveryCharacterOfTheRoster)
 {
     NiceMock<MockLogger> logger;
-    std::set<VoxelCell> solidCells = floorOver(3);
-    std::vector<std::vector<VoxelCell>> stopCells{
+    Voxels solidVoxels = floorOver(3);
+    std::vector<std::vector<VoxelPosition>> stopPositions{
         {groundAt(3, 0)}, {groundAt(-3, 0)}};
     World world(logger);
     GameLoop gameLoop(world);
-    PatrolSystem system(solidCells, stopCells);
+    PatrolSystem system(solidVoxels, stopPositions);
 
     gameLoop.addSystem(Phase::Sending, system);
 

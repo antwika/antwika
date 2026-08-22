@@ -32,36 +32,38 @@ namespace antwika::worldgen::detail
 
         struct StairStep final
         {
-            std::size_t cell = 0;
+            std::size_t position = 0;
             std::span<const std::size_t> wantedCells{};
         };
 
         struct Move final
         {
-            voxel::VoxelCell toCell{};
+            voxel::VoxelPosition toPosition{};
             std::uint64_t weight = 0;
             std::array<StairStep, kMostPins> stairSteps{};
             std::size_t pinCount = 0;
         };
 
-        [[nodiscard]] voxel::VoxelCell stepped(
-            const voxel::VoxelCell fromCell,
+        [[nodiscard]] voxel::VoxelPosition stepped(
+            const voxel::VoxelPosition fromPosition,
             const voxel::Facing facing,
             const std::int32_t times)
         {
             const auto step = voxel::stepVectorFor(facing);
 
-            return voxel::VoxelCell{
-                .x = fromCell.x + (step.x * times),
-                .y = fromCell.y,
-                .z = fromCell.z + (step.z * times)};
+            return voxel::VoxelPosition{
+                .x = fromPosition.x + (step.x * times),
+                .y = fromPosition.y,
+                .z = fromPosition.z + (step.z * times)};
         }
 
-        [[nodiscard]] voxel::VoxelCell raised(
-            const voxel::VoxelCell fromCell, const std::int32_t levels)
+        [[nodiscard]] voxel::VoxelPosition raised(
+            const voxel::VoxelPosition fromPosition, const std::int32_t levels)
         {
-            return voxel::VoxelCell{
-                .x = fromCell.x, .y = fromCell.y + levels, .z = fromCell.z};
+            return voxel::VoxelPosition{
+                .x =
+                    fromPosition.x, .y =
+                        fromPosition.y + levels, .z = fromPosition.z};
         }
     }
 
@@ -73,13 +75,13 @@ namespace antwika::worldgen::detail
 
     bool fits(
         const Board &board,
-        const std::size_t cell,
+        const std::size_t position,
         const std::span<const std::size_t> wantedCells)
     {
         return std::ranges::any_of(
             wantedCells,
             [&](const std::size_t value)
-            { return board.holds(cell, value); });
+            { return board.holds(position, value); });
     }
 
     std::int32_t highestTerrace(
@@ -117,7 +119,7 @@ namespace antwika::worldgen::detail
             {
             }
 
-            [[nodiscard]] std::optional<voxel::VoxelCell> street()
+            [[nodiscard]] std::optional<voxel::VoxelPosition> street()
             {
                 for (std::int32_t tries = 0; tries < kStreetTries; ++tries)
                 {
@@ -131,12 +133,12 @@ namespace antwika::worldgen::detail
                     for (std::int32_t level = 0; level < shape.height;
                          ++level)
                     {
-                        const voxel::VoxelCell cubeCell{
+                        const voxel::VoxelPosition cubePosition{
                             .x = randomX, .y = level, .z = randomZ};
 
-                        if (opens(cubeCell))
+                        if (opens(cubePosition))
                         {
-                            return cubeCell;
+                            return cubePosition;
                         }
                     }
                 }
@@ -144,47 +146,49 @@ namespace antwika::worldgen::detail
                 return std::nullopt;
             }
 
-            [[nodiscard]] bool begin(const voxel::VoxelCell cubeCell)
+            [[nodiscard]] bool begin(const voxel::VoxelPosition cubePosition)
             {
                 const std::size_t mark = board.mark();
 
-                std::vector<std::size_t> cells;
-                hold(cells, cellOf(shape, cubeCell), rules.wearing(Role::Room));
+                std::vector<std::size_t> positions;
+                hold(positions, cellOf(shape, cubePosition),
+                    rules.wearing(Role::Room));
 
-                const auto underCell = raised(cubeCell, -1);
+                const auto underCell = raised(cubePosition, -1);
                 if (stands(underCell))
                 {
                     hold(
-                        cells,
+                        positions,
                         cellOf(shape, underCell),
                         rules.wearing(Role::Bear));
                 }
 
-                if (!settle(rules, shape, board, cells))
+                if (!settle(rules, shape, board, positions))
                 {
                     board.rewind(mark);
                     return false;
                 }
 
-                landings.push_back(cellOf(shape, cubeCell));
-                walkedCells.insert(cubeCell);
+                landings.push_back(cellOf(shape, cubePosition));
+                walkedPositions.insert(cubePosition);
 
                 return true;
             }
 
             [[nodiscard]] bool climb(
-                const voxel::VoxelCell fromCell, const std::int32_t upTo)
+                const voxel::VoxelPosition fromPosition,
+                const std::int32_t upTo)
             {
-                voxel::VoxelCell cell = fromCell;
+                voxel::VoxelPosition position = fromPosition;
 
                 for (std::size_t step = 0; step < walkSteps(shape); ++step)
                 {
-                    if (cell.y >= upTo)
+                    if (position.y >= upTo)
                     {
                         return true;
                     }
 
-                    auto moves = movesFrom(cell);
+                    auto moves = movesFrom(position);
                     bool went = false;
 
                     while (!moves.empty())
@@ -193,7 +197,7 @@ namespace antwika::worldgen::detail
 
                         if (lay(moves[which]))
                         {
-                            cell = moves[which].toCell;
+                            position = moves[which].toPosition;
                             went = true;
                             break;
                         }
@@ -205,12 +209,12 @@ namespace antwika::worldgen::detail
 
                     if (!went)
                     {
-                        stuckCell = cell;
+                        stuckPosition = position;
                         return false;
                     }
                 }
 
-                stuckCell = cell;
+                stuckPosition = position;
                 return false;
             }
 
@@ -219,9 +223,9 @@ namespace antwika::worldgen::detail
                 return landings;
             }
 
-            [[nodiscard]] voxel::VoxelCell stopped() const
+            [[nodiscard]] voxel::VoxelPosition stopped() const
             {
-                return stuckCell;
+                return stuckPosition;
             }
 
         private:
@@ -230,60 +234,64 @@ namespace antwika::worldgen::detail
             Board &board;
             rng::IRng &rng;
 
-            std::set<voxel::VoxelCell> walkedCells{};
+            std::set<voxel::VoxelPosition> walkedPositions{};
             std::vector<std::size_t> landings{};
-            voxel::VoxelCell stuckCell{};
+            voxel::VoxelPosition stuckPosition{};
 
-            [[nodiscard]] bool stands(const voxel::VoxelCell cubeCell) const
+            [[nodiscard]] bool stands(
+                const voxel::VoxelPosition cubePosition) const
             {
-                return within(shape, cubeCell);
+                return within(shape, cubePosition);
             }
 
-            [[nodiscard]] bool untrodden(const voxel::VoxelCell cubeCell) const
+            [[nodiscard]] bool untrodden(
+                const voxel::VoxelPosition cubePosition) const
             {
-                return !walkedCells.contains(cubeCell);
+                return !walkedPositions.contains(cubePosition);
             }
 
             [[nodiscard]] bool wears(
-                const voxel::VoxelCell cubeCell, const Role role) const
+                const voxel::VoxelPosition cubePosition, const Role role) const
             {
-                return stands(cubeCell)
+                return stands(cubePosition)
                        && fits(
-                           board, cellOf(shape, cubeCell), rules.wearing(role));
+                           board, cellOf(shape,
+                               cubePosition), rules.wearing(role));
             }
 
-            [[nodiscard]] bool opens(const voxel::VoxelCell cubeCell) const
+            [[nodiscard]] bool opens(
+                const voxel::VoxelPosition cubePosition) const
             {
-                const auto underCell = raised(cubeCell, -1);
+                const auto underCell = raised(cubePosition, -1);
 
-                return wears(cubeCell, Role::Room)
+                return wears(cubePosition, Role::Room)
                        && (underCell.y < 0 || wears(underCell, Role::Bear));
             }
 
             void hold(
-                std::vector<std::size_t> &cells,
-                const std::size_t cell,
+                std::vector<std::size_t> &positions,
+                const std::size_t position,
                 const std::span<const std::size_t> wantedCells)
             {
-                board.hold(cell, wantedCells);
-                cells.push_back(cell);
+                board.hold(position, wantedCells);
+                positions.push_back(position);
             }
 
             [[nodiscard]] bool lay(const Move &move)
             {
                 const std::size_t mark = board.mark();
 
-                std::vector<std::size_t> cells;
+                std::vector<std::size_t> positions;
                 for (std::size_t index = 0; index < move.pinCount; ++index)
                 {
-                    hold(cells, move.stairSteps[index].cell,
+                    hold(positions, move.stairSteps[index].position,
                     move.stairSteps[index].wantedCells);
                 }
 
-                for (const std::size_t cell : cells)
+                for (const std::size_t position : positions)
                 {
                     // GCOVR_EXCL_START
-                    if (board.wave()[cell].isEmpty())
+                    if (board.wave()[position].isEmpty())
                     {
                         board.rewind(mark);
                         return false;
@@ -291,40 +299,42 @@ namespace antwika::worldgen::detail
                     // GCOVR_EXCL_STOP
                 }
 
-                if (!settle(rules, shape, board, cells))
+                if (!settle(rules, shape, board, positions))
                 {
                     board.rewind(mark);
                     return false;
                 }
 
-                landings.push_back(cellOf(shape, move.toCell));
-                walkedCells.insert(move.toCell);
+                landings.push_back(cellOf(shape, move.toPosition));
+                walkedPositions.insert(move.toPosition);
 
                 return true;
             }
 
             void addLadder(
-                std::vector<Move> &moves, const voxel::VoxelCell cells) const
+                std::vector<Move> &moves,
+                const voxel::VoxelPosition positions) const
             {
-                const auto raisedCell = raised(cells, 1);
+                const auto raisedCell = raised(positions, 1);
 
                 if (!stands(raisedCell) || !untrodden(raisedCell))
                 {
                     return;
                 }
 
-                if (!wears(cells, Role::Climb)
+                if (!wears(positions, Role::Climb)
                     || !wears(raisedCell, Role::Perch))
                 {
                     return;
                 }
 
-                Move madeMove{.toCell = raisedCell, .weight = kLadderWeight};
+                Move madeMove{.toPosition = raisedCell,
+                    .weight = kLadderWeight};
                 madeMove.stairSteps[madeMove.pinCount++] = StairStep{
-                    .cell = cellOf(shape, cells),
+                    .position = cellOf(shape, positions),
                     .wantedCells = rules.wearing(Role::Climb)};
                 madeMove.stairSteps[madeMove.pinCount++] = StairStep{
-                    .cell = cellOf(shape, raisedCell),
+                    .position = cellOf(shape, raisedCell),
                     .wantedCells = rules.wearing(Role::Perch)};
 
                 moves.push_back(madeMove);
@@ -332,11 +342,11 @@ namespace antwika::worldgen::detail
 
             void addStair(
                 std::vector<Move> &moves,
-                const voxel::VoxelCell cell,
+                const voxel::VoxelPosition position,
                 const voxel::Facing facing) const
             {
-                const auto mid = stepped(cell, facing, 1);
-                const auto land = stepped(cell, facing, 2);
+                const auto mid = stepped(position, facing, 1);
+                const auto land = stepped(position, facing, 2);
                 const auto raisedCell = raised(land, 1);
 
                 if (!stands(mid) || !stands(land) || !stands(raisedCell))
@@ -351,7 +361,7 @@ namespace antwika::worldgen::detail
 
                 const auto steps = rules.matching(voxel::Kind::Ramp, facing);
 
-                if (!wears(cell, Role::Room)
+                if (!wears(position, Role::Room)
                     || !fits(board, cellOf(shape, mid), steps)
                     || !wears(land, Role::Land) || !wears(raisedCell,
                         Role::Room))
@@ -359,17 +369,18 @@ namespace antwika::worldgen::detail
                     return;
                 }
 
-                Move madeMove{.toCell = raisedCell, .weight = kStairWeight};
+                Move madeMove{.toPosition = raisedCell, .weight = kStairWeight};
                 madeMove.stairSteps[madeMove.pinCount++] = StairStep{
-                    .cell = cellOf(shape, cell),
+                    .position = cellOf(shape, position),
                     .wantedCells = rules.wearing(Role::Room)};
                 madeMove.stairSteps[madeMove.pinCount++] =
-                    StairStep{.cell = cellOf(shape, mid), .wantedCells = steps};
+                    StairStep{.position = cellOf(shape, mid),
+                        .wantedCells = steps};
                 madeMove.stairSteps[madeMove.pinCount++] = StairStep{
-                    .cell = cellOf(shape, land),
+                    .position = cellOf(shape, land),
                     .wantedCells = rules.wearing(Role::Land)};
                 madeMove.stairSteps[madeMove.pinCount++] = StairStep{
-                    .cell = cellOf(shape, raisedCell),
+                    .position = cellOf(shape, raisedCell),
                     .wantedCells = rules.wearing(Role::Room)};
 
                 moves.push_back(madeMove);
@@ -377,14 +388,14 @@ namespace antwika::worldgen::detail
 
             void addAcross(
                 std::vector<Move> &moves,
-                const voxel::VoxelCell cell,
+                const voxel::VoxelPosition position,
                 const voxel::Facing facing) const
             {
-                const auto toCell = stepped(cell, facing, 1);
-                const auto underCell = raised(toCell, -1);
+                const auto toPosition = stepped(position, facing, 1);
+                const auto underCell = raised(toPosition, -1);
 
-                if (!stands(toCell) || !untrodden(toCell)
-                    || !wears(toCell, Role::Perch))
+                if (!stands(toPosition) || !untrodden(toPosition)
+                    || !wears(toPosition, Role::Perch))
                 {
                     return;
                 }
@@ -394,15 +405,16 @@ namespace antwika::worldgen::detail
                     return;
                 }
 
-                Move madeMove{.toCell = toCell, .weight = kAcrossWeight};
+                Move madeMove{.toPosition = toPosition,
+                    .weight = kAcrossWeight};
                 madeMove.stairSteps[madeMove.pinCount++] = StairStep{
-                    .cell = cellOf(shape, toCell),
+                    .position = cellOf(shape, toPosition),
                     .wantedCells = rules.wearing(Role::Perch)};
 
                 if (stands(underCell))
                 {
                     madeMove.stairSteps[madeMove.pinCount++] = StairStep{
-                        .cell = cellOf(shape, underCell),
+                        .position = cellOf(shape, underCell),
                         .wantedCells = rules.wearing(Role::Bear)};
                 }
 
@@ -410,16 +422,16 @@ namespace antwika::worldgen::detail
             }
 
             [[nodiscard]] std::vector<Move> movesFrom(
-                const voxel::VoxelCell cell) const
+                const voxel::VoxelPosition position) const
             {
                 std::vector<Move> moves;
 
-                addLadder(moves, cell);
+                addLadder(moves, position);
 
                 for (const voxel::Facing facing : kWaysAbout)
                 {
-                    addStair(moves, cell, facing);
-                    addAcross(moves, cell, facing);
+                    addStair(moves, position, facing);
+                    addAcross(moves, position, facing);
                 }
 
                 return moves;
@@ -463,7 +475,7 @@ namespace antwika::worldgen::detail
         }
 
         const std::int32_t roof = highestTerrace(compiledRuleset, shape);
-        voxel::VoxelCell stuckCell{};
+        voxel::VoxelPosition stuckPosition{};
 
         for (std::uint32_t attempt = 0; attempt < kRouteAttempts; ++attempt)
         {
@@ -475,7 +487,7 @@ namespace antwika::worldgen::detail
             if (!start.has_value() || !walker.begin(*start)
                 || !walker.climb(*start, roof))
             {
-                stuckCell = walker.stopped();
+                stuckPosition = walker.stopped();
                 board.rewind(mark);
                 continue;
             }
@@ -484,20 +496,21 @@ namespace antwika::worldgen::detail
             {
                 const auto laidCubes = walker.laid();
                 const auto fromCube = laidCubes[rng.next() % laidCubes.size()];
-                const auto cubeCell = cubeAt(shape, fromCube);
+                const auto cubePosition = cubeAt(shape, fromCube);
                 const auto rise = static_cast<std::int32_t>(
                     rng.next()
                     % static_cast<std::uint64_t>(
                         kMostBranchRise - kLeastBranchRise + 1))
                     + kLeastBranchRise;
 
-                (void)walker.climb(cubeCell, std::min(cubeCell.y + rise, roof));
+                (void)walker.climb(cubePosition, std::min(cubePosition.y + rise,
+                    roof));
             }
 
             return StairResult{.climbed = true, .landings = walker.laid()};
         }
 
-        return StairResult{.climbed = false, .stuckCell = stuckCell};
+        return StairResult{.climbed = false, .stuckPosition = stuckPosition};
     } // GCOVR_EXCL_LINE
 
 }

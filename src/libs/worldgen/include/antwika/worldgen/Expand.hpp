@@ -1,13 +1,10 @@
 #pragma once
 
-#include <vector>
-
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/Voxels.hpp>
 
 namespace antwika::worldgen
 {
 
-    [[nodiscard]] std::vector<voxel::VoxelCell> chunkVoxels(
-        const std::vector<voxel::VoxelCell> &cubeCells);
+    [[nodiscard]] voxel::Voxels chunkVoxels(const voxel::Voxels &cubeVoxels);
 
 }

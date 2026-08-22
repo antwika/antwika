@@ -10,7 +10,8 @@
 #include <antwika/ecs/World.hpp>
 #include <antwika/gfx/Math3D.hpp>
 #include <antwika/time/Tick.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
+#include <antwika/voxel/Voxels.hpp>
 
 namespace antwika::system
 {
@@ -19,8 +20,8 @@ namespace antwika::system
     {
     public:
         PatrolSystem(
-            const std::set<voxel::VoxelCell> &solidCells,
-            const std::vector<std::vector<voxel::VoxelCell>> &stopCells)
+            const voxel::Voxels &solidVoxels,
+            const std::vector<std::vector<voxel::VoxelPosition>> &stopPositions)
             noexcept;
 
         void setFrozen(bool frozen) noexcept;
@@ -32,8 +33,8 @@ namespace antwika::system
         void update(ecs::World &world, time::Tick tick) override;
 
     private:
-        const std::set<voxel::VoxelCell> *solidCells;
-        const std::vector<std::vector<voxel::VoxelCell>> *stopCells;
+        const voxel::Voxels *solidVoxels;
+        const std::vector<std::vector<voxel::VoxelPosition>> *stopPositions;
         std::map<ecs::Entity, std::vector<gfx::Vec3>> routePositions;
         bool frozen = false;
         std::optional<std::uint32_t> speaking;

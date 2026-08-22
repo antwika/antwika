@@ -16,7 +16,8 @@
 #include <antwika/log/ILogger.hpp>
 #include <antwika/map/PlayerProgress.hpp>
 #include <antwika/time/Tick.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
+#include <antwika/voxel/Voxels.hpp>
 #include <antwika/collision/Collision.hpp>
 
 #include "antwika/gameplay/GameLoop.hpp"
@@ -41,9 +42,9 @@ namespace antwika::gameplay
         Game(
             log::ILogger &logger,
             ecs::World &world,
-            const std::set<voxel::VoxelCell> &solidCells,
-            const std::vector<std::vector<voxel::VoxelCell>>
-                &patrolCells);
+            const voxel::Voxels &solidVoxels,
+            const std::vector<std::vector<voxel::VoxelPosition>>
+                &patrolPositions);
 
         [[nodiscard]] ecs::World &world() noexcept override;
 
@@ -97,12 +98,12 @@ namespace antwika::gameplay
 
         void followPath(
             std::vector<gfx::Vec3> stopPositions,
-            voxel::VoxelCell goalCell) override;
+            voxel::VoxelPosition goalPosition) override;
 
         [[nodiscard]] const std::vector<gfx::Vec3> &path()
             const noexcept override;
 
-        [[nodiscard]] const std::optional<voxel::VoxelCell> &
+        [[nodiscard]] const std::optional<voxel::VoxelPosition> &
         pathGoal() const noexcept override;
 
         void stepAlongPath(bool playing) override;
@@ -129,7 +130,7 @@ namespace antwika::gameplay
         gfx::Vec3 cameraPosition{};
         std::vector<gfx::Vec3> stopPositions;
         std::size_t stopIndex = 0;
-        std::optional<voxel::VoxelCell> stopsGoalCell;
+        std::optional<voxel::VoxelPosition> stopsGoalPosition;
     };
 
 }

@@ -32,17 +32,17 @@ namespace antwika::decor
         }
 
         std::uint8_t frequencyRollFor(
-            const voxel::VoxelCell cell,
+            const voxel::VoxelPosition position,
             const std::size_t which,
             const std::uint32_t seed,
             const std::uint32_t stir)
         {
-            auto mixedSeed = static_cast<std::uint32_t>(cell.x)
+            auto mixedSeed = static_cast<std::uint32_t>(position.x)
                          * 73856093U;
 
-            mixedSeed ^= static_cast<std::uint32_t>(cell.y)
+            mixedSeed ^= static_cast<std::uint32_t>(position.y)
                      * 19349663U;
-            mixedSeed ^= static_cast<std::uint32_t>(cell.z)
+            mixedSeed ^= static_cast<std::uint32_t>(position.z)
                      * 83492791U;
             mixedSeed ^= static_cast<std::uint32_t>(which)
                      * 2654435761U;
@@ -53,25 +53,19 @@ namespace antwika::decor
                 hashMix(mixedSeed | 1U) % kFullFrequency);
         }
 
-        voxel::VoxelCell wallTangent(const std::size_t side)
+        voxel::VoxelPosition wallTangent(const std::size_t side)
         {
             switch (side)
             {
             case 0:
-                return voxel::VoxelCell{.x = 1};
+                return voxel::VoxelPosition{.x = 1};
             case 1:
-                return voxel::VoxelCell{.x = -1};
+                return voxel::VoxelPosition{.x = -1};
             case 2:
-                return voxel::VoxelCell{.z = -1};
+                return voxel::VoxelPosition{.z = -1};
             default:
-                return voxel::VoxelCell{.z = 1};
+                return voxel::VoxelPosition{.z = 1};
             }
-        }
-
-        voxel::VoxelCell positionOnly(const voxel::VoxelCell cell)
-        {
-            return voxel::VoxelCell{
-                .x = cell.x, .y = cell.y, .z = cell.z};
         }
 
         std::vector<std::size_t> shuffledValues(
@@ -96,16 +90,16 @@ namespace antwika::decor
         } // GCOVR_EXCL_LINE
 
         std::uint32_t choiceRollFor(
-            const voxel::VoxelCell cell,
+            const voxel::VoxelPosition position,
             const std::size_t side,
             const std::uint32_t seed)
         {
-            auto mixedSeed = static_cast<std::uint32_t>(cell.x)
+            auto mixedSeed = static_cast<std::uint32_t>(position.x)
                          * 73856093U;
 
-            mixedSeed ^= static_cast<std::uint32_t>(cell.y)
+            mixedSeed ^= static_cast<std::uint32_t>(position.y)
                      * 19349663U;
-            mixedSeed ^= static_cast<std::uint32_t>(cell.z)
+            mixedSeed ^= static_cast<std::uint32_t>(position.z)
                      * 83492791U;
             mixedSeed ^= static_cast<std::uint32_t>(side + 1)
                      * 0x9e3779b9U;
@@ -198,14 +192,14 @@ namespace antwika::decor
         struct DecorPlacement final
         {
             std::size_t face = 0;
-            voxel::VoxelCell cell{};
+            voxel::VoxelPosition position{};
             std::size_t side = 0;
         };
 
         std::vector<DecorPlacement> decorPlacements;
         std::map<std::pair<std::int32_t, std::int32_t>, std::size_t>
             byGround;
-        std::map<std::pair<std::size_t, voxel::VoxelCell>, std::size_t>
+        std::map<std::pair<std::size_t, voxel::VoxelPosition>, std::size_t>
             byWall;
         std::vector<wfc::Domain> waveDomains;
         std::vector<std::optional<std::size_t>> preferences;
@@ -238,7 +232,7 @@ namespace antwika::decor
                 if (fits && !decorSpanned(record)
                     && record.tile.atlas == drawnTiles[index].atlas
                     && frequencyRollFor(
-                           faces[index].cell,
+                           faces[index].cell.position(),
                            which,
                            seed,
                            upward ? 0U
@@ -275,7 +269,8 @@ namespace antwika::decor
             }
 
             auto rollValue = choiceRollFor(
-                              faces[index].cell, faces[index].side, seed)
+                              faces[index].cell.position(
+                                  ), faces[index].side, seed)
                           % total;
             auto likedTile = offeredTiles.front().first;
 
@@ -298,7 +293,9 @@ namespace antwika::decor
             if (upward)
             {
                 byGround.emplace(
-                    std::pair{faces[index].cell.x, faces[index].cell.z},
+                    std::pair{
+                        faces[index].cell.position().x,
+                        faces[index].cell.position().z},
                     decorPlacements.size());
             }
             else
@@ -306,14 +303,14 @@ namespace antwika::decor
                 byWall.emplace(
                     std::pair{
                         faces[index].side,
-                        positionOnly(faces[index].cell)},
+                        faces[index].cell.position()},
                     decorPlacements.size());
             }
 
             decorPlacements.push_back(
                 DecorPlacement{
                     .face = index,
-                    .cell = faces[index].cell,
+                    .position = faces[index].cell.position(),
                     .side = faces[index].side});
             waveDomains.push_back(mayDomain);
         }
@@ -365,21 +362,21 @@ namespace antwika::decor
 
         for (std::size_t index = 0; index < decorPlacements.size(); ++index)
         {
-            const auto &mine = decorPlacements[index].cell;
+            const auto &mine = decorPlacements[index].position;
 
             if (decorPlacements[index].side != 4)
             {
                 const auto way = wallTangent(decorPlacements[index].side);
-                const auto sideways = voxel::VoxelCell{
+                const auto sideways = voxel::VoxelPosition{
                     .x = mine.x + way.x,
                     .y = mine.y,
                     .z = mine.z + way.z};
-                const auto underCell = voxel::VoxelCell{
+                const auto underPosition = voxel::VoxelPosition{
                     .x = mine.x, .y = mine.y - 1, .z = mine.z};
                 const auto acrossWall = byWall.find(
                     std::pair{decorPlacements[index].side, sideways});
                 const auto belowWall = byWall.find(
-                    std::pair{decorPlacements[index].side, underCell});
+                    std::pair{decorPlacements[index].side, underPosition});
 
                 if (acrossWall != byWall.end())
                 {
@@ -401,7 +398,7 @@ namespace antwika::decor
                 {
                     const auto cubeOffset =
                         voxel::cubeCornerOf(mine).y
-                        == voxel::cubeCornerOf(underCell).y;
+                        == voxel::cubeCornerOf(underPosition).y;
 
                     adjacencies.emplace_back(
                         index,
@@ -419,12 +416,12 @@ namespace antwika::decor
                 std::pair{mine.x, mine.z + 1});
 
             if (east != byGround.end()
-                && decorPlacements[east->second].cell.y == mine.y)
+                && decorPlacements[east->second].position.y == mine.y)
             {
                 const auto cubeOffset =
                     voxel::cubeCornerOf(mine).x
                     == voxel::cubeCornerOf(
-                        decorPlacements[east->second].cell).x;
+                        decorPlacements[east->second].position).x;
 
                 adjacencies.emplace_back(
                     index,
@@ -434,12 +431,12 @@ namespace antwika::decor
             }
 
             if (south != byGround.end()
-                && decorPlacements[south->second].cell.y == mine.y)
+                && decorPlacements[south->second].position.y == mine.y)
             {
                 const auto cubeOffset =
                     voxel::cubeCornerOf(mine).z
                     == voxel::cubeCornerOf(
-                        decorPlacements[south->second].cell).z;
+                        decorPlacements[south->second].position).z;
 
                 adjacencies.emplace_back(
                     index,

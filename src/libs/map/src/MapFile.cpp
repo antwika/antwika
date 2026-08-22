@@ -40,7 +40,7 @@ namespace antwika::map
 
 
 
-            [[nodiscard]] std::optional<voxel::VoxelCell> readMarkedCube(
+            [[nodiscard]] std::optional<voxel::VoxelPosition> readMarkedCube(
                 const nlohmann::json &json)
             {
                 if (json.is_null())
@@ -50,7 +50,7 @@ namespace antwika::map
 
                 const auto &place = json[std::string(kAtKey)];
 
-                return voxel::VoxelCell{
+                return voxel::VoxelPosition{
                     .x = place[0].get<std::int32_t>(),
                     .y = place[1].get<std::int32_t>(),
                     .z = place[2].get<std::int32_t>()};
@@ -149,19 +149,19 @@ namespace antwika::map
         return std::nullopt;
     }
 
-    std::vector<std::vector<voxel::VoxelCell>> patrolStopsOf(
+    std::vector<std::vector<voxel::VoxelPosition>> patrolStopsOf(
         const Map &map)
     {
-        std::vector<std::vector<voxel::VoxelCell>> cells;
+        std::vector<std::vector<voxel::VoxelPosition>> positions;
 
-        cells.reserve(map.characters.size());
+        positions.reserve(map.characters.size());
 
         for (const auto &figure : map.characters)
         {
-            cells.push_back(figure.patrolPathCells);
+            positions.push_back(figure.patrolPathPositions);
         }
 
-        return cells;
+        return positions;
     }
 
     std::string sidecarPath(
@@ -208,26 +208,32 @@ namespace antwika::map
 
         Map map;
 
-        for (const auto &voxel : wholeDocument[std::string(kVoxelsKey)])
+        for (const auto &writtenVoxel : wholeDocument[std::string(kVoxelsKey)])
         {
-            const auto &place = voxel[std::string(kAtKey)];
+            const auto &place = writtenVoxel[std::string(kAtKey)];
+            const voxel::VoxelPosition position{
+                .x = place[0].get<std::int32_t>(),
+                .y = place[1].get<std::int32_t>(),
+                .z = place[2].get<std::int32_t>()};
 
-            map.voxels.push_back(
-                voxel::VoxelCell{
-                    .x = place[0].get<std::int32_t>(),
-                    .y = place[1].get<std::int32_t>(),
-                    .z = place[2].get<std::int32_t>(),
-                    .kind = enumFromName<voxel::Kind>(
-                        kKindNames,
-                        voxel[std::string(kKindKey)]
-                            .get<std::string>()),
-                    .facing =
-                        voxel.contains(std::string(kClimbKey))
-                            ? enumFromName<voxel::Facing>(
-                                  kFacingNames,
-                                  voxel[std::string(kClimbKey)]
-                                      .get<std::string>())
-                            : voxel::Facing::Any});
+            if (map.voxels.contains(position))
+            {
+                throw MapFileError(
+                    std::string(kFailed)
+                    + "stands two voxels in one place");
+            }
+
+            map.voxels[position] = voxel::VoxelMaterial{
+                .kind = enumFromName<voxel::Kind>(
+                    kKindNames,
+                    writtenVoxel[std::string(kKindKey)].get<std::string>()),
+                .facing =
+                    writtenVoxel.contains(std::string(kClimbKey))
+                        ? enumFromName<voxel::Facing>(
+                              kFacingNames,
+                              writtenVoxel[std::string(kClimbKey)]
+                                  .get<std::string>())
+                        : voxel::Facing::Any};
         }
 
         map.tilemap = readTilemap(wholeDocument[std::string(kTilemapKey)]);
@@ -322,8 +328,8 @@ namespace antwika::map
 
             map.lamps.push_back(
                 light::Lamp{
-                    .cell =
-                        voxel::VoxelCell{
+                    .position =
+                        voxel::VoxelPosition{
                             .x = place[0].get<std::int32_t>(),
                             .y = place[1].get<std::int32_t>(),
                             .z = place[2].get<std::int32_t>()},
@@ -386,9 +392,10 @@ namespace antwika::map
         readFlips(map, wholeDocument);
         readTransitions(map, wholeDocument);
         readGates(map, wholeDocument);
-        map.spawnCubeCell =
+        map.spawnCubePosition =
             readMarkedCube(wholeDocument[std::string(kStartKey)]);
-        map.exitCubeCell = readMarkedCube(wholeDocument[std::string(kExitKey)]);
+        map.exitCubePosition = readMarkedCube(wholeDocument[std::string(
+            kExitKey)]);
         map.exitTarget = wholeDocument[std::string(kExitTargetKey)]
                              .get<std::string>();
 
@@ -411,7 +418,7 @@ namespace antwika::map
                 .way = home[std::string(kWayKey)]
                            .get<std::uint8_t>()};
 
-            figureCharacter.patrolPathCells =
+            figureCharacter.patrolPathPositions =
                 readCells(figureJson[std::string(kStopsKey)]);
 
             for (const auto &line :
@@ -446,12 +453,12 @@ namespace antwika::map
             PressurePlate plate;
             const auto &atJson = plateJson[std::string(kAtKey)];
 
-            plate.cell = voxel::VoxelCell{
+            plate.position = voxel::VoxelPosition{
                 .x = atJson[0].get<std::int32_t>(),
                 .y = atJson[1].get<std::int32_t>(),
                 .z = atJson[2].get<std::int32_t>()};
 
-            plate.toggleCells =
+            plate.togglePositions =
                 readCells(plateJson[std::string(kSwaysKey)]);
 
             map.plates.push_back(plate);

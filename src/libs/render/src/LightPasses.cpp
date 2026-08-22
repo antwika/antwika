@@ -29,20 +29,22 @@ namespace antwika::render
 
     void LightPasses::hide(
         gfx::ViewportRenderer &viewportRenderer,
-        std::set<voxel::VoxelCell> behindCells,
-        const voxel::VoxelCell aboutCell)
+        voxel::Voxels behindVoxels,
+        const voxel::VoxelPosition aboutPosition)
     {
-        if (behindCells == occludingCells && aboutCell == occlusionOriginCell
+        if (
+            behindVoxels ==
+                occludingVoxelsHeld && aboutPosition == occlusionOriginPosition
             && occlusionTexture)
         {
             return;
         }
 
-        occludingCells = std::move(behindCells);
-        occlusionOriginCell = aboutCell;
+        occludingVoxelsHeld = std::move(behindVoxels);
+        occlusionOriginPosition = aboutPosition;
 
         const auto drawnOver = voxelmap::occlusionMask(
-            occludingCells, voxelmap::occlusionMaskOrigin(aboutCell));
+            occludingVoxelsHeld, voxelmap::occlusionMaskOrigin(aboutPosition));
 
         if (occlusionTexture)
         {
@@ -54,10 +56,10 @@ namespace antwika::render
         occlusionTexture = viewportRenderer.createTexture(drawnOver);
     }
 
-    const std::set<voxel::VoxelCell> &LightPasses::hidden()
+    const voxel::Voxels &LightPasses::hidden()
         const noexcept
     {
-        return occludingCells;
+        return occludingVoxelsHeld;
     }
 
     void LightPasses::bakeLamps(

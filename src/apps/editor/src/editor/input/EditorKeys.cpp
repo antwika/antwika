@@ -5,7 +5,7 @@
 #include <antwika/light/PointLight.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/solver/VoxelWeave.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 
 #include "antwika/editor/Editor.hpp"
 
@@ -185,10 +185,10 @@ namespace antwika::editor
             commitFloatingPatch();
             characterView.mark.selection.reset();
             lineFromCell.reset();
-            shapeFromCell.reset();
+            shapeFromPosition.reset();
             dragPaintButton.reset();
-            stampCells.clear();
-            stampFromCell.reset();
+            stampVoxels.clear();
+            stampFromPosition.reset();
         }
 
         if (matchesChord(Action::LevelUp, pressedKey.key))
@@ -495,9 +495,10 @@ namespace antwika::editor
 
             resetGates();
 
-            if (playHere && pointer.hoveredCell.has_value())
+            if (playHere && pointer.hoveredPosition.has_value())
             {
-                standPlayerAt(pointer.hoveredCell->x, pointer.hoveredCell->z);
+                standPlayerAt(pointer.hoveredPosition->x,
+                    pointer.hoveredPosition->z);
             }
             else
             {

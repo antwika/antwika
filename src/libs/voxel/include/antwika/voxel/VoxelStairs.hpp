@@ -5,10 +5,11 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <set>
 #include <vector>
 
-#include "antwika/voxel/VoxelCell.hpp"
+#include "antwika/voxel/VoxelMaterial.hpp"
+#include "antwika/voxel/VoxelPosition.hpp"
+#include "antwika/voxel/Voxels.hpp"
 
 namespace antwika::voxel
 {
@@ -48,22 +49,17 @@ namespace antwika::voxel
             = default;
     };
 
-    [[nodiscard]] std::vector<StairQuad> stairQuads(VoxelCell climbCell);
+    [[nodiscard]] std::vector<StairQuad> stairQuads(
+        VoxelPosition climbPosition);
 
-    [[nodiscard]] VoxelCell inferredRampDirection(
-        const std::vector<VoxelCell> &cells, VoxelCell cell);
+    [[nodiscard]] VoxelPosition inferredRampDirection(
+        const Voxels &filledVoxels, VoxelPosition position);
 
-    [[nodiscard]] VoxelCell inferredRampDirection(
-        const std::set<VoxelCell> &filledCells, VoxelCell cell);
+    [[nodiscard]] Facing facingOfStep(VoxelPosition climbPosition);
 
-    [[nodiscard]] Facing facingOfStep(VoxelCell climbCell);
-
-    [[nodiscard]] VoxelCell stepVectorFor(Facing facing);
+    [[nodiscard]] VoxelPosition stepVectorFor(Facing facing);
 
     [[nodiscard]] StairHalf stairHalfOf(
-        const std::vector<VoxelCell> &cells, VoxelCell cell);
-
-    [[nodiscard]] StairHalf stairHalfOf(
-        const std::set<VoxelCell> &filledCells, VoxelCell cell);
+        const Voxels &filledVoxels, VoxelPosition position);
 
 }

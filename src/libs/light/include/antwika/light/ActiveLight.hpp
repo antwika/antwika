@@ -8,7 +8,7 @@
 #include <antwika/ecs/World.hpp>
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Math3D.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/collision/Collision.hpp>
 
 #include <antwika/light/PointLight.hpp>

@@ -43,7 +43,7 @@ namespace antwika::collision
         }
 
         [[nodiscard]] component::Position movedBy(
-            const std::set<voxel::VoxelCell> &filledCells,
+            const voxel::Voxels &filledVoxels,
             const component::Position position,
             const float byX,
             const float byZ)
@@ -51,7 +51,7 @@ namespace antwika::collision
             const auto x = position.x + byX;
             const auto z = position.z + byZ;
             const auto footing =
-                groundHeightUnderFootprint(filledCells, x, z, position.y);
+                groundHeightUnderFootprint(filledVoxels, x, z, position.y);
 
             if (!footing.has_value())
             {
@@ -64,11 +64,11 @@ namespace antwika::collision
         }
 
         [[nodiscard]] component::Position snappedToGround(
-            const std::set<voxel::VoxelCell> &filledCells,
+            const voxel::Voxels &filledVoxels,
             const component::Position position)
         {
             const auto footing = groundHeightUnderFootprint(
-                filledCells, position.x, position.z, position.y);
+                filledVoxels, position.x, position.z, position.y);
 
             if (!footing.has_value())
             {
@@ -86,23 +86,24 @@ namespace antwika::collision
             std::int32_t,
             std::int32_t>>
         ladderRungs(
-            const std::set<voxel::VoxelCell> &filledCells,
+            const voxel::Voxels &filledVoxels,
             const std::int32_t x,
             const std::int32_t z)
         {
             std::optional<std::int32_t> lowLevel;
             std::optional<std::int32_t> highLevel;
 
-            for (const auto &cell : filledCells)
+            for (const auto &[position, material] : filledVoxels)
             {
-                if (cell.x != x || cell.z != z
-                    || cell.kind != voxel::Kind::Ladder)
+                if (position.x != x || position.z != z
+                    || material.kind != voxel::Kind::Ladder)
                 {
                     continue;
                 }
 
-                lowLevel = std::min(lowLevel.value_or(cell.y), cell.y);
-                highLevel = std::max(highLevel.value_or(cell.y), cell.y);
+                lowLevel = std::min(lowLevel.value_or(position.y), position.y);
+                highLevel =
+                    std::max(highLevel.value_or(position.y), position.y);
             }
 
             if (!lowLevel.has_value())
@@ -135,27 +136,28 @@ namespace antwika::collision
     }
 
     bool isSolid(
-        const std::set<voxel::VoxelCell> &filledCells,
-        const voxel::VoxelCell cells)
+        const voxel::Voxels &filledVoxels,
+        const voxel::VoxelPosition position)
     {
-        const auto foundCell = filledCells.find(cells);
+        const auto foundVoxel = filledVoxels.find(position);
 
-        return foundCell != filledCells.end()
-               && foundCell->kind != voxel::Kind::Water
-               && foundCell->kind != voxel::Kind::Ladder;
+        return foundVoxel != filledVoxels.end()
+               && foundVoxel->second.kind != voxel::Kind::Water
+               && foundVoxel->second.kind != voxel::Kind::Ladder;
     }
 
     bool hasHeadroom(
-        const std::set<voxel::VoxelCell> &filledCells,
-        const voxel::VoxelCell groundCell)
+        const voxel::Voxels &filledVoxels,
+        const voxel::VoxelPosition groundPosition)
     {
         for (std::int32_t upIndex = 1; upIndex <= kWalkerHeight; ++upIndex)
         {
-            const voxel::VoxelCell overCell{
-                .x = groundCell.x, .y = groundCell.y + upIndex,
-                .z = groundCell.z};
+            const voxel::VoxelPosition overPosition{
+                .x = groundPosition.x,
+                .y = groundPosition.y + upIndex,
+                .z = groundPosition.z};
 
-            if (isSolid(filledCells, overCell))
+            if (isSolid(filledVoxels, overPosition))
             {
                 return false;
             }
@@ -165,7 +167,7 @@ namespace antwika::collision
     }
 
     std::optional<voxel::VoxelCell> supportingVoxel(
-        const std::set<voxel::VoxelCell> &filledCells,
+        const voxel::Voxels &filledVoxels,
         const std::int32_t x,
         const std::int32_t z,
         const float feet)
@@ -174,20 +176,22 @@ namespace antwika::collision
 
         for (std::int32_t step = 1; step >= -kMaxFallDepth; --step)
         {
-            const voxel::VoxelCell groundCell{
+            const voxel::VoxelPosition groundPosition{
                 .x = x,
                 .y = underCell + step,
                 .z = z};
-            const auto foundCell = filledCells.find(groundCell);
+            const auto foundVoxel = filledVoxels.find(groundPosition);
 
-            if (foundCell == filledCells.end()
-                || foundCell->kind == voxel::Kind::Ladder)
+            if (foundVoxel == filledVoxels.end()
+                || foundVoxel->second.kind == voxel::Kind::Ladder)
             {
                 continue;
             }
 
-            return hasHeadroom(filledCells, groundCell)
-                       ? std::optional<voxel::VoxelCell>{*foundCell}
+            return hasHeadroom(filledVoxels, groundPosition)
+                       ? std::optional<voxel::VoxelCell>{
+                             voxel::voxelCellAt(
+                                 foundVoxel->first, foundVoxel->second)}
                        : std::nullopt;
         }
 
@@ -195,12 +199,12 @@ namespace antwika::collision
     }
 
     std::optional<float> groundHeightAtColumn(
-        const std::set<voxel::VoxelCell> &filledCells,
+        const voxel::Voxels &filledVoxels,
         const std::int32_t x,
         const std::int32_t z,
         const float feet)
     {
-        const auto groundCell = supportingVoxel(filledCells, x, z, feet);
+        const auto groundCell = supportingVoxel(filledVoxels, x, z, feet);
 
         if (!groundCell.has_value())
         {
@@ -215,7 +219,7 @@ namespace antwika::collision
     }
 
     float groundHeightOn(
-        const std::set<voxel::VoxelCell> &filledCells,
+        const voxel::Voxels &filledVoxels,
         const voxel::VoxelCell groundCell,
         const float x,
         const float z)
@@ -233,8 +237,8 @@ namespace antwika::collision
         }
 
         const auto climb = voxel::inferredRampDirection(
-            filledCells,
-            groundCell);
+            filledVoxels,
+            groundCell.position());
         const auto rising = climb.x != 0;
         const auto way = static_cast<float>(
             rising ? climb.x : climb.z);
@@ -252,7 +256,7 @@ namespace antwika::collision
     }
 
     std::optional<float> groundHeightUnderFootprint(
-        const std::set<voxel::VoxelCell> &filledCells,
+        const voxel::Voxels &filledVoxels,
         const float x,
         const float z,
         const float feet)
@@ -270,7 +274,7 @@ namespace antwika::collision
                  ++rowIndex)
             {
                 const auto groundCell =
-                    supportingVoxel(filledCells, columnIndex, rowIndex, feet);
+                    supportingVoxel(filledVoxels, columnIndex, rowIndex, feet);
 
                 if (!groundCell.has_value())
                 {
@@ -278,7 +282,7 @@ namespace antwika::collision
                 }
 
                 const auto footing = groundHeightOn(
-                    filledCells,
+                    filledVoxels,
                     *groundCell,
                     x,
                     z);
@@ -292,24 +296,24 @@ namespace antwika::collision
     }
 
     std::optional<component::Position> restPositionOverColumn(
-        const std::set<voxel::VoxelCell> &filledCells,
+        const voxel::Voxels &filledVoxels,
         const std::int32_t x,
         const std::int32_t z)
     {
         std::optional<std::int32_t> best;
 
-        for (const auto cell : filledCells)
+        for (const auto &[position, material] : filledVoxels)
         {
-            const auto worse = best.has_value() && cell.y <= *best;
+            const auto worse = best.has_value() && position.y <= *best;
 
-            if (cell.x != x || cell.z != z || worse
-                || cell.kind == voxel::Kind::Water
-                || !hasHeadroom(filledCells, cell))
+            if (position.x != x || position.z != z || worse
+                || material.kind == voxel::Kind::Water
+                || !hasHeadroom(filledVoxels, position))
             {
                 continue;
             }
 
-            best = cell.y;
+            best = position.y;
         }
 
         if (!best.has_value())
@@ -324,27 +328,24 @@ namespace antwika::collision
     }
 
     std::optional<component::Position> spawnPosition(
-        const std::vector<voxel::VoxelCell> &cells)
+        const voxel::Voxels &filledVoxels)
     {
-        const std::set<voxel::VoxelCell> filledCells(
-            cells.begin(),
-            cells.end());
-        const auto middle = voxelmap::voxelsCenter(cells);
+        const auto middle = voxelmap::voxelsCenter(filledVoxels);
         std::optional<component::Position> bestPosition;
         auto nearest = 0.0F;
 
-        for (const auto cell : filledCells)
+        for (const auto &[position, material] : filledVoxels)
         {
-            if (cell.kind == voxel::Kind::Water
-                || !hasHeadroom(filledCells, cell))
+            if (material.kind == voxel::Kind::Water
+                || !hasHeadroom(filledVoxels, position))
             {
                 continue;
             }
 
             const component::Position stoodPosition{
-                .x = static_cast<float>(cell.x) * voxel::kVoxelSide,
-                .y = topOf(cell.y),
-                .z = static_cast<float>(cell.z) * voxel::kVoxelSide};
+                .x = static_cast<float>(position.x) * voxel::kVoxelSide,
+                .y = topOf(position.y),
+                .z = static_cast<float>(position.z) * voxel::kVoxelSide};
             const auto span = distanceBetween(stoodPosition, middle);
 
             if (bestPosition.has_value()
@@ -362,12 +363,12 @@ namespace antwika::collision
     }
 
     component::Position movedWithCollision(
-        const std::set<voxel::VoxelCell> &filledCells,
+        const voxel::Voxels &filledVoxels,
         const component::Position position,
         const component::Velocity velocity)
     {
         const auto rungs = ladderRungs(
-            filledCells,
+            filledVoxels,
             columnOf(position.x),
             columnOf(position.z));
 
@@ -392,7 +393,7 @@ namespace antwika::collision
                 if (velocity.velocityX != 0.0F)
                 {
                     liftedPosition = movedBy(
-                        filledCells,
+                        filledVoxels,
                         liftedPosition,
                         velocity.velocityX * pace,
                         0.0F);
@@ -404,7 +405,7 @@ namespace antwika::collision
                         && velocity.velocityZ > 0.0F))
                 {
                     liftedPosition = movedBy(
-                        filledCells,
+                        filledVoxels,
                         liftedPosition,
                         0.0F,
                         velocity.velocityZ * pace);
@@ -419,7 +420,7 @@ namespace antwika::collision
             + (velocity.velocityZ * velocity.velocityZ));
 
         const auto stoodPosition = supportingVoxel(
-            filledCells,
+            filledVoxels,
             columnOf(position.x),
             columnOf(position.z),
             position.y);
@@ -437,28 +438,28 @@ namespace antwika::collision
         const auto byZ = velocity.velocityZ * pace;
 
         return snappedToGround(
-            filledCells,
+            filledVoxels,
             movedBy(
-                filledCells,
-                movedBy(filledCells, position, byX, 0.0F),
+                filledVoxels,
+                movedBy(filledVoxels, position, byX, 0.0F),
                 0.0F,
                 byZ));
     }
 
-    std::array<voxel::VoxelCell, 2> stoodCells(
+    std::array<voxel::VoxelPosition, 2> stoodCells(
         const component::Position position)
     {
-        const voxel::VoxelCell standsInCell{
+        const voxel::VoxelPosition standsInPosition{
             .x = levelAt(position.x),
             .y = levelAt(position.y),
             .z = levelAt(position.z)};
 
         return {
-            standsInCell,
-            voxel::VoxelCell{
-                .x = standsInCell.x,
-                .y = standsInCell.y - 1,
-                .z = standsInCell.z}};
+            standsInPosition,
+            voxel::VoxelPosition{
+                .x = standsInPosition.x,
+                .y = standsInPosition.y - 1,
+                .z = standsInPosition.z}};
     } // GCOVR_EXCL_LINE
 
 }

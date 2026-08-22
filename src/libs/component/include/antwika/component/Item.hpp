@@ -5,7 +5,7 @@
 #include <cstdint>
 
 #include <antwika/enums/Enumeration.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 
 namespace antwika::component
 {
@@ -29,7 +29,7 @@ namespace antwika::component
 
     struct Item final
     {
-        voxel::VoxelCell cell{};
+        voxel::VoxelPosition position{};
 
         std::uint8_t kind = 0;
     };

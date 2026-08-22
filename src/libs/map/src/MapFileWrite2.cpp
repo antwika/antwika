@@ -81,7 +81,7 @@ namespace antwika::map::mapfile
         const auto cells =
             [&document](
                 const std::string_view key,
-                const std::vector<voxel::VoxelCell> &voxelCells)
+                const std::vector<voxel::VoxelPosition> &voxelCells)
         {
             auto arrayJson = nlohmann::json::array();
 
@@ -95,11 +95,11 @@ namespace antwika::map::mapfile
             document[std::string(key)] = arrayJson;
         };
 
-        cells(kKeysKey, map.keyCells);
-        cells(kDoorsKey, map.doorCells);
-        cells(kCheckpointsKey, map.checkpointCells);
-        cells(kFoodKey, map.foodCells);
-        cells(kWaterKey, map.waterCells);
+        cells(kKeysKey, map.keyPositions);
+        cells(kDoorsKey, map.doorPositions);
+        cells(kCheckpointsKey, map.checkpointPositions);
+        cells(kFoodKey, map.foodPositions);
+        cells(kWaterKey, map.waterPositions);
         document[std::string(kExitLockedKey)] =
             map.exitLocked;
     }

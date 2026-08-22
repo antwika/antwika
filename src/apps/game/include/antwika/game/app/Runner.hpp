@@ -26,7 +26,7 @@
 #include <antwika/render/WorldShader.hpp>
 #include <antwika/time/SystemClock.hpp>
 #include <antwika/time/Tick.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 
 #include <antwika/gameplay/Game.hpp>
 
@@ -73,7 +73,7 @@ namespace antwika::game
         gfx::ViewportRenderer viewportRenderer;
         map::Map map;
         ecs::World world;
-        std::vector<std::vector<voxel::VoxelCell>> patrolCells;
+        std::vector<std::vector<voxel::VoxelPosition>> patrolPositions;
         render::WorldMeshes meshes;
         render::AtlasSheets sheets;
         render::CharacterSkins skins;

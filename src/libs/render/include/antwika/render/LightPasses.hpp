@@ -14,7 +14,8 @@
 #include <antwika/gfx/ViewportRenderer.hpp>
 #include <antwika/light/ActiveLight.hpp>
 #include <antwika/light/PointLight.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
+#include <antwika/voxel/Voxels.hpp>
 
 namespace antwika::render
 {
@@ -30,10 +31,10 @@ namespace antwika::render
 
         void hide(
             gfx::ViewportRenderer &viewportRenderer,
-            std::set<voxel::VoxelCell> behindCells,
-            voxel::VoxelCell aboutCell);
+            voxel::Voxels behindVoxels,
+            voxel::VoxelPosition aboutPosition);
 
-        [[nodiscard]] const std::set<voxel::VoxelCell> &hidden()
+        [[nodiscard]] const voxel::Voxels &hidden()
             const noexcept;
 
         void bakeLamps(
@@ -56,8 +57,8 @@ namespace antwika::render
         std::unique_ptr<gfx::ITexture> occlusionTexture;
         bool stale = true;
         std::vector<light::ActiveLight> bakedLights;
-        std::set<voxel::VoxelCell> occludingCells;
-        voxel::VoxelCell occlusionOriginCell{};
+        voxel::Voxels occludingVoxelsHeld;
+        voxel::VoxelPosition occlusionOriginPosition{};
     };
 
 }
