@@ -4,6 +4,8 @@
 #include <set>
 #include <utility>
 
+#include <antwika/enums/Enumeration.hpp>
+
 namespace antwika::tile
 {
 
@@ -16,32 +18,35 @@ namespace antwika::tile
             voxel::Side answerSide = voxel::Side::Top;
         };
 
+        struct SideCornersRow final
+        {
+            voxel::Side side;
+            std::array<CornerAcross, 2> corners;
+        };
+
+        constexpr std::array<SideCornersRow, voxel::kFaceSides>
+            kSideCornersRows{{
+            {voxel::Side::Top,
+             {CornerAcross{voxel::Corner::TopLeft, voxel::Side::Left},
+              CornerAcross{voxel::Corner::TopRight, voxel::Side::Right}}},
+            {voxel::Side::Bottom,
+             {CornerAcross{voxel::Corner::BottomLeft, voxel::Side::Left},
+              CornerAcross{voxel::Corner::BottomRight, voxel::Side::Right}}},
+            {voxel::Side::Left,
+             {CornerAcross{voxel::Corner::TopLeft, voxel::Side::Top},
+              CornerAcross{voxel::Corner::BottomLeft, voxel::Side::Bottom}}},
+            {voxel::Side::Right,
+             {CornerAcross{voxel::Corner::TopRight, voxel::Side::Top},
+              CornerAcross{
+                  voxel::Corner::BottomRight, voxel::Side::Bottom}}}}};
+
+        static_assert(
+            enums::tagsInOrder(kSideCornersRows, &SideCornersRow::side));
+
         [[nodiscard]] std::array<CornerAcross, 2> cornersAlong(
             const voxel::Side side)
         {
-            switch (side)
-            {
-            case voxel::Side::Top:
-                return {
-                    CornerAcross{voxel::Corner::TopLeft, voxel::Side::Left},
-                    CornerAcross{voxel::Corner::TopRight, voxel::Side::Right}};
-            case voxel::Side::Bottom:
-                return {
-                    CornerAcross{voxel::Corner::BottomLeft, voxel::Side::Left},
-                    CornerAcross{
-                        voxel::Corner::BottomRight, voxel::Side::Right}};
-            case voxel::Side::Left:
-                return {
-                    CornerAcross{voxel::Corner::TopLeft, voxel::Side::Top},
-                    CornerAcross{
-                        voxel::Corner::BottomLeft, voxel::Side::Bottom}};
-            case voxel::Side::Right:
-                break;
-            }
-
-            return {
-                CornerAcross{voxel::Corner::TopRight, voxel::Side::Top},
-                CornerAcross{voxel::Corner::BottomRight, voxel::Side::Bottom}};
+            return enums::lookup(kSideCornersRows, side).corners;
         }
 
         [[nodiscard]] bool cornersAgree(

@@ -10,6 +10,7 @@
 #include <string_view>
 #include <utility>
 
+#include <antwika/enums/Enumeration.hpp>
 #include <antwika/wfc/AdjacencyConstraint.hpp>
 #include <antwika/wfc/CompatibilityTable.hpp>
 #include <antwika/wfc/Domain.hpp>
@@ -82,21 +83,23 @@ namespace antwika::solver
             return message;
         } // GCOVR_EXCL_LINE
 
+        struct SideNameRow final
+        {
+            voxel::Side side;
+            std::string_view name;
+        };
+
+        constexpr std::array<SideNameRow, voxel::kFaceSides> kSideNames{{
+            {voxel::Side::Top, "top"},
+            {voxel::Side::Bottom, "bottom"},
+            {voxel::Side::Left, "left"},
+            {voxel::Side::Right, "right"}}};
+
+        static_assert(enums::tagsInOrder(kSideNames, &SideNameRow::side));
+
         [[nodiscard]] std::string_view sideNamed(const voxel::Side side)
         {
-            switch (side)
-            {
-            case voxel::Side::Top:
-                return "top";
-            case voxel::Side::Bottom:
-                return "bottom";
-            case voxel::Side::Left:
-                return "left";
-            case voxel::Side::Right:
-                break;
-            }
-
-            return "right";
+            return enums::lookup(kSideNames, side).name;
         }
 
         [[nodiscard]] std::string_view edgeNamed(const voxel::EdgeKind edge)
