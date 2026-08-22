@@ -46,4 +46,25 @@ namespace antwika::enums
         return table[index(value) % kCount<Enum>];
     }
 
+    template <typename Row, std::size_t Size, typename Enum>
+    [[nodiscard]] constexpr bool tagsInOrder(
+        const std::array<Row, Size> &rows,
+        Enum Row::*tag) noexcept
+    {
+        if (Size != kCount<Enum>)
+        {
+            return false;
+        }
+
+        for (std::size_t slotIndex = 0; slotIndex < Size; ++slotIndex)
+        {
+            if (index(rows[slotIndex].*tag) != slotIndex)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
 }

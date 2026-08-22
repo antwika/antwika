@@ -13,6 +13,7 @@ using antwika::enums::index;
 using antwika::enums::kAll;
 using antwika::enums::kCount;
 using antwika::enums::lookup;
+using antwika::enums::tagsInOrder;
 using antwika::enums::tests::Color;
 using antwika::enums::tests::Side;
 
@@ -62,4 +63,41 @@ TEST(EnumerationTest, Lookup_WrapsAnEnumeratorPastTheBound)
         "red", "green", "blue"};
 
     EXPECT_EQ(lookup(kInks, static_cast<Color>(kCount<Color>)), "red");
+}
+
+namespace
+{
+    struct ColorRow final
+    {
+        Color color;
+        std::string_view ink;
+    };
+}
+
+TEST(EnumerationTest, TagsInOrder_AcceptsARowPerEnumeratorInOrder)
+{
+    constexpr std::array<ColorRow, kCount<Color>> kRows{
+        {{Color::Red, "red"},
+         {Color::Green, "green"},
+         {Color::Blue, "blue"}}};
+
+    EXPECT_TRUE(tagsInOrder(kRows, &ColorRow::color));
+}
+
+TEST(EnumerationTest, TagsInOrder_RefusesRowsOutOfEnumeratorOrder)
+{
+    constexpr std::array<ColorRow, kCount<Color>> kRows{
+        {{Color::Red, "red"},
+         {Color::Blue, "blue"},
+         {Color::Green, "green"}}};
+
+    EXPECT_FALSE(tagsInOrder(kRows, &ColorRow::color));
+}
+
+TEST(EnumerationTest, TagsInOrder_RefusesATableShorterThanTheEnum)
+{
+    constexpr std::array<ColorRow, 2> kRows{
+        {{Color::Red, "red"}, {Color::Green, "green"}}};
+
+    EXPECT_FALSE(tagsInOrder(kRows, &ColorRow::color));
 }
