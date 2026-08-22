@@ -1,9 +1,7 @@
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
-#include <vector>
 
-#include <antwika/voxel/VoxelCell.hpp>
 #include <antwika/worldgen/ChunkShape.hpp>
 #include <antwika/worldgen/CityRuleset.hpp>
 #include <antwika/worldgen/Expand.hpp>
@@ -42,7 +40,7 @@ namespace
         const double grew = millisSince(began);
 
         const auto laying = Clock::now();
-        const auto voxels = chunkVoxels(result.cubeCells);
+        const auto voxels = chunkVoxels(result.cubeVoxels);
         const double laid = millisSince(laying);
 
         std::printf(
@@ -57,7 +55,7 @@ namespace
                                                   : "not grown",
             grew,
             laid,
-            result.cubeCells.size(),
+            result.cubeVoxels.size(),
             voxels.size());
     }
 
