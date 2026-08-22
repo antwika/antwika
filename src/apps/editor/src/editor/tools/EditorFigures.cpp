@@ -1,5 +1,6 @@
 #include <filesystem>
 #include <string>
+#include <system_error>
 #include <vector>
 
 #include <antwika/io/AssetPath.hpp>
@@ -96,10 +97,13 @@ namespace antwika::editor
              index < characterView.skins().size();
              ++index)
         {
+            const auto sheetPath = characterSheetPath(index);
+            std::error_code errorCode;
+
+            std::filesystem::create_directories(
+                std::filesystem::path(sheetPath).parent_path(), errorCode);
             gfx::writePngFile(
-                characterView.skins().at(index),
-                characterSheetPath(index),
-                kAppName);
+                characterView.skins().at(index), sheetPath, kAppName);
         }
     }
 
@@ -253,6 +257,11 @@ namespace antwika::editor
     void Editor::playApart()
     {
         saveCurrentMap();
+
+        if (mapPath.empty())
+        {
+            return;
+        }
 
         const auto assetFolder =
             (std::filesystem::path(io::assetPath(std::string(kAppName)))
