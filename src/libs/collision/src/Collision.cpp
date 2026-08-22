@@ -26,6 +26,29 @@ namespace antwika::collision
                    - 1;
         }
 
+        constexpr float kHeightSlack = 0.001F;
+
+        [[nodiscard]] constexpr bool nearlyAtLeast(
+            const float height, const float bound) noexcept
+        {
+            return height >= bound - kHeightSlack;
+        }
+
+        [[nodiscard]] constexpr bool nearlyAtMost(
+            const float height, const float bound) noexcept
+        {
+            return height <= bound + kHeightSlack;
+        }
+
+        [[nodiscard]] constexpr bool nearlyWithin(
+            const float height,
+            const float lowBound,
+            const float highBound) noexcept
+        {
+            return nearlyAtLeast(height, lowBound)
+                   && nearlyAtMost(height, highBound);
+        }
+
         [[nodiscard]] float topOf(const std::int32_t y)
         {
             return (static_cast<float>(y) + 1.0F) * voxel::kVoxelSide;
@@ -50,36 +73,30 @@ namespace antwika::collision
         {
             const auto x = position.x + byX;
             const auto z = position.z + byZ;
-            const auto footing =
-                groundHeightUnderFootprint(filledVoxels, x, z, position.y);
 
-            if (!footing.has_value())
-            {
-                return position;
-            }
-
-            const auto height = std::max(*footing, position.y);
-
-            return component::Position{.x = x, .y = height, .z = z};
+            return groundHeightUnderFootprint(filledVoxels, x, z, position.y)
+                .transform([&](const float footing) {
+                    return component::Position{
+                        .x = x,
+                        .y = std::max(footing, position.y),
+                        .z = z};
+                })
+                .value_or(position);
         }
 
         [[nodiscard]] component::Position snappedToGround(
             const voxel::Voxels &filledVoxels,
             const component::Position position)
         {
-            const auto footing = groundHeightUnderFootprint(
-                filledVoxels, position.x, position.z, position.y);
-
-            if (!footing.has_value())
-            {
-                return position;
-            }
-
-            const auto fell = std::max(
-                *footing, position.y - kFallSpeed);
-
-            return component::Position{
-                .x = position.x, .y = fell, .z = position.z};
+            return groundHeightUnderFootprint(
+                       filledVoxels, position.x, position.z, position.y)
+                .transform([&](const float footing) {
+                    return component::Position{
+                        .x = position.x,
+                        .y = std::max(footing, position.y - kFallSpeed),
+                        .z = position.z};
+                })
+                .value_or(position);
         }
 
         [[nodiscard]] std::optional<std::pair<
@@ -363,57 +380,74 @@ namespace antwika::collision
         return bestPosition;
     }
 
+    namespace
+    {
+        [[nodiscard]] std::optional<component::Position> climbedOnLadder(
+            const voxel::Voxels &filledVoxels,
+            const component::Position position,
+            const component::Velocity velocity)
+        {
+            const auto rungs = ladderRungs(
+                filledVoxels, columnOf(position.x), columnOf(position.z));
+
+            if (!rungs.has_value())
+            {
+                return std::nullopt;
+            }
+
+            const auto foot = topOf(rungs->first) - voxel::kVoxelSide;
+            const auto head = topOf(rungs->second);
+
+            if (!nearlyWithin(position.y, foot, head))
+            {
+                return std::nullopt;
+            }
+
+            const auto pace =
+                kWalkSpeed * velocity.speedMultiplier * kRampSpeedFactor;
+            auto liftedPosition = position;
+
+            liftedPosition.y = std::clamp(
+                position.y + (-velocity.velocityZ * pace), foot, head);
+
+            if (velocity.velocityX != 0.0F)
+            {
+                liftedPosition = movedBy(
+                    filledVoxels,
+                    liftedPosition,
+                    velocity.velocityX * pace,
+                    0.0F);
+            }
+
+            const auto leavingTop = nearlyAtLeast(liftedPosition.y, head)
+                                    && velocity.velocityZ < 0.0F;
+            const auto leavingFoot = nearlyAtMost(liftedPosition.y, foot)
+                                     && velocity.velocityZ > 0.0F;
+
+            if (leavingTop || leavingFoot)
+            {
+                liftedPosition = movedBy(
+                    filledVoxels,
+                    liftedPosition,
+                    0.0F,
+                    velocity.velocityZ * pace);
+            }
+
+            return liftedPosition;
+        }
+    }
+
     component::Position movedWithCollision(
         const voxel::Voxels &filledVoxels,
         const component::Position position,
         const component::Velocity velocity)
     {
-        const auto rungs = ladderRungs(
-            filledVoxels,
-            columnOf(position.x),
-            columnOf(position.z));
+        const auto climbedPosition =
+            climbedOnLadder(filledVoxels, position, velocity);
 
-        if (rungs.has_value())
+        if (climbedPosition.has_value())
         {
-            const auto foot =
-                topOf(rungs->first) - voxel::kVoxelSide;
-            const auto head = topOf(rungs->second);
-
-            if (position.y >= foot - 0.001F
-                && position.y <= head + 0.001F)
-            {
-                const auto pace = kWalkSpeed * velocity.speedMultiplier
-                                  * kRampSpeedFactor;
-                auto liftedPosition = position;
-
-                liftedPosition.y = std::clamp(
-                    position.y + (-velocity.velocityZ * pace),
-                    foot,
-                    head);
-
-                if (velocity.velocityX != 0.0F)
-                {
-                    liftedPosition = movedBy(
-                        filledVoxels,
-                        liftedPosition,
-                        velocity.velocityX * pace,
-                        0.0F);
-                }
-
-                if ((liftedPosition.y >= head - 0.001F
-                     && velocity.velocityZ < 0.0F)
-                    || (liftedPosition.y <= foot + 0.001F
-                        && velocity.velocityZ > 0.0F))
-                {
-                    liftedPosition = movedBy(
-                        filledVoxels,
-                        liftedPosition,
-                        0.0F,
-                        velocity.velocityZ * pace);
-                }
-
-                return liftedPosition;
-            }
+            return *climbedPosition;
         }
 
         const auto walkSpeed = std::sqrt(
