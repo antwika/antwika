@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <vector>
 
+#include <antwika/enums/Enumeration.hpp>
+
 #include "antwika/voxel/VoxelMaterial.hpp"
 #include "antwika/voxel/VoxelPosition.hpp"
 #include "antwika/voxel/Voxels.hpp"
@@ -29,16 +31,26 @@ namespace antwika::voxel
         Right,
     };
 
-    inline constexpr std::size_t kFaceSides = 4;
+    [[nodiscard]] constexpr Side lastEnumerator(Side) noexcept
+    {
+        return Side::Right;
+    }
 
-    inline constexpr std::array<Side, kFaceSides> kEverySide{
-        Side::Top, Side::Bottom, Side::Left, Side::Right};
+    inline constexpr std::size_t kFaceSides = enums::kCount<Side>;
+
+    inline constexpr std::array<Side, kFaceSides> kEverySide =
+        enums::kAll<Side>;
 
     enum class EdgeKind : std::uint8_t
     {
         Boundary,
         Interior,
     };
+
+    [[nodiscard]] constexpr EdgeKind lastEnumerator(EdgeKind) noexcept
+    {
+        return EdgeKind::Interior;
+    }
 
     enum class Corner : std::uint8_t
     {
@@ -48,13 +60,15 @@ namespace antwika::voxel
         BottomRight,
     };
 
-    inline constexpr std::size_t kFaceCorners = 4;
+    [[nodiscard]] constexpr Corner lastEnumerator(Corner) noexcept
+    {
+        return Corner::BottomRight;
+    }
 
-    inline constexpr std::array<Corner, kFaceCorners> kEveryCorner{
-        Corner::TopLeft,
-        Corner::TopRight,
-        Corner::BottomLeft,
-        Corner::BottomRight};
+    inline constexpr std::size_t kFaceCorners = enums::kCount<Corner>;
+
+    inline constexpr std::array<Corner, kFaceCorners> kEveryCorner =
+        enums::kAll<Corner>;
 
     struct FaceEdge final
     {

@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <array>
 #include <functional>
 #include <map>
 #include <optional>
@@ -53,19 +54,16 @@ namespace antwika::decor
                 hashMix(mixedSeed | 1U) % kFullFrequency);
         }
 
+        constexpr std::array<voxel::VoxelPosition, 4> kWallTangentPositions{
+            voxel::VoxelPosition{.x = 1},
+            voxel::VoxelPosition{.x = -1},
+            voxel::VoxelPosition{.z = -1},
+            voxel::VoxelPosition{.z = 1}};
+
         voxel::VoxelPosition wallTangent(const std::size_t side)
         {
-            switch (side)
-            {
-            case 0:
-                return voxel::VoxelPosition{.x = 1};
-            case 1:
-                return voxel::VoxelPosition{.x = -1};
-            case 2:
-                return voxel::VoxelPosition{.z = -1};
-            default:
-                return voxel::VoxelPosition{.z = 1};
-            }
+            return kWallTangentPositions.at(
+                side % kWallTangentPositions.size());
         }
 
         std::vector<std::size_t> shuffledValues(

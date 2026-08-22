@@ -6,6 +6,7 @@ antwika_add_library(
         src/TileShapes.cpp
         src/Transitions.cpp
     DEPENDS
+        antwika::enums
         antwika::geometry
         antwika::gfx
         antwika::tilemap

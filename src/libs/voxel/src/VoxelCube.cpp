@@ -149,19 +149,21 @@ namespace antwika::voxel
 
     Side facing(const Side side)
     {
-        switch (side)
+        struct SideRow final
         {
-        case Side::Top:
-            return Side::Bottom;
-        case Side::Bottom:
-            return Side::Top;
-        case Side::Left:
-            return Side::Right;
-        case Side::Right:
-            break;
-        }
+            Side side;
+            Side facingSide;
+        };
 
-        return Side::Left;
+        constexpr std::array<SideRow, kFaceSides> kSideRows{{
+            {Side::Top, Side::Bottom},
+            {Side::Bottom, Side::Top},
+            {Side::Left, Side::Right},
+            {Side::Right, Side::Left}}};
+
+        static_assert(enums::tagsInOrder(kSideRows, &SideRow::side));
+
+        return enums::lookup(kSideRows, side).facingSide;
     }
 
     FaceEdge facing(const FaceEdge edge)
