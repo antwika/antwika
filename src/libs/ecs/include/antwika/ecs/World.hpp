@@ -1,6 +1,5 @@
 #pragma once
 
-#include <array>
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -35,8 +34,6 @@ namespace antwika::ecs
     class World final
     {
     public:
-        static constexpr std::size_t kMaxComponents = 32;
-
         explicit World(
             ILogger &logger,
             std::uint64_t maxEntities =
@@ -142,17 +139,25 @@ namespace antwika::ecs
         void forgetComponents() noexcept;
 
     private:
-        static constexpr std::size_t kSlots = 2 * kMaxComponents;
+        static constexpr std::size_t kSeedSlots = 8;
 
-        static constexpr std::size_t kSlotMask = kSlots - 1;
+        static_assert((kSeedSlots & (kSeedSlots - 1)) == 0);
 
         [[nodiscard]] std::size_t slotFor(
             ComponentKey key, std::string_view name);
 
+        [[nodiscard]] std::size_t slotCapacity() const noexcept
+        {
+            return keys.size() / 2;
+        }
+
+        void growSlots();
+
         [[nodiscard]] std::size_t findSlot(
             const ComponentKey key) const noexcept
         {
-            auto slotIndex = static_cast<std::size_t>(key) & kSlotMask;
+            const auto slotMask = keys.size() - 1;
+            auto slotIndex = static_cast<std::size_t>(key) & slotMask;
 
             while (keys[slotIndex] != 0)
             {
@@ -161,7 +166,7 @@ namespace antwika::ecs
                     return slotIndex;
                 }
 
-                slotIndex = (slotIndex + 1) & kSlotMask;
+                slotIndex = (slotIndex + 1) & slotMask;
             }
 
             return kNoSlot;
@@ -224,10 +229,9 @@ namespace antwika::ecs
 
         std::unique_ptr<detail::EntityManager> entityManager;
 
-        std::array<ComponentKey, kSlots> keys{};
-        std::array<std::unique_ptr<detail::IComponentPool>, kSlots>
-            pools;
-        std::array<std::unique_ptr<detail::IPendingComponents>, kSlots>
+        std::vector<ComponentKey> keys;
+        std::vector<std::unique_ptr<detail::IComponentPool>> pools;
+        std::vector<std::unique_ptr<detail::IPendingComponents>>
             pendingBuffers;
 
         std::vector<std::size_t> filledSlots;
