@@ -27,7 +27,7 @@ namespace antwika::app
                 return argument;
             }
 
-            std::string quoted = "\"";
+            std::string quotedArgument = "\"";
             std::size_t backslashes = 0;
 
             for (const auto character : argument)
@@ -38,22 +38,22 @@ namespace antwika::app
                     continue;
                 }
 
-                quoted.append(
+                quotedArgument.append(
                     character == '"' ? backslashes * 2 : backslashes, '\\');
                 backslashes = 0;
 
                 if (character == '"')
                 {
-                    quoted.push_back('\\');
+                    quotedArgument.push_back('\\');
                 }
 
-                quoted.push_back(character);
+                quotedArgument.push_back(character);
             }
 
-            quoted.append(backslashes * 2, '\\');
-            quoted.push_back('"');
+            quotedArgument.append(backslashes * 2, '\\');
+            quotedArgument.push_back('"');
 
-            return quoted;
+            return quotedArgument;
         }
     }
 
@@ -75,7 +75,7 @@ namespace antwika::app
 
         PROCESS_INFORMATION processInformation{};
 
-        const auto started = ::CreateProcessA(
+        const bool started = ::CreateProcessA(
             program.c_str(),
             commandLine.data(),
             nullptr,
@@ -85,9 +85,9 @@ namespace antwika::app
             nullptr,
             nullptr,
             &startupInfo,
-            &processInformation);
+            &processInformation) != FALSE;
 
-        if (started == FALSE)
+        if (!started)
         {
             return false;
         }
