@@ -132,6 +132,21 @@ TEST(DoubleBufferingTest, RemoveAll_DropsAPendingWriteOnARemovedEntity)
     EXPECT_EQ(storage.read(Entity{3}), (Health{30}));
 }
 
+TEST(DoubleBufferingTest, RemoveAll_KeepsAPendingWriteWhenNothingMatches)
+{
+    ComponentStorage<Health> storage;
+    storage.insert(Entity{1}, Health{10});
+    storage.insert(Entity{2}, Health{20});
+
+    storage.write(Entity{1}, Health{99});
+    storage.removeAll(std::vector<Entity>{Entity{7}, Entity{8}});
+    storage.commit();
+    storage.commit();
+
+    EXPECT_EQ(storage.read(Entity{1}), (Health{99}));
+    EXPECT_EQ(storage.read(Entity{2}), (Health{20}));
+}
+
 TEST(DoubleBufferingTest, RemoveAll_LeavesAnUnwrittenSurvivorUntouched)
 {
     ComponentStorage<Health> storage;
