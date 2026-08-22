@@ -11,6 +11,7 @@
 #include <tuple>
 #include <utility>
 
+#include <antwika/geometry/GridStep.hpp>
 #include <antwika/animation/Playback.hpp>
 #include <antwika/component/AnimationState.hpp>
 #include <antwika/component/Position.hpp>
@@ -318,29 +319,17 @@ namespace antwika::character
             goingCells.pop_front();
             paintCharacter(sheetBitmap, direction, frame, hereCell, color);
 
-            for (const auto &[acrossStep, downStep] :
-                 {std::pair{1, 0},
-                  std::pair{-1, 0},
-                  std::pair{0, 1},
-                  std::pair{0, -1}})
+            for (const auto step : geometry::kFourNeighbourSteps)
             {
-                const auto column =
-                    static_cast<std::int64_t>(hereCell.column) + acrossStep;
-                const auto row =
-                    static_cast<std::int64_t>(hereCell.row) + downStep;
+                const auto steppedCell = geometry::steppedFrom(
+                    kCharacterCellSize, hereCell, step);
 
-                if (column < 0 || row < 0
-                    || column >= static_cast<std::int64_t>(
-                           kCharacterCellSize.width)
-                    || row >= static_cast<std::int64_t>(
-                           kCharacterCellSize.height))
+                if (!steppedCell.has_value())
                 {
                     continue;
                 }
 
-                const geometry::GridCell nextCell{
-                    .column = static_cast<std::uint32_t>(column),
-                    .row = static_cast<std::uint32_t>(row)};
+                const auto nextCell = *steppedCell;
 
                 if (seenCells.contains({nextCell.column, nextCell.row})
                     || characterPixelColor(
