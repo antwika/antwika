@@ -16,26 +16,6 @@
 namespace antwika::map
 {
 
-    namespace
-    {
-        [[nodiscard]] gfx::Bitmap readSidecarOrBundled(
-            const std::string &mapPath,
-            const std::string_view name,
-            const std::string_view app)
-        {
-            const auto sidecarFilePath = sidecarPath(mapPath, name);
-
-            if (std::filesystem::exists(sidecarFilePath))
-            {
-                return gfx::readPngFile(sidecarFilePath, app);
-            }
-
-            return gfx::readPngFile(
-                io::assetPath(std::string(name)), app);
-        }
-
-    }
-
     gfx::Bitmap readSharedOrBundled(
         const std::string &mapPath,
         const std::string_view name,
@@ -138,7 +118,15 @@ namespace antwika::map
         const gfx::Size tileSize,
         const std::string_view app)
     {
-        auto atlas = readSidecarOrBundled(mapPath, name, app);
+        const auto sidecarFilePath = sidecarPath(mapPath, name);
+
+        if (!std::filesystem::exists(sidecarFilePath))
+        {
+            throw gfx::GfxError(
+                "the map has no atlas at " + sidecarFilePath);
+        }
+
+        auto atlas = gfx::readPngFile(sidecarFilePath, app);
         const auto wantedSize = tilemap::atlasSize(tileSize);
 
         if (atlas.size != wantedSize)
@@ -149,6 +137,20 @@ namespace antwika::map
         }
 
         return atlas;
+    } // GCOVR_EXCL_LINE
+
+    gfx::Bitmap loadAtlasOrBlank(
+        const std::string &mapPath,
+        const std::string_view name,
+        const gfx::Size tileSize,
+        const std::string_view app)
+    {
+        if (!std::filesystem::exists(sidecarPath(mapPath, name)))
+        {
+            return tilemap::blankAtlas(tileSize);
+        }
+
+        return loadAtlas(mapPath, name, tileSize, app);
     } // GCOVR_EXCL_LINE
 
     void writeSharedTexture(

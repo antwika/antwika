@@ -219,7 +219,7 @@ TEST(VoxelTest, VoxelMesh_GivesEachSideAWayOfItsOwn)
     EXPECT_EQ(normals.size(), 6U);
 }
 
-TEST(VoxelTest, AtlasSize_MatchesWhatTheAssetsHold)
+TEST(VoxelTest, AtlasSize_MatchesTheSixteenBySixteenGrid)
 {
     EXPECT_EQ(atlasSize(kWallTileSize).width, 270U);
     EXPECT_EQ(atlasSize(kWallTileSize).height, 174U);

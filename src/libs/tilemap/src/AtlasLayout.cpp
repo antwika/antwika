@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 #include <antwika/gfx/PointF.hpp>
 #include <antwika/gfx/SizeF.hpp>
@@ -27,6 +28,18 @@ namespace antwika::tilemap
             .width = columns * tileSize.width + (columns - 1) * padding,
             .height = rows * tileSize.height + (rows - 1) * padding};
     }
+
+    gfx::Bitmap blankAtlas(const gfx::Size tileSize)
+    {
+        const auto wholeSize = atlasSize(tileSize);
+
+        return gfx::Bitmap{
+            .size = wholeSize,
+            .pixels = std::vector<std::uint8_t>(
+                static_cast<std::size_t>(wholeSize.width)
+                    * wholeSize.height * gfx::kBytesPerPixel,
+                0)};
+    } // GCOVR_EXCL_LINE
 
     gfx::RectF tilePixels(
         const std::size_t index, const gfx::Size tileSize)

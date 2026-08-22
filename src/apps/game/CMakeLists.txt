@@ -35,7 +35,5 @@ antwika_add_app(
         ../../../assets/shaders/shadow.vert
         ../../../assets/shaders/voxel.frag
         ../../../assets/shaders/voxel.vert
-        ../../../assets/textures/atlas-15x12.png
-        ../../../assets/textures/atlas-15x9.png
         ../../../assets/textures/character-20x28.png
 )

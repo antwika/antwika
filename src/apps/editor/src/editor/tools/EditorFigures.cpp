@@ -1,4 +1,6 @@
 #include <filesystem>
+#include <string>
+#include <vector>
 
 #include <antwika/io/AssetPath.hpp>
 #include <antwika/gfx/PngFile.hpp>
@@ -24,6 +26,17 @@ namespace
 {
 
     constexpr float kTalkRadius = 1.6F;
+
+    const std::vector<std::string> kPlayerComponents{
+        "component::Position",
+        "component::Velocity",
+        "component::AnimationState",
+        "component::RosterIndex",
+        "component::Health",
+        "component::Inventory",
+        "component::Player",
+        "component::FillLight",
+        "component::CarriedLight"};
 
 }
 
@@ -214,7 +227,7 @@ namespace antwika::editor
             map::Character{
                 .name = "Player",
                 .idlePlacement = startingPlacement(),
-                .components = {"component::CarriedLight"},
+                .components = kPlayerComponents,
                 .player = true});
     }
 

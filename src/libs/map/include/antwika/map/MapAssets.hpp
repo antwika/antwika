@@ -37,6 +37,12 @@ namespace antwika::map
         gfx::Size tileSize,
         std::string_view app);
 
+    [[nodiscard]] gfx::Bitmap loadAtlasOrBlank(
+        const std::string &mapPath,
+        std::string_view name,
+        gfx::Size tileSize,
+        std::string_view app);
+
     [[nodiscard]] gfx::Bitmap loadCharacterSheet(
         const std::string &mapPath, std::string_view app);
 

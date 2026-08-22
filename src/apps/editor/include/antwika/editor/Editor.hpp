@@ -292,6 +292,7 @@ namespace antwika::editor
         void rightTaken(input::Position position);
         void saveCurrentMap();
         bool loadCurrentMap();
+        void startNewMap();
         void listFolder(const std::string &folder);
         void openFileDialog(bool forSave);
         void confirmFileDialog();

@@ -93,12 +93,12 @@ namespace antwika::editor
 
         atlasSheets.open(
             viewportRenderer,
-            {map::loadAtlas(
+            {map::loadAtlasOrBlank(
                  mapPath,
                  "atlas-15x9.png",
                  tilemap::kWallTileSize,
                  kAppName),
-             map::loadAtlas(
+             map::loadAtlasOrBlank(
                  mapPath,
                  "atlas-15x12.png",
                  tilemap::kFloorTileSize,

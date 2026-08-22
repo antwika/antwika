@@ -79,20 +79,7 @@ namespace antwika::editor
         switch (item)
         {
         case antwika::editor::MenuItem::New:
-            pushUndo();
-            map.voxels.clear();
-            map.spawnCubeCell.reset();
-            map.exitCubeCell.reset();
-            map.exitLocked = false;
-            map.keyCells.clear();
-            map.doorCells.clear();
-            map.checkpointCells.clear();
-            map.foodCells.clear();
-            map.waterCells.clear();
-            editLevel =
-                antwika::voxel::cubeIndexOfLevel(
-                    voxelmap::topLevel(map.voxels));
-            rebuildWorld();
+            startNewMap();
             break;
         case antwika::editor::MenuItem::Save:
             openFileDialog(true);

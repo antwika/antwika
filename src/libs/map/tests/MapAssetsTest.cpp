@@ -18,6 +18,7 @@
 
 using antwika::tilemap::atlasSize;
 using antwika::gfx::Bitmap;
+using antwika::tilemap::blankAtlas;
 using antwika::character::characterSheetSize;
 using antwika::voxelmap::demoCells;
 using antwika::map::fallbackTiles;
@@ -25,6 +26,7 @@ using antwika::map::faceTilesFor;
 using antwika::gfx::GfxError;
 using antwika::tilemap::kWallTileSize;
 using antwika::map::loadAtlas;
+using antwika::map::loadAtlasOrBlank;
 using antwika::map::loadCharacterSheet;
 using antwika::map::Map;
 using antwika::map::readSharedOrBundled;
@@ -106,6 +108,40 @@ namespace
             loadAtlas(mapPath, "wall.png", kWallTileSize, kAppName);
 
         EXPECT_EQ(readBitmap.size, atlasBitmap.size);
+        EXPECT_EQ(readBitmap.pixels, atlasBitmap.pixels);
+    }
+
+    TEST(MapAssetsTest, LoadAtlas_TurnsDownAMapWithNoAtlasBesideIt)
+    {
+        const auto mapPath = somewhereToMap("no-atlas");
+
+        EXPECT_THROW(
+            static_cast<void>(
+                loadAtlas(mapPath, "wall.png", kWallTileSize, kAppName)),
+            GfxError);
+    }
+
+    TEST(MapAssetsTest, LoadAtlasOrBlank_GivesABlankSheetWithNoSidecar)
+    {
+        const auto mapPath = somewhereToMap("blank-atlas");
+        const auto atlasBitmap =
+            loadAtlasOrBlank(mapPath, "wall.png", kWallTileSize, kAppName);
+
+        EXPECT_EQ(atlasBitmap.size, atlasSize(kWallTileSize));
+        EXPECT_EQ(atlasBitmap, blankAtlas(kWallTileSize));
+    }
+
+    TEST(MapAssetsTest, LoadAtlasOrBlank_TakesTheSidecarWhenThereIsOne)
+    {
+        const auto mapPath = somewhereToMap("sidecar-over-blank");
+        const auto atlasBitmap = markedBitmap(atlasSize(kWallTileSize));
+
+        antwika::gfx::writePngFile(
+            atlasBitmap, sidecarPath(mapPath, "wall.png"), kAppName);
+
+        const auto readBitmap =
+            loadAtlasOrBlank(mapPath, "wall.png", kWallTileSize, kAppName);
+
         EXPECT_EQ(readBitmap.pixels, atlasBitmap.pixels);
     }
 
