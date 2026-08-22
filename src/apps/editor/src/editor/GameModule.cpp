@@ -33,10 +33,12 @@ namespace antwika::editor
         ecs::World &world,
         const std::set<voxel::VoxelCell> &solidCells,
         const std::vector<std::vector<voxel::VoxelCell>> &patrolCells)
+#ifdef ANTWIKA_GAME_SHARED
         : logger(&logger),
           world(&world),
           solidCells(&solidCells),
           patrolCells(&patrolCells)
+#endif
     {
         claimPlayComponents(world);
 
@@ -230,7 +232,7 @@ namespace antwika::editor
             return false;
         }
 
-        takeDown(loadedModule);
+        takeDown(madeGame);
         dlclose(library);
 
         std::error_code errorCode;
@@ -240,7 +242,7 @@ namespace antwika::editor
         openedPath = *path;
         setUp = freshSetUp;
         takeDown = freshTakeDown;
-        loadedModule = setUp(logger, world, solids, patrolStops);
+        madeGame = setUp(logger, world, solidCells, patrolCells);
 
         return true;
     }

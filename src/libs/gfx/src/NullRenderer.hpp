@@ -122,7 +122,6 @@ namespace antwika::gfx::detail
     private:
         ILogger &logger;
         std::size_t pushedCount = 0;
-        bool targeted = false;
     };
 
 }

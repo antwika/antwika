@@ -31,11 +31,6 @@ using antwika::tilemap::tileSource;
 
 namespace
 {
-    constexpr antwika::gfx::Size kCanvasSize{
-        .width = 320, .height = 180};
-
-    constexpr float kTolerance = 0.001F;
-
     [[nodiscard]] float right(const antwika::gfx::RectF &placeRect)
     {
         return placeRect.originPoint.x + placeRect.size.width;

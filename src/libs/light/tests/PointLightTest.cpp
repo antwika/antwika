@@ -18,10 +18,6 @@
 namespace
 {
     constexpr float kTolerance = 0.001F;
-
-    constexpr auto kTurn = 2.0F * std::numbers::pi_v<float>;
-
-    constexpr int kSteps = 16;
 }
 
 TEST(PointLightTest, WithLampAt_SetsOneDownWhereItIsAsked)

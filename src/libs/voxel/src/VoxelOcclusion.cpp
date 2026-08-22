@@ -46,7 +46,7 @@ namespace antwika::voxel
             const auto arm =
                 static_cast<std::int32_t>(kOcclusionMaskWidth) / 2;
 
-            const auto withinWindow = [columnCell, arm, lowest, roofLevel](
+            const auto withinWindow = [columnCell, lowest, roofLevel](
                                           const VoxelCell cell)
             {
                 return cell.y >= lowest && cell.y < roofLevel
