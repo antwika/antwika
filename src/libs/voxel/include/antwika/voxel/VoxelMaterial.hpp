@@ -4,6 +4,8 @@
 #include <compare>
 #include <cstdint>
 
+#include <antwika/enums/Enumeration.hpp>
+
 namespace antwika::voxel
 {
 
@@ -15,6 +17,11 @@ namespace antwika::voxel
         Ladder,
     };
 
+    [[nodiscard]] constexpr Kind lastEnumerator(Kind) noexcept
+    {
+        return Kind::Ladder;
+    }
+
     enum class Facing : std::uint8_t
     {
         Any,
@@ -24,15 +31,16 @@ namespace antwika::voxel
         South,
     };
 
-    inline constexpr std::array<Facing, 5> kEveryFacing{
-        Facing::Any,
-        Facing::East,
-        Facing::West,
-        Facing::North,
-        Facing::South};
+    [[nodiscard]] constexpr Facing lastEnumerator(Facing) noexcept
+    {
+        return Facing::South;
+    }
 
-    inline constexpr std::array<Kind, 4> kEveryKind{
-        Kind::Normal, Kind::Water, Kind::Ramp, Kind::Ladder};
+    inline constexpr std::array<Facing, enums::kCount<Facing>>
+        kEveryFacing = enums::kAll<Facing>;
+
+    inline constexpr std::array<Kind, enums::kCount<Kind>> kEveryKind =
+        enums::kAll<Kind>;
 
     struct VoxelMaterial final
     {

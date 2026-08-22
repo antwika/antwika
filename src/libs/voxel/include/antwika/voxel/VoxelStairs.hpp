@@ -7,6 +7,8 @@
 #include <cstdint>
 #include <vector>
 
+#include <antwika/enums/Enumeration.hpp>
+
 #include "antwika/voxel/VoxelMaterial.hpp"
 #include "antwika/voxel/VoxelPosition.hpp"
 #include "antwika/voxel/Voxels.hpp"
@@ -21,8 +23,13 @@ namespace antwika::voxel
         Upper,
     };
 
-    inline constexpr std::array<StairHalf, 3> kEveryStairHalf{
-        StairHalf::Any, StairHalf::Lower, StairHalf::Upper};
+    [[nodiscard]] constexpr StairHalf lastEnumerator(StairHalf) noexcept
+    {
+        return StairHalf::Upper;
+    }
+
+    inline constexpr std::array<StairHalf, enums::kCount<StairHalf>>
+        kEveryStairHalf = enums::kAll<StairHalf>;
 
     enum class StairPart : std::uint8_t
     {
@@ -31,8 +38,13 @@ namespace antwika::voxel
         Side,
     };
 
-    inline constexpr std::array<StairPart, 3> kEveryStairPart{
-        StairPart::Any, StairPart::Front, StairPart::Side};
+    [[nodiscard]] constexpr StairPart lastEnumerator(StairPart) noexcept
+    {
+        return StairPart::Side;
+    }
+
+    inline constexpr std::array<StairPart, enums::kCount<StairPart>>
+        kEveryStairPart = enums::kAll<StairPart>;
 
     inline constexpr std::size_t kStepsPerVoxel = 3;
 

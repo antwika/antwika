@@ -5,6 +5,7 @@
 #include <optional>
 #include <vector>
 
+#include <antwika/enums/Enumeration.hpp>
 #include <antwika/gfx/PointF.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/RectF.hpp>
@@ -39,32 +40,16 @@ namespace antwika::editor
         Eraser,
     };
 
-    inline constexpr std::array kEveryToolButton{
-        ToolButton::Brush,
-        ToolButton::Picker,
-        ToolButton::FreeLook,
-        ToolButton::Lighting,
-        ToolButton::Lamp,
-        ToolButton::RuleLines,
-        ToolButton::Start,
-        ToolButton::Exit,
-        ToolButton::Stamp,
-        ToolButton::Figure,
-        ToolButton::PressurePlate,
-        ToolButton::Key,
-        ToolButton::Door,
-        ToolButton::Checkpoint,
-        ToolButton::Food,
-        ToolButton::Water,
-        ToolButton::Eraser};
+    [[nodiscard]] constexpr ToolButton lastEnumerator(ToolButton) noexcept
+    {
+        return ToolButton::Eraser;
+    }
 
-    inline constexpr std::array kEveryPaint{
-        map::Paint::Brush,
-        map::Paint::Line,
-        map::Paint::Fill,
-        map::Paint::Select,
-        map::Paint::Rect,
-        map::Paint::Circle};
+    inline constexpr std::array<ToolButton, enums::kCount<ToolButton>>
+        kEveryToolButton = enums::kAll<ToolButton>;
+
+    inline constexpr std::array<map::Paint, enums::kCount<map::Paint>>
+        kEveryPaint = enums::kAll<map::Paint>;
 
     [[nodiscard]] gfx::Rect mirrorIcon();
 

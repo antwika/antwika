@@ -96,8 +96,13 @@ namespace antwika::editor
         Forbidden,
     };
 
-    inline constexpr std::array<EdgeToggle, 2> kEveryEdgeToggle{
-        EdgeToggle::Boundary, EdgeToggle::Forbidden};
+    [[nodiscard]] constexpr EdgeToggle lastEnumerator(EdgeToggle) noexcept
+    {
+        return EdgeToggle::Forbidden;
+    }
+
+    inline constexpr std::array<EdgeToggle, enums::kCount<EdgeToggle>>
+        kEveryEdgeToggle = enums::kAll<EdgeToggle>;
 
     inline constexpr float kEdgeToggleSide = 13.0F;
 
