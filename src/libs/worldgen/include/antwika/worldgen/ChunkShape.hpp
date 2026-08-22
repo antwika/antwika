@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <antwika/rng/IRng.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/wfc/CompatibilityTable.hpp>
 #include "antwika/worldgen/VoxelBox.hpp"
 
@@ -30,17 +30,18 @@ namespace antwika::worldgen
 
     [[nodiscard]] std::size_t cubeCount(ChunkShape shape);
 
-    [[nodiscard]] bool within(ChunkShape shape, voxel::VoxelCell cubeCell);
+    [[nodiscard]] bool within(ChunkShape shape,
+        voxel::VoxelPosition cubePosition);
 
     [[nodiscard]] std::size_t cellOf(
-        ChunkShape shape, voxel::VoxelCell cubeCell);
+        ChunkShape shape, voxel::VoxelPosition cubePosition);
 
-    [[nodiscard]] voxel::VoxelCell cubeAt(
+    [[nodiscard]] voxel::VoxelPosition cubeAt(
         ChunkShape shape, std::size_t cell);
 
     [[nodiscard]] VoxelBox chunkBox(
-        ChunkShape shape, voxel::VoxelCell originCell);
+        ChunkShape shape, voxel::VoxelPosition originPosition);
 
-    [[nodiscard]] bool holds(VoxelBox box, voxel::VoxelCell voxel);
+    [[nodiscard]] bool holds(VoxelBox box, voxel::VoxelPosition position);
 
 }

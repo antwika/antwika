@@ -26,6 +26,10 @@ using antwika::voxelmap::rayInModelSpace;
 using antwika::voxelmap::rayThrough;
 using antwika::voxelmap::tilePicked;
 using antwika::voxel::VoxelCell;
+using antwika::voxel::VoxelMaterial;
+using antwika::voxel::VoxelPosition;
+using antwika::voxel::voxelsOf;
+using antwika::voxel::Voxels;
 using antwika::gfx::Vec3;
 
 namespace
@@ -35,7 +39,7 @@ namespace
 
     constexpr float kViewHalfHeight = 1.3F;
 
-    const std::vector<VoxelCell> kLone{VoxelCell{}};
+    const auto kLone = voxelsOf({VoxelCell{}});
 
     [[nodiscard]] antwika::gfx::Mat4 unturned()
     {
@@ -80,8 +84,8 @@ TEST(VoxelPickTest, RaycastFace_TakesTheSideTheRayComesAt)
 
 TEST(VoxelPickTest, RaycastFace_TakesTheNearerOfTwoVoxels)
 {
-    const std::vector<VoxelCell> pairCells{
-        VoxelCell{.z = 0}, VoxelCell{.z = 1}};
+    const auto pairCells = voxelsOf({
+        VoxelCell{.z = 0}, VoxelCell{.z = 1}});
     const Ray ray{
         .fromPosition = Vec3{0.0F, 0.0F, 9.0F},
         .direction = Vec3{0.0F, 0.0F, -1.0F}};
@@ -138,7 +142,7 @@ TEST(VoxelPickTest, FaceTile_MatchesWhatTheMeshDrawsThere)
     {
         EXPECT_EQ(
             faceTile({.cell = cell, .side = side}).index,
-            antwika::voxelmap::defaultTileIndex(cell, side));
+            antwika::voxelmap::defaultTileIndex(cell.position(), side));
     }
 }
 
@@ -344,7 +348,7 @@ TEST(VoxelPickTest, TilePicked_TellsOneFaceFromAnotherAmongTheDrawn)
 
 TEST(VoxelPickTest, FaceMiddle_LiesOnTheFaceNotInTheVoxel)
 {
-    const std::vector<VoxelCell> loneCells{VoxelCell{}};
+    const auto loneCells = voxelsOf({VoxelCell{}});
 
     for (std::size_t side = 0;
          side < antwika::voxelmap::kVoxelFaceCount;
@@ -355,7 +359,7 @@ TEST(VoxelPickTest, FaceMiddle_LiesOnTheFaceNotInTheVoxel)
 
         EXPECT_NEAR(
             glm::dot(
-                middlePoint - antwika::voxelmap::cellMiddle(VoxelCell{}),
+                middlePoint - antwika::voxelmap::cellMiddle(VoxelPosition{}),
                 faceNormal(side)),
             antwika::voxel::kVoxelSide / 2.0F,
             1e-5F);
@@ -452,14 +456,14 @@ TEST(VoxelPickTest, IsFrontFacing_TurnsAFaceAwayWhereTheModelTurns)
 
 TEST(VoxelPickTest, CellAtLevel_TakesTheCellALineMeetsTheLevelIn)
 {
-    const std::vector<VoxelCell> loneCells{VoxelCell{}};
+    const auto loneCells = voxelsOf({VoxelCell{}});
     const Ray downRay{
         .fromPosition = Vec3{0.0F, 5.0F, 0.0F},
         .direction = Vec3{0.0F, -1.0F, 0.0F}};
     const auto pickedCell = antwika::voxelmap::cellAtLevel(downRay, 0);
 
     ASSERT_TRUE(pickedCell.has_value());
-    EXPECT_EQ(*pickedCell, VoxelCell{});
+    EXPECT_EQ(*pickedCell, VoxelPosition{});
 }
 
 TEST(VoxelPickTest, CellAtLevel_TakesTheCubeLevelHoldingTheOneGiven)
@@ -474,13 +478,13 @@ TEST(VoxelPickTest, CellAtLevel_TakesTheCubeLevelHoldingTheOneGiven)
 
         ASSERT_TRUE(pickedCell.has_value());
         EXPECT_EQ(pickedCell->y, antwika::voxel::cubeCornerOf(
-                             VoxelCell{.y = level}).y);
+                             VoxelPosition{.y = level}).y);
     }
 }
 
 TEST(VoxelPickTest, CellAtLevel_MissesALevelALineRunsAlong)
 {
-    const std::vector<VoxelCell> loneCells{VoxelCell{}};
+    const auto loneCells = voxelsOf({VoxelCell{}});
     const Ray acrossRay{
         .fromPosition = Vec3{0.0F, 5.0F, 0.0F},
         .direction = Vec3{1.0F, 0.0F, 0.0F}};
@@ -491,7 +495,7 @@ TEST(VoxelPickTest, CellAtLevel_MissesALevelALineRunsAlong)
 
 TEST(VoxelPickTest, CellAtLevel_MissesALevelBehindWhereItStarts)
 {
-    const std::vector<VoxelCell> loneCells{VoxelCell{}};
+    const auto loneCells = voxelsOf({VoxelCell{}});
     const Ray upRay{
         .fromPosition = Vec3{0.0F, 5.0F, 0.0F},
         .direction = Vec3{0.0F, 1.0F, 0.0F}};
@@ -519,7 +523,7 @@ TEST(VoxelPickTest, CellUnder_TakesTheCellThePileIsPointedAt)
 TEST(VoxelPickTest, LevelGridLines_RulesTheLevelIntoCubes)
 {
     const auto cells =
-        antwika::voxel::expandCubesToVoxels({VoxelCell{}});
+        antwika::voxel::expandCubesToVoxels(voxelsOf({VoxelCell{}}));
     const auto gridLines = antwika::voxelmap::levelGridLines(cells, 0);
 
     EXPECT_FALSE(gridLines.empty());
@@ -533,7 +537,7 @@ TEST(VoxelPickTest, LevelGridLines_RulesTheLevelIntoCubes)
 TEST(VoxelPickTest, LevelGridLines_LiesAtTheLevelItIsGiven)
 {
     const auto cells =
-        antwika::voxel::expandCubesToVoxels({VoxelCell{}});
+        antwika::voxel::expandCubesToVoxels(voxelsOf({VoxelCell{}}));
     const auto lowLines = antwika::voxelmap::levelGridLines(cells, 0);
     const auto highLines = antwika::voxelmap::levelGridLines(cells, 2);
 
@@ -544,7 +548,7 @@ TEST(VoxelPickTest, LevelGridLines_LiesAtTheLevelItIsGiven)
 TEST(VoxelPickTest, LevelGridLines_ReachesPastThePileEveryWay)
 {
     const auto cells =
-        antwika::voxel::expandCubesToVoxels({VoxelCell{}});
+        antwika::voxel::expandCubesToVoxels(voxelsOf({VoxelCell{}}));
     const auto gridLines = antwika::voxelmap::levelGridLines(cells, 0);
     auto least = gridLines.front().fromPosition.x;
     auto most = gridLines.front().toPosition.x;
@@ -562,22 +566,22 @@ TEST(VoxelPickTest, LevelGridLines_ReachesPastThePileEveryWay)
 TEST(VoxelPickTest, CubeWireframe_GivesACubeItsTwelveEdges)
 {
     const auto cells =
-        antwika::voxel::expandCubesToVoxels({VoxelCell{}});
+        antwika::voxel::expandCubesToVoxels(voxelsOf({VoxelCell{}}));
 
-    EXPECT_EQ(antwika::voxelmap::cubeWireframe(VoxelCell{}).size(),
+    EXPECT_EQ(antwika::voxelmap::cubeWireframe(VoxelPosition{}).size(),
               12U);
 }
 
 TEST(VoxelPickTest, CubeWireframe_TakesEveryCellOfACubeToTheOneCube)
 {
     const auto cells =
-        antwika::voxel::expandCubesToVoxels({VoxelCell{}});
+        antwika::voxel::expandCubesToVoxels(voxelsOf({VoxelCell{}}));
     const auto wireframe =
-        antwika::voxelmap::cubeWireframe(VoxelCell{});
+        antwika::voxelmap::cubeWireframe(VoxelPosition{});
 
     for (const auto cell :
          antwika::voxel::cubeCells(
-             antwika::voxel::cubeCornerOf(VoxelCell{})))
+             antwika::voxel::cubeCornerOf(VoxelPosition{})))
     {
         EXPECT_EQ(
             antwika::voxelmap::cubeWireframe(cell), wireframe);
@@ -587,10 +591,10 @@ TEST(VoxelPickTest, CubeWireframe_TakesEveryCellOfACubeToTheOneCube)
 TEST(VoxelPickTest, CubeWireframe_RunsACubeSideAlongEveryEdge)
 {
     const auto cells =
-        antwika::voxel::expandCubesToVoxels({VoxelCell{}});
+        antwika::voxel::expandCubesToVoxels(voxelsOf({VoxelCell{}}));
 
     for (const auto &span :
-         antwika::voxelmap::cubeWireframe(VoxelCell{}))
+         antwika::voxelmap::cubeWireframe(VoxelPosition{}))
     {
         EXPECT_NEAR(
             glm::length(span.toPosition - span.fromPosition),
@@ -624,7 +628,8 @@ TEST(VoxelPickTest, CellAtLevel_MeetsTheLevelAtTheFootOfItsCube)
 
 TEST(VoxelPickTest, CellAtLevel_StandsACubeOnTheGridItIsRuledOn)
 {
-    const auto gridLines = antwika::voxelmap::levelGridLines({VoxelCell{}}, 0);
+    const auto gridLines = antwika::voxelmap::levelGridLines(voxelsOf(
+        {VoxelCell{}}), 0);
     const Ray downRay{
         .fromPosition = Vec3{0.0F, 9.0F, 0.0F},
         .direction = Vec3{0.0F, -1.0F, 0.0F}};
@@ -647,27 +652,27 @@ TEST(VoxelPickTest, OcclusionMask_MarksAPlaceAtItsOwnLevelsBit)
 {
     using antwika::voxelmap::occlusionMask;
 
-    const VoxelCell cornerCell{.x = -4, .z = -4};
+    const VoxelPosition cornerPosition{.x = -4, .z = -4};
     const auto mask = occlusionMask(
-        std::set<VoxelCell>{
+        voxelsOf({
             VoxelCell{.x = 0, .y = 9, .z = 0},
-            VoxelCell{.x = 1, .y = 0, .z = 0}},
-        cornerCell);
+            VoxelCell{.x = 1, .y = 0, .z = 0}}),
+        cornerPosition);
 
-    const auto faceAt = [&cornerCell](const VoxelCell cell)
+    const auto faceAt = [&cornerPosition](const VoxelPosition cell)
     {
-        return ((static_cast<std::size_t>(cell.z - cornerCell.z)
+        return ((static_cast<std::size_t>(cell.z - cornerPosition.z)
                  * antwika::voxelmap::kOcclusionMaskWidth)
-                + static_cast<std::size_t>(cell.x - cornerCell.x))
+                + static_cast<std::size_t>(cell.x - cornerPosition.x))
                * antwika::gfx::kBytesPerPixel;
     };
 
     EXPECT_EQ(
-        mask.pixels[faceAt(VoxelCell{.x = 0, .z = 0}) + 1], 1U << 1);
+        mask.pixels[faceAt(VoxelPosition{.x = 0, .z = 0}) + 1], 1U << 1);
     EXPECT_EQ(
-        mask.pixels[faceAt(VoxelCell{.x = 1, .z = 0})], 1U);
+        mask.pixels[faceAt(VoxelPosition{.x = 1, .z = 0})], 1U);
     EXPECT_EQ(
-        mask.pixels[faceAt(VoxelCell{.x = 2, .z = 0})], 0U);
+        mask.pixels[faceAt(VoxelPosition{.x = 2, .z = 0})], 0U);
 }
 
 TEST(VoxelPickTest, OcclusionMask_LeavesOutWhatFallsOffTheSquare)
@@ -675,10 +680,10 @@ TEST(VoxelPickTest, OcclusionMask_LeavesOutWhatFallsOffTheSquare)
     using antwika::voxelmap::occlusionMask;
 
     const auto mask = occlusionMask(
-        std::set<VoxelCell>{
+        voxelsOf({
             VoxelCell{.x = 90, .y = 0, .z = 0},
-            VoxelCell{.x = 0, .y = 90, .z = 0}},
-        VoxelCell{});
+            VoxelCell{.x = 0, .y = 90, .z = 0}}),
+        VoxelPosition{});
 
     for (const auto pixel : mask.pixels)
     {

@@ -29,7 +29,7 @@ namespace antwika::map
 
         Placement idlePlacement{};
 
-        std::vector<voxel::VoxelCell> patrolPathCells{};
+        std::vector<voxel::VoxelPosition> patrolPathPositions{};
 
         std::vector<std::string> dialogue{};
 

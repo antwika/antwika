@@ -15,6 +15,8 @@
 #include "antwika/editor/editor/GameModule.hpp"
 
 using antwika::ecs::World;
+using antwika::voxel::VoxelPosition;
+using antwika::voxel::Voxels;
 
 using antwika::editor::GameModule;
 using antwika::component::Health;
@@ -30,8 +32,8 @@ namespace
     {
     protected:
         NiceMock<MockLogger> logger;
-        std::set<VoxelCell> solidCells;
-        std::vector<std::vector<VoxelCell>> patrolCells;
+        Voxels solidVoxels;
+        std::vector<std::vector<VoxelPosition>> patrolPositions;
     };
 
 }
@@ -39,7 +41,7 @@ namespace
 TEST_F(GameModuleTest, GameModule_MakesAGameToBeReachedThrough)
 {
     World world(logger);
-    GameModule module(logger, world, solidCells, patrolCells);
+    GameModule module(logger, world, solidVoxels, patrolPositions);
 
     EXPECT_TRUE(module->world().alive(module->eye()));
 }
@@ -47,7 +49,7 @@ TEST_F(GameModuleTest, GameModule_MakesAGameToBeReachedThrough)
 TEST_F(GameModuleTest, GameModule_IsReadThroughWhereItIsHeldAsConst)
 {
     World world(logger);
-    GameModule module(logger, world, solidCells, patrolCells);
+    GameModule module(logger, world, solidVoxels, patrolPositions);
     const auto &constModule = module;
 
     EXPECT_EQ(constModule->player(), module->player());
@@ -56,7 +58,7 @@ TEST_F(GameModuleTest, GameModule_IsReadThroughWhereItIsHeldAsConst)
 TEST_F(GameModuleTest, GameModule_ClaimsThePlayForTheImageThatHoldsIt)
 {
     World world(logger);
-    GameModule module(logger, world, solidCells, patrolCells);
+    GameModule module(logger, world, solidVoxels, patrolPositions);
     const auto entity = world.create();
 
     world.add<Health>(entity, Health{.food = 7});
@@ -69,7 +71,7 @@ TEST_F(GameModuleTest, GameModule_ClaimsThePlayForTheImageThatHoldsIt)
 TEST_F(GameModuleTest, Reload_LeavesWhatWasPlayedStandingInTheWorld)
 {
     World world(logger);
-    GameModule module(logger, world, solidCells, patrolCells);
+    GameModule module(logger, world, solidVoxels, patrolPositions);
     const auto entity = world.create();
 
     world.add<Health>(entity, Health{.food = 7});
@@ -87,7 +89,7 @@ TEST_F(GameModuleTest, Reload_LeavesWhatWasPlayedStandingInTheWorld)
 TEST_F(GameModuleTest, Reload_TakesUpTheEyeThatAlreadyStands)
 {
     World world(logger);
-    GameModule module(logger, world, solidCells, patrolCells);
+    GameModule module(logger, world, solidVoxels, patrolPositions);
     const auto eye = module->eye();
 
     ASSERT_TRUE(module.reload());

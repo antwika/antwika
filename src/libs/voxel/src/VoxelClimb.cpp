@@ -16,75 +16,80 @@ namespace antwika::voxel
     namespace detail
     {
 
-        [[nodiscard]] VoxelCell offsetBy(
-            const VoxelCell fromCell, const VoxelCell byCell)
+        VoxelPosition offsetBy(
+            const VoxelPosition fromPosition,
+            const VoxelPosition byPosition)
         {
-            return VoxelCell{
-                .x = fromCell.x + byCell.x,
-                .y = fromCell.y + byCell.y,
-                .z = fromCell.z + byCell.z};
+            return VoxelPosition{
+                .x = fromPosition.x + byPosition.x,
+                .y = fromPosition.y + byPosition.y,
+                .z = fromPosition.z + byPosition.z};
         }
 
-        constexpr std::array<VoxelCell, 4> kAboutCells{
-            VoxelCell{.x = 1},
-            VoxelCell{.x = -1},
-            VoxelCell{.z = 1},
-            VoxelCell{.z = -1}};
-
-        constexpr VoxelCell kBelowCell{.y = -1};
-
-        [[nodiscard]] VoxelCell rotated90(const VoxelCell stepCell)
+        VoxelPosition opposite(const VoxelPosition stepPosition)
         {
-            return VoxelCell{.x = -stepCell.x, .y = -stepCell.y,
-                             .z = -stepCell.z};
+            return VoxelPosition{
+                .x = -stepPosition.x,
+                .y = -stepPosition.y,
+                .z = -stepPosition.z};
         }
 
-        [[nodiscard]] std::optional<Kind> kindAt(
-            const std::set<VoxelCell> &filledCells, const VoxelCell cell)
-        {
-            const auto foundCell = filledCells.find(cell);
+        constexpr std::array<VoxelPosition, 4> kAboutPositions{
+            VoxelPosition{.x = 1},
+            VoxelPosition{.x = -1},
+            VoxelPosition{.z = 1},
+            VoxelPosition{.z = -1}};
 
-            return foundCell == filledCells.end()
+        constexpr VoxelPosition kBelowPosition{.y = -1};
+
+        std::optional<Kind> kindAt(
+            const Voxels &filledVoxels, const VoxelPosition position)
+        {
+            const auto foundVoxel = filledVoxels.find(position);
+
+            return foundVoxel == filledVoxels.end()
                               ? std::nullopt
-                              : std::optional{foundCell->kind};
+                              : std::optional{foundVoxel->second.kind};
         }
 
-        [[nodiscard]] std::optional<Kind> effectiveKindAt(
-            const std::set<VoxelCell> &filledCells, VoxelCell cell);
-
-        [[nodiscard]] std::optional<VoxelCell> voxelAt(
-            const std::set<VoxelCell> &filledCells, const VoxelCell cell)
+        std::optional<VoxelMaterial> materialAt(
+            const Voxels &filledVoxels, const VoxelPosition position)
         {
-            const auto foundCell = filledCells.find(cell);
+            const auto foundVoxel = filledVoxels.find(position);
 
-            return foundCell == filledCells.end() ? std::nullopt
-                              : std::optional{*foundCell};
+            return foundVoxel == filledVoxels.end()
+                              ? std::nullopt
+                              : std::optional{foundVoxel->second};
         }
 
         [[nodiscard]] bool groundBeside(
-            const std::set<VoxelCell> &filledCells,
-            const VoxelCell cell,
-            const VoxelCell stepCell)
+            const Voxels &filledVoxels,
+            const VoxelPosition position,
+            const VoxelPosition stepPosition)
         {
-            const auto corner = cubeCornerOf(cell);
+            const auto corner = cubeCornerOf(position);
 
             for (std::int32_t upIndex = 0; upIndex < kCubeSide; ++upIndex)
             {
                 for (std::int32_t alongIndex = 0; alongIndex < kCubeSide;
                      ++alongIndex)
                 {
-                    const auto besideCell = VoxelCell{
+                    const auto besidePosition = VoxelPosition{
                         .x = corner.x
-                             + (stepCell.x != 0
-                                            ? (stepCell.x > 0 ? kCubeSide : -1)
+                             + (stepPosition.x != 0
+                                            ? (stepPosition.x > 0
+                                                   ? kCubeSide
+                                                   : -1)
                                             : alongIndex),
                         .y = corner.y + upIndex,
                         .z = corner.z
-                             + (stepCell.z != 0
-                                            ? (stepCell.z > 0 ? kCubeSide : -1)
+                             + (stepPosition.z != 0
+                                            ? (stepPosition.z > 0
+                                                   ? kCubeSide
+                                                   : -1)
                                             : alongIndex)};
 
-                    if (kindAt(filledCells, besideCell) == Kind::Normal)
+                    if (kindAt(filledVoxels, besidePosition) == Kind::Normal)
                     {
                         return true;
                     }
@@ -94,10 +99,10 @@ namespace antwika::voxel
             return false;
         }
 
-        [[nodiscard]] std::optional<VoxelCell> shapedClimb(
-            const std::set<VoxelCell> &filledCells, const VoxelCell cell)
+        [[nodiscard]] std::optional<VoxelPosition> shapedClimb(
+            const Voxels &filledVoxels, const VoxelPosition position)
         {
-            const auto corner = cubeCornerOf(cell);
+            const auto corner = cubeCornerOf(position);
             const auto top = corner.y + kCubeSide - 1;
 
             std::set<std::int32_t> acrossX;
@@ -107,12 +112,12 @@ namespace antwika::voxel
             {
                 for (std::int32_t offZ = 0; offZ < kCubeSide; ++offZ)
                 {
-                    const auto probeCell = VoxelCell{
+                    const auto probePosition = VoxelPosition{
                         .x = corner.x + offX,
                         .y = top,
                         .z = corner.z + offZ};
 
-                    if (kindAt(filledCells, probeCell) == Kind::Ramp)
+                    if (kindAt(filledVoxels, probePosition) == Kind::Ramp)
                     {
                         acrossX.insert(offX);
                         acrossZ.insert(offZ);
@@ -122,197 +127,175 @@ namespace antwika::voxel
 
             if (acrossX.size() == 1 && acrossZ.size() > 1)
             {
-                return VoxelCell{
+                return VoxelPosition{
                     .x = *acrossX.begin() == 0 ? -1 : 1};
             }
 
             if (acrossZ.size() == 1 && acrossX.size() > 1)
             {
-                return VoxelCell{
+                return VoxelPosition{
                     .z = *acrossZ.begin() == 0 ? -1 : 1};
             }
 
             return std::nullopt;
         }
 
-        [[nodiscard]] VoxelCell climbWithin(
-            const std::set<VoxelCell> &filledCells, const VoxelCell cell)
+        [[nodiscard]] VoxelPosition climbWithin(
+            const Voxels &filledVoxels, const VoxelPosition position)
         {
-            if (const auto shapedCell = shapedClimb(filledCells, cell);
-                shapedCell.has_value())
+            if (const auto shapedStep = shapedClimb(filledVoxels, position);
+                shapedStep.has_value())
             {
-                return *shapedCell;
+                return *shapedStep;
             }
 
-            const auto voxel = voxelAt(filledCells, cell);
+            const auto material = materialAt(filledVoxels, position);
 
-            if (voxel.has_value() && voxel->facing != Facing::Any)
+            if (material.has_value() && material->facing != Facing::Any)
             {
-                return stepVectorFor(voxel->facing);
+                return stepVectorFor(material->facing);
             }
 
-            for (const auto step : kAboutCells)
+            for (const auto step : kAboutPositions)
             {
-                if (groundBeside(filledCells, cell, step)
+                if (groundBeside(filledVoxels, position, step)
                     && !groundBeside(
-                        filledCells, cell, rotated90(step)))
+                        filledVoxels, position, opposite(step)))
                 {
                     return step;
                 }
             }
 
-            for (const auto step : kAboutCells)
+            for (const auto step : kAboutPositions)
             {
-                if (groundBeside(filledCells, cell, step))
+                if (groundBeside(filledVoxels, position, step))
                 {
                     return step;
                 }
             }
 
-            const auto fills = [&filledCells](const VoxelCell place)
-            { return effectiveKindAt(filledCells, place) == Kind::Normal; };
+            const auto fills = [&filledVoxels](const VoxelPosition place)
+            { return effectiveKindAt(filledVoxels, place) == Kind::Normal; };
 
-            for (const auto step : kAboutCells)
+            for (const auto step : kAboutPositions)
             {
-                if (fills(offsetBy(cell, step))
-                    && !fills(offsetBy(cell, rotated90(step))))
+                if (fills(offsetBy(position, step))
+                    && !fills(offsetBy(position, opposite(step))))
                 {
                     return step;
                 }
             }
 
-            const auto aboveCell = offsetBy(cell, VoxelCell{.y = 1});
+            const auto abovePosition =
+                offsetBy(position, VoxelPosition{.y = 1});
 
-            if (kindAt(filledCells, aboveCell) == Kind::Ramp)
+            if (kindAt(filledVoxels, abovePosition) == Kind::Ramp)
             {
-                return climbWithin(filledCells, aboveCell);
+                return climbWithin(filledVoxels, abovePosition);
             }
 
-            for (const auto step : kAboutCells)
+            for (const auto step : kAboutPositions)
             {
-                const auto open = offsetBy(cell, rotated90(step));
+                const auto open = offsetBy(position, opposite(step));
 
-                if (!filledCells.contains(open)
-                    && kindAt(filledCells, offsetBy(open, kBelowCell))
+                if (!filledVoxels.contains(open)
+                    && kindAt(filledVoxels, offsetBy(open, kBelowPosition))
                            == Kind::Ramp)
                 {
                     return step;
                 }
             }
 
-            return kAboutCells.front();
+            return kAboutPositions.front();
         }
 
         [[nodiscard]] StairHalf levelWithin(
-            const std::set<VoxelCell> &filledCells, const VoxelCell cell)
+            const Voxels &filledVoxels, const VoxelPosition position)
         {
-            if (cell.kind != Kind::Ramp)
+            if (kindAt(filledVoxels, position) != Kind::Ramp)
             {
                 return StairHalf::Any;
             }
 
-            return kindAt(filledCells, offsetBy(cell, kBelowCell))
+            return kindAt(filledVoxels, offsetBy(position, kBelowPosition))
                            == Kind::Ramp
                             ? StairHalf::Upper
                             : StairHalf::Lower;
         }
 
-        [[nodiscard]] bool isRampStep(
-            const std::set<VoxelCell> &filledCells, const VoxelCell cell)
+        bool isRampStep(
+            const Voxels &filledVoxels, const VoxelPosition position)
         {
-            return cell.kind == Kind::Ramp
-                   && !filledCells.contains(
-                       offsetBy(cell, VoxelCell{.y = 1}));
+            return kindAt(filledVoxels, position) == Kind::Ramp
+                   && !filledVoxels.contains(
+                       offsetBy(position, VoxelPosition{.y = 1}));
         }
 
-        [[nodiscard]] std::optional<Kind> effectiveKindAt(
-            const std::set<VoxelCell> &filledCells, const VoxelCell cell)
+        std::optional<Kind> effectiveKindAt(
+            const Voxels &filledVoxels, const VoxelPosition position)
         {
-            const auto cellKind = kindAt(filledCells, cell);
+            const auto voxelKind = kindAt(filledVoxels, position);
 
-            if (cellKind != Kind::Ramp)
+            if (voxelKind != Kind::Ramp)
             {
-                return cellKind;
+                return voxelKind;
             }
 
-            return isRampStep(
-                       filledCells,
-                       VoxelCell{
-                           .x = cell.x,
-                           .y = cell.y,
-                           .z = cell.z,
-                           .kind = Kind::Ramp})
-                                 ? Kind::Ramp
-                                 : Kind::Normal;
+            return isRampStep(filledVoxels, position) ? Kind::Ramp
+                                                      : Kind::Normal;
         }
 
     }
 
-    VoxelCell inferredRampDirection(
-        const std::vector<VoxelCell> &cells, const VoxelCell cell)
+    VoxelPosition inferredRampDirection(
+        const Voxels &filledVoxels, const VoxelPosition position)
     {
-        const std::set<VoxelCell> filledCells(cells.begin(), cells.end());
-
-        return climbWithin(filledCells, cell);
+        return climbWithin(filledVoxels, position);
     }
 
-    VoxelCell inferredRampDirection(
-        const std::set<VoxelCell> &filledCells, const VoxelCell cell)
+    Facing facingOfStep(const VoxelPosition climbPosition)
     {
-        return climbWithin(filledCells, cell);
-    }
-
-    Facing facingOfStep(const VoxelCell climbCell)
-    {
-        if (climbCell.x > 0)
+        if (climbPosition.x > 0)
         {
             return Facing::East;
         }
 
-        if (climbCell.x < 0)
+        if (climbPosition.x < 0)
         {
             return Facing::West;
         }
 
-        if (climbCell.z > 0)
+        if (climbPosition.z > 0)
         {
             return Facing::South;
         }
 
-        return climbCell.z < 0 ? Facing::North : Facing::Any;
+        return climbPosition.z < 0 ? Facing::North : Facing::Any;
     }
 
-    VoxelCell stepVectorFor(const Facing facing)
+    VoxelPosition stepVectorFor(const Facing facing)
     {
         switch (facing)
         {
         case Facing::East:
-            return VoxelCell{.x = 1};
+            return VoxelPosition{.x = 1};
         case Facing::West:
-            return VoxelCell{.x = -1};
+            return VoxelPosition{.x = -1};
         case Facing::North:
-            return VoxelCell{.z = -1};
+            return VoxelPosition{.z = -1};
         case Facing::South:
-            return VoxelCell{.z = 1};
+            return VoxelPosition{.z = 1};
         case Facing::Any:
             break;
         }
 
-        return VoxelCell{};
+        return VoxelPosition{};
     }
 
     StairHalf stairHalfOf(
-        const std::vector<VoxelCell> &cells, const VoxelCell cell)
+        const Voxels &filledVoxels, const VoxelPosition position)
     {
-        const std::set<VoxelCell> filledCells(cells.begin(), cells.end());
-
-        return levelWithin(filledCells, cell);
-    }
-
-    StairHalf stairHalfOf(
-        const std::set<VoxelCell> &filledCells, const VoxelCell cell)
-    {
-        return levelWithin(filledCells, cell);
+        return levelWithin(filledVoxels, position);
     }
 
 }

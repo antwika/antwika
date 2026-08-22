@@ -1,5 +1,4 @@
 #include <cstddef>
-#include <set>
 #include <vector>
 
 #include <antwika/gfx/Math3D.hpp>
@@ -16,60 +15,55 @@ namespace antwika::voxelmap
     {
 
         [[nodiscard]] bool facedByAClimb(
-            const voxel::VoxelCell climbCell, const gfx::Vec3 normal)
+            const voxel::VoxelPosition climbPosition, const gfx::Vec3 normal)
         {
-            return ((normal.x * static_cast<float>(climbCell.x))
-                    + (normal.z * static_cast<float>(climbCell.z)))
+            return ((normal.x * static_cast<float>(climbPosition.x))
+                    + (normal.z * static_cast<float>(climbPosition.z)))
                    < 0.0F;
         }
 
     }
 
-    std::vector<FaceRef> visibleFacesOf(
-        const std::vector<voxel::VoxelCell> &cells)
+    std::vector<FaceRef> visibleFacesOf(const voxel::Voxels &voxels)
     {
-        const std::set<voxel::VoxelCell> filledCells(
-            cells.begin(),
-            cells.end());
-
         std::vector<FaceRef> faces;
 
-        for (const auto cell : cells)
+        for (const auto &[position, material] : voxels)
         {
-            const auto climb = cell.kind == voxel::Kind::Ramp
-                             ? voxel::inferredRampDirection(
-                                         filledCells, cell)
-                                   : voxel::VoxelCell{};
-            const auto level = voxel::stairHalfOf(filledCells, cell);
+            const auto climb = material.kind == voxel::Kind::Ramp
+                             ? voxel::inferredRampDirection(voxels, position)
+                             : voxel::VoxelPosition{};
+            const auto level = voxel::stairHalfOf(voxels, position);
 
             for (std::size_t side = 0; side < kFaces; ++side)
             {
-                const auto neighbourCell = offsetBy(
-                    cell, kVoxelFaces[side].neighbourOffsetCell);
+                const auto neighbourPosition = offsetBy(
+                    position, kVoxelFaces[side].neighbourOffsetPosition);
                 const auto beyondKind =
-                    effectiveKindAt(filledCells, neighbourCell);
+                    effectiveKindAt(voxels, neighbourPosition);
                 const auto footprint =
                     kVoxelFaces[side].normal.y > 0.0F
-                    && cell.kind == voxel::Kind::Normal
+                    && material.kind == voxel::Kind::Normal
                     && beyondKind == voxel::Kind::Normal;
 
                 if (beyondKind.has_value()
-                    && voxel::occludes(*beyondKind, cell.kind)
+                    && voxel::occludes(*beyondKind, material.kind)
                     && !footprint)
                 {
                     continue;
                 }
 
                 if (kVoxelFaces[side].normal.y > 0.0F
-                    && kindAt(filledCells, neighbourCell) == voxel::Kind::Ramp)
+                    && kindAt(voxels, neighbourPosition)
+                           == voxel::Kind::Ramp)
                 {
                     continue;
                 }
 
-                if (kindAt(filledCells, neighbourCell) == voxel::Kind::Ramp
+                if (kindAt(voxels, neighbourPosition) == voxel::Kind::Ramp
                     && facedByAClimb(
-                        voxel::inferredRampDirection(filledCells,
-                        neighbourCell),
+                        voxel::inferredRampDirection(
+                            voxels, neighbourPosition),
                         kVoxelFaces[side].normal))
                 {
                     continue;
@@ -77,9 +71,9 @@ namespace antwika::voxelmap
 
                 faces.push_back(
                     FaceRef{
-                        .cell = cell,
+                        .cell = voxel::voxelCellAt(position, material),
                         .side = side,
-                        .climbCell = climb,
+                        .climbPosition = climb,
                         .levelHalf = level});
             }
         }

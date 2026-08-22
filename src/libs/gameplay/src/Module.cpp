@@ -6,12 +6,12 @@
 extern "C" antwika::gameplay::IGame *antwikaGameCreate(
     antwika::log::ILogger *const logger,
     antwika::ecs::World *const world,
-    const std::set<antwika::voxel::VoxelCell> *const solids,
-    const std::vector<std::vector<antwika::voxel::VoxelCell>> *const
+    const antwika::voxel::Voxels *const solidVoxels,
+    const std::vector<std::vector<antwika::voxel::VoxelPosition>> *const
         patrolStops)
 {
     return new antwika::gameplay::Game(
-        *logger, *world, *solids, *patrolStops);
+        *logger, *world, *solidVoxels, *patrolStops);
 }
 
 extern "C" void antwikaGameDestroy(antwika::gameplay::IGame *const game)

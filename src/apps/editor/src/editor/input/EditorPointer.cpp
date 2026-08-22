@@ -231,7 +231,7 @@ namespace antwika::editor
 
         carryLamp();
 
-        if (dragPaintButton.has_value() && !shapeFromCell.has_value()
+        if (dragPaintButton.has_value() && !shapeFromPosition.has_value()
             && activeView == map::View::World)
         {
             const auto cell = voxelmap::cellUnder(
@@ -241,7 +241,7 @@ namespace antwika::editor
                 pointer.pointerOnCanvas,
                 antwika::voxel::cubeTop(editLevel));
 
-            if (cell.has_value() && cell != lastPaintedCell)
+            if (cell.has_value() && cell != lastPaintedPosition)
             {
                 map.voxels = voxel::withRampsRebuilt(
                     tool == map::Tool::Eraser
@@ -253,7 +253,7 @@ namespace antwika::editor
                               brushKind,
                               rampFacing),
                     *cell);
-                lastPaintedCell = cell;
+                lastPaintedPosition = cell;
                 remeshPending = true;
             }
         }
@@ -373,7 +373,7 @@ namespace antwika::editor
             && upReleased.button == *dragPaintButton)
         {
             dragPaintButton.reset();
-            lastPaintedCell.reset();
+            lastPaintedPosition.reset();
         }
 
         if (upReleased.button == input::MouseButton::Left

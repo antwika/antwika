@@ -23,9 +23,9 @@ namespace antwika::map
 
     struct PressurePlate final
     {
-        voxel::VoxelCell cell{};
+        voxel::VoxelPosition position{};
 
-        std::vector<voxel::VoxelCell> toggleCells{};
+        std::vector<voxel::VoxelPosition> togglePositions{};
 
         [[nodiscard]] bool operator==(const PressurePlate &other) const
             = default;

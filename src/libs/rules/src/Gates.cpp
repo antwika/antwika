@@ -6,13 +6,13 @@
 namespace antwika::rules
 {
 
-    std::optional<voxel::VoxelCell> gateCubeContaining(
-        const std::span<const voxel::VoxelCell> gateCells,
-        const voxel::VoxelCell cell)
+    std::optional<voxel::VoxelPosition> gateCubeContaining(
+        const std::span<const voxel::VoxelPosition> gatePositions,
+        const voxel::VoxelPosition position)
     {
-        const auto corner = voxel::cubeCornerOf(cell);
+        const auto corner = voxel::cubeCornerOf(position);
 
-        for (const auto one : gateCells)
+        for (const auto one : gatePositions)
         {
             if (voxel::cubeCornerOf(one) == corner)
             {
@@ -23,21 +23,21 @@ namespace antwika::rules
         return std::nullopt;
     }
 
-    std::optional<voxel::VoxelCell> adjacentDoor(
-        const std::span<const voxel::VoxelCell> doorCells,
-        const voxel::VoxelCell standsInCell)
+    std::optional<voxel::VoxelPosition> adjacentDoor(
+        const std::span<const voxel::VoxelPosition> doorPositions,
+        const voxel::VoxelPosition standsInPosition)
     {
-        const auto middle = voxel::cubeCornerOf(standsInCell);
+        const auto middle = voxel::cubeCornerOf(standsInPosition);
 
         for (const auto way :
-             {voxel::VoxelCell{.x = voxel::kCubeSide},
-              voxel::VoxelCell{.x = -voxel::kCubeSide},
-              voxel::VoxelCell{.z = voxel::kCubeSide},
-              voxel::VoxelCell{.z = -voxel::kCubeSide}})
+             {voxel::VoxelPosition{.x = voxel::kCubeSide},
+              voxel::VoxelPosition{.x = -voxel::kCubeSide},
+              voxel::VoxelPosition{.z = voxel::kCubeSide},
+              voxel::VoxelPosition{.z = -voxel::kCubeSide}})
         {
             const auto foundCube = gateCubeContaining(
-                doorCells,
-                voxel::VoxelCell{
+                doorPositions,
+                voxel::VoxelPosition{
                     .x = middle.x + way.x,
                     .y = middle.y,
                     .z = middle.z + way.z});
@@ -51,31 +51,31 @@ namespace antwika::rules
         return std::nullopt;
     }
 
-    std::vector<voxel::VoxelCell> doorwayCells(
-        const std::span<const voxel::VoxelCell> doorCells,
-        const voxel::VoxelCell cornerCell)
+    std::vector<voxel::VoxelPosition> doorwayCells(
+        const std::span<const voxel::VoxelPosition> doorPositions,
+        const voxel::VoxelPosition cornerPosition)
     {
-        std::vector<voxel::VoxelCell> cells;
+        std::vector<voxel::VoxelPosition> positions;
 
-        for (const auto door : doorCells)
+        for (const auto door : doorPositions)
         {
-            if (voxel::cubeCornerOf(door).x == cornerCell.x
-                && voxel::cubeCornerOf(door).z == cornerCell.z)
+            if (voxel::cubeCornerOf(door).x == cornerPosition.x
+                && voxel::cubeCornerOf(door).z == cornerPosition.z)
             {
-                cells.push_back(door);
+                positions.push_back(door);
             }
         }
 
-        return cells;
+        return positions;
     } // GCOVR_EXCL_LINE
 
     bool cubeOccupied(
-        const std::span<const voxel::VoxelCell> voxels,
-        const voxel::VoxelCell cornerCell)
+        const voxel::Voxels &voxels,
+        const voxel::VoxelPosition cornerPosition)
     {
-        for (const auto voxel : voxels)
+        for (const auto &[position, material] : voxels)
         {
-            if (voxel::cubeCornerOf(voxel) == cornerCell)
+            if (voxel::cubeCornerOf(position) == cornerPosition)
             {
                 return true;
             }

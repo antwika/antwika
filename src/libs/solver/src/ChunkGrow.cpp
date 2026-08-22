@@ -5,73 +5,65 @@
 #include <utility>
 
 #include <antwika/voxel/VoxelCube.hpp>
-#include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/tilemap/TileEdges.hpp>
 
 namespace antwika::solver
 {
 
-    std::vector<voxel::VoxelCell> hintsFrom(
-        const std::vector<voxel::VoxelCell> &voxels,
+    voxel::Voxels hintsFrom(
+        const voxel::Voxels &voxels,
         const worldgen::ChunkShape shape,
-        const voxel::VoxelCell originPointCell)
+        const voxel::VoxelPosition originPointPosition)
     {
-        std::map<voxel::VoxelCell, voxel::VoxelCell> cubeCells;
+        voxel::Voxels hintVoxels;
 
-        for (const voxel::VoxelCell piece : voxels)
+        for (const auto &[piecePosition, material] : voxels)
         {
-            const auto corner = voxel::cubeCornerOf(piece);
-            const voxel::VoxelCell cubeCell{
-                .x = (corner.x / voxel::kCubeSide) - originPointCell.x,
-                .y = (corner.y / voxel::kCubeSide) - originPointCell.y,
-                .z = (corner.z / voxel::kCubeSide) - originPointCell.z};
+            const auto corner = voxel::cubeCornerOf(piecePosition);
+            const voxel::VoxelPosition cubePosition{
+                .x = (corner.x / voxel::kCubeSide) - originPointPosition.x,
+                .y = (corner.y / voxel::kCubeSide) - originPointPosition.y,
+                .z = (corner.z / voxel::kCubeSide) - originPointPosition.z};
 
-            if (!worldgen::within(shape, cubeCell))
+            if (!worldgen::within(shape, cubePosition))
             {
                 continue;
             }
 
-            const voxel::VoxelCell hintCell{
-                .x = cubeCell.x + originPointCell.x,
-                .y = cubeCell.y + originPointCell.y,
-                .z = cubeCell.z + originPointCell.z,
-                .kind = piece.kind,
-                .facing = piece.facing};
+            const voxel::VoxelPosition hintPosition{
+                .x = cubePosition.x + originPointPosition.x,
+                .y = cubePosition.y + originPointPosition.y,
+                .z = cubePosition.z + originPointPosition.z};
 
-            const auto standing = cubeCells.find(hintCell);
+            const auto standing = hintVoxels.find(hintPosition);
 
-            if (standing == cubeCells.end()
+            if (standing == hintVoxels.end()
                 || (standing->second.facing == voxel::Facing::Any
-                    && piece.facing != voxel::Facing::Any))
+                    && material.facing != voxel::Facing::Any))
             {
-                cubeCells[hintCell] = hintCell;
+                hintVoxels[hintPosition] = material;
             }
         }
 
-        std::vector<voxel::VoxelCell> hintCells;
-        hintCells.reserve(cubeCells.size());
-
-        for (const auto &[where, hintCell] : cubeCells)
-        {
-            hintCells.push_back(hintCell);
-        }
-
-        return hintCells;
+        return hintVoxels;
     } // GCOVR_EXCL_LINE
 
-    std::vector<voxel::VoxelCell> withChunkSpliced(
-        std::vector<voxel::VoxelCell> pileCell,
+    voxel::Voxels withChunkSpliced(
+        voxel::Voxels pileVoxels,
         const worldgen::VoxelBox box,
-        const std::vector<voxel::VoxelCell> &grownCell)
+        const voxel::Voxels &grownVoxels)
     {
         std::erase_if(
-            pileCell,
-            [box](const voxel::VoxelCell voxel)
-            { return worldgen::holds(box, voxel); });
+            pileVoxels,
+            [box](const auto &standing)
+            { return worldgen::holds(box, standing.first); });
 
-        pileCell.insert(pileCell.end(), grownCell.begin(), grownCell.end());
+        for (const auto &[position, material] : grownVoxels)
+        {
+            pileVoxels[position] = material;
+        }
 
-        return pileCell;
+        return pileVoxels;
     } // GCOVR_EXCL_LINE
 
     std::string growTrouble(const worldgen::ChunkResult &result)

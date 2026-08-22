@@ -9,7 +9,7 @@
 #include <antwika/input/Key.hpp>
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/rules/Gates.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 
 #include "antwika/editor/Editor.hpp"
@@ -28,14 +28,14 @@ namespace antwika::editor
     }
 
     void Editor::pressGate(
-        const voxel::VoxelCell cell, const input::MouseButton button)
+        const voxel::VoxelPosition position, const input::MouseButton button)
     {
-        auto &gateCells = tool == map::Tool::Key    ? map.keyCells
-                        : tool == map::Tool::Door  ? map.doorCells
-                        : tool == map::Tool::Food  ? map.foodCells
-                        : tool == map::Tool::Water ? map.waterCells
-                        : map.checkpointCells;
-        const auto foundCube = rules::gateCubeContaining(gateCells, cell);
+        auto &gateCells = tool == map::Tool::Key    ? map.keyPositions
+                        : tool == map::Tool::Door  ? map.doorPositions
+                        : tool == map::Tool::Food  ? map.foodPositions
+                        : tool == map::Tool::Water ? map.waterPositions
+                        : map.checkpointPositions;
+        const auto foundCube = rules::gateCubeContaining(gateCells, position);
 
         if (button == input::MouseButton::Right)
         {
@@ -47,7 +47,7 @@ namespace antwika::editor
             pushUndo();
             std::erase_if(
                 gateCells,
-                [this, corner = *foundCube](const voxel::VoxelCell one)
+                [this, corner = *foundCube](const voxel::VoxelPosition one)
                 {
                     const auto gone =
                         antwika::voxel::cubeCornerOf(one) == corner;
@@ -76,80 +76,81 @@ namespace antwika::editor
         }
 
         pushUndo();
-        gateCells.push_back(cell);
+        gateCells.push_back(position);
 
-        if (!rules::cubeOccupied(map.voxels, antwika::voxel::cubeCornerOf(cell))
+        if (!rules::cubeOccupied(map.voxels,
+            antwika::voxel::cubeCornerOf(position))
             || tool == map::Tool::Door)
         {
             map.voxels = voxel::withRampsRebuilt(
-                voxel::withBlockAt(map.voxels, cell), cell);
+                voxel::withBlockAt(map.voxels, position), position);
             rebuildWorld();
         }
     }
 
     void Editor::onSteppedWorld(const gfx::Vec3 walkerPosition)
     {
-        const voxel::VoxelCell standsInCell{
+        const voxel::VoxelPosition standsInPosition{
             .x = static_cast<std::int32_t>(
                 std::floor(walkerPosition.x / voxel::kVoxelSide)),
             .y = static_cast<std::int32_t>(
                 std::floor(walkerPosition.y / voxel::kVoxelSide)),
             .z = static_cast<std::int32_t>(
                 std::floor(walkerPosition.z / voxel::kVoxelSide))};
-        const voxel::VoxelCell standsOnCell{
-            .x = standsInCell.x,
-            .y = standsInCell.y - 1,
-            .z = standsInCell.z};
+        const voxel::VoxelPosition standsOnPosition{
+            .x = standsInPosition.x,
+            .y = standsInPosition.y - 1,
+            .z = standsInPosition.z};
 
-        onSteppedPlates(standsOnCell);
-        onSteppedGates(standsInCell, standsOnCell);
+        onSteppedPlates(standsOnPosition);
+        onSteppedGates(standsInPosition, standsOnPosition);
 
-        if (map.exitCubeCell.has_value()
-            && (antwika::voxel::cubeCornerOf(standsInCell)
-                    == antwika::voxel::cubeCornerOf(*map.exitCubeCell)
-                || antwika::voxel::cubeCornerOf(standsOnCell)
-                       == antwika::voxel::cubeCornerOf(*map.exitCubeCell)))
+        if (map.exitCubePosition.has_value()
+            && (antwika::voxel::cubeCornerOf(standsInPosition)
+                    == antwika::voxel::cubeCornerOf(*map.exitCubePosition)
+                || antwika::voxel::cubeCornerOf(standsOnPosition)
+                       == antwika::voxel::cubeCornerOf(*map.exitCubePosition)))
         {
             takeExit();
         }
     }
 
     void Editor::onSteppedGates(
-        const voxel::VoxelCell standsInCell,
-        const voxel::VoxelCell standsOnCell)
+        const voxel::VoxelPosition standsInPosition,
+        const voxel::VoxelPosition standsOnPosition)
     {
-        if (game->gates().lockedExitAnnouncedCell.has_value()
-            && (!map.exitCubeCell.has_value()
-                || (antwika::voxel::cubeCornerOf(standsInCell)
-                        != antwika::voxel::cubeCornerOf(*map.exitCubeCell)
-                    && antwika::voxel::cubeCornerOf(standsOnCell)
+        if (game->gates().lockedExitAnnouncedPosition.has_value()
+            && (!map.exitCubePosition.has_value()
+                || (antwika::voxel::cubeCornerOf(standsInPosition)
+                        != antwika::voxel::cubeCornerOf(*map.exitCubePosition)
+                    && antwika::voxel::cubeCornerOf(standsOnPosition)
                            != antwika::voxel::cubeCornerOf(
-                               *map.exitCubeCell))))
+                               *map.exitCubePosition))))
         {
-            game->gates().lockedExitAnnouncedCell.reset();
+            game->gates().lockedExitAnnouncedPosition.reset();
         }
 
-        onSteppedKeys(standsInCell, standsOnCell);
-        onSteppedCheckpoints(standsOnCell);
-        onSteppedDoors(standsInCell);
+        onSteppedKeys(standsInPosition, standsOnPosition);
+        onSteppedCheckpoints(standsOnPosition);
+        onSteppedDoors(standsInPosition);
     }
 
     void Editor::onSteppedKeys(
-        const voxel::VoxelCell standsInCell,
-        const voxel::VoxelCell standsOnCell)
+        const voxel::VoxelPosition standsInPosition,
+        const voxel::VoxelPosition standsOnPosition)
     {
-        for (const auto gateCell : {standsInCell, standsOnCell})
+        for (const auto gateCell : {standsInPosition, standsOnPosition})
         {
-            const auto foundCube = rules::gateCubeContaining(map.keyCells,
+            const auto foundCube = rules::gateCubeContaining(map.keyPositions,
             gateCell);
 
             if (!foundCube.has_value()
-                || game->gates().collectedKeyCells.contains(*foundCube))
+                || game->gates().collectedKeyPositions.contains(*foundCube))
             {
                 continue;
             }
 
-            game->gates().collectedKeyCells.insert(*foundCube);
+            game->gates().collectedKeyPositions.insert(*foundCube);
             game->gates().keysHeld += 1;
             sayCaption(
                 "a key",
@@ -184,17 +185,19 @@ namespace antwika::editor
             kind == component::ItemKind::Food ? "eaten" : "drunk");
     }
 
-    void Editor::onSteppedCheckpoints(const voxel::VoxelCell standsOnCell)
+    void Editor::onSteppedCheckpoints(
+        const voxel::VoxelPosition standsOnPosition)
     {
         const auto pad =
-            rules::gateCubeContaining(map.checkpointCells, standsOnCell);
+            rules::gateCubeContaining(map.checkpointPositions,
+                standsOnPosition);
 
-        if (pad.has_value() && game->gates().checkpointOnCell != pad)
+        if (pad.has_value() && game->gates().checkpointOnPosition != pad)
         {
             const auto stoodPosition =
                 game->world().get<component::Position>(game->player());
 
-            game->gates().checkpointOnCell = pad;
+            game->gates().checkpointOnPosition = pad;
             game->gates().checkpointPlacement = map::Placement{
                 .position = collision::positionOf(stoodPosition),
                 .way = game->world()
@@ -205,24 +208,24 @@ namespace antwika::editor
 
     }
 
-    void Editor::onSteppedDoors(const voxel::VoxelCell standsInCell)
+    void Editor::onSteppedDoors(const voxel::VoxelPosition standsInPosition)
     {
-        const auto adjacentDoorCell = rules::adjacentDoor(map.doorCells,
-        standsInCell);
+        const auto adjacentDoorCell = rules::adjacentDoor(map.doorPositions,
+        standsInPosition);
 
         if (!adjacentDoorCell.has_value())
         {
-            game->gates().announcedDoorCell.reset();
+            game->gates().announcedDoorPosition.reset();
 
             return;
         }
 
-        if (game->gates().announcedDoorCell == adjacentDoorCell)
+        if (game->gates().announcedDoorPosition == adjacentDoorCell)
         {
             return;
         }
 
-        game->gates().announcedDoorCell = adjacentDoorCell;
+        game->gates().announcedDoorPosition = adjacentDoorCell;
 
         if (game->gates().keysHeld == 0)
         {
@@ -234,7 +237,7 @@ namespace antwika::editor
 
         pushUndo();
 
-        const auto openedCells = rules::doorwayCells(map.doorCells,
+        const auto openedCells = rules::doorwayCells(map.doorPositions,
             *adjacentDoorCell);
 
         for (const auto doorCell : openedCells)
@@ -244,8 +247,8 @@ namespace antwika::editor
         }
 
         std::erase_if(
-            map.doorCells,
-            [&openedCells](const voxel::VoxelCell doorCell)
+            map.doorPositions,
+            [&openedCells](const voxel::VoxelPosition doorCell)
             {
                 return std::find(
                            openedCells.begin(),
@@ -273,12 +276,12 @@ namespace antwika::editor
             return true;
         }
 
-        if (map.exitCubeCell.has_value()
-            && game->gates().lockedExitAnnouncedCell
-                   != antwika::voxel::cubeCornerOf(*map.exitCubeCell))
+        if (map.exitCubePosition.has_value()
+            && game->gates().lockedExitAnnouncedPosition
+                   != antwika::voxel::cubeCornerOf(*map.exitCubePosition))
         {
-            game->gates().lockedExitAnnouncedCell =
-                antwika::voxel::cubeCornerOf(*map.exitCubeCell);
+            game->gates().lockedExitAnnouncedPosition =
+                antwika::voxel::cubeCornerOf(*map.exitCubePosition);
             sayCaption(
                 "the exit", "locked - a key would open it");
         }

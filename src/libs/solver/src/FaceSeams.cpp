@@ -47,7 +47,9 @@ namespace antwika::solver
                 const auto side = sideTowards(face.side, direction);
 
                 const voxelmap::FaceRef besideRef{
-                    .cell = offsetBy(face.cell, direction),
+                    .cell = voxel::voxelCellAt(
+                        offsetBy(face.cell.position(), direction),
+                        voxel::VoxelMaterial{}),
                     .side = face.side};
                 const auto lying = placedFaces.find(besideRef);
 
@@ -55,8 +57,9 @@ namespace antwika::solver
                     && sameSurface(faces[lying->second], face))
                 {
                     const auto kind =
-                        voxel::cubeCornerOf(face.cell)
-                                == voxel::cubeCornerOf(besideRef.cell)
+                        voxel::cubeCornerOf(face.cell.position())
+                                == voxel::cubeCornerOf(
+                                       besideRef.cell.position())
                                  ? voxel::EdgeKind::Interior
                                  : voxel::EdgeKind::Boundary;
 
@@ -85,8 +88,10 @@ namespace antwika::solver
                 }
 
                 const auto kind =
-                    atCubeFace(face.cell, voxelmap::faceNormal(face.side))
-                            && atCubeFace(face.cell, direction)
+                    atCubeFace(
+                        face.cell.position(),
+                        voxelmap::faceNormal(face.side))
+                            && atCubeFace(face.cell.position(), direction)
                         ? voxel::EdgeKind::Boundary
                         : voxel::EdgeKind::Interior;
 
@@ -122,8 +127,9 @@ namespace antwika::solver
 
         for (const auto &seam : seams)
         {
-            if (voxelmap::levelOf(faces[seam.faceA].cell) == level
-                && voxelmap::levelOf(faces[seam.faceB].cell) == level)
+            if (voxelmap::levelOf(faces[seam.faceA].cell.position()) == level
+                && voxelmap::levelOf(faces[seam.faceB].cell.position(
+                    )) == level)
             {
                 hereSeams.push_back(seam);
             }
@@ -141,8 +147,10 @@ namespace antwika::solver
 
         for (const auto &seam : seams)
         {
-            const auto hereSeams = voxelmap::levelOf(faces[seam.faceA].cell);
-            const auto thereLevel = voxelmap::levelOf(faces[seam.faceB].cell);
+            const auto hereSeams = voxelmap::levelOf(
+                faces[seam.faceA].cell.position());
+            const auto thereLevel = voxelmap::levelOf(
+                faces[seam.faceB].cell.position());
 
             if ((hereSeams == level) != (thereLevel == level))
             {

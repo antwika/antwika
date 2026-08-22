@@ -2,7 +2,6 @@
 #include <cmath>
 #include <deque>
 #include <map>
-#include <set>
 #include <utility>
 
 #include <antwika/gfx/Bitmap.hpp>
@@ -13,19 +12,19 @@ namespace antwika::voxelmap
 {
 
     std::vector<LineSegment> occluderFootprints(
-        const std::set<voxel::VoxelCell> &hiddenCells)
+        const voxel::Voxels &hiddenVoxels)
     {
         std::map<std::pair<std::int32_t, std::int32_t>, std::int32_t>
             floors;
 
-        for (const auto cell : hiddenCells)
+        for (const auto &[position, material] : hiddenVoxels)
         {
-            const auto key = std::pair{cell.x, cell.z};
+            const auto key = std::pair{position.x, position.z};
             const auto foundFloor = floors.find(key);
 
-            if (foundFloor == floors.end() || cell.y < foundFloor->second)
+            if (foundFloor == floors.end() || position.y < foundFloor->second)
             {
-                floors[key] = cell.y;
+                floors[key] = position.y;
             }
         }
 
@@ -33,7 +32,7 @@ namespace antwika::voxelmap
                            const std::int32_t y,
                            const std::int32_t z)
         {
-            return cellMiddle(voxel::VoxelCell{.x = x, .y = y, .z = z})
+            return cellMiddle(voxel::VoxelPosition{.x = x, .y = y, .z = z})
                    - gfx::Vec3{
                        voxel::kVoxelSide / 2.0F,
                        voxel::kVoxelSide / 2.0F,
@@ -46,42 +45,44 @@ namespace antwika::voxelmap
         {
             const auto &[x, z] = column;
             const auto corner = latticeAt(x, level, z);
-            const auto acrossCell = latticeAt(x + 1, level, z);
-            const auto alongCell = latticeAt(x, level, z + 1);
+            const auto acrossPoint = latticeAt(x + 1, level, z);
+            const auto alongPoint = latticeAt(x, level, z + 1);
             const auto both = latticeAt(x + 1, level, z + 1);
 
             segments.push_back(
                 LineSegment{
                     .fromPosition = corner,
-                    .toPosition = acrossCell});
+                    .toPosition = acrossPoint});
             segments.push_back(
                 LineSegment{
                     .fromPosition = corner,
-                    .toPosition = alongCell});
+                    .toPosition = alongPoint});
             segments.push_back(
                 LineSegment{
-                    .fromPosition = acrossCell,
+                    .fromPosition = acrossPoint,
                     .toPosition = both});
             segments.push_back(
                 LineSegment{
-                    .fromPosition = alongCell,
+                    .fromPosition = alongPoint,
                     .toPosition = both});
         }
 
         return segments;
     } // GCOVR_EXCL_LINE
 
-    voxel::VoxelCell occlusionMaskOrigin(const voxel::VoxelCell aboutCell)
+    voxel::VoxelPosition occlusionMaskOrigin(
+        const voxel::VoxelPosition aboutPosition)
     {
         const auto arm =
             static_cast<std::int32_t>(kOcclusionMaskWidth) / 2;
 
-        return voxel::VoxelCell{.x = aboutCell.x - arm, .z = aboutCell.z - arm};
+        return voxel::VoxelPosition{
+            .x = aboutPosition.x - arm, .z = aboutPosition.z - arm};
     }
 
     gfx::Bitmap occlusionMask(
-        const std::set<voxel::VoxelCell> &hiddenCells,
-        const voxel::VoxelCell cornerCell)
+        const voxel::Voxels &hiddenVoxels,
+        const voxel::VoxelPosition cornerPosition)
     {
         gfx::Bitmap bitmap{
             .size =
@@ -94,11 +95,11 @@ namespace antwika::voxelmap
                     * gfx::kBytesPerPixel,
                 0)};
 
-        for (const auto cell : hiddenCells)
+        for (const auto &[position, material] : hiddenVoxels)
         {
-            const auto acrossOffset = cell.x - cornerCell.x;
-            const auto alongOffset = cell.z - cornerCell.z;
-            const auto level = cell.y;
+            const auto acrossOffset = position.x - cornerPosition.x;
+            const auto alongOffset = position.z - cornerPosition.z;
+            const auto level = position.y;
 
             if (acrossOffset < 0 || alongOffset < 0
                 || acrossOffset >= static_cast<std::int32_t>(

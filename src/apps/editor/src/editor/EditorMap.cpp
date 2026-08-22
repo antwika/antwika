@@ -16,7 +16,7 @@
 #include <antwika/rules/Orientation.hpp>
 #include <antwika/solver/VoxelWeave.hpp>
 #include <antwika/tilemap/AtlasLayout.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 
 #include "antwika/editor/Editor.hpp"
@@ -24,25 +24,25 @@
 namespace antwika::editor
 {
 
-    std::vector<voxel::VoxelCell> Editor::visibleCells()
+    voxel::Voxels Editor::visibleCells()
     {
         if (!hideAboveLevel || playing)
         {
             return map.voxels;
         }
 
-        std::vector<antwika::voxel::VoxelCell> keptCells;
+        voxel::Voxels keptVoxels;
 
-        for (const auto cell : map.voxels)
+        for (const auto &[position, material] : map.voxels)
         {
-            if (cell.y
+            if (position.y
                 <= antwika::voxel::cubeTop(editLevel) - voxel::kCubeSide)
             {
-                keptCells.push_back(cell);
+                keptVoxels[position] = material;
             }
         }
 
-        return keptCells;
+        return keptVoxels;
     }
 
     void Editor::rebuildDecorMesh()
@@ -566,7 +566,7 @@ namespace antwika::editor
 
     void Editor::applyStep(map::Snapshot stepSnapshot)
     {
-        growTroubleCells.clear();
+        growTroublePositions.clear();
         map = std::move(stepSnapshot.map);
         atlasSheets.take(std::move(stepSnapshot.pixelBitmaps));
         characterView.takeSkins(

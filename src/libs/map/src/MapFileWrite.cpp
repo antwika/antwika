@@ -34,27 +34,27 @@ namespace antwika::map
     namespace
     {
             [[nodiscard]] nlohmann::json writtenVoxels(
-                const std::vector<voxel::VoxelCell> &cells)
+                const voxel::Voxels &voxels)
             {
                 auto arrayJson = nlohmann::json::array();
 
-                for (const auto cell : cells)
+                for (const auto &[position, material] : voxels)
                 {
-                    nlohmann::json voxel;
+                    nlohmann::json writtenVoxel;
 
-                    voxel[std::string(kAtKey)] =
+                    writtenVoxel[std::string(kAtKey)] =
                         nlohmann::json::array(
-                            {cell.x, cell.y, cell.z});
-                    voxel[std::string(kKindKey)] =
-                        std::string(nameOf(cell.kind));
+                            {position.x, position.y, position.z});
+                    writtenVoxel[std::string(kKindKey)] =
+                        std::string(nameOf(material.kind));
 
-                    if (cell.facing != voxel::Facing::Any)
+                    if (material.facing != voxel::Facing::Any)
                     {
-                        voxel[std::string(kClimbKey)] =
-                            std::string(nameOf(cell.facing));
+                        writtenVoxel[std::string(kClimbKey)] =
+                            std::string(nameOf(material.facing));
                     }
 
-                    arrayJson.push_back(voxel);
+                    arrayJson.push_back(writtenVoxel);
                 }
 
                 return arrayJson;
@@ -86,7 +86,9 @@ namespace antwika::map
 
                     lampJson[std::string(kAtKey)] =
                         nlohmann::json::array(
-                            {lamp.cell.x, lamp.cell.y, lamp.cell.z});
+                            {lamp.position.x,
+                             lamp.position.y,
+                             lamp.position.z});
                     lampJson[std::string(kTintKey)] =
                         nlohmann::json::array(
                             {lamp.tintColor.red,
@@ -100,9 +102,9 @@ namespace antwika::map
                 return arrayJson;
             } // GCOVR_EXCL_LINE
             [[nodiscard]] nlohmann::json writtenMarkedCube(
-                const std::optional<voxel::VoxelCell> &cell)
+                const std::optional<voxel::VoxelPosition> &position)
             {
-                if (!cell.has_value())
+                if (!position.has_value())
                 {
                     return {};
                 }
@@ -110,7 +112,7 @@ namespace antwika::map
                 nlohmann::json objectJson;
 
                 objectJson[std::string(kAtKey)] = nlohmann::json::array(
-                    {cell->x, cell->y, cell->z});
+                    {position->x, position->y, position->z});
 
                 return objectJson;
             } // GCOVR_EXCL_LINE
@@ -367,9 +369,9 @@ namespace antwika::map
 
         writeLatest(document, map);
         document[std::string(kStartKey)] =
-            writtenMarkedCube(map.spawnCubeCell);
+            writtenMarkedCube(map.spawnCubePosition);
         document[std::string(kExitKey)] =
-            writtenMarkedCube(map.exitCubeCell);
+            writtenMarkedCube(map.exitCubePosition);
         document[std::string(kExitTargetKey)] = map.exitTarget;
 
         auto figures = nlohmann::json::array();
@@ -391,7 +393,7 @@ namespace antwika::map
 
             auto stops = nlohmann::json::array();
 
-            for (const auto stop : figure.patrolPathCells)
+            for (const auto stop : figure.patrolPathPositions)
             {
                 stops.push_back(
                     nlohmann::json::array(
@@ -417,11 +419,13 @@ namespace antwika::map
 
             plateJson[std::string(kAtKey)] =
                 nlohmann::json::array(
-                    {plate.cell.x, plate.cell.y, plate.cell.z});
+                    {plate.position.x,
+                     plate.position.y,
+                     plate.position.z});
 
             auto sways = nlohmann::json::array();
 
-            for (const auto sway : plate.toggleCells)
+            for (const auto sway : plate.togglePositions)
             {
                 sways.push_back(
                     nlohmann::json::array(

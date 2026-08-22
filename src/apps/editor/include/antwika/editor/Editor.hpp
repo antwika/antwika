@@ -130,7 +130,7 @@ namespace antwika::editor
 
         render::WorldMeshes worldMeshes;
 
-        std::vector<std::vector<voxel::VoxelCell>> patrolCells;
+        std::vector<std::vector<voxel::VoxelPosition>> patrolPositions;
         std::int32_t editLevel = 0;
         bool hideAboveLevel = false;
         bool playing = false;
@@ -201,7 +201,7 @@ namespace antwika::editor
 
         worldgen::ChunkShape growShape{};
 
-        std::vector<voxel::VoxelCell> growTroubleCells;
+        std::vector<voxel::VoxelPosition> growTroublePositions;
 
         PointerTrack pointer;
 
@@ -210,11 +210,11 @@ namespace antwika::editor
 
         bool remeshPending = false;
 
-        std::optional<voxel::VoxelCell> shapeFromCell;
+        std::optional<voxel::VoxelPosition> shapeFromPosition;
         std::optional<light::Lamp> draggedLamp;
 
-        std::vector<voxel::VoxelCell> stampCells;
-        std::optional<voxel::VoxelCell> stampFromCell;
+        voxel::Voxels stampVoxels;
+        std::optional<voxel::VoxelPosition> stampFromPosition;
 
         std::optional<std::size_t> figurePicked;
         bool figurePlaced = false;
@@ -222,7 +222,7 @@ namespace antwika::editor
         Caption caption;
 
         std::optional<std::size_t> platePicked;
-        std::optional<voxel::VoxelCell> lastPlateStoodOnCell;
+        std::optional<voxel::VoxelPosition> lastPlateStoodOnPosition;
 
         KeyBindings bindings = defaultChords();
         input::ActionMap actions = actionMapFrom(bindings);
@@ -263,7 +263,7 @@ namespace antwika::editor
         std::optional<gfx::RectF> canvasRect;
 
         std::optional<input::MouseButton> dragPaintButton;
-        std::optional<voxel::VoxelCell> lastPaintedCell;
+        std::optional<voxel::VoxelPosition> lastPaintedPosition;
 
         render::LightPasses lightPasses;
 
@@ -277,7 +277,7 @@ namespace antwika::editor
         [[nodiscard]] bool pollWindow();
         void pollInputs();
 
-        [[nodiscard]] std::vector<voxel::VoxelCell> visibleCells();
+        [[nodiscard]] voxel::Voxels visibleCells();
         void rebuildDecorMesh();
         void rebuildWorld();
         [[nodiscard]] map::Placement startingPlacement();
@@ -335,24 +335,25 @@ namespace antwika::editor
             std::chrono::time_point<std::chrono::system_clock>
                 startedAt);
 
-        [[nodiscard]] std::vector<voxel::VoxelCell> shapedCubes(
-            voxel::VoxelCell fromCell, voxel::VoxelCell toCell) const;
+        [[nodiscard]] std::vector<voxel::VoxelPosition> shapedCubes(
+            voxel::VoxelPosition fromPosition,
+            voxel::VoxelPosition toPosition) const;
 
         bool beginShape(
-            voxel::VoxelCell cell, input::MouseButton button);
+            voxel::VoxelPosition position, input::MouseButton button);
 
         void finishShape(input::MouseButton button);
 
         void placeStartOrExit(
-            voxel::VoxelCell cell, input::MouseButton button);
+            voxel::VoxelPosition position, input::MouseButton button);
 
         void pressStamp(
-            voxel::VoxelCell cell, input::MouseButton button);
+            voxel::VoxelPosition position, input::MouseButton button);
 
         void finishStamp(input::MouseButton button);
 
-        [[nodiscard]] std::vector<voxel::VoxelCell> stampGhost(
-            voxel::VoxelCell positionCell) const;
+        [[nodiscard]] std::vector<voxel::VoxelPosition> stampGhost(
+            voxel::VoxelPosition positionCell) const;
 
         [[nodiscard]] std::string characterSheetPath(
             std::size_t position) const;
@@ -362,7 +363,7 @@ namespace antwika::editor
         void saveCharacterSkins();
 
         void pressFigure(
-            voxel::VoxelCell cell, input::MouseButton button);
+            voxel::VoxelPosition position, input::MouseButton button);
 
         void ensurePlayerInRoster();
 
@@ -386,9 +387,9 @@ namespace antwika::editor
         void interact();
 
         void pressPlate(
-            voxel::VoxelCell cell, input::MouseButton button);
+            voxel::VoxelPosition position, input::MouseButton button);
 
-        void onSteppedPlates(voxel::VoxelCell standsOnCell);
+        void onSteppedPlates(voxel::VoxelPosition standsOnPosition);
 
         void layoutWorldRail(ui::Context &context);
 
@@ -414,14 +415,16 @@ namespace antwika::editor
         void pressedOnSheets(
             const input::PointerButtonPressed &downPressed);
         void pressGate(
-            voxel::VoxelCell cell, input::MouseButton button);
+            voxel::VoxelPosition position, input::MouseButton button);
         [[nodiscard]] std::vector<light::ActiveLight> currentLights();
         void onSteppedGates(
-            voxel::VoxelCell standsInCell, voxel::VoxelCell standsOnCell);
+            voxel::VoxelPosition standsInPosition,
+            voxel::VoxelPosition standsOnPosition);
         void onSteppedKeys(
-            voxel::VoxelCell standsInCell, voxel::VoxelCell standsOnCell);
-        void onSteppedCheckpoints(voxel::VoxelCell standsOnCell);
-        void onSteppedDoors(voxel::VoxelCell standsInCell);
+            voxel::VoxelPosition standsInPosition,
+            voxel::VoxelPosition standsOnPosition);
+        void onSteppedCheckpoints(voxel::VoxelPosition standsOnPosition);
+        void onSteppedDoors(voxel::VoxelPosition standsInPosition);
         void onSteppedWorld(gfx::Vec3 walkerPosition);
         [[nodiscard]] bool tryUnlockExit();
         void resetGates();
@@ -466,7 +469,7 @@ namespace antwika::editor
             component::Position stoodPosition,
             component::AnimationState posedState);
 
-        bool beginLampCarry(voxel::VoxelCell cell);
+        bool beginLampCarry(voxel::VoxelPosition position);
 
         void carryLamp();
 

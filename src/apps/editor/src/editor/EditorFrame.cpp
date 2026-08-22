@@ -10,7 +10,7 @@
 #include <antwika/light/PointLight.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/ui/HoverHint.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/voxel/VoxelOcclusion.hpp>
 #include <antwika/voxelmap/VoxelPick.hpp>
@@ -131,7 +131,7 @@ namespace antwika::editor
             const auto aimedRotation =
                 playing
                     ? std::optional<
-                          antwika::voxel::VoxelCell>{}
+                          antwika::voxel::VoxelPosition>{}
                     : voxelmap::cellUnder(
                           worldCamera(),
                           model,
@@ -145,7 +145,7 @@ namespace antwika::editor
                           static_cast<float>(
                               aimedRotation.value_or(
                                         antwika::voxel::
-                                            VoxelCell{})
+                                            VoxelPosition{})
                                   .x)
                               + 0.5F,
                           static_cast<float>(
@@ -155,7 +155,7 @@ namespace antwika::editor
                           static_cast<float>(
                               aimedRotation.value_or(
                                         antwika::voxel::
-                                            VoxelCell{})
+                                            VoxelPosition{})
                                   .z)
                               + 0.5F};
             const auto hideFrom = clockSource.now();
@@ -163,24 +163,23 @@ namespace antwika::editor
                 playing || aimedRotation.has_value()
                     ? antwika::voxel::occludingVoxels(
                           worldMeshes.cells(), anchoredTarget)
-                    : std::set<
-                          antwika::voxel::VoxelCell>{};
+                    : antwika::voxel::Voxels{};
 
-            pointer.hoveredCell = aimedRotation;
+            pointer.hoveredPosition = aimedRotation;
 
             if (aimedRotation.has_value())
             {
                 std::erase_if(
                     behind,
                     [pad = antwika::voxel::cubeCornerOf(*aimedRotation)](
-                        const antwika::voxel::VoxelCell &cell)
+                        const auto &standing)
                     {
-                        return antwika::voxel::cubeCornerOf(cell)
+                        return antwika::voxel::cubeCornerOf(standing.first)
                                == pad;
                     });
             }
 
-            const antwika::voxel::VoxelCell aboutCell{
+            const antwika::voxel::VoxelPosition aboutPosition{
                 .x = static_cast<std::int32_t>(
                     std::floor(
                         anchoredTarget.x / antwika::voxel::kVoxelSide)),
@@ -188,7 +187,8 @@ namespace antwika::editor
                     std::floor(
                         anchoredTarget.z / antwika::voxel::kVoxelSide))};
 
-            lightPasses.hide(viewportRenderer, std::move(behind), aboutCell);
+            lightPasses.hide(viewportRenderer, std::move(behind),
+                aboutPosition);
 
             meters.hideRate.record(
                 std::chrono::duration_cast<
@@ -196,7 +196,7 @@ namespace antwika::editor
                     clockSource.now() - hideFrom));
 
             const auto corner =
-                voxelmap::occlusionMaskOrigin(aboutCell);
+                voxelmap::occlusionMaskOrigin(aboutPosition);
             const auto lights = currentLights();
 
             const auto lampFrom = clockSource.now();
@@ -229,7 +229,7 @@ namespace antwika::editor
                                + 0.5F)
                                   * antwika::voxel::kVoxelSide,
                     .carrying = std::optional<std::size_t>{},
-                    .hidingCornerCell = corner,
+                    .hidingCornerPosition = corner,
                     .sightPoint =
                         antwika::voxel::lineOfSight(walkerPosition),
                     .sightSlot = 0,

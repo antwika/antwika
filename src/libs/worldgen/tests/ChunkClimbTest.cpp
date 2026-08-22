@@ -18,6 +18,8 @@ using antwika::pathfinding::GridPos;
 using antwika::pathfinding::pathBetween;
 using antwika::voxel::Kind;
 using antwika::voxel::VoxelCell;
+using antwika::voxel::voxelsOf;
+using antwika::voxel::VoxelPosition;
 using antwika::worldgen::ChunkOutcome;
 using antwika::worldgen::ChunkRequest;
 using antwika::worldgen::ChunkResult;
@@ -47,7 +49,7 @@ namespace
     [[nodiscard]] bool climbable(
         const ChunkResult &result, const std::int32_t roof)
     {
-        const FakeChunkWalkGraph graph(kSmallShape, result.cubeCells);
+        const FakeChunkWalkGraph graph(kSmallShape, result.cubeVoxels);
         const auto cap = static_cast<std::uint64_t>(cubeCount(kSmallShape));
 
         for (const GridPos street : graph.streets())
@@ -85,15 +87,15 @@ TEST(ChunkClimbTest, Grow_LeavesAWayFromTheStreetToTheHighestTerrace)
 
 TEST(ChunkClimbTest, Grow_LeavesAWayUpAroundTheCubesTheArtistPainted)
 {
-    const std::vector<VoxelCell> hintCells{
+    const auto hintVoxels = voxelsOf({
         VoxelCell{.x = 2, .y = 4, .z = 2, .kind = Kind::Normal},
         VoxelCell{.x = 3, .y = 4, .z = 2, .kind = Kind::Normal},
-        VoxelCell{.x = 2, .y = 4, .z = 3, .kind = Kind::Normal}};
+        VoxelCell{.x = 2, .y = 4, .z = 3, .kind = Kind::Normal}});
 
     const auto result = growChunk(
         city(),
         ChunkRequest{
-            .seed = 3, .shape = kSmallShape, .hintCells = hintCells});
+            .seed = 3, .shape = kSmallShape, .hintVoxels = hintVoxels});
 
     ASSERT_EQ(result.outcome, ChunkOutcome::Grown);
     EXPECT_TRUE(climbable(result, roofOf()));
@@ -106,7 +108,7 @@ TEST(ChunkClimbTest, Grow_LeavesAStreetToSetOutFromEvenWithNoWayUp)
 
     ASSERT_EQ(result.outcome, ChunkOutcome::Grown);
 
-    const FakeChunkWalkGraph graph(kSmallShape, result.cubeCells);
+    const FakeChunkWalkGraph graph(kSmallShape, result.cubeVoxels);
 
     EXPECT_FALSE(graph.streets().empty());
 }

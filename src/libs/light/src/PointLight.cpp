@@ -9,7 +9,7 @@ namespace antwika::light
 
     gfx::Vec3 lampPosition(const Lamp lamp)
     {
-        return voxelmap::cellMiddle(lamp.cell);
+        return voxelmap::cellMiddle(lamp.position);
     }
 
     gfx::Size shadowAtlasSize()
@@ -68,13 +68,13 @@ namespace antwika::light
     } // GCOVR_EXCL_LINE
 
     std::vector<Lamp> withoutLampAt(
-        const std::vector<Lamp> &lamps, const voxel::VoxelCell cell)
+        const std::vector<Lamp> &lamps, const voxel::VoxelPosition position)
     {
         std::vector<Lamp> keptLamps;
 
         for (const auto lamp : lamps)
         {
-            if (!(lamp.cell == cell))
+            if (!(lamp.position == position))
             {
                 keptLamps.push_back(lamp);
             }
@@ -85,17 +85,18 @@ namespace antwika::light
 
     std::vector<Lamp> withLampAt(
         const std::vector<Lamp> &lamps,
-        const voxel::VoxelCell cell,
+        const voxel::VoxelPosition position,
         const gfx::Color tintColor)
     {
-        auto updatedLamps = withoutLampAt(lamps, cell);
+        auto updatedLamps = withoutLampAt(lamps, position);
 
         if (updatedLamps.size() >= kMaxLamps)
         {
             return lamps;
         }
 
-        updatedLamps.push_back(Lamp{.cell = cell, .tintColor = tintColor});
+        updatedLamps.push_back(Lamp{.position = position,
+            .tintColor = tintColor});
 
         return updatedLamps;
     } // GCOVR_EXCL_LINE

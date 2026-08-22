@@ -5,7 +5,8 @@
 #include <antwika/ecs/World.hpp>
 #include <antwika/input/DirectionKeys.hpp>
 #include <antwika/time/Tick.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
+#include <antwika/voxel/Voxels.hpp>
 #include <antwika/collision/Collision.hpp>
 
 namespace antwika::system
@@ -15,12 +16,12 @@ namespace antwika::system
     {
     public:
         explicit WalkSystem(
-            const std::set<voxel::VoxelCell> &solidCells) noexcept;
+            const voxel::Voxels &solidVoxels) noexcept;
 
         void update(ecs::World &world, time::Tick tick) override;
 
     private:
-        const std::set<voxel::VoxelCell> *solidCells;
+        const voxel::Voxels *solidVoxels;
     };
 
 }

@@ -24,6 +24,7 @@
 #include "antwika/render/LightPasses.hpp"
 
 using antwika::render::LightPasses;
+using antwika::voxel::Voxels;
 using antwika::gfx::IMesh;
 using antwika::gfx::IRenderTarget;
 using antwika::gfx::IShader;
@@ -39,7 +40,9 @@ using antwika::gfx::mocks::MockShader;
 using antwika::gfx::mocks::MockTexture;
 using antwika::light::ActiveLight;
 using antwika::voxel::VoxelCell;
+using antwika::voxel::voxelsOf;
 using ::testing::NiceMock;
+using antwika::voxel::VoxelPosition;
 
 namespace
 {
@@ -112,10 +115,10 @@ TEST(LightPassesTest, Hide_DrawsTheMaskOnceForTheSameCubesAndPlace)
     handsOutResources(innerRenderer);
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     LightPasses passes;
-    const std::set<VoxelCell> behindCells{VoxelCell{.x = 1, .z = 2}};
+    const auto behindCells = voxelsOf({VoxelCell{.x = 1, .z = 2}});
 
     passes.open(viewportRenderer, ShaderSource{});
-    passes.hide(viewportRenderer, behindCells, VoxelCell{});
+    passes.hide(viewportRenderer, behindCells, VoxelPosition{});
 
     EXPECT_EQ(passes.hidden(), behindCells);
     EXPECT_NE(passes.hiding(), nullptr);
@@ -123,7 +126,7 @@ TEST(LightPassesTest, Hide_DrawsTheMaskOnceForTheSameCubesAndPlace)
     EXPECT_CALL(innerRenderer, createTexture).Times(0);
     EXPECT_CALL(innerRenderer, updateTexture).Times(0);
 
-    passes.hide(viewportRenderer, behindCells, VoxelCell{});
+    passes.hide(viewportRenderer, behindCells, VoxelPosition{});
 }
 
 TEST(LightPassesTest, Hide_DrawsTheMaskAfreshWhereTheCubesChanged)
@@ -134,11 +137,13 @@ TEST(LightPassesTest, Hide_DrawsTheMaskAfreshWhereTheCubesChanged)
     LightPasses passes;
 
     passes.open(viewportRenderer, ShaderSource{});
-    passes.hide(viewportRenderer, {VoxelCell{.x = 1, .z = 2}}, VoxelCell{});
+    passes.hide(viewportRenderer, voxelsOf({VoxelCell{.x = 1, .z = 2}}),
+        VoxelPosition{});
 
     EXPECT_CALL(innerRenderer, updateTexture).Times(1);
 
-    passes.hide(viewportRenderer, {VoxelCell{.x = 3, .z = 4}}, VoxelCell{});
+    passes.hide(viewportRenderer, voxelsOf({VoxelCell{.x = 3, .z = 4}}),
+        VoxelPosition{});
 
     EXPECT_EQ(passes.hidden().size(), 1U);
 }

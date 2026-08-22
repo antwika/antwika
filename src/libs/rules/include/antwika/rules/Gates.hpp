@@ -4,25 +4,25 @@
 #include <span>
 #include <vector>
 
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
+#include <antwika/voxel/Voxels.hpp>
 
 namespace antwika::rules
 {
 
-    [[nodiscard]] std::optional<voxel::VoxelCell> gateCubeContaining(
-        std::span<const voxel::VoxelCell> gateCells,
-        voxel::VoxelCell cell);
+    [[nodiscard]] std::optional<voxel::VoxelPosition> gateCubeContaining(
+        std::span<const voxel::VoxelPosition> gatePositions,
+        voxel::VoxelPosition position);
 
-    [[nodiscard]] std::optional<voxel::VoxelCell> adjacentDoor(
-        std::span<const voxel::VoxelCell> doorCells,
-        voxel::VoxelCell standsInCell);
+    [[nodiscard]] std::optional<voxel::VoxelPosition> adjacentDoor(
+        std::span<const voxel::VoxelPosition> doorPositions,
+        voxel::VoxelPosition standsInPosition);
 
-    [[nodiscard]] std::vector<voxel::VoxelCell> doorwayCells(
-        std::span<const voxel::VoxelCell> doorCells,
-        voxel::VoxelCell cornerCell);
+    [[nodiscard]] std::vector<voxel::VoxelPosition> doorwayCells(
+        std::span<const voxel::VoxelPosition> doorPositions,
+        voxel::VoxelPosition cornerPosition);
 
     [[nodiscard]] bool cubeOccupied(
-        std::span<const voxel::VoxelCell> voxels,
-        voxel::VoxelCell cornerCell);
+        const voxel::Voxels &voxels, voxel::VoxelPosition cornerPosition);
 
 }

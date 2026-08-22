@@ -12,7 +12,7 @@
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
 
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxelmap/Voxel.hpp>
 #include <antwika/voxelmap/VoxelPick.hpp>
 #include <antwika/collision/Collision.hpp>
@@ -36,7 +36,7 @@ namespace antwika::light
 
     struct Lamp final
     {
-        voxel::VoxelCell cell{};
+        voxel::VoxelPosition position{};
 
         gfx::Color tintColor = component::kLampTintColor;
 
@@ -47,7 +47,7 @@ namespace antwika::light
     [[nodiscard]] gfx::Vec3 lampPosition(Lamp lamp);
 
     [[nodiscard]] std::vector<Lamp> withoutLampAt(
-        const std::vector<Lamp> &lamps, voxel::VoxelCell cells);
+        const std::vector<Lamp> &lamps, voxel::VoxelPosition position);
 
     inline constexpr std::uint32_t kShadowFaceResolution = 512;
 
@@ -70,7 +70,7 @@ namespace antwika::light
 
     [[nodiscard]] std::vector<Lamp> withLampAt(
         const std::vector<Lamp> &lamps,
-        voxel::VoxelCell cells,
+        voxel::VoxelPosition position,
         gfx::Color tintColor);
 
 }

@@ -102,9 +102,9 @@ namespace
 
     TEST(DecorTest, SolveDecor_LaysNothingAtAFrequencyOfNought)
     {
-        const auto cells = antwika::voxel::expandCubesToVoxels(
-            {antwika::voxel::VoxelCell{}});
-        const auto faces = visibleFacesOf(cells);
+        const auto voxels = antwika::voxel::expandCubesToVoxels(
+            antwika::voxel::voxelsOf({antwika::voxel::VoxelCell{}}));
+        const auto faces = visibleFacesOf(voxels);
         const auto drawnTiles = defaultTiles(faces);
         auto decor = withDecorToggled({}, kOneTile);
 
@@ -152,20 +152,20 @@ namespace
 
     TEST(DecorTest, SolveDecor_PassesOverADecorOfNoWeight)
     {
-        std::vector<antwika::voxel::VoxelCell> cubeCells;
+        antwika::voxel::Voxels cubeVoxels;
 
         for (std::int32_t x = 0; x < 4; ++x)
         {
             for (std::int32_t z = 0; z < 4; ++z)
             {
-                cubeCells.push_back(
-                    antwika::voxel::VoxelCell{.x = x, .z = z});
+                cubeVoxels[antwika::voxel::VoxelPosition{.x = x, .z = z}] =
+                    antwika::voxel::VoxelMaterial{};
             }
         }
 
-        const auto cells =
-            antwika::voxel::expandCubesToVoxels(cubeCells);
-        const auto faces = visibleFacesOf(cells);
+        const auto voxels =
+            antwika::voxel::expandCubesToVoxels(cubeVoxels);
+        const auto faces = visibleFacesOf(voxels);
         constexpr Tile kBaseTile{.atlas = Atlas::Floor, .index = 9};
         constexpr Tile kWantedTile{.atlas = Atlas::Floor, .index = 26};
         constexpr Tile kShunnedTile{.atlas = Atlas::Floor, .index = 27};
@@ -194,20 +194,20 @@ namespace
 
     TEST(DecorTest, SolveDecor_MixesTheDecorABaseOffersMoreThanOneOf)
     {
-        std::vector<antwika::voxel::VoxelCell> cubeCells;
+        antwika::voxel::Voxels cubeVoxels;
 
         for (std::int32_t x = 0; x < 4; ++x)
         {
             for (std::int32_t z = 0; z < 4; ++z)
             {
-                cubeCells.push_back(
-                    antwika::voxel::VoxelCell{.x = x, .z = z});
+                cubeVoxels[antwika::voxel::VoxelPosition{.x = x, .z = z}] =
+                    antwika::voxel::VoxelMaterial{};
             }
         }
 
-        const auto cells =
-            antwika::voxel::expandCubesToVoxels(cubeCells);
-        const auto faces = visibleFacesOf(cells);
+        const auto voxels =
+            antwika::voxel::expandCubesToVoxels(cubeVoxels);
+        const auto faces = visibleFacesOf(voxels);
         constexpr Tile kBaseTile{.atlas = Atlas::Floor, .index = 9};
 
         std::vector<Tile> drawnTiles(faces.size(), kBaseTile);
@@ -255,9 +255,9 @@ namespace
 
     TEST(DecorTest, SolveDecorLayers_LaysTheLayersOverOneAnother)
     {
-        const auto cells = antwika::voxel::expandCubesToVoxels(
-            {antwika::voxel::VoxelCell{}});
-        const auto faces = visibleFacesOf(cells);
+        const auto voxels = antwika::voxel::expandCubesToVoxels(
+            antwika::voxel::voxelsOf({antwika::voxel::VoxelCell{}}));
+        const auto faces = visibleFacesOf(voxels);
         constexpr Tile kBaseTile{.atlas = Atlas::Floor, .index = 9};
         constexpr Tile kUnderTile{.atlas = Atlas::Floor, .index = 26};
         constexpr Tile kOverTile{.atlas = Atlas::Floor, .index = 27};
@@ -345,9 +345,9 @@ namespace
 
     TEST(DecorTest, SolveDecor_DressesAWallItsBasesAllow)
     {
-        const std::vector<antwika::voxel::VoxelCell> cells{
-            antwika::voxel::VoxelCell{}};
-        const auto faces = visibleFacesOf(cells);
+        const auto voxels = antwika::voxel::voxelsOf({
+            antwika::voxel::VoxelCell{}});
+        const auto faces = visibleFacesOf(voxels);
         const auto drawnTiles = facedWith(faces, kBrickTile, kOneTile);
         auto decor = withDecorToggled({}, kMossTile);
 
@@ -372,9 +372,9 @@ namespace
 
     TEST(DecorTest, SolveDecor_LeavesFlatDecorOffWalls)
     {
-        const std::vector<antwika::voxel::VoxelCell> cells{
-            antwika::voxel::VoxelCell{}};
-        const auto faces = visibleFacesOf(cells);
+        const auto voxels = antwika::voxel::voxelsOf({
+            antwika::voxel::VoxelCell{}});
+        const auto faces = visibleFacesOf(voxels);
         const auto drawnTiles = facedWith(faces, kBrickTile, kOtherTile);
         auto decor = withDecorToggled({}, kOneTile);
 
@@ -387,10 +387,10 @@ namespace
 
     TEST(DecorTest, SolveDecor_HoldsWallSeamsToTheRules)
     {
-        const std::vector<antwika::voxel::VoxelCell> cells{
+        const auto voxels = antwika::voxel::voxelsOf({
             antwika::voxel::VoxelCell{},
-            antwika::voxel::VoxelCell{.x = 1}};
-        const auto faces = visibleFacesOf(cells);
+            antwika::voxel::VoxelCell{.x = 1}});
+        const auto faces = visibleFacesOf(voxels);
         const auto drawnTiles = facedWith(faces, kBrickTile, kOneTile);
         auto decor = withDecorToggled({}, kMossTile);
 
@@ -423,9 +423,9 @@ namespace
 
     TEST(DecorTest, SolveDecor_KeepsWallPlanesApart)
     {
-        const std::vector<antwika::voxel::VoxelCell> cells{
-            antwika::voxel::VoxelCell{}};
-        const auto faces = visibleFacesOf(cells);
+        const auto voxels = antwika::voxel::voxelsOf({
+            antwika::voxel::VoxelCell{}});
+        const auto faces = visibleFacesOf(voxels);
         const auto drawnTiles = facedWith(faces, kBrickTile, kOneTile);
         auto decor = withDecorToggled({}, kMossTile);
 
@@ -451,15 +451,15 @@ namespace
 
     TEST(DecorTest, SolveDecor_ThinsWallsByFrequencyApart)
     {
-        std::vector<antwika::voxel::VoxelCell> cells;
+        antwika::voxel::Voxels voxels;
 
         for (std::int32_t x = 0; x < 16; ++x)
         {
-            cells.push_back(
-                antwika::voxel::VoxelCell{.x = x, .z = x * 3});
+            voxels[antwika::voxel::VoxelPosition{.x = x, .z = x * 3}] =
+                    antwika::voxel::VoxelMaterial{};
         }
 
-        const auto faces = visibleFacesOf(cells);
+        const auto faces = visibleFacesOf(voxels);
         const auto drawnTiles = facedWith(faces, kBrickTile, kOneTile);
         auto decor = withDecorToggled({}, kMossTile);
 
@@ -536,10 +536,10 @@ namespace
 
     TEST(DecorTest, SolveDecor_StampsAWholeFootprintOrNothing)
     {
-        const std::vector<antwika::voxel::VoxelCell> cells{
+        const auto voxels = antwika::voxel::voxelsOf({
             antwika::voxel::VoxelCell{},
-            antwika::voxel::VoxelCell{.x = 1}};
-        const auto faces = visibleFacesOf(cells);
+            antwika::voxel::VoxelCell{.x = 1}});
+        const auto faces = visibleFacesOf(voxels);
         const auto drawnTiles = facedWith(faces, kBrickTile, kOneTile);
         auto decor = withDecorToggled({}, kMossTile);
 
@@ -579,9 +579,9 @@ namespace
 
     TEST(DecorTest, SolveDecor_SkipsAStampItsGroundCannotHold)
     {
-        const std::vector<antwika::voxel::VoxelCell> cells{
-            antwika::voxel::VoxelCell{}};
-        const auto faces = visibleFacesOf(cells);
+        const auto voxels = antwika::voxel::voxelsOf({
+            antwika::voxel::VoxelCell{}});
+        const auto faces = visibleFacesOf(voxels);
         const auto drawnTiles = facedWith(faces, kBrickTile, kOneTile);
         auto decor = withDecorToggled({}, kMossTile);
 
@@ -595,18 +595,18 @@ namespace
 
     TEST(DecorTest, SolveDecor_LaysTheSameStampsUnderOneSeed)
     {
-        std::vector<antwika::voxel::VoxelCell> cells;
+        antwika::voxel::Voxels voxels;
 
         for (std::int32_t x = 0; x < 8; ++x)
         {
             for (std::int32_t z = 0; z < 8; ++z)
             {
-                cells.push_back(
-                    antwika::voxel::VoxelCell{.x = x, .z = z});
+                voxels[antwika::voxel::VoxelPosition{.x = x, .z = z}] =
+                    antwika::voxel::VoxelMaterial{};
             }
         }
 
-        const auto faces = visibleFacesOf(cells);
+        const auto faces = visibleFacesOf(voxels);
         const auto drawnTiles = facedWith(faces, kBrickTile, kOneTile);
         auto decor = withDecorToggled({}, kOneTile);
 
@@ -628,10 +628,10 @@ namespace
 
     TEST(DecorTest, SolveDecor_DressesAWaterTopItsBasesAllow)
     {
-        const std::vector<antwika::voxel::VoxelCell> cells{
+        const auto voxels = antwika::voxel::voxelsOf({
             antwika::voxel::VoxelCell{
-                .kind = antwika::voxel::Kind::Water}};
-        const auto faces = visibleFacesOf(cells);
+                .kind = antwika::voxel::Kind::Water}});
+        const auto faces = visibleFacesOf(voxels);
         const auto drawnTiles = facedWith(faces, kBrickTile, kOneTile);
         auto decor = withDecorToggled({}, kOtherTile);
 
@@ -655,10 +655,10 @@ namespace
 
     TEST(DecorTest, SolveDecor_DressesALadderWallItsBasesAllow)
     {
-        const std::vector<antwika::voxel::VoxelCell> cells{
+        const auto voxels = antwika::voxel::voxelsOf({
             antwika::voxel::VoxelCell{
-                .kind = antwika::voxel::Kind::Ladder}};
-        const auto faces = visibleFacesOf(cells);
+                .kind = antwika::voxel::Kind::Ladder}});
+        const auto faces = visibleFacesOf(voxels);
         const auto drawnTiles = facedWith(faces, kBrickTile, kOneTile);
         auto decor = withDecorToggled({}, kMossTile);
 
@@ -677,7 +677,7 @@ namespace
                     antwika::voxel::VoxelCell{
                         .kind = antwika::voxel::Kind::Ramp},
                 .side = 4,
-                .climbCell = antwika::voxel::VoxelCell{.x = 1}}};
+                .climbPosition = antwika::voxel::VoxelPosition{.x = 1}}};
         const std::map<std::size_t, Tile> placedTiles{{0, kOneTile}};
         const auto mesh = antwika::decor::decorMesh(
             faces, placedTiles, withDecorToggled({}, kOneTile), 0);
@@ -685,7 +685,7 @@ namespace
 
         for (const auto &quad :
              antwika::voxel::stairQuads(
-                 antwika::voxel::VoxelCell{.x = 1}))
+                 antwika::voxel::VoxelPosition{.x = 1}))
         {
             treads += quad.side == 4 ? 1U : 0U;
         }
@@ -715,9 +715,9 @@ namespace
 
     TEST(DecorTest, SolveDecor_DressesTheTopsItsBasesAllow)
     {
-        const auto cells = antwika::voxel::expandCubesToVoxels(
-            {antwika::voxel::VoxelCell{}});
-        const auto faces = visibleFacesOf(cells);
+        const auto voxels = antwika::voxel::expandCubesToVoxels(
+            antwika::voxel::voxelsOf({antwika::voxel::VoxelCell{}}));
+        const auto faces = visibleFacesOf(voxels);
         const auto drawnTiles = defaultTiles(faces);
 
         std::vector<DecorTile> decor =

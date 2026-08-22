@@ -37,7 +37,7 @@ namespace antwika::worldgen
         {
             const CompiledRuleset &compiledRuleset;
             ChunkShape shape;
-            voxel::VoxelCell originCell;
+            voxel::VoxelPosition originPosition;
 
             std::vector<wfc::Domain> waveDomains{};
             std::vector<bool> settledFlags{};
@@ -45,25 +45,27 @@ namespace antwika::worldgen
             std::vector<std::size_t> pinnedIndexes{};
         };
 
-        [[nodiscard]] voxel::VoxelCell inTheWorld(
-            const voxel::VoxelCell originCell, const voxel::VoxelCell cubeCell)
+        [[nodiscard]] voxel::VoxelPosition inTheWorld(
+            const voxel::VoxelPosition originPosition,
+            const voxel::VoxelPosition cubePosition)
         {
-            return voxel::VoxelCell{
-                .x = originCell.x + cubeCell.x,
-                .y = originCell.y + cubeCell.y,
-                .z = originCell.z + cubeCell.z};
+            return voxel::VoxelPosition{
+                .x = originPosition.x + cubePosition.x,
+                .y = originPosition.y + cubePosition.y,
+                .z = originPosition.z + cubePosition.z};
         }
 
         [[nodiscard]] ChunkResult troubleAt(
             const ChunkOutcome outcome,
-            const voxel::VoxelCell originCell,
-            const std::vector<voxel::VoxelCell> &cubeCells)
+            const voxel::VoxelPosition originPosition,
+            const std::vector<voxel::VoxelPosition> &cubePositions)
         {
             ChunkResult result{.outcome = outcome};
 
-            for (const voxel::VoxelCell cube : cubeCells)
+            for (const voxel::VoxelPosition cube : cubePositions)
             {
-                result.culpritCells.push_back(inTheWorld(originCell, cube));
+                result.culpritPositions.push_back(
+                    inTheWorld(originPosition, cube));
             }
 
             return result;
@@ -138,44 +140,42 @@ namespace antwika::worldgen
         [[nodiscard]] std::optional<ChunkResult> layHints(
             GrowState &growing,
             Board &board,
-            const std::vector<voxel::VoxelCell> &hintCells)
+            const voxel::Voxels &hintVoxels)
         {
-            for (const voxel::VoxelCell hint : hintCells)
+            for (const auto &[hintPosition, material] : hintVoxels)
             {
-                const voxel::VoxelCell cubeCell{
-                    .x = hint.x - growing.originCell.x,
-                    .y = hint.y - growing.originCell.y,
-                    .z = hint.z - growing.originCell.z,
-                    .kind = hint.kind,
-                    .facing = hint.facing};
+                const voxel::VoxelPosition cubePosition{
+                    .x = hintPosition.x - growing.originPosition.x,
+                    .y = hintPosition.y - growing.originPosition.y,
+                    .z = hintPosition.z - growing.originPosition.z};
 
-                if (!within(growing.shape, cubeCell))
+                if (!within(growing.shape, cubePosition))
                 {
                     return troubleAt(
                         ChunkOutcome::HintOutside,
-                        growing.originCell,
-                        {cubeCell});
+                        growing.originPosition,
+                        std::vector<voxel::VoxelPosition>{cubePosition});
                 }
 
-                const auto wantedPieces =
-                    growing.compiledRuleset.matching(hint.kind, hint.facing);
+                const auto wantedPieces = growing.compiledRuleset.matching(
+                    material.kind, material.facing);
 
                 if (wantedPieces.empty())
                 {
                     return troubleAt(
                         ChunkOutcome::HintUnknown,
-                        growing.originCell,
-                        {cubeCell});
+                        growing.originPosition,
+                        std::vector<voxel::VoxelPosition>{cubePosition});
                 }
 
-                const std::size_t cell = cellOf(growing.shape, cubeCell);
+                const std::size_t cell = cellOf(growing.shape, cubePosition);
 
                 if (!fits(board, cell, wantedPieces))
                 {
                     return troubleAt(
                         ChunkOutcome::HintsConflict,
-                        growing.originCell,
-                        {cubeCell});
+                        growing.originPosition,
+                        std::vector<voxel::VoxelPosition>{cubePosition});
                 }
 
                 board.hold(cell, wantedPieces);
@@ -196,9 +196,9 @@ namespace antwika::worldgen
 
             for (std::size_t cell = 0; cell < cubeCount(shape); ++cell)
             {
-                const auto cubeCell = cubeAt(shape, cell);
+                const auto cubePosition = cubeAt(shape, cell);
 
-                if (cubeCell.x + 1 < shape.width)
+                if (cubePosition.x + 1 < shape.width)
                 {
                     seams.push_back(
                         Seam{
@@ -207,7 +207,7 @@ namespace antwika::worldgen
                             .axis = Axis::Across});
                 }
 
-                if (cubeCell.z + 1 < shape.depth)
+                if (cubePosition.z + 1 < shape.depth)
                 {
                     seams.push_back(
                         Seam{
@@ -216,7 +216,7 @@ namespace antwika::worldgen
                             .axis = Axis::Along});
                 }
 
-                if (cubeCell.y + 1 < shape.height)
+                if (cubePosition.y + 1 < shape.height)
                 {
                     seams.push_back(
                         Seam{
@@ -266,16 +266,17 @@ namespace antwika::worldgen
                 {
                     return troubleAt(
                         ChunkOutcome::HintsConflict,
-                        growing.originCell,
-                        {cubeAt(growing.shape, seam.lowIndex),
-                         cubeAt(growing.shape, seam.highIndex)});
+                        growing.originPosition,
+                        std::vector<voxel::VoxelPosition>{
+                            cubeAt(growing.shape, seam.lowIndex),
+                            cubeAt(growing.shape, seam.highIndex)});
                 }
             }
 
             return std::nullopt;
         }
 
-        [[nodiscard]] std::vector<voxel::VoxelCell> thinnest(
+        [[nodiscard]] std::vector<voxel::VoxelPosition> thinnest(
             const GrowState &growing)
         {
             std::vector<std::pair<std::size_t, std::size_t>> rankedPairs;
@@ -294,20 +295,20 @@ namespace antwika::worldgen
 
             std::ranges::sort(rankedPairs);
 
-            std::vector<voxel::VoxelCell> namedCells;
+            std::vector<voxel::VoxelPosition> namedPositions;
             for (const auto &[count, cell] : rankedPairs)
             {
-                if (namedCells.size() >= kMaxReportedCulprits)
+                if (namedPositions.size() >= kMaxReportedCulprits)
                 {
                     break;
                 }
 
-                namedCells.push_back(
+                namedPositions.push_back(
                     inTheWorld(
-                        growing.originCell, cubeAt(growing.shape, cell)));
+                        growing.originPosition, cubeAt(growing.shape, cell)));
             }
 
-            return namedCells;
+            return namedPositions;
         } // GCOVR_EXCL_LINE
 
         [[nodiscard]] std::vector<std::optional<std::size_t>> rollWishes(
@@ -319,10 +320,10 @@ namespace antwika::worldgen
             for (
                 std::size_t cell = 0; cell < growing.waveDomains.size(); ++cell)
             {
-                const auto cubeCell = cubeAt(growing.shape, cell);
+                const auto cubePosition = cubeAt(growing.shape, cell);
                 const auto desire = growing.compiledRuleset.desireIn(
                     growing.compiledRuleset.districtOf(growing.shape,
-                        cubeCell.y));
+                        cubePosition.y));
 
                 std::uint64_t total = 0;
                 for (const std::size_t which : growing.waveDomains[cell])
@@ -368,7 +369,7 @@ namespace antwika::worldgen
         GrowState growing{
             .compiledRuleset = compiledRuleset,
             .shape = request.shape,
-            .originCell = request.originCell};
+            .originPosition = request.originPosition};
 
         layDistricts(growing);
         keepDemandsFromTheRim(growing);
@@ -382,11 +383,11 @@ namespace antwika::worldgen
         {
             return ChunkResult{
                 .outcome = ChunkOutcome::Unsatisfiable,
-                .culpritCells = thinnest(growing)};
+                .culpritPositions = thinnest(growing)};
         }
 
         if (const auto troubleFailure =
-                layHints(growing, board, request.hintCells))
+                layHints(growing, board, request.hintVoxels))
         {
             return *troubleFailure;
         }
@@ -403,7 +404,7 @@ namespace antwika::worldgen
         {
             return ChunkResult{
                 .outcome = ChunkOutcome::HintsConflict,
-                .culpritCells = thinnest(growing)};
+                .culpritPositions = thinnest(growing)};
         }
 
         const auto laidWays =
@@ -417,8 +418,9 @@ namespace antwika::worldgen
         if (!laidWays.climbed)
         {
             return troubleAt(
-                ChunkOutcome::NoWayUp, request.originCell,
-                {laidWays.stuckCell});
+                ChunkOutcome::NoWayUp,
+                request.originPosition,
+                std::vector<voxel::VoxelPosition>{laidWays.stuckPosition});
         }
 
         for (const std::size_t cell : laidWays.landings)
@@ -453,7 +455,7 @@ namespace antwika::worldgen
                 .outcome = solution.outcome == wfc::SolveOutcome::Unsatisfiable
                          ? ChunkOutcome::Unsatisfiable
                          : ChunkOutcome::LimitExceeded,
-                .culpritCells = thinnest(growing)};
+                .culpritPositions = thinnest(growing)};
         }
 
         ChunkResult result;
@@ -468,12 +470,11 @@ namespace antwika::worldgen
                 continue;
             }
 
-            auto cubeCell =
-                inTheWorld(request.originCell, cubeAt(request.shape, cell));
-            cubeCell.kind = prototype.kind;
-            cubeCell.facing = prototype.facing;
+            const auto cubePosition = inTheWorld(
+                request.originPosition, cubeAt(request.shape, cell));
 
-            result.cubeCells.push_back(cubeCell);
+            result.cubeVoxels[cubePosition] = voxel::VoxelMaterial{
+                .kind = prototype.kind, .facing = prototype.facing};
         }
 
         return result;

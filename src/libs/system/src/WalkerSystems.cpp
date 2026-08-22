@@ -65,8 +65,8 @@ namespace antwika::system
     }
 
     WalkSystem::WalkSystem(
-        const std::set<voxel::VoxelCell> &solidCells) noexcept
-        : solidCells(&solidCells)
+        const voxel::Voxels &solidVoxels) noexcept
+        : solidVoxels(&solidVoxels)
     {
     }
 
@@ -78,7 +78,7 @@ namespace antwika::system
             world.set<component::Position>(
                 entity,
                 collision::movedWithCollision(
-                    *solidCells,
+                    *solidVoxels,
                     world.get<component::Position>(entity),
                     world.get<component::Velocity>(entity)));
         }

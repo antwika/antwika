@@ -22,6 +22,7 @@ using antwika::rng::SplitMix64Rng;
 using antwika::rng::fakes::FakeRng;
 using antwika::voxel::Kind;
 using antwika::voxel::VoxelCell;
+using antwika::voxel::VoxelPosition;
 using antwika::wfc::Domain;
 using antwika::worldgen::cellOf;
 using antwika::worldgen::ChunkShape;
@@ -249,7 +250,7 @@ TEST(StairsTest, Settle_TurnsAwayAWaveWithACubeThatCanBeNothing)
     auto wave = freshWave(kSmallShape);
     Board board(wave);
 
-    const auto cube = VoxelCell{.x = 2, .y = 5, .z = 2};
+    const auto cube = VoxelPosition{.x = 2, .y = 5, .z = 2};
     const auto cell = cellOf(kSmallShape, cube);
 
     board.hold(cell, city().matching(Kind::Water, antwika::voxel::Facing::Any));
@@ -265,7 +266,7 @@ TEST(StairsTest, Board_PutsBackWhatItTook)
 
     const std::size_t mark = board.mark();
     board.hold(
-        cellOf(kSmallShape, VoxelCell{.x = 2, .y = 5, .z = 2}),
+        cellOf(kSmallShape, VoxelPosition{.x = 2, .y = 5, .z = 2}),
         city().wearing(Role::Bear));
 
     EXPECT_NE(wave, beforeWave);

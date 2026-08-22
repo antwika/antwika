@@ -14,14 +14,14 @@ namespace antwika::render
     void WorldMeshes::rebuild(
         gfx::ViewportRenderer &viewportRenderer,
         const map::Map &drawnMap,
-        std::vector<voxel::VoxelCell> shownCells,
+        voxel::Voxels shownVoxels,
         const solver::CornerSeams joiningSeams,
         const std::array<gfx::Bitmap, 2> &sheetBitmaps,
         const std::uint32_t tick)
     {
         auto viewedMap = drawnMap;
 
-        viewedMap.voxels = shownCells;
+        viewedMap.voxels = shownVoxels;
         effectiveRules = tile::rulesWithTransitions(
             drawnMap.rules,
             drawnMap.transitions,
@@ -31,15 +31,15 @@ namespace antwika::render
         viewedMap.rules = effectiveRules;
         solvedTiles =
             map::faceTilesFor(viewedMap, joiningSeams, faceTileCache);
-        visibleFaces = voxelmap::visibleFacesOf(shownCells);
+        visibleFaces = voxelmap::visibleFacesOf(shownVoxels);
         finalFaceTiles = decor::withVariantsApplied(
             visibleFaces, solvedTiles, drawnMap.familyGroups, 0);
 
-        const auto meshFor = [this, &viewportRenderer, &shownCells](
+        const auto meshFor = [this, &viewportRenderer, &shownVoxels](
                                  const voxelmap::Pass pass)
         {
             const auto mesh = voxelmap::voxelMesh(
-                shownCells, visibleFaces, finalFaceTiles, pass);
+                shownVoxels, visibleFaces, finalFaceTiles, pass);
 
             std::vector<std::unique_ptr<gfx::IMesh>> pieceMeshes;
 
@@ -66,7 +66,7 @@ namespace antwika::render
             drawnMap.decorRules,
             0);
         rebuildDecor(viewportRenderer, drawnMap, tick);
-        solidCells = std::set<voxel::VoxelCell>(
+        solidVoxels = voxel::Voxels(
             drawnMap.voxels.begin(), drawnMap.voxels.end());
     }
 
@@ -122,10 +122,10 @@ namespace antwika::render
         return decorMesh.get();
     }
 
-    const std::set<voxel::VoxelCell> &WorldMeshes::cells()
+    const voxel::Voxels &WorldMeshes::cells()
         const noexcept
     {
-        return solidCells;
+        return solidVoxels;
     }
 
     const std::vector<voxelmap::FaceRef> &WorldMeshes::faces()

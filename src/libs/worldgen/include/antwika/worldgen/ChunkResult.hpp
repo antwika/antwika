@@ -2,7 +2,8 @@
 
 #include <vector>
 #include <antwika/rng/IRng.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
+#include <antwika/voxel/Voxels.hpp>
 #include <antwika/worldgen/ruleset/CompiledRuleset.hpp>
 #include "antwika/worldgen/ChunkOutcome.hpp"
 #include "antwika/worldgen/ChunkShape.hpp"
@@ -15,9 +16,9 @@ namespace antwika::worldgen
     {
         ChunkOutcome outcome = ChunkOutcome::Grown;
 
-        std::vector<voxel::VoxelCell> cubeCells{};
+        voxel::Voxels cubeVoxels{};
 
-        std::vector<voxel::VoxelCell> culpritCells{};
+        std::vector<voxel::VoxelPosition> culpritPositions{};
 
         [[nodiscard]] bool operator==(const ChunkResult &other) const
             = default;

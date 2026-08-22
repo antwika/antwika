@@ -1,8 +1,8 @@
 #include "antwika/voxel/VoxelCube.hpp"
 
-#include <set>
-#include <tuple>
+#include <utility>
 
+#include "antwika/voxel/VoxelDetail.hpp"
 #include "antwika/voxel/VoxelStairs.hpp"
 
 namespace antwika::voxel
@@ -30,37 +30,34 @@ namespace antwika::voxel
                 cubeOffset < 0 ? cubeOffset + kCubeSide : cubeOffset);
         }
 
-        constexpr std::array<VoxelCell, 4> kAboutACubeCells{
-            VoxelCell{.x = 1},
-            VoxelCell{.x = -1},
-            VoxelCell{.z = 1},
-            VoxelCell{.z = -1}};
-
-        [[nodiscard]] VoxelCell negated(const VoxelCell stepCell)
-        {
-            return VoxelCell{.x = -stepCell.x, .z = -stepCell.z};
-        }
+        constexpr std::array<VoxelPosition, 4> kAboutACubePositions{
+            VoxelPosition{.x = 1},
+            VoxelPosition{.x = -1},
+            VoxelPosition{.z = 1},
+            VoxelPosition{.z = -1}};
 
         [[nodiscard]] bool groundBeside(
-            const std::set<VoxelCell> &standingCells,
-            const VoxelCell cornerCell,
-            const VoxelCell stepCell,
+            const Voxels &standingVoxels,
+            const VoxelPosition cornerPosition,
+            const VoxelPosition stepPosition,
             const std::int32_t reach)
         {
             for (
             std::int32_t alongIndex = 0; alongIndex < kCubeSide; ++alongIndex)
             {
-                const auto besideCell = VoxelCell{
-                    .x = cornerCell.x + (stepCell.x * kCubeSide)
-                         + (stepCell.x == 0 ? alongIndex : 0),
+                const auto besidePosition = VoxelPosition{
+                    .x = cornerPosition.x
+                         + (stepPosition.x * kCubeSide)
+                         + (stepPosition.x == 0 ? alongIndex : 0),
                     .y = reach,
-                    .z = cornerCell.z + (stepCell.z * kCubeSide)
-                         + (stepCell.z == 0 ? alongIndex : 0)};
+                    .z = cornerPosition.z
+                         + (stepPosition.z * kCubeSide)
+                         + (stepPosition.z == 0 ? alongIndex : 0)};
 
-                const auto foundCell = standingCells.find(besideCell);
+                const auto foundVoxel = standingVoxels.find(besidePosition);
 
-                if (foundCell != standingCells.end()
-                    && foundCell->kind != Kind::Ramp)
+                if (foundVoxel != standingVoxels.end()
+                    && foundVoxel->second.kind != Kind::Ramp)
                 {
                     return true;
                 }
@@ -70,23 +67,25 @@ namespace antwika::voxel
         }
 
         [[nodiscard]] bool standsBeside(
-            const std::set<VoxelCell> &standingCells,
-            const VoxelCell cornerCell,
-            const VoxelCell stepCell)
+            const Voxels &standingVoxels,
+            const VoxelPosition cornerPosition,
+            const VoxelPosition stepPosition)
         {
             for (std::int32_t upIndex = 0; upIndex < kCubeSide; ++upIndex)
             {
                 for (std::int32_t alongIndex = 0; alongIndex < kCubeSide;
                      ++alongIndex)
                 {
-                    const auto besideCell = VoxelCell{
-                        .x = cornerCell.x + (stepCell.x * kCubeSide)
-                             + (stepCell.x == 0 ? alongIndex : 0),
-                        .y = cornerCell.y + upIndex,
-                        .z = cornerCell.z + (stepCell.z * kCubeSide)
-                             + (stepCell.z == 0 ? alongIndex : 0)};
+                    const auto besidePosition = VoxelPosition{
+                        .x = cornerPosition.x
+                             + (stepPosition.x * kCubeSide)
+                             + (stepPosition.x == 0 ? alongIndex : 0),
+                        .y = cornerPosition.y + upIndex,
+                        .z = cornerPosition.z
+                             + (stepPosition.z * kCubeSide)
+                             + (stepPosition.z == 0 ? alongIndex : 0)};
 
-                    if (standingCells.contains(besideCell))
+                    if (standingVoxels.contains(besidePosition))
                     {
                         return true;
                     }
@@ -97,20 +96,21 @@ namespace antwika::voxel
         }
 
         [[nodiscard]] bool isAutoFacedRamp(
-            const std::vector<VoxelCell> &cells, const VoxelCell cell)
+            const Voxels &voxels, const VoxelPosition position)
         {
-            const auto corner = cubeCornerOf(cell);
             auto foundAny = false;
 
-            for (const auto voxel : cells)
+            for (const auto place : cubeCells(cubeCornerOf(position)))
             {
-                if (cubeCornerOf(voxel) != corner)
+                const auto foundVoxel = voxels.find(place);
+
+                if (foundVoxel == voxels.end())
                 {
                     continue;
                 }
 
-                if (voxel.kind != Kind::Ramp
-                    || voxel.facing != Facing::Any)
+                if (foundVoxel->second.kind != Kind::Ramp
+                    || foundVoxel->second.facing != Facing::Any)
                 {
                     return false;
                 }
@@ -122,24 +122,20 @@ namespace antwika::voxel
         }
 
         [[nodiscard]] bool standsAs(
-            const std::vector<VoxelCell> &cells,
-            const VoxelCell cell,
-            const std::vector<VoxelCell> &wantCell)
+            const Voxels &voxels,
+            const VoxelPosition position,
+            const Voxels &wantedVoxels)
         {
-            const auto corner = cubeCornerOf(cell);
-            const std::set<VoxelCell> wantedCells(
-                wantCell.begin(),
-                wantCell.end());
             std::size_t standing = 0;
 
-            for (const auto voxel : cells)
+            for (const auto place : cubeCells(cubeCornerOf(position)))
             {
-                if (cubeCornerOf(voxel) != corner)
+                if (!voxels.contains(place))
                 {
                     continue;
                 }
 
-                if (!wantedCells.contains(voxel))
+                if (!wantedVoxels.contains(place))
                 {
                     return false;
                 }
@@ -147,7 +143,7 @@ namespace antwika::voxel
                 ++standing;
             }
 
-            return standing == wantedCells.size();
+            return standing == wantedVoxels.size();
         }
     }
 
@@ -174,19 +170,19 @@ namespace antwika::voxel
             .side = facing(edge.side), .edge = edge.edge};
     }
 
-    VoxelCell cubeCornerOf(const VoxelCell cell)
+    VoxelPosition cubeCornerOf(const VoxelPosition position)
     {
-        return VoxelCell{
-            .x = lowestOf(cell.x),
-            .y = lowestOf(cell.y),
-            .z = lowestOf(cell.z)};
+        return VoxelPosition{
+            .x = lowestOf(position.x),
+            .y = lowestOf(position.y),
+            .z = lowestOf(position.z)};
     }
 
-    std::vector<VoxelCell> cubeCells(const VoxelCell cornerCell)
+    std::vector<VoxelPosition> cubeCells(const VoxelPosition cornerPosition)
     {
-        std::vector<VoxelCell> cells;
+        std::vector<VoxelPosition> positions;
 
-        cells.reserve(kCubeVoxels);
+        positions.reserve(kCubeVoxels);
 
         for (std::int32_t z = 0; z < kCubeSide; ++z)
         {
@@ -194,62 +190,57 @@ namespace antwika::voxel
             {
                 for (std::int32_t x = 0; x < kCubeSide; ++x)
                 {
-                    cells.push_back(
-                        VoxelCell{
-                            .x = cornerCell.x + x,
-                            .y = cornerCell.y + y,
-                            .z = cornerCell.z + z});
+                    positions.push_back(
+                        VoxelPosition{
+                            .x = cornerPosition.x + x,
+                            .y = cornerPosition.y + y,
+                            .z = cornerPosition.z + z});
                 }
             }
         }
 
-        return cells;
+        return positions;
     } // GCOVR_EXCL_LINE
 
-    std::vector<VoxelCell> expandCubesToVoxels(
-        const std::vector<VoxelCell> &cells)
+    Voxels expandCubesToVoxels(const Voxels &cubeVoxels)
     {
-        std::vector<VoxelCell> expandedCells;
+        Voxels expandedVoxels;
 
-        expandedCells.reserve(cells.size() * kCubeVoxels);
-
-        for (const auto cell : cells)
+        for (const auto &[position, material] : cubeVoxels)
         {
-            for (const auto voxel : cubeCells(
-                     VoxelCell{
-                         .x = cell.x * kCubeSide,
-                         .y = cell.y * kCubeSide,
-                         .z = cell.z * kCubeSide}))
+            for (const auto place : cubeCells(
+                     VoxelPosition{
+                         .x = position.x * kCubeSide,
+                         .y = position.y * kCubeSide,
+                         .z = position.z * kCubeSide}))
             {
-                expandedCells.push_back(voxel);
+                expandedVoxels[place] = material;
             }
         }
 
-        return expandedCells;
+        return expandedVoxels;
     } // GCOVR_EXCL_LINE
 
-    VoxelCell rampDirectionFor(
-        const std::vector<VoxelCell> &cells, const VoxelCell cell)
+    VoxelPosition rampDirectionFor(
+        const Voxels &filledVoxels, const VoxelPosition position)
     {
-        const std::set<VoxelCell> standingCells(
-            cells.begin(), cells.end());
-        const auto corner = cubeCornerOf(cell);
+        const auto corner = cubeCornerOf(position);
         const auto top = corner.y + kCubeSide - 1;
 
         for (const auto wantsAWayIn : {true, false})
         {
             for (const auto reach : {top, corner.y})
             {
-                for (const auto step : kAboutACubeCells)
+                for (const auto step : kAboutACubePositions)
                 {
-                    if (!groundBeside(standingCells, corner, step, reach))
+                    if (!groundBeside(filledVoxels, corner, step, reach))
                     {
                         continue;
                     }
 
                     if (wantsAWayIn
                         && standsBeside(
-                            standingCells, corner, negated(step)))
+                            filledVoxels, corner, detail::opposite(step)))
                     {
                         continue;
                     }
@@ -259,30 +250,31 @@ namespace antwika::voxel
             }
         }
 
-        return kAboutACubeCells.front();
+        return kAboutACubePositions.front();
     }
 
-    std::vector<VoxelCell> cubeVoxels(
-        const VoxelCell cornerCell, const Kind kind, const VoxelCell climbCell)
+    Voxels cubeVoxels(
+        const VoxelPosition cornerPosition,
+        const Kind kind,
+        const VoxelPosition climbPosition)
     {
+        Voxels grownVoxels;
+
         if (kind != Kind::Ramp)
         {
-            auto grownCells = cubeCells(cornerCell);
-
-            for (auto &cell : grownCells)
+            for (const auto place : cubeCells(cornerPosition))
             {
-                cell.kind = kind;
+                grownVoxels[place] = VoxelMaterial{.kind = kind};
             }
 
-            return grownCells;
+            return grownVoxels;
         }
 
-        const auto alongX = climbCell.x != 0;
-        const auto forward = alongX ? climbCell.x > 0 : climbCell.z > 0;
+        const auto alongX = climbPosition.x != 0;
+        const auto forward =
+            alongX ? climbPosition.x > 0 : climbPosition.z > 0;
         const auto lowStep = forward ? 0 : kCubeSide - 1;
         const auto highStep = forward ? kCubeSide - 1 : 0;
-
-        std::vector<VoxelCell> grownCells;
 
         for (std::int32_t acrossIndex = 0; acrossIndex < kCubeSide;
              ++acrossIndex)
@@ -292,92 +284,86 @@ namespace antwika::voxel
                   std::pair{highStep, 0},
                   std::pair{highStep, kCubeSide - 1}})
             {
-                grownCells.push_back(
-                    VoxelCell{
-                        .x = cornerCell.x + (alongX ? step : acrossIndex),
-                        .y = cornerCell.y + upStep,
-                        .z = cornerCell.z + (alongX ? acrossIndex : step),
-                        .kind = Kind::Ramp});
+                grownVoxels[VoxelPosition{
+                    .x = cornerPosition.x + (alongX ? step : acrossIndex),
+                    .y = cornerPosition.y + upStep,
+                    .z = cornerPosition.z + (alongX ? acrossIndex : step)}] =
+                    VoxelMaterial{.kind = Kind::Ramp};
             }
         }
 
-        return grownCells;
+        return grownVoxels;
     } // GCOVR_EXCL_LINE
 
-    std::vector<VoxelCell> withBlockAt(
-        const std::vector<VoxelCell> &cells,
-        const VoxelCell cell,
+    Voxels withBlockAt(
+        const Voxels &filledVoxels,
+        const VoxelPosition position,
         const Kind kind,
         const Facing facingOverride)
     {
-        auto updatedCells = withoutBlockAt(cells, cell);
+        auto updatedVoxels = withoutBlockAt(filledVoxels, position);
         const auto climb = facingOverride == Facing::Any
-                         ? rampDirectionFor(cells, cell)
+                         ? rampDirectionFor(filledVoxels, position)
                          : stepVectorFor(facingOverride);
 
-        for (auto voxel : cubeVoxels(cubeCornerOf(cell), kind, climb))
+        for (const auto &[place, material] :
+             cubeVoxels(cubeCornerOf(position), kind, climb))
         {
-            voxel.facing =
-                kind == Kind::Ramp ? facingOverride : Facing::Any;
-
-            updatedCells.push_back(voxel);
+            updatedVoxels[place] = VoxelMaterial{
+                .kind = material.kind,
+                .facing = kind == Kind::Ramp ? facingOverride
+                                             : Facing::Any};
         }
 
-        return updatedCells;
+        return updatedVoxels;
     } // GCOVR_EXCL_LINE
 
-    std::vector<VoxelCell> withRampsRebuilt(
-        const std::vector<VoxelCell> &cells, const VoxelCell cell)
+    Voxels withRampsRebuilt(
+        const Voxels &filledVoxels, const VoxelPosition position)
     {
-        const auto corner = cubeCornerOf(cell);
-        auto updatedCells = cells;
+        const auto corner = cubeCornerOf(position);
+        auto updatedVoxels = filledVoxels;
 
-        for (const auto step : kAboutACubeCells)
+        for (const auto step : kAboutACubePositions)
         {
-            const auto besideCell = VoxelCell{
+            const auto besidePosition = VoxelPosition{
                 .x = corner.x + (step.x * kCubeSide),
                 .y = corner.y,
                 .z = corner.z + (step.z * kCubeSide)};
 
-            if (!isAutoFacedRamp(updatedCells, besideCell))
+            if (!isAutoFacedRamp(updatedVoxels, besidePosition))
             {
                 continue;
             }
 
-            const auto want = cubeVoxels(
-                cubeCornerOf(besideCell),
+            const auto wantedVoxels = cubeVoxels(
+                cubeCornerOf(besidePosition),
                 Kind::Ramp,
-                rampDirectionFor(updatedCells, besideCell));
+                rampDirectionFor(updatedVoxels, besidePosition));
 
-            if (standsAs(updatedCells, besideCell, want))
+            if (standsAs(updatedVoxels, besidePosition, wantedVoxels))
             {
                 continue;
             }
 
-            updatedCells = withBlockAt(updatedCells, besideCell, Kind::Ramp,
-                Facing::Any);
+            updatedVoxels = withBlockAt(
+                updatedVoxels, besidePosition, Kind::Ramp, Facing::Any);
         }
 
-        return updatedCells;
+        return updatedVoxels;
     } // GCOVR_EXCL_LINE
 
-    std::vector<VoxelCell> withoutBlockAt(
-        const std::vector<VoxelCell> &cells, const VoxelCell cell)
+    Voxels withoutBlockAt(
+        const Voxels &filledVoxels, const VoxelPosition position)
     {
-        const auto block = cubeCells(cubeCornerOf(cell));
-        const std::set<VoxelCell> goingCells(block.begin(), block.end());
+        auto keptVoxels = filledVoxels;
 
-        std::vector<VoxelCell> keptCells;
-
-        for (const auto voxel : cells)
+        for (const auto place : cubeCells(cubeCornerOf(position)))
         {
-            if (!goingCells.contains(voxel))
-            {
-                keptCells.push_back(voxel);
-            }
+            keptVoxels.erase(place);
         }
 
-        return keptCells;
+        return keptVoxels;
     } // GCOVR_EXCL_LINE
 
 }

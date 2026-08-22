@@ -1,7 +1,7 @@
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/light/PointLight.hpp>
 #include <antwika/rules/Gates.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/voxelmap/VoxelPick.hpp>
 
@@ -10,13 +10,14 @@
 namespace antwika::editor
 {
 
-    std::vector<voxel::VoxelCell> Editor::shapedCubes(
-        const voxel::VoxelCell fromCell, const voxel::VoxelCell toCell) const
+    std::vector<voxel::VoxelPosition> Editor::shapedCubes(
+        const voxel::VoxelPosition fromPosition,
+        const voxel::VoxelPosition toPosition) const
     {
-        const auto a = antwika::voxel::cubeCornerOf(fromCell);
-        const auto b = antwika::voxel::cubeCornerOf(toCell);
+        const auto a = antwika::voxel::cubeCornerOf(fromPosition);
+        const auto b = antwika::voxel::cubeCornerOf(toPosition);
 
-        std::vector<voxel::VoxelCell> cells;
+        std::vector<voxel::VoxelPosition> positions;
 
         if (paintMode == map::Paint::Rect)
         {
@@ -28,12 +29,12 @@ namespace antwika::editor
                      z <= std::max(a.z, b.z);
                      z += voxel::kCubeSide)
                 {
-                    cells.push_back(
-                        voxel::VoxelCell{.x = x, .y = a.y, .z = z});
+                    positions.push_back(
+                        voxel::VoxelPosition{.x = x, .y = a.y, .z = z});
                 }
             }
 
-            return cells;
+            return positions;
         }
 
         const auto deltaX = (b.x - a.x) / voxel::kCubeSide;
@@ -49,8 +50,8 @@ namespace antwika::editor
                        : static_cast<double>(step)
                           / static_cast<double>(steps);
 
-            cells.push_back(
-                voxel::VoxelCell{
+            positions.push_back(
+                voxel::VoxelPosition{
                     .x = a.x
                          + (static_cast<std::int32_t>(
                                 std::llround(
@@ -68,11 +69,11 @@ namespace antwika::editor
                             * voxel::kCubeSide)});
         }
 
-        return cells;
+        return positions;
     } // GCOVR_EXCL_LINE
 
     bool Editor::beginShape(
-        const voxel::VoxelCell cell,
+        const voxel::VoxelPosition position,
         const input::MouseButton button)
     {
         if (tool != map::Tool::Brush
@@ -82,7 +83,7 @@ namespace antwika::editor
             return false;
         }
 
-        shapeFromCell = cell;
+        shapeFromPosition = position;
         dragPaintButton = button;
 
         return true;
@@ -90,25 +91,25 @@ namespace antwika::editor
 
     void Editor::finishShape(const input::MouseButton button)
     {
-        if (!shapeFromCell.has_value() || !dragPaintButton.has_value()
+        if (!shapeFromPosition.has_value() || !dragPaintButton.has_value()
             || button != *dragPaintButton)
         {
             return;
         }
 
-        const auto cell = voxelmap::cellUnder(
+        const auto position = voxelmap::cellUnder(
             worldCamera(),
             worldRotation(),
             camera::kCanvasSize,
             pointer.pointerOnCanvas,
             antwika::voxel::cubeTop(editLevel));
 
-        if (cell.has_value())
+        if (position.has_value())
         {
             pushUndo();
 
             for (const auto cube :
-                 shapedCubes(*shapeFromCell, *cell))
+                 shapedCubes(*shapeFromPosition, *position))
             {
                 map.voxels = voxel::withRampsRebuilt(
                     dragPaintButton == input::MouseButton::Left
@@ -125,38 +126,38 @@ namespace antwika::editor
             rebuildWorld();
         }
 
-        shapeFromCell.reset();
+        shapeFromPosition.reset();
     }
 
     void Editor::placeStartOrExit(
-        const voxel::VoxelCell cell, const input::MouseButton button)
+        const voxel::VoxelPosition position, const input::MouseButton button)
     {
         pushUndo();
 
         auto &landing = tool == map::Tool::Start
-                      ? map.spawnCubeCell
-                      : map.exitCubeCell;
+                      ? map.spawnCubePosition
+                      : map.exitCubePosition;
 
         landing =
             button == input::MouseButton::Left
-                    ? std::optional{cell}
+                    ? std::optional{position}
                     : std::nullopt;
 
         if (button == input::MouseButton::Left
             && !rules::cubeOccupied(
-                map.voxels, antwika::voxel::cubeCornerOf(cell)))
+                map.voxels, antwika::voxel::cubeCornerOf(position)))
         {
             map.voxels = voxel::withRampsRebuilt(
-                voxel::withBlockAt(map.voxels, cell), cell);
+                voxel::withBlockAt(map.voxels, position), position);
             rebuildWorld();
         }
     }
 
-    bool Editor::beginLampCarry(const voxel::VoxelCell cell)
+    bool Editor::beginLampCarry(const voxel::VoxelPosition position)
     {
         for (const auto &lamp : map.lamps)
         {
-            if (lamp.cell == cell)
+            if (lamp.position == position)
             {
                 pushUndo();
                 draggedLamp = lamp;
@@ -175,20 +176,20 @@ namespace antwika::editor
             return;
         }
 
-        const auto cell = voxelmap::cellUnder(
+        const auto position = voxelmap::cellUnder(
             worldCamera(),
             worldRotation(),
             camera::kCanvasSize,
             pointer.pointerOnCanvas,
             antwika::voxel::cubeTop(editLevel));
 
-        if (cell.has_value() && *cell != draggedLamp->cell)
+        if (position.has_value() && *position != draggedLamp->position)
         {
             map.lamps = light::withLampAt(
-                light::withoutLampAt(map.lamps, draggedLamp->cell),
-                *cell,
+                light::withoutLampAt(map.lamps, draggedLamp->position),
+                *position,
                 draggedLamp->tintColor);
-            draggedLamp->cell = *cell;
+            draggedLamp->position = *position;
             lightPasses.forget();
         }
     }

@@ -3,28 +3,30 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <set>
 
 #include "antwika/voxel/VoxelOcclusion.hpp"
 
-using antwika::voxel::VoxelCell;
+using antwika::voxel::VoxelMaterial;
+using antwika::voxel::VoxelPosition;
+using antwika::voxel::Voxels;
 
 TEST(VoxelOcclusionTest, OccludingVoxels_HidesNothingWithNothingInTheWay)
 {
     using antwika::voxel::occludingVoxels;
 
-    std::set<VoxelCell> filledCells;
+    Voxels filledVoxels;
 
     for (std::int32_t x = -2; x <= 2; ++x)
     {
         for (std::int32_t z = -2; z <= 4; ++z)
         {
-            filledCells.insert(VoxelCell{.x = x, .y = 0, .z = z});
+            filledVoxels[VoxelPosition{.x = x, .y = 0, .z = z}] =
+                VoxelMaterial{};
         }
     }
 
     EXPECT_TRUE(
-        occludingVoxels(filledCells, glm::vec3{0.0F, 0.5F, 0.0F})
+        occludingVoxels(filledVoxels, glm::vec3{0.0F, 0.5F, 0.0F})
             .empty());
 }
 
@@ -38,19 +40,20 @@ namespace
 namespace
 {
 
-    [[nodiscard]] std::set<VoxelCell> groundUnder()
+    [[nodiscard]] Voxels groundUnder()
     {
-        std::set<VoxelCell> filledCells;
+        Voxels filledVoxels;
 
         for (std::int32_t x = -3; x <= 3; ++x)
         {
             for (std::int32_t z = -4; z <= 4; ++z)
             {
-                filledCells.insert(VoxelCell{.x = x, .y = 0, .z = z});
+                filledVoxels[VoxelPosition{.x = x, .y = 0, .z = z}] =
+                VoxelMaterial{};
             }
         }
 
-        return filledCells;
+        return filledVoxels;
     }
 
 }
@@ -61,19 +64,21 @@ TEST(
 {
     using antwika::voxel::occludingVoxels;
 
-    auto filledCells = groundUnder();
+    auto filledVoxels = groundUnder();
 
     for (std::int32_t z = -4; z <= 4; ++z)
     {
-        filledCells.insert(VoxelCell{.x = 0, .y = 3, .z = z});
+        filledVoxels[VoxelPosition{.x = 0, .y = 3, .z = z}] =
+                VoxelMaterial{};
     }
 
     const auto occludingCells =
-        occludingVoxels(filledCells, kStanding);
+        occludingVoxels(filledVoxels, kStanding);
 
-    EXPECT_TRUE(occludingCells.contains(VoxelCell{.x = 0, .y = 3, .z = 0}));
-    EXPECT_TRUE(occludingCells.contains(VoxelCell{.x = 0, .y = 3, .z = -4}));
-    EXPECT_TRUE(occludingCells.contains(VoxelCell{.x = 0, .y = 3, .z = 3}));
+    EXPECT_TRUE(occludingCells.contains(VoxelPosition{.x = 0, .y = 3, .z = 0}));
+    EXPECT_TRUE(occludingCells.contains(VoxelPosition{.x = 0, .y = 3,
+        .z = -4}));
+    EXPECT_TRUE(occludingCells.contains(VoxelPosition{.x = 0, .y = 3, .z = 3}));
 }
 
 TEST(
@@ -82,23 +87,27 @@ TEST(
 {
     using antwika::voxel::occludingVoxels;
 
-    auto filledCells = groundUnder();
+    auto filledVoxels = groundUnder();
 
     for (std::int32_t x = -20; x <= 20; ++x)
     {
         for (std::int32_t z = -20; z <= 20; ++z)
         {
-            filledCells.insert(VoxelCell{.x = x, .y = 3, .z = z});
+            filledVoxels[VoxelPosition{.x = x, .y = 3, .z = z}] =
+                VoxelMaterial{};
         }
     }
 
     const auto occludingCells =
-        occludingVoxels(filledCells, kStanding);
+        occludingVoxels(filledVoxels, kStanding);
 
-    EXPECT_TRUE(occludingCells.contains(VoxelCell{.x = 0, .y = 3, .z = 0}));
-    EXPECT_TRUE(occludingCells.contains(VoxelCell{.x = 12, .y = 3, .z = 0}));
-    EXPECT_FALSE(occludingCells.contains(VoxelCell{.x = 20, .y = 3, .z = 0}));
-    EXPECT_FALSE(occludingCells.contains(VoxelCell{.x = -20, .y = 3, .z = 0}));
+    EXPECT_TRUE(occludingCells.contains(VoxelPosition{.x = 0, .y = 3, .z = 0}));
+    EXPECT_TRUE(occludingCells.contains(VoxelPosition{.x = 12, .y = 3,
+        .z = 0}));
+    EXPECT_FALSE(occludingCells.contains(VoxelPosition{.x = 20, .y = 3,
+        .z = 0}));
+    EXPECT_FALSE(occludingCells.contains(VoxelPosition{.x = -20, .y = 3,
+        .z = 0}));
 }
 
 TEST(
@@ -107,16 +116,18 @@ TEST(
 {
     using antwika::voxel::occludingVoxels;
 
-    auto filledCells = groundUnder();
+    auto filledVoxels = groundUnder();
 
-    filledCells.insert(VoxelCell{.x = 0, .y = 3, .z = 0});
-    filledCells.insert(VoxelCell{.x = 5, .y = 3, .z = 0});
+    filledVoxels[VoxelPosition{.x = 0, .y = 3, .z = 0}] =
+                VoxelMaterial{};
+    filledVoxels[VoxelPosition{.x = 5, .y = 3, .z = 0}] =
+                VoxelMaterial{};
 
     const auto occludingCells =
-        occludingVoxels(filledCells, kStanding);
+        occludingVoxels(filledVoxels, kStanding);
 
-    EXPECT_TRUE(occludingCells.contains(VoxelCell{.x = 0, .y = 3, .z = 0}));
-    EXPECT_TRUE(occludingCells.contains(VoxelCell{.x = 5, .y = 3, .z = 0}));
+    EXPECT_TRUE(occludingCells.contains(VoxelPosition{.x = 0, .y = 3, .z = 0}));
+    EXPECT_TRUE(occludingCells.contains(VoxelPosition{.x = 5, .y = 3, .z = 0}));
 }
 
 TEST(
@@ -125,36 +136,42 @@ TEST(
 {
     using antwika::voxel::occludingVoxels;
 
-    auto filledCells = groundUnder();
+    auto filledVoxels = groundUnder();
 
     for (std::int32_t x = -3; x <= 3; ++x)
     {
-        filledCells.insert(VoxelCell{.x = x, .y = 3, .z = 0});
+        filledVoxels[VoxelPosition{.x = x, .y = 3, .z = 0}] =
+                VoxelMaterial{};
     }
 
-    filledCells.insert(VoxelCell{.x = 3, .y = 1, .z = 0});
-    filledCells.insert(VoxelCell{.x = 3, .y = 2, .z = 0});
+    filledVoxels[VoxelPosition{.x = 3, .y = 1, .z = 0}] =
+                VoxelMaterial{};
+    filledVoxels[VoxelPosition{.x = 3, .y = 2, .z = 0}] =
+                VoxelMaterial{};
 
     const auto occludingCells =
-        occludingVoxels(filledCells, kStanding);
+        occludingVoxels(filledVoxels, kStanding);
 
-    EXPECT_TRUE(occludingCells.contains(VoxelCell{.x = 3, .y = 3, .z = 0}));
-    EXPECT_FALSE(occludingCells.contains(VoxelCell{.x = 3, .y = 2, .z = 0}));
-    EXPECT_FALSE(occludingCells.contains(VoxelCell{.x = 3, .y = 1, .z = 0}));
+    EXPECT_TRUE(occludingCells.contains(VoxelPosition{.x = 3, .y = 3, .z = 0}));
+    EXPECT_FALSE(occludingCells.contains(VoxelPosition{.x = 3, .y = 2,
+        .z = 0}));
+    EXPECT_FALSE(occludingCells.contains(VoxelPosition{.x = 3, .y = 1,
+        .z = 0}));
 }
 
 namespace
 {
 
-    [[nodiscard]] std::set<VoxelCell> roomShutIn()
+    [[nodiscard]] Voxels roomShutIn()
     {
-        std::set<VoxelCell> filledCells;
+        Voxels filledVoxels;
 
         for (std::int32_t x = -8; x <= 8; ++x)
         {
             for (std::int32_t z = -8; z <= 8; ++z)
             {
-                filledCells.insert(VoxelCell{.x = x, .y = 0, .z = z});
+                filledVoxels[VoxelPosition{.x = x, .y = 0, .z = z}] =
+                VoxelMaterial{};
             }
         }
 
@@ -162,10 +179,14 @@ namespace
         {
             for (std::int32_t sideIndex = -4; sideIndex <= 4; ++sideIndex)
             {
-                filledCells.insert(VoxelCell{.x = -4, .y = y, .z = sideIndex});
-                filledCells.insert(VoxelCell{.x = 4, .y = y, .z = sideIndex});
-                filledCells.insert(VoxelCell{.x = sideIndex, .y = y, .z = -4});
-                filledCells.insert(VoxelCell{.x = sideIndex, .y = y, .z = 4});
+                filledVoxels[VoxelPosition{.x = -4, .y = y, .z = sideIndex}] =
+                VoxelMaterial{};
+                filledVoxels[VoxelPosition{.x = 4, .y = y, .z = sideIndex}] =
+                VoxelMaterial{};
+                filledVoxels[VoxelPosition{.x = sideIndex, .y = y, .z = -4}] =
+                VoxelMaterial{};
+                filledVoxels[VoxelPosition{.x = sideIndex, .y = y, .z = 4}] =
+                VoxelMaterial{};
             }
         }
 
@@ -173,11 +194,12 @@ namespace
         {
             for (std::int32_t z = -4; z <= 4; ++z)
             {
-                filledCells.insert(VoxelCell{.x = x, .y = 5, .z = z});
+                filledVoxels[VoxelPosition{.x = x, .y = 5, .z = z}] =
+                VoxelMaterial{};
             }
         }
 
-        return filledCells;
+        return filledVoxels;
     }
 
 }
@@ -188,16 +210,16 @@ TEST(
 {
     using antwika::voxel::occludingVoxels;
 
-    auto filledCells = roomShutIn();
+    auto filledVoxels = roomShutIn();
 
-    const VoxelCell storeyOverCell{.x = 7, .y = 3, .z = -7};
+    const VoxelPosition storeyOverPosition{.x = 7, .y = 3, .z = -7};
 
-    filledCells.insert(storeyOverCell);
+    filledVoxels[storeyOverPosition] = VoxelMaterial{};
 
     const auto occludingCells =
-        occludingVoxels(filledCells, kStanding);
+        occludingVoxels(filledVoxels, kStanding);
 
-    EXPECT_TRUE(occludingCells.contains(storeyOverCell));
+    EXPECT_TRUE(occludingCells.contains(storeyOverPosition));
 }
 
 TEST(
@@ -209,9 +231,12 @@ TEST(
     const auto occludingCells =
         occludingVoxels(roomShutIn(), kStanding);
 
-    EXPECT_FALSE(occludingCells.contains(VoxelCell{.x = -4, .y = 3, .z = 0}));
-    EXPECT_FALSE(occludingCells.contains(VoxelCell{.x = -4, .y = 4, .z = 0}));
-    EXPECT_FALSE(occludingCells.contains(VoxelCell{.x = 0, .y = 3, .z = -4}));
+    EXPECT_FALSE(occludingCells.contains(VoxelPosition{.x = -4, .y = 3,
+        .z = 0}));
+    EXPECT_FALSE(occludingCells.contains(VoxelPosition{.x = -4, .y = 4,
+        .z = 0}));
+    EXPECT_FALSE(occludingCells.contains(VoxelPosition{.x = 0, .y = 3,
+        .z = -4}));
 }
 
 TEST(
@@ -223,8 +248,10 @@ TEST(
     const auto occludingCells =
         occludingVoxels(roomShutIn(), kStanding);
 
-    EXPECT_FALSE(occludingCells.contains(VoxelCell{.x = 0, .y = 0, .z = 0}));
-    EXPECT_FALSE(occludingCells.contains(VoxelCell{.x = 7, .y = 0, .z = -7}));
+    EXPECT_FALSE(occludingCells.contains(VoxelPosition{.x = 0, .y = 0,
+        .z = 0}));
+    EXPECT_FALSE(occludingCells.contains(VoxelPosition{.x = 7, .y = 0,
+        .z = -7}));
 }
 
 TEST(
@@ -233,18 +260,20 @@ TEST(
 {
     using antwika::voxel::occludingVoxels;
 
-    auto filledCells = groundUnder();
+    auto filledVoxels = groundUnder();
 
     for (std::int32_t z = -20; z <= 20; ++z)
     {
-        filledCells.insert(VoxelCell{.x = 0, .y = 3, .z = z});
+        filledVoxels[VoxelPosition{.x = 0, .y = 3, .z = z}] =
+                VoxelMaterial{};
     }
 
     const auto occludingCells =
-        occludingVoxels(filledCells, kStanding);
+        occludingVoxels(filledVoxels, kStanding);
 
-    EXPECT_TRUE(occludingCells.contains(VoxelCell{.x = 0, .y = 3, .z = 0}));
-    EXPECT_FALSE(occludingCells.contains(VoxelCell{.x = 0, .y = 3, .z = 18}));
+    EXPECT_TRUE(occludingCells.contains(VoxelPosition{.x = 0, .y = 3, .z = 0}));
+    EXPECT_FALSE(occludingCells.contains(VoxelPosition{.x = 0, .y = 3,
+        .z = 18}));
 }
 
 TEST(
@@ -253,24 +282,28 @@ TEST(
 {
     using antwika::voxel::occludingVoxels;
 
-    auto filledCells = groundUnder();
+    auto filledVoxels = groundUnder();
 
     for (std::int32_t z = -4; z <= 4; ++z)
     {
-        filledCells.insert(VoxelCell{.x = 0, .y = 3, .z = z});
+        filledVoxels[VoxelPosition{.x = 0, .y = 3, .z = z}] =
+                VoxelMaterial{};
     }
 
-    const VoxelCell holdingItUpCell{.x = 0, .y = 2, .z = -3};
+    const VoxelPosition holdingItUpPosition{.x = 0, .y = 2, .z = -3};
 
-    filledCells.insert(holdingItUpCell);
-    filledCells.insert(VoxelCell{.x = 0, .y = 1, .z = -3});
+    filledVoxels[holdingItUpPosition] = VoxelMaterial{};
+    filledVoxels[VoxelPosition{.x = 0, .y = 1, .z = -3}] =
+                VoxelMaterial{};
 
     const auto occludingCells =
-        occludingVoxels(filledCells, kStanding);
+        occludingVoxels(filledVoxels, kStanding);
 
-    EXPECT_TRUE(occludingCells.contains(VoxelCell{.x = 0, .y = 3, .z = -3}));
-    EXPECT_FALSE(occludingCells.contains(holdingItUpCell));
-    EXPECT_FALSE(occludingCells.contains(VoxelCell{.x = 0, .y = 1, .z = -3}));
+    EXPECT_TRUE(occludingCells.contains(VoxelPosition{.x = 0, .y = 3,
+        .z = -3}));
+    EXPECT_FALSE(occludingCells.contains(holdingItUpPosition));
+    EXPECT_FALSE(occludingCells.contains(VoxelPosition{.x = 0, .y = 1,
+        .z = -3}));
 }
 
 TEST(
@@ -279,17 +312,18 @@ TEST(
 {
     using antwika::voxel::occludingVoxels;
 
-    auto filledCells = groundUnder();
+    auto filledVoxels = groundUnder();
 
     for (std::int32_t x = -3; x <= 3; ++x)
     {
         for (std::int32_t z = -4; z <= 4; ++z)
         {
-            filledCells.insert(VoxelCell{.x = x, .y = 9, .z = z});
+            filledVoxels[VoxelPosition{.x = x, .y = 9, .z = z}] =
+                VoxelMaterial{};
         }
     }
 
-    EXPECT_TRUE(occludingVoxels(filledCells, kStanding).empty());
+    EXPECT_TRUE(occludingVoxels(filledVoxels, kStanding).empty());
 }
 
 TEST(
@@ -298,14 +332,14 @@ TEST(
 {
     using antwika::voxel::occludingVoxels;
 
-    auto filledCells = groundUnder();
-    const VoxelCell asideCell{.x = 2, .y = 3, .z = -3};
+    auto filledVoxels = groundUnder();
+    const VoxelPosition asidePosition{.x = 2, .y = 3, .z = -3};
 
-    filledCells.insert(asideCell);
+    filledVoxels[asidePosition] = VoxelMaterial{};
 
     const auto occludingCells =
-        occludingVoxels(filledCells, kStanding);
+        occludingVoxels(filledVoxels, kStanding);
 
-    EXPECT_FALSE(occludingCells.contains(asideCell));
+    EXPECT_FALSE(occludingCells.contains(asidePosition));
 }
 

@@ -14,9 +14,10 @@ namespace antwika::system
 {
 
     PatrolSystem::PatrolSystem(
-        const std::set<voxel::VoxelCell> &solidCells,
-        const std::vector<std::vector<voxel::VoxelCell>> &stopCells) noexcept
-        : solidCells(&solidCells), stopCells(&stopCells)
+        const voxel::Voxels &solidVoxels,
+        const std::vector<std::vector<voxel::VoxelPosition>> &stopPositions)
+        noexcept
+        : solidVoxels(&solidVoxels), stopPositions(&stopPositions)
     {
     }
 
@@ -49,8 +50,8 @@ namespace antwika::system
             world.get<component::RosterIndex>(entity).index;
             const auto stoppedWalking =
                 frozen || speaking == rosterIndex
-                || rosterIndex >= stopCells->size()
-                || stopCells->at(rosterIndex).empty();
+                || rosterIndex >= stopPositions->size()
+                || stopPositions->at(rosterIndex).empty();
 
             if (stoppedWalking)
             {
@@ -59,7 +60,7 @@ namespace antwika::system
                 continue;
             }
 
-            const auto &stopRound = stopCells->at(rosterIndex);
+            const auto &stopRound = stopPositions->at(rosterIndex);
             auto patrolState = world.get<component::Patrol>(entity);
             auto &route = routePositions[entity];
 
@@ -70,14 +71,14 @@ namespace antwika::system
                 const auto &goal = stopRound.at(
                     patrolState.nextStopIndex % stopRound.size());
                 const auto fromCell = collision::supportingVoxel(
-                    *solidCells,
+                    *solidVoxels,
                     static_cast<std::int32_t>(
                         std::floor(stoodPosition.x / voxel::kVoxelSide)),
                     static_cast<std::int32_t>(
                         std::floor(stoodPosition.z / voxel::kVoxelSide)),
                     stoodPosition.y);
                 const auto toCell = collision::supportingVoxel(
-                    *solidCells,
+                    *solidVoxels,
                     goal.x,
                     goal.z,
                     (static_cast<float>(goal.y) + 0.5F)
@@ -100,7 +101,7 @@ namespace antwika::system
                 }
 
                 const auto walk = pathfinding::pathBetween(
-                    collision::VoxelWalkGraph(*solidCells),
+                    collision::VoxelWalkGraph(*solidVoxels),
                     pathfinding::GridPos{
                         .x = fromCell->x, .y = fromCell->y, .z = fromCell->z},
                     pathfinding::GridPos{

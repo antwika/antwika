@@ -8,7 +8,7 @@
 #include <antwika/light/PointLight.hpp>
 #include <antwika/tilemap/AtlasLayout.hpp>
 #include <antwika/time/FrameRate.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 
 #include "antwika/editor/Editor.hpp"
@@ -560,12 +560,12 @@ namespace antwika::editor
             context.spacer(antwika::ui::kGrowSizing);
 
             if (activeView == map::View::World && !playing
-                && pointer.hoveredCell.has_value())
+                && pointer.hoveredPosition.has_value())
             {
                 context.label(
-                    std::to_string(pointer.hoveredCell->x) + " "
-                        + std::to_string(pointer.hoveredCell->y) + " "
-                        + std::to_string(pointer.hoveredCell->z)
+                    std::to_string(pointer.hoveredPosition->x) + " "
+                        + std::to_string(pointer.hoveredPosition->y) + " "
+                        + std::to_string(pointer.hoveredPosition->z)
                         + " - ",
                     kGridLineColor);
             }

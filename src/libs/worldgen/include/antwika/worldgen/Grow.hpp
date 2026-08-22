@@ -5,7 +5,7 @@
 #include <vector>
 
 #include <antwika/rng/IRng.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/worldgen/ruleset/CompiledRuleset.hpp>
 
 #include "antwika/worldgen/ChunkOutcome.hpp"

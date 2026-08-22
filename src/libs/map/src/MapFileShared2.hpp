@@ -249,21 +249,21 @@ namespace antwika::map::mapfile
         return shape;
     } // GCOVR_EXCL_LINE
 
-    [[nodiscard]] inline std::vector<voxel::VoxelCell> readCells(
+    [[nodiscard]] inline std::vector<voxel::VoxelPosition> readCells(
         const nlohmann::json &json)
     {
-        std::vector<voxel::VoxelCell> cells;
+        std::vector<voxel::VoxelPosition> positions;
 
-        for (const auto &cell : json)
+        for (const auto &writtenVoxel : json)
         {
-            cells.push_back(
-                voxel::VoxelCell{
-                    .x = cell[0].get<std::int32_t>(),
-                    .y = cell[1].get<std::int32_t>(),
-                    .z = cell[2].get<std::int32_t>()});
+            positions.push_back(
+                voxel::VoxelPosition{
+                    .x = writtenVoxel[0].get<std::int32_t>(),
+                    .y = writtenVoxel[1].get<std::int32_t>(),
+                    .z = writtenVoxel[2].get<std::int32_t>()});
         }
 
-        return cells;
+        return positions;
     } // GCOVR_EXCL_LINE
 
     void readFamilies(Map &map, const nlohmann::json &documentJson);

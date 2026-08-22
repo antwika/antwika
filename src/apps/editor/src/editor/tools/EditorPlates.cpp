@@ -1,5 +1,5 @@
 #include <antwika/input/MouseButton.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 
 #include "antwika/editor/Editor.hpp"
@@ -8,16 +8,16 @@ namespace antwika::editor
 {
 
     void Editor::pressPlate(
-        const voxel::VoxelCell cell, const input::MouseButton button)
+        const voxel::VoxelPosition position, const input::MouseButton button)
     {
-        const auto corner = antwika::voxel::cubeCornerOf(cell);
+        const auto corner = antwika::voxel::cubeCornerOf(position);
 
         if (button == input::MouseButton::Right)
         {
             for (std::size_t index = 0; index < map.plates.size();
                  ++index)
             {
-                if (antwika::voxel::cubeCornerOf(map.plates.at(index).cell)
+                if (antwika::voxel::cubeCornerOf(map.plates.at(index).position)
                     == corner)
                 {
                     pushUndo();
@@ -36,7 +36,7 @@ namespace antwika::editor
 
         for (std::size_t index = 0; index < map.plates.size(); ++index)
         {
-            if (antwika::voxel::cubeCornerOf(map.plates.at(index).cell)
+            if (antwika::voxel::cubeCornerOf(map.plates.at(index).position)
                 == corner)
             {
                 platePicked = index;
@@ -49,11 +49,11 @@ namespace antwika::editor
             && *platePicked < map.plates.size())
         {
             auto &sways =
-                map.plates.at(*platePicked).toggleCells;
+                map.plates.at(*platePicked).togglePositions;
             const auto foundSway = std::find_if(
                 sways.begin(),
                 sways.end(),
-                [corner](const voxel::VoxelCell sway)
+                [corner](const voxel::VoxelPosition sway)
                 {
                     return antwika::voxel::cubeCornerOf(sway)
                            == corner;
@@ -74,39 +74,40 @@ namespace antwika::editor
         }
 
         pushUndo();
-        map.plates.push_back(map::PressurePlate{.cell = cell});
+        map.plates.push_back(map::PressurePlate{.position = position});
         platePicked = map.plates.size() - 1;
     }
 
-    void Editor::onSteppedPlates(const voxel::VoxelCell standsOnCell)
+    void Editor::onSteppedPlates(const voxel::VoxelPosition standsOnPosition)
     {
-        const auto corner = antwika::voxel::cubeCornerOf(standsOnCell);
+        const auto corner = antwika::voxel::cubeCornerOf(standsOnPosition);
 
-        if (lastPlateStoodOnCell.has_value() && *lastPlateStoodOnCell == corner)
+        if (lastPlateStoodOnPosition.has_value(
+            ) && *lastPlateStoodOnPosition == corner)
         {
             return;
         }
 
-        lastPlateStoodOnCell = corner;
+        lastPlateStoodOnPosition = corner;
 
         for (const auto &plate : map.plates)
         {
-            if (antwika::voxel::cubeCornerOf(plate.cell) != corner)
+            if (antwika::voxel::cubeCornerOf(plate.position) != corner)
             {
                 continue;
             }
 
             pushUndo();
 
-            for (const auto sway : plate.toggleCells)
+            for (const auto sway : plate.togglePositions)
             {
                 const auto swayCorner =
                     antwika::voxel::cubeCornerOf(sway);
                 auto stands = false;
 
-                for (const auto &voxel : map.voxels)
+                for (const auto &[position, material] : map.voxels)
                 {
-                    if (antwika::voxel::cubeCornerOf(voxel)
+                    if (antwika::voxel::cubeCornerOf(position)
                         == swayCorner)
                     {
                         stands = true;

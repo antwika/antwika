@@ -5,7 +5,9 @@
 #include <cstdint>
 #include <vector>
 
-#include <antwika/voxel/VoxelCell.hpp>
+#include "antwika/voxel/VoxelMaterial.hpp"
+#include "antwika/voxel/VoxelPosition.hpp"
+#include "antwika/voxel/Voxels.hpp"
 
 namespace antwika::voxel
 {
@@ -83,29 +85,31 @@ namespace antwika::voxel
         FaceEdge{.side = Side::Right, .edge = EdgeKind::Boundary},
         FaceEdge{.side = Side::Right, .edge = EdgeKind::Interior}};
 
-    [[nodiscard]] VoxelCell cubeCornerOf(VoxelCell cell);
+    [[nodiscard]] VoxelPosition cubeCornerOf(VoxelPosition position);
 
-    [[nodiscard]] std::vector<VoxelCell> cubeCells(VoxelCell cornerCell);
+    [[nodiscard]] std::vector<VoxelPosition> cubeCells(
+        VoxelPosition cornerPosition);
 
-    [[nodiscard]] std::vector<VoxelCell> expandCubesToVoxels(
-        const std::vector<VoxelCell> &cells);
+    [[nodiscard]] Voxels expandCubesToVoxels(const Voxels &cubeVoxels);
 
-    [[nodiscard]] VoxelCell rampDirectionFor(
-        const std::vector<VoxelCell> &cells, VoxelCell cell);
+    [[nodiscard]] VoxelPosition rampDirectionFor(
+        const Voxels &filledVoxels, VoxelPosition position);
 
-    [[nodiscard]] std::vector<VoxelCell> cubeVoxels(
-        VoxelCell cornerCell, Kind kind, VoxelCell climbCell);
+    [[nodiscard]] Voxels cubeVoxels(
+        VoxelPosition cornerPosition,
+        Kind kind,
+        VoxelPosition climbPosition);
 
-    [[nodiscard]] std::vector<VoxelCell> withBlockAt(
-        const std::vector<VoxelCell> &cells,
-        VoxelCell cell,
+    [[nodiscard]] Voxels withBlockAt(
+        const Voxels &filledVoxels,
+        VoxelPosition position,
         Kind kind = Kind::Normal,
         Facing facingOverride = Facing::Any);
 
-    [[nodiscard]] std::vector<VoxelCell> withoutBlockAt(
-        const std::vector<VoxelCell> &cells, VoxelCell cell);
+    [[nodiscard]] Voxels withoutBlockAt(
+        const Voxels &filledVoxels, VoxelPosition position);
 
-    [[nodiscard]] std::vector<VoxelCell> withRampsRebuilt(
-        const std::vector<VoxelCell> &cells, VoxelCell cell);
+    [[nodiscard]] Voxels withRampsRebuilt(
+        const Voxels &filledVoxels, VoxelPosition position);
 
 }

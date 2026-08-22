@@ -14,6 +14,7 @@
 #include "antwika/gameplay/GameLoop.hpp"
 
 using antwika::ecs::World;
+using antwika::voxel::Voxels;
 using antwika::gameplay::Phase;
 using antwika::collision::isSolid;
 using antwika::collision::spawnPosition;
@@ -25,6 +26,7 @@ using antwika::collision::kWalkSpeed;
 using antwika::collision::positionOf;
 using antwika::collision::stoodCells;
 using antwika::voxel::VoxelCell;
+using antwika::voxel::voxelsOf;
 using antwika::component::Player;
 using antwika::collision::hasHeadroom;
 using antwika::system::MoveIntentSystem;
@@ -36,6 +38,7 @@ using antwika::collision::movedWithCollision;
 using antwika::component::Velocity;
 using antwika::system::WalkSystem;
 using antwika::log::mocks::MockLogger;
+using antwika::voxel::VoxelPosition;
 using ::testing::NiceMock;
 
 namespace
@@ -47,28 +50,28 @@ namespace
         kVoxelSide
         / static_cast<float>(antwika::voxel::kStepsPerVoxel);
 
-    [[nodiscard]] std::vector<VoxelCell> floorOver(
+    [[nodiscard]] Voxels floorOver(
         const std::int32_t reach)
     {
-        std::vector<VoxelCell> cells;
+        Voxels voxels;
 
         for (auto x = -reach; x <= reach; ++x)
         {
             for (auto z = -reach; z <= reach; ++z)
             {
-                cells.push_back(VoxelCell{.x = x, .y = 0, .z = z});
+                voxels.merge(voxelsOf({VoxelCell{.x = x, .y = 0, .z = z}}));
             }
         }
 
-        return cells;
+        return voxels;
     }
 
-    [[nodiscard]] std::set<VoxelCell> filledOver(
+    [[nodiscard]] Voxels filledOver(
         const std::int32_t reach)
     {
-        const auto cells = floorOver(reach);
+        const auto voxels = floorOver(reach);
 
-        return std::set<VoxelCell>(cells.begin(), cells.end());
+        return Voxels(voxels.begin(), voxels.end());
     }
 
 }
@@ -88,31 +91,33 @@ TEST(WalkerTest, PositionFrom_TakesBackWhatPositionOfGave)
 
 TEST(WalkerTest, IsSolid_TakesStoneAndStairsAndNotWaterOrAir)
 {
-    const std::set<VoxelCell> filledCells{
+    const auto filledVoxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Normal},
         VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Ramp},
-        VoxelCell{.x = 2, .y = 0, .z = 0, .kind = Kind::Water}};
+        VoxelCell{.x = 2, .y = 0, .z = 0, .kind = Kind::Water}});
 
-    EXPECT_TRUE(isSolid(filledCells, VoxelCell{.x = 0, .y = 0, .z = 0}));
-    EXPECT_TRUE(isSolid(filledCells, VoxelCell{.x = 1, .y = 0, .z = 0}));
-    EXPECT_FALSE(isSolid(filledCells, VoxelCell{.x = 2, .y = 0, .z = 0}));
-    EXPECT_FALSE(isSolid(filledCells, VoxelCell{.x = 3, .y = 0, .z = 0}));
+    EXPECT_TRUE(isSolid(filledVoxels, VoxelPosition{.x = 0, .y = 0, .z = 0}));
+    EXPECT_TRUE(isSolid(filledVoxels, VoxelPosition{.x = 1, .y = 0, .z = 0}));
+    EXPECT_FALSE(isSolid(filledVoxels, VoxelPosition{.x = 2, .y = 0, .z = 0}));
+    EXPECT_FALSE(isSolid(filledVoxels, VoxelPosition{.x = 3, .y = 0, .z = 0}));
 }
 
 TEST(WalkerTest, HasHeadroom_IsDeniedByWhateverStandsWithinAWalker)
 {
-    const std::set<VoxelCell> filledCells{
+    const auto filledVoxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0},
-        VoxelCell{.x = 0, .y = 2, .z = 0}};
+        VoxelCell{.x = 0, .y = 2, .z = 0}});
 
-    EXPECT_FALSE(hasHeadroom(filledCells, VoxelCell{.x = 0, .y = 0, .z = 0}));
-    EXPECT_TRUE(hasHeadroom(filledCells, VoxelCell{.x = 0, .y = 2, .z = 0}));
+    EXPECT_FALSE(hasHeadroom(filledVoxels, VoxelPosition{.x = 0, .y = 0,
+        .z = 0}));
+    EXPECT_TRUE(hasHeadroom(filledVoxels, VoxelPosition{.x = 0, .y = 2,
+        .z = 0}));
 }
 
 TEST(WalkerTest, GroundHeightAtColumn_GivesTheTopOfWhatBearsUnderneath)
 {
-    const auto filledCells = filledOver(1);
-    const auto footing = groundHeightAtColumn(filledCells, 0, 0, 1.0F);
+    const auto filledVoxels = filledOver(1);
+    const auto footing = groundHeightAtColumn(filledVoxels, 0, 0, 1.0F);
 
     ASSERT_TRUE(footing.has_value());
     EXPECT_NEAR(*footing, 1.0F, kTolerance);
@@ -120,10 +125,10 @@ TEST(WalkerTest, GroundHeightAtColumn_GivesTheTopOfWhatBearsUnderneath)
 
 TEST(WalkerTest, GroundHeightAtColumn_TakesAStepUpOfOneVoxel)
 {
-    auto filledCells = filledOver(1);
-    filledCells.insert(VoxelCell{.x = 1, .y = 1, .z = 0});
+    auto filledVoxels = filledOver(1);
+    filledVoxels.merge(voxelsOf({VoxelCell{.x = 1, .y = 1, .z = 0}}));
 
-    const auto footing = groundHeightAtColumn(filledCells, 1, 0, 1.0F);
+    const auto footing = groundHeightAtColumn(filledVoxels, 1, 0, 1.0F);
 
     ASSERT_TRUE(footing.has_value());
     EXPECT_NEAR(*footing, 2.0F, kTolerance);
@@ -131,11 +136,11 @@ TEST(WalkerTest, GroundHeightAtColumn_TakesAStepUpOfOneVoxel)
 
 TEST(WalkerTest, GroundHeightAtColumn_TakesAStepDownOfOneVoxel)
 {
-    const std::set<VoxelCell> filledCells{
+    const auto filledVoxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0},
-        VoxelCell{.x = 1, .y = -1, .z = 0}};
+        VoxelCell{.x = 1, .y = -1, .z = 0}});
 
-    const auto footing = groundHeightAtColumn(filledCells, 1, 0, 1.0F);
+    const auto footing = groundHeightAtColumn(filledVoxels, 1, 0, 1.0F);
 
     ASSERT_TRUE(footing.has_value());
     EXPECT_NEAR(*footing, 0.0F, kTolerance);
@@ -143,36 +148,36 @@ TEST(WalkerTest, GroundHeightAtColumn_TakesAStepDownOfOneVoxel)
 
 TEST(WalkerTest, GroundHeightAtColumn_DropsToGroundFarBelow)
 {
-    const std::set<VoxelCell> filledCells{
+    const auto filledVoxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0},
-        VoxelCell{.x = 1, .y = -2, .z = 0}};
+        VoxelCell{.x = 1, .y = -2, .z = 0}});
 
-    const auto footing = groundHeightAtColumn(filledCells, 1, 0, 1.0F);
+    const auto footing = groundHeightAtColumn(filledVoxels, 1, 0, 1.0F);
 
     ASSERT_TRUE(footing.has_value());
     EXPECT_NEAR(*footing, -1.0F, kTolerance);
-    EXPECT_FALSE(groundHeightAtColumn(filledCells, 2, 0, 1.0F).has_value());
+    EXPECT_FALSE(groundHeightAtColumn(filledVoxels, 2, 0, 1.0F).has_value());
 }
 
 TEST(WalkerTest, GroundHeightAtColumn_GivesUpPastTheMaxFallDepth)
 {
-    const std::set<VoxelCell> filledCells{
+    const auto filledVoxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0},
         VoxelCell{
             .x = 1,
             .y = -antwika::collision::kMaxFallDepth - 2,
-            .z = 0}};
+            .z = 0}});
 
-    EXPECT_FALSE(groundHeightAtColumn(filledCells, 1, 0, 1.0F).has_value());
+    EXPECT_FALSE(groundHeightAtColumn(filledVoxels, 1, 0, 1.0F).has_value());
 }
 
 TEST(WalkerTest, GroundHeightAtColumn_StandsInWaterSunkToTheWaist)
 {
-    const std::set<VoxelCell> filledCells{
+    const auto filledVoxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0},
-        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Water}};
+        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Water}});
 
-    const auto footing = groundHeightAtColumn(filledCells, 1, 0, 1.0F);
+    const auto footing = groundHeightAtColumn(filledVoxels, 1, 0, 1.0F);
 
     ASSERT_TRUE(footing.has_value());
     EXPECT_NEAR(*footing, 0.5F, kTolerance);
@@ -180,18 +185,18 @@ TEST(WalkerTest, GroundHeightAtColumn_StandsInWaterSunkToTheWaist)
 
 TEST(WalkerTest, MovedWithCollision_FallsNoFasterThanTheFallSpeed)
 {
-    std::set<VoxelCell> filledCells;
+    Voxels filledVoxels;
 
     for (std::int32_t x = 0; x <= 8; ++x)
     {
-        filledCells.insert(VoxelCell{.x = x, .y = 0, .z = 0});
-        filledCells.insert(VoxelCell{.x = x, .y = 0, .z = 1});
-        filledCells.insert(VoxelCell{.x = x, .y = 0, .z = -1});
+        filledVoxels.merge(voxelsOf({VoxelCell{.x = x, .y = 0, .z = 0}}));
+        filledVoxels.merge(voxelsOf({VoxelCell{.x = x, .y = 0, .z = 1}}));
+        filledVoxels.merge(voxelsOf({VoxelCell{.x = x, .y = 0, .z = -1}}));
     }
 
-    filledCells.insert(VoxelCell{.x = 0, .y = 1, .z = 0});
-    filledCells.insert(VoxelCell{.x = 0, .y = 2, .z = 0});
-    filledCells.insert(VoxelCell{.x = 0, .y = 3, .z = 0});
+    filledVoxels.merge(voxelsOf({VoxelCell{.x = 0, .y = 1, .z = 0}}));
+    filledVoxels.merge(voxelsOf({VoxelCell{.x = 0, .y = 2, .z = 0}}));
+    filledVoxels.merge(voxelsOf({VoxelCell{.x = 0, .y = 3, .z = 0}}));
 
     auto stoodPosition = Position{.x = 0.5F, .y = 4.0F, .z = 0.5F};
     auto sankMost = 0.0F;
@@ -201,7 +206,7 @@ TEST(WalkerTest, MovedWithCollision_FallsNoFasterThanTheFallSpeed)
         const auto was = stoodPosition;
 
         stoodPosition = movedWithCollision(
-            filledCells, stoodPosition, Velocity{.velocityX = 1.0F,
+            filledVoxels, stoodPosition, Velocity{.velocityX = 1.0F,
                 .velocityZ = 0.0F});
         sankMost = std::max(sankMost, was.y - stoodPosition.y);
     }
@@ -214,14 +219,14 @@ TEST(WalkerTest, MovedWithCollision_FallsNoFasterThanTheFallSpeed)
 
 TEST(WalkerTest, MovedWithCollision_SinksWhereItStandsOverAHole)
 {
-    const std::set<VoxelCell> filledCells{
-        VoxelCell{.x = 0, .y = -3, .z = 0}};
+    const auto filledVoxels = voxelsOf({
+        VoxelCell{.x = 0, .y = -3, .z = 0}});
 
     auto stoodPosition = Position{.x = 0.5F, .y = 3.0F, .z = 0.5F};
 
     for (std::size_t step = 0; step < 60; ++step)
     {
-        stoodPosition = movedWithCollision(filledCells, stoodPosition,
+        stoodPosition = movedWithCollision(filledVoxels, stoodPosition,
             Velocity{});
     }
 
@@ -230,20 +235,19 @@ TEST(WalkerTest, MovedWithCollision_SinksWhereItStandsOverAHole)
 
 TEST(WalkerTest, MovedWithCollision_WadesAtTheWadersPace)
 {
-    std::set<VoxelCell> landCells;
-    std::set<VoxelCell> poolCells;
+    Voxels landVoxels;
+    Voxels poolVoxels;
 
     for (std::int32_t x = -4; x <= 4; ++x)
     {
         for (std::int32_t z = -1; z <= 1; ++z)
         {
-            landCells.insert(VoxelCell{.x = x, .y = 0, .z = z});
-            poolCells.insert(
-                VoxelCell{
+            landVoxels.merge(voxelsOf({VoxelCell{.x = x, .y = 0, .z = z}}));
+            poolVoxels.merge(voxelsOf({VoxelCell{
                     .x = x,
                     .y = 0,
                     .z = z,
-                    .kind = Kind::Water});
+                    .kind = Kind::Water}}));
         }
     }
 
@@ -252,9 +256,9 @@ TEST(WalkerTest, MovedWithCollision_WadesAtTheWadersPace)
 
     for (std::size_t step = 0; step < 10; ++step)
     {
-        dryPosition = movedWithCollision(landCells, dryPosition,
+        dryPosition = movedWithCollision(landVoxels, dryPosition,
         Velocity{.velocityX = 1.0F});
-        wetPosition = movedWithCollision(poolCells, wetPosition,
+        wetPosition = movedWithCollision(poolVoxels, wetPosition,
             Velocity{.velocityX = 1.0F});
     }
 
@@ -266,15 +270,14 @@ TEST(WalkerTest, MovedWithCollision_WadesAtTheWadersPace)
 
 TEST(WalkerTest, MovedWithCollision_ClimbsALadderNorthAndDownAgain)
 {
-    std::set<VoxelCell> filledCells{
+    auto filledVoxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0},
-        VoxelCell{.x = 0, .y = 0, .z = 1}};
+        VoxelCell{.x = 0, .y = 0, .z = 1}});
 
     for (std::int32_t y = 1; y <= 4; ++y)
     {
-        filledCells.insert(
-            VoxelCell{
-                .x = 0, .y = y, .z = 0, .kind = Kind::Ladder});
+        filledVoxels.merge(voxelsOf({VoxelCell{
+                .x = 0, .y = y, .z = 0, .kind = Kind::Ladder}}));
     }
 
     auto stoodPosition = Position{.x = 0.5F, .y = 1.0F, .z = 0.5F};
@@ -282,7 +285,7 @@ TEST(WalkerTest, MovedWithCollision_ClimbsALadderNorthAndDownAgain)
     for (std::size_t step = 0; step < 200; ++step)
     {
         stoodPosition = movedWithCollision(
-            filledCells, stoodPosition, Velocity{.velocityZ = -1.0F});
+            filledVoxels, stoodPosition, Velocity{.velocityZ = -1.0F});
     }
 
     EXPECT_NEAR(stoodPosition.y, 5.0F, kTolerance);
@@ -291,7 +294,7 @@ TEST(WalkerTest, MovedWithCollision_ClimbsALadderNorthAndDownAgain)
     for (std::size_t step = 0; step < 200; ++step)
     {
         stoodPosition = movedWithCollision(
-            filledCells, stoodPosition, Velocity{.velocityZ = 1.0F});
+            filledVoxels, stoodPosition, Velocity{.velocityZ = 1.0F});
     }
 
     EXPECT_NEAR(stoodPosition.y, 1.0F, 0.2F);
@@ -299,25 +302,24 @@ TEST(WalkerTest, MovedWithCollision_ClimbsALadderNorthAndDownAgain)
 
 TEST(WalkerTest, MovedWithCollision_StepsOffTheTopOfALadder)
 {
-    std::set<VoxelCell> filledCells{
-        VoxelCell{.x = 0, .y = 0, .z = 0}};
+    auto filledVoxels = voxelsOf({
+        VoxelCell{.x = 0, .y = 0, .z = 0}});
 
     for (std::int32_t y = 1; y <= 3; ++y)
     {
-        filledCells.insert(
-            VoxelCell{
-                .x = 0, .y = y, .z = 0, .kind = Kind::Ladder});
+        filledVoxels.merge(voxelsOf({VoxelCell{
+                .x = 0, .y = y, .z = 0, .kind = Kind::Ladder}}));
     }
 
-    filledCells.insert(VoxelCell{.x = 0, .y = 3, .z = -1});
-    filledCells.insert(VoxelCell{.x = 0, .y = 3, .z = -2});
+    filledVoxels.merge(voxelsOf({VoxelCell{.x = 0, .y = 3, .z = -1}}));
+    filledVoxels.merge(voxelsOf({VoxelCell{.x = 0, .y = 3, .z = -2}}));
 
     auto stoodPosition = Position{.x = 0.5F, .y = 1.0F, .z = 0.5F};
 
     for (std::size_t step = 0; step < 400; ++step)
     {
         stoodPosition = movedWithCollision(
-            filledCells, stoodPosition, Velocity{.velocityZ = -1.0F});
+            filledVoxels, stoodPosition, Velocity{.velocityZ = -1.0F});
     }
 
     EXPECT_NEAR(stoodPosition.y, 4.0F, kTolerance);
@@ -326,21 +328,20 @@ TEST(WalkerTest, MovedWithCollision_StepsOffTheTopOfALadder)
 
 TEST(WalkerTest, MovedWithCollision_HoldsToTheRungsWithoutFalling)
 {
-    std::set<VoxelCell> filledCells{
-        VoxelCell{.x = 0, .y = -4, .z = 0}};
+    auto filledVoxels = voxelsOf({
+        VoxelCell{.x = 0, .y = -4, .z = 0}});
 
     for (std::int32_t y = 0; y <= 3; ++y)
     {
-        filledCells.insert(
-            VoxelCell{
-                .x = 0, .y = y, .z = 0, .kind = Kind::Ladder});
+        filledVoxels.merge(voxelsOf({VoxelCell{
+                .x = 0, .y = y, .z = 0, .kind = Kind::Ladder}}));
     }
 
     auto stoodPosition = Position{.x = 0.5F, .y = 2.5F, .z = 0.5F};
 
     for (std::size_t step = 0; step < 30; ++step)
     {
-        stoodPosition = movedWithCollision(filledCells, stoodPosition,
+        stoodPosition = movedWithCollision(filledVoxels, stoodPosition,
             Velocity{});
     }
 
@@ -349,11 +350,11 @@ TEST(WalkerTest, MovedWithCollision_HoldsToTheRungsWithoutFalling)
 
 TEST(WalkerTest, GroundHeightAtColumn_FallsPastALadderItDoesNotHold)
 {
-    const std::set<VoxelCell> filledCells{
+    const auto filledVoxels = voxelsOf({
         VoxelCell{.x = 0, .y = -3, .z = 0},
-        VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Ladder}};
+        VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Ladder}});
 
-    const auto footing = groundHeightAtColumn(filledCells, 0, 0, 3.0F);
+    const auto footing = groundHeightAtColumn(filledVoxels, 0, 0, 3.0F);
 
     ASSERT_TRUE(footing.has_value());
     EXPECT_NEAR(*footing, -2.0F, kTolerance);
@@ -361,13 +362,13 @@ TEST(WalkerTest, GroundHeightAtColumn_FallsPastALadderItDoesNotHold)
 
 TEST(WalkerTest, MovedWithCollision_RunsByTheMultiplierItIsSent)
 {
-    std::set<VoxelCell> filledCells;
+    Voxels filledVoxels;
 
     for (std::int32_t x = -8; x <= 8; ++x)
     {
         for (std::int32_t z = -1; z <= 1; ++z)
         {
-            filledCells.insert(VoxelCell{.x = x, .y = 0, .z = z});
+            filledVoxels.merge(voxelsOf({VoxelCell{.x = x, .y = 0, .z = z}}));
         }
     }
 
@@ -378,9 +379,9 @@ TEST(WalkerTest, MovedWithCollision_RunsByTheMultiplierItIsSent)
     {
         walkedPosition =
             movedWithCollision(
-                filledCells, walkedPosition, Velocity{.velocityX = 1.0F});
+                filledVoxels, walkedPosition, Velocity{.velocityX = 1.0F});
         ran = movedWithCollision(
-            filledCells,
+            filledVoxels,
             ran,
             Velocity{
                 .velocityX = 1.0F,
@@ -395,22 +396,22 @@ TEST(WalkerTest, MovedWithCollision_RunsByTheMultiplierItIsSent)
 
 TEST(WalkerTest, GroundHeightAtColumn_RefusesGroundWithNoRoomOverIt)
 {
-    const std::set<VoxelCell> filledCells{
+    const auto filledVoxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0},
         VoxelCell{.x = 1, .y = 1, .z = 0},
-        VoxelCell{.x = 1, .y = 2, .z = 0}};
+        VoxelCell{.x = 1, .y = 2, .z = 0}});
 
-    EXPECT_FALSE(groundHeightAtColumn(filledCells, 1, 0, 1.0F).has_value());
+    EXPECT_FALSE(groundHeightAtColumn(filledVoxels, 1, 0, 1.0F).has_value());
 }
 
 TEST(WalkerTest, RestPositionOverColumn_TakesTheHighestOfAColumnWithRoom)
 {
-    const std::set<VoxelCell> filledCells{
+    const auto filledVoxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0},
         VoxelCell{.x = 0, .y = 1, .z = 0},
-        VoxelCell{.x = 0, .y = 4, .z = 0}};
+        VoxelCell{.x = 0, .y = 4, .z = 0}});
 
-    const auto foothold = restPositionOverColumn(filledCells, 0, 0);
+    const auto foothold = restPositionOverColumn(filledVoxels, 0, 0);
 
     ASSERT_TRUE(foothold.has_value());
     EXPECT_NEAR(foothold->y, 5.0F, kTolerance);
@@ -423,7 +424,7 @@ TEST(WalkerTest, RestPositionOverColumn_GivesNothingOverAnEmptyColumn)
 
 TEST(WalkerTest, SpawnPosition_GivesNothingOnAPileThatBearsNothing)
 {
-    EXPECT_FALSE(spawnPosition(std::vector<VoxelCell>{}).has_value());
+    EXPECT_FALSE(spawnPosition(Voxels{}).has_value());
 }
 
 TEST(WalkerTest, SpawnPosition_StandsOnThePile)
@@ -438,9 +439,9 @@ TEST(WalkerTest, SpawnPosition_StandsOnThePile)
 
 TEST(WalkerTest, MovedWithCollision_CarriesAWalkerAcrossTheGround)
 {
-    const auto filledCells = filledOver(2);
+    const auto filledVoxels = filledOver(2);
     const auto stoodPosition = movedWithCollision(
-        filledCells,
+        filledVoxels,
         Position{.x = 0.5F, .y = 1.0F, .z = 0.5F},
         Velocity{.velocityX = 1.0F, .velocityZ = 0.0F});
 
@@ -451,15 +452,14 @@ TEST(WalkerTest, MovedWithCollision_CarriesAWalkerAcrossTheGround)
 
 TEST(WalkerTest, MovedWithCollision_CrossesARampAtHalfItsPace)
 {
-    auto filledCells = filledOver(2);
+    auto filledVoxels = filledOver(2);
 
-    filledCells.erase(VoxelCell{.x = 0, .y = 0, .z = 0});
-    filledCells.insert(
-        VoxelCell{
-            .x = 0, .y = 0, .z = 0, .kind = Kind::Ramp});
+    filledVoxels.erase(VoxelPosition{.x = 0, .y = 0, .z = 0});
+    filledVoxels.merge(voxelsOf({VoxelCell{
+            .x = 0, .y = 0, .z = 0, .kind = Kind::Ramp}}));
 
     const auto stoodPosition = movedWithCollision(
-        filledCells,
+        filledVoxels,
         Position{.x = 0.5F, .y = 1.0F, .z = 0.5F},
         Velocity{.velocityX = 1.0F, .velocityZ = 0.0F});
 
@@ -471,9 +471,9 @@ TEST(WalkerTest, MovedWithCollision_CrossesARampAtHalfItsPace)
 
 TEST(WalkerTest, MovedWithCollision_LeavesAWalkerSentNowhereWhereItStood)
 {
-    const auto filledCells = filledOver(2);
+    const auto filledVoxels = filledOver(2);
     const Position stoodPosition{.x = 0.75F, .y = 1.0F, .z = 0.25F};
-    const auto walkedTo = movedWithCollision(filledCells, stoodPosition,
+    const auto walkedTo = movedWithCollision(filledVoxels, stoodPosition,
         Velocity{});
 
     EXPECT_NEAR(walkedTo.x, stoodPosition.x, kTolerance);
@@ -483,11 +483,11 @@ TEST(WalkerTest, MovedWithCollision_LeavesAWalkerSentNowhereWhereItStood)
 
 TEST(WalkerTest, MovedWithCollision_ClimbsAStepOfOneVoxel)
 {
-    auto filledCells = filledOver(2);
-    filledCells.insert(VoxelCell{.x = 1, .y = 1, .z = 0});
+    auto filledVoxels = filledOver(2);
+    filledVoxels.merge(voxelsOf({VoxelCell{.x = 1, .y = 1, .z = 0}}));
 
     const auto stoodPosition = movedWithCollision(
-        filledCells,
+        filledVoxels,
         Position{.x = 0.95F, .y = 1.0F, .z = 0.5F},
         Velocity{.velocityX = 1.0F, .velocityZ = 0.0F});
 
@@ -496,14 +496,14 @@ TEST(WalkerTest, MovedWithCollision_ClimbsAStepOfOneVoxel)
 
 TEST(WalkerTest, MovedWithCollision_IsStoppedByASideTallerThanAStep)
 {
-    auto filledCells = filledOver(2);
-    filledCells.insert(VoxelCell{.x = 1, .y = 1, .z = 0});
-    filledCells.insert(VoxelCell{.x = 1, .y = 2, .z = 0});
+    auto filledVoxels = filledOver(2);
+    filledVoxels.merge(voxelsOf({VoxelCell{.x = 1, .y = 1, .z = 0}}));
+    filledVoxels.merge(voxelsOf({VoxelCell{.x = 1, .y = 2, .z = 0}}));
 
     const Position stoodPosition{.x = 0.95F, .y = 1.0F, .z = 0.5F};
     const auto walkedTo =
         movedWithCollision(
-            filledCells,
+            filledVoxels,
             stoodPosition,
             Velocity{.velocityX = 1.0F, .velocityZ = 0.0F});
 
@@ -515,14 +515,14 @@ TEST(
     WalkerTest,
     MovedWithCollision_RunsAlongWhatHoldsItRatherThanStoppingDead)
 {
-    auto filledCells = filledOver(4);
+    auto filledVoxels = filledOver(4);
 
     for (const auto alongIndex : {0, 1})
     {
         for (const auto upLevel : {1, 2})
         {
-            filledCells.insert(
-            VoxelCell{.x = 1, .y = upLevel, .z = alongIndex});
+            filledVoxels.merge(voxelsOf({VoxelCell{.x = 1, .y = upLevel,
+                .z = alongIndex}}));
         }
     }
 
@@ -531,7 +531,7 @@ TEST(
     for (auto step = 0; step < 10; ++step)
     {
         stoodPosition = movedWithCollision(
-            filledCells, stoodPosition, Velocity{.velocityX = 1.0F,
+            filledVoxels, stoodPosition, Velocity{.velocityX = 1.0F,
                 .velocityZ = 1.0F});
     }
 
@@ -543,11 +543,11 @@ TEST(
 
 TEST(WalkerTest, MovedWithCollision_KeepsOneWayAboutFromOutrunningTwo)
 {
-    const auto filledCells = filledOver(4);
+    const auto filledVoxels = filledOver(4);
     const Position stoodPosition{.x = 0.5F, .y = 1.0F, .z = 0.5F};
     const auto walkedTo =
         movedWithCollision(
-            filledCells,
+            filledVoxels,
             stoodPosition,
             Velocity{.velocityX = 1.0F, .velocityZ = 1.0F});
     const auto wentX = walkedTo.x - stoodPosition.x;
@@ -561,13 +561,13 @@ TEST(
     WalkerTest,
     MovedWithCollision_SettlesAWalkerLeftOverGroundThatFellAway)
 {
-    const std::set<VoxelCell> filledCells{
-        VoxelCell{.x = 0, .y = -1, .z = 0}};
+    const auto filledVoxels = voxelsOf({
+        VoxelCell{.x = 0, .y = -1, .z = 0}});
     auto stoodPosition = Position{.x = 0.5F, .y = 1.0F, .z = 0.5F};
 
     for (std::size_t step = 0; step < 10; ++step)
     {
-        stoodPosition = movedWithCollision(filledCells, stoodPosition,
+        stoodPosition = movedWithCollision(filledVoxels, stoodPosition,
             Velocity{});
     }
 
@@ -631,8 +631,8 @@ TEST(WalkerTest, Update_WalksTwoWalkersOverThePileAtOnce)
     NiceMock<MockLogger> logger;
     World world(logger);
     GameLoop gameLoop(world);
-    auto filledCells = filledOver(2);
-    WalkSystem steppingSystem(filledCells);
+    auto filledVoxels = filledOver(2);
+    WalkSystem steppingSystem(filledVoxels);
 
     gameLoop.addSystem(Phase::Walking, steppingSystem);
 
@@ -666,8 +666,8 @@ TEST(WalkerTest, Update_WalksEveryWalkerOverThePileAsItStands)
     NiceMock<MockLogger> logger;
     World world(logger);
     GameLoop gameLoop(world);
-    auto filledCells = filledOver(2);
-    WalkSystem steppingSystem(filledCells);
+    auto filledVoxels = filledOver(2);
+    WalkSystem steppingSystem(filledVoxels);
 
     gameLoop.addSystem(Phase::Walking, steppingSystem);
 
@@ -689,15 +689,14 @@ TEST(WalkerTest, Update_WalksEveryWalkerOverThePileAsItStands)
 
 TEST(WalkerTest, MovedWithCollision_ClimbsAFlightLaidAsARampCube)
 {
-    const auto cells = antwika::voxel::withBlockAt(
-        std::vector<VoxelCell>{},
-        VoxelCell{.x = 0, .y = 0, .z = 0},
+    const auto filledVoxels = antwika::voxel::withBlockAt(
+        Voxels{},
+        VoxelPosition{.x = 0, .y = 0, .z = 0},
         Kind::Ramp,
         antwika::voxel::Facing::East);
-    const std::set<VoxelCell> filledCells(cells.begin(), cells.end());
 
-    const auto lowGround = groundHeightAtColumn(filledCells, 0, 0, 1.0F);
-    const auto highGround = groundHeightAtColumn(filledCells, 1, 0, 1.0F);
+    const auto lowGround = groundHeightAtColumn(filledVoxels, 0, 0, 1.0F);
+    const auto highGround = groundHeightAtColumn(filledVoxels, 1, 0, 1.0F);
 
     ASSERT_TRUE(lowGround.has_value());
     ASSERT_TRUE(highGround.has_value());
@@ -709,7 +708,7 @@ TEST(WalkerTest, MovedWithCollision_ClimbsAFlightLaidAsARampCube)
     for (auto step = 0; step < 20; ++step)
     {
         stoodPosition = movedWithCollision(
-            filledCells, stoodPosition, Velocity{.velocityX = 1.0F,
+            filledVoxels, stoodPosition, Velocity{.velocityX = 1.0F,
                 .velocityZ = 0.0F});
     }
 
@@ -718,12 +717,13 @@ TEST(WalkerTest, MovedWithCollision_ClimbsAFlightLaidAsARampCube)
     EXPECT_LE(stoodPosition.y, *highGround);
 
     const auto underCell =
-        antwika::collision::supportingVoxel(filledCells, 1, 0, stoodPosition.y);
+        antwika::collision::supportingVoxel(filledVoxels, 1, 0,
+            stoodPosition.y);
 
     ASSERT_TRUE(underCell.has_value());
     EXPECT_NEAR(
         stoodPosition.y,
-        antwika::collision::groundHeightOn(filledCells, *underCell,
+        antwika::collision::groundHeightOn(filledVoxels, *underCell,
         stoodPosition.x,
             stoodPosition.z),
         kTolerance);
@@ -733,22 +733,22 @@ TEST(
     WalkerTest,
     GroundHeightUnderFootprint_HoldsEveryColumnItsFootprintCovers)
 {
-    const std::set<VoxelCell> filledCells{
+    const auto filledVoxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0},
         VoxelCell{.x = 1, .y = 0, .z = 0},
         VoxelCell{.x = 0, .y = 0, .z = 1},
-        VoxelCell{.x = 1, .y = 0, .z = 1}};
+        VoxelCell{.x = 1, .y = 0, .z = 1}});
 
     EXPECT_TRUE(
         antwika::collision::groundHeightUnderFootprint(
-            filledCells,
+            filledVoxels,
             0.5F,
             0.5F,
             1.0F)
             .has_value());
     EXPECT_FALSE(
         antwika::collision::groundHeightUnderFootprint(
-            filledCells,
+            filledVoxels,
             2.0F,
             0.5F,
             1.0F)
@@ -759,12 +759,12 @@ TEST(
     WalkerTest,
     GroundHeightUnderFootprint_RestsOnTheHighestUnderItsFootprint)
 {
-    auto filledCells = filledOver(2);
-    filledCells.insert(VoxelCell{.x = 1, .y = 1, .z = 0});
+    auto filledVoxels = filledOver(2);
+    filledVoxels.merge(voxelsOf({VoxelCell{.x = 1, .y = 1, .z = 0}}));
 
     const auto footing =
         antwika::collision::groundHeightUnderFootprint(
-            filledCells, 1.1F, 0.5F, 1.0F);
+            filledVoxels, 1.1F, 0.5F, 1.0F);
 
     ASSERT_TRUE(footing.has_value());
     EXPECT_NEAR(*footing, 2.0F, kTolerance);
@@ -774,17 +774,17 @@ TEST(
     WalkerTest,
     MovedWithCollision_KeepsAWalkersFootprintOffTheEdgeOfADrop)
 {
-    const std::set<VoxelCell> filledCells{
+    const auto filledVoxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0},
         VoxelCell{.x = 0, .y = 0, .z = 1},
-        VoxelCell{.x = 0, .y = 0, .z = -1}};
+        VoxelCell{.x = 0, .y = 0, .z = -1}});
 
     auto stoodPosition = Position{.x = 0.5F, .y = 1.0F, .z = 0.5F};
 
     for (auto step = 0; step < 20; ++step)
     {
         stoodPosition = movedWithCollision(
-            filledCells, stoodPosition, Velocity{.velocityX = 1.0F,
+            filledVoxels, stoodPosition, Velocity{.velocityX = 1.0F,
                 .velocityZ = 0.0F});
     }
 
@@ -810,60 +810,62 @@ TEST(WalkerTest, KWalkerPixel_MeasuresTheFootprintInWholePixels)
 namespace
 {
 
-    [[nodiscard]] std::set<VoxelCell> rampEastward()
+    [[nodiscard]] Voxels rampEastward()
     {
-        std::set<VoxelCell> filledCells;
+        Voxels filledVoxels;
 
         for (std::int32_t z = -2; z <= 2; ++z)
         {
             for (std::int32_t x = -3; x <= 0; ++x)
             {
-                filledCells.insert(VoxelCell{.x = x, .y = 0, .z = z});
+                filledVoxels.merge(voxelsOf({VoxelCell{.x = x, .y = 0,
+                    .z = z}}));
             }
 
-            filledCells.insert(
-                VoxelCell{
+            filledVoxels.merge(voxelsOf({VoxelCell{
                     .x = 1,
                     .y = 1,
                     .z = z,
                     .kind = Kind::Ramp,
-                    .facing = antwika::voxel::Facing::East});
-            filledCells.insert(VoxelCell{.x = 1, .y = 0, .z = z});
+                    .facing = antwika::voxel::Facing::East}}));
+            filledVoxels.merge(voxelsOf({VoxelCell{.x = 1, .y = 0, .z = z}}));
 
             for (std::int32_t x = 2; x <= 4; ++x)
             {
-                filledCells.insert(VoxelCell{.x = x, .y = 0, .z = z});
-                filledCells.insert(VoxelCell{.x = x, .y = 1, .z = z});
+                filledVoxels.merge(voxelsOf({VoxelCell{.x = x, .y = 0,
+                    .z = z}}));
+                filledVoxels.merge(voxelsOf({VoxelCell{.x = x, .y = 1,
+                    .z = z}}));
             }
         }
 
-        return filledCells;
+        return filledVoxels;
     }
 
-    [[nodiscard]] std::set<VoxelCell> walledRamp()
+    [[nodiscard]] Voxels walledRamp()
     {
-        auto filledCells = rampEastward();
+        auto filledVoxels = rampEastward();
 
         for (std::int32_t x = -3; x <= 4; ++x)
         {
-            filledCells.insert(VoxelCell{.x = x, .y = 1, .z = 3});
-            filledCells.insert(VoxelCell{.x = x, .y = 2, .z = 3});
+            filledVoxels.merge(voxelsOf({VoxelCell{.x = x, .y = 1, .z = 3}}));
+            filledVoxels.merge(voxelsOf({VoxelCell{.x = x, .y = 2, .z = 3}}));
         }
 
-        return filledCells;
+        return filledVoxels;
     }
 
 }
 
 TEST(WalkerTest, GroundHeightOn_StandsAPlainVoxelAtItsTopThroughout)
 {
-    const auto filledCells = filledOver(2);
+    const auto filledVoxels = filledOver(2);
     const VoxelCell groundCell{.x = 0, .y = 0, .z = 0};
 
     for (const auto index : {0.1F, 0.5F, 0.9F})
     {
         EXPECT_NEAR(
-            antwika::collision::groundHeightOn(filledCells, groundCell, index,
+            antwika::collision::groundHeightOn(filledVoxels, groundCell, index,
             index),
             1.0F * kVoxelSide,
             kTolerance);
@@ -872,7 +874,7 @@ TEST(WalkerTest, GroundHeightOn_StandsAPlainVoxelAtItsTopThroughout)
 
 TEST(WalkerTest, GroundHeightOn_RisesEvenlyAcrossARamp)
 {
-    const auto filledCells = rampEastward();
+    const auto filledVoxels = rampEastward();
     const VoxelCell rampCell{
         .x = 1,
         .y = 1,
@@ -881,22 +883,22 @@ TEST(WalkerTest, GroundHeightOn_RisesEvenlyAcrossARamp)
         .facing = antwika::voxel::Facing::East};
 
     EXPECT_NEAR(
-        antwika::collision::groundHeightOn(filledCells, rampCell, 1.0F, 0.5F),
+        antwika::collision::groundHeightOn(filledVoxels, rampCell, 1.0F, 0.5F),
         1.0F,
         kTolerance);
     EXPECT_NEAR(
-        antwika::collision::groundHeightOn(filledCells, rampCell, 1.5F, 0.5F),
+        antwika::collision::groundHeightOn(filledVoxels, rampCell, 1.5F, 0.5F),
         1.5F,
         kTolerance);
     EXPECT_NEAR(
-        antwika::collision::groundHeightOn(filledCells, rampCell, 2.0F, 0.5F),
+        antwika::collision::groundHeightOn(filledVoxels, rampCell, 2.0F, 0.5F),
         2.0F,
         kTolerance);
 }
 
 TEST(WalkerTest, GroundHeightOn_HoldsToTheEndsOfARampBeyondIt)
 {
-    const auto filledCells = rampEastward();
+    const auto filledVoxels = rampEastward();
     const VoxelCell rampCell{
         .x = 1,
         .y = 1,
@@ -905,18 +907,18 @@ TEST(WalkerTest, GroundHeightOn_HoldsToTheEndsOfARampBeyondIt)
         .facing = antwika::voxel::Facing::East};
 
     EXPECT_NEAR(
-        antwika::collision::groundHeightOn(filledCells, rampCell, -1.5F, 0.5F),
+        antwika::collision::groundHeightOn(filledVoxels, rampCell, -1.5F, 0.5F),
         1.0F,
         kTolerance);
     EXPECT_NEAR(
-        antwika::collision::groundHeightOn(filledCells, rampCell, 4.5F, 0.5F),
+        antwika::collision::groundHeightOn(filledVoxels, rampCell, 4.5F, 0.5F),
         2.0F,
         kTolerance);
 }
 
 TEST(WalkerTest, MovedWithCollision_LiftsAWalkerByATreadAndNoMoreAtOnce)
 {
-    const auto filledCells = rampEastward();
+    const auto filledVoxels = rampEastward();
     Position stoodPosition{.x = -0.5F, .y = 1.0F, .z = 0.5F};
     auto liftedHeight = 0.0F;
     auto didClimb = false;
@@ -926,7 +928,7 @@ TEST(WalkerTest, MovedWithCollision_LiftsAWalkerByATreadAndNoMoreAtOnce)
         const auto was = stoodPosition;
 
         stoodPosition = movedWithCollision(
-            filledCells, stoodPosition, Velocity{.velocityX = 1.0F});
+            filledVoxels, stoodPosition, Velocity{.velocityX = 1.0F});
         liftedHeight = std::max(liftedHeight,
             std::abs(stoodPosition.y - was.y));
         didClimb = didClimb || stoodPosition.y > was.y;
@@ -939,7 +941,7 @@ TEST(WalkerTest, MovedWithCollision_LiftsAWalkerByATreadAndNoMoreAtOnce)
 
 TEST(WalkerTest, MovedWithCollision_DropsAWalkerByATreadAndNoMoreAtOnce)
 {
-    const auto filledCells = rampEastward();
+    const auto filledVoxels = rampEastward();
     Position stoodPosition{.x = 3.5F, .y = 2.0F, .z = 0.5F};
     auto droppedHeight = 0.0F;
 
@@ -948,7 +950,7 @@ TEST(WalkerTest, MovedWithCollision_DropsAWalkerByATreadAndNoMoreAtOnce)
         const auto was = stoodPosition;
 
         stoodPosition = movedWithCollision(
-            filledCells, stoodPosition, Velocity{.velocityX = -1.0F});
+            filledVoxels, stoodPosition, Velocity{.velocityX = -1.0F});
         droppedHeight = std::max(droppedHeight,
             std::abs(stoodPosition.y - was.y));
     }
@@ -961,7 +963,7 @@ TEST(
     WalkerTest,
     GroundHeightUnderFootprint_StandsWhereEveryColumnBearsItStill)
 {
-    const auto filledCells = walledRamp();
+    const auto filledVoxels = walledRamp();
 
     for (auto index = 0; index <= 60; ++index)
     {
@@ -972,7 +974,7 @@ TEST(
             const auto z = -1.0F + (static_cast<float>(alongIndex) * 0.05F);
             const auto footing =
                 antwika::collision::groundHeightUnderFootprint(
-                    filledCells, x, z, 2.5F);
+                    filledVoxels, x, z, 2.5F);
 
             if (!footing.has_value())
             {
@@ -981,7 +983,7 @@ TEST(
 
             const auto secondHeight =
                 antwika::collision::groundHeightUnderFootprint(
-                    filledCells, x, z, *footing);
+                    filledVoxels, x, z, *footing);
 
             ASSERT_TRUE(secondHeight.has_value());
             EXPECT_NEAR(*secondHeight, *footing, kTolerance);
@@ -994,6 +996,6 @@ TEST(WalkerTest, StoodCells_NamesTheCubeAWalkerIsInAndTheOneUnderIt)
     const auto supportCells = stoodCells(
         antwika::component::Position{.x = 2.9F, .y = 2.0F, .z = -3.1F});
 
-    EXPECT_EQ(supportCells.front(), (VoxelCell{.x = 2, .y = 2, .z = -4}));
-    EXPECT_EQ(supportCells.back(), (VoxelCell{.x = 2, .y = 1, .z = -4}));
+    EXPECT_EQ(supportCells.front(), (VoxelPosition{.x = 2, .y = 2, .z = -4}));
+    EXPECT_EQ(supportCells.back(), (VoxelPosition{.x = 2, .y = 1, .z = -4}));
 }

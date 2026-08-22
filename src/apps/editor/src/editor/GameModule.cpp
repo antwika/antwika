@@ -6,7 +6,7 @@
 #include <type_traits>
 #include <string>
 
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/io/AssetPath.hpp>
 
 #include "antwika/editor/editor/PlayComponents.hpp"
@@ -31,13 +31,13 @@ namespace antwika::editor
     GameModule::GameModule(
         log::ILogger &logger,
         ecs::World &world,
-        const std::set<voxel::VoxelCell> &solidCells,
-        const std::vector<std::vector<voxel::VoxelCell>> &patrolCells)
+        const voxel::Voxels &solidVoxels,
+        const std::vector<std::vector<voxel::VoxelPosition>> &patrolPositions)
 #ifdef ANTWIKA_GAME_SHARED
         : logger(&logger),
           world(&world),
-          solidCells(&solidCells),
-          patrolCells(&patrolCells)
+          solidVoxels(&solidVoxels),
+          patrolPositions(&patrolPositions)
 #endif
     {
         claimPlayComponents(world);
@@ -49,7 +49,7 @@ namespace antwika::editor
         takeDown = &antwikaGameDestroy;
 #endif
 
-        madeGame = setUp(&logger, &world, &solidCells, &patrolCells);
+        madeGame = setUp(&logger, &world, &solidVoxels, &patrolPositions);
     }
 
     GameModule::~GameModule()
@@ -80,8 +80,8 @@ namespace antwika::editor
         gameplay::IGame *(**setUp)(
             log::ILogger *,
             ecs::World *,
-            const std::set<voxel::VoxelCell> *,
-            const std::vector<std::vector<voxel::VoxelCell>> *),
+            const voxel::Voxels *,
+            const std::vector<std::vector<voxel::VoxelPosition>> *),
         void (**takeDown)(gameplay::IGame *))
     {
         auto *const library = dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
@@ -242,7 +242,7 @@ namespace antwika::editor
         openedPath = *path;
         setUp = freshSetUp;
         takeDown = freshTakeDown;
-        madeGame = setUp(logger, world, solidCells, patrolCells);
+        madeGame = setUp(logger, world, solidVoxels, patrolPositions);
 
         return true;
     }

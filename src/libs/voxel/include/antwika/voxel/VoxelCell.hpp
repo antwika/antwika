@@ -51,4 +51,15 @@ namespace antwika::voxel
         }
     };
 
+    [[nodiscard]] inline VoxelCell voxelCellAt(
+        const VoxelPosition position, const VoxelMaterial material)
+    {
+        return VoxelCell{
+            .x = position.x,
+            .y = position.y,
+            .z = position.z,
+            .kind = material.kind,
+            .facing = material.facing};
+    }
+
 }

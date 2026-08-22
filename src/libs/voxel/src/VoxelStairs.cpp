@@ -42,16 +42,11 @@ namespace antwika::voxel
     namespace
     {
 
-        [[nodiscard]] std::size_t sideTowards(const VoxelCell wayCell)
+        [[nodiscard]] std::size_t sideTowards(const VoxelPosition wayPosition)
         {
             for (std::size_t side = 0; side < kFaces; ++side)
             {
-                const auto &neighbourOffset =
-                    kVoxelFaces[side].neighbourOffsetCell;
-
-                if (neighbourOffset.x == wayCell.x
-                    && neighbourOffset.y == wayCell.y
-                    && neighbourOffset.z == wayCell.z)
+                if (kVoxelFaces[side].neighbourOffsetPosition == wayPosition)
                 {
                     return side;
                 }
@@ -61,20 +56,20 @@ namespace antwika::voxel
         }
 
         [[nodiscard]] glm::vec3 within(
-            const VoxelCell climbCell,
+            const VoxelPosition climbPosition,
             const float alongDistance,
             const float acrossDistance,
             const float upDistance)
         {
-            const auto acrossCell = VoxelCell{.x = -climbCell.z,
-            .z = climbCell.x};
+            const auto acrossStep = VoxelPosition{.x = -climbPosition.z,
+            .z = climbPosition.x};
 
             return glm::vec3{
-                (static_cast<float>(climbCell.x) * alongDistance)
-                    + (static_cast<float>(acrossCell.x) * acrossDistance),
+                (static_cast<float>(climbPosition.x) * alongDistance)
+                    + (static_cast<float>(acrossStep.x) * acrossDistance),
                 upDistance,
-                (static_cast<float>(climbCell.z) * alongDistance)
-                    + (static_cast<float>(acrossCell.z) * acrossDistance)};
+                (static_cast<float>(climbPosition.z) * alongDistance)
+                    + (static_cast<float>(acrossStep.z) * acrossDistance)};
         }
 
         [[nodiscard]] glm::vec3 uponFace(
@@ -106,10 +101,12 @@ namespace antwika::voxel
 
     }
 
-    std::vector<StairQuad> stairQuads(const VoxelCell climbCell)
+    std::vector<StairQuad> stairQuads(const VoxelPosition climbPosition)
     {
-        const auto acrossCell = VoxelCell{.x = -climbCell.z, .z = climbCell.x};
-        const auto backCell = VoxelCell{.x = -climbCell.x, .z = -climbCell.z};
+        const auto acrossStep =
+            VoxelPosition{.x = -climbPosition.z, .z = climbPosition.x};
+        const auto backStep =
+            VoxelPosition{.x = -climbPosition.x, .z = -climbPosition.z};
 
         std::vector<StairQuad> quads;
 
@@ -124,15 +121,15 @@ namespace antwika::voxel
 
             quads.push_back(
                 quadOf(
-                    sideTowards(VoxelCell{.y = 1}),
-                    within(climbCell, nearHeight, -kHalf, nearHeight),
-                    within(climbCell, farHeight, kHalf, nearHeight)));
+                    sideTowards(VoxelPosition{.y = 1}),
+                    within(climbPosition, nearHeight, -kHalf, nearHeight),
+                    within(climbPosition, farHeight, kHalf, nearHeight)));
 
             quads.push_back(
                 quadOf(
-                    sideTowards(backCell),
-                    within(climbCell, farHeight, -kHalf, nearHeight),
-                    within(climbCell, farHeight, kHalf, farHeight)));
+                    sideTowards(backStep),
+                    within(climbPosition, farHeight, -kHalf, nearHeight),
+                    within(climbPosition, farHeight, kHalf, farHeight)));
 
             if (step == 0)
             {
@@ -141,19 +138,20 @@ namespace antwika::voxel
 
             quads.push_back(
                 quadOf(
-                    sideTowards(acrossCell),
-                    within(climbCell, nearHeight, kHalf, -kHalf),
-                    within(climbCell, farHeight, kHalf, nearHeight)));
+                    sideTowards(acrossStep),
+                    within(climbPosition, nearHeight, kHalf, -kHalf),
+                    within(climbPosition, farHeight, kHalf, nearHeight)));
 
             quads.push_back(
                 quadOf(
                     sideTowards(
-                        VoxelCell{.x = -acrossCell.x, .z = -acrossCell.z}),
-                    within(climbCell, nearHeight, -kHalf, -kHalf),
-                    within(climbCell, farHeight, -kHalf, nearHeight)));
+                        VoxelPosition{
+                            .x = -acrossStep.x, .z = -acrossStep.z}),
+                    within(climbPosition, nearHeight, -kHalf, -kHalf),
+                    within(climbPosition, farHeight, -kHalf, nearHeight)));
         }
 
-        for (const auto axis : {climbCell, VoxelCell{.y = -1}})
+        for (const auto axis : {climbPosition, VoxelPosition{.y = -1}})
         {
             const auto side = sideTowards(axis);
 

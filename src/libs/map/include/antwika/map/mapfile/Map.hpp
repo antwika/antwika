@@ -29,7 +29,7 @@ namespace antwika::map
 
     struct Map final
     {
-        std::vector<voxel::VoxelCell> voxels{};
+        voxel::Voxels voxels{};
 
         tilemap::Tilemap tilemap{};
 
@@ -45,23 +45,23 @@ namespace antwika::map
 
         std::vector<tile::TransitionTile> transitions{};
 
-        std::optional<voxel::VoxelCell> spawnCubeCell{};
+        std::optional<voxel::VoxelPosition> spawnCubePosition{};
 
-        std::optional<voxel::VoxelCell> exitCubeCell{};
+        std::optional<voxel::VoxelPosition> exitCubePosition{};
 
         std::string exitTarget{};
 
         bool exitLocked = false;
 
-        std::vector<voxel::VoxelCell> keyCells{};
+        std::vector<voxel::VoxelPosition> keyPositions{};
 
-        std::vector<voxel::VoxelCell> doorCells{};
+        std::vector<voxel::VoxelPosition> doorPositions{};
 
-        std::vector<voxel::VoxelCell> checkpointCells{};
+        std::vector<voxel::VoxelPosition> checkpointPositions{};
 
-        std::vector<voxel::VoxelCell> foodCells{};
+        std::vector<voxel::VoxelPosition> foodPositions{};
 
-        std::vector<voxel::VoxelCell> waterCells{};
+        std::vector<voxel::VoxelPosition> waterPositions{};
 
         std::optional<CameraView> camera{};
 

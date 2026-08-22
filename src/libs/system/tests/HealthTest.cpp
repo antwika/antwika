@@ -31,6 +31,8 @@ using antwika::component::Player;
 using antwika::component::Position;
 using antwika::component::Vitals;
 using antwika::voxel::VoxelCell;
+using antwika::voxel::VoxelPosition;
+using antwika::voxel::voxelsOf;
 using antwika::rules::autoConsumed;
 using antwika::rules::consumed;
 using antwika::rules::depleted;
@@ -207,7 +209,7 @@ namespace
         }
 
         [[nodiscard]] Entity lay(
-            const VoxelCell cell, const ItemKind kind)
+            const VoxelPosition position, const ItemKind kind)
         {
             auto &world = gameLoop.world();
             const auto entity = world.create();
@@ -215,7 +217,7 @@ namespace
             world.add<Item>(
                 entity,
                 Item{
-                    .cell = cell,
+                    .position = position,
                     .kind = static_cast<std::uint8_t>(kind)});
             world.commit();
 
@@ -234,7 +236,7 @@ namespace
         const auto walker =
             harness.walker(Position{.x = 0.0F, .y = 0.0F, .z = 0.0F});
         const auto item =
-            harness.lay(VoxelCell{.x = 0, .y = 1, .z = 0}, ItemKind::Food);
+            harness.lay(VoxelPosition{.x = 0, .y = 1, .z = 0}, ItemKind::Food);
 
         harness.step(1);
 
@@ -252,7 +254,7 @@ namespace
         const auto walker =
             harness.walker(Position{.x = 0.0F, .y = 0.0F, .z = 0.0F});
         const auto item = harness.lay(
-            VoxelCell{.x = 0, .y = 0, .z = 0}, ItemKind::Water);
+            VoxelPosition{.x = 0, .y = 0, .z = 0}, ItemKind::Water);
 
         harness.step(1);
 
@@ -270,7 +272,7 @@ namespace
         const auto walker =
             harness.walker(Position{.x = 0.0F, .y = 0.0F, .z = 0.0F});
         const auto item = harness.lay(
-            VoxelCell{.x = 40, .y = 1, .z = 40}, ItemKind::Food);
+            VoxelPosition{.x = 40, .y = 1, .z = 40}, ItemKind::Food);
 
         harness.step(1);
 
@@ -291,7 +293,7 @@ namespace
             harness.walker(Position{.x = 0.0F, .y = 0.0F, .z = 0.0F});
 
         (void)harness.lay(
-            VoxelCell{.x = 0, .y = 1, .z = 0}, ItemKind::Food);
+            VoxelPosition{.x = 0, .y = 1, .z = 0}, ItemKind::Food);
 
         harness.step(1);
 
@@ -323,7 +325,7 @@ namespace
             fullInventory);
 
         const auto item = harness.lay(
-            VoxelCell{.x = 0, .y = 1, .z = 0}, ItemKind::Food);
+            VoxelPosition{.x = 0, .y = 1, .z = 0}, ItemKind::Food);
 
         harness.step(1);
 
@@ -338,7 +340,7 @@ namespace
             Health{.food = 1, .water = kFullHealth});
 
         (void)harness.lay(
-            VoxelCell{.x = 0, .y = 1, .z = 0}, ItemKind::Food);
+            VoxelPosition{.x = 0, .y = 1, .z = 0}, ItemKind::Food);
 
         harness.step(1);
 
@@ -412,7 +414,7 @@ namespace
         const auto walker =
             harness.walker(Position{.x = 0.0F, .y = 0.0F, .z = 0.0F});
         const auto item = harness.lay(
-            VoxelCell{.x = 0, .y = 1, .z = 0}, ItemKind::Food);
+            VoxelPosition{.x = 0, .y = 1, .z = 0}, ItemKind::Food);
 
         harness.system.setFrozen(true);
         harness.step(kHungerTicks);

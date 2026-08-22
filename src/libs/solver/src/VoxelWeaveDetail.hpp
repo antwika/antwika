@@ -42,7 +42,7 @@ namespace antwika::solver::weavedetail
     [[nodiscard]] std::size_t faceAlong(const gfx::Vec3 direction);
 
     [[nodiscard]] bool atCubeFace(
-        voxel::VoxelCell cell, gfx::Vec3 direction);
+        voxel::VoxelPosition position, gfx::Vec3 direction);
 
     struct FaceEdge final
     {
@@ -51,8 +51,8 @@ namespace antwika::solver::weavedetail
         bool atRim = false;
     };
 
-        [[nodiscard]] voxel::VoxelCell offsetBy(
-            const voxel::VoxelCell fromCell, const gfx::Vec3 offset);
+        [[nodiscard]] voxel::VoxelPosition offsetBy(
+            voxel::VoxelPosition fromPosition, gfx::Vec3 offset);
 
         [[nodiscard]] gfx::Vec3 acrossOf(const std::size_t side);
 

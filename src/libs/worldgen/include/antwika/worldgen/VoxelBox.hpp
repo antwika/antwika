@@ -1,7 +1,7 @@
 #pragma once
 
 #include <antwika/rng/IRng.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/wfc/CompatibilityTable.hpp>
 
 namespace antwika::worldgen
@@ -9,9 +9,9 @@ namespace antwika::worldgen
 
     struct VoxelBox final
     {
-        voxel::VoxelCell lowCell{};
+        voxel::VoxelPosition lowPosition{};
 
-        voxel::VoxelCell highCell{};
+        voxel::VoxelPosition highPosition{};
 
         [[nodiscard]] bool operator==(const VoxelBox &other) const
             = default;

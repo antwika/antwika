@@ -3,7 +3,6 @@
 #include <array>
 #include <cstdint>
 #include <optional>
-#include <set>
 #include <vector>
 
 #include <antwika/component/Position.hpp>
@@ -12,6 +11,7 @@
 
 #include <antwika/voxelmap/Voxel.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
+#include <antwika/voxel/Voxels.hpp>
 #include <antwika/tilemap/TileEdges.hpp>
 
 namespace antwika::collision
@@ -48,50 +48,50 @@ namespace antwika::collision
     [[nodiscard]] component::Position positionFrom(gfx::Vec3 position);
 
     [[nodiscard]] bool isSolid(
-        const std::set<voxel::VoxelCell> &filledCells, voxel::VoxelCell cells);
+        const voxel::Voxels &filledVoxels, voxel::VoxelPosition position);
 
     [[nodiscard]] bool hasHeadroom(
-        const std::set<voxel::VoxelCell> &filledCells,
-        voxel::VoxelCell groundCell);
+        const voxel::Voxels &filledVoxels,
+        voxel::VoxelPosition groundPosition);
 
     [[nodiscard]] std::optional<float> groundHeightAtColumn(
-        const std::set<voxel::VoxelCell> &filledCells,
+        const voxel::Voxels &filledVoxels,
         std::int32_t x,
         std::int32_t z,
         float feet);
 
     [[nodiscard]] std::optional<voxel::VoxelCell> supportingVoxel(
-        const std::set<voxel::VoxelCell> &filledCells,
+        const voxel::Voxels &filledVoxels,
         std::int32_t x,
         std::int32_t z,
         float feet);
 
     [[nodiscard]] float groundHeightOn(
-        const std::set<voxel::VoxelCell> &filledCells,
+        const voxel::Voxels &filledVoxels,
         voxel::VoxelCell groundCell,
         float x,
         float z);
 
     [[nodiscard]] std::optional<float> groundHeightUnderFootprint(
-        const std::set<voxel::VoxelCell> &filledCells,
+        const voxel::Voxels &filledVoxels,
         float x,
         float z,
         float feet);
 
     [[nodiscard]] std::optional<component::Position> restPositionOverColumn(
-        const std::set<voxel::VoxelCell> &filledCells,
+        const voxel::Voxels &filledVoxels,
         std::int32_t x,
         std::int32_t z);
 
     [[nodiscard]] std::optional<component::Position> spawnPosition(
-        const std::vector<voxel::VoxelCell> &cells);
+        const voxel::Voxels &filledVoxels);
 
     [[nodiscard]] component::Position movedWithCollision(
-        const std::set<voxel::VoxelCell> &filledCells,
+        const voxel::Voxels &filledVoxels,
         component::Position position,
         component::Velocity velocity);
 
-    [[nodiscard]] std::array<voxel::VoxelCell, 2> stoodCells(
+    [[nodiscard]] std::array<voxel::VoxelPosition, 2> stoodCells(
         component::Position position);
 
 }

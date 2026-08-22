@@ -16,6 +16,11 @@ using antwika::rng::SplitMix64Rng;
 using antwika::voxel::Facing;
 using antwika::voxel::Kind;
 using antwika::voxel::VoxelCell;
+using antwika::voxel::VoxelMaterial;
+using antwika::voxel::Voxels;
+using antwika::voxel::VoxelPosition;
+using antwika::voxel::voxelsOf;
+using antwika::voxel::VoxelPosition;
 using antwika::worldgen::ChunkOutcome;
 using antwika::worldgen::ChunkRequest;
 using antwika::worldgen::ChunkResult;
@@ -42,12 +47,14 @@ namespace
         return compiledRuleset;
     }
 
-    [[nodiscard]] const VoxelCell *found(
-        const ChunkResult &result, const VoxelCell cubeCell)
+    [[nodiscard]] const VoxelMaterial *found(
+        const ChunkResult &result, const VoxelPosition cubePosition)
     {
-        const auto foundCell = std::ranges::find(result.cubeCells, cubeCell);
+        const auto foundVoxel = result.cubeVoxels.find(cubePosition);
 
-        return foundCell == result.cubeCells.end() ? nullptr : &*foundCell;
+        return foundVoxel == result.cubeVoxels.end()
+                   ? nullptr
+                   : &foundVoxel->second;
     }
 }
 
@@ -57,8 +64,8 @@ TEST(GrowChunkTest, Grow_RaisesABlockFromNothingAtAll)
         growChunk(city(), ChunkRequest{.seed = 1, .shape = kSmallShape});
 
     ASSERT_EQ(result.outcome, ChunkOutcome::Grown);
-    EXPECT_FALSE(result.cubeCells.empty());
-    EXPECT_TRUE(result.culpritCells.empty());
+    EXPECT_FALSE(result.cubeVoxels.empty());
+    EXPECT_TRUE(result.culpritPositions.empty());
 }
 
 TEST(GrowChunkTest, Grow_GivesTheSameBlockTwiceFromOneSeed)
@@ -77,7 +84,7 @@ TEST(GrowChunkTest, Grow_GivesADifferentBlockFromADifferentSeed)
 
     ASSERT_EQ(one.outcome, ChunkOutcome::Grown);
     ASSERT_EQ(otherChunk.outcome, ChunkOutcome::Grown);
-    EXPECT_NE(one.cubeCells, otherChunk.cubeCells);
+    EXPECT_NE(one.cubeVoxels, otherChunk.cubeVoxels);
 }
 
 TEST(GrowChunkTest, Grow_DrawsItsWaysAndItsFillFromSeparateStreams)
@@ -95,47 +102,49 @@ TEST(GrowChunkTest, Grow_DrawsItsWaysAndItsFillFromSeparateStreams)
 
     ASSERT_EQ(one.outcome, ChunkOutcome::Grown);
     ASSERT_EQ(otherChunk.outcome, ChunkOutcome::Grown);
-    EXPECT_NE(one.cubeCells, otherChunk.cubeCells);
+    EXPECT_NE(one.cubeVoxels, otherChunk.cubeVoxels);
 }
 
 TEST(GrowChunkTest, Grow_StandsEveryCubeAHintAsked)
 {
-    const std::vector<VoxelCell> hintCells{
+    const auto hintVoxels = voxelsOf({
         VoxelCell{.x = 2, .y = 5, .z = 2, .kind = Kind::Normal},
-        VoxelCell{.x = 3, .y = 5, .z = 2, .kind = Kind::Normal}};
+        VoxelCell{.x = 3, .y = 5, .z = 2, .kind = Kind::Normal}});
 
     const auto result = growChunk(
         city(),
-        ChunkRequest{.seed = 5, .shape = kSmallShape, .hintCells = hintCells});
+        ChunkRequest{.seed = 5, .shape = kSmallShape,
+            .hintVoxels = hintVoxels});
 
     ASSERT_EQ(result.outcome, ChunkOutcome::Grown);
 
-    for (const VoxelCell hint : hintCells)
+    for (const auto &[hintPosition, hintMaterial] : hintVoxels)
     {
-        const auto *foundCell = found(result, hint);
+        const auto *foundCell = found(result, hintPosition);
 
         ASSERT_NE(foundCell, nullptr);
-        EXPECT_EQ(foundCell->kind, hint.kind);
+        EXPECT_EQ(foundCell->kind, hintMaterial.kind);
     }
 }
 
 TEST(GrowChunkTest, Grow_StandsAStairTheWayTheArtistPaintedIt)
 {
-    const std::vector<VoxelCell> hintCells{
+    const auto hintVoxels = voxelsOf({
         VoxelCell{
             .x = 2,
             .y = 5,
             .z = 2,
             .kind = Kind::Ramp,
-            .facing = Facing::East}};
+            .facing = Facing::East}});
 
     const auto result = growChunk(
         city(),
-        ChunkRequest{.seed = 4, .shape = kSmallShape, .hintCells = hintCells});
+        ChunkRequest{.seed = 4, .shape = kSmallShape,
+            .hintVoxels = hintVoxels});
 
     ASSERT_EQ(result.outcome, ChunkOutcome::Grown);
 
-    const auto *foundCell = found(result, hintCells.front());
+    const auto *foundCell = found(result, hintVoxels.begin()->first);
 
     ASSERT_NE(foundCell, nullptr);
     EXPECT_EQ(foundCell->kind, Kind::Ramp);
@@ -148,11 +157,11 @@ TEST(GrowChunkTest, Grow_NamesAHintOutsideTheChunk)
         city(),
         ChunkRequest{
             .shape = kSmallShape,
-            .hintCells = {VoxelCell{.x = 99, .y = 1, .z = 1}}});
+            .hintVoxels = voxelsOf({VoxelCell{.x = 99, .y = 1, .z = 1}})});
 
     EXPECT_EQ(result.outcome, ChunkOutcome::HintOutside);
-    ASSERT_EQ(result.culpritCells.size(), 1U);
-    EXPECT_EQ(result.culpritCells.front().x, 99);
+    ASSERT_EQ(result.culpritPositions.size(), 1U);
+    EXPECT_EQ(result.culpritPositions.front().x, 99);
 }
 
 TEST(GrowChunkTest, Grow_NamesAHintNoPieceIsLaidOutAs)
@@ -174,9 +183,9 @@ TEST(GrowChunkTest, Grow_NamesAHintNoPieceIsLaidOutAs)
         compiledRuleset,
         ChunkRequest{
             .shape = kSmallShape,
-            .hintCells = {
+            .hintVoxels = voxelsOf({
                 VoxelCell{
-                    .x = 2, .y = 5, .z = 2, .kind = Kind::Water}}});
+                    .x = 2, .y = 5, .z = 2, .kind = Kind::Water}})});
 
     EXPECT_EQ(result.outcome, ChunkOutcome::HintUnknown);
 }
@@ -187,11 +196,11 @@ TEST(GrowChunkTest, Grow_NamesAHintTheDistrictItStandsInRefuses)
         city(),
         ChunkRequest{
             .shape = kSmallShape,
-            .hintCells = {
-                VoxelCell{.x = 2, .y = 13, .z = 2, .kind = Kind::Water}}});
+            .hintVoxels = voxelsOf({
+                VoxelCell{.x = 2, .y = 13, .z = 2, .kind = Kind::Water}})});
 
     EXPECT_EQ(result.outcome, ChunkOutcome::HintsConflict);
-    ASSERT_EQ(result.culpritCells.size(), 1U);
+    ASSERT_EQ(result.culpritPositions.size(), 1U);
 }
 
 TEST(GrowChunkTest, Grow_NamesBothCubesWhereTwoHintsStandAgainstOneAnother)
@@ -200,18 +209,18 @@ TEST(GrowChunkTest, Grow_NamesBothCubesWhereTwoHintsStandAgainstOneAnother)
         city(),
         ChunkRequest{
             .shape = kSmallShape,
-            .hintCells =
+            .hintVoxels = voxelsOf(
                 {VoxelCell{
                      .x = 2,
                      .y = 1,
                      .z = 2,
                      .kind = Kind::Ramp,
                      .facing = Facing::East},
-                 VoxelCell{.x = 3, .y = 1, .z = 2, .kind = Kind::Water}},
+                 VoxelCell{.x = 3, .y = 1, .z = 2, .kind = Kind::Water}}),
             .ways = 0});
 
     EXPECT_EQ(result.outcome, ChunkOutcome::HintsConflict);
-    EXPECT_EQ(result.culpritCells.size(), 2U);
+    EXPECT_EQ(result.culpritPositions.size(), 2U);
 }
 
 TEST(GrowChunkTest, Grow_NamesTheThinnestCubesWhereItGivesUp)
@@ -221,9 +230,10 @@ TEST(GrowChunkTest, Grow_NamesTheThinnestCubesWhereItGivesUp)
         ChunkRequest{.seed = 9, .shape = kSmallShape, .maxSteps = 1});
 
     ASSERT_EQ(result.outcome, ChunkOutcome::LimitExceeded);
-    EXPECT_FALSE(result.culpritCells.empty());
+    EXPECT_FALSE(result.culpritPositions.empty());
     EXPECT_LE(
-        result.culpritCells.size(), antwika::worldgen::kMaxReportedCulprits);
+        result.culpritPositions.size(
+            ), antwika::worldgen::kMaxReportedCulprits);
 }
 
 TEST(GrowChunkTest, Grow_TellsGivingUpApartFromCannotBeBuilt)
@@ -241,30 +251,30 @@ TEST(GrowChunkTest, Grow_GrowsABlockWithNoWayUpWhereNoneWasAsked)
         city(), ChunkRequest{.seed = 6, .shape = kSmallShape, .ways = 0});
 
     ASSERT_EQ(result.outcome, ChunkOutcome::Grown);
-    EXPECT_FALSE(result.cubeCells.empty());
+    EXPECT_FALSE(result.cubeVoxels.empty());
 }
 
 TEST(GrowChunkTest, Grow_NamesEveryCubeInTheWorldsOwnCubes)
 {
-    constexpr VoxelCell originPointCell{.x = 10, .y = -4, .z = 7};
+    constexpr VoxelPosition originPointPosition{.x = 10, .y = -4, .z = 7};
 
     const auto result = growChunk(
         city(),
         ChunkRequest{
             .seed = 8,
             .shape = kSmallShape,
-            .originCell = originPointCell});
+            .originPosition = originPointPosition});
 
     ASSERT_EQ(result.outcome, ChunkOutcome::Grown);
 
-    for (const VoxelCell cube : result.cubeCells)
+    for (const auto &[cube, material] : result.cubeVoxels)
     {
-        EXPECT_GE(cube.x, originPointCell.x);
-        EXPECT_LT(cube.x, originPointCell.x + kSmallShape.width);
-        EXPECT_GE(cube.y, originPointCell.y);
-        EXPECT_LT(cube.y, originPointCell.y + kSmallShape.height);
-        EXPECT_GE(cube.z, originPointCell.z);
-        EXPECT_LT(cube.z, originPointCell.z + kSmallShape.depth);
+        EXPECT_GE(cube.x, originPointPosition.x);
+        EXPECT_LT(cube.x, originPointPosition.x + kSmallShape.width);
+        EXPECT_GE(cube.y, originPointPosition.y);
+        EXPECT_LT(cube.y, originPointPosition.y + kSmallShape.height);
+        EXPECT_GE(cube.z, originPointPosition.z);
+        EXPECT_LT(cube.z, originPointPosition.z + kSmallShape.depth);
     }
 }
 
@@ -274,24 +284,19 @@ TEST(GrowChunkTest, Grow_LeavesOutTheAirRatherThanStandingIt)
         growChunk(city(), ChunkRequest{.seed = 2, .shape = kSmallShape});
 
     ASSERT_EQ(result.outcome, ChunkOutcome::Grown);
-    EXPECT_LT(result.cubeCells.size(), cubeCount(kSmallShape));
+    EXPECT_LT(result.cubeVoxels.size(), cubeCount(kSmallShape));
 }
 
-TEST(GrowChunkTest, Grow_LaysTheGroundBeforeAnythingStandsOnIt)
+TEST(GrowChunkTest, Grow_LaysTheGroundUnderMostOfTheBlock)
 {
     const auto result =
         growChunk(city(), ChunkRequest{.seed = 12, .shape = kSmallShape});
 
     ASSERT_EQ(result.outcome, ChunkOutcome::Grown);
 
-    for (std::size_t index = 1; index < result.cubeCells.size(); ++index)
-    {
-        EXPECT_LE(result.cubeCells[index - 1].y, result.cubeCells[index].y);
-    }
-
     const auto onTheFloor = std::ranges::count_if(
-        result.cubeCells,
-        [](const VoxelCell cube) { return cube.y == 0; });
+        result.cubeVoxels,
+        [](const auto &standing) { return standing.first.y == 0; });
 
     EXPECT_GT(onTheFloor, (kSmallShape.width * kSmallShape.depth) / 2);
 }
@@ -308,15 +313,15 @@ TEST(GrowChunkTest, Grow_NamesTheBlockUnclimbableWhereEveryCubeIsSettled)
 {
     constexpr ChunkShape tinyShape{.width = 2, .depth = 2, .height = 2};
 
-    std::vector<VoxelCell> hintCells;
+    Voxels hintVoxels;
     for (std::int32_t y = 0; y < tinyShape.height; ++y)
     {
         for (std::int32_t z = 0; z < tinyShape.depth; ++z)
         {
             for (std::int32_t x = 0; x < tinyShape.width; ++x)
             {
-                hintCells.push_back(
-                    VoxelCell{.x = x, .y = y, .z = z, .kind = Kind::Normal});
+                hintVoxels[VoxelPosition{.x = x, .y = y, .z = z}] =
+                    VoxelMaterial{.kind = Kind::Normal};
             }
         }
     }
@@ -324,11 +329,11 @@ TEST(GrowChunkTest, Grow_NamesTheBlockUnclimbableWhereEveryCubeIsSettled)
     const auto result = growChunk(
         city(), ChunkRequest{
             .shape = tinyShape,
-            .hintCells = hintCells,
+            .hintVoxels = hintVoxels,
             .ways = 1});
 
     EXPECT_EQ(result.outcome, ChunkOutcome::NoWayUp);
-    EXPECT_EQ(result.culpritCells.size(), 1U);
+    EXPECT_EQ(result.culpritPositions.size(), 1U);
 }
 
 TEST(GrowChunkTest, Grow_NamesHintsThatFallOutOnlyOnceTheyHaveSpread)
@@ -339,18 +344,18 @@ TEST(GrowChunkTest, Grow_NamesHintsThatFallOutOnlyOnceTheyHaveSpread)
         city(),
         ChunkRequest{
             .shape = shape,
-            .hintCells =
+            .hintVoxels = voxelsOf(
                 {VoxelCell{
                      .x = 1,
                      .y = 1,
                      .z = 1,
                      .kind = Kind::Ramp,
                      .facing = Facing::East},
-                 VoxelCell{.x = 2, .y = 2, .z = 1, .kind = Kind::Water}},
+                 VoxelCell{.x = 2, .y = 2, .z = 1, .kind = Kind::Water}}),
             .ways = 0});
 
     EXPECT_EQ(result.outcome, ChunkOutcome::HintsConflict);
-    EXPECT_FALSE(result.culpritCells.empty());
+    EXPECT_FALSE(result.culpritPositions.empty());
 }
 
 TEST(GrowChunkTest, Grow_NamesABlockNoDistrictCanBeStackedInto)
@@ -397,5 +402,5 @@ TEST(GrowChunkTest, Grow_NamesABlockNoDistrictCanBeStackedInto)
         ChunkRequest{.shape = ChunkShape{.width = 2, .depth = 2, .height = 2}});
 
     EXPECT_EQ(result.outcome, ChunkOutcome::Unsatisfiable);
-    EXPECT_FALSE(result.culpritCells.empty());
+    EXPECT_FALSE(result.culpritPositions.empty());
 }

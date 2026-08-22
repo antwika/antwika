@@ -1,8 +1,8 @@
 #pragma once
 
+#include <compare>
 #include <cstddef>
 #include <cstdint>
-#include <set>
 #include <span>
 #include <vector>
 
@@ -13,6 +13,8 @@
 
 #include <antwika/tilemap/Tilemap.hpp>
 #include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
+#include <antwika/voxel/Voxels.hpp>
 #include <antwika/voxelmap/VoxelStairs.hpp>
 
 namespace antwika::voxelmap
@@ -31,18 +33,17 @@ namespace antwika::voxelmap
     [[nodiscard]] gfx::Vec3 faceNormal(std::size_t side);
 
     [[nodiscard]] voxel::StairPart stairPartOf(
-        voxel::VoxelCell climbCell, std::size_t side);
+        voxel::VoxelPosition climbPosition, std::size_t side);
 
-    [[nodiscard]] gfx::Vec3 voxelsCenter(
-        const std::vector<voxel::VoxelCell> &cells);
+    [[nodiscard]] gfx::Vec3 voxelsCenter(const voxel::Voxels &voxels);
 
-    [[nodiscard]] gfx::Vec3 cellMiddle(voxel::VoxelCell cell);
+    [[nodiscard]] gfx::Vec3 cellMiddle(voxel::VoxelPosition position);
 
     [[nodiscard]] gfx::Vec3 faceCorner(
         std::size_t side, std::size_t corner);
 
     [[nodiscard]] std::size_t defaultTileIndex(
-        voxel::VoxelCell cell, std::size_t face);
+        voxel::VoxelPosition position, std::size_t face);
 
     struct FaceRef final
     {
@@ -50,19 +51,21 @@ namespace antwika::voxelmap
 
         std::size_t side = 0;
 
-        voxel::VoxelCell climbCell{};
+        voxel::VoxelPosition climbPosition{};
 
         voxel::StairHalf levelHalf = voxel::StairHalf::Any;
 
         [[nodiscard]] bool operator==(const FaceRef &other) const
         {
-            return cell == other.cell && side == other.side;
+            return cell.position() == other.cell.position()
+                   && side == other.side;
         }
 
         [[nodiscard]] std::strong_ordering operator<=>(
             const FaceRef &other) const
         {
-            if (const auto where = cell <=> other.cell; where != 0)
+            if (const auto where = cell.position() <=> other.cell.position();
+                where != 0)
             {
                 return where;
             }
@@ -72,34 +75,31 @@ namespace antwika::voxelmap
     };
 
     [[nodiscard]] bool usesMirroredUv(
-        const std::vector<voxel::VoxelCell> &cells, const FaceRef &face);
+        const voxel::Voxels &voxels, const FaceRef &face);
 
     [[nodiscard]] std::vector<FaceRef> visibleFacesOf(
-        const std::vector<voxel::VoxelCell> &cells);
+        const voxel::Voxels &voxels);
 
-    [[nodiscard]] std::int32_t levelOf(voxel::VoxelCell cell);
+    [[nodiscard]] std::int32_t levelOf(voxel::VoxelPosition position);
 
-    [[nodiscard]] std::int32_t topLevel(
-        const std::vector<voxel::VoxelCell> &cells);
+    [[nodiscard]] std::int32_t topLevel(const voxel::Voxels &voxels);
 
-    [[nodiscard]] std::int32_t bottomLevel(
-        const std::vector<voxel::VoxelCell> &cells);
+    [[nodiscard]] std::int32_t bottomLevel(const voxel::Voxels &voxels);
 
     [[nodiscard]] std::vector<tilemap::Tile> defaultTiles(
         const std::vector<FaceRef> &faces);
 
-    [[nodiscard]] std::vector<voxel::VoxelCell> demoCells();
+    [[nodiscard]] voxel::Voxels demoCells();
+
+    [[nodiscard]] gfx::MeshData voxelMesh(const voxel::Voxels &voxels);
 
     [[nodiscard]] gfx::MeshData voxelMesh(
-        const std::vector<voxel::VoxelCell> &cells);
-
-    [[nodiscard]] gfx::MeshData voxelMesh(
-        const std::vector<voxel::VoxelCell> &cells,
+        const voxel::Voxels &voxels,
         std::span<const tilemap::Tile> wovenTiles,
         Pass pass = Pass::Solid);
 
     [[nodiscard]] gfx::MeshData voxelMesh(
-        const std::vector<voxel::VoxelCell> &cells,
+        const voxel::Voxels &voxels,
         std::span<const FaceRef> faces,
         std::span<const tilemap::Tile> wovenTiles,
         Pass pass);

@@ -9,7 +9,7 @@
 #include <antwika/ui/ClickTrack.hpp>
 #include <antwika/ui/HoverHint.hpp>
 #include <antwika/ui/WidgetId.hpp>
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 
 #include "antwika/editor/editor/state/CanvasRest.hpp"
 
@@ -28,7 +28,7 @@ namespace antwika::editor
 
         ui::WidgetId hoveredWidget = ui::kNoWidget;
 
-        std::optional<voxel::VoxelCell> hoveredCell;
+        std::optional<voxel::VoxelPosition> hoveredPosition;
 
         ui::HoverTrack hoverTracker;
 

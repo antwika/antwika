@@ -35,6 +35,10 @@ using antwika::voxelmap::bottomLevel;
 using antwika::voxelmap::demoCells;
 using antwika::voxelmap::modelRotation;
 using antwika::voxel::VoxelCell;
+using antwika::voxel::VoxelMaterial;
+using antwika::voxel::VoxelPosition;
+using antwika::voxel::voxelsOf;
+using antwika::voxel::Voxels;
 using antwika::voxelmap::voxelMesh;
 using antwika::voxelmap::visibleFacesOf;
 using antwika::voxelmap::defaultTiles;
@@ -70,29 +74,24 @@ namespace
 
 TEST(VoxelTest, DemoCells_StacksOneOnAThreeByThreeBase)
 {
-    const auto cells = demoCells();
+    const auto voxels = demoCells();
 
-    EXPECT_EQ(cells.size(), 10U);
+    EXPECT_EQ(voxels.size(), 10U);
 
     std::size_t base = 0;
 
-    for (const auto cell : cells)
+    for (const auto &[position, material] : voxels)
     {
-        base += cell.y == 0 ? 1U : 0U;
+        base += position.y == 0 ? 1U : 0U;
     }
 
     EXPECT_EQ(base, 9U);
-    EXPECT_EQ(
-        std::count(
-            cells.begin(),
-            cells.end(),
-            VoxelCell{.x = 0, .y = 1, .z = 0}),
-        1);
+    EXPECT_TRUE(voxels.contains(VoxelPosition{.x = 0, .y = 1, .z = 0}));
 }
 
 TEST(VoxelTest, VoxelMesh_DrawsAllSixSidesOfALoneVoxel)
 {
-    const auto mesh = voxelMesh({VoxelCell{}});
+    const auto mesh = voxelMesh(voxelsOf({VoxelCell{}}));
 
     EXPECT_EQ(facesOf(mesh), 6U);
     EXPECT_EQ(mesh.vertices.size(), 24U);
@@ -102,7 +101,7 @@ TEST(VoxelTest, VoxelMesh_DrawsAllSixSidesOfALoneVoxel)
 TEST(VoxelTest, VoxelMesh_LeavesOutTheFaceTwoVoxelsShare)
 {
     const auto mesh = voxelMesh(
-        {VoxelCell{}, VoxelCell{.x = 1}});
+        voxelsOf({VoxelCell{}, VoxelCell{.x = 1}}));
 
     EXPECT_EQ(facesOf(mesh), kTouchingFaces);
 }
@@ -117,7 +116,7 @@ TEST(VoxelTest, VoxelMesh_KeepsOnlyTheOutsideOfThePyramid)
 
 TEST(VoxelTest, VoxelMesh_StandsAPileWhereItsCellsSay)
 {
-    const auto mesh = voxelMesh({VoxelCell{.x = 4, .y = 2, .z = 6}});
+    const auto mesh = voxelMesh(voxelsOf({VoxelCell{.x = 4, .y = 2, .z = 6}}));
 
     auto lowest = mesh.vertices.front().position;
     auto highest = lowest;
@@ -130,7 +129,7 @@ TEST(VoxelTest, VoxelMesh_StandsAPileWhereItsCellsSay)
 
     const auto middle = (lowest + highest) / 2.0F;
 
-    const auto pileMiddle = cellMiddle(VoxelCell{.x = 4, .y = 2, .z = 6});
+    const auto pileMiddle = cellMiddle(VoxelPosition{.x = 4, .y = 2, .z = 6});
 
     EXPECT_NEAR(middle.x, pileMiddle.x, 1e-5F);
     EXPECT_NEAR(middle.y, pileMiddle.y, 1e-5F);
@@ -139,10 +138,10 @@ TEST(VoxelTest, VoxelMesh_StandsAPileWhereItsCellsSay)
 
 TEST(VoxelTest, VoxelMesh_LeavesThePileWhereItWasWhenOneIsAdded)
 {
-    const std::vector<VoxelCell> beforeCells{
-        VoxelCell{}, VoxelCell{.x = 1}};
-    const std::vector<VoxelCell> grownCells{
-        VoxelCell{}, VoxelCell{.x = 1}, VoxelCell{.x = 2}};
+    const auto beforeCells = voxelsOf({
+        VoxelCell{}, VoxelCell{.x = 1}});
+    const auto grownCells = voxelsOf({
+        VoxelCell{}, VoxelCell{.x = 1}, VoxelCell{.x = 2}});
 
     const auto beforeMesh = voxelMesh(beforeCells);
     const auto afterMesh = voxelMesh(grownCells);
@@ -160,10 +159,10 @@ TEST(VoxelTest, VoxelMesh_LeavesThePileWhereItWasWhenOneIsAdded)
 
 TEST(VoxelTest, VoxelMesh_LeavesThePileWhereItWasWhenOneIsTaken)
 {
-    const std::vector<VoxelCell> beforeCells{
-        VoxelCell{}, VoxelCell{.x = 1}, VoxelCell{.x = 2}};
-    const std::vector<VoxelCell> fewerCells{
-        VoxelCell{}, VoxelCell{.x = 1}};
+    const auto beforeCells = voxelsOf({
+        VoxelCell{}, VoxelCell{.x = 1}, VoxelCell{.x = 2}});
+    const auto fewerCells = voxelsOf({
+        VoxelCell{}, VoxelCell{.x = 1}});
     const auto beforeMesh = voxelMesh(beforeCells);
     const auto afterMesh = voxelMesh(fewerCells);
 
@@ -204,7 +203,7 @@ TEST(VoxelTest, VoxelMesh_WindsEveryFaceOutward)
 
 TEST(VoxelTest, VoxelMesh_GivesEachSideAWayOfItsOwn)
 {
-    const auto mesh = voxelMesh({VoxelCell{}});
+    const auto mesh = voxelMesh(voxelsOf({VoxelCell{}}));
 
     std::set<std::array<std::int32_t, 3>> normals;
 
@@ -280,11 +279,11 @@ TEST(VoxelTest, DefaultTileIndex_GivesEverySideOfThePileATileOfItsOwn)
 {
     std::set<std::size_t> seenIndexes;
 
-    for (const auto cell : demoCells())
+    for (const auto &[position, material] : demoCells())
     {
         for (std::size_t side = 0; side < 6; ++side)
         {
-            seenIndexes.insert(defaultTileIndex(cell, side));
+            seenIndexes.insert(defaultTileIndex(position, side));
         }
     }
 
@@ -390,8 +389,8 @@ TEST(VoxelTest, ModelRotation_TipsAboutTheAxisAcrossTheView)
 
 TEST(VoxelTest, LevelOf_ReckonsALevelByHowHighAVoxelStands)
 {
-    EXPECT_EQ(levelOf(VoxelCell{.x = 7, .y = 3, .z = -2}), 3);
-    EXPECT_EQ(levelOf(VoxelCell{.y = -4}), -4);
+    EXPECT_EQ(levelOf(VoxelPosition{.x = 7, .y = 3, .z = -2}), 3);
+    EXPECT_EQ(levelOf(VoxelPosition{.y = -4}), -4);
 }
 
 TEST(VoxelTest, TopLevel_TakesTheHighestVoxelOfThePile)
@@ -408,8 +407,8 @@ TEST(VoxelTest, TopLevel_ReckonsNoughtForAPileWithNoVoxels)
 
 TEST(VoxelTest, TopLevel_TakesTheHighestWhereEveryVoxelIsBelowNought)
 {
-    const std::vector<VoxelCell> belowCells{
-        VoxelCell{.y = -5}, VoxelCell{.y = -2}, VoxelCell{.y = -9}};
+    const auto belowCells = voxelsOf({
+        VoxelCell{.y = -5}, VoxelCell{.y = -2}, VoxelCell{.y = -9}});
 
     EXPECT_EQ(topLevel(belowCells), -2);
     EXPECT_EQ(bottomLevel(belowCells), -9);
@@ -419,10 +418,10 @@ TEST(VoxelTest, VisibleFacesOf_KeepsTheFaceASolidTurnsToWater)
 {
     using antwika::voxel::Kind;
 
-    const std::vector<VoxelCell> cells{
+    const auto voxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Normal},
-        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Water}};
-    const auto faces = visibleFacesOf(cells);
+        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Water}});
+    const auto faces = visibleFacesOf(voxels);
 
     std::size_t solid = 0;
     std::size_t watery = 0;
@@ -441,10 +440,10 @@ TEST(VoxelTest, VisibleFacesOf_KeepsTheGroundASolidStandsOn)
     using antwika::voxel::Kind;
     using antwika::voxelmap::faceNormal;
 
-    const std::vector<VoxelCell> cells{
+    const auto voxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Normal},
-        VoxelCell{.x = 0, .y = 1, .z = 0, .kind = Kind::Normal}};
-    const auto faces = visibleFacesOf(cells);
+        VoxelCell{.x = 0, .y = 1, .z = 0, .kind = Kind::Normal}});
+    const auto faces = visibleFacesOf(voxels);
 
     std::size_t lowestTop = 0;
 
@@ -464,12 +463,12 @@ TEST(VoxelTest, VisibleFacesOf_KeepsNoGroundUnderWaterOrAStair)
     using antwika::voxel::Kind;
     using antwika::voxelmap::faceNormal;
 
-    const std::vector<VoxelCell> cells{
+    const auto voxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Water},
         VoxelCell{.x = 0, .y = 1, .z = 0, .kind = Kind::Normal},
         VoxelCell{.x = 4, .y = 0, .z = 0, .kind = Kind::Normal},
-        VoxelCell{.x = 4, .y = 1, .z = 0, .kind = Kind::Ramp}};
-    const auto faces = visibleFacesOf(cells);
+        VoxelCell{.x = 4, .y = 1, .z = 0, .kind = Kind::Ramp}});
+    const auto faces = visibleFacesOf(voxels);
 
     std::size_t coveredCount = 0;
 
@@ -488,13 +487,13 @@ TEST(VoxelTest, VisibleFacesOf_KeepsEverySideOfARampCube)
 {
     using antwika::voxel::Kind;
 
-    const std::vector<VoxelCell> cells{
+    const auto voxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Ramp},
-        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Normal}};
+        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Normal}});
 
     std::size_t flight = 0;
 
-    for (const auto face : visibleFacesOf(cells))
+    for (const auto face : visibleFacesOf(voxels))
     {
         if (face.cell.kind == Kind::Ramp)
         {
@@ -517,7 +516,7 @@ TEST(VoxelTest, StairUvRect_TakesWholePixelsOfATreadAndARiser)
         antwika::gfx::PointF{0.0F, 0.0F},
         antwika::gfx::SizeF{15.0F, 9.0F});
 
-    for (const auto &quad : stairQuads(VoxelCell{.z = -1}))
+    for (const auto &quad : stairQuads(VoxelPosition{.z = -1}))
     {
         const auto isFloorFace =
             antwika::voxelmap::faceNormal(quad.side).y != 0.0F;
@@ -549,7 +548,7 @@ TEST(VoxelTest, StairUvRect_CutsATileIntoAsManyBandsAsThereAreSteps)
     std::set<float> bands;
     auto coveredArea = 0.0F;
 
-    for (const auto &quad : stairQuads(VoxelCell{.z = -1}))
+    for (const auto &quad : stairQuads(VoxelPosition{.z = -1}))
     {
         if (antwika::voxelmap::faceNormal(quad.side).y <= 0.5F)
         {
@@ -573,12 +572,12 @@ TEST(VoxelTest, VoxelMesh_DrawsARampAsAFlightOfSteps)
     using antwika::voxel::Kind;
     using antwika::voxelmap::Pass;
 
-    const std::vector<VoxelCell> cells{
+    const auto voxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Ramp},
-        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Normal}};
-    const auto faces = visibleFacesOf(cells);
+        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Normal}});
+    const auto faces = visibleFacesOf(voxels);
     const auto mesh =
-        voxelMesh(cells, defaultTiles(faces), Pass::Solid);
+        voxelMesh(voxels, defaultTiles(faces), Pass::Solid);
 
     std::set<float> tops;
 
@@ -604,14 +603,14 @@ TEST(VoxelTest, VoxelMesh_LaysTheWateryFacesInTheirOwnPass)
     using antwika::voxel::Kind;
     using antwika::voxelmap::Pass;
 
-    const std::vector<VoxelCell> cells{
+    const auto voxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Normal},
-        VoxelCell{.x = 2, .y = 0, .z = 0, .kind = Kind::Water}};
-    const auto faces = visibleFacesOf(cells);
+        VoxelCell{.x = 2, .y = 0, .z = 0, .kind = Kind::Water}});
+    const auto faces = visibleFacesOf(voxels);
     const auto tiles = defaultTiles(faces);
-    const auto solid = voxelMesh(cells, tiles, Pass::Solid);
-    const auto watery = voxelMesh(cells, tiles, Pass::Water);
-    const auto wholeMesh = voxelMesh(cells, tiles);
+    const auto solid = voxelMesh(voxels, tiles, Pass::Solid);
+    const auto watery = voxelMesh(voxels, tiles, Pass::Water);
+    const auto wholeMesh = voxelMesh(voxels, tiles);
 
     EXPECT_EQ(
         solid.vertices.size() + watery.vertices.size(),
@@ -633,13 +632,13 @@ TEST(VoxelTest, VisibleFacesOf_FillsARampWithAnotherStandingOnIt)
 {
     using antwika::voxel::Kind;
 
-    const std::vector<VoxelCell> cells{
+    const auto voxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Ramp},
-        VoxelCell{.x = 0, .y = 1, .z = 0, .kind = Kind::Ramp}};
+        VoxelCell{.x = 0, .y = 1, .z = 0, .kind = Kind::Ramp}});
 
     std::size_t belowCells = 0;
 
-    for (const auto face : visibleFacesOf(cells))
+    for (const auto face : visibleFacesOf(voxels))
     {
         if (face.cell.y == 0)
         {
@@ -655,11 +654,11 @@ TEST(VoxelTest, VisibleFacesOf_LetsARampHideTheSideOfAnother)
 {
     using antwika::voxel::Kind;
 
-    const std::vector<VoxelCell> cells{
+    const auto voxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Ramp},
-        VoxelCell{.x = 0, .y = 0, .z = 1, .kind = Kind::Ramp}};
+        VoxelCell{.x = 0, .y = 0, .z = 1, .kind = Kind::Ramp}});
 
-    for (const auto face : visibleFacesOf(cells))
+    for (const auto face : visibleFacesOf(voxels))
     {
         const auto way = antwika::voxelmap::faceNormal(face.side).z;
 
@@ -673,14 +672,14 @@ TEST(VoxelTest, VoxelMesh_LeavesARampUnderAnotherWhole)
     using antwika::voxel::Kind;
     using antwika::voxelmap::Pass;
 
-    const std::vector<VoxelCell> cells{
+    const auto voxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Ramp},
-        VoxelCell{.x = 0, .y = 1, .z = 0, .kind = Kind::Ramp}};
-    const auto faces = visibleFacesOf(cells);
+        VoxelCell{.x = 0, .y = 1, .z = 0, .kind = Kind::Ramp}});
+    const auto faces = visibleFacesOf(voxels);
     const auto mesh =
-        voxelMesh(cells, defaultTiles(faces), Pass::Solid);
+        voxelMesh(voxels, defaultTiles(faces), Pass::Solid);
 
-    const auto lowest = cellMiddle(VoxelCell{});
+    const auto lowest = cellMiddle(VoxelPosition{});
 
     for (const auto &vertex : mesh.vertices)
     {
@@ -698,20 +697,20 @@ TEST(VoxelTest, VisibleFacesOf_CarriesTheClimbOfTheFlightItBelongsTo)
 {
     using antwika::voxel::Kind;
 
-    const std::vector<VoxelCell> cells{
+    const auto voxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Ramp},
-        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Normal}};
+        VoxelCell{.x = 1, .y = 0, .z = 0, .kind = Kind::Normal}});
 
-    for (const auto face : visibleFacesOf(cells))
+    for (const auto face : visibleFacesOf(voxels))
     {
         if (face.cell.kind == Kind::Ramp)
         {
-            EXPECT_EQ(face.climbCell.x, 1);
-            EXPECT_EQ(face.climbCell.z, 0);
+            EXPECT_EQ(face.climbPosition.x, 1);
+            EXPECT_EQ(face.climbPosition.z, 0);
         }
         else
         {
-            EXPECT_EQ(face.climbCell, VoxelCell{});
+            EXPECT_EQ(face.climbPosition, VoxelPosition{});
         }
     }
 }
@@ -722,33 +721,34 @@ TEST(VoxelTest, UsesMirroredUv_ReadsBackwardsOnlyWhereNoRimCanSay)
     using antwika::voxel::Kind;
     using antwika::voxelmap::usesMirroredUv;
 
-    std::vector<VoxelCell> cells;
+    Voxels voxels;
 
     for (std::int32_t x = -4; x <= 6; ++x)
     {
         for (std::int32_t z = -4; z <= 6; ++z)
         {
-            cells.push_back(VoxelCell{.x = x, .y = -1, .z = z});
+            voxels[VoxelPosition{.x = x, .y = -1, .z = z}] =
+                VoxelMaterial{};
         }
     }
 
-    for (const auto cell :
-         cubeVoxels(VoxelCell{}, Kind::Ramp, VoxelCell{.x = 1}))
+    for (const auto &[position, material] :
+         cubeVoxels(VoxelPosition{}, Kind::Ramp, VoxelPosition{.x = 1}))
     {
-        cells.push_back(cell);
+        voxels[position] = material;
     }
 
     std::size_t backwards = 0;
     std::size_t wholeCount = 0;
 
-    for (const auto face : visibleFacesOf(cells))
+    for (const auto face : visibleFacesOf(voxels))
     {
         if (face.cell.kind != Kind::Ramp)
         {
             continue;
         }
 
-        if (usesMirroredUv(cells, face))
+        if (usesMirroredUv(voxels, face))
         {
             ++backwards;
 
@@ -768,11 +768,11 @@ TEST(VoxelTest, UsesMirroredUv_LeavesAFaceOfNoFlightAlone)
 {
     using antwika::voxelmap::usesMirroredUv;
 
-    const std::vector<VoxelCell> cells{VoxelCell{}};
+    const auto voxels = voxelsOf({VoxelCell{}});
 
-    for (const auto face : visibleFacesOf(cells))
+    for (const auto face : visibleFacesOf(voxels))
     {
-        EXPECT_FALSE(usesMirroredUv(cells, face));
+        EXPECT_FALSE(usesMirroredUv(voxels, face));
     }
 }
 
@@ -783,35 +783,37 @@ TEST(VoxelTest, UsesMirroredUv_KeepsTheNearSideWhicheverWayAFlightClimbs)
     using antwika::voxel::Kind;
     using antwika::voxelmap::usesMirroredUv;
 
-    const std::array<VoxelCell, 4> wayCells{
-        VoxelCell{.x = 1},
-        VoxelCell{.x = -1},
-        VoxelCell{.z = 1},
-        VoxelCell{.z = -1}};
+    const std::array<VoxelPosition, 4> wayPositions{
+        VoxelPosition{.x = 1},
+        VoxelPosition{.x = -1},
+        VoxelPosition{.z = 1},
+        VoxelPosition{.z = -1}};
 
-    for (const auto way : wayCells)
+    for (const auto way : wayPositions)
     {
-        std::vector<VoxelCell> cells;
+        Voxels voxels;
 
         for (std::int32_t x = -5; x <= 7; ++x)
         {
             for (std::int32_t z = -5; z <= 7; ++z)
             {
-                cells.push_back(VoxelCell{.x = x, .y = -1, .z = z});
+                voxels[VoxelPosition{.x = x, .y = -1, .z = z}] =
+                VoxelMaterial{};
             }
         }
 
-        for (const auto cell : cubeVoxels(VoxelCell{}, Kind::Ramp, way))
+        for (const auto &[position, material] :
+             cubeVoxels(VoxelPosition{}, Kind::Ramp, way))
         {
-            cells.push_back(cell);
+            voxels[position] = material;
         }
 
         std::size_t backwards = 0;
 
-        for (const auto face : visibleFacesOf(cells))
+        for (const auto face : visibleFacesOf(voxels))
         {
             if (face.cell.kind != Kind::Ramp
-                || !usesMirroredUv(cells, face))
+                || !usesMirroredUv(voxels, face))
             {
                 continue;
             }
@@ -833,17 +835,17 @@ TEST(VoxelTest, VisibleFacesOf_CarriesTheLevelOfTheFlightAFaceStandsIn)
     using antwika::voxel::stairHalfOf;
     using antwika::voxel::Kind;
 
-    std::vector<VoxelCell> cells;
+    Voxels voxels;
 
-    for (const auto cell :
-         cubeVoxels(VoxelCell{}, Kind::Ramp, VoxelCell{.x = 1}))
+    for (const auto &[position, material] :
+         cubeVoxels(VoxelPosition{}, Kind::Ramp, VoxelPosition{.x = 1}))
     {
-        cells.push_back(cell);
+        voxels[position] = material;
     }
 
-    for (const auto face : visibleFacesOf(cells))
+    for (const auto face : visibleFacesOf(voxels))
     {
-        EXPECT_EQ(face.levelHalf, stairHalfOf(cells, face.cell));
+        EXPECT_EQ(face.levelHalf, stairHalfOf(voxels, face.cell.position()));
     }
 }
 
@@ -853,16 +855,16 @@ TEST(VoxelTest, VisibleFacesOf_HidesWhatStandsAgainstTheHeadOfAFlight)
     using antwika::voxelmap::faceNormal;
     using antwika::voxel::Kind;
 
-    const std::vector<VoxelCell> cells{
+    const auto voxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Normal},
         VoxelCell{
             .x = 0,
             .y = 0,
             .z = 1,
             .kind = Kind::Ramp,
-            .facing = Facing::North}};
+            .facing = Facing::North}});
 
-    for (const auto face : visibleFacesOf(cells))
+    for (const auto face : visibleFacesOf(voxels))
     {
         if (face.cell.kind == Kind::Normal)
         {
@@ -877,18 +879,18 @@ TEST(VoxelTest, VisibleFacesOf_KeepsWhatOnlyTheFootOfAFlightStandsAt)
     using antwika::voxelmap::faceNormal;
     using antwika::voxel::Kind;
 
-    const std::vector<VoxelCell> cells{
+    const auto voxels = voxelsOf({
         VoxelCell{.x = 0, .y = 0, .z = 0, .kind = Kind::Normal},
         VoxelCell{
             .x = 0,
             .y = 0,
             .z = 1,
             .kind = Kind::Ramp,
-            .facing = Facing::South}};
+            .facing = Facing::South}});
 
     std::size_t towardsCount = 0;
 
-    for (const auto face : visibleFacesOf(cells))
+    for (const auto face : visibleFacesOf(voxels))
     {
         if (face.cell.kind == Kind::Normal
             && faceNormal(face.side).z > 0.0F)
@@ -907,7 +909,7 @@ TEST(VoxelTest, StairPartOf_TellsTheFrontsOfAFlightFromItsSides)
     using antwika::voxel::StairPart;
     using antwika::voxelmap::stairPartOf;
 
-    constexpr VoxelCell eastwardCell{.x = 1};
+    constexpr VoxelPosition eastwardPosition{.x = 1};
 
     for (std::size_t side = 0; side < kVoxelFaceCount; ++side)
     {
@@ -917,7 +919,7 @@ TEST(VoxelTest, StairPartOf_TellsTheFrontsOfAFlightFromItsSides)
                       : normal.x != 0.0F  ? StairPart::Front
                       : StairPart::Side;
 
-        EXPECT_EQ(stairPartOf(eastwardCell, side), expectedPart);
+        EXPECT_EQ(stairPartOf(eastwardPosition, side), expectedPart);
     }
 }
 
@@ -928,7 +930,7 @@ TEST(VoxelTest, StairPartOf_TurnsWithTheClimb)
     using antwika::voxel::StairPart;
     using antwika::voxelmap::stairPartOf;
 
-    constexpr VoxelCell northwardCell{.z = -1};
+    constexpr VoxelPosition northwardPosition{.z = -1};
 
     for (std::size_t side = 0; side < kVoxelFaceCount; ++side)
     {
@@ -938,7 +940,7 @@ TEST(VoxelTest, StairPartOf_TurnsWithTheClimb)
                       : normal.z != 0.0F  ? StairPart::Front
                       : StairPart::Side;
 
-        EXPECT_EQ(stairPartOf(northwardCell, side), expectedPart);
+        EXPECT_EQ(stairPartOf(northwardPosition, side), expectedPart);
     }
 }
 
@@ -951,6 +953,6 @@ TEST(VoxelTest, StairPartOf_NamesNoPartOfAFaceWithNoFlight)
     for (std::size_t side = 0; side < kVoxelFaceCount; ++side)
     {
         EXPECT_EQ(
-            stairPartOf(VoxelCell{}, side), StairPart::Any);
+            stairPartOf(VoxelPosition{}, side), StairPart::Any);
     }
 }

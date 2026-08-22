@@ -25,6 +25,7 @@ using antwika::component::FillLight;
 using antwika::component::kFillLightHeight;
 using antwika::component::Position;
 using antwika::voxel::VoxelCell;
+using antwika::voxel::VoxelPosition;
 using antwika::log::mocks::MockLogger;
 using ::testing::NiceMock;
 
@@ -43,7 +44,7 @@ TEST(ActiveLightTest, ActiveLights_TakesEveryLampSetDown)
     NiceMock<MockLogger> logger;
     const World world(logger);
     const std::vector<Lamp> lamps{
-        Lamp{.cell = VoxelCell{.x = 1, .y = 2, .z = 3},
+        Lamp{.position = VoxelPosition{.x = 1, .y = 2, .z = 3},
             .tintColor = kRedColor}};
 
     const auto lights = activeLights(world, lamps);
@@ -95,7 +96,8 @@ TEST(
     {
         lamps.push_back(
             Lamp{
-                .cell = VoxelCell{.x = static_cast<std::int32_t>(index)}});
+                .position = VoxelPosition{.x = static_cast<std::int32_t>(
+                    index)}});
     }
 
     const auto lights = activeLights(world, lamps);
@@ -344,7 +346,7 @@ TEST(
     world.commit();
 
     const std::vector<Lamp> lamps{
-        Lamp{.cell = VoxelCell{.x = 6, .y = 0, .z = 0}}};
+        Lamp{.position = VoxelPosition{.x = 6, .y = 0, .z = 0}}};
     const auto lights = activeLights(world, lamps);
 
     ASSERT_EQ(lights.size(), 2U);
@@ -399,8 +401,8 @@ TEST(ActiveLightTest, ActiveLights_CountsFolkBeforeALampSetDown)
     {
         lamps.push_back(
             Lamp{
-                .cell = VoxelCell{
-                    .x = static_cast<std::int32_t>(index)}});
+                .position = VoxelPosition{.x = static_cast<std::int32_t>(
+                    index)}});
     }
 
     const auto lights = activeLights(folkLights, lamps);
@@ -420,7 +422,7 @@ TEST(ActiveLightTest, ActiveLights_MatchesItsOldWaysWithNoFolk)
     world.commit();
 
     const std::vector<Lamp> lamps{
-        Lamp{.cell = VoxelCell{.x = 4}}};
+        Lamp{.position = VoxelPosition{.x = 4}}};
 
     EXPECT_EQ(
         activeLights(world, lamps), activeLights(world, {}, lamps));

@@ -6,20 +6,21 @@
 #include <antwika/worldgen/ChunkShape.hpp>
 #include <antwika/worldgen/Grow.hpp>
 
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
+#include <antwika/voxel/Voxels.hpp>
 
 namespace antwika::solver
 {
 
-    [[nodiscard]] std::vector<voxel::VoxelCell> hintsFrom(
-        const std::vector<voxel::VoxelCell> &voxels,
+    [[nodiscard]] voxel::Voxels hintsFrom(
+        const voxel::Voxels &voxels,
         worldgen::ChunkShape shape,
-        voxel::VoxelCell originPointCell);
+        voxel::VoxelPosition originPointPosition);
 
-    [[nodiscard]] std::vector<voxel::VoxelCell> withChunkSpliced(
-        std::vector<voxel::VoxelCell> pileCell,
+    [[nodiscard]] voxel::Voxels withChunkSpliced(
+        voxel::Voxels pileVoxels,
         worldgen::VoxelBox box,
-        const std::vector<voxel::VoxelCell> &grownCell);
+        const voxel::Voxels &grownVoxels);
 
     [[nodiscard]] std::string growTrouble(
         const worldgen::ChunkResult &result);

@@ -21,6 +21,8 @@
 #include "antwika/gameplay/Game.hpp"
 
 using antwika::ecs::World;
+using antwika::voxel::VoxelPosition;
+using antwika::voxel::Voxels;
 using antwika::component::AnimationState;
 using antwika::gameplay::Game;
 using antwika::gameplay::GateState;
@@ -32,31 +34,31 @@ using antwika::component::Player;
 using antwika::component::Position;
 using antwika::component::Velocity;
 using ::testing::NiceMock;
+using antwika::voxel::voxelsOf;
 
 namespace
 {
 
     constexpr float kTolerance = 0.0001F;
 
-    [[nodiscard]] std::set<VoxelCell> floorOver(
+    [[nodiscard]] Voxels floorOver(
         const std::int32_t reach)
     {
-        std::set<VoxelCell> cells;
+        Voxels voxels;
 
         for (auto x = -reach; x <= reach; ++x)
         {
             for (auto z = -reach; z <= reach; ++z)
             {
-                cells.insert(
-                    VoxelCell{
+                voxels.merge(voxelsOf({VoxelCell{
                         .x = x,
                         .y = 0,
                         .z = z,
-                        .kind = Kind::Normal});
+                        .kind = Kind::Normal}}));
             }
         }
 
-        return cells;
+        return voxels;
     }
 
     class GameTest : public ::testing::Test
@@ -81,10 +83,10 @@ namespace
         }
 
         NiceMock<MockLogger> logger;
-        std::set<VoxelCell> solids = floorOver(6);
-        std::vector<std::vector<VoxelCell>> patrolCells;
+        Voxels solids = floorOver(6);
+        std::vector<std::vector<VoxelPosition>> patrolPositions;
         World world{logger};
-        Game game{logger, world, solids, patrolCells};
+        Game game{logger, world, solids, patrolPositions};
     };
 
 }
@@ -197,7 +199,7 @@ TEST_F(GameTest, FollowPath_TakesUpTheStopsAndTheGoal)
 {
     game.followPath(
         {antwika::gfx::Vec3{1.0F, 0.0F, 0.0F}},
-        VoxelCell{.x = 1, .y = 0, .z = 0});
+        VoxelPosition{.x = 1, .y = 0, .z = 0});
 
     EXPECT_EQ(game.path().size(), 1U);
     ASSERT_TRUE(game.pathGoal().has_value());
@@ -210,7 +212,7 @@ TEST_F(GameTest, StepAlongPath_SendsTheWalkerAtTheStopItMakesFor)
     game.setWalkerFrozen(false);
     game.followPath(
         {antwika::gfx::Vec3{3.0F, 0.0F, 0.0F}},
-        VoxelCell{.x = 3, .y = 0, .z = 0});
+        VoxelPosition{.x = 3, .y = 0, .z = 0});
     game.stepAlongPath(true);
     game.run(1);
 
@@ -222,7 +224,7 @@ TEST_F(GameTest, StepAlongPath_DropsThePathOnceTheLastStopIsReached)
     stand();
     game.followPath(
         {antwika::gfx::Vec3{0.0F, 0.0F, 0.0F}},
-        VoxelCell{.x = 0, .y = 0, .z = 0});
+        VoxelPosition{.x = 0, .y = 0, .z = 0});
     game.stepAlongPath(true);
 
     EXPECT_TRUE(game.path().empty());
@@ -234,7 +236,7 @@ TEST_F(GameTest, StepAlongPath_LeavesThePathAloneWhileNotPlaying)
     stand();
     game.followPath(
         {antwika::gfx::Vec3{3.0F, 0.0F, 0.0F}},
-        VoxelCell{.x = 3, .y = 0, .z = 0});
+        VoxelPosition{.x = 3, .y = 0, .z = 0});
     game.stepAlongPath(false);
 
     EXPECT_EQ(game.path().size(), 1U);
@@ -247,7 +249,7 @@ TEST_F(GameTest, StepAlongPath_LetsTheKeysWinOverThePath)
     game.wasdKeys().west = true;
     game.followPath(
         {antwika::gfx::Vec3{3.0F, 0.0F, 0.0F}},
-        VoxelCell{.x = 3, .y = 0, .z = 0});
+        VoxelPosition{.x = 3, .y = 0, .z = 0});
     game.stepAlongPath(true);
     game.run(1);
 
@@ -258,7 +260,7 @@ TEST_F(GameTest, ClearPath_DropsWhateverWasBeingFollowed)
 {
     game.followPath(
         {antwika::gfx::Vec3{3.0F, 0.0F, 0.0F}},
-        VoxelCell{.x = 3, .y = 0, .z = 0});
+        VoxelPosition{.x = 3, .y = 0, .z = 0});
     game.clearPath();
 
     EXPECT_TRUE(game.path().empty());
@@ -271,7 +273,7 @@ TEST_F(GameTest, ClearSteering_LeavesTheWalkerStandingStill)
     game.setWalkerFrozen(false);
     game.followPath(
         {antwika::gfx::Vec3{3.0F, 0.0F, 0.0F}},
-        VoxelCell{.x = 3, .y = 0, .z = 0});
+        VoxelPosition{.x = 3, .y = 0, .z = 0});
     game.stepAlongPath(true);
     game.clearSteering();
     game.run(1);

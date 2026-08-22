@@ -146,12 +146,12 @@ namespace antwika::map::mapfile
 
     void readGates(Map &map, const nlohmann::json &documentJson)
     {
-        map.keyCells = readCells(documentJson[std::string(kKeysKey)]);
-        map.doorCells = readCells(documentJson[std::string(kDoorsKey)]);
-        map.checkpointCells =
+        map.keyPositions = readCells(documentJson[std::string(kKeysKey)]);
+        map.doorPositions = readCells(documentJson[std::string(kDoorsKey)]);
+        map.checkpointPositions =
             readCells(documentJson[std::string(kCheckpointsKey)]);
-        map.foodCells = readCells(documentJson[std::string(kFoodKey)]);
-        map.waterCells = readCells(documentJson[std::string(kWaterKey)]);
+        map.foodPositions = readCells(documentJson[std::string(kFoodKey)]);
+        map.waterPositions = readCells(documentJson[std::string(kWaterKey)]);
         map.exitLocked =
             documentJson[std::string(kExitLockedKey)].get<bool>();
     }
