@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include <antwika/ecs/OpenPhase.hpp>
 #include <antwika/ecs/View.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/log/ILogger.hpp>
@@ -21,6 +22,7 @@ namespace
 {
 
     using antwika::ecs::Entity;
+    using antwika::ecs::OpenPhase;
     using antwika::ecs::World;
     using antwika::log::ILogger;
     using antwika::log::Level;
@@ -89,18 +91,21 @@ namespace
         std::vector<Entity> entities;
         entities.reserve(kEntities);
 
-        for (std::size_t at = 0; at < kEntities; ++at)
         {
-            const auto entity = world.create();
-            const auto value = static_cast<std::int32_t>(at);
-            world.add<Position>(entity, Position{value, value});
-            world.add<Velocity>(entity, Velocity{1, 1});
-            world.add<Health>(entity, Health{value});
-            world.add<Label>(entity, Label{static_cast<std::uint32_t>(at)});
-            entities.push_back(entity);
-        }
+            const OpenPhase phase(world);
 
-        world.commit();
+            for (std::size_t at = 0; at < kEntities; ++at)
+            {
+                const auto entity = world.create();
+                const auto value = static_cast<std::int32_t>(at);
+                world.add<Position>(entity, Position{value, value});
+                world.add<Velocity>(entity, Velocity{1, 1});
+                world.add<Health>(entity, Health{value});
+                world.add<Label>(
+                    entity, Label{static_cast<std::uint32_t>(at)});
+                entities.push_back(entity);
+            }
+        }
 
         std::uint64_t checksum = 0;
         const auto start = Clock::now();
@@ -109,11 +114,11 @@ namespace
         {
             for (int phase = 0; phase < kPhases; ++phase)
             {
+                const OpenPhase openPhase(world);
                 const auto at =
                     static_cast<std::size_t>(tick * kPhases + phase)
                     % kEntities;
                 world.set<Health>(entities[at], Health{tick});
-                world.commit();
             }
 
             checksum += static_cast<std::uint64_t>(
@@ -136,17 +141,19 @@ namespace
         std::vector<Entity> grid;
         grid.reserve(static_cast<std::size_t>(kSide) * kSide);
 
-        for (std::int32_t y = 0; y < kSide; ++y)
         {
-            for (std::int32_t x = 0; x < kSide; ++x)
+            const OpenPhase phase(world);
+
+            for (std::int32_t y = 0; y < kSide; ++y)
             {
-                const auto entity = world.create();
-                world.add<Cell>(entity, Cell{(x + y) % 3 == 0});
-                grid.push_back(entity);
+                for (std::int32_t x = 0; x < kSide; ++x)
+                {
+                    const auto entity = world.create();
+                    world.add<Cell>(entity, Cell{(x + y) % 3 == 0});
+                    grid.push_back(entity);
+                }
             }
         }
-
-        world.commit();
 
         const auto at = [&grid](std::int32_t x, std::int32_t y)
         {
@@ -158,6 +165,8 @@ namespace
 
         for (int tick = 0; tick < kTicks; ++tick)
         {
+            const OpenPhase phase(world);
+
             for (std::int32_t y = 1; y < kSide - 1; ++y)
             {
                 for (std::int32_t x = 1; x < kSide - 1; ++x)
@@ -188,8 +197,6 @@ namespace
                     checksum += now ? 1U : 0U;
                 }
             }
-
-            world.commit();
         }
 
         return Result{millisSince(start), checksum};
@@ -205,19 +212,21 @@ namespace
         SilentLogger logger;
         World world(logger);
 
-        for (std::size_t at = 0; at < kEntities; ++at)
         {
-            const auto entity = world.create();
-            const auto value = static_cast<std::int32_t>(at);
-            world.add<Position>(entity, Position{value, value});
+            const OpenPhase phase(world);
 
-            if (at % 2 == 0)
+            for (std::size_t at = 0; at < kEntities; ++at)
             {
-                world.add<Velocity>(entity, Velocity{1, 1});
+                const auto entity = world.create();
+                const auto value = static_cast<std::int32_t>(at);
+                world.add<Position>(entity, Position{value, value});
+
+                if (at % 2 == 0)
+                {
+                    world.add<Velocity>(entity, Velocity{1, 1});
+                }
             }
         }
-
-        world.commit();
 
         std::uint64_t checksum = 0;
         const auto start = Clock::now();
@@ -252,25 +261,31 @@ namespace
             std::vector<Entity> entities;
             entities.reserve(kEntities);
 
-            for (std::size_t at = 0; at < kEntities; ++at)
             {
-                const auto entity = world.create();
-                const auto value = static_cast<std::int32_t>(at);
-                world.add<Position>(entity, Position{value, value});
-                world.add<Velocity>(entity, Velocity{1, 1});
-                world.add<Health>(entity, Health{value});
-                world.add<Label>(entity, Label{static_cast<std::uint32_t>(at)});
-                entities.push_back(entity);
+                const OpenPhase spawningPhase(world);
+
+                for (std::size_t at = 0; at < kEntities; ++at)
+                {
+                    const auto entity = world.create();
+                    const auto value = static_cast<std::int32_t>(at);
+                    world.add<Position>(entity, Position{value, value});
+                    world.add<Velocity>(entity, Velocity{1, 1});
+                    world.add<Health>(entity, Health{value});
+                    world.add<Label>(
+                        entity, Label{static_cast<std::uint32_t>(at)});
+                    entities.push_back(entity);
+                }
             }
 
-            world.commit();
-
-            for (const auto entity : entities)
             {
-                world.destroy(entity);
+                const OpenPhase clearingPhase(world);
+
+                for (const auto entity : entities)
+                {
+                    world.destroy(entity);
+                }
             }
 
-            world.commit();
             checksum += entities.size();
         }
 
