@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <cstdint>
 #include <set>
 #include <vector>
 
@@ -29,6 +30,9 @@ namespace
     using antwika::decor::withDecorToggled;
     using antwika::decor::withFrameAdded;
     using antwika::decor::withFrameSet;
+    using antwika::decor::frameWidget;
+    using antwika::decor::hasAnimatedDecor;
+    using antwika::decor::memberWidget;
 
     constexpr Tile kOneTile{.atlas = Atlas::Floor, .index = 1};
     constexpr Tile kOtherTile{.atlas = Atlas::Floor, .index = 2};
@@ -741,6 +745,46 @@ namespace
             0);
 
         EXPECT_TRUE(bare.empty());
+    }
+
+    TEST(DecorTest, HasAnimatedDecor_SeesNoAnimationInStillTiles)
+    {
+        const std::vector<DecorTile> decor{
+            DecorTile{.tile = kOneTile, .frameTiles = {kOneTile}},
+            DecorTile{.tile = kOtherTile, .frameTiles = {}}};
+
+        EXPECT_FALSE(hasAnimatedDecor(decor));
+    }
+
+    TEST(DecorTest, HasAnimatedDecor_SeesATileHoldingSeveralFrames)
+    {
+        const std::vector<DecorTile> decor{
+            DecorTile{.tile = kOneTile, .frameTiles = {kOneTile}},
+            DecorTile{
+                .tile = kOtherTile,
+                .frameTiles = {kOtherTile, kOneTile}}};
+
+        EXPECT_TRUE(hasAnimatedDecor(decor));
+    }
+
+    TEST(DecorTest, FrameWidget_TellsOneFrameFromTheNext)
+    {
+        EXPECT_NE(frameWidget(0), frameWidget(1));
+        EXPECT_EQ(
+            static_cast<std::uint64_t>(frameWidget(3))
+                - static_cast<std::uint64_t>(frameWidget(0)),
+            3U);
+        EXPECT_NE(frameWidget(0), antwika::decor::kFrameAddWidget);
+    }
+
+    TEST(DecorTest, MemberWidget_TellsOneMemberFromTheNext)
+    {
+        EXPECT_NE(memberWidget(0), memberWidget(1));
+        EXPECT_EQ(
+            static_cast<std::uint64_t>(memberWidget(2))
+                - static_cast<std::uint64_t>(memberWidget(0)),
+            2U);
+        EXPECT_NE(memberWidget(0), frameWidget(0));
     }
 
 }
