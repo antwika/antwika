@@ -18,7 +18,12 @@ CPP_GLOBS = (
     "backends/**/*.hpp",
 )
 
-PYTHON_GLOBS = ("scripts/*.py", "scripts/tests/*.py", "conanfile.py")
+PYTHON_GLOBS = (
+    "scripts/*.py",
+    "scripts/tests/*.py",
+    "conanfile.py",
+    "src/libs/*/conanfile.py",
+)
 CMAKE_GLOBS = (
     "cmake/*.cmake",
     "CMakeLists.txt",
@@ -1083,7 +1088,7 @@ def is_excluded(relative: Path) -> bool:
 def find_stray_markdown(root: Path) -> list[Path]:
     stray = []
 
-    for path in sorted(root.glob(MARKDOWN_GLOB)):
+    for path in find_paths(root, MARKDOWN_GLOB):
         relative = path.relative_to(root)
 
         if is_excluded(relative):
@@ -1106,7 +1111,7 @@ def find_violations(root: Path) -> list[Violation]:
     sources = {
         path: path.read_text(encoding="utf-8", errors="ignore")
         for pattern in CPP_GLOBS
-        for path in sorted(root.glob(pattern))
+        for path in find_paths(root, pattern)
     }
 
     derivable: set[str] = set()
@@ -1115,7 +1120,7 @@ def find_violations(root: Path) -> list[Violation]:
         derivable |= derivable_names(mask_cpp(text))
 
     for pattern in CPP_GLOBS:
-        for path in sorted(root.glob(pattern)):
+        for path in find_paths(root, pattern):
             text = sources[path]
 
             if path.suffix == ".hpp" and re.match(r"^Test[A-Z]", path.stem):
@@ -1197,7 +1202,7 @@ def find_violations(root: Path) -> list[Violation]:
                 violations.append(Violation(path, line, INCLUDE_ORDER))
 
     for pattern in PYTHON_GLOBS:
-        for path in sorted(root.glob(pattern)):
+        for path in find_paths(root, pattern):
             text = path.read_text(encoding="utf-8", errors="ignore")
             for line in find_python_comments(text):
                 violations.append(Violation(path, line, "'#' comment"))
@@ -1216,7 +1221,7 @@ def find_violations(root: Path) -> list[Violation]:
     globs = CMAKE_GLOBS + YAML_GLOBS + SHELL_GLOBS + DOCKER_GLOBS
 
     for pattern in globs:
-        for path in sorted(root.glob(pattern)):
+        for path in find_paths(root, pattern):
             text = path.read_text(encoding="utf-8", errors="ignore")
             multiline = pattern in CMAKE_GLOBS
             lines = text.split("\n")
@@ -1237,6 +1242,17 @@ def find_violations(root: Path) -> list[Violation]:
 
     return violations
 
+
+
+def find_paths(root: Path, pattern: str) -> list:
+    return sorted(
+        path
+        for path in root.glob(pattern)
+        if not any(
+            part.startswith("build")
+            for part in path.relative_to(root).parts[:-1]
+        )
+    )
 
 def main() -> int:
     parser = argparse.ArgumentParser()

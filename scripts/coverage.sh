@@ -80,4 +80,4 @@ if [ -n "$html_dir" ]; then
     gcovr_args+=(--html-details "$html_dir/index.html")
 fi
 
-gcovr "${gcovr_args[@]}" "$build_dir"
+gcovr "${gcovr_args[@]}" "$build_dir" src

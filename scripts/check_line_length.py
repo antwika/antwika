@@ -12,7 +12,12 @@ CPP_GLOBS = (
     "backends/**/*.cpp",
     "backends/**/*.hpp",
 )
-PYTHON_GLOBS = ("scripts/*.py", "scripts/tests/*.py")
+PYTHON_GLOBS = (
+    "scripts/*.py",
+    "scripts/tests/*.py",
+    "conanfile.py",
+    "src/libs/*/conanfile.py",
+)
 
 MAX_LINE_LENGTH = 80
 
@@ -29,12 +34,23 @@ def find_violations(root: Path) -> list[tuple[Path, int, int]]:
     violations: list[tuple[Path, int, int]] = []
 
     for pattern in CPP_GLOBS + PYTHON_GLOBS:
-        for path in sorted(root.glob(pattern)):
+        for path in find_paths(root, pattern):
             for line_no, length in find_long_lines(path):
                 violations.append((path, line_no, length))
 
     return violations
 
+
+
+def find_paths(root: Path, pattern: str) -> list:
+    return sorted(
+        path
+        for path in root.glob(pattern)
+        if not any(
+            part.startswith("build")
+            for part in path.relative_to(root).parts[:-1]
+        )
+    )
 
 def main() -> int:
     parser = argparse.ArgumentParser()

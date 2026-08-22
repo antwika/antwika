@@ -12,3 +12,5 @@ core.*
 /.vscode/*-backend
 
 Testing
+/src/libs/*/build/
+/src/libs/*/CMakeUserPresets.json

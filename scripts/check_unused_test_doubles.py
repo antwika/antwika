@@ -34,6 +34,12 @@ def collect_included_paths(root: Path) -> set[str]:
             if source.suffix not in (".cpp", ".hpp"):
                 continue
 
+            if any(
+                part.startswith("build")
+                for part in source.relative_to(root).parts[:-1]
+            ):
+                continue
+
             if is_test_double_path(source):
                 continue
 

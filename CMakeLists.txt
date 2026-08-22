@@ -146,6 +146,9 @@ if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
     endif()
 endif()
 
+find_package(antwika-time REQUIRED)
+find_package(antwika-log REQUIRED)
+
 add_subdirectory(src)
 add_subdirectory(backends)
 

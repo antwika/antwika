@@ -19,7 +19,12 @@ CPP_GLOBS = (
     "backends/**/*.cpp",
     "backends/**/*.hpp",
 )
-PYTHON_GLOBS = ("scripts/*.py", "scripts/tests/*.py")
+PYTHON_GLOBS = (
+    "scripts/*.py",
+    "scripts/tests/*.py",
+    "conanfile.py",
+    "src/libs/*/conanfile.py",
+)
 
 ABBREVIATIONS = ("e.g.", "i.e.", "etc.", "vs.", "cf.", "approx.")
 CODE_SPAN = re.compile(r"`[^`]*`")
@@ -169,18 +174,29 @@ def find_violations(root: Path) -> list[Violation]:
     violations: list[Violation] = []
 
     for pattern in MARKDOWN_GLOBS:
-        for path in sorted(root.glob(pattern)):
+        for path in find_paths(root, pattern):
             violations.extend(check_markdown_file(path))
     for pattern in CPP_GLOBS:
-        for path in sorted(root.glob(pattern)):
+        for path in find_paths(root, pattern):
             violations.extend(check_cpp_file(path))
     for pattern in PYTHON_GLOBS:
-        for path in sorted(root.glob(pattern)):
+        for path in find_paths(root, pattern):
             if path.resolve() == Path(__file__).resolve():
                 continue
             violations.extend(check_python_file(path))
 
     return violations
+
+
+def find_paths(root: Path, pattern: str) -> list:
+    return sorted(
+        path
+        for path in root.glob(pattern)
+        if not any(
+            part.startswith("build")
+            for part in path.relative_to(root).parts[:-1]
+        )
+    )
 
 def main() -> int:
     parser = argparse.ArgumentParser()

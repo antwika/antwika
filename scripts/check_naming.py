@@ -1260,7 +1260,7 @@ def read_sources(root: Path) -> dict[Path, str]:
     sources = {}
 
     for pattern in CPP_GLOBS:
-        for path in sorted(root.glob(pattern)):
+        for path in find_paths(root, pattern):
             text = path.read_text(encoding="utf-8", errors="ignore")
             sources[path] = _blank_init_lists(
                 _blank_directives(mask_cpp(text))
@@ -1313,6 +1313,17 @@ def find_violations(root: Path) -> list[Violation]:
 
     return judge(sites, declared, namespaces) + judge_part_of_speech(aside)
 
+
+
+def find_paths(root: Path, pattern: str) -> list:
+    return sorted(
+        path
+        for path in root.glob(pattern)
+        if not any(
+            part.startswith("build")
+            for part in path.relative_to(root).parts[:-1]
+        )
+    )
 
 def main() -> int:
     parser = argparse.ArgumentParser()
