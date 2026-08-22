@@ -23,9 +23,6 @@ set(ANTWIKA_NOTICE_SOURCES
 )
 
 set(ANTWIKA_NOTICE_NAMES
-    LICENSE
-    NOTICE
-    THIRD_PARTY.txt
     RobotoMono-OFL.txt
 )
 
@@ -386,11 +383,17 @@ function(antwika_add_test_support)
 
     install(
         TARGETS ${target}
-        EXPORT antwika_${ARG_MODULE}Targets
+        EXPORT ${target}Targets
     )
 
     install(
         DIRECTORY include/
         DESTINATION include
+    )
+
+    install(
+        EXPORT ${target}Targets
+        NAMESPACE antwika::
+        DESTINATION lib/cmake/antwika
     )
 endfunction()

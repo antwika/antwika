@@ -4,6 +4,8 @@ set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
+source scripts/packages.sh
+
 read_selection() {
     local subsystem=$1
     local file=.vscode/$subsystem-backend
@@ -84,6 +86,10 @@ fi
 
 echo "==> gfx backend '$gfx_backend', sound backend '$sound_backend'"
 
+for editable in "${ANTWIKA_EDITABLES[@]}"; do
+    conan editable add "$editable"
+done
+
 conan install . \
     -of build \
     -o "gfx_backend=$gfx_backend" \
@@ -91,6 +97,7 @@ conan install . \
     "-pr:b=./profiles/build/${CONAN_PROFILE}" \
     "-pr:h=./profiles/host/${CONAN_PROFILE}" \
     --build=missing \
+    --build=editable \
     -s build_type=Release \
     --lockfile="$lockfile"
 

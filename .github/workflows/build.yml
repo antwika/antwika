@@ -120,6 +120,45 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:${{ inputs.version }}
             ${{ inputs.latest && format('{0}/{1}-{2}:latest', env.REGISTRY, env.IMAGE_PREFIX, matrix.image) || '' }}
 
+  packages:
+    name: Versioned library packages
+    needs: images
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/antwika-dev-gnu:${{ inputs.version }}
+      options: --user root
+    env:
+      CONAN_PROFILE: gcc-linux-x86_64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Build each versioned library on its own
+        shell: bash
+        run: |
+          source scripts/packages.sh
+
+          for editable in "${ANTWIKA_EDITABLES[@]}"; do
+            conan editable remove "$editable" || true
+          done
+
+          for package in "${ANTWIKA_EDITABLES[@]}"; do
+            conan create "$package" \
+              -pr:b=./profiles/build/${CONAN_PROFILE} \
+              -pr:h=./profiles/host/${CONAN_PROFILE} \
+              --build=missing \
+              -s build_type=Release
+          done
+
+      - name: Show what was created
+        shell: bash
+        run: conan list "antwika-*"
+
   apps:
     name: ${{ matrix.name }} app(s)
     needs: images
@@ -171,7 +210,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.conan2
-          key: conan-${{ matrix.image }}-${{ hashFiles('conanfile.py', 'conan.lock', format('profiles/build/{0}', matrix.conan_profile), format('profiles/host/{0}', matrix.conan_profile)) }}
+          key: conan-${{ matrix.image }}-${{ hashFiles('conanfile.py', 'conan.lock', 'src/libs/*/conanfile.py', format('profiles/build/{0}', matrix.conan_profile), format('profiles/host/{0}', matrix.conan_profile)) }}
           restore-keys: |
             conan-${{ matrix.image }}-
 
@@ -183,6 +222,15 @@ jobs:
           restore-keys: |
             ccache-${{ matrix.image }}-
 
+      - name: Register the versioned libraries as editable
+        shell: bash
+        run: |
+          source scripts/packages.sh
+
+          for editable in "${ANTWIKA_EDITABLES[@]}"; do
+            conan editable add "$editable"
+          done
+
       - name: Install dependencies
         shell: bash
         run: |
@@ -190,7 +238,9 @@ jobs:
             -of build \
             -pr:b=./profiles/build/${CONAN_PROFILE} \
             -pr:h=./profiles/host/${CONAN_PROFILE} \
+            ${{ matrix.coverage && '-o antwika-time/*:coverage=True -o antwika-log/*:coverage=True' || '' }} \
             --build=missing \
+            --build=editable \
             -s build_type=Release \
             --lockfile=conan.lock
 
@@ -320,7 +370,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.conan2
-          key: conan-gnu-${{ matrix.backend }}-${{ hashFiles('conanfile.py', 'conan.lock', matrix.lockfile, 'profiles/build/gcc-linux-x86_64', 'profiles/host/gcc-linux-x86_64') }}
+          key: conan-gnu-${{ matrix.backend }}-${{ hashFiles('conanfile.py', 'conan.lock', matrix.lockfile, 'src/libs/*/conanfile.py', 'profiles/build/gcc-linux-x86_64', 'profiles/host/gcc-linux-x86_64') }}
           restore-keys: |
             conan-gnu-${{ matrix.backend }}-
 
@@ -332,6 +382,15 @@ jobs:
           restore-keys: |
             ccache-${{ matrix.backend }}-
 
+      - name: Register the versioned libraries as editable
+        shell: bash
+        run: |
+          source scripts/packages.sh
+
+          for editable in "${ANTWIKA_EDITABLES[@]}"; do
+            conan editable add "$editable"
+          done
+
       - name: Install the default configuration, for its presets
         shell: bash
         run: |
@@ -340,6 +399,7 @@ jobs:
             -pr:b=./profiles/build/${CONAN_PROFILE} \
             -pr:h=./profiles/host/${CONAN_PROFILE} \
             --build=missing \
+            --build=editable \
             -s build_type=Release \
             --lockfile=conan.lock
 
@@ -349,10 +409,11 @@ jobs:
           conan install . \
             -of "$BUILD_DIR" \
             ${{ matrix.options }} \
-            -c tools.cmake.cmake_layout:build_folder_vars="${{ matrix.folder_vars }}" \
+            -c "&:tools.cmake.cmake_layout:build_folder_vars=${{ matrix.folder_vars }}" \
             -pr:b=./profiles/build/${CONAN_PROFILE} \
             -pr:h=./profiles/host/${CONAN_PROFILE} \
             --build=missing \
+            --build=editable \
             -s build_type=Release \
             --lockfile=${{ matrix.lockfile }}
 

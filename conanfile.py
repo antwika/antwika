@@ -3,8 +3,6 @@ from conan.errors import ConanInvalidConfiguration
 from conan.tools.cmake import CMakeDeps, CMakeToolchain
 
 class AntwikaConan(ConanFile):
-    license = "Apache-2.0"
-
     settings = (
         "os",
         "compiler",
@@ -53,6 +51,9 @@ class AntwikaConan(ConanFile):
             )
 
     def requirements(self) -> None:
+        self.requires("antwika-time/[^1.0]")
+        self.requires("antwika-log/[^1.0]")
+
         self.requires("nlohmann_json/3.12.0", override=True)
         self.requires("json-schema-validator/2.4.0")
 
