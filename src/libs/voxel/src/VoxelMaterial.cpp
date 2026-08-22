@@ -1,4 +1,4 @@
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelMaterial.hpp>
 
 namespace antwika::voxel
 {

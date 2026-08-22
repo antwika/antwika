@@ -13,6 +13,7 @@
 #include <antwika/voxelmap/Voxel.hpp>
 
 #include <antwika/map/Settings.hpp>
+#include <antwika/voxel/VoxelStairs.hpp>
 
 namespace antwika::editor
 {

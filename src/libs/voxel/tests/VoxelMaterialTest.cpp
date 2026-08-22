@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelMaterial.hpp>
 
 TEST(VoxelCellTest, Occludes_LetsWaterShowWhatStandsInIt)
 {

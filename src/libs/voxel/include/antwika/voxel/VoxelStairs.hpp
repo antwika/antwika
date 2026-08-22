@@ -4,6 +4,7 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <set>
 #include <vector>
 
@@ -11,6 +12,26 @@
 
 namespace antwika::voxel
 {
+
+    enum class StairHalf : std::uint8_t
+    {
+        Any,
+        Lower,
+        Upper,
+    };
+
+    inline constexpr std::array<StairHalf, 3> kEveryStairHalf{
+        StairHalf::Any, StairHalf::Lower, StairHalf::Upper};
+
+    enum class StairPart : std::uint8_t
+    {
+        Any,
+        Front,
+        Side,
+    };
+
+    inline constexpr std::array<StairPart, 3> kEveryStairPart{
+        StairPart::Any, StairPart::Front, StairPart::Side};
 
     inline constexpr std::size_t kStepsPerVoxel = 3;
 

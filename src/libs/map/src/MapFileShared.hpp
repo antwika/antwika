@@ -26,6 +26,7 @@
 #include <antwika/character/Character.hpp>
 #include <antwika/map/MapFile.hpp>
 #include <antwika/map/MapFileError.hpp>
+#include <antwika/voxel/VoxelStairs.hpp>
 
 namespace antwika::map::mapfile
 {
