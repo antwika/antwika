@@ -4,6 +4,7 @@
 
 #include <antwika/component/AnimationState.hpp>
 #include <antwika/component/Position.hpp>
+#include <antwika/ecs/OpenPhase.hpp>
 #include <antwika/editor/ui/IconSheet.hpp>
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Math3D.hpp>
@@ -153,15 +154,20 @@ namespace antwika::editor
 
                 if (loadCurrentMap())
                 {
-                    game->world().set<component::Position>(
-                        game->player(),
-                        collision::positionFrom(
-                            progress->stancePlacement.position));
-                    game->world().set<component::AnimationState>(
-                        game->player(),
-                        component::AnimationState{
-                            .direction = progress->stancePlacement.way});
-                    game->world().commit();
+                    {
+                        const ecs::OpenPhase phase(game->world());
+
+                        game->world().set<component::Position>(
+                            game->player(),
+                            collision::positionFrom(
+                                progress->stancePlacement.position));
+                        game->world().set<component::AnimationState>(
+                            game->player(),
+                            component::AnimationState{
+                                .direction =
+                                    progress->stancePlacement.way});
+                    }
+
                     game->cameraTarget() =
                         progress->stancePlacement.position;
                 }

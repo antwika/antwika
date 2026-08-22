@@ -10,6 +10,7 @@
 #include <antwika/component/Player.hpp>
 #include <antwika/component/Position.hpp>
 #include <antwika/component/Vitals.hpp>
+#include <antwika/ecs/OpenPhase.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/rules/Health.hpp>
 #include <antwika/rules/Items.hpp>
@@ -18,6 +19,7 @@
 #include "antwika/gameplay/GameLoop.hpp"
 #include "antwika/system/HealthSystem.hpp"
 
+using antwika::ecs::OpenPhase;
 using antwika::ecs::World;
 using antwika::ecs::Entity;
 using antwika::gameplay::GameLoop;
@@ -200,10 +202,13 @@ namespace
             auto &world = gameLoop.world();
             const auto entity = world.create();
 
-            world.add<Position>(entity, stoodPosition);
-            world.add<Health>(entity, health);
-            world.add<Inventory>(entity, bagInventory);
-            world.commit();
+            {
+                const OpenPhase phase(world);
+
+                world.add<Position>(entity, stoodPosition);
+                world.add<Health>(entity, health);
+                world.add<Inventory>(entity, bagInventory);
+            }
 
             return entity;
         }
@@ -214,12 +219,15 @@ namespace
             auto &world = gameLoop.world();
             const auto entity = world.create();
 
-            world.add<Item>(
-                entity,
-                Item{
-                    .position = position,
-                    .kind = static_cast<std::uint8_t>(kind)});
-            world.commit();
+            {
+                const OpenPhase phase(world);
+
+                world.add<Item>(
+                    entity,
+                    Item{
+                        .position = position,
+                        .kind = static_cast<std::uint8_t>(kind)});
+            }
 
             return entity;
         }
@@ -357,8 +365,11 @@ namespace
             Health{.food = 1, .water = kFullHealth},
             carrying(ItemKind::Food));
 
-        harness.gameLoop.world().add<Player>(walker, Player{});
-        harness.gameLoop.world().commit();
+        {
+            const OpenPhase phase(harness.gameLoop.world());
+
+            harness.gameLoop.world().add<Player>(walker, Player{});
+        }
 
         harness.step(1);
 
@@ -431,10 +442,13 @@ namespace
         auto &world = harness.gameLoop.world();
         const auto entity = world.create();
 
-        world.add<Position>(
-            entity, Position{.x = 0.0F, .y = 0.0F, .z = 0.0F});
-        world.add<Health>(entity, Health{.food = 1, .water = 1});
-        world.commit();
+        {
+            const OpenPhase phase(world);
+
+            world.add<Position>(
+                entity, Position{.x = 0.0F, .y = 0.0F, .z = 0.0F});
+            world.add<Health>(entity, Health{.food = 1, .water = 1});
+        }
 
         harness.step(kHungerTicks);
 

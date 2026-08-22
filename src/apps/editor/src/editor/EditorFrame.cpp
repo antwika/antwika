@@ -33,7 +33,10 @@ namespace antwika::editor
                 ? std::optional<std::uint32_t>(
                       static_cast<std::uint32_t>(*caption.speaker))
                 : std::nullopt);
+        game->setRosterCount(map.characters.size());
         game->run(tick);
+        sayConsumeReport();
+        sayDialogueLine();
 
         if (playing && !game->world().alive(game->player()))
         {

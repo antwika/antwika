@@ -3,6 +3,7 @@ antwika_add_library(
     SOURCES
         src/ComponentKey.cpp
         src/EntityManager.cpp
+        src/OpenPhase.cpp
         src/SystemScheduler.cpp
         src/World.cpp
     DEPENDS

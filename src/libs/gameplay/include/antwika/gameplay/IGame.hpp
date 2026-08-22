@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -56,6 +57,8 @@ namespace antwika::gameplay
         virtual void setWorldFrozen(bool frozen) noexcept = 0;
 
         virtual void setRunning(bool running) noexcept = 0;
+
+        virtual void setRosterCount(std::size_t rosterCount) noexcept = 0;
 
         virtual void forgetPatrols() = 0;
 

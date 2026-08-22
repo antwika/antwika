@@ -2,9 +2,11 @@ antwika_add_library(
     NAME system
     SOURCES
         src/AnimationSystem.cpp
+        src/ConsumeSystem.cpp
         src/HealthSystem.cpp
         src/OrientationSystem.cpp
         src/PatrolSystem.cpp
+        src/TalkSystem.cpp
         src/TickPacer.cpp
         src/WalkerSystems.cpp
     DEPENDS

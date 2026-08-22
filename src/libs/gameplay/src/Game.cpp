@@ -7,6 +7,7 @@
 #include <antwika/component/AnimationState.hpp>
 #include <antwika/component/Orientation.hpp>
 #include <antwika/component/Position.hpp>
+#include <antwika/ecs/OpenPhase.hpp>
 #include <antwika/gfx/Math3D.hpp>
 
 namespace antwika::gameplay
@@ -27,7 +28,9 @@ namespace antwika::gameplay
         loop.addSystem(Phase::Sending, patrolSystem);
         loop.addSystem(Phase::Walking, walkSystem);
         loop.addSystem(Phase::Walking, animationSystem);
+        loop.addSystem(Phase::Walking, talkSystem);
         loop.addSystem(Phase::Health, healthSystem);
+        loop.addSystem(Phase::Health, consumeSystem);
 
         for (const auto standing : world.view<component::Orientation>())
         {
@@ -38,8 +41,9 @@ namespace antwika::gameplay
 
         eyeEntity = world.create();
 
+        const ecs::OpenPhase phase(world);
+
         world.add<component::Orientation>(eyeEntity, component::Orientation{});
-        world.commit();
     }
 
     ecs::World &Game::world() noexcept
@@ -91,6 +95,11 @@ namespace antwika::gameplay
     void Game::setRunning(const bool running) noexcept
     {
         intentSystem.setRunning(running);
+    }
+
+    void Game::setRosterCount(const std::size_t rosterCount) noexcept
+    {
+        talkSystem.setRosterCount(rosterCount);
     }
 
     void Game::forgetPatrols()

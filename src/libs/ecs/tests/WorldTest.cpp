@@ -4,11 +4,13 @@
 #include <utility>
 #include <vector>
 
+#include <antwika/ecs/OpenPhase.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
 #include "antwika/ecs/World.hpp"
 #include "antwika/ecs/EcsError.hpp"
 
+using antwika::ecs::OpenPhase;
 using antwika::ecs::EcsError;
 using antwika::ecs::Entity;
 using antwika::ecs::World;
@@ -91,8 +93,11 @@ TEST(WorldTest, Add_IsVisibleAfterCommit)
     World world(logger);
     const auto entity = world.create();
 
-    world.add<Position>(entity, Position{1, 2});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(entity, Position{1, 2});
+    }
 
     ASSERT_TRUE(world.has<Position>(entity));
     EXPECT_EQ(world.get<Position>(entity), (Position{1, 2}));
@@ -103,14 +108,19 @@ TEST(WorldTest, Set_IsNotVisibleUntilTheNextCommit)
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
-    world.add<Position>(entity, Position{1, 2});
-    world.commit();
+    {
+        const OpenPhase phase(world);
 
-    world.set<Position>(entity, Position{9, 9});
+        world.add<Position>(entity, Position{1, 2});
+    }
 
-    EXPECT_EQ(world.get<Position>(entity), (Position{1, 2}));
+    {
+        const OpenPhase phase(world);
 
-    world.commit();
+        world.set<Position>(entity, Position{9, 9});
+
+        EXPECT_EQ(world.get<Position>(entity), (Position{1, 2}));
+    }
 
     EXPECT_EQ(world.get<Position>(entity), (Position{9, 9}));
 }
@@ -130,11 +140,15 @@ TEST(WorldTest, Set_ThrowsOnAnUncommittedAdd)
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
-    world.add<Position>(entity, Position{1, 2});
 
-    EXPECT_THROW(world.set<Position>(entity, Position{9, 9}), EcsError);
+    {
+        const OpenPhase phase(world);
 
-    world.commit();
+        world.add<Position>(entity, Position{1, 2});
+
+        EXPECT_THROW(
+            world.set<Position>(entity, Position{9, 9}), EcsError);
+    }
 
     EXPECT_EQ(world.get<Position>(entity), (Position{1, 2}));
 }
@@ -144,12 +158,18 @@ TEST(WorldTest, Remove_BeatsAnImmediateSetInAPhase)
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
-    world.add<Position>(entity, Position{1, 2});
-    world.commit();
+    {
+        const OpenPhase phase(world);
 
-    world.set<Position>(entity, Position{9, 9});
-    world.remove<Position>(entity);
-    world.commit();
+        world.add<Position>(entity, Position{1, 2});
+    }
+
+    {
+        const OpenPhase phase(world);
+
+        world.set<Position>(entity, Position{9, 9});
+        world.remove<Position>(entity);
+    }
 
     EXPECT_FALSE(world.has<Position>(entity));
 }
@@ -159,11 +179,17 @@ TEST(WorldTest, Add_OverwritesAComponentAlreadyHeld)
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
-    world.add<Position>(entity, Position{1, 2});
-    world.commit();
+    {
+        const OpenPhase phase(world);
 
-    world.add<Position>(entity, Position{3, 4});
-    world.commit();
+        world.add<Position>(entity, Position{1, 2});
+    }
+
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(entity, Position{3, 4});
+    }
 
     EXPECT_EQ(world.get<Position>(entity), (Position{3, 4}));
 }
@@ -173,12 +199,18 @@ TEST(WorldTest, Add_BeatsAnEarlierSetInAPhase)
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
-    world.add<Position>(entity, Position{1, 2});
-    world.commit();
+    {
+        const OpenPhase phase(world);
 
-    world.set<Position>(entity, Position{9, 9});
-    world.add<Position>(entity, Position{3, 4});
-    world.commit();
+        world.add<Position>(entity, Position{1, 2});
+    }
+
+    {
+        const OpenPhase phase(world);
+
+        world.set<Position>(entity, Position{9, 9});
+        world.add<Position>(entity, Position{3, 4});
+    }
 
     EXPECT_EQ(world.get<Position>(entity), (Position{3, 4}));
 }
@@ -188,12 +220,18 @@ TEST(WorldTest, Add_BeatsALaterSetInAPhase)
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
-    world.add<Position>(entity, Position{1, 2});
-    world.commit();
+    {
+        const OpenPhase phase(world);
 
-    world.add<Position>(entity, Position{3, 4});
-    world.set<Position>(entity, Position{9, 9});
-    world.commit();
+        world.add<Position>(entity, Position{1, 2});
+    }
+
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(entity, Position{3, 4});
+        world.set<Position>(entity, Position{9, 9});
+    }
 
     EXPECT_EQ(world.get<Position>(entity), (Position{3, 4}));
 }
@@ -204,9 +242,12 @@ TEST(WorldTest, Add_ResolvesTwoInAPhaseAsTheLater)
     World world(logger);
     const auto entity = world.create();
 
-    world.add<Position>(entity, Position{1, 2});
-    world.add<Position>(entity, Position{3, 4});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(entity, Position{1, 2});
+        world.add<Position>(entity, Position{3, 4});
+    }
 
     EXPECT_EQ(world.get<Position>(entity), (Position{3, 4}));
 }
@@ -226,14 +267,19 @@ TEST(WorldTest, Remove_LeavesTheComponentGoneAfterCommit)
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
-    world.add<Position>(entity, Position{1, 2});
-    world.commit();
+    {
+        const OpenPhase phase(world);
 
-    world.remove<Position>(entity);
+        world.add<Position>(entity, Position{1, 2});
+    }
 
-    EXPECT_TRUE(world.has<Position>(entity));
+    {
+        const OpenPhase phase(world);
 
-    world.commit();
+        world.remove<Position>(entity);
+
+        EXPECT_TRUE(world.has<Position>(entity));
+    }
 
     EXPECT_FALSE(world.has<Position>(entity));
 }
@@ -243,14 +289,19 @@ TEST(WorldTest, Destroy_LeavesTheEntityAliveUntilCommit)
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
-    world.add<Position>(entity, Position{1, 2});
-    world.commit();
+    {
+        const OpenPhase phase(world);
 
-    world.destroy(entity);
+        world.add<Position>(entity, Position{1, 2});
+    }
 
-    EXPECT_TRUE(world.alive(entity));
+    {
+        const OpenPhase phase(world);
 
-    world.commit();
+        world.destroy(entity);
+
+        EXPECT_TRUE(world.alive(entity));
+    }
 
     EXPECT_FALSE(world.alive(entity));
     EXPECT_FALSE(world.has<Position>(entity));
@@ -261,8 +312,11 @@ TEST(WorldTest, Get_ThrowsOnADeadEntity)
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
-    world.destroy(entity);
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.destroy(entity);
+    }
 
     EXPECT_THROW(
         static_cast<void>(world.get<Position>(entity)), EcsError);
@@ -273,8 +327,11 @@ TEST(WorldTest, Has_IsFalseRatherThanThrowingWhenDead)
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
-    world.destroy(entity);
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.destroy(entity);
+    }
 
     EXPECT_FALSE(world.has<Position>(entity));
 }
@@ -284,8 +341,11 @@ TEST(WorldTest, Add_ThrowsOnADeadEntity)
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
-    world.destroy(entity);
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.destroy(entity);
+    }
 
     EXPECT_THROW(
         world.add<Position>(entity, Position{}), EcsError);
@@ -296,8 +356,11 @@ TEST(WorldTest, Destroy_ThrowsOnAnAlreadyDeadEntity)
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
-    world.destroy(entity);
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.destroy(entity);
+    }
 
     EXPECT_THROW(world.destroy(entity), EcsError);
 }
@@ -307,12 +370,18 @@ TEST(WorldTest, Destroy_RetiresAnEntityOncePerPhase)
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
-    world.add<Position>(entity, Position{1, 2});
-    world.commit();
+    {
+        const OpenPhase phase(world);
 
-    world.destroy(entity);
-    EXPECT_NO_THROW(world.destroy(entity));
-    EXPECT_NO_THROW(world.commit());
+        world.add<Position>(entity, Position{1, 2});
+    }
+
+    EXPECT_NO_THROW({
+        const OpenPhase phase(world);
+
+        world.destroy(entity);
+        world.destroy(entity);
+    });
 
     EXPECT_FALSE(world.alive(entity));
     EXPECT_FALSE(world.has<Position>(entity));
@@ -323,10 +392,16 @@ TEST(WorldTest, Commit_DoesNotReapplyTheFirstCommit)
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
-    world.destroy(entity);
-    world.commit();
+    {
+        const OpenPhase phase(world);
 
-    EXPECT_NO_THROW(world.commit());
+        world.destroy(entity);
+    }
+
+    EXPECT_NO_THROW({
+        const OpenPhase secondPhase(world);
+    });
+
     EXPECT_FALSE(world.alive(entity));
 }
 
@@ -335,8 +410,11 @@ TEST(WorldTest, Remove_ThrowsOnADeadEntity)
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
-    world.destroy(entity);
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.destroy(entity);
+    }
 
     EXPECT_THROW(world.remove<Position>(entity), EcsError);
 }
@@ -346,10 +424,12 @@ TEST(WorldTest, Remove_DoesNothingForAComponentNeverHeld)
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
-    world.commit();
 
-    EXPECT_NO_THROW(world.remove<Position>(entity));
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        EXPECT_NO_THROW(world.remove<Position>(entity));
+    }
 
     EXPECT_FALSE(world.has<Position>(entity));
 }
@@ -360,8 +440,11 @@ TEST(WorldTest, Get_ThrowsWhenOnlyAnotherEntityHasIt)
     World world(logger);
     const auto withPosition = world.create();
     const auto withoutPosition = world.create();
-    world.add<Position>(withPosition, Position{1, 2});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(withPosition, Position{1, 2});
+    }
 
     EXPECT_THROW(
         static_cast<void>(world.get<Position>(withoutPosition)), EcsError);
@@ -372,8 +455,11 @@ TEST(WorldTest, Set_ThrowsOnADeadEntity)
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
-    world.destroy(entity);
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.destroy(entity);
+    }
 
     EXPECT_THROW(world.set<Position>(entity, Position{}), EcsError);
 }
@@ -384,19 +470,28 @@ TEST(WorldTest, Destroy_LeavesUnrelatedPoolsAlone)
     World world(logger);
     const auto withPosition = world.create();
     const auto withVelocity = world.create();
-    world.add<Position>(withPosition, Position{1, 2});
-    world.add<Velocity>(withVelocity, Velocity{3});
-    world.commit();
+    {
+        const OpenPhase phase(world);
 
-    world.destroy(withPosition);
-    world.commit();
+        world.add<Position>(withPosition, Position{1, 2});
+        world.add<Velocity>(withVelocity, Velocity{3});
+    }
+
+    {
+        const OpenPhase phase(world);
+
+        world.destroy(withPosition);
+    }
 
     EXPECT_FALSE(world.alive(withPosition));
     ASSERT_TRUE(world.has<Velocity>(withVelocity));
     EXPECT_EQ(world.get<Velocity>(withVelocity), (Velocity{3}));
 
-    world.destroy(withVelocity);
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.destroy(withVelocity);
+    }
 
     EXPECT_FALSE(world.alive(withVelocity));
 }
@@ -407,10 +502,13 @@ TEST(WorldTest, Destroy_LeavesNoOrphanWhenStagedBeforeAdd)
     World world(logger);
     const auto entity = world.create();
 
-    world.destroy(entity);
-    world.add<Position>(entity, Position{1, 2});
-    world.add<Velocity>(entity, Velocity{3});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.destroy(entity);
+        world.add<Position>(entity, Position{1, 2});
+        world.add<Velocity>(entity, Velocity{3});
+    }
 
     EXPECT_FALSE(world.alive(entity));
     EXPECT_FALSE(world.has<Position>(entity));
@@ -436,8 +534,11 @@ TEST(WorldTest, View_ReturnsTheEntityForOneComponent)
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
-    world.add<Velocity>(entity, Velocity{5});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Velocity>(entity, Velocity{5});
+    }
 
     const auto view = world.view<Velocity>();
     const std::vector<Entity> entities(view.begin(), view.end());
@@ -451,10 +552,13 @@ TEST(WorldTest, View_IntersectsMultipleComponentTypes)
     World world(logger);
     const auto both = world.create();
     const auto positionOnly = world.create();
-    world.add<Position>(both, Position{1, 1});
-    world.add<Velocity>(both, Velocity{2});
-    world.add<Position>(positionOnly, Position{3, 3});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(both, Position{1, 1});
+        world.add<Velocity>(both, Velocity{2});
+        world.add<Position>(positionOnly, Position{3, 3});
+    }
 
     const auto view = world.view<Position, Velocity>();
     const std::vector<Entity> entities(view.begin(), view.end());
@@ -474,17 +578,24 @@ TEST(WorldTest, Destroy_KeepsTheOrderOfTheSurvivorsInAView)
     World world(logger);
 
     std::vector<Entity> entities;
-    for (int index = 0; index < 6; ++index)
-    {
-        const auto entity = world.create();
-        world.add<Position>(entity, Position{index, index});
-        entities.push_back(entity);
-    }
-    world.commit();
 
-    world.destroy(entities[1]);
-    world.destroy(entities[4]);
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        for (int index = 0; index < 6; ++index)
+        {
+            const auto entity = world.create();
+            world.add<Position>(entity, Position{index, index});
+            entities.push_back(entity);
+        }
+    }
+
+    {
+        const OpenPhase phase(world);
+
+        world.destroy(entities[1]);
+        world.destroy(entities[4]);
+    }
 
     const auto view = world.view<Position>();
     const std::vector<Entity> orderEntities(view.begin(), view.end());
@@ -502,14 +613,23 @@ TEST(WorldTest, Destroy_KeepsAWriteToAPoolTheDoomedEntityIsNotIn)
     const auto doomedEntity = world.create();
     const auto standingEntity = world.create();
 
-    world.add<Position>(doomedEntity, Position{1, 2});
-    world.add<Velocity>(standingEntity, Velocity{3});
-    world.commit();
+    {
+        const OpenPhase phase(world);
 
-    world.set<Velocity>(standingEntity, Velocity{9});
-    world.destroy(doomedEntity);
-    world.commit();
-    world.commit();
+        world.add<Position>(doomedEntity, Position{1, 2});
+        world.add<Velocity>(standingEntity, Velocity{3});
+    }
+
+    {
+        const OpenPhase phase(world);
+
+        world.set<Velocity>(standingEntity, Velocity{9});
+        world.destroy(doomedEntity);
+    }
+
+    {
+        const OpenPhase secondPhase(world);
+    }
 
     EXPECT_FALSE(world.alive(doomedEntity));
     ASSERT_TRUE(world.has<Velocity>(standingEntity));
@@ -522,20 +642,27 @@ TEST(WorldTest, Destroy_ClearsEveryPoolOfABatchInOneCommit)
     World world(logger);
 
     std::vector<Entity> entities;
-    for (int index = 0; index < 4; ++index)
-    {
-        const auto entity = world.create();
-        world.add<Position>(entity, Position{index, index});
-        world.add<Velocity>(entity, Velocity{index});
-        entities.push_back(entity);
-    }
-    world.commit();
 
-    for (const auto entity : entities)
     {
-        world.destroy(entity);
+        const OpenPhase phase(world);
+
+        for (int index = 0; index < 4; ++index)
+        {
+            const auto entity = world.create();
+            world.add<Position>(entity, Position{index, index});
+            world.add<Velocity>(entity, Velocity{index});
+            entities.push_back(entity);
+        }
     }
-    world.commit();
+
+    {
+        const OpenPhase phase(world);
+
+        for (const auto entity : entities)
+        {
+            world.destroy(entity);
+        }
+    }
 
     for (const auto entity : entities)
     {
@@ -573,14 +700,20 @@ TEST(WorldTest, Has_IsFalseForATypeAnotherWorldRegisteredFirst)
 
     World firstWorld(logger);
     const auto entity = firstWorld.create();
-    firstWorld.add<Unregistered>(entity, Unregistered{1});
-    firstWorld.add<Registered>(entity, Registered{2});
-    firstWorld.commit();
+    {
+        const OpenPhase phase(firstWorld);
+
+        firstWorld.add<Unregistered>(entity, Unregistered{1});
+        firstWorld.add<Registered>(entity, Registered{2});
+    }
 
     World secondWorld(logger);
     const auto secondEntity = secondWorld.create();
-    secondWorld.add<Registered>(secondEntity, Registered{3});
-    secondWorld.commit();
+    {
+        const OpenPhase phase(secondWorld);
+
+        secondWorld.add<Registered>(secondEntity, Registered{3});
+    }
 
     EXPECT_FALSE(secondWorld.has<Unregistered>(secondEntity));
     EXPECT_EQ(secondWorld.view<Unregistered>().size(), 0U);
@@ -592,17 +725,26 @@ TEST(WorldTest, Add_FillsAPoolAnotherWorldOpenedFirst)
 
     World firstWorld(logger);
     const auto entity = firstWorld.create();
-    firstWorld.add<Unregistered>(entity, Unregistered{1});
-    firstWorld.add<Registered>(entity, Registered{2});
-    firstWorld.commit();
+    {
+        const OpenPhase phase(firstWorld);
+
+        firstWorld.add<Unregistered>(entity, Unregistered{1});
+        firstWorld.add<Registered>(entity, Registered{2});
+    }
 
     World secondWorld(logger);
     const auto secondEntity = secondWorld.create();
-    secondWorld.add<Registered>(secondEntity, Registered{3});
-    secondWorld.commit();
+    {
+        const OpenPhase phase(secondWorld);
 
-    secondWorld.add<Unregistered>(secondEntity, Unregistered{4});
-    secondWorld.commit();
+        secondWorld.add<Registered>(secondEntity, Registered{3});
+    }
+
+    {
+        const OpenPhase phase(secondWorld);
+
+        secondWorld.add<Unregistered>(secondEntity, Unregistered{4});
+    }
 
     ASSERT_TRUE(secondWorld.has<Unregistered>(secondEntity));
     EXPECT_EQ(secondWorld.get<Unregistered>(secondEntity), (Unregistered{4}));
@@ -614,9 +756,12 @@ TEST(WorldTest, Remove_BeatsAnEarlierAddInAPhase)
     World world(logger);
     const auto entity = world.create();
 
-    world.add<Position>(entity, Position{1, 2});
-    world.remove<Position>(entity);
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(entity, Position{1, 2});
+        world.remove<Position>(entity);
+    }
 
     EXPECT_FALSE(world.has<Position>(entity));
 }
@@ -626,12 +771,18 @@ TEST(WorldTest, Add_BeatsAnEarlierRemoveInAPhase)
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
-    world.add<Position>(entity, Position{1, 2});
-    world.commit();
+    {
+        const OpenPhase phase(world);
 
-    world.remove<Position>(entity);
-    world.add<Position>(entity, Position{7, 8});
-    world.commit();
+        world.add<Position>(entity, Position{1, 2});
+    }
+
+    {
+        const OpenPhase phase(world);
+
+        world.remove<Position>(entity);
+        world.add<Position>(entity, Position{7, 8});
+    }
 
     ASSERT_TRUE(world.has<Position>(entity));
     EXPECT_EQ(world.get<Position>(entity), (Position{7, 8}));
@@ -643,9 +794,15 @@ TEST(WorldTest, Commit_LeavesADrainedBufferAlone)
     World world(logger);
     const auto entity = world.create();
 
-    world.add<Position>(entity, Position{1, 2});
-    world.commit();
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(entity, Position{1, 2});
+    }
+
+    {
+        const OpenPhase drainedPhase(world);
+    }
 
     ASSERT_TRUE(world.has<Position>(entity));
     EXPECT_EQ(world.get<Position>(entity), (Position{1, 2}));
@@ -658,10 +815,13 @@ TEST(WorldTest, Add_IsDiscardedWhenTheEntityDiesInTheSamePhase)
     const auto doomedEntity = world.create();
     const auto keptEntity = world.create();
 
-    world.destroy(doomedEntity);
-    world.add<Position>(doomedEntity, Position{1, 2});
-    world.add<Position>(keptEntity, Position{3, 4});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.destroy(doomedEntity);
+        world.add<Position>(doomedEntity, Position{1, 2});
+        world.add<Position>(keptEntity, Position{3, 4});
+    }
 
     EXPECT_FALSE(world.alive(doomedEntity));
     EXPECT_FALSE(world.has<Position>(doomedEntity));
@@ -674,9 +834,12 @@ TEST(WorldTest, Destroy_ClearsBothPoolsOfATypePairSharedAcrossWorlds)
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
-    world.add<Unregistered>(entity, Unregistered{1});
-    world.add<Registered>(entity, Registered{2});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Unregistered>(entity, Unregistered{1});
+        world.add<Registered>(entity, Registered{2});
+    }
 
     ASSERT_TRUE(world.has<Unregistered>(entity));
     ASSERT_TRUE(world.has<Registered>(entity));
@@ -685,8 +848,11 @@ TEST(WorldTest, Destroy_ClearsBothPoolsOfATypePairSharedAcrossWorlds)
     const std::vector<Entity> listedEntities(view.begin(), view.end());
     EXPECT_EQ(listedEntities, (std::vector<Entity>{entity}));
 
-    world.destroy(entity);
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.destroy(entity);
+    }
 
     EXPECT_FALSE(world.has<Unregistered>(entity));
     EXPECT_FALSE(world.has<Registered>(entity));
@@ -709,8 +875,11 @@ TEST(WorldTest, Claim_LeavesATypeAlreadyHeldAsItStands)
     World world(logger);
     const auto entity = world.create();
 
-    world.add<Position>(entity, Position{1, 2});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(entity, Position{1, 2});
+    }
     world.claim<Position>();
 
     ASSERT_TRUE(world.has<Position>(entity));
@@ -723,9 +892,12 @@ TEST(WorldTest, Claim_TakesUpOneOfTheSlotsAWorldHolds)
     World world(logger);
     const auto entity = world.create();
 
-    world.claim<Position>();
-    world.add<Position>(entity, Position{3, 4});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.claim<Position>();
+        world.add<Position>(entity, Position{3, 4});
+    }
 
     ASSERT_TRUE(world.has<Position>(entity));
     EXPECT_EQ(world.get<Position>(entity), (Position{3, 4}));
@@ -737,8 +909,11 @@ TEST(WorldTest, ForgetComponents_LeavesEveryEntityStanding)
     World world(logger);
     const auto entity = world.create();
 
-    world.add<Position>(entity, Position{1, 2});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(entity, Position{1, 2});
+    }
     world.forgetComponents();
 
     EXPECT_TRUE(world.alive(entity));
@@ -750,9 +925,12 @@ TEST(WorldTest, ForgetComponents_TakesEveryComponentAway)
     World world(logger);
     const auto entity = world.create();
 
-    world.add<Position>(entity, Position{1, 2});
-    world.add<Velocity>(entity, Velocity{3});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(entity, Position{1, 2});
+        world.add<Velocity>(entity, Velocity{3});
+    }
     world.forgetComponents();
 
     EXPECT_FALSE(world.has<Position>(entity));
@@ -765,11 +943,17 @@ TEST(WorldTest, ForgetComponents_LetsTheSameTypeBeTakenUpAfresh)
     World world(logger);
     const auto entity = world.create();
 
-    world.add<Position>(entity, Position{1, 2});
-    world.commit();
-    world.forgetComponents();
-    world.add<Position>(entity, Position{4, 5});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(entity, Position{1, 2});
+    }
+    {
+        const OpenPhase phase(world);
+
+        world.forgetComponents();
+        world.add<Position>(entity, Position{4, 5});
+    }
 
     ASSERT_TRUE(world.has<Position>(entity));
     EXPECT_EQ(world.get<Position>(entity), (Position{4, 5}));
@@ -781,9 +965,12 @@ TEST(WorldTest, ForgetComponents_DropsWhatWasStagedAndNotYetCommitted)
     World world(logger);
     const auto entity = world.create();
 
-    world.add<Position>(entity, Position{1, 2});
-    world.forgetComponents();
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Position>(entity, Position{1, 2});
+        world.forgetComponents();
+    }
 
     EXPECT_FALSE(world.has<Position>(entity));
 }
@@ -794,9 +981,12 @@ TEST(WorldTest, Commit_KeepsEveryComponentTypeThroughSeveralGrowths)
     World world(logger);
     const auto entity = world.create();
 
-    addFillers(
-        world, entity, std::make_index_sequence<kManyComponents>{});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        addFillers(
+            world, entity, std::make_index_sequence<kManyComponents>{});
+    }
 
     EXPECT_TRUE(
         holdsFillers(
@@ -810,16 +1000,24 @@ TEST(WorldTest, Destroy_LetsGoOfEveryComponentTypeThroughSeveralGrowths)
     World world(logger);
     const auto entity = world.create();
 
-    addFillers(
-        world, entity, std::make_index_sequence<kManyComponents>{});
-    world.commit();
+    {
+        const OpenPhase phase(world);
 
-    world.destroy(entity);
-    world.commit();
+        addFillers(
+            world, entity, std::make_index_sequence<kManyComponents>{});
+    }
+
+    {
+        const OpenPhase phase(world);
+
+        world.destroy(entity);
+    }
 
     const auto laterEntity = world.create();
 
-    world.commit();
+    {
+        const OpenPhase phase(world);
+    }
 
     EXPECT_TRUE(
         holdsNoFiller(
@@ -834,13 +1032,19 @@ TEST(WorldTest, Add_KeepsEarlierComponentsWhenTheSlotTableGrows)
     World world(logger);
     const auto entity = world.create();
 
-    world.add<Padding<100>>(entity, Padding<100>{1});
-    world.add<Padding<101>>(entity, Padding<101>{2});
-    world.commit();
+    {
+        const OpenPhase phase(world);
 
-    addFillers(
-        world, entity, std::make_index_sequence<kManyComponents>{});
-    world.commit();
+        world.add<Padding<100>>(entity, Padding<100>{1});
+        world.add<Padding<101>>(entity, Padding<101>{2});
+    }
+
+    {
+        const OpenPhase phase(world);
+
+        addFillers(
+            world, entity, std::make_index_sequence<kManyComponents>{});
+    }
 
     ASSERT_TRUE(world.has<Padding<100>>(entity));
     EXPECT_EQ(world.get<Padding<100>>(entity).value, 1);
@@ -856,13 +1060,15 @@ TEST(WorldTest, Commit_AppliesWhatWasStagedBeforeTheSlotTableGrew)
     World world(logger);
     const auto entity = world.create();
 
-    world.add<Padding<100>>(entity, Padding<100>{5});
-    world.add<Padding<101>>(entity, Padding<101>{6});
+    {
+        const OpenPhase phase(world);
 
-    addFillers(
-        world, entity, std::make_index_sequence<kManyComponents>{});
+        world.add<Padding<100>>(entity, Padding<100>{5});
+        world.add<Padding<101>>(entity, Padding<101>{6});
 
-    world.commit();
+        addFillers(
+            world, entity, std::make_index_sequence<kManyComponents>{});
+    }
 
     ASSERT_TRUE(world.has<Padding<100>>(entity));
     EXPECT_EQ(world.get<Padding<100>>(entity).value, 5);
@@ -878,13 +1084,19 @@ TEST(WorldTest, ForgetComponents_LetsTypesBeTakenUpAfreshAfterAGrowth)
     World world(logger);
     const auto entity = world.create();
 
-    addFillers(
-        world, entity, std::make_index_sequence<kManyComponents>{});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        addFillers(
+            world, entity, std::make_index_sequence<kManyComponents>{});
+    }
     world.forgetComponents();
 
-    world.add<Padding<0>>(entity, Padding<0>{9});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Padding<0>>(entity, Padding<0>{9});
+    }
 
     ASSERT_TRUE(world.has<Padding<0>>(entity));
     EXPECT_EQ(world.get<Padding<0>>(entity).value, 9);

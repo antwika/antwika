@@ -4,7 +4,9 @@
 #include <antwika/component/Inventory.hpp>
 #include <antwika/component/Item.hpp>
 #include <antwika/component/Position.hpp>
-#include <antwika/component/Vitals.hpp>
+#include <antwika/component/ConsumeIntent.hpp>
+#include <antwika/component/ConsumeReport.hpp>
+#include <antwika/ecs/OpenPhase.hpp>
 #include <antwika/gfx/Math3D.hpp>
 #include <antwika/input/Key.hpp>
 #include <antwika/input/MouseButton.hpp>
@@ -163,26 +165,36 @@ namespace antwika::editor
     void Editor::consumeItem(const component::ItemKind kind)
     {
         auto &world = game->world();
-        const component::Vitals heldVitals{
-            .health = world.get<component::Health>(game->player()),
-            .inventory = world.get<component::Inventory>(game->player())};
-        const auto afterVitals = rules::consumed(heldVitals, kind);
+        const ecs::OpenPhase phase(world);
 
-        if (afterVitals.inventory.slots == heldVitals.inventory.slots)
+        world.add<component::ConsumeIntent>(
+            game->player(),
+            component::ConsumeIntent{
+                .kind = static_cast<std::uint8_t>(kind)});
+    }
+
+    void Editor::sayConsumeReport()
+    {
+        auto &world = game->world();
+
+        if (!world.has<component::ConsumeReport>(game->player()))
         {
-            sayCaption(
-                kind == component::ItemKind::Food ? "food" : "water",
-                "there is none left to take");
-
             return;
         }
 
-        world.set<component::Health>(game->player(), afterVitals.health);
-        world.set<component::Inventory>(game->player(), afterVitals.inventory);
-        world.commit();
+        const auto report =
+            world.get<component::ConsumeReport>(game->player());
+        const auto kind = static_cast<component::ItemKind>(report.kind);
+
         sayCaption(
             kind == component::ItemKind::Food ? "food" : "water",
-            kind == component::ItemKind::Food ? "eaten" : "drunk");
+            report.anyLeft
+                ? (kind == component::ItemKind::Food ? "eaten" : "drunk")
+                : "there is none left to take");
+
+        const ecs::OpenPhase phase(world);
+
+        world.remove<component::ConsumeReport>(game->player());
     }
 
     void Editor::onSteppedCheckpoints(

@@ -7,6 +7,9 @@
 #include <antwika/gfx/PngFile.hpp>
 #include <antwika/app/SpawnDetached.hpp>
 #include <antwika/component/AnimationState.hpp>
+#include <antwika/component/DialogueLine.hpp>
+#include <antwika/component/TalkIntent.hpp>
+#include <antwika/ecs/OpenPhase.hpp>
 #include <antwika/component/Player.hpp>
 #include <antwika/component/Position.hpp>
 #include <antwika/component/RosterIndex.hpp>
@@ -25,8 +28,6 @@
 
 namespace
 {
-
-    constexpr float kTalkRadius = 1.6F;
 
     const std::vector<std::string> kPlayerComponents{
         "component::Position",
@@ -251,8 +252,9 @@ namespace antwika::editor
 
     void Editor::spawnItems()
     {
+        const ecs::OpenPhase phase(game->world());
+
         gameplay::spawnItems(game->world(), map);
-        game->world().commit();
     }
 
     void Editor::playApart()
@@ -317,54 +319,43 @@ namespace antwika::editor
         }
 
         auto &world = game->world();
-        const auto stoodPosition =
-            world.get<component::Position>(game->player());
+        const ecs::OpenPhase phase(world);
 
-        for (const auto entity :
-             world.view<component::Position, component::RosterIndex,
-                 component::Speaker>())
+        world.add<component::TalkIntent>(
+            game->player(), component::TalkIntent{});
+    }
+
+    void Editor::sayDialogueLine()
+    {
+        auto &world = game->world();
+
+        if (!world.has<component::DialogueLine>(game->player()))
         {
-            if (world.has<component::Player>(entity))
-            {
-                continue;
-            }
-
-            const auto rosterIndex =
-                world.get<component::RosterIndex>(entity).index;
-
-            if (rosterIndex >= map.characters.size())
-            {
-                continue;
-            }
-
-            const auto therePosition = world.get<component::Position>(entity);
-            const auto byX = therePosition.x - stoodPosition.x;
-            const auto byZ = therePosition.z - stoodPosition.z;
-
-            if ((byX * byX) + (byZ * byZ)
-                > kTalkRadius * kTalkRadius)
-            {
-                continue;
-            }
-
-            const auto &figure = map.characters.at(rosterIndex);
-            const auto speaker = world.get<component::Speaker>(entity);
-
-            sayCaption(
-                figure.name.empty()
-                    ? "figure " + std::to_string(rosterIndex)
-                    : figure.name,
-                figure.dialogue.at(
-                    speaker.nextLineIndex % figure.dialogue.size()),
-                rosterIndex);
-            world.set<component::Speaker>(
-                entity,
-                component::Speaker{
-                    .nextLineIndex = speaker.nextLineIndex + 1});
-            world.commit();
-
             return;
         }
+
+        const auto dialogueLine =
+            world.get<component::DialogueLine>(game->player());
+
+        if (dialogueLine.rosterIndex < map.characters.size())
+        {
+            const auto &figure = map.characters.at(dialogueLine.rosterIndex);
+
+            if (!figure.dialogue.empty())
+            {
+                sayCaption(
+                    figure.name.empty()
+                        ? "figure " + std::to_string(dialogueLine.rosterIndex)
+                        : figure.name,
+                    figure.dialogue.at(
+                        dialogueLine.lineIndex % figure.dialogue.size()),
+                    dialogueLine.rosterIndex);
+            }
+        }
+
+        const ecs::OpenPhase phase(world);
+
+        world.remove<component::DialogueLine>(game->player());
     }
 
 }

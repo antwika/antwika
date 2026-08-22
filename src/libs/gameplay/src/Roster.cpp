@@ -9,6 +9,7 @@
 #include <antwika/component/Position.hpp>
 #include <antwika/component/RosterIndex.hpp>
 #include <antwika/component/Speaker.hpp>
+#include <antwika/ecs/OpenPhase.hpp>
 #include <antwika/light/ActiveLight.hpp>
 #include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxel/Voxels.hpp>
@@ -39,12 +40,14 @@ namespace antwika::gameplay
             goneEntities.push_back(entity);
         }
 
-        for (const auto entity : goneEntities)
         {
-            world.destroy(entity);
-        }
+            const ecs::OpenPhase clearingPhase(world);
 
-        world.commit();
+            for (const auto entity : goneEntities)
+            {
+                world.destroy(entity);
+            }
+        }
 
         std::vector<std::size_t> spawnOrder{hero};
 
@@ -58,6 +61,8 @@ namespace antwika::gameplay
         }
 
         auto player = ecs::Entity{};
+
+        const ecs::OpenPhase spawningPhase(world);
 
         for (const auto index : spawnOrder)
         {
@@ -96,7 +101,6 @@ namespace antwika::gameplay
         }
 
         spawnItems(world, laidMap);
-        world.commit();
 
         return player;
     }

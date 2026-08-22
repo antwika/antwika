@@ -4,11 +4,13 @@
 #include <chrono>
 #include <vector>
 
+#include <antwika/ecs/OpenPhase.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/time/fakes/FakeSleeper.hpp>
 
 #include "antwika/system/TickPacer.hpp"
 
+using antwika::ecs::OpenPhase;
 using antwika::ecs::World;
 using antwika::system::TickPacer;
 using antwika::log::mocks::MockLogger;
@@ -74,14 +76,20 @@ TEST(TickPacerTest, Update_LeavesTheWorldUnchanged)
     World world(logger);
 
     const auto entity = world.create();
-    world.add<Marker>(entity, Marker{.value = 3});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Marker>(entity, Marker{.value = 3});
+    }
 
     FakeSleeper sleeper;
     TickPacer pacer(sleeper, 1ms);
 
-    pacer.update(world, 0);
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        pacer.update(world, 0);
+    }
 
     EXPECT_EQ(world.get<Marker>(entity), (Marker{.value = 3}));
 }
@@ -92,26 +100,38 @@ TEST(TickPacerTest, Update_LeavesTheWorldStillEditable)
     World world(logger);
 
     const auto entity = world.create();
-    world.add<Marker>(entity, Marker{.value = 3});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Marker>(entity, Marker{.value = 3});
+    }
 
     FakeSleeper sleeper;
     TickPacer pacer(sleeper, 1ms);
     pacer.update(world, 0);
 
-    world.remove<Marker>(entity);
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.remove<Marker>(entity);
+    }
 
     EXPECT_FALSE(world.has<Marker>(entity));
 
     const auto second = world.create();
-    world.add<Marker>(second, Marker{.value = 7});
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.add<Marker>(second, Marker{.value = 7});
+    }
 
     ASSERT_EQ(world.get<Marker>(second), (Marker{.value = 7}));
 
-    world.destroy(second);
-    world.commit();
+    {
+        const OpenPhase phase(world);
+
+        world.destroy(second);
+    }
 
     EXPECT_FALSE(world.has<Marker>(second));
 }

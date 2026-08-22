@@ -8,6 +8,7 @@
 #include <antwika/component/AnimationState.hpp>
 #include <antwika/component/Position.hpp>
 #include <antwika/component/Velocity.hpp>
+#include <antwika/ecs/OpenPhase.hpp>
 #include <antwika/gfx/Camera3D.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/camera/FlyCamera.hpp>
@@ -18,6 +19,7 @@
 #include "antwika/editor/ui/CharacterView.hpp"
 #include "antwika/gameplay/GameLoop.hpp"
 
+using antwika::ecs::OpenPhase;
 using antwika::ecs::World;
 using antwika::gameplay::Phase;
 using antwika::character::blankCharacter;
@@ -341,9 +343,12 @@ TEST(CharacterTest, Update_TurnsAPoseTheWayItIsBeingSent)
 
     const auto entity = gameLoop.world().create();
 
-    gameLoop.world().add<Velocity>(entity, Velocity{.velocityZ = 1.0F});
-    gameLoop.world().add<AnimationState>(entity, AnimationState{});
-    gameLoop.world().commit();
+    {
+        const OpenPhase phase(gameLoop.world());
+
+        gameLoop.world().add<Velocity>(entity, Velocity{.velocityZ = 1.0F});
+        gameLoop.world().add<AnimationState>(entity, AnimationState{});
+    }
 
     gameLoop.run(7);
 
@@ -365,12 +370,15 @@ TEST(CharacterTest, Update_KeepsTheWayAPoseFacedWhenItStops)
 
     const auto entity = gameLoop.world().create();
 
-    gameLoop.world().add<Velocity>(entity, Velocity{});
-    gameLoop.world().add<AnimationState>(
-        entity,
-        AnimationState{
-            .direction = 5, .walking = true, .startedAtTick = 2});
-    gameLoop.world().commit();
+    {
+        const OpenPhase phase(gameLoop.world());
+
+        gameLoop.world().add<Velocity>(entity, Velocity{});
+        gameLoop.world().add<AnimationState>(
+            entity,
+            AnimationState{
+                .direction = 5, .walking = true, .startedAtTick = 2});
+    }
 
     gameLoop.run(9);
 
@@ -393,15 +401,18 @@ TEST(CharacterTest, Update_PosesEveryCharacterInTheWorld)
     const auto walking = gameLoop.world().create();
     const auto position = gameLoop.world().create();
 
-    gameLoop.world().add<Velocity>(
-        walking, Velocity{.velocityX = 1.0F});
-    gameLoop.world().add<AnimationState>(walking, AnimationState{});
-    gameLoop.world().add<Velocity>(position, Velocity{});
-    gameLoop.world().add<AnimationState>(
-        position,
-        AnimationState{
-            .direction = 4, .walking = true, .startedAtTick = 1});
-    gameLoop.world().commit();
+    {
+        const OpenPhase phase(gameLoop.world());
+
+        gameLoop.world().add<Velocity>(
+            walking, Velocity{.velocityX = 1.0F});
+        gameLoop.world().add<AnimationState>(walking, AnimationState{});
+        gameLoop.world().add<Velocity>(position, Velocity{});
+        gameLoop.world().add<AnimationState>(
+            position,
+            AnimationState{
+                .direction = 4, .walking = true, .startedAtTick = 1});
+    }
 
     gameLoop.run(6);
 
