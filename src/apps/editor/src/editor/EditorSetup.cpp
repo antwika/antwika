@@ -117,21 +117,7 @@ namespace antwika::editor
         cameraRig.viewHeight =
             camera::orthoHalfHeight(camera::kCanvasSize, cameraRig.view.zoom);
 
-        activeView = document.map.settings.view;
-        viewBeforePlay = document.map.settings.view;
-        tool = document.map.settings.tool;
-        lighting = document.map.settings.lighting;
-        showRuleLines = document.map.settings.showRuleLines;
-        paintMode = document.map.settings.paint;
-        brushKind = document.map.settings.kind;
-        grid = document.map.settings.grid;
-        showPlacementGhost = document.map.settings.showPlacementGhost;
-        lampSight = document.map.settings.lampSight;
-        cameraFollows = document.map.settings.cameraFollows;
-        hideAboveLevel = document.map.settings.hideAboveLevel;
-        cornerJoining = document.map.settings.cornersJoined
-                      ? solver::CornerSeams::Included
-                      : solver::CornerSeams::Ignored;
+        takeSettings(document.map.settings);
 
         rebuildWorld();
 

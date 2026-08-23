@@ -143,7 +143,7 @@ namespace antwika::editor
                         kLevelGridLineColor);
                 }
 
-                if (!cameraRig.freeLook && grid)
+                if (!cameraRig.freeLook && settings.grid)
                 {
                     ruled(gridLines, kLevelGridLineColor);
                 }
@@ -170,10 +170,10 @@ namespace antwika::editor
                     || ascendHeld;
 
                 if (going.has_value() && !cameraRig.freeLook
-                    && showPlacementGhost && !steering
+                    && settings.showPlacementGhost && !steering
                     && !frame.interactions.pointerOverUi)
                 {
-                    if (tool == map::Tool::Stamp
+                    if (settings.tool == map::Tool::Stamp
                         && (stampFromPosition.has_value()
                             || !stampVoxels.empty()))
                     {
@@ -253,7 +253,7 @@ namespace antwika::editor
                     ruled(voxelmap::cubeWireframe(waterCell), kWaterBarColor);
                 }
 
-                if (tool == map::Tool::Figure
+                if (settings.tool == map::Tool::Figure
                     && figurePicked.has_value()
                     && *figurePicked < document.map.characters.size())
                 {
@@ -267,7 +267,7 @@ namespace antwika::editor
                     }
                 }
 
-                if (tool == map::Tool::PressurePlate)
+                if (settings.tool == map::Tool::PressurePlate)
                 {
                     for (std::size_t index = 0;
                          index < document.map.plates.size();
@@ -295,7 +295,7 @@ namespace antwika::editor
 
         const auto seamFrom = clockSource.now();
 
-        if (showRuleLines && !play.playing)
+        if (settings.showRuleLines && !play.playing)
         {
             const auto &faces = worldMeshes.faces();
             const auto seamRuled =

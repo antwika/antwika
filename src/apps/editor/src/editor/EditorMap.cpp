@@ -27,7 +27,7 @@ namespace antwika::editor
 
     voxel::Voxels Editor::visibleCells()
     {
-        if (!hideAboveLevel || play.playing)
+        if (!settings.hideAboveLevel || play.playing)
         {
             return document.map.voxels;
         }
@@ -283,20 +283,7 @@ namespace antwika::editor
                                    play.game->player())
                                .direction};
             }
-            document.map.settings = map::Settings{
-                .lighting = lighting,
-                .showRuleLines = showRuleLines,
-                .tool = tool,
-                .paint = paintMode,
-                .view = play.playing ? viewBeforePlay : activeView,
-                .kind = brushKind,
-                .grid = grid,
-                .showPlacementGhost = showPlacementGhost,
-                .lampSight = lampSight,
-                .cameraFollows = cameraFollows,
-                .hideAboveLevel = hideAboveLevel,
-                .cornersJoined =
-                    cornerJoining == solver::CornerSeams::Included};
+            document.map.settings = settingsAsShown();
 
             for (std::size_t sheet = 0;
                  sheet < map::kAtlasSheetCount;
@@ -361,20 +348,7 @@ namespace antwika::editor
             cameraRig.viewHeight =
                 camera::orthoHalfHeight(camera::kCanvasSize,
                     cameraRig.view.zoom);
-            lighting = document.map.settings.lighting;
-            showRuleLines = document.map.settings.showRuleLines;
-            tool = document.map.settings.tool;
-            paintMode = document.map.settings.paint;
-            activeView = document.map.settings.view;
-            brushKind = document.map.settings.kind;
-            grid = document.map.settings.grid;
-            showPlacementGhost = document.map.settings.showPlacementGhost;
-            lampSight = document.map.settings.lampSight;
-            cameraFollows = document.map.settings.cameraFollows;
-            hideAboveLevel = document.map.settings.hideAboveLevel;
-            cornerJoining = document.map.settings.cornersJoined
-                          ? solver::CornerSeams::Included
-                          : solver::CornerSeams::Ignored;
+            takeSettings(document.map.settings);
             atlasSheets.take(
                 map::loadAtlasPairOrBlank(document.path(), kAppName));
             iconsView.open(
@@ -531,6 +505,27 @@ namespace antwika::editor
     {
         dialogs.fileDialog.reset();
     }
+
+    void Editor::takeSettings(const map::Settings &shownSettings)
+    {
+        settings = shownSettings;
+        activeView = shownSettings.view;
+        viewBeforePlay = shownSettings.view;
+        cornerJoining = shownSettings.cornersJoined
+                      ? solver::CornerSeams::Included
+                      : solver::CornerSeams::Ignored;
+    }
+
+    map::Settings Editor::settingsAsShown() const
+    {
+        auto shownSettings = settings;
+
+        shownSettings.view = play.playing ? viewBeforePlay : activeView;
+        shownSettings.cornersJoined =
+            cornerJoining == solver::CornerSeams::Included;
+
+        return shownSettings;
+    } // GCOVR_EXCL_LINE
 
     map::Snapshot Editor::snapshot()
     {

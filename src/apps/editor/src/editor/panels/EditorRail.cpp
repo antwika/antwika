@@ -17,12 +17,14 @@ namespace antwika::editor
         const auto showPalette =
             activeView == map::View::Atlases
             || activeView == map::View::Character
-            || (activeView == map::View::World && tool == map::Tool::Lamp);
+            || (activeView == map::View::World
+                && settings.tool == map::Tool::Lamp);
         const auto showLayers = activeView == map::View::Atlases;
         const auto showExitPanel =
-            tool == map::Tool::Exit && activeView == map::View::World;
+            settings.tool == map::Tool::Exit && activeView == map::View::World;
         const auto showFigures =
-            tool == map::Tool::Figure && activeView == map::View::World;
+            settings.tool == map::Tool::Figure
+            && activeView == map::View::World;
 
         if (showPalette || showLayers || showExitPanel || showFigures)
         {

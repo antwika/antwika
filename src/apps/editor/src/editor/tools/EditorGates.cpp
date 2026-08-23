@@ -32,11 +32,16 @@ namespace antwika::editor
     void Editor::pressGate(
         const voxel::VoxelPosition position, const input::MouseButton button)
     {
-        auto &gateCells = tool == map::Tool::Key    ? document.map.keyPositions
-                        : tool == map::Tool::Door  ? document.map.doorPositions
-                        : tool == map::Tool::Food  ? document.map.foodPositions
-                        : tool == map::Tool::Water ? document.map.waterPositions
-                        : document.map.checkpointPositions;
+        const auto chosenTool = settings.tool;
+
+        auto &drawnMap = document.map;
+
+        auto &gateCells =
+            chosenTool == map::Tool::Key     ? drawnMap.keyPositions
+            : chosenTool == map::Tool::Door  ? drawnMap.doorPositions
+            : chosenTool == map::Tool::Food  ? drawnMap.foodPositions
+            : chosenTool == map::Tool::Water ? drawnMap.waterPositions
+                                             : drawnMap.checkpointPositions;
         const auto foundCube = rules::gateCubeContaining(gateCells, position);
 
         if (button == input::MouseButton::Right)
@@ -54,7 +59,7 @@ namespace antwika::editor
                     const auto gone =
                         antwika::voxel::cubeCornerOf(one) == corner;
 
-                    if (gone && tool == map::Tool::Door)
+                    if (gone && settings.tool == map::Tool::Door)
                     {
                         document.map.voxels = voxel::withRampsRebuilt(
                             voxel::withoutBlockAt(document.map.voxels, one),
@@ -64,7 +69,7 @@ namespace antwika::editor
                     return gone;
                 });
 
-            if (tool == map::Tool::Door)
+            if (settings.tool == map::Tool::Door)
             {
                 rebuildWorld();
             }
@@ -82,7 +87,7 @@ namespace antwika::editor
 
         if (!rules::cubeOccupied(document.map.voxels,
             antwika::voxel::cubeCornerOf(position))
-            || tool == map::Tool::Door)
+            || settings.tool == map::Tool::Door)
         {
             document.map.voxels = voxel::withRampsRebuilt(
                 voxel::withBlockAt(document.map.voxels, position), position);

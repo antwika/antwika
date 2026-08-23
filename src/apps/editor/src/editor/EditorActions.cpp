@@ -359,36 +359,36 @@ namespace antwika::editor
         }
 
         return std::string(
-                   tool == map::Tool::Brush
+                   settings.tool == map::Tool::Brush
                          ? "1 world - lmb adds - rmb takes - "
                          "f5 plays"
-                   : tool == map::Tool::Lamp
+                   : settings.tool == map::Tool::Lamp
                        ? "1 world - lmb sets a lamp of the "
                          "ink chosen - rmb takes"
-                   : tool == map::Tool::Start
+                   : settings.tool == map::Tool::Start
                        ? "1 world - lmb sets the start cube "
                          "- rmb takes it"
-                   : tool == map::Tool::Exit
+                   : settings.tool == map::Tool::Exit
                        ? "1 world - lmb sets the exit cube "
                          "- rmb takes it"
-                   : tool == map::Tool::Stamp
+                   : settings.tool == map::Tool::Stamp
                        ? "1 world - drag copies cubes - lmb "
                          "sets them down - rmb drops them"
-                   : tool == map::Tool::Figure
+                   : settings.tool == map::Tool::Figure
                        ? "1 world - lmb stands the chosen "
                          "figure here, again adds a stop - "
                          "rmb takes it away"
-                   : tool == map::Tool::PressurePlate
+                   : settings.tool == map::Tool::PressurePlate
                        ? "1 world - lmb sets the plate, then "
                          "picks the cubes it sways - rmb "
                          "takes it"
-                   : tool == map::Tool::Food
+                   : settings.tool == map::Tool::Food
                        ? "1 world - lmb lays food to pick up "
                          "- rmb takes it"
-                   : tool == map::Tool::Water
+                   : settings.tool == map::Tool::Water
                        ? "1 world - lmb lays water to pick up "
                          "- rmb takes it"
-                   : tool == map::Tool::Eraser
+                   : settings.tool == map::Tool::Eraser
                        ? "1 world - lmb clears cubes - drag "
                          "sweeps them away"
                        : "1 world - lmb picks a tile - rmb "

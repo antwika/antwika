@@ -422,13 +422,13 @@ namespace antwika::editor
                 const auto markedTiles =
                     !lineFromCell.has_value()
                         ? std::vector{*pixel}
-                    : paintMode == map::Paint::Rect
+                    : settings.paint == map::Paint::Rect
                         ? tile::rectPixels(
                               *lineFromCell, *pixel)
-                    : paintMode == map::Paint::Circle
+                    : settings.paint == map::Paint::Circle
                         ? tile::circlePixels(
                               *lineFromCell, *pixel)
-                    : paintMode == map::Paint::Line
+                    : settings.paint == map::Paint::Line
                         ? tile::linePixels(*lineFromCell, *pixel)
                         : std::vector{*pixel};
 

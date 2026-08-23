@@ -288,7 +288,7 @@ namespace antwika::editor
         }
 
         if (clear && activeView == map::View::World
-            && tool == map::Tool::Picker)
+            && settings.tool == map::Tool::Picker)
         {
             face = voxelmap::facePicked(
                 visibleCells(),

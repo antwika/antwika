@@ -54,7 +54,7 @@ namespace antwika::editor
             onSteppedWorld(walkerPosition);
         }
 
-        if (cameraFollows && play.playing)
+        if (settings.cameraFollows && play.playing)
         {
             play.game->follow(worldRotation(), walkerPosition);
         }
@@ -218,8 +218,8 @@ namespace antwika::editor
                 viewportRenderer,
                 render::WorldShaderInputs{
                     .playing = play.playing,
-                    .lighting = lighting,
-                    .sightOn = lampSight && play.playing && lowerLight,
+                    .lighting = settings.lighting,
+                    .sightOn = settings.lampSight && play.playing && lowerLight,
                     .ambient =
                         static_cast<float>(document.map.ambient) / 100.0F,
                     .walkerPosition = walkerPosition,

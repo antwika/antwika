@@ -244,13 +244,13 @@ namespace antwika::editor
             if (cell.has_value() && cell != lastPaintedPosition)
             {
                 document.map.voxels = voxel::withRampsRebuilt(
-                    tool == map::Tool::Eraser
+                    settings.tool == map::Tool::Eraser
                           ? voxel::withoutBlockAt(
                               document.map.voxels, *cell)
                         : voxel::withBlockAt(
                               document.map.voxels,
                               *cell,
-                              brushKind,
+                              settings.kind,
                               rampFacing),
                     *cell);
                 lastPaintedPosition = cell;
@@ -402,7 +402,7 @@ namespace antwika::editor
 
                 pushUndo();
 
-                if (paintMode == map::Paint::Rect)
+                if (settings.paint == map::Paint::Rect)
                 {
                     tile::paintPixels(
                         sheet,
@@ -411,7 +411,7 @@ namespace antwika::editor
                             *lineFromCell, *pixel),
                         ink);
                 }
-                else if (paintMode == map::Paint::Circle)
+                else if (settings.paint == map::Paint::Circle)
                 {
                     tile::paintPixels(
                         sheet,
