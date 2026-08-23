@@ -29,7 +29,10 @@ namespace antwika::gfx::raylib
 
     RaylibRenderer::RaylibRenderer() = default;
 
-    RaylibRenderer::~RaylibRenderer() = default;
+    RaylibRenderer::~RaylibRenderer()
+    {
+        detach();
+    }
 
     void RaylibRenderer::clear(Color color)
     {
@@ -211,6 +214,11 @@ namespace antwika::gfx::raylib
 
     void RaylibRenderer::detach()
     {
+        if (!attached)
+        {
+            return;
+        }
+
         for (RaylibRenderTarget *target : liveTargets)
         {
             target->unload();
