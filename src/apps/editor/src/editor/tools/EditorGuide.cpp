@@ -42,7 +42,7 @@ namespace antwika::editor
         }
 
         const auto standing =
-            game->world().get<component::Position>(game->player());
+            play.game->world().get<component::Position>(play.game->player());
         const auto fromStood = collision::supportingVoxel(
             worldMeshes.cells(),
             static_cast<std::int32_t>(
@@ -98,7 +98,7 @@ namespace antwika::editor
                     static_cast<float>(stop.z)});
         }
 
-        game->followPath(std::move(stopPositions), toStood->position);
+        play.game->followPath(std::move(stopPositions), toStood->position);
     }
 
 }

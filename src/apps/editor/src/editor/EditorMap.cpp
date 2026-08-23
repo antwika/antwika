@@ -27,7 +27,7 @@ namespace antwika::editor
 
     voxel::Voxels Editor::visibleCells()
     {
-        if (!hideAboveLevel || playing)
+        if (!hideAboveLevel || play.playing)
         {
             return document.map.voxels;
         }
@@ -69,7 +69,7 @@ namespace antwika::editor
         return gameplay::startingPlacement(
             document.map,
             worldMeshes.cells(),
-            playing ? game->gates().checkpointPlacement
+            play.playing ? play.game->gates().checkpointPlacement
                     : std::optional<map::Placement>{});
     }
 
@@ -106,20 +106,20 @@ namespace antwika::editor
         spawnRoster();
 
         {
-            const ecs::OpenPhase phase(game->world());
+            const ecs::OpenPhase phase(play.game->world());
 
-            game->world().set<component::Position>(
-                game->player(), stoodPosition);
-            game->world().set<component::AnimationState>(
-                game->player(),
+            play.game->world().set<component::Position>(
+                play.game->player(), stoodPosition);
+            play.game->world().set<component::AnimationState>(
+                play.game->player(),
                 component::AnimationState{.direction = startPlacement.way});
         }
 
-        game->cameraTarget() =
+        play.game->cameraTarget() =
             antwika::gfx::Vec3{stoodPosition.x, stoodPosition.y,
             stoodPosition.z};
-        game->clearPath();
-        game->clearSteering();
+        play.game->clearPath();
+        play.game->clearSteering();
     }
 
     void Editor::standPlayerAt(
@@ -133,13 +133,13 @@ namespace antwika::editor
         if (restPosition.has_value())
         {
             {
-                const ecs::OpenPhase phase(game->world());
+                const ecs::OpenPhase phase(play.game->world());
 
-                game->world().set<component::Position>(
-                    game->player(), *restPosition);
+                play.game->world().set<component::Position>(
+                    play.game->player(), *restPosition);
             }
 
-            game->cameraTarget() = antwika::gfx::Vec3{
+            play.game->cameraTarget() = antwika::gfx::Vec3{
                 restPosition->x, restPosition->y, restPosition->z};
         }
     }
@@ -147,16 +147,16 @@ namespace antwika::editor
     gfx::Mat4 Editor::worldRotation()
     {
         const auto orientation =
-            game->world().get<component::Orientation>(game->eye());
+            play.game->world().get<component::Orientation>(play.game->eye());
 
         return voxelmap::modelRotation(orientation.yaw, orientation.pitch);
     }
 
     gfx::Camera3D Editor::worldCamera()
     {
-        return playing
+        return play.playing
                    ? camera::cameraOf(
-                         game->cameraTransform(),
+                         play.game->cameraTransform(),
                          camera::kCanvasSize,
                          viewHeight)
                    : camera::perspectiveOf(
@@ -168,11 +168,11 @@ namespace antwika::editor
     void Editor::aimPlayCamera()
     {
         const auto stoodPosition =
-            game->world().get<component::Position>(game->player());
+            play.game->world().get<component::Position>(play.game->player());
 
-        game->cameraTransform() =
+        play.game->cameraTransform() =
             camera::snappedPitch(camera::defaultTransform());
-        game->aimAt(
+        play.game->aimAt(
             worldRotation(),
             antwika::gfx::Vec3{stoodPosition.x, stoodPosition.y,
             stoodPosition.z});
@@ -181,7 +181,8 @@ namespace antwika::editor
     void Editor::moveCamera()
     {
         const auto goal = camera::orthoHalfHeight(
-            camera::kCanvasSize, playing ? game->zoom() : cameraView.zoom);
+            camera::kCanvasSize,
+            play.playing ? play.game->zoom() : cameraView.zoom);
 
         viewHeight =
             std::abs(goal - viewHeight) < 0.001F
@@ -192,7 +193,7 @@ namespace antwika::editor
 
         if (!orbitFromPosition.has_value()
             || activeView != map::View::World
-            || playing || focusedField != FocusedField::Nothing
+            || play.playing || focusedField != FocusedField::Nothing
             || dialogs.fileDialog.has_value() || dialogs.quitConfirmOpen
             || keysOpen
             || rebindingAction.has_value() || heldModifiers().control
@@ -202,9 +203,11 @@ namespace antwika::editor
         }
 
         const auto byX = std::clamp(
-            game->wasdKeys().axisX() + game->arrowKeys().axisX(), -1.0F, 1.0F);
+            play.game->wasdKeys().axisX() + play.game->arrowKeys().axisX(),
+            -1.0F, 1.0F);
         const auto byY = std::clamp(
-            game->wasdKeys().axisZ() + game->arrowKeys().axisZ(), -1.0F, 1.0F);
+            play.game->wasdKeys().axisZ() + play.game->arrowKeys().axisZ(),
+            -1.0F, 1.0F);
         const auto byRise =
             (ascendHeld ? 1.0F : 0.0F)
             - (descendHeld ? 1.0F : 0.0F);
@@ -226,14 +229,15 @@ namespace antwika::editor
     void Editor::turnPlayer(
         const float byYaw, const float byPitch)
     {
-        game->world().set<component::Orientation>(
-            game->eye(),
+        play.game->world().set<component::Orientation>(
+            play.game->eye(),
             antwika::rules::turnedBy(
-                game->world().get<component::Orientation>(game->eye()),
+                play.game->world().get<component::Orientation>(play.game->eye(
+                        )),
                 byYaw,
                 byPitch));
 
-        game->aimAt(worldRotation(), game->cameraTarget());
+        play.game->aimAt(worldRotation(), play.game->cameraTarget());
     }
 
     void Editor::orbitCamera(
@@ -272,9 +276,11 @@ namespace antwika::editor
                 document.map.characters.at(
                     *hero).idlePlacement = map::Placement{
                     .position = collision::positionOf(
-                        game->world().get<component::Position>(game->player())),
-                    .way = game->world()
-                               .get<component::AnimationState>(game->player())
+                        play.game->world().get<component::Position>(
+                            play.game->player())),
+                    .way = play.game->world()
+                               .get<component::AnimationState>(
+                                   play.game->player())
                                .direction};
             }
             document.map.settings = map::Settings{
@@ -282,7 +288,7 @@ namespace antwika::editor
                 .showRuleLines = showRuleLines,
                 .tool = tool,
                 .paint = paintMode,
-                .view = playing ? viewBeforePlay : activeView,
+                .view = play.playing ? viewBeforePlay : activeView,
                 .kind = brushKind,
                 .grid = grid,
                 .showPlacementGhost = showPlacementGhost,

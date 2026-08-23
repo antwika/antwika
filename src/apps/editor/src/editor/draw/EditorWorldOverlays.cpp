@@ -36,7 +36,7 @@ namespace antwika::editor
         const gfx::Camera3D &camera,
         const gfx::Mat4 &modelMatrix)
     {
-        if (!playing && overlayStale)
+        if (!play.playing && overlayStale)
         {
             gridLines = voxelmap::levelGridLines(
                 document.map.voxels, antwika::voxel::cubeTop(editLevel));
@@ -86,11 +86,11 @@ namespace antwika::editor
                 }
             };
 
-            if (playing)
+            if (play.playing)
             {
                 for (const auto keyCell : document.map.keyPositions)
                 {
-                    if (!game->gates().collectedKeyPositions.contains(
+                    if (!play.game->gates().collectedKeyPositions.contains(
                             antwika::voxel::cubeCornerOf(keyCell)))
                     {
                         ruled(voxelmap::cubeWireframe(keyCell), kRuleLineColor);
@@ -105,10 +105,11 @@ namespace antwika::editor
                 }
 
                 for (const auto entity :
-                     game->world().view<antwika::component::Item>())
+                     play.game->world().view<antwika::component::Item>())
                 {
                     const auto item =
-                        game->world().get<antwika::component::Item>(entity);
+                        play.game->world().get<antwika::component::Item>(
+                            entity);
 
                     ruled(
                         voxelmap::cubeWireframe(item.position),
@@ -125,14 +126,14 @@ namespace antwika::editor
                 kForbiddenMarkerColor);
             }
 
-            if (playing && game->pathGoal().has_value())
+            if (play.playing && play.game->pathGoal().has_value())
             {
                 ruled(
-                    voxelmap::cubeWireframe(*game->pathGoal()),
+                    voxelmap::cubeWireframe(*play.game->pathGoal()),
                     kPlacementPreviewColor);
             }
 
-            if (!playing)
+            if (!play.playing)
             {
                 if (!lightPasses.hidden().empty())
                 {
@@ -162,8 +163,8 @@ namespace antwika::editor
                 const auto steering =
                     orbiting
                     || (panning && panGripPosition.has_value())
-                    || game->wasdKeys() != input::DirectionKeys{}
-                    || game->arrowKeys() != input::DirectionKeys{}
+                    || play.game->wasdKeys() != input::DirectionKeys{}
+                    || play.game->arrowKeys() != input::DirectionKeys{}
                     || descendHeld
                     || ascendHeld;
 
@@ -293,7 +294,7 @@ namespace antwika::editor
 
         const auto seamFrom = clockSource.now();
 
-        if (showRuleLines && !playing)
+        if (showRuleLines && !play.playing)
         {
             const auto &faces = worldMeshes.faces();
             const auto seamRuled =
@@ -376,7 +377,7 @@ namespace antwika::editor
         drawPointMark(
             clipMatrix, gfx::Vec3{0.0F, 0.0F, 0.0F}, kOriginPointColor);
 
-        if (!playing)
+        if (!play.playing)
         {
             return;
         }
@@ -387,7 +388,7 @@ namespace antwika::editor
         }
 
         const auto stoodPosition =
-            world.get<component::Position>(game->player());
+            play.world.get<component::Position>(play.game->player());
 
         const gfx::Vec3 walkerPosition{
             stoodPosition.x, stoodPosition.y, stoodPosition.z};
@@ -404,7 +405,7 @@ namespace antwika::editor
 
     void Editor::drawHealthBars(const gfx::Mat4 &clipMatrix)
     {
-        if (!playing)
+        if (!play.playing)
         {
             return;
         }
@@ -418,13 +419,13 @@ namespace antwika::editor
                 kWaterBarColor};
 
         for (const auto entity :
-             game->world().view<component::Position, component::Health>())
+             play.game->world().view<component::Position, component::Health>())
         {
             const auto overhead = voxelmap::projectToScreen(
                 clipMatrix,
                 camera::kCanvasSize,
                 character::headTopOf(
-                    game->world().get<component::Position>(entity)));
+                    play.game->world().get<component::Position>(entity)));
 
             if (!overhead.has_value())
             {
@@ -432,7 +433,7 @@ namespace antwika::editor
             }
 
             const auto bars = antwika::render::healthBars(
-                *overhead, game->world().get<component::Health>(entity));
+                *overhead, play.game->world().get<component::Health>(entity));
 
             for (std::size_t index = 0;
                  index < antwika::render::kHealthBarParts;

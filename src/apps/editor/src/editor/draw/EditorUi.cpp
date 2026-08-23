@@ -536,7 +536,7 @@ namespace antwika::editor
                                                   : kTextColor);
             context.spacer(antwika::ui::kGrowSizing);
 
-            if (activeView == map::View::World && !playing
+            if (activeView == map::View::World && !play.playing
                 && pointer.hoveredPosition.has_value())
             {
                 context.label(

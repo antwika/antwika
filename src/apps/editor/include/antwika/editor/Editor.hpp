@@ -77,6 +77,7 @@
 #include "antwika/editor/editor/FileDialog.hpp"
 #include "antwika/editor/editor/EditorDocument.hpp"
 #include "antwika/editor/editor/GameModule.hpp"
+#include "antwika/editor/editor/PlaySession.hpp"
 #include "antwika/editor/plan/PlanBoard.hpp"
 #include "antwika/editor/plan/PlanFile.hpp"
 #include "antwika/editor/ui/AtlasView.hpp"
@@ -121,7 +122,6 @@ namespace antwika::editor
     private:
         log::ILogger &logger;
         bool playOnly = false;
-        bool titleScreenUp = false;
         gfx::IGfxBackend &backend;
         input::IInputBackend &inputs;
         std::unique_ptr<gfx::IWindow> window;
@@ -134,10 +134,8 @@ namespace antwika::editor
 
         render::WorldMeshes worldMeshes;
 
-        std::vector<std::vector<voxel::VoxelPosition>> patrolPositions;
         std::int32_t editLevel = 0;
         bool hideAboveLevel = false;
-        bool playing = false;
 
         bool overlayStale = true;
         std::vector<voxelmap::LineSegment> gridLines;
@@ -154,9 +152,8 @@ namespace antwika::editor
 
         render::ScenePass scenePass;
 
-        ecs::World world;
 
-        GameModule game;
+        PlaySession play;
 
         map::CameraView cameraView;
 

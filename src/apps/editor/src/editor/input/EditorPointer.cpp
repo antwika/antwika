@@ -40,7 +40,7 @@ namespace antwika::editor
             antwika::gfx::Point{
                 .x = movedEvent.position.x, .y = movedEvent.position.y});
 
-        if (playing)
+        if (play.playing)
         {
             if (turningPlayer)
             {
@@ -314,7 +314,7 @@ namespace antwika::editor
             && orbitFromPosition.has_value())
         {
             if (!orbiting && activeView == map::View::World
-                && !playing)
+                && !play.playing)
             {
                 rightTaken(upReleased.position);
             }

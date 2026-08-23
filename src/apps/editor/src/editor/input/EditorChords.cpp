@@ -63,7 +63,7 @@ namespace antwika::editor
     {
         if (actions.matches(heldAction(Action::Run), key, heldModifiers()))
         {
-            game->setRunning(down);
+            play.game->setRunning(down);
         }
     }
 
@@ -76,42 +76,42 @@ namespace antwika::editor
 
         if (matches(Action::WalkNorth))
         {
-            game->wasdKeys().north = down;
+            play.game->wasdKeys().north = down;
         }
 
         if (matches(Action::WalkSouth))
         {
-            game->wasdKeys().south = down;
+            play.game->wasdKeys().south = down;
         }
 
         if (matches(Action::WalkWest))
         {
-            game->wasdKeys().west = down;
+            play.game->wasdKeys().west = down;
         }
 
         if (matches(Action::WalkEast))
         {
-            game->wasdKeys().east = down;
+            play.game->wasdKeys().east = down;
         }
 
         if (matches(Action::WalkNorthAlt))
         {
-            game->arrowKeys().north = down;
+            play.game->arrowKeys().north = down;
         }
 
         if (matches(Action::WalkSouthAlt))
         {
-            game->arrowKeys().south = down;
+            play.game->arrowKeys().south = down;
         }
 
         if (matches(Action::WalkWestAlt))
         {
-            game->arrowKeys().west = down;
+            play.game->arrowKeys().west = down;
         }
 
         if (matches(Action::WalkEastAlt))
         {
-            game->arrowKeys().east = down;
+            play.game->arrowKeys().east = down;
         }
     }
 

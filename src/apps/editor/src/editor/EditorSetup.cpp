@@ -55,8 +55,7 @@ namespace antwika::editor
                       .resizable = true})),
           viewportRenderer(
               window->renderer(), window->size(), camera::kCanvasSize),
-          world(logger),
-          game(logger, world, worldMeshes.cells(), patrolPositions)
+          play(logger, worldMeshes.cells())
     {
         document.startFrom(std::move(mapPathGiven));
         document.map = map::Map{
@@ -149,20 +148,20 @@ namespace antwika::editor
                 if (loadCurrentMap())
                 {
                     {
-                        const ecs::OpenPhase phase(game->world());
+                        const ecs::OpenPhase phase(play.game->world());
 
-                        game->world().set<component::Position>(
-                            game->player(),
+                        play.game->world().set<component::Position>(
+                            play.game->player(),
                             collision::positionFrom(
                                 progress->stancePlacement.position));
-                        game->world().set<component::AnimationState>(
-                            game->player(),
+                        play.game->world().set<component::AnimationState>(
+                            play.game->player(),
                             component::AnimationState{
                                 .direction =
                                     progress->stancePlacement.way});
                     }
 
-                    game->cameraTarget() =
+                    play.game->cameraTarget() =
                         progress->stancePlacement.position;
                 }
                 else
@@ -171,9 +170,9 @@ namespace antwika::editor
                 }
             }
 
-            playing = true;
+            play.playing = true;
             activeView = map::View::World;
-            titleScreenUp = true;
+            play.titleScreenUp = true;
             aimPlayCamera();
         }
 

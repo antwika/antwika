@@ -22,41 +22,41 @@ namespace antwika::editor
 
     void Editor::simulate()
     {
-        game->stepAlongPath(playing);
+        play.game->stepAlongPath(play.playing);
         moveCamera();
-        game->setWalkerFrozen(
-            !playing || heldModifiers().control || heldModifiers().shift
+        play.game->setWalkerFrozen(
+            !play.playing || heldModifiers().control || heldModifiers().shift
                 || heldModifiers().alt);
-        game->setWorldFrozen(!playing);
-        game->setSpeaking(
+        play.game->setWorldFrozen(!play.playing);
+        play.game->setSpeaking(
             tick < caption.untilTick && caption.speaker.has_value()
                 ? std::optional<std::uint32_t>(
                       static_cast<std::uint32_t>(*caption.speaker))
                 : std::nullopt);
-        game->setRosterCount(document.map.characters.size());
-        game->run(tick);
+        play.game->setRosterCount(document.map.characters.size());
+        play.game->run(tick);
         sayConsumeReport();
         sayDialogueLine();
 
-        if (playing && !game->world().alive(game->player()))
+        if (play.playing && !play.game->world().alive(play.game->player()))
         {
             sayCaption("the walker", "it gave out");
             standPlayer();
         }
 
         const auto walkerStood =
-            game->world().get<component::Position>(game->player());
+            play.game->world().get<component::Position>(play.game->player());
         const antwika::gfx::Vec3 walkerPosition{
             walkerStood.x, walkerStood.y, walkerStood.z};
 
-        if (playing)
+        if (play.playing)
         {
             onSteppedWorld(walkerPosition);
         }
 
-        if (cameraFollows && playing)
+        if (cameraFollows && play.playing)
         {
-            game->follow(worldRotation(), walkerPosition);
+            play.game->follow(worldRotation(), walkerPosition);
         }
 
         ++tick;
@@ -65,32 +65,32 @@ namespace antwika::editor
 #ifdef ANTWIKA_GAME_SHARED
     void Editor::reloadGameModule()
     {
-        if (!game.hasChanged())
+        if (!play.game.hasChanged())
         {
             return;
         }
 
-        const auto keptTransform = game->cameraTransform();
-        const auto keptZoom = game->zoom();
-        const auto target = game->cameraTarget();
-        const auto gates = game->gates();
+        const auto keptTransform = play.game->cameraTransform();
+        const auto keptZoom = play.game->zoom();
+        const auto target = play.game->cameraTarget();
+        const auto gates = play.game->gates();
 
-        if (!game.reload())
+        if (!play.game.reload())
         {
             return;
         }
 
-        for (const auto standing : world.view<component::Player>())
+        for (const auto standing : play.world.view<component::Player>())
         {
-            game->setPlayer(standing);
+            play.game->setPlayer(standing);
 
             break;
         }
 
-        game->cameraTransform() = keptTransform;
-        game->zoom() = keptZoom;
-        game->cameraTarget() = target;
-        game->gates() = gates;
+        play.game->cameraTransform() = keptTransform;
+        play.game->zoom() = keptZoom;
+        play.game->cameraTarget() = target;
+        play.game->gates() = gates;
 
         logger.log(log::Level::Info, "the game module was reloaded");
         showStatus("the game module was reloaded");
@@ -125,14 +125,14 @@ namespace antwika::editor
 
         const auto model = worldRotation();
         const auto walkerStood =
-            game->world().get<component::Position>(game->player());
+            play.game->world().get<component::Position>(play.game->player());
         const antwika::gfx::Vec3 walkerPosition{
             walkerStood.x, walkerStood.y, walkerStood.z};
 
         if (activeView == map::View::World)
         {
             const auto aimedRotation =
-                playing
+                play.playing
                     ? std::optional<
                           antwika::voxel::VoxelPosition>{}
                     : voxelmap::cellUnder(
@@ -142,7 +142,7 @@ namespace antwika::editor
                           pointer.pointerOnCanvas,
                           antwika::voxel::cubeTop(editLevel));
             const auto anchoredTarget =
-                playing
+                play.playing
                     ? walkerPosition
                     : antwika::gfx::Vec3{
                           static_cast<float>(
@@ -163,7 +163,7 @@ namespace antwika::editor
                               + 0.5F};
             const auto hideFrom = clockSource.now();
             auto behind =
-                playing || aimedRotation.has_value()
+                play.playing || aimedRotation.has_value()
                     ? antwika::voxel::occludingVoxels(
                           worldMeshes.cells(), anchoredTarget)
                     : antwika::voxel::Voxels{};
@@ -217,14 +217,14 @@ namespace antwika::editor
             worldShader.setLook(
                 viewportRenderer,
                 render::WorldShaderInputs{
-                    .playing = playing,
+                    .playing = play.playing,
                     .lighting = lighting,
-                    .sightOn = lampSight && playing && lowerLight,
+                    .sightOn = lampSight && play.playing && lowerLight,
                     .ambient =
                         static_cast<float>(document.map.ambient) / 100.0F,
                     .walkerPosition = walkerPosition,
                     .fadeAbove =
-                        playing
+                        play.playing
                             ? walkerStood.y
                             : (static_cast<float>(
                                    antwika::voxel::cubeTop(editLevel)
@@ -249,7 +249,7 @@ namespace antwika::editor
         characterView.refresh(viewportRenderer);
 
         viewportRenderer.clear(
-            playing ? kPlayBackgroundColor : kEditorBackgroundColor);
+            play.playing ? kPlayBackgroundColor : kEditorBackgroundColor);
 
         if (activeView == map::View::Atlases && selectedTile.has_value())
         {
@@ -269,7 +269,7 @@ namespace antwika::editor
         }
 
         const auto uiResting =
-            playing && !dialogs.quitConfirmOpen && !keysOpen
+            play.playing && !dialogs.quitConfirmOpen && !keysOpen
             && !dialogs.fileDialog.has_value()
             && !inkPicker.editingInk.has_value()
             && !rebindingAction.has_value() && !slidingWidget.has_value()

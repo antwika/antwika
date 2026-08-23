@@ -14,11 +14,11 @@ namespace antwika::editor
     void Editor::onPointerPressed(
         const input::PointerButtonPressed &downPressed)
     {
-        if (playing)
+        if (play.playing)
         {
-            if (titleScreenUp)
+            if (play.titleScreenUp)
             {
-                titleScreenUp = false;
+                play.titleScreenUp = false;
 
                 return;
             }
@@ -119,7 +119,7 @@ namespace antwika::editor
             pointer.lastPointerPosition = downPressed.position;
             panGripPosition.reset();
 
-            if (activeView == map::View::World && !playing)
+            if (activeView == map::View::World && !play.playing)
             {
                 const auto projectToScreen =
                     viewportRenderer.viewport().toCanvas(

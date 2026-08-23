@@ -21,7 +21,7 @@ namespace antwika::editor
 
     void Editor::resetGates()
     {
-        game->gates() = gameplay::GateState{};
+        play.game->gates() = gameplay::GateState{};
     }
 
     void Editor::clearAssignModes()
@@ -123,7 +123,7 @@ namespace antwika::editor
         const voxel::VoxelPosition standsInPosition,
         const voxel::VoxelPosition standsOnPosition)
     {
-        if (game->gates().lockedExitAnnouncedPosition.has_value()
+        if (play.game->gates().lockedExitAnnouncedPosition.has_value()
             && (!document.map.exitCubePosition.has_value()
                 || (antwika::voxel::cubeCornerOf(standsInPosition)
                         != antwika::voxel::cubeCornerOf(
@@ -132,7 +132,7 @@ namespace antwika::editor
                            != antwika::voxel::cubeCornerOf(
                                *document.map.exitCubePosition))))
         {
-            game->gates().lockedExitAnnouncedPosition.reset();
+            play.game->gates().lockedExitAnnouncedPosition.reset();
         }
 
         onSteppedKeys(standsInPosition, standsOnPosition);
@@ -151,16 +151,17 @@ namespace antwika::editor
             gateCell);
 
             if (!foundCube.has_value()
-                || game->gates().collectedKeyPositions.contains(*foundCube))
+                || play.game->gates().collectedKeyPositions.contains(
+                    *foundCube))
             {
                 continue;
             }
 
-            game->gates().collectedKeyPositions.insert(*foundCube);
-            game->gates().keysHeld += 1;
+            play.game->gates().collectedKeyPositions.insert(*foundCube);
+            play.game->gates().keysHeld += 1;
             sayCaption(
                 "a key",
-                "taken (" + std::to_string(game->gates().keysHeld)
+                "taken (" + std::to_string(play.game->gates().keysHeld)
                     + " held)");
         }
 
@@ -168,26 +169,26 @@ namespace antwika::editor
 
     void Editor::consumeItem(const component::ItemKind kind)
     {
-        auto &world = game->world();
-        const ecs::OpenPhase phase(world);
+        auto &gameWorld = play.game->world();
+        const ecs::OpenPhase phase(gameWorld);
 
-        world.add<component::ConsumeIntent>(
-            game->player(),
+        gameWorld.add<component::ConsumeIntent>(
+            play.game->player(),
             component::ConsumeIntent{
                 .kind = static_cast<std::uint8_t>(kind)});
     }
 
     void Editor::sayConsumeReport()
     {
-        auto &world = game->world();
+        auto &gameWorld = play.game->world();
 
-        if (!world.has<component::ConsumeReport>(game->player()))
+        if (!gameWorld.has<component::ConsumeReport>(play.game->player()))
         {
             return;
         }
 
         const auto report =
-            world.get<component::ConsumeReport>(game->player());
+            gameWorld.get<component::ConsumeReport>(play.game->player());
         const auto kind = static_cast<component::ItemKind>(report.kind);
 
         sayCaption(
@@ -196,9 +197,9 @@ namespace antwika::editor
                 ? (kind == component::ItemKind::Food ? "eaten" : "drunk")
                 : "there is none left to take");
 
-        const ecs::OpenPhase phase(world);
+        const ecs::OpenPhase phase(gameWorld);
 
-        world.remove<component::ConsumeReport>(game->player());
+        gameWorld.remove<component::ConsumeReport>(play.game->player());
     }
 
     void Editor::onSteppedCheckpoints(
@@ -208,16 +209,17 @@ namespace antwika::editor
             rules::gateCubeContaining(document.map.checkpointPositions,
                 standsOnPosition);
 
-        if (pad.has_value() && game->gates().checkpointOnPosition != pad)
+        if (pad.has_value() && play.game->gates().checkpointOnPosition != pad)
         {
             const auto stoodPosition =
-                game->world().get<component::Position>(game->player());
+                play.game->world().get<component::Position>(play.game->player(
+                        ));
 
-            game->gates().checkpointOnPosition = pad;
-            game->gates().checkpointPlacement = map::Placement{
+            play.game->gates().checkpointOnPosition = pad;
+            play.game->gates().checkpointPlacement = map::Placement{
                 .position = collision::positionOf(stoodPosition),
-                .way = game->world()
-                           .get<component::AnimationState>(game->player())
+                .way = play.game->world()
+                           .get<component::AnimationState>(play.game->player())
                            .direction};
             sayCaption("checkpoint", "the respawn is set here");
         }
@@ -232,19 +234,19 @@ namespace antwika::editor
 
         if (!adjacentDoorCell.has_value())
         {
-            game->gates().announcedDoorPosition.reset();
+            play.game->gates().announcedDoorPosition.reset();
 
             return;
         }
 
-        if (game->gates().announcedDoorPosition == adjacentDoorCell)
+        if (play.game->gates().announcedDoorPosition == adjacentDoorCell)
         {
             return;
         }
 
-        game->gates().announcedDoorPosition = adjacentDoorCell;
+        play.game->gates().announcedDoorPosition = adjacentDoorCell;
 
-        if (game->gates().keysHeld == 0)
+        if (play.game->gates().keysHeld == 0)
         {
             sayCaption(
                 "the door", "locked - a key would open it");
@@ -274,7 +276,7 @@ namespace antwika::editor
                        != openedCells.end();
             });
         rebuildWorld();
-        game->gates().keysHeld -= 1;
+        play.game->gates().keysHeld -= 1;
         sayCaption("the door", "a key unlocks it");
     }
 
@@ -285,20 +287,20 @@ namespace antwika::editor
             return true;
         }
 
-        if (game->gates().keysHeld > 0)
+        if (play.game->gates().keysHeld > 0)
         {
-            game->gates().keysHeld -= 1;
+            play.game->gates().keysHeld -= 1;
             sayCaption("the exit", "unlocked");
 
             return true;
         }
 
         if (document.map.exitCubePosition.has_value()
-            && game->gates().lockedExitAnnouncedPosition
+            && play.game->gates().lockedExitAnnouncedPosition
                    != antwika::voxel::cubeCornerOf(
                        *document.map.exitCubePosition))
         {
-            game->gates().lockedExitAnnouncedPosition =
+            play.game->gates().lockedExitAnnouncedPosition =
                 antwika::voxel::cubeCornerOf(*document.map.exitCubePosition);
             sayCaption(
                 "the exit", "locked - a key would open it");
