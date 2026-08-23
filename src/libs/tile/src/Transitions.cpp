@@ -333,9 +333,9 @@ namespace antwika::tile
         return updatedRules;
     } // GCOVR_EXCL_LINE
 
-    ui::WidgetId transitionRowWidget(const std::size_t rowIndex)
+    widget::WidgetId transitionRowWidget(const std::size_t rowIndex)
     {
-        return ui::WidgetId{
+        return widget::WidgetId{
             353 + static_cast<std::uint64_t>(rowIndex)};
     }
 

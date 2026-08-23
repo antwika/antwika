@@ -12,7 +12,7 @@
 namespace antwika::editor
 {
 
-    ui::WidgetId Editor::widgetForField(const FocusedField focusedField)
+    widget::WidgetId Editor::widgetForField(const FocusedField focusedField)
     {
         switch (focusedField)
         {
@@ -30,7 +30,7 @@ namespace antwika::editor
             break;
         }
 
-        return antwika::ui::kNoWidget;
+        return antwika::widget::kNoWidget;
     }
 
     bool Editor::layoutModals(ui::Context &context)

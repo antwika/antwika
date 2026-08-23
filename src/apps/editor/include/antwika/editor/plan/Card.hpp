@@ -2,7 +2,7 @@
 
 #include <string>
 #include <antwika/gfx/Rect.hpp>
-#include <antwika/ui/WidgetId.hpp>
+#include <antwika/widget/WidgetId.hpp>
 
 namespace antwika::editor
 {

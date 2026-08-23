@@ -155,7 +155,7 @@ namespace antwika::editor
     namespace
     {
 
-        [[nodiscard]] bool onToolPanel(const ui::WidgetId whichWidget)
+        [[nodiscard]] bool onToolPanel(const widget::WidgetId whichWidget)
         {
             for (const auto button : kEveryToolButton)
             {
@@ -387,7 +387,7 @@ namespace antwika::editor
             {left + pad, top + pad}, hint, kUiScale, kTextColor);
     }
 
-    std::string_view Editor::hintFor(const ui::WidgetId whichWidget) const
+    std::string_view Editor::hintFor(const widget::WidgetId whichWidget) const
     {
         if (whichWidget == tabWidget(map::View::World))
         {

@@ -11,7 +11,7 @@
 #include <vector>
 
 #include <antwika/gfx/Rect.hpp>
-#include <antwika/ui/WidgetId.hpp>
+#include <antwika/widget/WidgetId.hpp>
 
 #include "antwika/editor/plan/Board.hpp"
 #include "antwika/editor/plan/Card.hpp"
@@ -56,13 +56,13 @@ namespace antwika::editor
     [[nodiscard]] std::size_t dropIndex(
         std::span<const gfx::Rect> cardRects, std::int32_t pointerY);
 
-    inline constexpr ui::WidgetId kPlanDetailWidget{410};
+    inline constexpr widget::WidgetId kPlanDetailWidget{410};
 
-    inline constexpr ui::WidgetId kPlanTitleWidget{411};
+    inline constexpr widget::WidgetId kPlanTitleWidget{411};
 
-    inline constexpr ui::WidgetId kPlanBodyWidget{412};
+    inline constexpr widget::WidgetId kPlanBodyWidget{412};
 
-    inline constexpr ui::WidgetId kPlanDeleteWidget{413};
+    inline constexpr widget::WidgetId kPlanDeleteWidget{413};
 
     inline constexpr std::uint64_t kFirstPlanAddWidget = 416;
 
@@ -70,26 +70,26 @@ namespace antwika::editor
 
     inline constexpr std::uint64_t kFirstPlanCardWidget = 512;
 
-    [[nodiscard]] constexpr ui::WidgetId planColumnWidget(
+    [[nodiscard]] constexpr widget::WidgetId planColumnWidget(
         const Column whichColumn) noexcept
     {
-        return ui::WidgetId{
+        return widget::WidgetId{
             kFirstPlanColumnWidget
             + static_cast<std::uint64_t>(whichColumn)};
     }
 
-    [[nodiscard]] constexpr ui::WidgetId planAddWidget(
+    [[nodiscard]] constexpr widget::WidgetId planAddWidget(
         const Column whichColumn) noexcept
     {
-        return ui::WidgetId{
+        return widget::WidgetId{
             kFirstPlanAddWidget
             + static_cast<std::uint64_t>(whichColumn)};
     }
 
-    [[nodiscard]] constexpr ui::WidgetId planCardWidget(
+    [[nodiscard]] constexpr widget::WidgetId planCardWidget(
         const Column whichColumn, const std::size_t cardIndex) noexcept
     {
-        return ui::WidgetId{
+        return widget::WidgetId{
             kFirstPlanCardWidget
             + (static_cast<std::uint64_t>(whichColumn)
                * kMaxCardsPerColumn)
@@ -97,6 +97,6 @@ namespace antwika::editor
     }
 
     [[nodiscard]] std::optional<std::pair<Column, std::size_t>>
-    cardOfWidget(ui::WidgetId whichWidget);
+    cardOfWidget(widget::WidgetId whichWidget);
 
 }

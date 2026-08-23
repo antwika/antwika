@@ -9,7 +9,7 @@
 #include <cstddef>
 
 #include <antwika/enums/Enumeration.hpp>
-#include <antwika/ui/WidgetId.hpp>
+#include <antwika/widget/WidgetId.hpp>
 
 namespace antwika::editor
 {
@@ -70,9 +70,9 @@ namespace antwika::editor
 
     [[nodiscard]] bool isToggle(MenuItem item);
 
-    [[nodiscard]] ui::WidgetId menuWidget(Menu menu);
+    [[nodiscard]] widget::WidgetId menuWidget(Menu menu);
 
-    [[nodiscard]] ui::WidgetId firstItemWidget(Menu menu);
+    [[nodiscard]] widget::WidgetId firstItemWidget(Menu menu);
 
     [[nodiscard]] std::span<const std::string_view> itemNamesOf(
         Menu menu);

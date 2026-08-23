@@ -7,9 +7,9 @@
 namespace antwika::editor
 {
 
-    ui::WidgetId mapRowWidget(const std::size_t rowIndex)
+    widget::WidgetId mapRowWidget(const std::size_t rowIndex)
     {
-        return static_cast<ui::WidgetId>(
+        return static_cast<widget::WidgetId>(
             static_cast<std::uint64_t>(kFirstMapRowWidget)
             + (rowIndex % kMaxPicked));
     }

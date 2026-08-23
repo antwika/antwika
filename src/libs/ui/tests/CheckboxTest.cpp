@@ -22,7 +22,7 @@ using antwika::ui::DrawList;
 using antwika::ui::FillRect;
 using antwika::ui::Pointer;
 using antwika::ui::Theme;
-using antwika::ui::WidgetId;
+using antwika::widget::WidgetId;
 
 namespace
 {

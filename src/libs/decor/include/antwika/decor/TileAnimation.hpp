@@ -5,7 +5,7 @@
 
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/time/Tick.hpp>
-#include <antwika/ui/WidgetId.hpp>
+#include <antwika/widget/WidgetId.hpp>
 #include <antwika/tilemap/Tilemap.hpp>
 
 #include <antwika/decor/Decor.hpp>
@@ -50,10 +50,10 @@ namespace antwika::decor
         std::span<const TileAnimation> flipAnimations,
         time::Tick tick);
 
-    inline constexpr ui::WidgetId kToggleAnimationWidget{369};
+    inline constexpr widget::WidgetId kToggleAnimationWidget{369};
 
-    inline constexpr ui::WidgetId kAddFrameWidget{370};
+    inline constexpr widget::WidgetId kAddFrameWidget{370};
 
-    [[nodiscard]] ui::WidgetId flipFrameWidget(std::size_t frame);
+    [[nodiscard]] widget::WidgetId flipFrameWidget(std::size_t frame);
 
 }

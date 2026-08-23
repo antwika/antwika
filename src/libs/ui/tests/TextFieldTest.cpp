@@ -35,7 +35,7 @@ using antwika::ui::TextFieldSpec;
 using antwika::ui::Key;
 using antwika::ui::Keyboard;
 using antwika::ui::Theme;
-using antwika::ui::WidgetId;
+using antwika::widget::WidgetId;
 
 namespace
 {

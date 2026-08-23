@@ -32,7 +32,7 @@ using antwika::ui::SplitChange;
 using antwika::ui::SplitSpec;
 using antwika::ui::Theme;
 using antwika::ui::UiError;
-using antwika::ui::WidgetId;
+using antwika::widget::WidgetId;
 
 namespace
 {
@@ -383,7 +383,7 @@ TEST(SplitTest, Split_ReportsNothingForADividerWithNoId)
     antwika::ui::Interactions seenInteractions;
 
     auto spec = evenly();
-    spec.widgetId = antwika::ui::kNoWidget;
+    spec.widgetId = antwika::widget::kNoWidget;
     spec.dragging = true;
 
     static_cast<void>(panesOf(

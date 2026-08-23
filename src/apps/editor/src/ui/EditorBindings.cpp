@@ -240,9 +240,9 @@ namespace antwika::editor
         return enums::lookup(kActionRows, action).key;
     }
 
-    ui::WidgetId keyRowWidget(const std::size_t rowIndex)
+    widget::WidgetId keyRowWidget(const std::size_t rowIndex)
     {
-        return ui::WidgetId{
+        return widget::WidgetId{
             300 + static_cast<std::uint64_t>(rowIndex)};
     }
 

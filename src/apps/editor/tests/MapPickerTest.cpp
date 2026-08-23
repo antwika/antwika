@@ -63,7 +63,7 @@ TEST(MapPickerTest, EnsureMapExtension_LeavesANameThatHasItAlone)
 
 TEST(MapPickerTest, MapRowWidget_GivesEveryListedNameOneOfItsOwn)
 {
-    std::set<antwika::ui::WidgetId> seenWidgets;
+    std::set<antwika::widget::WidgetId> seenWidgets;
 
     for (std::size_t index = 0; index < kMaxPicked; ++index)
     {

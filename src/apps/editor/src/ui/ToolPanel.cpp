@@ -270,49 +270,49 @@ namespace antwika::editor
             + kMarkedStairHalves.size());
     }
 
-    ui::WidgetId kindWidget(const voxel::Kind whichKind)
+    widget::WidgetId kindWidget(const voxel::Kind whichKind)
     {
-        return ui::WidgetId{
+        return widget::WidgetId{
             kFirstKindWidget
             + static_cast<std::uint64_t>(rankOf(whichKind))};
     }
 
-    ui::WidgetId facingWidget(const voxel::Facing whichFacing)
+    widget::WidgetId facingWidget(const voxel::Facing whichFacing)
     {
-        return ui::WidgetId{
+        return widget::WidgetId{
             kFirstFacingWidget
             + static_cast<std::uint64_t>(rankOf(whichFacing))};
     }
 
-    ui::WidgetId levelWidget(const voxel::StairHalf whichHalf)
+    widget::WidgetId levelWidget(const voxel::StairHalf whichHalf)
     {
-        return ui::WidgetId{
+        return widget::WidgetId{
             kFirstLevelWidget
             + static_cast<std::uint64_t>(rankOf(whichHalf))};
     }
 
-    ui::WidgetId partWidget(const voxel::StairPart whichPart)
+    widget::WidgetId partWidget(const voxel::StairPart whichPart)
     {
         return whichPart == voxel::StairPart::Side ? kPartSideWidget
                           : kPartFrontWidget;
     }
 
-    ui::WidgetId figureWidget(const std::size_t figureIndex)
+    widget::WidgetId figureWidget(const std::size_t figureIndex)
     {
-        return ui::WidgetId{
+        return widget::WidgetId{
             282 + static_cast<std::uint64_t>(figureIndex)};
     }
 
-    ui::WidgetId toolWidget(const ToolButton whichButton)
+    widget::WidgetId toolWidget(const ToolButton whichButton)
     {
-        return ui::WidgetId{
+        return widget::WidgetId{
             kFirstToolWidget + static_cast<std::uint64_t>(
                                    rankOf(whichButton))};
     }
 
-    ui::WidgetId paintWidget(const map::Paint whichPaint)
+    widget::WidgetId paintWidget(const map::Paint whichPaint)
     {
-        return ui::WidgetId{
+        return widget::WidgetId{
             kFirstPaintWidget + static_cast<std::uint64_t>(
                                     rankOf(whichPaint))};
     }

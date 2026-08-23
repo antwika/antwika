@@ -33,13 +33,13 @@ using antwika::ui::FillRect;
 using antwika::ui::Frame;
 using antwika::ui::Key;
 using antwika::ui::Keyboard;
-using antwika::ui::kNoWidget;
+using antwika::widget::kNoWidget;
 using antwika::ui::LineRun;
 using antwika::ui::Pointer;
 using antwika::ui::ScrollChange;
 using antwika::ui::TextAreaSpec;
 using antwika::ui::Theme;
-using antwika::ui::WidgetId;
+using antwika::widget::WidgetId;
 using antwika::ui::tests::linesOf;
 
 namespace

@@ -135,7 +135,7 @@ namespace antwika::editor
     }
 
     std::optional<std::pair<Column, std::size_t>> cardOfWidget(
-        const ui::WidgetId whichWidget)
+        const widget::WidgetId whichWidget)
     {
         const auto idValue = static_cast<std::uint64_t>(whichWidget);
         const auto span = kEveryColumn.size() * kMaxCardsPerColumn;

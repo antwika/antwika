@@ -23,7 +23,7 @@ namespace antwika::editor
 
         bool pointerHeld = false;
 
-        ui::WidgetId hoveredWidget = ui::kNoWidget;
+        widget::WidgetId hoveredWidget = widget::kNoWidget;
 
         std::optional<voxel::VoxelPosition> hoveredPosition;
 
@@ -31,7 +31,7 @@ namespace antwika::editor
 
         ui::ClickTrack clickTracker;
 
-        ui::WidgetId lastPickedWidget = ui::kNoWidget;
+        widget::WidgetId lastPickedWidget = widget::kNoWidget;
 
         std::uint32_t lastPickedAt = 0;
 

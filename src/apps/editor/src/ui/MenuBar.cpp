@@ -105,8 +105,8 @@ namespace antwika::editor
         {
             Menu menu;
             std::string_view name;
-            ui::WidgetId widget;
-            ui::WidgetId firstItemWidget;
+            widget::WidgetId widget;
+            widget::WidgetId firstItemWidget;
             std::span<const MenuItem> items;
             std::span<const std::string_view> names;
         };
@@ -114,26 +114,26 @@ namespace antwika::editor
         constexpr std::array<MenuRow, enums::kCount<Menu>> kMenuRows{{
             {Menu::File,
              "File",
-             ui::WidgetId{1},
-             ui::WidgetId{kFirstItemWidget},
+             widget::WidgetId{1},
+             widget::WidgetId{kFirstItemWidget},
              kFileItems,
              kFileNames},
             {Menu::Edit,
              "Edit",
-             ui::WidgetId{4},
-             ui::WidgetId{8},
+             widget::WidgetId{4},
+             widget::WidgetId{8},
              kEditItems,
              kEditNames},
             {Menu::View,
              "View",
-             ui::WidgetId{2},
-             ui::WidgetId{kFirstItemWidget + kWidgetsPerMenu},
+             widget::WidgetId{2},
+             widget::WidgetId{kFirstItemWidget + kWidgetsPerMenu},
              kViewItems,
              kViewNames},
             {Menu::Settings,
              "Settings",
-             ui::WidgetId{3},
-             ui::WidgetId{kFirstItemWidget + (2 * kWidgetsPerMenu)},
+             widget::WidgetId{3},
+             widget::WidgetId{kFirstItemWidget + (2 * kWidgetsPerMenu)},
              kSettingsItems,
              kSettingsNames}}};
 
@@ -160,12 +160,12 @@ namespace antwika::editor
         return enums::lookup(kMenuItemRows, item).toggle;
     }
 
-    ui::WidgetId menuWidget(const Menu menu)
+    widget::WidgetId menuWidget(const Menu menu)
     {
         return enums::lookup(kMenuRows, menu).widget;
     }
 
-    ui::WidgetId firstItemWidget(const Menu menu)
+    widget::WidgetId firstItemWidget(const Menu menu)
     {
         return enums::lookup(kMenuRows, menu).firstItemWidget;
     }

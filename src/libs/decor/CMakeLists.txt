@@ -12,7 +12,7 @@ antwika_add_library(
         antwika::tilemap
         antwika::tile
         antwika::time
-        antwika::ui
+        antwika::widget
         antwika::voxel
         antwika::voxelmap
         antwika::wfc

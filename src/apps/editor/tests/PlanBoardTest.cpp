@@ -253,7 +253,7 @@ TEST(PlanBoardTest, DropIndex_DropsAtTheHeadOfAColumnHoldingNothing)
 
 TEST(PlanBoardTest, PlanCardWidget_HandsOutANumberToEveryCard)
 {
-    std::set<antwika::ui::WidgetId> seenWidgets;
+    std::set<antwika::widget::WidgetId> seenWidgets;
 
     for (const auto which : kEveryColumn)
     {
@@ -283,9 +283,9 @@ TEST(PlanBoardTest, CardOfWidget_ReadsBackWhateverPlanCardWidgetWrote)
 
 TEST(PlanBoardTest, CardOfWidget_ReadsNoCardFromAnotherNumber)
 {
-    EXPECT_FALSE(cardOfWidget(antwika::ui::kNoWidget).has_value());
+    EXPECT_FALSE(cardOfWidget(antwika::widget::kNoWidget).has_value());
     EXPECT_FALSE(
         cardOfWidget(planColumnWidget(Column::Todo)).has_value());
     EXPECT_FALSE(
-        cardOfWidget(antwika::ui::WidgetId{9000}).has_value());
+        cardOfWidget(antwika::widget::WidgetId{9000}).has_value());
 }

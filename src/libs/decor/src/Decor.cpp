@@ -415,15 +415,15 @@ namespace antwika::decor
                || rules.allows(tile, edge, otherTile);
     }
 
-    ui::WidgetId frameWidget(const std::size_t frame)
+    widget::WidgetId frameWidget(const std::size_t frame)
     {
-        return ui::WidgetId{
+        return widget::WidgetId{
             kFirstFrameWidget + static_cast<std::uint64_t>(frame)};
     }
 
-    ui::WidgetId memberWidget(const std::size_t member)
+    widget::WidgetId memberWidget(const std::size_t member)
     {
-        return ui::WidgetId{
+        return widget::WidgetId{
             386 + static_cast<std::uint64_t>(member)};
     }
 

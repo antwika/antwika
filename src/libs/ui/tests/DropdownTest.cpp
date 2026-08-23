@@ -39,13 +39,13 @@ using antwika::ui::HoverPointer;
 using antwika::ui::Key;
 using antwika::ui::Keyboard;
 using antwika::ui::kNoOption;
-using antwika::ui::kNoWidget;
+using antwika::widget::kNoWidget;
 using antwika::ui::isOccluded;
 using antwika::ui::OptionChoice;
 using antwika::ui::Pointer;
 using antwika::ui::TextAreaSpec;
 using antwika::ui::Theme;
-using antwika::ui::WidgetId;
+using antwika::widget::WidgetId;
 
 namespace
 {

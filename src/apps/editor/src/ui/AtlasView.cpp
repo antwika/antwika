@@ -75,9 +75,9 @@ namespace antwika::editor
         return "";
     }
 
-    ui::WidgetId tabWidget(const map::View view)
+    widget::WidgetId tabWidget(const map::View view)
     {
-        return ui::WidgetId{
+        return widget::WidgetId{
             kFirstTabWidget
             + static_cast<std::uint64_t>(view)};
     }
@@ -405,9 +405,9 @@ namespace antwika::editor
         return std::nullopt;
     }
 
-    ui::WidgetId edgeToggleWidget(const EdgeToggle whichToggle)
+    widget::WidgetId edgeToggleWidget(const EdgeToggle whichToggle)
     {
-        return ui::WidgetId{
+        return widget::WidgetId{
             whichToggle == EdgeToggle::Boundary ? kBoundaryToggleWidget
                          : kForbiddenToggleWidget};
     }

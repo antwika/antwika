@@ -9,7 +9,7 @@
 #include <antwika/enums/Enumeration.hpp>
 #include <antwika/gfx/PointF.hpp>
 #include <antwika/gfx/RectF.hpp>
-#include <antwika/ui/WidgetId.hpp>
+#include <antwika/widget/WidgetId.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/input/Key.hpp>
 #include <antwika/tilemap/Tilemap.hpp>
@@ -27,7 +27,7 @@ namespace antwika::editor
 
     [[nodiscard]] std::string_view tabName(map::View view);
 
-    [[nodiscard]] ui::WidgetId tabWidget(map::View view);
+    [[nodiscard]] widget::WidgetId tabWidget(map::View view);
 
     [[nodiscard]] map::View viewAfterKey(
         map::View view, input::Key key, bool back);
@@ -106,9 +106,9 @@ namespace antwika::editor
 
     inline constexpr float kEdgeToggleSide = 13.0F;
 
-    [[nodiscard]] ui::WidgetId edgeToggleWidget(EdgeToggle whichToggle);
+    [[nodiscard]] widget::WidgetId edgeToggleWidget(EdgeToggle whichToggle);
 
-    inline constexpr ui::WidgetId kDeriveRulesWidget{178};
+    inline constexpr widget::WidgetId kDeriveRulesWidget{178};
 
     [[nodiscard]] std::string_view edgeToggleName(EdgeToggle whichToggle);
 

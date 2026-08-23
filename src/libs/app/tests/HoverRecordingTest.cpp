@@ -28,7 +28,7 @@
 #include <antwika/ui/Frame.hpp>
 #include <antwika/ui/Hover.hpp>
 #include <antwika/ui/Theme.hpp>
-#include <antwika/ui/WidgetId.hpp>
+#include <antwika/widget/WidgetId.hpp>
 
 #include "antwika/app/PointerReading.hpp"
 
@@ -54,7 +54,7 @@ using antwika::ui::Context;
 using antwika::ui::DrawList;
 using antwika::ui::FillRect;
 using antwika::ui::Theme;
-using antwika::ui::WidgetId;
+using antwika::widget::WidgetId;
 
 namespace
 {

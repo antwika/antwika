@@ -41,7 +41,7 @@ using antwika::ui::Pointer;
 using antwika::ui::ScrollChange;
 using antwika::ui::TextAreaSpec;
 using antwika::ui::Theme;
-using antwika::ui::WidgetId;
+using antwika::widget::WidgetId;
 using antwika::ui::tests::linesOf;
 
 namespace

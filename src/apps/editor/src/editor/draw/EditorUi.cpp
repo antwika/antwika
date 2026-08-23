@@ -66,7 +66,7 @@ namespace antwika::editor
                 ? antwika::editor::kPickerNameWidget
             : inkPicker.editingInk.has_value()
                 ? decor::kInkHexWidget
-                : antwika::ui::kNoWidget};
+                : antwika::widget::kNoWidget};
 
         {
             context.setTheme(menuTheme());
@@ -586,7 +586,7 @@ namespace antwika::editor
         auto frame = context.build();
         const auto port = viewportRenderer.viewport();
         const auto roomOf =
-            [&frame, port](const antwika::ui::WidgetId id)
+            [&frame, port](const antwika::widget::WidgetId id)
             -> std::optional<gfx::RectF>
         {
             const auto rect = frame.rects.find(id);

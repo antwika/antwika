@@ -26,7 +26,7 @@ TEST(LayersTest, DefaultLayers_HoldTheOneEveryMapHas)
 
 TEST(LayersTest, LayerWidget_GivesEveryLayerARowOfItsOwn)
 {
-    std::set<antwika::ui::WidgetId> seenWidgets{
+    std::set<antwika::widget::WidgetId> seenWidgets{
         kToolPanelWidget,
         kStatusBarWidget,
         kLayersPanelWidget,
