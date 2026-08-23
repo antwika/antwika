@@ -3,12 +3,9 @@
 #include <cstdint>
 #include <optional>
 
-#include <antwika/gfx/Point.hpp>
-#include <antwika/gfx/PointF.hpp>
 #include <antwika/input/Position.hpp>
 #include <antwika/ui/ClickTrack.hpp>
 #include <antwika/ui/HoverHint.hpp>
-#include <antwika/ui/WidgetId.hpp>
 #include <antwika/voxel/VoxelPosition.hpp>
 
 #include "antwika/editor/editor/state/CanvasRest.hpp"

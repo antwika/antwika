@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "antwika/editor/editor/FileDialog.hpp"
-#include "antwika/editor/ui/MenuBar.hpp"
 
 namespace antwika::editor
 {
