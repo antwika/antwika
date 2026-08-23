@@ -9,7 +9,7 @@
 #include <antwika/character/Character.hpp>
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/GfxError.hpp>
-#include <antwika/gfx/PngFile.hpp>
+#include <antwika/image/PngFile.hpp>
 #include <antwika/tilemap/AtlasLayout.hpp>
 #include <antwika/voxelmap/Voxel.hpp>
 
@@ -101,7 +101,7 @@ namespace
         const auto mapPath = somewhereToMap("sidecar-atlas");
         const auto atlasBitmap = markedBitmap(atlasSize(kWallTileSize));
 
-        antwika::gfx::writePngFile(
+        antwika::image::writePngFile(
             atlasBitmap, sidecarPath(mapPath, "wall.png"), kAppName);
 
         const auto readBitmap =
@@ -136,7 +136,7 @@ namespace
         const auto mapPath = somewhereToMap("sidecar-over-blank");
         const auto atlasBitmap = markedBitmap(atlasSize(kWallTileSize));
 
-        antwika::gfx::writePngFile(
+        antwika::image::writePngFile(
             atlasBitmap, sidecarPath(mapPath, "wall.png"), kAppName);
 
         const auto readBitmap =
@@ -149,7 +149,7 @@ namespace
     {
         const auto mapPath = somewhereToMap("wrong-atlas");
 
-        antwika::gfx::writePngFile(
+        antwika::image::writePngFile(
             markedBitmap(Size{.width = 8, .height = 8}),
             sidecarPath(mapPath, "wall.png"),
             kAppName);

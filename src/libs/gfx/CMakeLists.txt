@@ -1,5 +1,3 @@
-find_package(stb REQUIRED)
-
 find_package(glm REQUIRED)
 
 include(AntwikaEmbedBinary)
@@ -36,13 +34,8 @@ add_library(antwika_gfx
     src/NullShader.cpp
     src/NullTexture.cpp
     src/NullWindow.cpp
-    src/PngFile.cpp
-    src/PngReader.cpp
-    src/PngWriter.cpp
     src/ShaderReader.cpp
     src/ShaderSource.cpp
-    src/StbImage.cpp
-    src/StbImageWrite.cpp
     src/TargetScope.cpp
     src/TextLayout.cpp
     src/Transform.cpp
@@ -51,11 +44,6 @@ add_library(antwika_gfx
 )
 
 add_library(antwika::gfx ALIAS antwika_gfx)
-
-set_source_files_properties(src/StbImage.cpp src/StbImageWrite.cpp
-    PROPERTIES
-        COMPILE_OPTIONS "-w"
-)
 
 set_target_properties(antwika_gfx PROPERTIES
     WINDOWS_EXPORT_ALL_SYMBOLS ON
@@ -75,7 +63,6 @@ target_link_libraries(antwika_gfx
         glm::glm
     PRIVATE
         antwika::io
-        stb::stb
 )
 
 target_compile_definitions(antwika_gfx

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace antwika::gfx::detail
+namespace antwika::image::detail
 {
 
     struct DecodedImage final

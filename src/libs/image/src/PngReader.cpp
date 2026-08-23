@@ -1,4 +1,4 @@
-#include "antwika/gfx/PngReader.hpp"
+#include "antwika/image/PngReader.hpp"
 
 #include <cstdint>
 #include <istream>
@@ -12,7 +12,7 @@
 
 #include "StbImage.hpp"
 
-namespace antwika::gfx
+namespace antwika::image
 {
 
     namespace
@@ -28,7 +28,7 @@ namespace antwika::gfx
         using OwnedPixels = std::unique_ptr<unsigned char, PixelDeleter>;
     }
 
-    Bitmap PngReader::read(std::istream &inputStream) const
+    gfx::Bitmap PngReader::read(std::istream &inputStream) const
     {
         const std::vector<unsigned char> bytes{
             std::istreambuf_iterator<char>(inputStream),
@@ -37,21 +37,22 @@ namespace antwika::gfx
         const auto decodedImage = detail::decodeImage(
             bytes.data(),
             static_cast<int>(bytes.size()),
-            static_cast<int>(kBytesPerPixel));
+            static_cast<int>(gfx::kBytesPerPixel));
 
         const OwnedPixels pixels{decodedImage.pixels};
 
         if (pixels == nullptr)
         {
-            throw GfxError(
+            throw gfx::GfxError(
                 std::string("gfx: could not decode a PNG: ")
                 + detail::decodeFailureReason());
         }
 
         const auto count = static_cast<std::size_t>(decodedImage.width)
-            * static_cast<std::size_t>(decodedImage.height) * kBytesPerPixel;
+            * static_cast<std::size_t>(decodedImage.height)
+            * gfx::kBytesPerPixel;
 
-        return Bitmap{
+        return gfx::Bitmap{
             .size = {
                 .width = static_cast<std::uint32_t>(decodedImage.width),
                 .height = static_cast<std::uint32_t>(decodedImage.height)},

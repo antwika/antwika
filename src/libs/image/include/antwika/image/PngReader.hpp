@@ -4,13 +4,13 @@
 
 #include "antwika/gfx/Bitmap.hpp"
 
-namespace antwika::gfx
+namespace antwika::image
 {
 
     class PngReader final
     {
     public:
-        [[nodiscard]] Bitmap read(std::istream &inputStream) const;
+        [[nodiscard]] gfx::Bitmap read(std::istream &inputStream) const;
     };
 
 }

@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace antwika::gfx::detail
+namespace antwika::image::detail
 {
 
     [[nodiscard]] std::string encodePng(

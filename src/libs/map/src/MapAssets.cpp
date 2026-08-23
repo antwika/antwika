@@ -7,7 +7,7 @@
 
 #include <antwika/tilemap/AtlasLayout.hpp>
 #include <antwika/io/AssetPath.hpp>
-#include <antwika/gfx/PngFile.hpp>
+#include <antwika/image/PngFile.hpp>
 #include <antwika/gfx/GfxError.hpp>
 #include <antwika/gfx/Math3D.hpp>
 #include <antwika/gfx/ShaderReader.hpp>
@@ -25,10 +25,10 @@ namespace antwika::map
 
         if (std::filesystem::exists(sharedPath))
         {
-            return gfx::readPngFile(sharedPath, app);
+            return image::readPngFile(sharedPath, app);
         }
 
-        return gfx::readPngFile(
+        return image::readPngFile(
             io::assetPath(std::string(name)), app);
     }
 
@@ -126,7 +126,7 @@ namespace antwika::map
                 "the map has no atlas at " + sidecarFilePath);
         }
 
-        auto atlas = gfx::readPngFile(sidecarFilePath, app);
+        auto atlas = image::readPngFile(sidecarFilePath, app);
         const auto wantedSize = tilemap::atlasSize(tileSize);
 
         if (atlas.size != wantedSize)
@@ -196,7 +196,7 @@ namespace antwika::map
 
         std::filesystem::create_directories(
             std::filesystem::path(sharedPath).parent_path(), errorCode);
-        gfx::writePngFile(sheetBitmap, sharedPath, app);
+        image::writePngFile(sheetBitmap, sharedPath, app);
     }
 
     gfx::Bitmap loadCharacterSheet(

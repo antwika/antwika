@@ -4,7 +4,7 @@
 #include <utility>
 #include <variant>
 
-#include <antwika/gfx/PngFile.hpp>
+#include <antwika/image/PngFile.hpp>
 #include <antwika/character/Character.hpp>
 #include <antwika/component/AnimationState.hpp>
 #include <antwika/component/Orientation.hpp>
@@ -68,7 +68,7 @@ namespace antwika::game
 
             try
             {
-                const auto loadedBitmap = gfx::readPngFile(path, kAppName);
+                const auto loadedBitmap = image::readPngFile(path, kAppName);
 
                 if (loadedBitmap.size == character::characterSheetSize())
                 {

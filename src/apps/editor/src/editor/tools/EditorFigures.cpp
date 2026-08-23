@@ -4,7 +4,7 @@
 #include <vector>
 
 #include <antwika/io/AssetPath.hpp>
-#include <antwika/gfx/PngFile.hpp>
+#include <antwika/image/PngFile.hpp>
 #include <antwika/app/SpawnDetached.hpp>
 #include <antwika/component/AnimationState.hpp>
 #include <antwika/component/DialogueLine.hpp>
@@ -71,7 +71,7 @@ namespace antwika::editor
 
             try
             {
-                skinBitmap = gfx::readPngFile(
+                skinBitmap = image::readPngFile(
                     characterSheetPath(index), kAppName);
             }
             catch (...)
@@ -103,7 +103,7 @@ namespace antwika::editor
 
             std::filesystem::create_directories(
                 std::filesystem::path(sheetPath).parent_path(), errorCode);
-            gfx::writePngFile(
+            image::writePngFile(
                 characterView.skins().at(index), sheetPath, kAppName);
         }
     }
