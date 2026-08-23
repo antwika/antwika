@@ -157,17 +157,11 @@ namespace antwika::game
 
     void Runner::run()
     {
-        lastFrameAt = clockSource.now();
+        tickDebt.start();
 
         while (window->isOpen() && running)
         {
-            const auto startedAt = clockSource.now();
-            const auto since =
-                std::chrono::duration_cast<std::chrono::nanoseconds>(
-                    startedAt - lastFrameAt);
-
-            lastFrameAt = startedAt;
-            tickDebt += since;
+            (void)tickDebt.advance();
 
             pollWindow();
             pollInputs();
@@ -178,17 +172,17 @@ namespace antwika::game
             }
 
             for (std::size_t tickCount = 0;
-                 tickDebt >= app::kTickPeriod
+                 tickDebt.owesTick()
                  && tickCount < app::kMaxCatchUpTicks;
                  ++tickCount)
             {
-                tickDebt -= app::kTickPeriod;
+                tickDebt.payTick();
                 step();
             }
 
-            if (tickDebt >= app::kTickPeriod)
+            if (tickDebt.owesTick())
             {
-                tickDebt = std::chrono::nanoseconds{};
+                tickDebt.forgive();
             }
 
             draw();

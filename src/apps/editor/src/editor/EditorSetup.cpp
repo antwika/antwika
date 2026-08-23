@@ -253,19 +253,11 @@ namespace antwika::editor
 
     void Editor::run()
     {
-        lastFrameAt = clockSource.now();
+        tickDebt.start();
 
         while (window->isOpen() && running)
         {
-            const auto startedAt = clockSource.now();
-
-            const auto since =
-                std::chrono::duration_cast<std::chrono::nanoseconds>(
-                    startedAt - lastFrameAt);
-
-            meters.frameRate.record(since);
-            lastFrameAt = startedAt;
-            tickDebt += since;
+            meters.frameRate.record(tickDebt.advance());
 
             if (!pollWindow())
             {
@@ -279,7 +271,7 @@ namespace antwika::editor
                 break;
             }
 
-            frame(startedAt);
+            frame(tickDebt.startedAt());
         }
 
         window->close();

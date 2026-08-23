@@ -11,10 +11,11 @@ antwika_add_library(
         src/RunCatchingErrors.cpp
         src/RunRecorded.cpp
         src/SpawnDetached.cpp
+        src/TickDebt.cpp
         src/TickLimitSource.cpp
         src/WavFile.cpp
         src/WindowCloseSource.cpp
-        src/WindowEvents.cpp
+    src/WindowEvents.cpp
         src/WindowInputSource.cpp
         src/WindowPointerMapping.cpp
         src/WindowedSession.cpp

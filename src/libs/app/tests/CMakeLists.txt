@@ -15,6 +15,7 @@ add_executable(antwika_app_tests
     RunCatchingErrorsTest.cpp
     RunRecordedTest.cpp
     SpawnDetachedTest.cpp
+    TickDebtTest.cpp
     TickLimitSourceTest.cpp
     WavFileTest.cpp
     WindowCloseSourceTest.cpp
