@@ -129,7 +129,7 @@ namespace antwika::editor
 
             if (downPressed.button == input::MouseButton::Left
                 && (heldModifiers().shift
-                    || paintMode == map::Paint::Select))
+                    || settings.paint == map::Paint::Select))
             {
                 if (characterView.mark.selection.has_value()
                     && character::selectionContains(
@@ -175,7 +175,7 @@ namespace antwika::editor
                 strokeErases ? character::kTransparentInk
                              : inkPicker.activeInk);
 
-            if (paintMode == map::Paint::Fill && !strokeErases)
+            if (settings.paint == map::Paint::Fill && !strokeErases)
             {
                 character::paintCharacterFill(
                     characterView.sheet(),
@@ -299,8 +299,9 @@ namespace antwika::editor
             return true;
         }
 
-        if (paintMode == map::Paint::Line || paintMode == map::Paint::Rect
-            || paintMode == map::Paint::Circle)
+        if (settings.paint == map::Paint::Line
+            || settings.paint == map::Paint::Rect
+            || settings.paint == map::Paint::Circle)
         {
             lineFromCell = pixel;
 
@@ -311,7 +312,7 @@ namespace antwika::editor
 
         pushUndo();
 
-        if (paintMode == map::Paint::Fill)
+        if (settings.paint == map::Paint::Fill)
         {
             tile::paintFill(
                 sheet,

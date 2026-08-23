@@ -10,9 +10,9 @@ namespace antwika::editor
     void Editor::layoutWorldRail(ui::Context &context)
     {
         const auto showExitPanel =
-            tool == map::Tool::Exit && activeView == map::View::World;
+            settings.tool == map::Tool::Exit && activeView == map::View::World;
         const auto showFigures =
-            tool == map::Tool::Figure
+            settings.tool == map::Tool::Figure
             && activeView == map::View::World;
 
             if (showFigures)
@@ -141,7 +141,8 @@ namespace antwika::editor
                         .checked = document.map.exitLocked});
             }
 
-            if (tool == map::Tool::Lamp && activeView == map::View::World)
+            if (settings.tool == map::Tool::Lamp
+                && activeView == map::View::World)
             {
                 const auto ambientPanel = context.column(
                     antwika::ui::ContainerSpec{

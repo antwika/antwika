@@ -19,7 +19,7 @@ namespace antwika::editor
 
         std::vector<voxel::VoxelPosition> positions;
 
-        if (paintMode == map::Paint::Rect)
+        if (settings.paint == map::Paint::Rect)
         {
             for (auto x = std::min(a.x, b.x);
                  x <= std::max(a.x, b.x);
@@ -76,9 +76,9 @@ namespace antwika::editor
         const voxel::VoxelPosition position,
         const input::MouseButton button)
     {
-        if (tool != map::Tool::Brush
-            || (paintMode != map::Paint::Rect
-                && paintMode != map::Paint::Line))
+        if (settings.tool != map::Tool::Brush
+            || (settings.paint != map::Paint::Rect
+                && settings.paint != map::Paint::Line))
         {
             return false;
         }
@@ -116,7 +116,7 @@ namespace antwika::editor
                                      ? voxel::withBlockAt(
                               document.map.voxels,
                               cube,
-                              brushKind,
+                              settings.kind,
                               rampFacing)
                         : voxel::withoutBlockAt(
                               document.map.voxels, cube),
@@ -134,7 +134,7 @@ namespace antwika::editor
     {
         pushUndo();
 
-        auto &landing = tool == map::Tool::Start
+        auto &landing = settings.tool == map::Tool::Start
                       ? document.map.spawnCubePosition
                       : document.map.exitCubePosition;
 

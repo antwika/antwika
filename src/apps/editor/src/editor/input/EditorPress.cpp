@@ -171,7 +171,7 @@ namespace antwika::editor
 
             if (downPressed.button == input::MouseButton::Left
                 && (heldModifiers().shift
-                    || tool == map::Tool::Picker))
+                    || settings.tool == map::Tool::Picker))
             {
                 const auto pickedFace = voxelmap::tilePicked(
                     visibleCells(),
@@ -206,7 +206,7 @@ namespace antwika::editor
                 return;
             }
 
-            switch (placementOf(tool))
+            switch (placementOf(settings.tool))
             {
             case ToolPlacement::Lamp:
                 if (downPressed.button == input::MouseButton::Left
@@ -267,13 +267,13 @@ namespace antwika::editor
             pushUndo();
 
             document.map.voxels = voxel::withRampsRebuilt(
-                tool == map::Tool::Eraser
+                settings.tool == map::Tool::Eraser
                       ? voxel::withoutBlockAt(
                           document.map.voxels, *cell)
                     : voxel::withBlockAt(
                           document.map.voxels,
                           *cell,
-                          brushKind,
+                          settings.kind,
                           rampFacing),
                 *cell);
             dragPaintButton = downPressed.button;
@@ -304,7 +304,7 @@ namespace antwika::editor
             return;
         }
 
-        switch (placementOf(tool))
+        switch (placementOf(settings.tool))
         {
         case ToolPlacement::Lamp:
             pushUndo();

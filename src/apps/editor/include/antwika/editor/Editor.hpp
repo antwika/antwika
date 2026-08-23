@@ -136,7 +136,6 @@ namespace antwika::editor
         render::WorldMeshes worldMeshes;
 
         std::int32_t editLevel = 0;
-        bool hideAboveLevel = false;
 
         bool overlayStale = true;
         std::vector<voxelmap::LineSegment> gridLines;
@@ -158,7 +157,6 @@ namespace antwika::editor
 
         CameraRig cameraRig;
 
-        bool cameraFollows = true;
 
 
 
@@ -172,15 +170,8 @@ namespace antwika::editor
 
         PlanView plan;
 
-        map::Tool tool = map::Tool::Brush;
-        bool lighting = true;
-        bool showRuleLines = true;
-        map::Paint paintMode = map::Paint::Brush;
-        voxel::Kind brushKind = voxel::Kind::Normal;
+        map::Settings settings;
         voxel::Facing rampFacing = voxel::Facing::Any;
-        bool grid = true;
-        bool showPlacementGhost = true;
-        bool lampSight = true;
         bool lowerSight = true;
         bool lowerLight = true;
 
@@ -313,9 +304,13 @@ namespace antwika::editor
         [[nodiscard]] gfx::RectF frameRect();
         [[nodiscard]] std::optional<geometry::GridCell> cellUnderPointer();
         void drawColorPicker();
-        using MenuFlag = bool Editor::*;
+        using MenuFlag = bool &(*)(Editor &);
 
         [[nodiscard]] static MenuFlag toggledFlag(MenuItem item);
+
+        void takeSettings(const map::Settings &shownSettings);
+
+        [[nodiscard]] map::Settings settingsAsShown() const;
         void onMenuItem(MenuItem item);
         [[nodiscard]] bool isChecked(MenuItem item);
         [[nodiscard]] std::string statusText();

@@ -84,7 +84,7 @@ namespace antwika::editor
             if (interactions.activatedWidget
                 == paintWidget(which))
             {
-                paintMode = which;
+                settings.paint = which;
                 consumedKey = true;
             }
         }
@@ -101,7 +101,7 @@ namespace antwika::editor
 
             if (activeView == map::View::World)
             {
-                brushKind = kind;
+                settings.kind = kind;
 
                 continue;
             }

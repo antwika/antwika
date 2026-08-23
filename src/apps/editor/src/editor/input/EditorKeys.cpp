@@ -124,9 +124,9 @@ namespace antwika::editor
         activeView = nextView;
 
         if (activeView != map::View::Character
-            && paintMode == map::Paint::Select)
+            && settings.paint == map::Paint::Select)
         {
-            paintMode = map::Paint::Brush;
+            settings.paint = map::Paint::Brush;
         }
     }
 
@@ -176,7 +176,7 @@ namespace antwika::editor
                 turningPlayer = false;
                 activeView = viewBeforePlay;
 
-                if (hideAboveLevel)
+                if (settings.hideAboveLevel)
                 {
                     rebuildWorld();
                 }
@@ -261,7 +261,7 @@ namespace antwika::editor
             editLevel += 1;
             overlayStale = true;
 
-            if (hideAboveLevel)
+            if (settings.hideAboveLevel)
             {
                 rebuildWorld();
             }
@@ -272,7 +272,7 @@ namespace antwika::editor
             editLevel -= 1;
             overlayStale = true;
 
-            if (hideAboveLevel)
+            if (settings.hideAboveLevel)
             {
                 rebuildWorld();
             }
@@ -292,7 +292,7 @@ namespace antwika::editor
             {
                 if (matchesChord(row.action, pressedKey.key))
                 {
-                    brushKind = row.kind;
+                    settings.kind = row.kind;
                 }
             }
         }
@@ -321,7 +321,7 @@ namespace antwika::editor
                     continue;
                 }
 
-                paintMode = paint;
+                settings.paint = paint;
             }
         }
 
@@ -508,7 +508,7 @@ namespace antwika::editor
             dialogs.fileDialog.reset();
             inkPicker.editingInk.reset();
 
-            if (hideAboveLevel)
+            if (settings.hideAboveLevel)
             {
                 rebuildWorld();
             }

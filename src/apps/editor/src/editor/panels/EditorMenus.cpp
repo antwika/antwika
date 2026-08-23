@@ -17,11 +17,11 @@ namespace antwika::editor
     {
         return antwika::editor::toolButtonActive(
             whichButton,
-            tool,
+            settings.tool,
             ToolToggles{
                 .freeLook = cameraRig.freeLook,
-                .lighting = lighting,
-                .showRuleLines = showRuleLines});
+                .lighting = settings.lighting,
+                .showRuleLines = settings.showRuleLines});
     }
 
     void Editor::pressTool(const ToolButton whichButton)
@@ -31,21 +31,21 @@ namespace antwika::editor
 
         if (chosenTool.has_value())
         {
-            tool = *chosenTool;
+            settings.tool = *chosenTool;
 
             return;
         }
 
         if (whichButton == ToolButton::Lighting)
         {
-            lighting = !lighting;
+            settings.lighting = !settings.lighting;
 
             return;
         }
 
         if (whichButton == ToolButton::RuleLines)
         {
-            showRuleLines = !showRuleLines;
+            settings.showRuleLines = !settings.showRuleLines;
 
             return;
         }
@@ -68,15 +68,42 @@ namespace antwika::editor
         };
 
         constexpr std::array kFlagRows{
-            FlagRow{MenuItem::Grid, &Editor::grid},
-            FlagRow{MenuItem::Marker, &Editor::showPlacementGhost},
-            FlagRow{MenuItem::RuleLines, &Editor::showRuleLines},
-            FlagRow{MenuItem::Lighting, &Editor::lighting},
-            FlagRow{MenuItem::Sight, &Editor::lampSight},
-            FlagRow{MenuItem::LowerSight, &Editor::lowerSight},
-            FlagRow{MenuItem::LowerLight, &Editor::lowerLight},
-            FlagRow{MenuItem::Follow, &Editor::cameraFollows},
-            FlagRow{MenuItem::AboveHidden, &Editor::hideAboveLevel}};
+            FlagRow{
+                MenuItem::Grid,
+                [](Editor &editor) -> bool &
+                { return editor.settings.grid; }},
+            FlagRow{
+                MenuItem::Marker,
+                [](Editor &editor) -> bool &
+                { return editor.settings.showPlacementGhost; }},
+            FlagRow{
+                MenuItem::RuleLines,
+                [](Editor &editor) -> bool &
+                { return editor.settings.showRuleLines; }},
+            FlagRow{
+                MenuItem::Lighting,
+                [](Editor &editor) -> bool &
+                { return editor.settings.lighting; }},
+            FlagRow{
+                MenuItem::Sight,
+                [](Editor &editor) -> bool &
+                { return editor.settings.lampSight; }},
+            FlagRow{
+                MenuItem::LowerSight,
+                [](Editor &editor) -> bool &
+                { return editor.lowerSight; }},
+            FlagRow{
+                MenuItem::LowerLight,
+                [](Editor &editor) -> bool &
+                { return editor.lowerLight; }},
+            FlagRow{
+                MenuItem::Follow,
+                [](Editor &editor) -> bool &
+                { return editor.settings.cameraFollows; }},
+            FlagRow{
+                MenuItem::AboveHidden,
+                [](Editor &editor) -> bool &
+                { return editor.settings.hideAboveLevel; }}};
 
         const auto foundRow =
             std::ranges::find(kFlagRows, item, &FlagRow::item);
@@ -93,7 +120,9 @@ namespace antwika::editor
     {
         if (const auto flag = toggledFlag(item); flag != nullptr)
         {
-            this->*flag = !(this->*flag);
+            bool &held = flag(*this);
+
+            held = !held;
 
             if (item == MenuItem::AboveHidden)
             {
@@ -164,7 +193,7 @@ namespace antwika::editor
     {
         if (const auto flag = toggledFlag(item); flag != nullptr)
         {
-            return this->*flag;
+            return flag(*this);
         }
 
         if (item == MenuItem::FreeLook)

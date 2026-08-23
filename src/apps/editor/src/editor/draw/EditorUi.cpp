@@ -302,7 +302,7 @@ namespace antwika::editor
                         }
                     }
 
-                    if (tool == map::Tool::Brush)
+                    if (settings.tool == map::Tool::Brush)
                     {
                         context.spacer(
                             antwika::ui::fixedSize(
@@ -321,7 +321,7 @@ namespace antwika::editor
                                 antwika::ui::ButtonSpec{
                                     .widgetId = paintWidget(which),
                                     .state =
-                                        which == paintMode
+                                        which == settings.paint
                                                ? std::optional{
                                                   antwika::ui::
                                                       ButtonState::
@@ -355,7 +355,7 @@ namespace antwika::editor
                             antwika::ui::ButtonSpec{
                                 .widgetId = paintWidget(which),
                                 .state =
-                                    which == paintMode
+                                    which == settings.paint
                                            ? std::optional{
                                               antwika::ui::
                                                   ButtonState::
@@ -395,7 +395,7 @@ namespace antwika::editor
                     {
                         const auto active =
                             activeView == map::View::World
-                                        ? kind == brushKind
+                                        ? kind == settings.kind
                                         : selectedTile.has_value()
                                       && activeRules().kindOf(
                                              *selectedTile)
