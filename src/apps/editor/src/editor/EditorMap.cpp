@@ -291,14 +291,17 @@ namespace antwika::editor
                 .cornersJoined =
                     cornerJoining == solver::CornerSeams::Included};
 
-            gfx::writePngFile(
-                atlasSheets.sheet(0),
-                map::sidecarPath(mapPath, "atlas-15x9.png"),
-                kAppName);
-            gfx::writePngFile(
-                atlasSheets.sheet(1),
-                map::sidecarPath(mapPath, "atlas-15x12.png"),
-                kAppName);
+            for (std::size_t sheet = 0;
+                 sheet < map::kAtlasSheetCount;
+                 ++sheet)
+            {
+                gfx::writePngFile(
+                    atlasSheets.sheet(sheet),
+                    map::sidecarPath(
+                        mapPath,
+                        map::kAtlasSheets.at(sheet).name),
+                    kAppName);
+            }
             saveCharacterSkins();
 
             if (iconsView.unsaved())
@@ -365,16 +368,7 @@ namespace antwika::editor
                           ? solver::CornerSeams::Included
                           : solver::CornerSeams::Ignored;
             atlasSheets.take(
-                {map::loadAtlasOrBlank(
-                     mapPath,
-                     "atlas-15x9.png",
-                     tilemap::kWallTileSize,
-                     kAppName),
-                 map::loadAtlasOrBlank(
-                     mapPath,
-                     "atlas-15x12.png",
-                     tilemap::kFloorTileSize,
-                     kAppName)});
+                map::loadAtlasPairOrBlank(mapPath, kAppName));
             iconsView.open(
                 viewportRenderer, loadIconSheet(mapPath, kAppName));
             characterView.editFirst();

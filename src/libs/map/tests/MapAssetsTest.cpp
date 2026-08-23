@@ -213,3 +213,19 @@ namespace
     }
 
 }
+
+TEST(MapAssetsTest, AtlasSheets_PairEachNameWithItsTileSize)
+{
+    ASSERT_EQ(antwika::map::kAtlasSheets.size(), 2U);
+
+    EXPECT_EQ(
+        antwika::map::kAtlasSheets[0].name, "atlas-15x9.png");
+    EXPECT_EQ(
+        antwika::map::kAtlasSheets[0].tileSize,
+        antwika::tilemap::kWallTileSize);
+    EXPECT_EQ(
+        antwika::map::kAtlasSheets[1].name, "atlas-15x12.png");
+    EXPECT_EQ(
+        antwika::map::kAtlasSheets[1].tileSize,
+        antwika::tilemap::kFloorTileSize);
+}

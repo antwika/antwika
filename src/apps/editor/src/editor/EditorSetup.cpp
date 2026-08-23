@@ -94,16 +94,7 @@ namespace antwika::editor
 
         atlasSheets.open(
             viewportRenderer,
-            {map::loadAtlasOrBlank(
-                 mapPath,
-                 "atlas-15x9.png",
-                 tilemap::kWallTileSize,
-                 kAppName),
-             map::loadAtlasOrBlank(
-                 mapPath,
-                 "atlas-15x12.png",
-                 tilemap::kFloorTileSize,
-                 kAppName)},
+            map::loadAtlasPairOrBlank(mapPath, kAppName),
             map,
             tick);
         characterView.open(

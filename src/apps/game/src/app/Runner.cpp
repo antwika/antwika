@@ -111,29 +111,11 @@ namespace antwika::game
             map.settings.cornersJoined
                 ? solver::CornerSeams::Included
                 : solver::CornerSeams::Ignored,
-            {map::loadAtlas(
-                 this->mapPath,
-                 "atlas-15x9.png",
-                 tilemap::kWallTileSize,
-                 kAppName),
-             map::loadAtlas(
-                 this->mapPath,
-                 "atlas-15x12.png",
-                 tilemap::kFloorTileSize,
-                 kAppName)},
+            map::loadAtlasPair(this->mapPath, kAppName),
             tick);
         sheets.open(
             viewportRenderer,
-            {map::loadAtlas(
-                 this->mapPath,
-                 "atlas-15x9.png",
-                 tilemap::kWallTileSize,
-                 kAppName),
-             map::loadAtlas(
-                 this->mapPath,
-                 "atlas-15x12.png",
-                 tilemap::kFloorTileSize,
-                 kAppName)},
+            map::loadAtlasPair(this->mapPath, kAppName),
             map,
             tick);
 
