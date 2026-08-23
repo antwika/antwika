@@ -60,27 +60,7 @@ namespace antwika::map
 
             [[nodiscard]] nlohmann::json tilemapSchema()
             {
-                nlohmann::json shape;
-
-                shape["type"] = "object";
-                shape["additionalProperties"] = false;
-                shape["required"] = {
-                    std::string(kColumnsKey),
-                    std::string(kRowsKey),
-                    std::string(kTilesKey)};
-                shape["properties"][std::string(kColumnsKey)] =
-                    wholeSchema(0, kMaxPlaces);
-                shape["properties"][std::string(kRowsKey)] =
-                    wholeSchema(0, kMaxPlaces);
-                shape["properties"][std::string(kTilesKey)]["type"] =
-                    "array";
-                nlohmann::json nullSchema;
-                nullSchema["type"] = "null";
-
-                shape["properties"][std::string(kTilesKey)]["items"]
-                     ["oneOf"] = {tileSchema(), nullSchema};
-
-                return shape;
+                return shapeOf(kTilemapFields);
             } // GCOVR_EXCL_LINE
 
             [[nodiscard]] nlohmann::json ruleSchema()

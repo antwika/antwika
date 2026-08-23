@@ -107,20 +107,8 @@ namespace antwika::map
             [[nodiscard]] tilemap::Tilemap readTilemap(
             const nlohmann::json &json)
             {
-                tilemap::Tilemap tilemap;
-
-                tilemap.columns =
-                    json[std::string(kColumnsKey)].get<std::uint32_t>();
-                tilemap.rows =
-                    json[std::string(kRowsKey)].get<std::uint32_t>();
-
-                for (const auto &tile : json[std::string(kTilesKey)])
-                {
-                    tilemap.tiles.push_back(
-                        tile.is_null()
-                            ? std::optional<tilemap::Tile>{}
-                            : std::optional<tilemap::Tile>{readTile(tile)});
-                }
+                const auto tilemap =
+                    read<tilemap::Tilemap>(kTilemapFields, json);
 
                 if (!tilemap.isComplete())
                 {

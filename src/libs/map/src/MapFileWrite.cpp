@@ -98,26 +98,6 @@ namespace antwika::map
 
                 return objectJson;
             } // GCOVR_EXCL_LINE
-            [[nodiscard]] nlohmann::json writtenTilemap(
-                const tilemap::Tilemap &tilemap)
-            {
-                auto tilesJson = nlohmann::json::array();
-
-                for (const auto tile : tilemap.tiles)
-                {
-                    tilesJson.push_back(
-                        tile.has_value() ? writtenTile(*tile)
-                                         : nlohmann::json());
-                }
-
-                nlohmann::json objectJson;
-
-                objectJson[std::string(kColumnsKey)] = tilemap.columns;
-                objectJson[std::string(kRowsKey)] = tilemap.rows;
-                objectJson[std::string(kTilesKey)] = tilesJson;
-
-                return objectJson;
-            } // GCOVR_EXCL_LINE
             [[nodiscard]] nlohmann::json writtenRules(
                 const tile::TileRules &rules)
             {
@@ -160,7 +140,7 @@ namespace antwika::map
             kMapVersion;
         document[std::string(kVoxelsKey)] = writtenVoxels(map.voxels);
         document[std::string(kTilemapKey)] =
-            writtenTilemap(map.tilemap);
+            written(kTilemapFields, map.tilemap);
         document[std::string(kRulesKey)] = writtenRules(map.rules);
         auto colors = nlohmann::json::array();
 
