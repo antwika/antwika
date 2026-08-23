@@ -49,26 +49,44 @@ namespace antwika::editor
         takeDown = &antwikaGameDestroy;
 #endif
 
-        madeGame = setUp(&logger, &world, &solidVoxels, &patrolPositions);
+        try
+        {
+            madeGame =
+                setUp(&logger, &world, &solidVoxels, &patrolPositions);
+        }
+        catch (...)
+        {
+            letGo();
+
+            throw;
+        }
     }
 
     GameModule::~GameModule()
     {
+        letGo();
+    }
+
+    void GameModule::letGo() noexcept
+    {
         if (madeGame != nullptr)
         {
             takeDown(madeGame);
+            madeGame = nullptr;
         }
 
 #ifdef ANTWIKA_GAME_SHARED
         if (library != nullptr)
         {
             dlclose(library);
+            library = nullptr;
         }
 
         if (!openedPath.empty())
         {
             std::error_code errorCode;
             std::filesystem::remove(openedPath, errorCode);
+            openedPath.clear();
         }
 #endif
     }

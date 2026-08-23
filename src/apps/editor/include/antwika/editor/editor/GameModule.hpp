@@ -43,6 +43,8 @@ namespace antwika::editor
 #endif
 
     private:
+        void letGo() noexcept;
+
 #ifdef ANTWIKA_GAME_SHARED
         void open();
 

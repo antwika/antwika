@@ -25,6 +25,16 @@ namespace antwika::gfx::raylib
     namespace
     {
         constexpr std::size_t kMaxTransformDepth = 32;
+
+        struct ImageCloser final
+        {
+            void operator()(::Image *image) const noexcept
+            {
+                UnloadImage(*image);
+            }
+        };
+
+        using HeldImage = std::unique_ptr<::Image, ImageCloser>;
     }
 
     RaylibRenderer::RaylibRenderer() = default;
@@ -160,12 +170,11 @@ namespace antwika::gfx::raylib
         rlDrawRenderBatchActive();
 
         ::Image screenImage = LoadImageFromScreen();
+        const HeldImage heldImage{&screenImage};
 
         if (screenImage.data == nullptr || screenImage.width <= 0
             || screenImage.height <= 0)
         {
-            UnloadImage(screenImage);
-
             return Bitmap{};
         }
 
@@ -187,8 +196,6 @@ namespace antwika::gfx::raylib
             source,
             takenBitmap.pixels.size(),
             takenBitmap.pixels.begin());
-
-        UnloadImage(screenImage);
 
         return takenBitmap;
     }
