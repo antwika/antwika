@@ -115,9 +115,9 @@ namespace antwika::editor
 
         if (downPressed.button == input::MouseButton::Middle)
         {
-            panning = true;
+            cameraRig.panning = true;
             pointer.lastPointerPosition = downPressed.position;
-            panGripPosition.reset();
+            cameraRig.panGripPosition.reset();
 
             if (activeView == map::View::World && !play.playing)
             {
@@ -127,7 +127,7 @@ namespace antwika::editor
                             .x = downPressed.position.x,
                             .y = downPressed.position.y});
 
-                panGripPosition = voxelmap::planeHit(
+                cameraRig.panGripPosition = voxelmap::planeHit(
                     voxelmap::rayInModelSpace(
                         voxelmap::rayThrough(
                             worldCamera(),
@@ -151,8 +151,8 @@ namespace antwika::editor
         if (activeView == map::View::World
             && downPressed.button == input::MouseButton::Right)
         {
-            orbitFromPosition = downPressed.position;
-            orbiting = false;
+            cameraRig.orbitFromPosition = downPressed.position;
+            cameraRig.orbiting = false;
 
             return;
         }

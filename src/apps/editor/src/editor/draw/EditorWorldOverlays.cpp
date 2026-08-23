@@ -143,12 +143,12 @@ namespace antwika::editor
                         kLevelGridLineColor);
                 }
 
-                if (!freeLook && grid)
+                if (!cameraRig.freeLook && grid)
                 {
                     ruled(gridLines, kLevelGridLineColor);
                 }
 
-                if (!freeLook)
+                if (!cameraRig.freeLook)
                 {
                     ruled(topLines, kCursorColor);
                 }
@@ -161,14 +161,15 @@ namespace antwika::editor
                     antwika::voxel::cubeTop(editLevel));
 
                 const auto steering =
-                    orbiting
-                    || (panning && panGripPosition.has_value())
+                    cameraRig.orbiting
+                    || (cameraRig.panning
+                        && cameraRig.panGripPosition.has_value())
                     || play.game->wasdKeys() != input::DirectionKeys{}
                     || play.game->arrowKeys() != input::DirectionKeys{}
                     || descendHeld
                     || ascendHeld;
 
-                if (going.has_value() && !freeLook
+                if (going.has_value() && !cameraRig.freeLook
                     && showPlacementGhost && !steering
                     && !frame.interactions.pointerOverUi)
                 {

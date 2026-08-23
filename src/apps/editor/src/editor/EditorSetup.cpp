@@ -114,9 +114,9 @@ namespace antwika::editor
             .transform = camera::centeredOn(camera::defaultTransform(),
                 voxelmap::voxelsCenter(document.map.voxels))};
 
-        cameraView = document.map.camera.value_or(opening);
-        viewHeight =
-            camera::orthoHalfHeight(camera::kCanvasSize, cameraView.zoom);
+        cameraRig.view = document.map.camera.value_or(opening);
+        cameraRig.viewHeight =
+            camera::orthoHalfHeight(camera::kCanvasSize, cameraRig.view.zoom);
 
         activeView = document.map.settings.view;
         viewBeforePlay = document.map.settings.view;

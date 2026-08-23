@@ -177,7 +177,7 @@ namespace antwika::editor
             }
         }
 
-        if (panning && activeView == map::View::Atlases)
+        if (cameraRig.panning && activeView == map::View::Atlases)
         {
             const auto was =
                 viewportRenderer.viewport().toCanvas(
@@ -192,7 +192,7 @@ namespace antwika::editor
                     - static_cast<float>(was.y)};
             pointer.lastPointerPosition = movedEvent.position;
         }
-        else if (panning && panGripPosition.has_value())
+        else if (cameraRig.panning && cameraRig.panGripPosition.has_value())
         {
             const auto hit = voxelmap::planeHit(
                 voxelmap::rayInModelSpace(
@@ -201,30 +201,30 @@ namespace antwika::editor
                         camera::kCanvasSize,
                         pointer.pointerOnCanvas),
                     worldRotation()),
-                panGripPosition->y);
+                cameraRig.panGripPosition->y);
 
             if (hit.has_value())
             {
-                cameraView.transform.position += antwika::gfx::Vec3{
+                cameraRig.view.transform.position += antwika::gfx::Vec3{
                     worldRotation()
                     * antwika::gfx::Vec4{
-                        *panGripPosition - *hit, 0.0F}};
+                        *cameraRig.panGripPosition - *hit, 0.0F}};
             }
 
             pointer.lastPointerPosition = movedEvent.position;
         }
-        else if (panning)
+        else if (cameraRig.panning)
         {
             const auto was = viewportRenderer.viewport().toCanvas(
                 antwika::gfx::Point{
                     .x = pointer.lastPointerPosition.x,
                     .y = pointer.lastPointerPosition.y});
 
-            cameraView.transform = camera::panned(
-                cameraView.transform,
+            cameraRig.view.transform = camera::panned(
+                cameraRig.view.transform,
                 static_cast<float>(was.x) - pointer.pointerOnCanvas.x,
                 pointer.pointerOnCanvas.y - static_cast<float>(was.y),
-                viewHeight
+                cameraRig.viewHeight
                     / static_cast<float>(camera::kCanvasSize.height));
             pointer.lastPointerPosition = movedEvent.position;
         }
@@ -258,21 +258,21 @@ namespace antwika::editor
             }
         }
 
-        if (orbitFromPosition.has_value()
+        if (cameraRig.orbitFromPosition.has_value()
             && activeView == map::View::World)
         {
-            if (!orbiting
+            if (!cameraRig.orbiting
                 && std::abs(
-                       movedEvent.position.x - orbitFromPosition->x)
+                       movedEvent.position.x - cameraRig.orbitFromPosition->x)
                            + std::abs(
                                movedEvent.position.y
-                               - orbitFromPosition->y)
+                               - cameraRig.orbitFromPosition->y)
                        > 4)
             {
-                orbiting = true;
+                cameraRig.orbiting = true;
             }
 
-            if (orbiting)
+            if (cameraRig.orbiting)
             {
                 orbitCamera(
                     static_cast<float>(
@@ -284,10 +284,10 @@ namespace antwika::editor
             }
         }
 
-        if (freeLook)
+        if (cameraRig.freeLook)
         {
-            cameraView.transform = camera::rotated(
-                cameraView.transform,
+            cameraRig.view.transform = camera::rotated(
+                cameraRig.view.transform,
                 static_cast<float>(
                     movedEvent.position.x - pointer.lastPointerPosition.x)
                     * camera::kMouseTurn,
@@ -305,22 +305,22 @@ namespace antwika::editor
     {
         if (upReleased.button == input::MouseButton::Middle)
         {
-            panning = false;
+            cameraRig.panning = false;
             turningPlayer = false;
-            panGripPosition.reset();
+            cameraRig.panGripPosition.reset();
         }
 
         if (upReleased.button == input::MouseButton::Right
-            && orbitFromPosition.has_value())
+            && cameraRig.orbitFromPosition.has_value())
         {
-            if (!orbiting && activeView == map::View::World
+            if (!cameraRig.orbiting && activeView == map::View::World
                 && !play.playing)
             {
                 rightTaken(upReleased.position);
             }
 
-            orbitFromPosition.reset();
-            orbiting = false;
+            cameraRig.orbitFromPosition.reset();
+            cameraRig.orbiting = false;
         }
 
         if (upReleased.button == input::MouseButton::Left)

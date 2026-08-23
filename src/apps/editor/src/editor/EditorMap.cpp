@@ -158,11 +158,11 @@ namespace antwika::editor
                    ? camera::cameraOf(
                          play.game->cameraTransform(),
                          camera::kCanvasSize,
-                         viewHeight)
+                         cameraRig.viewHeight)
                    : camera::perspectiveOf(
-                       cameraView.transform,
+                       cameraRig.view.transform,
                        camera::kCanvasSize,
-                       viewHeight);
+                       cameraRig.viewHeight);
     }
 
     void Editor::aimPlayCamera()
@@ -182,16 +182,16 @@ namespace antwika::editor
     {
         const auto goal = camera::orthoHalfHeight(
             camera::kCanvasSize,
-            play.playing ? play.game->zoom() : cameraView.zoom);
+            play.playing ? play.game->zoom() : cameraRig.view.zoom);
 
-        viewHeight =
-            std::abs(goal - viewHeight) < 0.001F
+        cameraRig.viewHeight =
+            std::abs(goal - cameraRig.viewHeight) < 0.001F
                 ? goal
-                : viewHeight
-                      + ((goal - viewHeight)
+                : cameraRig.viewHeight
+                      + ((goal - cameraRig.viewHeight)
                          * camera::kZoomLerpRate);
 
-        if (!orbitFromPosition.has_value()
+        if (!cameraRig.orbitFromPosition.has_value()
             || activeView != map::View::World
             || play.playing || focusedField != FocusedField::Nothing
             || dialogs.fileDialog.has_value() || dialogs.quitConfirmOpen
@@ -214,8 +214,8 @@ namespace antwika::editor
 
         if (byX != 0.0F || byY != 0.0F || byRise != 0.0F)
         {
-            cameraView.transform = camera::movedAlongView(
-                cameraView.transform,
+            cameraRig.view.transform = camera::movedAlongView(
+                cameraRig.view.transform,
                 -byY,
                 byX,
                 byRise,
@@ -244,16 +244,16 @@ namespace antwika::editor
         const float byYaw, const float byPitch)
     {
         const auto backDistance =
-            viewHeight
+            cameraRig.viewHeight
             / std::tan(camera::kEditorFov / 2.0F);
         const auto eye =
-            cameraView.transform.position
-            - (camera::forward(cameraView.transform) * backDistance);
+            cameraRig.view.transform.position
+            - (camera::forward(cameraRig.view.transform) * backDistance);
 
-        cameraView.transform =
-            camera::rotated(cameraView.transform, byYaw, byPitch);
-        cameraView.transform.position =
-            eye + (camera::forward(cameraView.transform) * backDistance);
+        cameraRig.view.transform =
+            camera::rotated(cameraRig.view.transform, byYaw, byPitch);
+        cameraRig.view.transform.position =
+            eye + (camera::forward(cameraRig.view.transform) * backDistance);
     }
 
     void Editor::saveCurrentMap()
@@ -268,7 +268,7 @@ namespace antwika::editor
 
         try
         {
-            document.map.camera = cameraView;
+            document.map.camera = cameraRig.view;
             const auto hero = playerIndex(document.map);
 
             if (hero.has_value())
@@ -353,13 +353,14 @@ namespace antwika::editor
             const auto camera = document.map.camera.value_or(
                 map::CameraView{
                     .transform = camera::centeredOn(
-                        cameraView.transform,
+                        cameraRig.view.transform,
                         voxelmap::voxelsCenter(document.map.voxels)),
-                    .zoom = cameraView.zoom});
+                    .zoom = cameraRig.view.zoom});
 
-            cameraView = camera;
-            viewHeight =
-                camera::orthoHalfHeight(camera::kCanvasSize, cameraView.zoom);
+            cameraRig.view = camera;
+            cameraRig.viewHeight =
+                camera::orthoHalfHeight(camera::kCanvasSize,
+                    cameraRig.view.zoom);
             lighting = document.map.settings.lighting;
             showRuleLines = document.map.settings.showRuleLines;
             tool = document.map.settings.tool;

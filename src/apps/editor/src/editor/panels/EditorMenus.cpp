@@ -19,7 +19,7 @@ namespace antwika::editor
             whichButton,
             tool,
             ToolToggles{
-                .freeLook = freeLook,
+                .freeLook = cameraRig.freeLook,
                 .lighting = lighting,
                 .showRuleLines = showRuleLines});
     }
@@ -50,12 +50,12 @@ namespace antwika::editor
             return;
         }
 
-        freeLook = !freeLook;
+        cameraRig.freeLook = !cameraRig.freeLook;
 
-        if (!freeLook)
+        if (!cameraRig.freeLook)
         {
-            cameraView.transform =
-                camera::resetToIsometric(cameraView.transform);
+            cameraRig.view.transform =
+                camera::resetToIsometric(cameraRig.view.transform);
         }
     }
 
@@ -169,7 +169,7 @@ namespace antwika::editor
 
         if (item == MenuItem::FreeLook)
         {
-            return freeLook;
+            return cameraRig.freeLook;
         }
 
         return item == MenuItem::Corners

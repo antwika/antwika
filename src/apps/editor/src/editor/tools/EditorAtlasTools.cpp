@@ -155,7 +155,7 @@ namespace antwika::editor
         else if (rolledScrolled.vertical != 0)
         {
             auto &zoomValue = play.playing ? play.game->zoom(
-                ) : cameraView.zoom;
+                ) : cameraRig.view.zoom;
 
             zoomValue = std::clamp(
                 zoomValue
