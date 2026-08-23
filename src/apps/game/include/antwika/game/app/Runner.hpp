@@ -44,7 +44,11 @@ namespace antwika::game
     class Runner final
     {
     public:
-        Runner(log::ILogger &logger, std::string mapPath);
+        Runner(
+            log::ILogger &logger,
+            gfx::IGfxBackend &backend,
+            input::IInputBackend &inputs,
+            std::string mapPath);
 
         void run();
 
@@ -67,8 +71,8 @@ namespace antwika::game
         [[nodiscard]] gfx::Camera3D worldCamera() const;
 
         std::string mapPath;
-        std::unique_ptr<gfx::IGfxBackend> backend;
-        std::unique_ptr<input::IInputBackend> inputs;
+        gfx::IGfxBackend &backend;
+        input::IInputBackend &inputs;
         std::unique_ptr<gfx::IWindow> window;
         gfx::ViewportRenderer viewportRenderer;
         map::Map map;

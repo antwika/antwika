@@ -40,6 +40,8 @@ namespace antwika::editor
 
     Editor::Editor(
         log::ILogger &logger,
+        gfx::IGfxBackend &backendGiven,
+        input::IInputBackend &inputsGiven,
         std::string mapPathGiven,
         const bool playOnlyGiven,
         std::string planPathGiven)
@@ -47,10 +49,10 @@ namespace antwika::editor
           mapPath(std::move(mapPathGiven)),
           startMapPath(mapPath),
           playOnly(playOnlyGiven),
-          backend(gfx::makeSelectedBackend(logger)),
-          inputs(antwika::input::makeSelectedInputBackend(logger)),
+          backend(backendGiven),
+          inputs(inputsGiven),
           window(
-              backend->createWindow(
+              backend.createWindow(
                   gfx::WindowSpec{
                       .title = "Antwika",
                       .size = kWindowSize,
@@ -190,7 +192,7 @@ namespace antwika::editor
     {
         bool closeRequested = false;
 
-        while (const auto event = backend->pollEvent())
+        while (const auto event = backend.pollEvent())
         {
             if (event->window != window->id())
             {
@@ -225,7 +227,7 @@ namespace antwika::editor
     {
         inputState.beginTick();
 
-        while (const auto event = inputs->pollEvent())
+        while (const auto event = inputs.pollEvent())
         {
             inputState.apply(*event);
 
