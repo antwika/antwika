@@ -139,6 +139,38 @@ namespace antwika::map
         return atlas;
     } // GCOVR_EXCL_LINE
 
+    std::array<gfx::Bitmap, kAtlasSheetCount> loadAtlasPair(
+        const std::string &mapPath, const std::string_view app)
+    {
+        return {
+            loadAtlas(
+                mapPath,
+                kAtlasSheets[0].name,
+                kAtlasSheets[0].tileSize,
+                app),
+            loadAtlas(
+                mapPath,
+                kAtlasSheets[1].name,
+                kAtlasSheets[1].tileSize,
+                app)};
+    }
+
+    std::array<gfx::Bitmap, kAtlasSheetCount> loadAtlasPairOrBlank(
+        const std::string &mapPath, const std::string_view app)
+    {
+        return {
+            loadAtlasOrBlank(
+                mapPath,
+                kAtlasSheets[0].name,
+                kAtlasSheets[0].tileSize,
+                app),
+            loadAtlasOrBlank(
+                mapPath,
+                kAtlasSheets[1].name,
+                kAtlasSheets[1].tileSize,
+                app)};
+    }
+
     gfx::Bitmap loadAtlasOrBlank(
         const std::string &mapPath,
         const std::string_view name,
