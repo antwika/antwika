@@ -25,6 +25,7 @@
 #include <antwika/character/Character.hpp>
 #include <antwika/map/MapFile.hpp>
 #include <antwika/map/MapFileError.hpp>
+#include "MapFileTables.hpp"
 #include "MapFileShared.hpp"
 #include "MapFileShared2.hpp"
 
@@ -213,27 +214,7 @@ namespace antwika::map
             camera[std::string(kZoomKey)] = map.camera->zoom;
         }
 
-        nlohmann::json settings;
-
-        settings[std::string(kLightingKey)] = map.settings.lighting;
-        settings[std::string(kTiesKey)] = map.settings.showRuleLines;
-        settings[std::string(kToolKey)] =
-            std::string(nameOf(map.settings.tool));
-        settings[std::string(kDrawingKey)] =
-            std::string(nameOf(map.settings.paint));
-        settings[std::string(kViewKey)] =
-            std::string(nameOf(map.settings.view));
-        settings[std::string(kKindKey)] =
-            std::string(nameOf(map.settings.kind));
-        settings[std::string(kGridKey)] = map.settings.grid;
-        settings[std::string(kMarkerKey)] = map.settings.showPlacementGhost;
-        settings[std::string(kSightKey)] = map.settings.lampSight;
-        settings[std::string(kFollowingKey)] =
-            map.settings.cameraFollows;
-        settings[std::string(kAboveHiddenKey)] =
-            map.settings.hideAboveLevel;
-        settings[std::string(kCornersJoinedKey)] =
-            map.settings.cornersJoined;
+        const auto settings = written(kSettingsFields, map.settings);
 
         auto kinds = nlohmann::json::array();
 

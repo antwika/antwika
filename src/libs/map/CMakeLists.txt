@@ -6,7 +6,8 @@ antwika_add_library(
         src/Layers.cpp
         src/MapAssets.cpp
         src/MapFile.cpp
-        src/MapFileMigrations.cpp
+        src/MapFileField.cpp
+    src/MapFileMigrations.cpp
         src/MapFileMigrations2.cpp
         src/MapFileMigrations3.cpp
         src/MapFileMigrations4.cpp

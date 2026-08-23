@@ -25,6 +25,7 @@
 #include <antwika/character/Character.hpp>
 
 #include "antwika/map/MapFileError.hpp"
+#include "MapFileTables.hpp"
 #include "MapFileShared.hpp"
 #include "MapFileShared2.hpp"
 
@@ -430,40 +431,9 @@ namespace antwika::map
             map.plates.push_back(plate);
         }
 
-        const auto &settings = wholeDocument[std::string(kSettingsKey)];
-
-        map.settings = Settings{
-            .lighting =
-                settings[std::string(kLightingKey)].get<bool>(),
-            .showRuleLines =
-                settings[std::string(kTiesKey)].get<bool>(),
-            .tool = enumFromName(
-                kToolNames,
-                settings[std::string(kToolKey)].get<std::string>()),
-            .paint = enumFromName(
-                kDrawingNames,
-                settings[std::string(kDrawingKey)]
-                    .get<std::string>()),
-            .view = enumFromName(
-                kViewNames,
-                settings[std::string(kViewKey)].get<std::string>()),
-            .kind = enumFromName(
-                kKindNames,
-                settings[std::string(kKindKey)]
-                    .get<std::string>()),
-            .grid = settings[std::string(kGridKey)].get<bool>(),
-            .showPlacementGhost =
-                settings[std::string(kMarkerKey)].get<bool>(),
-            .lampSight =
-                settings[std::string(kSightKey)].get<bool>(),
-            .cameraFollows = settings[std::string(kFollowingKey)]
-                             .get<bool>(),
-            .hideAboveLevel =
-                settings[std::string(kAboveHiddenKey)]
-                    .get<bool>(),
-            .cornersJoined =
-                settings[std::string(kCornersJoinedKey)]
-                    .get<bool>()};
+        map.settings = read<Settings>(
+            kSettingsFields,
+            wholeDocument[std::string(kSettingsKey)]);
 
         return map;
     } // GCOVR_EXCL_LINE

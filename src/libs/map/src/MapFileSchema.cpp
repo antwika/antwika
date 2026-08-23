@@ -32,19 +32,6 @@ namespace antwika::map
 
     namespace
     {
-            [[nodiscard]] nlohmann::json namesOf(
-                const std::span<const std::string_view> names)
-            {
-                auto arrayJson = nlohmann::json::array();
-
-                for (const auto name : names)
-                {
-                    arrayJson.push_back(std::string(name));
-                }
-
-                return arrayJson;
-            } // GCOVR_EXCL_LINE
-
             [[nodiscard]] nlohmann::json voxelSchema()
             {
                 nlohmann::json arraySchema;
