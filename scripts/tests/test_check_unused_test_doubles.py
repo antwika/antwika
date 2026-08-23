@@ -11,6 +11,8 @@ SCRIPT_PATH = (
     Path(__file__).resolve().parent.parent / "check_unused_test_doubles.py"
 )
 
+sys.path.insert(0, str(SCRIPT_PATH.parent))
+
 spec = importlib.util.spec_from_file_location(
     "check_unused_test_doubles", SCRIPT_PATH
 )

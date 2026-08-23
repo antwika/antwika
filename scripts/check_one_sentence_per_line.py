@@ -6,24 +6,14 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-DEFAULT_ROOT = Path(__file__).resolve().parent.parent
-
-MARKDOWN_GLOBS = (
-    "README.md",
+from repofiles import (
+    DEFAULT_ROOT,
+    MARKDOWN_GLOBS,
+    CPP_GLOBS,
+    PYTHON_GLOBS,
+    find_paths,
 )
 
-CPP_GLOBS = (
-    "src/**/*.cpp",
-    "src/**/*.hpp",
-    "backends/**/*.cpp",
-    "backends/**/*.hpp",
-)
-PYTHON_GLOBS = (
-    "scripts/*.py",
-    "scripts/tests/*.py",
-    "conanfile.py",
-    "src/libs/*/conanfile.py",
-)
 
 ABBREVIATIONS = ("e.g.", "i.e.", "etc.", "vs.", "cf.", "approx.")
 CODE_SPAN = re.compile(r"`[^`]*`")

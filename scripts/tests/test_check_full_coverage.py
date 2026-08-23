@@ -12,6 +12,8 @@ SCRIPT_PATH = (
     Path(__file__).resolve().parent.parent / "check_full_coverage.py"
 )
 
+sys.path.insert(0, str(SCRIPT_PATH.parent))
+
 spec = importlib.util.spec_from_file_location(
     "check_full_coverage", SCRIPT_PATH
 )

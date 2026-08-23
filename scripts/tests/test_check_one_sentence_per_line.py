@@ -9,6 +9,8 @@ SCRIPT_PATH = (
     Path(__file__).resolve().parent.parent / "check_one_sentence_per_line.py"
 )
 
+sys.path.insert(0, str(SCRIPT_PATH.parent))
+
 spec = importlib.util.spec_from_file_location(
     "check_one_sentence_per_line", SCRIPT_PATH
 )

@@ -4,20 +4,8 @@ import argparse
 import sys
 from pathlib import Path
 
-DEFAULT_ROOT = Path(__file__).resolve().parent.parent
+from repofiles import DEFAULT_ROOT, CPP_GLOBS, PYTHON_GLOBS, find_paths
 
-CPP_GLOBS = (
-    "src/**/*.cpp",
-    "src/**/*.hpp",
-    "backends/**/*.cpp",
-    "backends/**/*.hpp",
-)
-PYTHON_GLOBS = (
-    "scripts/*.py",
-    "scripts/tests/*.py",
-    "conanfile.py",
-    "src/libs/*/conanfile.py",
-)
 
 MAX_LINE_LENGTH = 80
 
@@ -39,7 +27,6 @@ def find_violations(root: Path) -> list[tuple[Path, int, int]]:
                 violations.append((path, line_no, length))
 
     return violations
-
 
 
 def find_paths(root: Path, pattern: str) -> list:
