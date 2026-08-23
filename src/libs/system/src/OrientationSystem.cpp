@@ -1,6 +1,7 @@
 #include "antwika/system/OrientationSystem.hpp"
 
 #include <algorithm>
+#include <antwika/component/TurnIntent.hpp>
 #include <antwika/component/Orientation.hpp>
 
 namespace antwika::system
@@ -19,7 +20,10 @@ namespace antwika::system
             world.set<component::Orientation>(
                 entity,
                 rules::rotatedBy(
-                    world.get<component::Orientation>(entity), *lookKeys));
+                    world.get<component::Orientation>(entity),
+                    component::TurnIntent{
+                        .axisX = lookKeys->axisX(),
+                        .axisZ = lookKeys->axisZ()}));
         }
     }
 

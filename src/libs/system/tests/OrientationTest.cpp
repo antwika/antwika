@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <antwika/component/TurnIntent.hpp>
 #include <antwika/component/Orientation.hpp>
 #include <antwika/ecs/OpenPhase.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
@@ -27,6 +28,13 @@ namespace
 
     constexpr float kTolerance = 0.0001F;
 
+    [[nodiscard]] antwika::component::TurnIntent intentOf(
+        const DirectionKeys keys)
+    {
+        return antwika::component::TurnIntent{
+            .axisX = keys.axisX(), .axisZ = keys.axisZ()};
+    }
+
 }
 
 TEST(OrientationTest, RotatedBy_CarriesAnOrientationTheWayThatIsHeld)
@@ -34,7 +42,7 @@ TEST(OrientationTest, RotatedBy_CarriesAnOrientationTheWayThatIsHeld)
     const auto orientation =
         rotatedBy(
             Orientation{},
-            DirectionKeys{.north = true, .east = true});
+            intentOf(DirectionKeys{.north = true, .east = true}));
 
     EXPECT_NEAR(orientation.yaw, kTurnRate, kTolerance);
     EXPECT_NEAR(orientation.pitch, -kTurnRate, kTolerance);
@@ -44,8 +52,12 @@ TEST(OrientationTest, RotatedBy_LeavesAnOrientationHeldBothWaysWhereItWas)
 {
     const auto orientation = rotatedBy(
         Orientation{.yaw = 0.5F, .pitch = 0.25F},
-        DirectionKeys{
-            .north = true, .south = true, .west = true, .east = true});
+        intentOf(
+            DirectionKeys{
+                .north = true,
+                .south = true,
+                .west = true,
+                .east = true}));
 
     EXPECT_NEAR(orientation.yaw, 0.5F, kTolerance);
     EXPECT_NEAR(orientation.pitch, 0.25F, kTolerance);

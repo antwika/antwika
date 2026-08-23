@@ -1,7 +1,7 @@
 #pragma once
 
 #include <antwika/component/Orientation.hpp>
-#include <antwika/input/DirectionKeys.hpp>
+#include <antwika/component/TurnIntent.hpp>
 
 namespace antwika::rules
 {
@@ -11,7 +11,8 @@ namespace antwika::rules
     inline constexpr float kMaxPitch = 1.0F;
 
     [[nodiscard]] component::Orientation rotatedBy(
-        component::Orientation orientation, input::DirectionKeys keys);
+        component::Orientation orientation,
+        component::TurnIntent intent);
 
     [[nodiscard]] component::Orientation turnedBy(
         component::Orientation orientation, float byYaw, float byPitch);

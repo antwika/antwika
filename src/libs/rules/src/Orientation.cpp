@@ -21,12 +21,12 @@ namespace antwika::rules
 
     component::Orientation rotatedBy(
         const component::Orientation orientation,
-        const input::DirectionKeys keys)
+        const component::TurnIntent intent)
     {
         return turnedBy(
             orientation,
-            keys.axisX() * kTurnRate,
-            keys.axisZ() * kTurnRate);
+            intent.axisX * kTurnRate,
+            intent.axisZ * kTurnRate);
     }
 
 }

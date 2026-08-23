@@ -7,7 +7,6 @@ antwika_add_library(
         src/Orientation.cpp
     DEPENDS
         antwika::component
-        antwika::input
         antwika::tilemap
         antwika::time
         antwika::voxel
