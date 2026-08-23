@@ -5,6 +5,7 @@
 
 #include <antwika/gfx/fakes/FakeBareTarget.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
+#include <antwika/gfx/Math3D.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/PointF.hpp>
 #include <antwika/gfx/Rect.hpp>
@@ -20,6 +21,7 @@ using antwika::gfx::Size;
 using antwika::gfx::SizeF;
 using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::fakes::FakeBareTarget;
+using ::testing::_;
 using ::testing::InSequence;
 using ::testing::NiceMock;
 
@@ -104,6 +106,36 @@ TEST(RenderScopesTest, ClipScope_EndsTheClipWhenAThrowLeavesTheScope)
             const auto scope = renderer.clipScope(kAreaRect);
 
             throw std::runtime_error("the panel gave up part way");
+        },
+        std::runtime_error);
+}
+
+TEST(RenderScopesTest, TransformScope_PopsTheTransformWhenItGoesOutOfScope)
+{
+    NiceMock<MockRenderer> renderer;
+    const InSequence order;
+
+    EXPECT_CALL(renderer, pushTransform(_));
+    EXPECT_CALL(renderer, popTransform());
+
+    {
+        const auto scope =
+            renderer.transformScope(antwika::gfx::identityMatrix());
+    }
+}
+
+TEST(RenderScopesTest, TransformScope_PopsWhenAThrowLeavesTheScope)
+{
+    NiceMock<MockRenderer> renderer;
+
+    EXPECT_CALL(renderer, popTransform());
+
+    EXPECT_THROW(
+        {
+            const auto scope =
+                renderer.transformScope(antwika::gfx::identityMatrix());
+
+            throw std::runtime_error("the pass gave up part way");
         },
         std::runtime_error);
 }

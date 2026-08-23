@@ -7,7 +7,7 @@
 #include <utility>
 
 #include <antwika/gfx/Color.hpp>
-#include <antwika/gfx/IRenderer.hpp>
+#include <antwika/gfx/ISurfaceRenderer.hpp>
 #include <antwika/gfx/PointF.hpp>
 #include <antwika/gfx/RectF.hpp>
 #include <antwika/ui/Context.hpp>
@@ -185,7 +185,7 @@ namespace antwika::editor
     }
 
     inline void drawOutline(
-        gfx::IRenderer &renderer,
+        gfx::ISurfaceRenderer &renderer,
         const gfx::RectF whereRect,
         const gfx::Color lineColor)
     {
