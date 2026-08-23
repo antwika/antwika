@@ -5,6 +5,7 @@
 #include <antwika/map/MapFile.hpp>
 #include <antwika/map/MapFileError.hpp>
 
+#include "MapFileTables.hpp"
 #include "MapFileShared2.hpp"
 
 namespace antwika::map::mapfile
@@ -146,12 +147,11 @@ namespace antwika::map::mapfile
 
     void readGates(Map &map, const nlohmann::json &documentJson)
     {
-        map.keyPositions = readCells(documentJson[std::string(kKeysKey)]);
-        map.doorPositions = readCells(documentJson[std::string(kDoorsKey)]);
-        map.checkpointPositions =
-            readCells(documentJson[std::string(kCheckpointsKey)]);
-        map.foodPositions = readCells(documentJson[std::string(kFoodKey)]);
-        map.waterPositions = readCells(documentJson[std::string(kWaterKey)]);
+        for (const auto &row : kGateRows)
+        {
+            map.*(row.cells) =
+                readCells(documentJson[std::string(row.key)]);
+        }
         map.exitLocked =
             documentJson[std::string(kExitLockedKey)].get<bool>();
     }

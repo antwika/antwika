@@ -4,6 +4,7 @@
 
 #include <antwika/map/MapFile.hpp>
 
+#include "MapFileTables.hpp"
 #include "MapFileShared2.hpp"
 
 namespace antwika::map::mapfile
@@ -78,28 +79,17 @@ namespace antwika::map::mapfile
 
         document[std::string(kTransitionsKey)] = transitions;
 
-        const auto cells =
-            [&document](
-                const std::string_view key,
-                const std::vector<voxel::VoxelPosition> &voxelCells)
+        for (const auto &row : kGateRows)
         {
             auto arrayJson = nlohmann::json::array();
 
-            for (const auto cell : voxelCells)
+            for (const auto cell : map.*(row.cells))
             {
-                arrayJson.push_back(
-                    nlohmann::json::array(
-                        {cell.x, cell.y, cell.z}));
+                arrayJson.push_back(jsonOf(cell));
             }
 
-            document[std::string(key)] = arrayJson;
-        };
-
-        cells(kKeysKey, map.keyPositions);
-        cells(kDoorsKey, map.doorPositions);
-        cells(kCheckpointsKey, map.checkpointPositions);
-        cells(kFoodKey, map.foodPositions);
-        cells(kWaterKey, map.waterPositions);
+            document[std::string(row.key)] = arrayJson;
+        }
         document[std::string(kExitLockedKey)] =
             map.exitLocked;
     }
