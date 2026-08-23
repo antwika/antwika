@@ -91,7 +91,6 @@ namespace antwika::editor
         editLevel =
             antwika::voxel::cubeIndexOfLevel(voxelmap::topLevel(
                     document.map.voxels));
-        rebuildWorld();
 
         atlasSheets.open(
             viewportRenderer,
@@ -133,6 +132,8 @@ namespace antwika::editor
         cornerJoining = document.map.settings.cornersJoined
                       ? solver::CornerSeams::Included
                       : solver::CornerSeams::Ignored;
+
+        rebuildWorld();
 
         if (playOnly)
         {

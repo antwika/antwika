@@ -6,6 +6,10 @@
 #include <antwika/gfx/NullBackend.hpp>
 #include <antwika/input/NullInputBackend.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
+#include <antwika/map/MapFile.hpp>
+#include <antwika/testing/ScratchDirectory.hpp>
+#include <antwika/tile/Transitions.hpp>
+#include <antwika/tilemap/Tilemap.hpp>
 
 #include "antwika/editor/Editor.hpp"
 
@@ -14,6 +18,7 @@ using antwika::gfx::NullBackend;
 using antwika::input::NullInputBackend;
 using antwika::log::Level;
 using antwika::log::mocks::MockLogger;
+using antwika::testing::ScratchDirectory;
 using ::testing::_;
 using ::testing::HasSubstr;
 using ::testing::NiceMock;
@@ -58,5 +63,31 @@ TEST_F(EditorTest, Editor_OpensStraightIntoPlayWhenItIsAskedTo)
     EXPECT_NO_THROW({
         const Editor editor(
             logger, backend, inputs, std::string(kMissingMapPath), true);
+    });
+}
+
+TEST_F(EditorTest, Editor_OpensAMapWhoseTilesTransitionIntoOneAnother)
+{
+    const ScratchDirectory scratch("editor-transitions");
+    const auto mapPath = scratch.pathIn("transitions.json");
+
+    antwika::map::Map drawnMap;
+    drawnMap.tilemap = antwika::tilemap::defaultTilemap();
+    drawnMap.settings.cornersJoined = true;
+    drawnMap.transitions.push_back(
+        antwika::tile::TransitionTile{
+            .fromTile = {.atlas = antwika::tilemap::Atlas::Wall,
+                         .index = 0},
+            .toTile = {.atlas = antwika::tilemap::Atlas::Wall,
+                       .index = 1},
+            .maskTile = {.atlas = antwika::tilemap::Atlas::Wall,
+                         .index = 2},
+            .outputTile = {.atlas = antwika::tilemap::Atlas::Wall,
+                           .index = 3}});
+
+    antwika::map::saveMap(mapPath, drawnMap);
+
+    EXPECT_NO_THROW({
+        const Editor editor(logger, backend, inputs, mapPath);
     });
 }
