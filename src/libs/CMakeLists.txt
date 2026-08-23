@@ -5,6 +5,7 @@ endif()
 
 add_subdirectory(enums)
 add_subdirectory(widget)
+add_subdirectory(intent)
 add_subdirectory(geometry)
 add_subdirectory(voxel)
 add_subdirectory(cli)

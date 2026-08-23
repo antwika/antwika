@@ -22,6 +22,7 @@ antwika_add_library(
         src/PointerHintSource.cpp
         src/StopOnKeySource.cpp
     DEPENDS
+        antwika::intent
         antwika::schema
         antwika::enums
         antwika::engine

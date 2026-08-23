@@ -2,7 +2,7 @@
 
 #include <antwika/ecs/ISystem.hpp>
 #include <antwika/ecs/World.hpp>
-#include <antwika/input/DirectionKeys.hpp>
+#include <antwika/intent/DirectionKeys.hpp>
 #include <antwika/time/Tick.hpp>
 #include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxel/Voxels.hpp>
@@ -15,8 +15,8 @@ namespace antwika::system
     {
     public:
         MoveIntentSystem(
-            const input::DirectionKeys &wasdKeys,
-            const input::DirectionKeys &arrowKeys) noexcept;
+            const intent::DirectionKeys &wasdKeys,
+            const intent::DirectionKeys &arrowKeys) noexcept;
 
         void setFrozen(bool frozen) noexcept;
 
@@ -30,8 +30,8 @@ namespace antwika::system
         void update(ecs::World &world, time::Tick tick) override;
 
     private:
-        const input::DirectionKeys *wasdKeys;
-        const input::DirectionKeys *arrowKeys;
+        const intent::DirectionKeys *wasdKeys;
+        const intent::DirectionKeys *arrowKeys;
         bool frozen = false;
         bool running = false;
         bool steering = false;

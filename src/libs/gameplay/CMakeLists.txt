@@ -39,7 +39,7 @@ antwika_add_library(
         antwika::ecs
         antwika::enums
         antwika::gfx
-        antwika::input
+        antwika::intent
         antwika::light
         antwika::log
         antwika::map

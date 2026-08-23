@@ -11,7 +11,7 @@
 #include <antwika/ecs/Entity.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/gfx/Math3D.hpp>
-#include <antwika/input/DirectionKeys.hpp>
+#include <antwika/intent/DirectionKeys.hpp>
 #include <antwika/map/PlayerProgress.hpp>
 #include <antwika/time/Tick.hpp>
 #include <antwika/voxel/VoxelPosition.hpp>
@@ -46,10 +46,10 @@ namespace antwika::gameplay
 
         virtual void setPlayer(ecs::Entity entity) noexcept = 0;
 
-        [[nodiscard]] virtual input::DirectionKeys &wasdKeys()
+        [[nodiscard]] virtual intent::DirectionKeys &wasdKeys()
             noexcept = 0;
 
-        [[nodiscard]] virtual input::DirectionKeys &arrowKeys()
+        [[nodiscard]] virtual intent::DirectionKeys &arrowKeys()
             noexcept = 0;
 
         virtual void setWalkerFrozen(bool frozen) noexcept = 0;

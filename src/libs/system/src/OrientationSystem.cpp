@@ -8,7 +8,7 @@ namespace antwika::system
 {
 
     OrientationSystem::OrientationSystem(
-        const input::DirectionKeys &lookKeys) noexcept
+        const intent::DirectionKeys &lookKeys) noexcept
         : lookKeys(&lookKeys)
     {
     }
