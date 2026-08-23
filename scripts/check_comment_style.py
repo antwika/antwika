@@ -9,30 +9,17 @@ import tokenize
 from dataclasses import dataclass
 from pathlib import Path
 
-DEFAULT_ROOT = Path(__file__).resolve().parent.parent
-
-CPP_GLOBS = (
-    "src/**/*.cpp",
-    "src/**/*.hpp",
-    "backends/**/*.cpp",
-    "backends/**/*.hpp",
+from repofiles import (
+    DEFAULT_ROOT,
+    CPP_GLOBS,
+    PYTHON_GLOBS,
+    CMAKE_GLOBS,
+    YAML_GLOBS,
+    SHELL_GLOBS,
+    DOCKER_GLOBS,
+    find_paths,
 )
 
-PYTHON_GLOBS = (
-    "scripts/*.py",
-    "scripts/tests/*.py",
-    "conanfile.py",
-    "src/libs/*/conanfile.py",
-)
-CMAKE_GLOBS = (
-    "cmake/*.cmake",
-    "CMakeLists.txt",
-    "src/**/CMakeLists.txt",
-    "backends/**/CMakeLists.txt",
-)
-YAML_GLOBS = (".github/workflows/*.yml",)
-SHELL_GLOBS = ("scripts/*.sh",)
-DOCKER_GLOBS = (".devcontainer/*/Dockerfile",)
 
 DOCKER_DIRECTIVES = ("# syntax=", "# escape=")
 
@@ -1248,7 +1235,6 @@ def find_violations(root: Path) -> list[Violation]:
                     )
 
     return violations
-
 
 
 def find_paths(root: Path, pattern: str) -> list:

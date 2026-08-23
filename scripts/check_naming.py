@@ -7,14 +7,8 @@ from collections.abc import Iterator
 from dataclasses import dataclass, replace
 from pathlib import Path
 
-DEFAULT_ROOT = Path(__file__).resolve().parent.parent
+from repofiles import DEFAULT_ROOT, CPP_GLOBS, find_paths
 
-CPP_GLOBS = (
-    "src/**/*.cpp",
-    "src/**/*.hpp",
-    "backends/**/*.cpp",
-    "backends/**/*.hpp",
-)
 
 NOT_LOWER_CAMEL = "not lowerCamelCase"
 
@@ -1312,7 +1306,6 @@ def find_violations(root: Path) -> list[Violation]:
         )
 
     return judge(sites, declared, namespaces) + judge_part_of_speech(aside)
-
 
 
 def find_paths(root: Path, pattern: str) -> list:

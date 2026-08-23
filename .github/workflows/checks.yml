@@ -29,6 +29,10 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
 
+      - name: Test repofiles module
+        shell: bash
+        run: python3 scripts/tests/test_repofiles.py
+
       - name: Test check-unused-test-doubles script
         shell: bash
         run: python3 scripts/tests/test_check_unused_test_doubles.py

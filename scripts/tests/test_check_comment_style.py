@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 
 import importlib.util
+import sys
 import tempfile
 from pathlib import Path
 
 SCRIPT_PATH = (
     Path(__file__).resolve().parent.parent / "check_comment_style.py"
 )
+
+sys.path.insert(0, str(SCRIPT_PATH.parent))
 
 spec = importlib.util.spec_from_file_location(
     "check_comment_style", SCRIPT_PATH

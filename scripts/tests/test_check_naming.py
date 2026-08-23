@@ -8,6 +8,8 @@ from pathlib import Path
 SCRIPT = Path(__file__).resolve().parent.parent / "check_naming.py"
 DEFAULT_ROOT = SCRIPT.parent.parent
 
+sys.path.insert(0, str(SCRIPT.parent))
+
 spec = importlib.util.spec_from_file_location("check_naming", SCRIPT)
 check_naming = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(check_naming)
