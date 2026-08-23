@@ -190,15 +190,7 @@ namespace antwika::map
 
         if (map.camera.has_value())
         {
-            camera[std::string(kAtKey)] = nlohmann::json::array(
-                {toFixed(map.camera->transform.position.x),
-                 toFixed(map.camera->transform.position.y),
-                 toFixed(map.camera->transform.position.z)});
-            camera[std::string(kYawKey)] =
-                toFixed(map.camera->transform.yaw);
-            camera[std::string(kPitchKey)] =
-                toFixed(map.camera->transform.pitch);
-            camera[std::string(kZoomKey)] = map.camera->zoom;
+            camera = written(kCameraFields, *map.camera);
         }
 
         const auto settings = written(kSettingsFields, map.settings);

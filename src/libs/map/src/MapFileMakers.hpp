@@ -290,6 +290,68 @@ namespace antwika::map::mapfile
             }};
     }
 
+    template <auto Outer, auto Inner>
+    [[nodiscard]] constexpr Field nestedPlaceField(
+        const std::string_view key)
+    {
+        return Field{
+            .key = key,
+            .shape = &fixedPlaceShape,
+            .valueOf = [](const void *record)
+            {
+                const auto place = memberOf<Outer>(record).*Inner;
+
+                return nlohmann::json::array(
+                    {toFixed(place.x),
+                     toFixed(place.y),
+                     toFixed(place.z)});
+            },
+            .setFrom = [](void *record, const nlohmann::json &json)
+            {
+                memberIn<Outer>(record).*Inner = gfx::Vec3{
+                    fromFixed(json[0].get<std::int64_t>()),
+                    fromFixed(json[1].get<std::int64_t>()),
+                    fromFixed(json[2].get<std::int64_t>())};
+            }};
+    }
+
+    template <auto Outer, auto Inner>
+    [[nodiscard]] constexpr Field nestedFixedField(
+        const std::string_view key)
+    {
+        return Field{
+            .key = key,
+            .shape = []
+            {
+                return wholeSchema(
+                    -kMaxCameraCoord, kMaxCameraCoord);
+            },
+            .valueOf = [](const void *record)
+            {
+                return nlohmann::json(
+                    toFixed(memberOf<Outer>(record).*Inner));
+            },
+            .setFrom = [](void *record, const nlohmann::json &json)
+            {
+                memberIn<Outer>(record).*Inner =
+                    fromFixed(json.get<std::int64_t>());
+            }};
+    }
+
+    [[nodiscard]] inline nlohmann::json orNullShape(
+        nlohmann::json shape)
+    {
+        nlohmann::json nullShape;
+
+        nullShape["type"] = "null";
+
+        nlohmann::json either;
+
+        either["oneOf"] = {std::move(shape), nullShape};
+
+        return either;
+    } // GCOVR_EXCL_LINE
+
     template <auto Member, const auto &Table>
     [[nodiscard]] constexpr Field recordField(
         const std::string_view key)

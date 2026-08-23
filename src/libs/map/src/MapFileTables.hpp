@@ -95,6 +95,24 @@ namespace antwika::map::mapfile
         tileListField<&decor::DecorTile::spanTiles, 1,
             decor::kMaxDecorSpan * decor::kMaxDecorSpan>(kMembersKey)};
 
+    struct MarkedCube final
+    {
+        voxel::VoxelPosition position{};
+    };
+
+    inline constexpr std::array<Field, 1> kMarkedCubeFields{
+        cellField<&MarkedCube::position>(kAtKey)};
+
+    inline constexpr std::array<Field, 4> kCameraFields{
+        nestedPlaceField<&CameraView::transform,
+            &camera::CameraTransform::position>(kAtKey),
+        nestedFixedField<&CameraView::transform,
+            &camera::CameraTransform::yaw>(kYawKey),
+        nestedFixedField<&CameraView::transform,
+            &camera::CameraTransform::pitch>(kPitchKey),
+        wholeField<&CameraView::zoom, camera::kMinZoom,
+            camera::kMaxZoom>(kZoomKey)};
+
     using KindRow = std::pair<tilemap::Tile, voxel::Kind>;
 
     using FacingRow = std::pair<tilemap::Tile, voxel::Facing>;
