@@ -40,7 +40,7 @@ namespace antwika::editor
         Eraser,
     };
 
-    [[nodiscard]] constexpr ToolButton lastEnumerator(ToolButton) noexcept
+    [[nodiscard]] constexpr ToolButton getLastEnumerator(ToolButton) noexcept
     {
         return ToolButton::Eraser;
     }
@@ -51,7 +51,7 @@ namespace antwika::editor
     inline constexpr std::array<map::Paint, enums::kCount<map::Paint>>
         kEveryPaint = enums::kAll<map::Paint>;
 
-    [[nodiscard]] gfx::Rect mirrorIcon();
+    [[nodiscard]] gfx::Rect getMirrorIcon();
 
     inline constexpr widget::WidgetId kMirrorWidget{203};
 
@@ -82,21 +82,21 @@ namespace antwika::editor
 
     [[nodiscard]] gfx::Rect iconOf(voxel::StairHalf whichHalf);
 
-    [[nodiscard]] widget::WidgetId toolWidget(ToolButton whichButton);
+    [[nodiscard]] widget::WidgetId getToolWidget(ToolButton whichButton);
 
-    [[nodiscard]] widget::WidgetId paintWidget(map::Paint whichPaint);
+    [[nodiscard]] widget::WidgetId getPaintWidget(map::Paint whichPaint);
 
-    [[nodiscard]] widget::WidgetId kindWidget(voxel::Kind whichKind);
+    [[nodiscard]] widget::WidgetId getKindWidget(voxel::Kind whichKind);
 
-    [[nodiscard]] widget::WidgetId facingWidget(voxel::Facing whichFacing);
+    [[nodiscard]] widget::WidgetId getFacingWidget(voxel::Facing whichFacing);
 
-    [[nodiscard]] widget::WidgetId levelWidget(voxel::StairHalf whichHalf);
+    [[nodiscard]] widget::WidgetId getLevelWidget(voxel::StairHalf whichHalf);
 
     inline constexpr widget::WidgetId kPartFrontWidget{180};
 
     inline constexpr widget::WidgetId kPartSideWidget{181};
 
-    [[nodiscard]] widget::WidgetId partWidget(voxel::StairPart whichPart);
+    [[nodiscard]] widget::WidgetId getPartWidget(voxel::StairPart whichPart);
 
     inline constexpr widget::WidgetId kToolPanelWidget{64};
 
@@ -148,7 +148,7 @@ namespace antwika::editor
 
     inline constexpr widget::WidgetId kFigureLineAddWidget{252};
 
-    [[nodiscard]] widget::WidgetId figureWidget(std::size_t figureIndex);
+    [[nodiscard]] widget::WidgetId getFigureWidget(std::size_t figureIndex);
 
     inline constexpr float kToolButtonGap = 4.0F;
 

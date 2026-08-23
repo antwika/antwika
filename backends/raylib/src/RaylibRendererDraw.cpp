@@ -90,7 +90,7 @@ void RaylibRenderer::drawRect(RectF rect, Color color)
             return;
         }
 
-        if (!blitIsInBounds(mine->size(), sourceRect, destinationRect))
+        if (!isBlitIsInBounds(mine->getSize(), sourceRect, destinationRect))
         {
             return;
         }
@@ -115,7 +115,7 @@ void RaylibRenderer::drawRect(RectF rect, Color color)
             .height = destinationRect.size.height};
 
         DrawTexturePro(
-            mine->raw(),
+            mine->getRawHandle(),
             sourceRectangle,
             destinationRectangle,
             ::Vector2{.x = 0.0F, .y = 0.0F},
@@ -262,15 +262,15 @@ void RaylibRenderer::drawRect(RectF rect, Color color)
 
         inTarget = mine;
 
-        rlEnableFramebuffer(mine->frameBuffer());
+        rlEnableFramebuffer(mine->getFrameBuffer());
         rlViewport(
             0,
             0,
-            static_cast<int>(mine->size().width),
-            static_cast<int>(mine->size().height));
-        rlSetFramebufferWidth(static_cast<int>(mine->size().width));
-        rlSetFramebufferHeight(static_cast<int>(mine->size().height));
-        setOrthoProjection(mine->size());
+            static_cast<int>(mine->getSize().width),
+            static_cast<int>(mine->getSize().height));
+        rlSetFramebufferWidth(static_cast<int>(mine->getSize().width));
+        rlSetFramebufferHeight(static_cast<int>(mine->getSize().height));
+        setOrthoProjection(mine->getSize());
     }
 
     void RaylibRenderer::beginTargetRegion(
@@ -295,7 +295,7 @@ void RaylibRenderer::drawRect(RectF rect, Color color)
 
         inTarget = mine;
 
-        rlEnableFramebuffer(mine->frameBuffer());
+        rlEnableFramebuffer(mine->getFrameBuffer());
 
         inRegionRect = regionRect;
 
@@ -314,7 +314,7 @@ void RaylibRenderer::drawRect(RectF rect, Color color)
         }
 
         const auto targetHeight =
-            static_cast<int>(inTarget->size().height)
+            static_cast<int>(inTarget->getSize().height)
             - inRegionRect->originPoint.y
             - static_cast<int>(inRegionRect->size.height);
 
@@ -398,8 +398,8 @@ void RaylibRenderer::drawRect(RectF rect, Color color)
         const ::Matrix wasModelview = rlGetMatrixModelview();
         const bool blended = surfaceMaterial.blend == BlendMode::Alpha;
 
-        rlSetMatrixProjection(toRaylib(camera.projectionMatrix()));
-        rlSetMatrixModelview(toRaylib(camera.view()));
+        rlSetMatrixProjection(toRaylib(camera.getProjectionMatrix()));
+        rlSetMatrixModelview(toRaylib(camera.getView()));
         rlEnableDepthTest();
 
         if (blended)
@@ -407,7 +407,7 @@ void RaylibRenderer::drawRect(RectF rect, Color color)
             rlDisableDepthMask();
         }
 
-        DrawMesh(mine->raw(), material->raw(), toRaylib(modelMatrix));
+        DrawMesh(mine->getRawHandle(), material->getRawHandle(), toRaylib(modelMatrix));
 
         if (blended)
         {

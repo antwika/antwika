@@ -18,7 +18,7 @@ using antwika::ecs::World;
 namespace fakes = antwika::gameplay::fakes;
 
 using antwika::gameplay::Phase;
-using antwika::gameplay::phaseName;
+using antwika::gameplay::getPhaseName;
 using antwika::gameplay::kPhaseCount;
 using antwika::gameplay::kAllPhases;
 using antwika::gameplay::GameLoop;
@@ -28,7 +28,7 @@ using ::testing::NiceMock;
 TEST(GameLoopTest, Phases_EndWithHealth)
 {
     EXPECT_EQ(kAllPhases.back(), Phase::Health);
-    EXPECT_EQ(phaseName(Phase::Health), "health");
+    EXPECT_EQ(getPhaseName(Phase::Health), "health");
 }
 
 TEST(GameLoopTest, PhaseName_GivesEveryPhaseAName)
@@ -37,7 +37,7 @@ TEST(GameLoopTest, PhaseName_GivesEveryPhaseAName)
 
     for (const auto phase : kAllPhases)
     {
-        names.push_back(phaseName(phase));
+        names.push_back(getPhaseName(phase));
     }
 
     EXPECT_EQ(names.size(), kPhaseCount);
@@ -69,12 +69,12 @@ TEST(GameLoopTest, Run_SettlesAPhaseBeforeTheNextBegins)
     NiceMock<MockLogger> logger;
     World world(logger);
     GameLoop gameLoop(world);
-    const auto entity = gameLoop.world().create();
+    const auto entity = gameLoop.getWorld().create();
 
     {
-        const OpenPhase phase(gameLoop.world());
+        const OpenPhase phase(gameLoop.getWorld());
 
-        gameLoop.world().add<fakes::UpdateCount>(entity, fakes::UpdateCount{});
+        gameLoop.getWorld().add<fakes::UpdateCount>(entity, fakes::UpdateCount{});
     }
 
     std::vector<int> seenOrder;
@@ -93,12 +93,12 @@ TEST(GameLoopTest, Run_HidesWhatItsOwnPhaseIsStillWriting)
     NiceMock<MockLogger> logger;
     World world(logger);
     GameLoop gameLoop(world);
-    const auto entity = gameLoop.world().create();
+    const auto entity = gameLoop.getWorld().create();
 
     {
-        const OpenPhase phase(gameLoop.world());
+        const OpenPhase phase(gameLoop.getWorld());
 
-        gameLoop.world().add<fakes::UpdateCount>(entity, fakes::UpdateCount{});
+        gameLoop.getWorld().add<fakes::UpdateCount>(entity, fakes::UpdateCount{});
     }
 
     std::vector<int> seenOrder;

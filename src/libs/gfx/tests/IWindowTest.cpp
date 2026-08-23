@@ -25,8 +25,8 @@ TEST(IWindowTest, ConfiguredSize_DefaultsToTheReportedSize)
 {
     const FakeUnresizableWindow window(Size{.width = 320, .height = 240});
 
-    ASSERT_EQ(window.size(), (Size{.width = 320, .height = 240}));
-    EXPECT_EQ(window.configuredSize(), window.size());
+    ASSERT_EQ(window.getSize(), (Size{.width = 320, .height = 240}));
+    EXPECT_EQ(window.getConfiguredSize(), window.getSize());
 }
 
 TEST(IWindowTest, ConfiguredSize_DefaultFollowsWhateverSizeReports)
@@ -34,9 +34,9 @@ TEST(IWindowTest, ConfiguredSize_DefaultFollowsWhateverSizeReports)
     const FakeUnresizableWindow smallWindow(Size{.width = 1, .height = 2});
     const FakeUnresizableWindow largeWindow(Size{.width = 800, .height = 600});
 
-    EXPECT_EQ(smallWindow.configuredSize(), (Size{.width = 1, .height = 2}));
+    EXPECT_EQ(smallWindow.getConfiguredSize(), (Size{.width = 1, .height = 2}));
     EXPECT_EQ(
-        largeWindow.configuredSize(),
+        largeWindow.getConfiguredSize(),
         (Size{.width = 800, .height = 600}));
 }
 
@@ -46,5 +46,5 @@ TEST(IWindowTest, SetSize_IsIgnoredByAWindowWithoutLiveResize)
 
     window.setSize(Size{.width = 800, .height = 600});
 
-    EXPECT_EQ(window.size(), (Size{.width = 320, .height = 240}));
+    EXPECT_EQ(window.getSize(), (Size{.width = 320, .height = 240}));
 }

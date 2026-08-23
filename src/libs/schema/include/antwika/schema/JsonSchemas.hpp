@@ -10,21 +10,21 @@
 namespace antwika::schema
 {
 
-    [[nodiscard]] nlohmann::json countSchema();
+    [[nodiscard]] nlohmann::json getCountSchema();
 
-    [[nodiscard]] nlohmann::json boundedCountSchema(std::int64_t maximum);
+    [[nodiscard]] nlohmann::json getBoundedCountSchema(std::int64_t maximum);
 
-    [[nodiscard]] nlohmann::json coordinateSchema();
+    [[nodiscard]] nlohmann::json getCoordinateSchema();
 
-    [[nodiscard]] nlohmann::json wordSchema();
+    [[nodiscard]] nlohmann::json getWordSchema();
 
-    [[nodiscard]] nlohmann::json requiredSchema(
+    [[nodiscard]] nlohmann::json getRequiredSchema(
         std::initializer_list<std::string_view> members);
 
-    [[nodiscard]] nlohmann::json objectSchema(
+    [[nodiscard]] nlohmann::json getObjectSchema(
         std::initializer_list<std::string_view> requiredKeys);
 
-    [[nodiscard]] nlohmann::json documentSchema(
+    [[nodiscard]] nlohmann::json getDocumentSchema(
         std::string_view title,
         std::initializer_list<std::string_view> requiredKeys);
 

@@ -6,7 +6,7 @@
 namespace antwika::ui::detail
 {
 
-    [[nodiscard]] inline std::uint32_t clampToU32(
+    [[nodiscard]] inline std::uint32_t getClampToU32(
         std::uint64_t value) noexcept
     {
         constexpr auto limit = std::numeric_limits<std::uint32_t>::max();

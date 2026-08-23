@@ -14,7 +14,7 @@
 namespace antwika::text
 {
 
-    [[nodiscard]] constexpr gfx::Color glyphPixelColor(
+    [[nodiscard]] constexpr gfx::Color getGlyphPixelColor(
         gfx::Color color, std::uint8_t coverage) noexcept
     {
         return gfx::Color{
@@ -41,7 +41,7 @@ namespace antwika::text
         }
 
         const GlyphCells &cells = cache.at(scale);
-        const gfx::Size size = cells.cellSize();
+        const gfx::Size size = cells.getCellSize();
         const auto step = static_cast<std::int64_t>(size.width);
         const auto top = static_cast<std::int64_t>(originPoint.y);
 
@@ -71,7 +71,7 @@ namespace antwika::text
                                  .y = static_cast<std::int32_t>(
                                      top + row)},
                             .size = {.width = 1, .height = 1}},
-                        glyphPixelColor(color, coverage));
+                        getGlyphPixelColor(color, coverage));
                 }
             }
         }

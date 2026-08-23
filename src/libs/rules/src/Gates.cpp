@@ -6,7 +6,7 @@
 namespace antwika::rules
 {
 
-    std::optional<voxel::VoxelPosition> gateCubeContaining(
+    std::optional<voxel::VoxelPosition> getGateCubeContaining(
         const std::span<const voxel::VoxelPosition> gatePositions,
         const voxel::VoxelPosition position)
     {
@@ -23,7 +23,7 @@ namespace antwika::rules
         return std::nullopt;
     }
 
-    std::optional<voxel::VoxelPosition> adjacentDoor(
+    std::optional<voxel::VoxelPosition> getAdjacentDoor(
         const std::span<const voxel::VoxelPosition> doorPositions,
         const voxel::VoxelPosition standsInPosition)
     {
@@ -35,7 +35,7 @@ namespace antwika::rules
               voxel::VoxelPosition{.z = voxel::kCubeSide},
               voxel::VoxelPosition{.z = -voxel::kCubeSide}})
         {
-            const auto foundCube = gateCubeContaining(
+            const auto foundCube = getGateCubeContaining(
                 doorPositions,
                 voxel::VoxelPosition{
                     .x = middle.x + way.x,
@@ -51,7 +51,7 @@ namespace antwika::rules
         return std::nullopt;
     }
 
-    std::vector<voxel::VoxelPosition> doorwayCells(
+    std::vector<voxel::VoxelPosition> getDoorwayCells(
         const std::span<const voxel::VoxelPosition> doorPositions,
         const voxel::VoxelPosition cornerPosition)
     {
@@ -69,7 +69,7 @@ namespace antwika::rules
         return positions;
     } // GCOVR_EXCL_LINE
 
-    bool cubeOccupied(
+    bool isCubeOccupied(
         const voxel::Voxels &voxels,
         const voxel::VoxelPosition cornerPosition)
     {

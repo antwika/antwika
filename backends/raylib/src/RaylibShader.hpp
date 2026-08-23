@@ -27,7 +27,7 @@ namespace antwika::gfx::raylib
         [[nodiscard]] bool isOwnedBy(
             const RaylibRenderer &candidateRenderer) const noexcept;
 
-        [[nodiscard]] const ::Shader &raw() const noexcept;
+        [[nodiscard]] const ::Shader &getRawHandle() const noexcept;
 
         [[nodiscard]] bool isLoaded() const noexcept;
 

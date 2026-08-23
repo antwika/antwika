@@ -17,10 +17,10 @@ namespace antwika::editor
 
     namespace
     {
-        const worldgen::CompiledRuleset &shippedRules()
+        const worldgen::CompiledRuleset &getShippedRules()
         {
             static const worldgen::CompiledRuleset compiledRuleset(
-                worldgen::cityRuleset());
+                worldgen::getCityRuleset());
 
             return compiledRuleset;
         }
@@ -35,7 +35,7 @@ namespace antwika::editor
             .hintVoxels = solver::hintsFrom(document.map.voxels, growShape,
                 voxel::VoxelPosition{})};
 
-        const auto result = worldgen::growChunk(shippedRules(), request);
+        const auto result = worldgen::getGrowChunk(getShippedRules(), request);
 
         growTroublePositions.clear();
 
@@ -50,17 +50,17 @@ namespace antwika::editor
                         .z = cube.z * voxel::kCubeSide});
             }
 
-            showStatus(solver::growTrouble(result), true);
+            showStatus(solver::getGrowTrouble(result), true);
 
             return;
         }
 
         pushUndo();
 
-        document.map.voxels = solver::withChunkSpliced(
+        document.map.voxels = solver::getWithChunkSpliced(
             std::move(document.map.voxels),
-            worldgen::chunkBox(request.shape, request.originPosition),
-            worldgen::chunkVoxels(result.cubeVoxels));
+            worldgen::getChunkBox(request.shape, request.originPosition),
+            worldgen::getChunkVoxels(result.cubeVoxels));
 
         document.markDirty();
         rebuildWorld();

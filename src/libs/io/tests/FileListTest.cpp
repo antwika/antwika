@@ -10,7 +10,7 @@
 #include "antwika/io/FileList.hpp"
 
 using antwika::io::entriesIn;
-using antwika::io::entryText;
+using antwika::io::getEntryText;
 using antwika::io::FileEntry;
 using antwika::io::kParentEntry;
 using antwika::io::pathIn;
@@ -18,7 +18,7 @@ using antwika::testing::ScratchDirectory;
 
 namespace
 {
-    [[nodiscard]] FileEntry parent()
+    [[nodiscard]] FileEntry getParent()
     {
         return FileEntry{
             .name = std::string{kParentEntry}, .directory = true};
@@ -33,9 +33,9 @@ TEST(FileListTest, EntriesIn_NamesEveryFileInReadingOrder)
     scratchDirectory.write("first.png", "x");
 
     EXPECT_EQ(
-        entriesIn(scratchDirectory.string()),
+        entriesIn(scratchDirectory.getString()),
         (std::vector<FileEntry>{
-            parent(),
+            getParent(),
             FileEntry{.name = "first.png"},
             FileEntry{.name = "second.png"}}));
 }
@@ -48,9 +48,9 @@ TEST(FileListTest, EntriesIn_PutsTheDirectoriesAheadOfTheFiles)
     scratchDirectory.write("alone.png", "x");
 
     EXPECT_EQ(
-        entriesIn(scratchDirectory.string()),
+        entriesIn(scratchDirectory.getString()),
         (std::vector<FileEntry>{
-            parent(),
+            getParent(),
             FileEntry{.name = "nested", .directory = true},
             FileEntry{.name = "alone.png"}}));
 }
@@ -61,7 +61,7 @@ TEST(FileListTest, EntriesIn_LeadsWithTheParentEvenWhenItCannotRead)
 
     EXPECT_EQ(
         entriesIn(scratchDirectory.pathIn("nowhere")),
-        (std::vector<FileEntry>{parent()}));
+        (std::vector<FileEntry>{getParent()}));
 }
 
 TEST(FileListTest, EntriesIn_SortsTheDirectoriesAmongThemselves)
@@ -71,9 +71,9 @@ TEST(FileListTest, EntriesIn_SortsTheDirectoriesAmongThemselves)
     std::filesystem::create_directories(scratchDirectory.pathIn("alpha"));
 
     EXPECT_EQ(
-        entriesIn(scratchDirectory.string()),
+        entriesIn(scratchDirectory.getString()),
         (std::vector<FileEntry>{
-            parent(),
+            getParent(),
             FileEntry{.name = "alpha", .directory = true},
             FileEntry{.name = "beta", .directory = true}}));
 }
@@ -97,14 +97,14 @@ TEST(FileListTest, PathIn_KeepsANameAloneOutOfTheWorkingDirectory)
 TEST(FileListTest, EntryText_MarksADirectoryWithATrailingSlash)
 {
     EXPECT_EQ(
-        entryText(FileEntry{.name = "sprites", .directory = true}),
+        getEntryText(FileEntry{.name = "sprites", .directory = true}),
         "sprites/");
-    EXPECT_EQ(entryText(parent()), "../");
+    EXPECT_EQ(getEntryText(getParent()), "../");
 }
 
 TEST(FileListTest, EntryText_LeavesAFileNameAlone)
 {
-    EXPECT_EQ(entryText(FileEntry{.name = "atlas.png"}), "atlas.png");
+    EXPECT_EQ(getEntryText(FileEntry{.name = "atlas.png"}), "atlas.png");
 }
 
 TEST(FileListTest, FileEntry_ComparesEveryFieldItCarries)
@@ -126,8 +126,8 @@ TEST(FileListTest, EntriesIn_LeavesOutWhatIsNeitherFileNorDirectory)
             "nothing-here"), scratchDirectory.pathIn("dangling"));
 
     EXPECT_EQ(
-        entriesIn(scratchDirectory.string()),
-        (std::vector<FileEntry>{parent()}));
+        entriesIn(scratchDirectory.getString()),
+        (std::vector<FileEntry>{getParent()}));
 }
 
 TEST(FileListTest, EntriesIn_NamesAFileTooLongToSitInsideAString)
@@ -139,8 +139,8 @@ TEST(FileListTest, EntriesIn_NamesAFileTooLongToSitInsideAString)
     scratchDirectory.write(longName, "x");
 
     EXPECT_EQ(
-        entriesIn(scratchDirectory.string()),
-        (std::vector<FileEntry>{parent(), FileEntry{.name = longName}}));
+        entriesIn(scratchDirectory.getString()),
+        (std::vector<FileEntry>{getParent(), FileEntry{.name = longName}}));
 }
 
 TEST(FileListTest, EntriesIn_NamesADirectoryTooLongToSitInsideAString)
@@ -152,9 +152,9 @@ TEST(FileListTest, EntriesIn_NamesADirectoryTooLongToSitInsideAString)
     std::filesystem::create_directories(scratchDirectory.pathIn(longName));
 
     EXPECT_EQ(
-        entriesIn(scratchDirectory.string()),
+        entriesIn(scratchDirectory.getString()),
         (std::vector<FileEntry>{
-            parent(), FileEntry{.name = longName, .directory = true}}));
+            getParent(), FileEntry{.name = longName, .directory = true}}));
 }
 
 TEST(FileListTest, PathIn_JoinsANameTooLongToSitInsideAString)

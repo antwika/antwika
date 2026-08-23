@@ -11,7 +11,7 @@ namespace antwika::render
 
     namespace
     {
-        [[nodiscard]] gfx::RectF pixels(
+        [[nodiscard]] gfx::RectF getPixels(
             const float left,
             const float top,
             const float width,
@@ -22,7 +22,7 @@ namespace antwika::render
                 gfx::SizeF{std::round(width), height});
         }
 
-        [[nodiscard]] float filledWidth(
+        [[nodiscard]] float getFilledWidth(
             const std::uint16_t level) noexcept
         {
             return kHealthBarWide * static_cast<float>(level)
@@ -30,7 +30,7 @@ namespace antwika::render
         }
     }
 
-    std::array<gfx::RectF, kHealthBarParts> healthBars(
+    std::array<gfx::RectF, kHealthBarParts> getHealthBars(
         const gfx::PointF overheadPoint,
         const component::Health health) noexcept
     {
@@ -40,17 +40,17 @@ namespace antwika::render
         const auto foodTop = waterTop - kHealthBarGap - kHealthBarTall;
 
         return {
-            pixels(left, foodTop, kHealthBarWide, kHealthBarTall),
-            pixels(
+            getPixels(left, foodTop, kHealthBarWide, kHealthBarTall),
+            getPixels(
                 left,
                 foodTop,
-                filledWidth(health.food),
+                getFilledWidth(health.food),
                 kHealthBarTall),
-            pixels(left, waterTop, kHealthBarWide, kHealthBarTall),
-            pixels(
+            getPixels(left, waterTop, kHealthBarWide, kHealthBarTall),
+            getPixels(
                 left,
                 waterTop,
-                filledWidth(health.water),
+                getFilledWidth(health.water),
                 kHealthBarTall)};
     } // GCOVR_EXCL_LINE
 

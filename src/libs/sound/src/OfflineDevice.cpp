@@ -61,17 +61,17 @@ namespace antwika::sound
         return doneFrames;
     }
 
-    WaveFormat OfflineDevice::format() const
+    WaveFormat OfflineDevice::getFormat() const
     {
         return wave;
     }
 
-    FrameCount OfflineDevice::bufferFrames() const
+    FrameCount OfflineDevice::getBufferFrames() const
     {
         return bufferCount;
     }
 
-    FrameIndex OfflineDevice::framesPlayed() const
+    FrameIndex OfflineDevice::getFramesPlayed() const
     {
         return playedIndex;
     }

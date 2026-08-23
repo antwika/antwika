@@ -24,7 +24,7 @@ namespace antwika::editor
     void Editor::onPointerMoved(const input::PointerMoved &movedEvent)
     {
         const auto projectToScreen =
-            viewportRenderer.viewport().toCanvas(
+            viewportRenderer.getViewport().toCanvas(
                 antwika::gfx::Point{
                     .x = movedEvent.position.x,
                     .y = movedEvent.position.y});
@@ -72,14 +72,14 @@ namespace antwika::editor
         if (inkPicker.pickerDragging && inkPicker.editingInk.has_value())
         {
             const auto takenColor =
-                colorAtPoint(camera::kCanvasSize, inkPicker.pickerHsv,
+                getColorAtPoint(camera::kCanvasSize, inkPicker.pickerHsv,
                     pointer.pointerOnCanvas);
 
             if (takenColor.has_value())
             {
                 inkPicker.pickerHsv = *takenColor;
                 recolorInk(colorOf(inkPicker.pickerHsv));
-                inkPicker.hexText = colorToHex(
+                inkPicker.hexText = getColorToHex(
                     document.map.paletteColors.at(*inkPicker.editingInk));
             }
         }
@@ -89,7 +89,7 @@ namespace antwika::editor
             const auto editedTileValue = editedTile();
             const auto pixel = tile::pixelAt(
                 editedTileValue,
-                inspectedTileRect(frameRect(), editedTileValue),
+                getInspectedTileRect(frameRect(), editedTileValue),
                 pointer.pointerOnCanvas);
 
             if (pixel.has_value())
@@ -111,7 +111,7 @@ namespace antwika::editor
             && activeView == map::View::Character)
         {
             const auto pixel = character::characterPixelAt(
-                characterCanvasRect(camera::kCanvasSize),
+                getCharacterCanvasRect(camera::kCanvasSize),
                 pointer.pointerOnCanvas);
 
             if (pixel.has_value() && characterView.mark.selecting
@@ -124,7 +124,7 @@ namespace antwika::editor
                 && characterView.mark.grabbedMarkSelection.has_value()
                 && characterView.mark.grabbedAtCell.has_value())
             {
-                characterView.mark.selection = character::movedSelection(
+                characterView.mark.selection = character::getMovedSelection(
                     *characterView.mark.grabbedMarkSelection,
                     static_cast<std::int32_t>(
                         pixel->column)
@@ -141,20 +141,20 @@ namespace antwika::editor
             && characterView.mark.selectedFrame.has_value())
         {
             const auto pixel = character::characterPixelAt(
-                characterCanvasRect(camera::kCanvasSize),
+                getCharacterCanvasRect(camera::kCanvasSize),
                 pointer.pointerOnCanvas);
 
             if (pixel.has_value())
             {
                 character::paintCharacterLine(
-                    characterView.sheet(),
+                    characterView.getSheet(),
                     *characterView.mark.selectedFrame
                         / character::kCharacterFrames,
                     *characterView.mark.selectedFrame
                         % character::kCharacterFrames,
                     brushAtCell.value_or(*pixel),
                     *pixel,
-                    character::characterPaletteColor(
+                    character::getCharacterPaletteColor(
                         document.map.paletteColors,
                         strokeErases ? character::kTransparentInk
                                      : inkPicker.activeInk));
@@ -164,10 +164,10 @@ namespace antwika::editor
         }
 
         if (strokeActive && activeView == map::View::Icons
-            && iconsView.picked().has_value())
+            && iconsView.getPicked().has_value())
         {
             const auto pixel = antwika::editor::iconPixelAt(
-                antwika::editor::editedIconRect(camera::kCanvasSize),
+                antwika::editor::getEditedIconRect(camera::kCanvasSize),
                 pointer.pointerOnCanvas);
 
             if (pixel.has_value())
@@ -180,7 +180,7 @@ namespace antwika::editor
         if (cameraRig.panning && activeView == map::View::Atlases)
         {
             const auto was =
-                viewportRenderer.viewport().toCanvas(
+                viewportRenderer.getViewport().toCanvas(
                     antwika::gfx::Point{
                         .x = pointer.lastPointerPosition.x,
                         .y = pointer.lastPointerPosition.y});
@@ -194,9 +194,9 @@ namespace antwika::editor
         }
         else if (cameraRig.panning && cameraRig.panGripPosition.has_value())
         {
-            const auto hit = voxelmap::planeHit(
-                voxelmap::rayInModelSpace(
-                    voxelmap::rayThrough(
+            const auto hit = voxelmap::getPlaneHit(
+                voxelmap::getRayInModelSpace(
+                    voxelmap::getRayThrough(
                         worldCamera(),
                         camera::kCanvasSize,
                         pointer.pointerOnCanvas),
@@ -215,12 +215,12 @@ namespace antwika::editor
         }
         else if (cameraRig.panning)
         {
-            const auto was = viewportRenderer.viewport().toCanvas(
+            const auto was = viewportRenderer.getViewport().toCanvas(
                 antwika::gfx::Point{
                     .x = pointer.lastPointerPosition.x,
                     .y = pointer.lastPointerPosition.y});
 
-            cameraRig.view.transform = camera::panned(
+            cameraRig.view.transform = camera::getPanned(
                 cameraRig.view.transform,
                 static_cast<float>(was.x) - pointer.pointerOnCanvas.x,
                 pointer.pointerOnCanvas.y - static_cast<float>(was.y),
@@ -234,16 +234,16 @@ namespace antwika::editor
         if (dragPaintButton.has_value() && !shapeFromPosition.has_value()
             && activeView == map::View::World)
         {
-            const auto cell = voxelmap::cellUnder(
+            const auto cell = voxelmap::getCellUnder(
                 worldCamera(),
                 worldRotation(),
                 camera::kCanvasSize,
                 pointer.pointerOnCanvas,
-                antwika::voxel::cubeTop(editLevel));
+                antwika::voxel::getCubeTop(editLevel));
 
             if (cell.has_value() && cell != lastPaintedPosition)
             {
-                document.map.voxels = voxel::withRampsRebuilt(
+                document.map.voxels = voxel::getWithRampsRebuilt(
                     settings.tool == map::Tool::Eraser
                           ? voxel::withoutBlockAt(
                               document.map.voxels, *cell)
@@ -286,7 +286,7 @@ namespace antwika::editor
 
         if (cameraRig.freeLook)
         {
-            cameraRig.view.transform = camera::rotated(
+            cameraRig.view.transform = camera::getRotated(
                 cameraRig.view.transform,
                 static_cast<float>(
                     movedEvent.position.x - pointer.lastPointerPosition.x)
@@ -381,14 +381,14 @@ namespace antwika::editor
             && selectedTile.has_value())
         {
             const auto projectToScreen =
-                viewportRenderer.viewport().toCanvas(
+                viewportRenderer.getViewport().toCanvas(
                     antwika::gfx::Point{
                         .x = upReleased.position.x,
                         .y = upReleased.position.y});
             const auto editedTileValue = editedTile();
             const auto pixel = tile::pixelAt(
                 editedTileValue,
-                inspectedTileRect(frameRect(), editedTileValue),
+                getInspectedTileRect(frameRect(), editedTileValue),
                 antwika::gfx::PointF{
                     static_cast<float>(projectToScreen.x),
                     static_cast<float>(projectToScreen.y)});
@@ -407,7 +407,7 @@ namespace antwika::editor
                     tile::paintPixels(
                         sheet,
                         editedTileValue,
-                        tile::rectPixels(
+                        tile::getRectPixels(
                             *lineFromCell, *pixel),
                         ink);
                 }
@@ -416,7 +416,7 @@ namespace antwika::editor
                     tile::paintPixels(
                         sheet,
                         editedTileValue,
-                        tile::circlePixels(
+                        tile::getCirclePixels(
                             *lineFromCell, *pixel),
                         ink);
                 }
@@ -441,10 +441,10 @@ namespace antwika::editor
         {
             if (doubleClickAtPoint.has_value())
             {
-                const auto pickedFace = voxelmap::tilePicked(
+                const auto pickedFace = voxelmap::getTilePicked(
                     visibleCells(),
-                    worldMeshes.faces(),
-                    worldMeshes.drawnAs(),
+                    worldMeshes.getFaces(),
+                    worldMeshes.getDrawnAs(),
                     worldCamera(),
                     worldRotation(),
                     camera::kCanvasSize,
@@ -466,7 +466,7 @@ namespace antwika::editor
                  && activeView == map::View::Atlases)
         {
             const auto projectToScreen =
-                viewportRenderer.viewport().toCanvas(
+                viewportRenderer.getViewport().toCanvas(
                     antwika::gfx::Point{
                         .x = upReleased.position.x,
                         .y = upReleased.position.y});
@@ -488,7 +488,7 @@ namespace antwika::editor
             case PointerAction::Swap:
                 pushUndo();
 
-                if (heldModifiers().control)
+                if (getHeldModifiers().control)
                 {
                     duplicateTile(
                         gesture.fromCell, gesture.toCell);
@@ -503,11 +503,11 @@ namespace antwika::editor
                 break;
             case PointerAction::Look:
             {
-                auto tile = document.map.tilemap.at(
+                auto tile = document.map.tilemap.getEntryAt(
                     gesture.toCell.column, gesture.toCell.row);
 
                 if (tile.has_value()
-                    && handleAssignClick(*tile))
+                    && consumeAssignClick(*tile))
                 {
                     break;
                 }
@@ -537,7 +537,7 @@ namespace antwika::editor
             }
             case PointerAction::Rule:
             {
-                const auto tile = document.map.tilemap.at(
+                const auto tile = document.map.tilemap.getEntryAt(
                     gesture.toCell.column, gesture.toCell.row);
 
                 if (tile.has_value()
@@ -570,7 +570,7 @@ namespace antwika::editor
                     break;
                 }
 
-                const auto cornerState = activeRules().corner(
+                const auto cornerState = activeRules().getCorner(
                     *selectedTile, gesture.corner);
 
                 pushUndo();

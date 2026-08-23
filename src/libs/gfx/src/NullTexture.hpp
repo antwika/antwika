@@ -17,7 +17,7 @@ namespace antwika::gfx::detail
         NullTexture &operator=(const NullTexture &) = delete;
         NullTexture &operator=(NullTexture &&) = delete;
 
-        [[nodiscard]] Size size() const override;
+        [[nodiscard]] Size getSize() const override;
 
     private:
         Size textureSize;

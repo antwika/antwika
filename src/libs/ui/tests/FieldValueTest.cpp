@@ -21,7 +21,7 @@ namespace
 {
     constexpr WidgetId kFieldWidget{3};
 
-    [[nodiscard]] TextEdit anEdit()
+    [[nodiscard]] TextEdit getAnEdit()
     {
         return TextEdit{
             .fieldWidget = kFieldWidget,
@@ -55,35 +55,35 @@ TEST(FieldValueTest, Ctor_DefaultsAFieldToEmptyAndUnfocused)
 
 TEST(FieldValueTest, OperatorEquals_MatchesTextEditsOnEveryField)
 {
-    EXPECT_EQ(anEdit(), anEdit());
+    EXPECT_EQ(getAnEdit(), getAnEdit());
 
-    auto edit = anEdit();
+    auto edit = getAnEdit();
     edit.fieldWidget = WidgetId{4};
-    EXPECT_NE(anEdit(), edit);
+    EXPECT_NE(getAnEdit(), edit);
 
-    auto typedEdit = anEdit();
+    auto typedEdit = getAnEdit();
     typedEdit.text = "abc";
-    EXPECT_NE(anEdit(), typedEdit);
+    EXPECT_NE(getAnEdit(), typedEdit);
 
-    auto movedEdit = anEdit();
+    auto movedEdit = getAnEdit();
     movedEdit.cursor = 1;
-    EXPECT_NE(anEdit(), movedEdit);
+    EXPECT_NE(getAnEdit(), movedEdit);
 
-    auto selectedEdit = anEdit();
+    auto selectedEdit = getAnEdit();
     selectedEdit.anchor = 1;
-    EXPECT_NE(anEdit(), selectedEdit);
+    EXPECT_NE(getAnEdit(), selectedEdit);
 
-    auto copiedEdit = anEdit();
+    auto copiedEdit = getAnEdit();
     copiedEdit.copiedText = "ab";
-    EXPECT_NE(anEdit(), copiedEdit);
+    EXPECT_NE(getAnEdit(), copiedEdit);
 
-    auto submittedEdit = anEdit();
+    auto submittedEdit = getAnEdit();
     submittedEdit.submitted = true;
-    EXPECT_NE(anEdit(), submittedEdit);
+    EXPECT_NE(getAnEdit(), submittedEdit);
 
-    auto cancelledEdit = anEdit();
+    auto cancelledEdit = getAnEdit();
     cancelledEdit.cancelled = true;
-    EXPECT_NE(anEdit(), cancelledEdit);
+    EXPECT_NE(getAnEdit(), cancelledEdit);
 }
 
 TEST(FieldValueTest, OperatorEquals_MatchesChoicesOnBothParts)
@@ -107,7 +107,7 @@ TEST(FieldValueTest, OperatorEquals_ComparesTheEditAndTheChoice)
     EXPECT_EQ(quietInteractions, Interactions{});
 
     Interactions editedInteractions;
-    editedInteractions.edit = anEdit();
+    editedInteractions.edit = getAnEdit();
     EXPECT_NE(quietInteractions, editedInteractions);
 
     Interactions choseInteractions;

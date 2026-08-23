@@ -32,7 +32,7 @@ namespace antwika::gfx
     inline constexpr std::uint32_t kTextMultiplierMask =
         (std::uint32_t{1} << kTextFaceShift) - 1;
 
-    [[nodiscard]] constexpr std::uint32_t encodeTextScale(
+    [[nodiscard]] constexpr std::uint32_t getEncodeTextScale(
         TextFace face, std::uint32_t multiplier) noexcept
     {
         return (static_cast<std::uint32_t>(face) << kTextFaceShift)
@@ -65,14 +65,14 @@ namespace antwika::gfx
                                        : kGlyphLineHeight;
     }
 
-    [[nodiscard]] constexpr std::uint32_t scaledGlyphAdvance(
+    [[nodiscard]] constexpr std::uint32_t getScaledGlyphAdvance(
         std::uint32_t scale) noexcept
     {
         return glyphAdvanceOf(textFaceOf(scale))
                * textMultiplierOf(scale);
     }
 
-    [[nodiscard]] constexpr std::uint32_t scaledGlyphLineHeight(
+    [[nodiscard]] constexpr std::uint32_t getScaledGlyphLineHeight(
         std::uint32_t scale) noexcept
     {
         return glyphLineHeightOf(textFaceOf(scale))

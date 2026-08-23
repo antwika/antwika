@@ -54,55 +54,55 @@ namespace antwika::decor
     [[nodiscard]] const DecorTile *decorOf(
         std::span<const DecorTile> decor, tilemap::Tile tile);
 
-    [[nodiscard]] std::vector<DecorTile> withDecorToggled(
+    [[nodiscard]] std::vector<DecorTile> getWithDecorToggled(
         const std::vector<DecorTile> &decor,
         tilemap::Tile tile,
         std::size_t layer = 1);
 
-    [[nodiscard]] std::vector<DecorTile> withBaseToggled(
+    [[nodiscard]] std::vector<DecorTile> getWithBaseToggled(
         const std::vector<DecorTile> &decor,
         tilemap::Tile tile,
         tilemap::Tile baseTile);
 
-    [[nodiscard]] std::vector<DecorTile> withFrameAdded(
+    [[nodiscard]] std::vector<DecorTile> getWithFrameAdded(
         const std::vector<DecorTile> &decor, tilemap::Tile tile);
 
-    [[nodiscard]] bool decorSpanned(const DecorTile &decor);
+    [[nodiscard]] bool isDecorSpanned(const DecorTile &decor);
 
-    [[nodiscard]] std::vector<DecorTile> withSpanSet(
+    [[nodiscard]] std::vector<DecorTile> getWithSpanSet(
         const std::vector<DecorTile> &decor,
         tilemap::Tile tile,
         std::uint8_t acrossSpan,
         std::uint8_t downSpan);
 
-    [[nodiscard]] std::vector<DecorTile> withMemberSet(
+    [[nodiscard]] std::vector<DecorTile> getWithMemberSet(
         const std::vector<DecorTile> &decor,
         tilemap::Tile tile,
         std::size_t member,
         tilemap::Tile drawnTile);
 
-    [[nodiscard]] std::vector<DecorTile> withDecorLayerSet(
+    [[nodiscard]] std::vector<DecorTile> getWithDecorLayerSet(
         const std::vector<DecorTile> &decor,
         tilemap::Tile tile,
         std::size_t layer);
 
-    [[nodiscard]] std::vector<DecorTile> withWeightSet(
+    [[nodiscard]] std::vector<DecorTile> getWithWeightSet(
         const std::vector<DecorTile> &decor,
         tilemap::Tile tile,
         std::uint8_t weight);
 
-    [[nodiscard]] std::vector<DecorTile> withFrequencySet(
+    [[nodiscard]] std::vector<DecorTile> getWithFrequencySet(
         const std::vector<DecorTile> &decor,
         tilemap::Tile tile,
         std::uint8_t frequency);
 
-    [[nodiscard]] std::vector<DecorTile> withFrameSet(
+    [[nodiscard]] std::vector<DecorTile> getWithFrameSet(
         const std::vector<DecorTile> &decor,
         tilemap::Tile tile,
         std::size_t frame,
         tilemap::Tile drawnTile);
 
-    [[nodiscard]] std::vector<DecorTile> compactedDecor(
+    [[nodiscard]] std::vector<DecorTile> getCompactedDecor(
         const std::vector<DecorTile> &decor);
 
     [[nodiscard]] bool tilesCompatible(
@@ -112,13 +112,13 @@ namespace antwika::decor
         tilemap::Tile otherTile);
 
     [[nodiscard]] std::optional<std::vector<std::optional<tilemap::Tile>>>
-    previewNeighbourhood(
+    getPreviewNeighbourhood(
         const tile::TileRules &rules,
         tilemap::Tile middleTile,
         std::size_t side,
         std::uint32_t seed);
 
-    [[nodiscard]] std::map<std::size_t, tilemap::Tile> solveDecor(
+    [[nodiscard]] std::map<std::size_t, tilemap::Tile> getSolveDecor(
         const std::vector<voxelmap::FaceRef> &faces,
         std::span<const tilemap::Tile> drawnTiles,
         std::span<const DecorTile> decor,
@@ -127,7 +127,7 @@ namespace antwika::decor
 
     [[nodiscard]] std::vector<
         std::pair<std::size_t, std::map<std::size_t, tilemap::Tile>>>
-    solveDecorLayers(
+    getSolveDecorLayers(
         const std::vector<voxelmap::FaceRef> &faces,
         std::span<const tilemap::Tile> drawnTiles,
         std::span<const DecorTile> decor,
@@ -139,7 +139,7 @@ namespace antwika::decor
 
     inline constexpr float kDecorDepthBias = 0.01F;
 
-    [[nodiscard]] gfx::MeshData decorMesh(
+    [[nodiscard]] gfx::MeshData getDecorMesh(
         const std::vector<voxelmap::FaceRef> &faces,
         const std::map<std::size_t, tilemap::Tile> &placedTiles,
         std::span<const DecorTile> decor,
@@ -166,7 +166,7 @@ namespace antwika::decor
 
     inline constexpr widget::WidgetId kDecorMoveWidget{239};
 
-    [[nodiscard]] widget::WidgetId frameWidget(std::size_t frame);
+    [[nodiscard]] widget::WidgetId getFrameWidget(std::size_t frame);
 
     inline constexpr widget::WidgetId kSpanAcrossLessWidget{382};
 
@@ -176,6 +176,6 @@ namespace antwika::decor
 
     inline constexpr widget::WidgetId kSpanDownMoreWidget{385};
 
-    [[nodiscard]] widget::WidgetId memberWidget(std::size_t member);
+    [[nodiscard]] widget::WidgetId getMemberWidget(std::size_t member);
 
 }

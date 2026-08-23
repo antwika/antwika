@@ -25,21 +25,21 @@ namespace antwika::input
 
         void apply(const PointerScrolled &eventScrolled) noexcept;
 
-        [[nodiscard]] Position position() const noexcept;
+        [[nodiscard]] Position getPosition() const noexcept;
 
-        [[nodiscard]] Offset delta() const noexcept;
+        [[nodiscard]] Offset getDelta() const noexcept;
 
-        [[nodiscard]] Offset scroll() const noexcept;
+        [[nodiscard]] Offset getScroll() const noexcept;
 
         [[nodiscard]] bool isDown(MouseButton button) const noexcept;
 
-        [[nodiscard]] bool anyDown() const noexcept;
+        [[nodiscard]] bool isAnyDown() const noexcept;
 
         [[nodiscard]] bool wasPressed(MouseButton button) const noexcept;
 
         [[nodiscard]] bool wasReleased(MouseButton button) const noexcept;
 
-        [[nodiscard]] KeyModifiers pressModifiers(
+        [[nodiscard]] KeyModifiers getPressModifiers(
             MouseButton button) const noexcept;
 
     private:

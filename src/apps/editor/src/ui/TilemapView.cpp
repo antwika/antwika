@@ -11,7 +11,7 @@
 namespace antwika::editor
 {
 
-    gfx::RectF tilemapBounds(const gfx::Size canvasSize)
+    gfx::RectF getTilemapBounds(const gfx::Size canvasSize)
     {
         return gfx::RectF(
             gfx::PointF{kToolPanelWidth, kTopBarHeight},
@@ -22,16 +22,16 @@ namespace antwika::editor
                     - kBottomBarHeight});
     }
 
-    gfx::RectF tilemapPlace(
+    gfx::RectF getTilemapPlace(
         const gfx::Size canvasSize, const tilemap::Tilemap &tilemap)
     {
-        return tilemapPlace(tilemapBounds(canvasSize), tilemap);
+        return getTilemapPlace(getTilemapBounds(canvasSize), tilemap);
     }
 
-    gfx::RectF tilemapPlace(
+    gfx::RectF getTilemapPlace(
         const gfx::RectF roomRect, const tilemap::Tilemap &tilemap)
     {
-        const auto cell = tilemap::gridCellSize();
+        const auto cell = tilemap::getGridCellSize();
         const auto tilemapWidth = static_cast<float>(
             tilemap.columns * cell.width);
         const auto tilemapHeight =
@@ -65,7 +65,7 @@ namespace antwika::editor
             gfx::SizeF{width, height});
     }
 
-    std::optional<geometry::GridCell> cellAtPoint(
+    std::optional<geometry::GridCell> getCellAtPoint(
         const tilemap::Tilemap &tilemap,
         const gfx::RectF whereRect,
         const gfx::PointF point)
@@ -97,7 +97,7 @@ namespace antwika::editor
             .row = static_cast<std::uint32_t>(row)};
     }
 
-    gfx::RectF tilePlace(
+    gfx::RectF getTilePlace(
         const tilemap::Tilemap &tilemap,
         const std::uint32_t column,
         const std::uint32_t row,
@@ -108,7 +108,7 @@ namespace antwika::editor
         const auto cellHeight =
             whereRect.size.height / static_cast<float>(tilemap.rows);
 
-        const auto cell = tilemap.at(column, row);
+        const auto cell = tilemap.getEntryAt(column, row);
         const auto tile = tilemap::tileSizeOf(
             cell.has_value() ? cell->atlas : tilemap::Atlas::Floor);
         const auto scale = std::min(

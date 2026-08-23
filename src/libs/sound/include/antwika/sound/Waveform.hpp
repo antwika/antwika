@@ -15,7 +15,7 @@ namespace antwika::sound
 
         std::vector<float> samples;
 
-        [[nodiscard]] FrameCount frameCount() const noexcept;
+        [[nodiscard]] FrameCount getFrameCount() const noexcept;
 
         [[nodiscard]] bool isValid() const noexcept;
 

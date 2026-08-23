@@ -22,7 +22,7 @@ using ::testing::NiceMock;
 
 namespace
 {
-    WindowSpec demoSpec()
+    WindowSpec getDemoSpec()
     {
         return WindowSpec{
             .title = "Antwika raylib shaders",
@@ -30,7 +30,7 @@ namespace
             .hidden = true};
     }
 
-    ShaderSource workingSource()
+    ShaderSource getWorkingSource()
     {
         return ShaderSource{
             .vertex = R"(#version 330
@@ -61,10 +61,10 @@ TEST(RaylibShaderTest, CreateShader_ThrowsWhenTheVertexStageWillNotCompile)
     NiceMock<MockLogger> logger;
     RaylibBackend backend(logger);
 
-    const auto window = backend.createWindow(demoSpec());
+    const auto window = backend.createWindow(getDemoSpec());
     auto &renderer = window->renderer();
 
-    ShaderSource brokenSource = workingSource();
+    ShaderSource brokenSource = getWorkingSource();
     brokenSource.vertex = "#version 330\nthis is not glsl\n";
 
     EXPECT_THROW(
@@ -76,10 +76,10 @@ TEST(RaylibShaderTest, CreateShader_ThrowsWhenTheFragmentStageWillNotCompile)
     NiceMock<MockLogger> logger;
     RaylibBackend backend(logger);
 
-    const auto window = backend.createWindow(demoSpec());
+    const auto window = backend.createWindow(getDemoSpec());
     auto &renderer = window->renderer();
 
-    ShaderSource brokenSource = workingSource();
+    ShaderSource brokenSource = getWorkingSource();
     brokenSource.fragment = "#version 330\nvoid main() { nonsense(); }\n";
 
     EXPECT_THROW(
@@ -91,13 +91,13 @@ TEST(RaylibShaderTest, CreateShader_ThrowsOnceTheWindowHasClosed)
     NiceMock<MockLogger> logger;
     RaylibBackend backend(logger);
 
-    const auto window = backend.createWindow(demoSpec());
+    const auto window = backend.createWindow(getDemoSpec());
     auto &renderer = window->renderer();
 
     window->close();
 
     EXPECT_THROW(
-        { const auto shader = renderer.createShader(workingSource()); },
+        { const auto shader = renderer.createShader(getWorkingSource()); },
         GfxError);
 }
 
@@ -106,9 +106,9 @@ TEST(RaylibShaderTest, Shader_StopsBeingReadyOnceItsWindowCloses)
     NiceMock<MockLogger> logger;
     RaylibBackend backend(logger);
 
-    const auto window = backend.createWindow(demoSpec());
+    const auto window = backend.createWindow(getDemoSpec());
     const std::unique_ptr<IShader> shader =
-        window->renderer().createShader(workingSource());
+        window->renderer().createShader(getWorkingSource());
 
     ASSERT_NE(nullptr, shader);
     EXPECT_TRUE(shader->isReady());

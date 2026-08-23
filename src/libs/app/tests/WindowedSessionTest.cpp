@@ -63,12 +63,12 @@ namespace
     public:
         Fixture()
         {
-            ON_CALL(*window, id()).WillByDefault(Return(kWindow));
-            ON_CALL(*window, configuredSize())
+            ON_CALL(*window, getId()).WillByDefault(Return(kWindow));
+            ON_CALL(*window, getConfiguredSize())
                 .WillByDefault(Return(kCanvasSize));
-            ON_CALL(*window, size()).WillByDefault(Return(kCanvasSize));
+            ON_CALL(*window, getSize()).WillByDefault(Return(kCanvasSize));
 
-            ON_CALL(backend, name()).WillByDefault(Return("null"));
+            ON_CALL(backend, getName()).WillByDefault(Return("null"));
             ON_CALL(backend, pollEvent())
                 .WillByDefault(Return(std::nullopt));
             ON_CALL(backend, createWindow(::testing::_))
@@ -91,7 +91,7 @@ namespace
         WindowSpec askedSpec;
     };
 
-    WindowedSessionSpec describe()
+    WindowedSessionSpec getDescribe()
     {
         WindowedSessionSpec spec;
         spec.name = "Antwika Test";
@@ -104,7 +104,7 @@ namespace
     std::string recordingOf(const Event &event)
     {
         const auto path =
-            antwika::testing::scratchPath("WindowedSessionTest");
+            antwika::testing::getScratchPath("WindowedSessionTest");
 
         antwika::replay::saveReplayFile(
             {TickEvent{.tick = 0, .event = event}}, path.string());
@@ -119,7 +119,7 @@ TEST(WindowedSessionTest, Describe_AnnouncesBothBackendsByName)
     FakeInputBackend input;
 
     const WindowedSession session(
-        fixture.logging.logger(), fixture.backend, input, describe());
+        fixture.logging.logger(), fixture.backend, input, getDescribe());
 
     EXPECT_THAT(
         fixture.outputStream.str(),
@@ -132,7 +132,7 @@ TEST(WindowedSessionTest, Describe_AsksForTheTitleSizeAndResizing)
     Fixture fixture;
     FakeInputBackend input;
 
-    auto spec = describe();
+    auto spec = getDescribe();
     spec.resizable = true;
 
     const WindowedSession session(
@@ -141,7 +141,7 @@ TEST(WindowedSessionTest, Describe_AsksForTheTitleSizeAndResizing)
     EXPECT_EQ(fixture.askedSpec.title, "Antwika Test Window");
     EXPECT_EQ(fixture.askedSpec.size, kCanvasSize);
     EXPECT_TRUE(fixture.askedSpec.resizable);
-    EXPECT_EQ(&session.window(), fixture.window);
+    EXPECT_EQ(&session.getWindow(), fixture.window);
 }
 
 TEST(WindowedSessionTest, Describe_AsksForAFixedWindowUnlessToldOtherwise)
@@ -150,7 +150,7 @@ TEST(WindowedSessionTest, Describe_AsksForAFixedWindowUnlessToldOtherwise)
     FakeInputBackend input;
 
     const WindowedSession session(
-        fixture.logging.logger(), fixture.backend, input, describe());
+        fixture.logging.logger(), fixture.backend, input, getDescribe());
 
     EXPECT_FALSE(fixture.askedSpec.resizable);
 }
@@ -161,9 +161,9 @@ TEST(WindowedSessionTest, Describe_HandsBackTheWindowsCanvas)
     FakeInputBackend input;
 
     const WindowedSession session(
-        fixture.logging.logger(), fixture.backend, input, describe());
+        fixture.logging.logger(), fixture.backend, input, getDescribe());
 
-    EXPECT_EQ(session.canvas(), kCanvasSize);
+    EXPECT_EQ(session.getCanvas(), kCanvasSize);
 }
 
 TEST(WindowedSessionTest, Describe_HandsBackThePipelinesCodec)
@@ -172,15 +172,15 @@ TEST(WindowedSessionTest, Describe_HandsBackThePipelinesCodec)
     FakeInputBackend input;
 
     const WindowedSession session(
-        fixture.logging.logger(), fixture.backend, input, describe());
+        fixture.logging.logger(), fixture.backend, input, getDescribe());
 
     const InputEvent edgeEvent{KeyPressed{.key = Key::A}};
     const antwika::input::InputEventCodec twinCodec;
 
-    const auto encodedEvent = session.codec().encode(edgeEvent);
+    const auto encodedEvent = session.getCodec().getEncode(edgeEvent);
 
-    EXPECT_EQ(encodedEvent, twinCodec.encode(edgeEvent));
-    EXPECT_EQ(session.codec().decode(encodedEvent), edgeEvent);
+    EXPECT_EQ(encodedEvent, twinCodec.getEncode(edgeEvent));
+    EXPECT_EQ(session.getCodec().getDecode(encodedEvent), edgeEvent);
 }
 
 TEST(WindowedSessionTest, Describe_ReadsTheDeviceWithNoReplay)
@@ -190,11 +190,11 @@ TEST(WindowedSessionTest, Describe_ReadsTheDeviceWithNoReplay)
     FakeInputBackend input({edgeEvent});
 
     WindowedSession session(
-        fixture.logging.logger(), fixture.backend, input, describe());
+        fixture.logging.logger(), fixture.backend, input, getDescribe());
 
     EXPECT_EQ(
         session.source().eventsFor(0),
-        (std::vector<Event>{session.codec().encode(edgeEvent)}));
+        (std::vector<Event>{session.getCodec().getEncode(edgeEvent)}));
 }
 
 TEST(WindowedSessionTest, Describe_ReadsNoDeviceWithAReplay)
@@ -203,7 +203,7 @@ TEST(WindowedSessionTest, Describe_ReadsNoDeviceWithAReplay)
     const Event scriptedEvent{.name = "test.scripted", .payload = "{}"};
     FakeInputBackend input({InputEvent{KeyPressed{.key = Key::A}}});
 
-    auto spec = describe();
+    auto spec = getDescribe();
     spec.replayPath = recordingOf(scriptedEvent);
 
     WindowedSession session(
@@ -222,7 +222,7 @@ TEST(WindowedSessionTest, Describe_SeedsFromTheDemoRecording)
     const Event scriptedEvent{.name = "test.demo", .payload = "{}"};
     FakeInputBackend input;
 
-    auto spec = describe();
+    auto spec = getDescribe();
     spec.demoReplay = recordingOf(scriptedEvent);
 
     WindowedSession session(
@@ -240,7 +240,7 @@ TEST(WindowedSessionTest, Describe_ThrowsOnAnUnreadableRecording)
     Fixture fixture;
     FakeInputBackend input;
 
-    auto spec = describe();
+    auto spec = getDescribe();
     spec.replayPath = "no-such-recording.jsonl";
 
     EXPECT_THROW(
@@ -255,10 +255,10 @@ TEST(WindowedSessionTest, Describe_MapsADevicePositionWhenAsked)
     FakeInputBackend input({InputEvent{
         PointerMoved{.position = Position{.x = 200, .y = 100}}}});
 
-    auto spec = describe();
+    auto spec = getDescribe();
     spec.mapsPointerToCanvas = true;
 
-    ON_CALL(*fixture.window, size())
+    ON_CALL(*fixture.window, getSize())
         .WillByDefault(Return(Size{.width = 1280, .height = 960}));
 
     WindowedSession session(
@@ -268,7 +268,7 @@ TEST(WindowedSessionTest, Describe_MapsADevicePositionWhenAsked)
 
     ASSERT_EQ(events.size(), 1U);
     EXPECT_EQ(
-        session.codec().decode(events.front()),
+        session.getCodec().getDecode(events.front()),
         (InputEvent{
             PointerMoved{.position = Position{.x = 100, .y = 50}}}));
 }
@@ -279,17 +279,17 @@ TEST(WindowedSessionTest, Describe_LeavesADevicePositionAlone)
     FakeInputBackend input({InputEvent{
         PointerMoved{.position = Position{.x = 200, .y = 100}}}});
 
-    ON_CALL(*fixture.window, size())
+    ON_CALL(*fixture.window, getSize())
         .WillByDefault(Return(Size{.width = 1280, .height = 960}));
 
     WindowedSession session(
-        fixture.logging.logger(), fixture.backend, input, describe());
+        fixture.logging.logger(), fixture.backend, input, getDescribe());
 
     const auto events = session.source().eventsFor(0);
 
     ASSERT_EQ(events.size(), 1U);
     EXPECT_EQ(
-        session.codec().decode(events.front()),
+        session.getCodec().getDecode(events.front()),
         (InputEvent{
             PointerMoved{.position = Position{.x = 200, .y = 100}}}));
 }
@@ -305,7 +305,7 @@ TEST(WindowedSessionTest, Describe_PassesTheInputPolicyThrough)
     FakeInputBackend coalescedBackend(moveEvents);
     FakeInputBackend keptBackend(moveEvents);
 
-    auto spec = describe();
+    auto spec = getDescribe();
     spec.input.coalescePointerMotion = true;
 
     WindowedSession foldingSession(
@@ -314,7 +314,7 @@ TEST(WindowedSessionTest, Describe_PassesTheInputPolicyThrough)
         otherFixture.logging.logger(),
         otherFixture.backend,
         keptBackend,
-        describe());
+        getDescribe());
 
     EXPECT_EQ(foldingSession.source().eventsFor(0).size(), 1U);
     EXPECT_EQ(keepingSession.source().eventsFor(0).size(), 2U);
@@ -332,7 +332,7 @@ TEST(WindowedSessionTest, Describe_EndsTheRunOnItsOwnWindowClose)
         .WillOnce(Return(std::nullopt));
 
     WindowedSession session(
-        fixture.logging.logger(), fixture.backend, input, describe());
+        fixture.logging.logger(), fixture.backend, input, getDescribe());
 
     EXPECT_EQ(
         session.source().eventsFor(0),
@@ -346,7 +346,7 @@ TEST(WindowedSessionTest, Describe_ReportsANullBackendAsDrawingNothing)
     FakeInputBackend input;
 
     const WindowedSession session(
-        fixture.logging.logger(), fixture.backend, input, describe());
+        fixture.logging.logger(), fixture.backend, input, getDescribe());
 
     EXPECT_TRUE(session.isHeadless());
 }
@@ -356,10 +356,10 @@ TEST(WindowedSessionTest, Describe_ReportsAnyOtherBackendAsDrawing)
     Fixture fixture;
     FakeInputBackend input;
 
-    ON_CALL(fixture.backend, name()).WillByDefault(Return("raylib"));
+    ON_CALL(fixture.backend, getName()).WillByDefault(Return("raylib"));
 
     const WindowedSession session(
-        fixture.logging.logger(), fixture.backend, input, describe());
+        fixture.logging.logger(), fixture.backend, input, getDescribe());
 
     EXPECT_FALSE(session.isHeadless());
 }

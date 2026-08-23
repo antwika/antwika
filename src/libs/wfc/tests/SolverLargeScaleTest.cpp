@@ -18,7 +18,7 @@ using antwika::wfc::Solver;
 
 namespace
 {
-    CompatibilityTable makeNeighboursDifferTable()
+    CompatibilityTable createNeighboursDifferTable()
     {
         CompatibilityTable table(4);
         for (std::size_t value = 0; value < 4; ++value)
@@ -43,13 +43,13 @@ TEST(SolverLargeScaleTest, Solve_CompletesThousandsOfCells)
     constraints.reserve(kLength - 1);
     for (std::size_t i = 0; i + 1 < kLength; ++i)
     {
-        constraints.emplace_back(i, i + 1, makeNeighboursDifferTable());
+        constraints.emplace_back(i, i + 1, createNeighboursDifferTable());
     }
 
     const auto constraintRefs = referencesTo(constraints);
 
     Solver solver(waveDomains, constraintRefs);
-    const auto result = solver.solve();
+    const auto result = solver.getSolve();
 
     ASSERT_EQ(result.outcome, SolveOutcome::Solved);
     ASSERT_EQ(result.assignment.size(), kLength);
@@ -57,10 +57,10 @@ TEST(SolverLargeScaleTest, Solve_CompletesThousandsOfCells)
     ASSERT_EQ(result.assignment[0], 0U);
     ASSERT_EQ(result.assignment[1], 1U);
 
-    const CompatibilityTable table = makeNeighboursDifferTable();
+    const CompatibilityTable table = createNeighboursDifferTable();
     for (std::size_t i = 0; i + 1 < kLength; ++i)
     {
-        EXPECT_TRUE(table.compatible(
+        EXPECT_TRUE(table.isCompatible(
             result.assignment[i], result.assignment[i + 1]));
     }
 }

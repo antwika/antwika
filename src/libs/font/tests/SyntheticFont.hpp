@@ -12,10 +12,10 @@
 namespace antwika::font::tests
 {
 
-    [[nodiscard]] std::vector<std::uint8_t> buildFont(
+    [[nodiscard]] std::vector<std::uint8_t> createFont(
         FontRecipe recipe = {});
 
-    [[nodiscard]] std::vector<std::uint8_t> buildDirectory(
+    [[nodiscard]] std::vector<std::uint8_t> createDirectory(
         std::uint32_t flavour,
         std::uint16_t declaredTables,
         std::span<const TableRecord> records,

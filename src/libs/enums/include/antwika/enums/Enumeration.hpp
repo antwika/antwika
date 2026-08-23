@@ -19,7 +19,7 @@ namespace antwika::enums
 
     template <typename Enum>
     inline constexpr std::size_t kCount =
-        static_cast<std::size_t>(lastEnumerator(Enum{})) + 1;
+        static_cast<std::size_t>(getLastEnumerator(Enum{})) + 1;
 
     template <typename Enum>
     [[nodiscard]] constexpr std::size_t index(const Enum value) noexcept

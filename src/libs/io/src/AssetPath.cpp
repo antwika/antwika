@@ -15,7 +15,7 @@ namespace antwika::io
 
 #ifdef _WIN32
 
-    std::string executableDirectory()
+    std::string getExecutableDirectory()
     {
         std::wstring buffer(MAX_PATH, L'\0');
 
@@ -46,7 +46,7 @@ namespace antwika::io
 
 #else
 
-    std::string executableDirectory()
+    std::string getExecutableDirectory()
     {
         return std::filesystem::read_symlink("/proc/self/exe")
             .parent_path()
@@ -55,9 +55,9 @@ namespace antwika::io
 
 #endif
 
-    std::string assetPath(std::string_view name)
+    std::string getAssetPath(std::string_view name)
     {
-        return (std::filesystem::path(executableDirectory()) /
+        return (std::filesystem::path(getExecutableDirectory()) /
             std::filesystem::path(name))
             .string();
     }

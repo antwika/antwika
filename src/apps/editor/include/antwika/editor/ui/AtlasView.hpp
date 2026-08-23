@@ -25,20 +25,20 @@
 namespace antwika::editor
 {
 
-    [[nodiscard]] std::string_view tabName(map::View view);
+    [[nodiscard]] std::string_view getTabName(map::View view);
 
-    [[nodiscard]] widget::WidgetId tabWidget(map::View view);
+    [[nodiscard]] widget::WidgetId getTabWidget(map::View view);
 
-    [[nodiscard]] map::View viewAfterKey(
+    [[nodiscard]] map::View getViewAfterKey(
         map::View view, input::Key key, bool back);
 
-    [[nodiscard]] std::uint32_t railWidth(
+    [[nodiscard]] std::uint32_t getRailWidth(
         gfx::Size windowSize, gfx::Size canvasSize);
 
-    [[nodiscard]] std::uint32_t inspectColumnWidth(
+    [[nodiscard]] std::uint32_t getInspectColumnWidth(
         gfx::Size windowSize, gfx::Size canvasSize);
 
-    [[nodiscard]] gfx::RectF inspectColumnBounds(gfx::Size canvasSize);
+    [[nodiscard]] gfx::RectF getInspectColumnBounds(gfx::Size canvasSize);
 
     inline constexpr float kGridZoomStep = 1.1F;
 
@@ -46,7 +46,7 @@ namespace antwika::editor
 
     inline constexpr float kMaxGridZoom = 8.0F;
 
-    [[nodiscard]] gfx::RectF panZoomed(
+    [[nodiscard]] gfx::RectF getPanZoomed(
         gfx::RectF whereRect, gfx::PointF panPoint, float zoom);
 
     inline constexpr float kInspectedScale = 3.0F;
@@ -66,22 +66,22 @@ namespace antwika::editor
     [[nodiscard]] std::vector<tilemap::TileEdge> edgesIn(
         EdgeSelection selection);
 
-    [[nodiscard]] gfx::RectF inspectedTileRect(gfx::Size canvasSize,
+    [[nodiscard]] gfx::RectF getInspectedTileRect(gfx::Size canvasSize,
                                            tilemap::Tile tile);
 
-    [[nodiscard]] gfx::RectF inspectedTileRect(gfx::RectF roomRect,
+    [[nodiscard]] gfx::RectF getInspectedTileRect(gfx::RectF roomRect,
                                            tilemap::Tile tile);
 
-    [[nodiscard]] gfx::RectF markerPlace(gfx::Size canvasSize,
+    [[nodiscard]] gfx::RectF getMarkerPlace(gfx::Size canvasSize,
                                          tilemap::TileEdge edge);
 
-    [[nodiscard]] gfx::RectF markerPlace(gfx::RectF roomRect,
+    [[nodiscard]] gfx::RectF getMarkerPlace(gfx::RectF roomRect,
                                          tilemap::TileEdge edge);
 
-    [[nodiscard]] gfx::RectF bothMarkerPlace(
+    [[nodiscard]] gfx::RectF getBothMarkerPlace(
         gfx::Size canvasSize, voxel::Side side);
 
-    [[nodiscard]] gfx::RectF bothMarkerPlace(
+    [[nodiscard]] gfx::RectF getBothMarkerPlace(
         gfx::RectF roomRect, voxel::Side side);
 
     [[nodiscard]] std::optional<voxel::Side> bothMarkerAt(
@@ -96,7 +96,7 @@ namespace antwika::editor
         Forbidden,
     };
 
-    [[nodiscard]] constexpr EdgeToggle lastEnumerator(EdgeToggle) noexcept
+    [[nodiscard]] constexpr EdgeToggle getLastEnumerator(EdgeToggle) noexcept
     {
         return EdgeToggle::Forbidden;
     }
@@ -106,16 +106,16 @@ namespace antwika::editor
 
     inline constexpr float kEdgeToggleSide = 13.0F;
 
-    [[nodiscard]] widget::WidgetId edgeToggleWidget(EdgeToggle whichToggle);
+    [[nodiscard]] widget::WidgetId getEdgeToggleWidget(EdgeToggle whichToggle);
 
     inline constexpr widget::WidgetId kDeriveRulesWidget{178};
 
-    [[nodiscard]] std::string_view edgeToggleName(EdgeToggle whichToggle);
+    [[nodiscard]] std::string_view getEdgeToggleName(EdgeToggle whichToggle);
 
-    [[nodiscard]] gfx::RectF edgeTogglePlace(
+    [[nodiscard]] gfx::RectF getEdgeTogglePlace(
         gfx::Size canvasSize, EdgeToggle whichToggle);
 
-    [[nodiscard]] gfx::RectF edgeTogglePlace(
+    [[nodiscard]] gfx::RectF getEdgeTogglePlace(
         gfx::RectF roomRect, EdgeToggle whichToggle);
 
     [[nodiscard]] std::optional<EdgeToggle> edgeToggleAt(
@@ -130,10 +130,10 @@ namespace antwika::editor
     [[nodiscard]] std::optional<tilemap::TileEdge> markerAt(
         gfx::RectF roomRect, gfx::PointF point);
 
-    [[nodiscard]] gfx::RectF cornerPlace(
+    [[nodiscard]] gfx::RectF getCornerPlace(
         gfx::Size canvasSize, voxel::Corner corner);
 
-    [[nodiscard]] gfx::RectF cornerPlace(
+    [[nodiscard]] gfx::RectF getCornerPlace(
         gfx::RectF roomRect, voxel::Corner corner);
 
     [[nodiscard]] std::optional<voxel::Corner> cornerAt(
@@ -146,10 +146,10 @@ namespace antwika::editor
 
     inline constexpr std::size_t kBorderSides = 4;
 
-    [[nodiscard]] std::array<gfx::RectF, kBorderSides> outlineRects(
+    [[nodiscard]] std::array<gfx::RectF, kBorderSides> getOutlineRects(
         gfx::RectF whereRect, float thickness);
 
-    [[nodiscard]] std::optional<gfx::PointF> tileCenter(
+    [[nodiscard]] std::optional<gfx::PointF> getTileCenter(
         const tilemap::Tilemap &tilemap,
         gfx::RectF whereRect,
         tilemap::Tile tile);

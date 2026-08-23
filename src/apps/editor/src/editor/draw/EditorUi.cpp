@@ -51,13 +51,13 @@ namespace antwika::editor
         const bool pressed, const bool buttonHeld)
     {
         antwika::ui::Context context{
-            viewportRenderer.windowSize(),
-            gameTheme(),
+            viewportRenderer.getWindowSize(),
+            getGameTheme(),
             antwika::ui::Pointer{
                 .positionPoint = pointer.pointerInWindow,
                 .down = buttonHeld,
                 .pressed = pressed,
-                .extendsSelection = heldModifiers().shift},
+                .extendsSelection = getHeldModifiers().shift},
             pressed ? antwika::ui::Keyboard{}
                     : antwika::ui::Keyboard{
                           .keys = keysNow,
@@ -69,7 +69,7 @@ namespace antwika::editor
                 : antwika::widget::kNoWidget};
 
         {
-            context.setTheme(menuTheme());
+            context.setTheme(getMenuTheme());
 
             const auto bar = context.row(
                 antwika::ui::ContainerSpec{
@@ -99,15 +99,15 @@ namespace antwika::editor
 
                 context.dropdown(
                     antwika::ui::DropdownSpec{
-                        .widgetId = menuWidget(menu),
-                        .optionIdBaseWidget = firstItemWidget(menu),
+                        .widgetId = getMenuWidget(menu),
+                        .optionIdBaseWidget = getFirstItemWidget(menu),
                         .options = itemNamesOf(menu),
                         .markedOptions =
                             std::span<
                                 const antwika::ui::
                                     OptionMark>(
                                 markedText.data(), lines),
-                        .placeholder = menuName(menu),
+                        .placeholder = getMenuName(menu),
                         .open = dialogs.openMenu == menu});
             };
 
@@ -123,7 +123,7 @@ namespace antwika::editor
 
             context.spacer(antwika::ui::kGrowSizing);
             context.label(
-                time::formatFrameRate(meters.frameRate.perSecond()),
+                time::getFormatFrameRate(meters.frameRate.getPerSecond()),
                 kTextColor);
         }
 
@@ -136,9 +136,9 @@ namespace antwika::editor
             for (const auto tab : map::kEveryView)
             {
                 context.button(
-                    std::string(tabName(tab)),
+                    std::string(getTabName(tab)),
                     antwika::ui::ButtonSpec{
-                        .widgetId = tabWidget(tab),
+                        .widgetId = getTabWidget(tab),
                         .state =
                             tab == activeView
                                  ? std::optional{
@@ -151,7 +151,7 @@ namespace antwika::editor
             context.spacer(antwika::ui::kGrowSizing);
         }
 
-        context.setTheme(gameTheme());
+        context.setTheme(getGameTheme());
 
         if (layoutModals(context))
         {
@@ -169,7 +169,7 @@ namespace antwika::editor
             {
                 const auto sheet = context.column(
                     antwika::ui::ContainerSpec{
-                        .widthSizing = antwika::ui::fixedSize(
+                        .widthSizing = antwika::ui::getFixedSize(
                             kPickerWidth * kUiScale),
                         .backgroundColor = kPanelColor,
                         .padding = kPanelPadding});
@@ -193,7 +193,7 @@ namespace antwika::editor
                     context.button(
                         dialogs.folderEntries.at(index) + "/",
                         antwika::ui::ButtonSpec{
-                            .widgetId = antwika::editor::mapRowWidget(index),
+                            .widgetId = antwika::editor::getMapRowWidget(index),
                             .widthSizing = antwika::ui::kGrowSizing});
                 }
 
@@ -205,7 +205,7 @@ namespace antwika::editor
                     context.button(
                         entry,
                         antwika::ui::ButtonSpec{
-                            .widgetId = antwika::editor::mapRowWidget(
+                            .widgetId = antwika::editor::getMapRowWidget(
                                 dialogs.folderEntries.size() + index),
                             .widthSizing = antwika::ui::kGrowSizing,
                             .fillColor = entry == dialogs.fileDialog->fileName
@@ -284,15 +284,15 @@ namespace antwika::editor
                         {
                             const auto which =
                                 kEveryToolButton.at(rank);
-                            const auto active = toolButtonActive(which);
+                            const auto active = isToolButtonActive(which);
 
                             context.iconButton(
                                 antwika::ui::Icon{
-                                    .sheetTexture = iconsView.texture(),
+                                    .sheetTexture = iconsView.getTexture(),
                                     .sourceRect = iconOf(which),
                                     .scale = kUiScale},
                                 antwika::ui::ButtonSpec{
-                                    .widgetId = toolWidget(which),
+                                    .widgetId = getToolWidget(which),
                                     .state =
                                         active ? std::optional{
                                                  antwika::ui::
@@ -305,7 +305,7 @@ namespace antwika::editor
                     if (settings.tool == map::Tool::Brush)
                     {
                         context.spacer(
-                            antwika::ui::fixedSize(
+                            antwika::ui::getFixedSize(
                                 kPanelGap * kUiScale));
 
                         for (const auto which :
@@ -315,11 +315,11 @@ namespace antwika::editor
                         {
                             context.iconButton(
                                 antwika::ui::Icon{
-                                    .sheetTexture = iconsView.texture(),
+                                    .sheetTexture = iconsView.getTexture(),
                                     .sourceRect = iconOf(which),
                                     .scale = kUiScale},
                                 antwika::ui::ButtonSpec{
-                                    .widgetId = paintWidget(which),
+                                    .widgetId = getPaintWidget(which),
                                     .state =
                                         which == settings.paint
                                                ? std::optional{
@@ -349,11 +349,11 @@ namespace antwika::editor
 
                         context.iconButton(
                             antwika::ui::Icon{
-                                .sheetTexture = iconsView.texture(),
+                                .sheetTexture = iconsView.getTexture(),
                                 .sourceRect = iconOf(which),
                                 .scale = kUiScale},
                             antwika::ui::ButtonSpec{
-                                .widgetId = paintWidget(which),
+                                .widgetId = getPaintWidget(which),
                                 .state =
                                     which == settings.paint
                                            ? std::optional{
@@ -368,9 +368,9 @@ namespace antwika::editor
                     {
                         context.iconButton(
                             antwika::ui::Icon{
-                                .sheetTexture = iconsView.texture(),
+                                .sheetTexture = iconsView.getTexture(),
                                 .sourceRect =
-                                    antwika::editor::mirrorIcon(),
+                                    antwika::editor::getMirrorIcon(),
                                 .scale = kUiScale},
                             antwika::ui::ButtonSpec{
                                 .widgetId = antwika::editor::
@@ -384,7 +384,7 @@ namespace antwika::editor
                 if (marking)
                 {
                     context.spacer(
-                        antwika::ui::fixedSize(
+                        antwika::ui::getFixedSize(
                             kPanelGap * kUiScale));
 
                     const auto kinds = context.row(
@@ -403,11 +403,11 @@ namespace antwika::editor
 
                         context.iconButton(
                             antwika::ui::Icon{
-                                .sheetTexture = iconsView.texture(),
+                                .sheetTexture = iconsView.getTexture(),
                                 .sourceRect = iconOf(kind),
                                 .scale = kUiScale},
                             antwika::ui::ButtonSpec{
-                                .widgetId = kindWidget(kind),
+                                .widgetId = getKindWidget(kind),
                                 .state =
                                     active ? std::optional{
                                              antwika::ui::
@@ -435,11 +435,11 @@ namespace antwika::editor
 
                         context.iconButton(
                             antwika::ui::Icon{
-                                .sheetTexture = iconsView.texture(),
+                                .sheetTexture = iconsView.getTexture(),
                                 .sourceRect = iconOf(facing),
                                 .scale = kUiScale},
                             antwika::ui::ButtonSpec{
-                                .widgetId = facingWidget(facing),
+                                .widgetId = getFacingWidget(facing),
                                 .state =
                                     active ? std::optional{
                                              antwika::ui::
@@ -468,7 +468,7 @@ namespace antwika::editor
                                   ? "side"
                                   : "front",
                             antwika::ui::ButtonSpec{
-                                .widgetId = partWidget(part),
+                                .widgetId = getPartWidget(part),
                                 .fillColor = active
                                            ? kSelectionAccentColor
                                            : kGridLineColor});
@@ -497,9 +497,9 @@ namespace antwika::editor
 
                 const auto drawing = context.column(
                     antwika::ui::ContainerSpec{
-                        .widthSizing = antwika::ui::fixedSize(
-                            inspectColumnWidth(
-                                viewportRenderer.windowSize(),
+                        .widthSizing = antwika::ui::getFixedSize(
+                            getInspectColumnWidth(
+                                viewportRenderer.getWindowSize(),
                                 camera::kCanvasSize)),
                         .heightSizing = antwika::ui::kGrowSizing});
 
@@ -565,31 +565,31 @@ namespace antwika::editor
             }
 
             context.label(
-                time::formatFrameRate(meters.frameRate.perSecond()) + " - "
-                    + time::formatFrameTime(
-                          meters.workRate.averageFrameTime())
+                time::getFormatFrameRate(meters.frameRate.getPerSecond()) + " - "
+                    + time::getFormatFrameTime(
+                          meters.workRate.getAverageFrameTime())
                     + " - w "
-                    + time::formatFrameTime(meters.worldRate.averageFrameTime())
-                    + " u " + time::formatFrameTime(
-                        meters.uiRate.averageFrameTime())
-                    + " s " + time::formatFrameTime(
-                        meters.seamRate.averageFrameTime())
-                    + " l " + time::formatFrameTime(
-                        meters.lampRate.averageFrameTime())
+                    + time::getFormatFrameTime(meters.worldRate.getAverageFrameTime())
+                    + " u " + time::getFormatFrameTime(
+                        meters.uiRate.getAverageFrameTime())
+                    + " s " + time::getFormatFrameTime(
+                        meters.seamRate.getAverageFrameTime())
+                    + " l " + time::getFormatFrameTime(
+                        meters.lampRate.getAverageFrameTime())
                     + " c "
-                    + time::formatFrameTime(meters.sightRate.averageFrameTime())
+                    + time::getFormatFrameTime(meters.sightRate.getAverageFrameTime())
                     + " h "
-                    + time::formatFrameTime(meters.hideRate.averageFrameTime()),
+                    + time::getFormatFrameTime(meters.hideRate.getAverageFrameTime()),
                 kGridLineColor);
         }
 
         auto frame = context.build();
-        const auto port = viewportRenderer.viewport();
+        const auto port = viewportRenderer.getViewport();
         const auto roomOf =
             [&frame, port](const antwika::widget::WidgetId id)
             -> std::optional<gfx::RectF>
         {
-            const auto rect = frame.rects.find(id);
+            const auto rect = frame.rects.getFind(id);
 
             if (!rect.has_value())
             {

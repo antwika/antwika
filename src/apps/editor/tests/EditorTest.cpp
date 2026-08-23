@@ -74,7 +74,7 @@ TEST_F(EditorTest, Editor_OpensAMapWhoseTilesTransitionIntoOneAnother)
     const auto mapPath = scratch.pathIn("transitions.json");
 
     antwika::map::Map drawnMap;
-    drawnMap.tilemap = antwika::tilemap::defaultTilemap();
+    drawnMap.tilemap = antwika::tilemap::getDefaultTilemap();
     drawnMap.settings.cornersJoined = true;
     drawnMap.transitions.push_back(
         antwika::tile::TransitionTile{
@@ -100,9 +100,9 @@ TEST_F(EditorTest, Editor_StandsTheRosterOnTheWorldItJustBuilt)
     const auto mapPath = scratch.pathIn("spawn.json");
 
     antwika::map::Map drawnMap;
-    drawnMap.tilemap = antwika::tilemap::defaultTilemap();
-    drawnMap.voxels = antwika::voxel::expandCubesToVoxels(
-        antwika::voxelmap::demoCells());
+    drawnMap.tilemap = antwika::tilemap::getDefaultTilemap();
+    drawnMap.voxels = antwika::voxel::getExpandCubesToVoxels(
+        antwika::voxelmap::getDemoCells());
     drawnMap.spawnCubePosition =
         antwika::voxel::VoxelPosition{.x = 1, .y = 1, .z = 1};
 

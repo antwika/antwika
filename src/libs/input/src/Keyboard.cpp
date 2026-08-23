@@ -7,7 +7,7 @@ namespace antwika::input
 
     namespace
     {
-        [[nodiscard]] bool named(std::size_t index) noexcept
+        [[nodiscard]] bool isNamed(std::size_t index) noexcept
         {
             return index < kKeyCount;
         }
@@ -24,8 +24,8 @@ namespace antwika::input
     {
         applyModifiers(eventPressed.modifiers);
 
-        const auto index = keyIndex(eventPressed.key);
-        if (!named(index))
+        const auto index = getKeyIndex(eventPressed.key);
+        if (!isNamed(index))
         {
             return;
         }
@@ -43,8 +43,8 @@ namespace antwika::input
     {
         applyModifiers(eventReleased.modifiers);
 
-        const auto index = keyIndex(eventReleased.key);
-        if (!named(index))
+        const auto index = getKeyIndex(eventReleased.key);
+        if (!isNamed(index))
         {
             return;
         }
@@ -60,31 +60,31 @@ namespace antwika::input
 
     bool Keyboard::isDown(Key key) const noexcept
     {
-        const auto index = keyIndex(key);
-        return named(index) && downKeys.test(index);
+        const auto index = getKeyIndex(key);
+        return isNamed(index) && downKeys.test(index);
     }
 
     bool Keyboard::wasPressed(Key key) const noexcept
     {
-        const auto index = keyIndex(key);
-        return named(index) && pressedKeys.test(index);
+        const auto index = getKeyIndex(key);
+        return isNamed(index) && pressedKeys.test(index);
     }
 
     bool Keyboard::wasReleased(Key key) const noexcept
     {
-        const auto index = keyIndex(key);
-        return named(index) && releasedKeys.test(index);
+        const auto index = getKeyIndex(key);
+        return isNamed(index) && releasedKeys.test(index);
     }
 
-    KeyModifiers Keyboard::modifiers() const noexcept
+    KeyModifiers Keyboard::getModifiers() const noexcept
     {
         return heldModifiers;
     }
 
-    KeyModifiers Keyboard::pressModifiers(Key key) const noexcept
+    KeyModifiers Keyboard::getPressModifiers(Key key) const noexcept
     {
-        const auto index = keyIndex(key);
-        return named(index) ? pressedWithModifiers[index] : KeyModifiers{};
+        const auto index = getKeyIndex(key);
+        return isNamed(index) ? pressedWithModifiers[index] : KeyModifiers{};
     }
 
 }

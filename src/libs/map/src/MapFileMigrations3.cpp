@@ -91,48 +91,48 @@ namespace antwika::map
         void newestMapMigrations(
             schema::MigrationList &migrations)
         {
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 22,
                 23,
                 "antwika::map: a decor now says how often "
                 "it takes a base it may stand on",
                 mapV22ToV23));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 23,
                 24,
                 "antwika::map: a decor now carries a name "
                 "the artist may give it",
                 mapV23ToV24));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 24,
                 25,
                 "antwika::map: a map now keeps the view "
                 "toggles as they were left",
                 mapV24ToV25));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 25,
                 26,
                 "antwika::map: a map now says how its inks "
                 "glow and how much light the world keeps",
                 mapV25ToV26));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 26,
                 27,
                 "antwika::map: a stamp tool joined the "
                 "panel",
                 mapV26ToV27));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 27,
                 28,
                 "antwika::map: cubes may be ladders now",
                 mapV27ToV28));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 28,
                 29,
                 "antwika::map: an exit may lead to "
                 "another map now",
                 mapV28ToV29));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 29,
                 30,
                 "antwika::map: a map may hold figures "

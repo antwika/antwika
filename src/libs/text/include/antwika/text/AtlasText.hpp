@@ -16,10 +16,10 @@
 namespace antwika::text
 {
 
-    [[nodiscard]] gfx::Size atlasTextSize(
+    [[nodiscard]] gfx::Size getAtlasTextSize(
         const font::GlyphAtlas &atlas, std::string_view text) noexcept;
 
-    [[nodiscard]] std::vector<GlyphBlit> atlasTextBlits(
+    [[nodiscard]] std::vector<GlyphBlit> getAtlasTextBlits(
         const font::GlyphAtlas &atlas,
         gfx::Point originPoint,
         std::string_view text);

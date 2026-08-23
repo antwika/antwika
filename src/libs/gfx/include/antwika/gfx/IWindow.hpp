@@ -15,18 +15,18 @@ namespace antwika::gfx
     public:
         virtual ~IWindow() = default;
 
-        [[nodiscard]] virtual WindowId id() const = 0;
+        [[nodiscard]] virtual WindowId getId() const = 0;
 
         [[nodiscard]] virtual bool isOpen() const = 0;
 
-        [[nodiscard]] virtual std::string title() const = 0;
+        [[nodiscard]] virtual std::string getTitle() const = 0;
 
-        [[nodiscard]] virtual Size configuredSize() const
+        [[nodiscard]] virtual Size getConfiguredSize() const
         {
-            return size();
+            return getSize();
         }
 
-        [[nodiscard]] virtual Size size() const = 0;
+        [[nodiscard]] virtual Size getSize() const = 0;
 
         [[nodiscard]] virtual bool isFullscreen() const = 0;
 

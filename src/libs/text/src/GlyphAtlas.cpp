@@ -39,9 +39,9 @@ namespace antwika::text
         }
     }
 
-    gfx::Bitmap glyphAtlasBitmap(const GlyphCells &cells)
+    gfx::Bitmap getGlyphAtlasBitmap(const GlyphCells &cells)
     {
-        const gfx::Size cellSize = cells.cellSize();
+        const gfx::Size cellSize = cells.getCellSize();
 
         const gfx::Size sheetSize{
             .width = static_cast<std::uint32_t>(gfx::kGlyphCount)
@@ -81,7 +81,7 @@ namespace antwika::text
         return bitmap;
     } // GCOVR_EXCL_LINE
 
-    std::optional<gfx::Rect> glyphAtlasCell(
+    std::optional<gfx::Rect> getGlyphAtlasCell(
         const GlyphCells &cells, char character) noexcept
     {
         const auto index = indexOf(character);
@@ -91,7 +91,7 @@ namespace antwika::text
             return std::nullopt;
         }
 
-        const gfx::Size cellSize = cells.cellSize();
+        const gfx::Size cellSize = cells.getCellSize();
 
         return gfx::Rect{
             .originPoint =
@@ -100,17 +100,17 @@ namespace antwika::text
             .size = cellSize};
     }
 
-    std::vector<GlyphBlit> glyphAtlasBlits(
+    std::vector<GlyphBlit> getGlyphAtlasBlits(
         const GlyphCells &cells, gfx::Point originPoint, std::string_view text)
     {
-        const gfx::Size cellSize = cells.cellSize();
+        const gfx::Size cellSize = cells.getCellSize();
 
         std::vector<GlyphBlit> blits;
         blits.reserve(text.size());
 
         for (std::size_t charIndex = 0; charIndex < text.size(); ++charIndex)
         {
-            const auto source = glyphAtlasCell(cells, text[charIndex]);
+            const auto source = getGlyphAtlasCell(cells, text[charIndex]);
 
             if (!source.has_value())
             {

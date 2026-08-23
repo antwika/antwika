@@ -12,11 +12,11 @@ using antwika::voxel::VoxelPosition;
 using antwika::voxel::VoxelPosition;
 using antwika::worldgen::cellOf;
 using antwika::worldgen::ChunkShape;
-using antwika::worldgen::chunkBox;
+using antwika::worldgen::getChunkBox;
 using antwika::worldgen::cubeAt;
-using antwika::worldgen::cubeCount;
+using antwika::worldgen::getCubeCount;
 using antwika::worldgen::holds;
-using antwika::worldgen::within;
+using antwika::worldgen::isWithin;
 using antwika::worldgen::WorldgenError;
 
 namespace
@@ -26,14 +26,14 @@ namespace
 
 TEST(ChunkShapeTest, CubeCount_MultipliesTheThreeSides)
 {
-    EXPECT_EQ(cubeCount(kSmallShape), 60U);
+    EXPECT_EQ(getCubeCount(kSmallShape), 60U);
 }
 
 TEST(ChunkShapeTest, CubeCount_TurnsAwayAShapeWithNoSideToIt)
 {
-    EXPECT_THROW((void)cubeCount(ChunkShape{.width = 0}), WorldgenError);
-    EXPECT_THROW((void)cubeCount(ChunkShape{.depth = 0}), WorldgenError);
-    EXPECT_THROW((void)cubeCount(ChunkShape{.height = 0}), WorldgenError);
+    EXPECT_THROW((void)getCubeCount(ChunkShape{.width = 0}), WorldgenError);
+    EXPECT_THROW((void)getCubeCount(ChunkShape{.depth = 0}), WorldgenError);
+    EXPECT_THROW((void)getCubeCount(ChunkShape{.height = 0}), WorldgenError);
 }
 
 TEST(ChunkShapeTest, CellOf_RunsBottomUpSoTiesBreakLow)
@@ -70,9 +70,9 @@ TEST(ChunkShapeTest, CellOf_NumbersEveryCubeOnce)
         }
     }
 
-    EXPECT_EQ(seenIndexes.size(), cubeCount(kSmallShape));
+    EXPECT_EQ(seenIndexes.size(), getCubeCount(kSmallShape));
     EXPECT_EQ(*seenIndexes.begin(), 0U);
-    EXPECT_EQ(*seenIndexes.rbegin(), cubeCount(kSmallShape) - 1);
+    EXPECT_EQ(*seenIndexes.rbegin(), getCubeCount(kSmallShape) - 1);
 }
 
 TEST(ChunkShapeTest, CellOf_TurnsAwayACubeOutsideTheChunk)
@@ -85,7 +85,7 @@ TEST(ChunkShapeTest, CellOf_TurnsAwayACubeOutsideTheChunk)
 
 TEST(ChunkShapeTest, CubeAt_UndoesCellOf)
 {
-    for (std::size_t cell = 0; cell < cubeCount(kSmallShape); ++cell)
+    for (std::size_t cell = 0; cell < getCubeCount(kSmallShape); ++cell)
     {
         EXPECT_EQ(cellOf(kSmallShape, cubeAt(kSmallShape, cell)), cell);
     }
@@ -94,27 +94,27 @@ TEST(ChunkShapeTest, CubeAt_UndoesCellOf)
 TEST(ChunkShapeTest, CubeAt_TurnsAwayACellTheChunkDoesNotHold)
 {
     EXPECT_THROW(
-        (void)cubeAt(kSmallShape, cubeCount(kSmallShape)),
+        (void)cubeAt(kSmallShape, getCubeCount(kSmallShape)),
         WorldgenError);
 }
 
 TEST(ChunkShapeTest, Within_TurnsAwayACubeOutsideTheShape)
 {
-    EXPECT_TRUE(within(kSmallShape, VoxelPosition{.x = 2, .y = 4, .z = 3}));
-    EXPECT_FALSE(within(kSmallShape, VoxelPosition{.x = -1}));
-    EXPECT_FALSE(within(kSmallShape, VoxelPosition{.y = -1}));
-    EXPECT_FALSE(within(kSmallShape, VoxelPosition{.z = -1}));
-    EXPECT_FALSE(within(kSmallShape, VoxelPosition{.x = 3}));
-    EXPECT_FALSE(within(kSmallShape, VoxelPosition{.y = 5}));
-    EXPECT_FALSE(within(kSmallShape, VoxelPosition{.z = 4}));
+    EXPECT_TRUE(isWithin(kSmallShape, VoxelPosition{.x = 2, .y = 4, .z = 3}));
+    EXPECT_FALSE(isWithin(kSmallShape, VoxelPosition{.x = -1}));
+    EXPECT_FALSE(isWithin(kSmallShape, VoxelPosition{.y = -1}));
+    EXPECT_FALSE(isWithin(kSmallShape, VoxelPosition{.z = -1}));
+    EXPECT_FALSE(isWithin(kSmallShape, VoxelPosition{.x = 3}));
+    EXPECT_FALSE(isWithin(kSmallShape, VoxelPosition{.y = 5}));
+    EXPECT_FALSE(isWithin(kSmallShape, VoxelPosition{.z = 4}));
 }
 
 TEST(ChunkShapeTest, ChunkBox_CoversEveryVoxelOfEveryCube)
 {
     constexpr VoxelPosition originPointPosition{.x = 2, .y = -3, .z = 5};
-    const auto box = chunkBox(kSmallShape, originPointPosition);
+    const auto box = getChunkBox(kSmallShape, originPointPosition);
 
-    for (std::size_t cell = 0; cell < cubeCount(kSmallShape); ++cell)
+    for (std::size_t cell = 0; cell < getCubeCount(kSmallShape); ++cell)
     {
         const auto cube = cubeAt(kSmallShape, cell);
         const VoxelPosition cornerPosition{
@@ -122,7 +122,7 @@ TEST(ChunkShapeTest, ChunkBox_CoversEveryVoxelOfEveryCube)
             .y = (originPointPosition.y + cube.y) * antwika::voxel::kCubeSide,
             .z = (originPointPosition.z + cube.z) * antwika::voxel::kCubeSide};
 
-        for (const auto voxel : antwika::voxel::cubeCells(cornerPosition))
+        for (const auto voxel : antwika::voxel::getCubeCells(cornerPosition))
         {
             EXPECT_TRUE(holds(box, voxel));
         }
@@ -131,7 +131,7 @@ TEST(ChunkShapeTest, ChunkBox_CoversEveryVoxelOfEveryCube)
 
 TEST(ChunkShapeTest, Holds_LeavesTheCubeBesideTheChunkAlone)
 {
-    const auto box = chunkBox(kSmallShape, VoxelPosition{});
+    const auto box = getChunkBox(kSmallShape, VoxelPosition{});
 
     EXPECT_TRUE(holds(box, VoxelPosition{}));
     EXPECT_FALSE(holds(box, VoxelPosition{.x = -1}));
@@ -145,6 +145,6 @@ TEST(ChunkShapeTest, Holds_LeavesTheCubeBesideTheChunkAlone)
 TEST(ChunkShapeTest, ChunkBox_TurnsAwayAShapeWithNoSideToIt)
 {
     EXPECT_THROW(
-        (void)chunkBox(ChunkShape{.height = 0},
+        (void)getChunkBox(ChunkShape{.height = 0},
             VoxelPosition{}), WorldgenError);
 }

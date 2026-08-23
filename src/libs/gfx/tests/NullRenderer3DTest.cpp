@@ -22,7 +22,7 @@
 using antwika::gfx::Camera3D;
 using antwika::gfx::Color;
 using antwika::gfx::GfxError;
-using antwika::gfx::identityMatrix;
+using antwika::gfx::getIdentityMatrix;
 using antwika::gfx::IMesh;
 using antwika::gfx::IShader;
 using antwika::gfx::MeshData;
@@ -37,7 +37,7 @@ using ::testing::NiceMock;
 
 namespace
 {
-    MeshData oneTriangle()
+    MeshData getOneTriangle()
     {
         return MeshData{
             .vertices =
@@ -56,11 +56,11 @@ TEST(NullRenderer3DTest, CreateMesh_ReportsTheCountsItWasGiven)
     EXPECT_CALL(logger, log(Level::Trace, "gfx.null: create mesh"));
 
     const std::unique_ptr<IMesh> mesh =
-        renderer.createMesh(oneTriangle());
+        renderer.createMesh(getOneTriangle());
 
     ASSERT_NE(nullptr, mesh);
-    EXPECT_EQ(3U, mesh->vertexCount());
-    EXPECT_EQ(1U, mesh->triangleCount());
+    EXPECT_EQ(3U, mesh->getVertexCount());
+    EXPECT_EQ(1U, mesh->getTriangleCount());
 }
 
 TEST(NullRenderer3DTest, CreateMesh_RefusesGeometryARealBackendWould)
@@ -68,7 +68,7 @@ TEST(NullRenderer3DTest, CreateMesh_RefusesGeometryARealBackendWould)
     NiceMock<MockLogger> logger;
     NullRenderer renderer(logger);
 
-    MeshData mesh = oneTriangle();
+    MeshData mesh = getOneTriangle();
     mesh.indices.back() = 3U;
 
     EXPECT_THROW(
@@ -81,12 +81,12 @@ TEST(NullRenderer3DTest, DrawMesh_DiscardsTheDrawAndTracesIt)
     NullRenderer renderer(logger);
 
     const std::unique_ptr<IMesh> mesh =
-        renderer.createMesh(oneTriangle());
+        renderer.createMesh(getOneTriangle());
 
     EXPECT_CALL(logger, log(Level::Trace, "gfx.null: draw mesh"));
 
     renderer.drawMesh(
-        *mesh, identityMatrix(), Camera3D{}, Color{});
+        *mesh, getIdentityMatrix(), Camera3D{}, Color{});
 }
 
 TEST(NullRenderer3DTest, CreateShader_ReturnsAReadyProgramAndTracesIt)
@@ -118,7 +118,7 @@ TEST(NullRenderer3DTest, DrawMesh_DiscardsAMaterialDrawAndTracesIt)
     NullRenderer renderer(logger);
 
     const std::unique_ptr<IMesh> mesh =
-        renderer.createMesh(oneTriangle());
+        renderer.createMesh(getOneTriangle());
     const std::unique_ptr<IShader> shader = renderer.createShader(
         ShaderSource{.vertex = "vs", .fragment = "fs"});
 
@@ -126,7 +126,7 @@ TEST(NullRenderer3DTest, DrawMesh_DiscardsAMaterialDrawAndTracesIt)
 
     renderer.drawMesh(
         *mesh,
-        identityMatrix(),
+        getIdentityMatrix(),
         Camera3D{},
         MeshMaterial{.shader = shader.get()});
 }

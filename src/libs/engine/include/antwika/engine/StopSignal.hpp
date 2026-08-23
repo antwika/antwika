@@ -14,10 +14,10 @@ namespace antwika::engine
     public:
         void handle(const TickEvent &event) override;
 
-        [[nodiscard]] bool stopped() const noexcept;
+        [[nodiscard]] bool isStopped() const noexcept;
 
     private:
-        bool isStopped = false;
+        bool stopped = false;
     };
 
 }

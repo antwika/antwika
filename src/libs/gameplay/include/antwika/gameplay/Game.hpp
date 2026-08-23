@@ -49,13 +49,13 @@ namespace antwika::gameplay
             const std::vector<std::vector<voxel::VoxelPosition>>
                 &patrolPositions);
 
-        [[nodiscard]] ecs::World &world() noexcept override;
+        [[nodiscard]] ecs::World &getWorld() noexcept override;
 
-        [[nodiscard]] const ecs::World &world() const noexcept override;
+        [[nodiscard]] const ecs::World &getWorld() const noexcept override;
 
-        [[nodiscard]] ecs::Entity eye() const noexcept override;
+        [[nodiscard]] ecs::Entity getEye() const noexcept override;
 
-        [[nodiscard]] ecs::Entity player() const noexcept override;
+        [[nodiscard]] ecs::Entity getPlayer() const noexcept override;
 
         void setPlayer(ecs::Entity entity) noexcept override;
 
@@ -82,15 +82,15 @@ namespace antwika::gameplay
 
         [[nodiscard]] gfx::Vec3 playerAt() const override;
 
-        [[nodiscard]] GateState &gates() noexcept override;
+        [[nodiscard]] GateState &getGates() noexcept override;
 
-        [[nodiscard]] const GateState &gates(
+        [[nodiscard]] const GateState &getGates(
             ) const noexcept override;
 
-        [[nodiscard]] camera::CameraTransform &cameraTransform()
+        [[nodiscard]] camera::CameraTransform &getCameraTransform()
             noexcept override;
 
-        [[nodiscard]] const camera::CameraTransform &cameraTransform()
+        [[nodiscard]] const camera::CameraTransform &getCameraTransform()
             const noexcept override;
 
         [[nodiscard]] std::int32_t &zoom() noexcept override;
@@ -105,17 +105,17 @@ namespace antwika::gameplay
             std::vector<gfx::Vec3> stopPositions,
             voxel::VoxelPosition goalPosition) override;
 
-        [[nodiscard]] const std::vector<gfx::Vec3> &path()
+        [[nodiscard]] const std::vector<gfx::Vec3> &getPath()
             const noexcept override;
 
         [[nodiscard]] const std::optional<voxel::VoxelPosition> &
-        pathGoal() const noexcept override;
+        getPathGoal() const noexcept override;
 
         void stepAlongPath(bool playing) override;
 
         void clearPath() noexcept override;
 
-        [[nodiscard]] map::Progress progress(
+        [[nodiscard]] map::Progress getProgress(
             std::string mapName) const override;
 
     private:

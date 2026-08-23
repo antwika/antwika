@@ -12,7 +12,7 @@ TEST(PointerHintChannelTest, ForRenderingOnly_ReportsNothingUntilSomethingIs)
 {
     const PointerHintChannel channel;
 
-    EXPECT_EQ(channel.latest(), std::nullopt);
+    EXPECT_EQ(channel.getLatest(), std::nullopt);
 }
 
 TEST(PointerHintChannelTest, ForRenderingOnly_ReportsWhatWasPublished)
@@ -22,7 +22,7 @@ TEST(PointerHintChannelTest, ForRenderingOnly_ReportsWhatWasPublished)
     channel.publish(PointerHint{.position = {.x = 7, .y = 9}});
 
     EXPECT_EQ(
-        channel.latest(),
+        channel.getLatest(),
         (PointerHint{.position = {.x = 7, .y = 9}}));
 }
 
@@ -34,6 +34,6 @@ TEST(PointerHintChannelTest, ForRenderingOnly_ReportsOnlyTheLatest)
     channel.publish(PointerHint{.position = {.x = 2, .y = 2}});
 
     EXPECT_EQ(
-        channel.latest(),
+        channel.getLatest(),
         (PointerHint{.position = {.x = 2, .y = 2}}));
 }

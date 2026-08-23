@@ -31,7 +31,7 @@ namespace antwika::ui
     namespace
     {
         using detail::Area;
-        using detail::clampToU32;
+        using detail::getClampToU32;
         using detail::TextEditInput;
         using detail::FocusRing;
         using detail::kNoNode;
@@ -55,7 +55,7 @@ namespace antwika::ui
             std::span<const TextHighlight> litHighlights{};
         };
 
-        [[nodiscard]] bool litPiece(
+        [[nodiscard]] bool isLitPiece(
             const Line &line,
             const std::size_t fromIndex,
             const std::size_t toIndex) noexcept
@@ -71,7 +71,7 @@ namespace antwika::ui
             return false;
         }
 
-        [[nodiscard]] std::size_t countLines(
+        [[nodiscard]] std::size_t getCountLines(
             const std::string_view text) noexcept
         {
             return 1
@@ -82,7 +82,7 @@ namespace antwika::ui
         [[nodiscard]] std::uint32_t lineHeightOf(
             const Theme &theme) noexcept
         {
-            return clampToU32(
+            return getClampToU32(
                 std::uint64_t{
                     antwika::gfx::glyphLineHeightOf(theme.face)}
                 * theme.textScale);
@@ -90,7 +90,7 @@ namespace antwika::ui
 
         [[nodiscard]] std::uint32_t advanceOf(const Theme &theme) noexcept
         {
-            return clampToU32(
+            return getClampToU32(
                 std::uint64_t{antwika::gfx::glyphAdvanceOf(theme.face)}
                 * theme.textScale);
         }
@@ -139,7 +139,7 @@ namespace antwika::ui
             tree.open(Node{ // GCOVR_EXCL_LINE
                 .axis = Axis::Row,
                 .widthSizing = kGrowSizing,
-                .heightSizing = fixedSize(height),
+                .heightSizing = getFixedSize(height),
                 .gap = 0,
                 .clips = true});
 
@@ -149,7 +149,7 @@ namespace antwika::ui
             {
                 if (cuts[index] == line.caret)
                 {
-                    tree.add(detail::caretNode(theme)); // GCOVR_EXCL_LINE
+                    tree.add(detail::getCaretNode(theme)); // GCOVR_EXCL_LINE
                 }
 
                 const auto fromIndex = cuts[index];
@@ -159,7 +159,7 @@ namespace antwika::ui
                     line.lowIndex < line.highIndex && fromIndex >= line.lowIndex
                                     && toIndex <= line.highIndex;
 
-                const bool lit = !picked && litPiece(line, fromIndex, toIndex);
+                const bool lit = !picked && isLitPiece(line, fromIndex, toIndex);
 
                 tree.add(Node{ // GCOVR_EXCL_LINE
                     .kind = detail::NodeKind::Text,
@@ -171,21 +171,21 @@ namespace antwika::ui
                                      : std::nullopt),
                     .text = std::string{ // GCOVR_EXCL_LINE
                         line.text.substr(fromIndex, toIndex - fromIndex)},
-                    .textScale = antwika::gfx::encodeTextScale(
+                    .textScale = antwika::gfx::getEncodeTextScale(
                         theme.face, theme.textScale),
                     .textColor = theme.textColor});
             }
 
             if (line.caret == line.end)
             {
-                tree.add(detail::caretNode(theme)); // GCOVR_EXCL_LINE
+                tree.add(detail::getCaretNode(theme)); // GCOVR_EXCL_LINE
             }
 
             if (line.lowIndex < line.highIndex && line.highIndex > line.end)
             {
                 tree.add(Node{ // GCOVR_EXCL_LINE
-                    .widthSizing = fixedSize(advanceOf(theme)),
-                    .heightSizing = fixedSize(height),
+                    .widthSizing = getFixedSize(advanceOf(theme)),
+                    .heightSizing = getFixedSize(height),
                     .backgroundColor = theme.selectionColor});
             }
 
@@ -238,7 +238,7 @@ namespace antwika::ui
             .widgetId = spec.widgetId,
             .focusStyle = ring});
 
-        const auto lines = countLines(spec.text);
+        const auto lines = getCountLines(spec.text);
 
         const auto first = std::min(spec.scroll, lines - 1);
 
@@ -279,7 +279,7 @@ namespace antwika::ui
 
         for (std::size_t line = 0; line < lines; ++line)
         {
-            const auto end = detail::endOfLine(spec.text, begin);
+            const auto end = detail::getEndOfLine(spec.text, begin);
 
             const bool carries =
                 focused && cursor >= begin && cursor <= end;
@@ -308,7 +308,7 @@ namespace antwika::ui
 
                     tree->add(Node{ // GCOVR_EXCL_LINE
                         .widthSizing = kGrowSizing,
-                        .heightSizing = fixedSize(clampToU32(
+                        .heightSizing = getFixedSize(getClampToU32(
                             std::uint64_t{band.rows}
                             * lineHeightOf(themeValue))),
                         .widgetId = band.widgetId});
@@ -334,14 +334,14 @@ namespace antwika::ui
         {
             track = tree->open(Node{ // GCOVR_EXCL_LINE
                 .axis = Axis::Column,
-                .widthSizing = fixedSize(themeValue.scrollbarWidth),
+                .widthSizing = getFixedSize(themeValue.scrollbarWidth),
                 .heightSizing = kGrowSizing,
                 .gap = 0,
                 .backgroundColor = themeValue.scrollTrackColor});
 
             thumb = tree->add(Node{ // GCOVR_EXCL_LINE
                 .widthSizing = kGrowSizing,
-                .heightSizing = fixedSize(0),
+                .heightSizing = getFixedSize(0),
                 .backgroundColor = themeValue.scrollThumbColor});
 
             closeContainer();

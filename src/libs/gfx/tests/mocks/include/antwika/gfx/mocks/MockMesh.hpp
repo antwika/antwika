@@ -14,8 +14,8 @@ namespace antwika::gfx::mocks
     class MockMesh : public IMesh
     {
     public:
-        MOCK_METHOD(std::size_t, vertexCount, (), (const, override));
-        MOCK_METHOD(std::size_t, triangleCount, (), (const, override));
+        MOCK_METHOD(std::size_t, getVertexCount, (), (const, override));
+        MOCK_METHOD(std::size_t, getTriangleCount, (), (const, override));
     };
 
 }

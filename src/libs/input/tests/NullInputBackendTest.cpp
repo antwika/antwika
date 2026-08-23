@@ -18,7 +18,7 @@ TEST(NullInputBackendTest, Name_IsNull)
     NiceMock<MockLogger> logger;
     NullInputBackend backend(logger);
 
-    EXPECT_EQ(backend.name(), "null");
+    EXPECT_EQ(backend.getName(), "null");
 }
 
 TEST(NullInputBackendTest, Ctor_LogsThatItReportsNothing)
@@ -36,7 +36,7 @@ TEST(NullInputBackendTest, Capabilities_ClaimsBothDevices)
     NullInputBackend backend(logger);
 
     EXPECT_EQ(
-        backend.capabilities(),
+        backend.getCapabilities(),
         (InputCapabilities{.keyboard = true, .pointer = true}));
 }
 

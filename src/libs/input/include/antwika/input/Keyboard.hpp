@@ -27,9 +27,9 @@ namespace antwika::input
 
         [[nodiscard]] bool wasReleased(Key key) const noexcept;
 
-        [[nodiscard]] KeyModifiers modifiers() const noexcept;
+        [[nodiscard]] KeyModifiers getModifiers() const noexcept;
 
-        [[nodiscard]] KeyModifiers pressModifiers(Key key) const noexcept;
+        [[nodiscard]] KeyModifiers getPressModifiers(Key key) const noexcept;
 
     private:
         std::bitset<kKeyCount> downKeys;

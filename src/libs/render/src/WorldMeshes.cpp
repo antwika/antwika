@@ -22,7 +22,7 @@ namespace antwika::render
         auto viewedMap = drawnMap;
 
         viewedMap.voxels = shownVoxels;
-        effectiveRules = tile::rulesWithTransitions(
+        effectiveRules = tile::getRulesWithTransitions(
             drawnMap.rules,
             drawnMap.transitions,
             sheetBitmaps.at(0),
@@ -32,13 +32,13 @@ namespace antwika::render
         solvedTiles =
             map::faceTilesFor(viewedMap, joiningSeams, faceTileCache);
         visibleFaces = voxelmap::visibleFacesOf(shownVoxels);
-        finalFaceTiles = decor::withVariantsApplied(
+        finalFaceTiles = decor::getWithVariantsApplied(
             visibleFaces, solvedTiles, drawnMap.familyGroups, 0);
 
         const auto meshFor = [this, &viewportRenderer, &shownVoxels](
                                  const voxelmap::Pass pass)
         {
-            const auto mesh = voxelmap::voxelMesh(
+            const auto mesh = voxelmap::getVoxelMesh(
                 shownVoxels, visibleFaces, finalFaceTiles, pass);
 
             std::vector<std::unique_ptr<gfx::IMesh>> pieceMeshes;
@@ -49,7 +49,7 @@ namespace antwika::render
             }
 
             for (const auto &piece :
-                 gfx::splitMesh(mesh, voxelmap::kMeshPieceVertices))
+                 gfx::getSplitMesh(mesh, voxelmap::kMeshPieceVertices))
             {
                 pieceMeshes.push_back(viewportRenderer.createMesh(piece));
             }
@@ -59,7 +59,7 @@ namespace antwika::render
 
         solidMesh = meshFor(voxelmap::Pass::Solid);
         waterMesh = meshFor(voxelmap::Pass::Water);
-        decorByFace = decor::solveDecorLayers(
+        decorByFace = decor::getSolveDecorLayers(
             visibleFaces,
             solvedTiles,
             drawnMap.decor,
@@ -79,7 +79,7 @@ namespace antwika::render
 
         for (std::size_t rank = 0; rank < decorByFace.size(); ++rank)
         {
-            const auto mesh = decor::decorMesh(
+            const auto mesh = decor::getDecorMesh(
                 visibleFaces,
                 decorByFace[rank].second,
                 drawnMap.decor,
@@ -105,55 +105,55 @@ namespace antwika::render
                   : viewportRenderer.createMesh(mergedData);
     }
 
-    std::span<const std::unique_ptr<gfx::IMesh>> WorldMeshes::solid()
+    std::span<const std::unique_ptr<gfx::IMesh>> WorldMeshes::getSolid()
         const noexcept
     {
         return solidMesh;
     }
 
-    std::span<const std::unique_ptr<gfx::IMesh>> WorldMeshes::water()
+    std::span<const std::unique_ptr<gfx::IMesh>> WorldMeshes::getWater()
         const noexcept
     {
         return waterMesh;
     }
 
-    const gfx::IMesh *WorldMeshes::decor() const noexcept
+    const gfx::IMesh *WorldMeshes::getDecor() const noexcept
     {
         return decorMesh.get();
     }
 
-    const voxel::Voxels &WorldMeshes::cells()
+    const voxel::Voxels &WorldMeshes::getCells()
         const noexcept
     {
         return solidVoxels;
     }
 
-    const std::vector<voxelmap::FaceRef> &WorldMeshes::faces()
+    const std::vector<voxelmap::FaceRef> &WorldMeshes::getFaces()
         const noexcept
     {
         return visibleFaces;
     }
 
-    const std::vector<tilemap::Tile> &WorldMeshes::solved()
+    const std::vector<tilemap::Tile> &WorldMeshes::getSolved()
         const noexcept
     {
         return solvedTiles;
     }
 
-    const std::vector<tilemap::Tile> &WorldMeshes::drawnAs()
+    const std::vector<tilemap::Tile> &WorldMeshes::getDrawnAs()
         const noexcept
     {
         return finalFaceTiles;
     }
 
-    const tile::TileRules &WorldMeshes::rules() const noexcept
+    const tile::TileRules &WorldMeshes::getRules() const noexcept
     {
         return effectiveRules;
     }
 
     const std::vector<
         std::pair<std::size_t, std::map<std::size_t, tilemap::Tile>>> &
-    WorldMeshes::decorLayers() const noexcept
+    WorldMeshes::getDecorLayers() const noexcept
     {
         return decorByFace;
     }

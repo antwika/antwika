@@ -30,7 +30,7 @@ using antwika::gfx::Size;
 using antwika::ui::Axis;
 using antwika::ui::Context;
 using antwika::ui::FillRect;
-using antwika::ui::fixedSize;
+using antwika::ui::getFixedSize;
 using antwika::ui::Frame;
 using antwika::ui::kFitSizing;
 using antwika::ui::kGrowSizing;
@@ -55,7 +55,7 @@ namespace
     constexpr Color kAccentColor{.red = 90, .green = 40, .blue = 40};
     constexpr Color kInkColor{.red = 200, .green = 210, .blue = 220};
 
-    Theme plainTheme()
+    Theme getPlainTheme()
     {
         return Theme{
             .panelColor = kPanelColor,
@@ -66,7 +66,7 @@ namespace
             .buttonPadding = 0};
     }
 
-    Node container(
+    Node getContainer(
         Axis axis, Sizing widthSizing, Sizing heightSizing, WidgetId widget)
     {
         return Node{
@@ -76,7 +76,7 @@ namespace
             .widgetId = widget};
     }
 
-    std::optional<Rect> filled(const Frame &frame, Color color)
+    std::optional<Rect> getFilled(const Frame &frame, Color color)
     {
         for (const auto &command : frame.drawList)
         {
@@ -96,7 +96,7 @@ TEST(WidgetRectsTest, Find_AnswersNothingWhenNothingWasNamed)
 {
     const WidgetRects rects;
 
-    EXPECT_FALSE(rects.find(kFirstWidget).has_value());
+    EXPECT_FALSE(rects.getFind(kFirstWidget).has_value());
 }
 
 TEST(WidgetRectsTest, Find_AnswersTheRectangleItWasGiven)
@@ -106,7 +106,7 @@ TEST(WidgetRectsTest, Find_AnswersTheRectangleItWasGiven)
     const WidgetRects rects{.widgetRects = {WidgetRect{
                                 .widgetId = kFirstWidget, .rect = boxRect}}};
 
-    EXPECT_EQ(boxRect, rects.find(kFirstWidget));
+    EXPECT_EQ(boxRect, rects.getFind(kFirstWidget));
 }
 
 TEST(WidgetRectsTest, Find_AnswersNothingForAnIdNoNodeCarried)
@@ -114,7 +114,7 @@ TEST(WidgetRectsTest, Find_AnswersNothingForAnIdNoNodeCarried)
     const WidgetRects rects{
         .widgetRects = {WidgetRect{.widgetId = kFirstWidget, .rect = {}}}};
 
-    EXPECT_FALSE(rects.find(kAbsentWidget).has_value());
+    EXPECT_FALSE(rects.getFind(kAbsentWidget).has_value());
 }
 
 TEST(WidgetRectsTest, OperatorEquals_ComparesTheEntriesAndTheirOrder)
@@ -147,21 +147,21 @@ TEST(WidgetRectsTest, OperatorEquals_ComparesTheEntriesAndTheirOrder)
 
 TEST(WidgetRectsTest, Layout_CollectsNothingWhenNoMappingIsAskedFor)
 {
-    LayoutTree tree{container(Axis::Row, kGrowSizing, kGrowSizing, kNoWidget)};
+    LayoutTree tree{getContainer(Axis::Row, kGrowSizing, kGrowSizing, kNoWidget)};
 
     const auto child =
-        tree.add(container(Axis::Row, kGrowSizing, kGrowSizing, kFirstWidget));
+        tree.add(getContainer(Axis::Row, kGrowSizing, kGrowSizing, kFirstWidget));
 
     layout(tree, Size{.width = 40, .height = 10});
 
-    EXPECT_EQ(40U, tree.node(child).arrangedRect.size.width);
+    EXPECT_EQ(40U, tree.getNode(child).arrangedRect.size.width);
 }
 
 TEST(WidgetRectsTest, Layout_LeavesAnUnnamedNodeOutOfTheMapping)
 {
-    LayoutTree tree{container(Axis::Row, kGrowSizing, kGrowSizing, kNoWidget)};
+    LayoutTree tree{getContainer(Axis::Row, kGrowSizing, kGrowSizing, kNoWidget)};
 
-    tree.add(container(Axis::Row, kGrowSizing, kGrowSizing, kNoWidget));
+    tree.add(getContainer(Axis::Row, kGrowSizing, kGrowSizing, kNoWidget));
 
     WidgetRects rects;
 
@@ -172,28 +172,28 @@ TEST(WidgetRectsTest, Layout_LeavesAnUnnamedNodeOutOfTheMapping)
 
 TEST(WidgetRectsTest, Layout_ReportsTheRectangleTheNodeWasArrangedInto)
 {
-    LayoutTree tree{container(Axis::Row, kGrowSizing, kGrowSizing, kNoWidget)};
+    LayoutTree tree{getContainer(Axis::Row, kGrowSizing, kGrowSizing, kNoWidget)};
 
     const auto first =
-        tree.add(container(Axis::Row, kGrowSizing, kGrowSizing, kFirstWidget));
+        tree.add(getContainer(Axis::Row, kGrowSizing, kGrowSizing, kFirstWidget));
     const auto second =
-        tree.add(container(Axis::Row, kGrowSizing, kGrowSizing, kSecondWidget));
+        tree.add(getContainer(Axis::Row, kGrowSizing, kGrowSizing, kSecondWidget));
 
     WidgetRects rects;
 
     layout(tree, Size{.width = 40, .height = 10}, &rects);
 
-    EXPECT_EQ(tree.node(first).arrangedRect, rects.find(kFirstWidget));
-    EXPECT_EQ(tree.node(second).arrangedRect, rects.find(kSecondWidget));
+    EXPECT_EQ(tree.getNode(first).arrangedRect, rects.getFind(kFirstWidget));
+    EXPECT_EQ(tree.getNode(second).arrangedRect, rects.getFind(kSecondWidget));
 }
 
 TEST(WidgetRectsTest, Layout_ReportsTheShrunkRectangleAndNotTheAskedFor)
 {
-    LayoutTree tree{container(Axis::Row, kGrowSizing, kGrowSizing, kNoWidget)};
+    LayoutTree tree{getContainer(Axis::Row, kGrowSizing, kGrowSizing, kNoWidget)};
 
-    tree.add(container(Axis::Row, fixedSize(40), kGrowSizing, kFirstWidget));
-    tree.add(container(Axis::Row, fixedSize(40), kGrowSizing, kSecondWidget));
-    tree.add(container(Axis::Row, fixedSize(40), kGrowSizing, kThirdWidget));
+    tree.add(getContainer(Axis::Row, getFixedSize(40), kGrowSizing, kFirstWidget));
+    tree.add(getContainer(Axis::Row, getFixedSize(40), kGrowSizing, kSecondWidget));
+    tree.add(getContainer(Axis::Row, getFixedSize(40), kGrowSizing, kThirdWidget));
 
     WidgetRects rects;
 
@@ -203,40 +203,40 @@ TEST(WidgetRectsTest, Layout_ReportsTheShrunkRectangleAndNotTheAskedFor)
         (Rect{
             .originPoint = {.x = 0, .y = 0},
             .size = {.width = 17, .height = 10}}),
-        rects.find(kFirstWidget));
+        rects.getFind(kFirstWidget));
     EXPECT_EQ(
         (Rect{
             .originPoint = {.x = 17, .y = 0},
             .size = {.width = 17, .height = 10}}),
-        rects.find(kSecondWidget));
+        rects.getFind(kSecondWidget));
     EXPECT_EQ(
         (Rect{
             .originPoint = {.x = 34, .y = 0},
             .size = {.width = 16, .height = 10}}),
-        rects.find(kThirdWidget));
+        rects.getFind(kThirdWidget));
 }
 
 TEST(WidgetRectsTest, Layout_KeepsTheLastDeclarationOfARepeatedId)
 {
-    LayoutTree tree{container(Axis::Row, kGrowSizing, kGrowSizing, kNoWidget)};
+    LayoutTree tree{getContainer(Axis::Row, kGrowSizing, kGrowSizing, kNoWidget)};
 
-    tree.add(container(Axis::Row, fixedSize(10), kGrowSizing, kFirstWidget));
+    tree.add(getContainer(Axis::Row, getFixedSize(10), kGrowSizing, kFirstWidget));
     const auto second =
         tree.add(
-            container(Axis::Row, fixedSize(10), kGrowSizing, kFirstWidget));
+            getContainer(Axis::Row, getFixedSize(10), kGrowSizing, kFirstWidget));
 
     WidgetRects rects;
 
     layout(tree, Size{.width = 40, .height = 10}, &rects);
 
     EXPECT_EQ(1U, rects.widgetRects.size());
-    EXPECT_EQ(tree.node(second).arrangedRect, rects.find(kFirstWidget));
-    EXPECT_EQ(10, tree.node(second).arrangedRect.originPoint.x);
+    EXPECT_EQ(tree.getNode(second).arrangedRect, rects.getFind(kFirstWidget));
+    EXPECT_EQ(10, tree.getNode(second).arrangedRect.originPoint.x);
 }
 
 TEST(WidgetRectsTest, Frame_ReportsNothingForAUiThatNamesNothing)
 {
-    Context uiContext{Size{.width = 40, .height = 20}, plainTheme()};
+    Context uiContext{Size{.width = 40, .height = 20}, getPlainTheme()};
 
     {
         const auto body = uiContext.column();
@@ -249,11 +249,11 @@ TEST(WidgetRectsTest, Frame_ReportsNothingForAUiThatNamesNothing)
 
 TEST(WidgetRectsTest, Frame_ReportsTheRectangleAContainerWasFilledWith)
 {
-    Context uiContext{Size{.width = 40, .height = 20}, plainTheme()};
+    Context uiContext{Size{.width = 40, .height = 20}, getPlainTheme()};
 
     {
         const auto body = uiContext.row({
-            .heightSizing = fixedSize(8),
+            .heightSizing = getFixedSize(8),
             .backgroundColor = kAccentColor,
             .widgetId = kFirstWidget});
 
@@ -262,21 +262,21 @@ TEST(WidgetRectsTest, Frame_ReportsTheRectangleAContainerWasFilledWith)
 
     const auto frame = uiContext.build();
 
-    EXPECT_EQ(filled(frame, kAccentColor), frame.rects.find(kFirstWidget));
+    EXPECT_EQ(getFilled(frame, kAccentColor), frame.rects.getFind(kFirstWidget));
     EXPECT_EQ(
         (Rect{
             .originPoint = {.x = 0, .y = 0},
             .size = {.width = 40, .height = 8}}),
-        frame.rects.find(kFirstWidget));
+        frame.rects.getFind(kFirstWidget));
 }
 
 TEST(WidgetRectsTest, Frame_ReportsAButtonsRectangleToo)
 {
-    Context uiContext{Size{.width = 40, .height = 20}, plainTheme()};
+    Context uiContext{Size{.width = 40, .height = 20}, getPlainTheme()};
 
     uiContext.button(
         "ab",
-        {.widgetId = kSecondWidget, .widthSizing = fixedSize(20)});
+        {.widgetId = kSecondWidget, .widthSizing = getFixedSize(20)});
 
     const auto frame = uiContext.build();
 
@@ -284,23 +284,23 @@ TEST(WidgetRectsTest, Frame_ReportsAButtonsRectangleToo)
         (Rect{
             .originPoint = {.x = 0, .y = 0},
             .size = {.width = 20, .height = 8}}),
-        frame.rects.find(kSecondWidget));
+        frame.rects.getFind(kSecondWidget));
 }
 
 TEST(WidgetRectsTest, Frame_KeepsANestedRectangleInsideItsParents)
 {
-    Context uiContext{Size{.width = 60, .height = 30}, plainTheme()};
+    Context uiContext{Size{.width = 60, .height = 30}, getPlainTheme()};
 
     {
         const auto outer = uiContext.column({
-            .widthSizing = fixedSize(40),
-            .heightSizing = fixedSize(20),
+            .widthSizing = getFixedSize(40),
+            .heightSizing = getFixedSize(20),
             .padding = 4U,
             .widgetId = kFirstWidget});
 
         {
             const auto inner = uiContext.row({
-                .heightSizing = fixedSize(6),
+                .heightSizing = getFixedSize(6),
                 .widgetId = kSecondWidget});
 
             uiContext.label("ab");
@@ -308,8 +308,8 @@ TEST(WidgetRectsTest, Frame_KeepsANestedRectangleInsideItsParents)
     }
 
     const auto frame = uiContext.build();
-    const auto parent = frame.rects.find(kFirstWidget);
-    const auto child = frame.rects.find(kSecondWidget);
+    const auto parent = frame.rects.getFind(kFirstWidget);
+    const auto child = frame.rects.getFind(kSecondWidget);
 
     ASSERT_TRUE(parent.has_value());
     ASSERT_TRUE(child.has_value());
@@ -330,12 +330,12 @@ TEST(WidgetRectsTest, Frame_HoversANamedContainerLikeAnyOtherWidget)
 {
     Context uiContext{
         Size{.width = 40, .height = 20},
-        plainTheme(),
+        getPlainTheme(),
         {.positionPoint = Point{.x = 5, .y = 2}}};
 
     {
         const auto body = uiContext.row({
-            .heightSizing = fixedSize(8),
+            .heightSizing = getFixedSize(8),
             .backgroundColor = kAccentColor,
             .widgetId = kFirstWidget});
 

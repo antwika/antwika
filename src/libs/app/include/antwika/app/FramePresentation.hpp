@@ -27,7 +27,7 @@ namespace antwika::app
     template <typename OverlayT>
     concept HasDrawList = requires(const OverlayT &overlay) {
         {
-            overlay.commands()
+            overlay.getCommands()
         } -> std::convertible_to<const antwika::ui::DrawList &>;
     };
 
@@ -42,7 +42,7 @@ namespace antwika::app
     void paintOverlay(
         ISurfaceRenderer &renderer, const OverlayT &overlay)
     {
-        antwika::ui::paint(renderer, overlay.commands());
+        antwika::ui::paint(renderer, overlay.getCommands());
     }
 
     template <HasDrawList OverlayT>
@@ -53,7 +53,7 @@ namespace antwika::app
     {
         if (overlay.has_value())
         {
-            antwika::ui::paint(renderer, overlay->get().commands());
+            antwika::ui::paint(renderer, overlay->get().getCommands());
         }
     }
 
@@ -86,7 +86,7 @@ namespace antwika::app
         FrameT &&frame)
     {
         antwika::gfx::ViewportRenderer viewportRenderer(
-            window.renderer(), window.size(), canvasSize);
+            window.renderer(), window.getSize(), canvasSize);
 
         std::forward<FrameT>(frame)(viewportRenderer);
         paintOverlay(viewportRenderer, overlay);

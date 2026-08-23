@@ -30,7 +30,7 @@ namespace antwika::replay
         };
     }
 
-    std::span<const cli::FlagSpec> replayCliFlags()
+    std::span<const cli::FlagSpec> getReplayCliFlags()
     {
         return kReplayFlags;
     }
@@ -38,13 +38,13 @@ namespace antwika::replay
     ReplayCliOptions replayCliOptionsFrom(const cli::CommandLine &parsedLine)
     {
         ReplayCliOptions options;
-        options.recordPath = parsedLine.value("--record");
-        options.replayPath = parsedLine.value("--replay");
+        options.recordPath = parsedLine.getValue("--record");
+        options.replayPath = parsedLine.getValue("--replay");
         options.helpRequested = parsedLine.has(cli::kHelpFlag);
         return options;
     } // GCOVR_EXCL_LINE
 
-    std::vector<TickEvent> loadReplayFile(
+    std::vector<TickEvent> getLoadReplayFile(
         const std::string &path, CanvasCheckOptions check)
     {
         std::ifstream replayFile =
@@ -54,7 +54,7 @@ namespace antwika::replay
         return reader.read(replayFile);
     }
 
-    std::ofstream openReplayFile(const std::string &path)
+    std::ofstream getOpenReplayFile(const std::string &path)
     {
         return io::openToWriteAs<ReplayFormatError>(path, "a replay");
     }
@@ -64,7 +64,7 @@ namespace antwika::replay
         const std::string &path,
         std::optional<geometry::Size> canvasSize)
     {
-        std::ofstream replayFile = openReplayFile(path);
+        std::ofstream replayFile = getOpenReplayFile(path);
 
         ReplayRecorder recorder(replayFile, path, canvasSize);
         for (const TickEvent &event : events)

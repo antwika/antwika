@@ -5,15 +5,15 @@
 
 #include <antwika/io/AssetPath.hpp>
 
-using antwika::io::assetPath;
-using antwika::io::executableDirectory;
+using antwika::io::getAssetPath;
+using antwika::io::getExecutableDirectory;
 
 namespace
 {
 
     TEST(AssetPathTest, ExecutableDirectory_IsAnAbsoluteDirectory)
     {
-        const std::filesystem::path directory = executableDirectory();
+        const std::filesystem::path directory = getExecutableDirectory();
 
         EXPECT_TRUE(directory.is_absolute());
         EXPECT_TRUE(std::filesystem::is_directory(directory));
@@ -22,16 +22,16 @@ namespace
     TEST(AssetPathTest, AssetPath_SitsBesideTheExecutable)
     {
         const std::filesystem::path expectedPath =
-            std::filesystem::path(executableDirectory()) / "atlas.png";
+            std::filesystem::path(getExecutableDirectory()) / "atlas.png";
 
-        EXPECT_EQ(assetPath("atlas.png"), expectedPath.string());
+        EXPECT_EQ(getAssetPath("atlas.png"), expectedPath.string());
     }
 
     TEST(AssetPathTest, AssetPath_GivesTheDirectoryForAnEmptyName)
     {
         const std::filesystem::path expectedPath =
-            std::filesystem::path(executableDirectory()) / "";
+            std::filesystem::path(getExecutableDirectory()) / "";
 
-        EXPECT_EQ(assetPath(""), expectedPath.string());
+        EXPECT_EQ(getAssetPath(""), expectedPath.string());
     }
 }

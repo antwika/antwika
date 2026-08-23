@@ -47,7 +47,7 @@ namespace
             data.push_back(value);
         }
 
-        [[nodiscard]] std::string str() const
+        [[nodiscard]] std::string getString() const
         {
             return std::string(data.begin(), data.end());
         }
@@ -67,7 +67,7 @@ namespace
         std::uint16_t fmtSize = 16;
     };
 
-    [[nodiscard]] std::string build(const Wav &wav)
+    [[nodiscard]] std::string getBuild(const Wav &wav)
     {
         Bytes bodyBytes;
 
@@ -109,10 +109,10 @@ namespace
             allBytes.raw(byte);
         }
 
-        return allBytes.str();
+        return allBytes.getString();
     }
 
-    [[nodiscard]] Waveform decode(const std::string &bytes)
+    [[nodiscard]] Waveform getDecode(const std::string &bytes)
     {
         std::istringstream inputStream(bytes);
         return WavReader{}.read(inputStream);
@@ -121,21 +121,21 @@ namespace
 
 TEST(WavReaderTest, Decode_ReadsSixteenBitMonoAudio)
 {
-    const auto wav = decode(build(
+    const auto wav = getDecode(getBuild(
         Wav{.samples = {0x00, 0x40, 0x00, 0x00}}));
 
     EXPECT_EQ(wav.format, (WaveFormat{.rate = 48000, .channels = 1}));
-    ASSERT_EQ(wav.frameCount(), 2U);
+    ASSERT_EQ(wav.getFrameCount(), 2U);
     EXPECT_NEAR(wav.samples[0], 0.5F, 0.001F);
     EXPECT_EQ(wav.samples[1], 0.0F);
 }
 
 TEST(WavReaderTest, Decode_ReadsEightBitAudioAsUnsigned)
 {
-    const auto wav = decode(build(
+    const auto wav = getDecode(getBuild(
         Wav{.bits = 8, .samples = {128, 255, 0}}));
 
-    ASSERT_EQ(wav.frameCount(), 3U);
+    ASSERT_EQ(wav.getFrameCount(), 3U);
     EXPECT_EQ(wav.samples[0], 0.0F);
     EXPECT_GT(wav.samples[1], 0.9F);
     EXPECT_EQ(wav.samples[2], -1.0F);
@@ -143,71 +143,71 @@ TEST(WavReaderTest, Decode_ReadsEightBitAudioAsUnsigned)
 
 TEST(WavReaderTest, Decode_ReadsTwentyFourBitAudio)
 {
-    const auto wav = decode(build(
+    const auto wav = getDecode(getBuild(
         Wav{.bits = 24, .samples = {0x00, 0x00, 0x40, 0x00, 0x00, 0x00}}));
 
-    ASSERT_EQ(wav.frameCount(), 2U);
+    ASSERT_EQ(wav.getFrameCount(), 2U);
     EXPECT_NEAR(wav.samples[0], 0.5F, 0.001F);
     EXPECT_EQ(wav.samples[1], 0.0F);
 }
 
 TEST(WavReaderTest, Decode_ReadsThirtyTwoBitAudio)
 {
-    const auto wav = decode(build(
+    const auto wav = getDecode(getBuild(
         Wav{.bits = 32, .samples = {0x00, 0x00, 0x00, 0x40}}));
 
-    ASSERT_EQ(wav.frameCount(), 1U);
+    ASSERT_EQ(wav.getFrameCount(), 1U);
     EXPECT_NEAR(wav.samples[0], 0.5F, 0.001F);
 }
 
 TEST(WavReaderTest, Decode_ReadsThirtyTwoBitFloatAudio)
 {
-    const auto wav = decode(build(
+    const auto wav = getDecode(getBuild(
         Wav{.encoding = 3, .bits = 32, .samples = {0x00, 0x00, 0x00, 0x3F}}));
 
-    ASSERT_EQ(wav.frameCount(), 1U);
+    ASSERT_EQ(wav.getFrameCount(), 1U);
     EXPECT_FLOAT_EQ(wav.samples[0], 0.5F);
 }
 
 TEST(WavReaderTest, Decode_ReadsAnExtensibleHeaderBySubFormat)
 {
-    const auto wav = decode(build(
+    const auto wav = getDecode(getBuild(
         Wav{.encoding = 0xFFFE, .samples = {0x00, 0x40}, .fmtSize = 40}));
 
-    ASSERT_EQ(wav.frameCount(), 1U);
+    ASSERT_EQ(wav.getFrameCount(), 1U);
     EXPECT_NEAR(wav.samples[0], 0.5F, 0.001F);
 }
 
 TEST(WavReaderTest, Decode_ReadsInterleavedStereo)
 {
-    const auto wav = decode(build(
+    const auto wav = getDecode(getBuild(
         Wav{.channels = 2, .samples = {0x00, 0x40, 0x00, 0xC0}}));
 
     EXPECT_EQ(wav.format.channels, 2U);
-    ASSERT_EQ(wav.frameCount(), 1U);
+    ASSERT_EQ(wav.getFrameCount(), 1U);
     EXPECT_GT(wav.samples[0], 0.0F);
     EXPECT_LT(wav.samples[1], 0.0F);
 }
 
 TEST(WavReaderTest, Decode_DropsATrailingPartialFrame)
 {
-    const auto wav = decode(build(
+    const auto wav = getDecode(getBuild(
         Wav{.channels = 2, .samples = {0x00, 0x40, 0x00, 0xC0, 0x11, 0x11}}));
 
-    EXPECT_EQ(wav.frameCount(), 1U);
+    EXPECT_EQ(wav.getFrameCount(), 1U);
     EXPECT_EQ(wav.samples.size(), 2U);
 }
 
 TEST(WavReaderTest, Decode_ReadsADataChunkThatEndsExactlyAtTheStreamEnd)
 {
-    const auto bytes = build(Wav{.samples = {}});
+    const auto bytes = getBuild(Wav{.samples = {}});
 
     ASSERT_EQ(bytes.size(), 44U);
 
-    const auto wav = decode(bytes);
+    const auto wav = getDecode(bytes);
 
     EXPECT_EQ(wav.format, (WaveFormat{.rate = 48000, .channels = 1}));
-    EXPECT_EQ(wav.frameCount(), 0U);
+    EXPECT_EQ(wav.getFrameCount(), 0U);
     EXPECT_TRUE(wav.samples.empty());
 }
 
@@ -234,7 +234,7 @@ TEST(WavReaderTest, Decode_ReadsChunksInEitherOrder)
     allBytes.u16(0);
     allBytes.u16(16);
 
-    EXPECT_EQ(decode(allBytes.str()).frameCount(), 2U);
+    EXPECT_EQ(getDecode(allBytes.getString()).getFrameCount(), 2U);
 }
 
 TEST(WavReaderTest, Decode_SkipsAnUnknownChunk)
@@ -265,17 +265,17 @@ TEST(WavReaderTest, Decode_SkipsAnUnknownChunk)
     allBytes.raw(0x00);
     allBytes.raw(0x40);
 
-    EXPECT_EQ(decode(allBytes.str()).frameCount(), 1U);
+    EXPECT_EQ(getDecode(allBytes.getString()).getFrameCount(), 1U);
 }
 
 TEST(WavReaderTest, Decode_RefusesAnEmptyStream)
 {
-    EXPECT_THROW((void)decode(""), SoundError);
+    EXPECT_THROW((void)getDecode(""), SoundError);
 }
 
 TEST(WavReaderTest, Decode_RefusesSomethingThatIsNotRiff)
 {
-    EXPECT_THROW((void)decode("not a wav file at all"), SoundError);
+    EXPECT_THROW((void)getDecode("not a wav file at all"), SoundError);
 }
 
 TEST(WavReaderTest, Decode_RefusesRiffThatIsNotWave)
@@ -285,7 +285,7 @@ TEST(WavReaderTest, Decode_RefusesRiffThatIsNotWave)
     allBytes.u32(4);
     allBytes.tag("AVI ");
 
-    EXPECT_THROW((void)decode(allBytes.str()), SoundError);
+    EXPECT_THROW((void)getDecode(allBytes.getString()), SoundError);
 }
 
 TEST(WavReaderTest, Decode_TakesABareRiffWaveHeaderAndThenMissesTheFormat)
@@ -299,7 +299,7 @@ TEST(WavReaderTest, Decode_TakesABareRiffWaveHeaderAndThenMissesTheFormat)
 
     try
     {
-        (void)decode(allBytes.str());
+        (void)getDecode(allBytes.getString());
         FAIL() << "a stream of twelve header bytes decoded";
     }
     catch (const SoundError &error)
@@ -320,20 +320,20 @@ TEST(WavReaderTest, Decode_RefusesAChunkPastTheEnd)
     allBytes.tag("data");
     allBytes.u32(9999);
 
-    EXPECT_THROW((void)decode(allBytes.str()), SoundError);
+    EXPECT_THROW((void)getDecode(allBytes.getString()), SoundError);
 }
 
 TEST(WavReaderTest, Decode_RefusesAFileWithNoFormatChunk)
 {
     EXPECT_THROW(
-        (void)decode(build(Wav{.samples = {0, 0}, .withFmt = false})),
+        (void)getDecode(getBuild(Wav{.samples = {0, 0}, .withFmt = false})),
         SoundError);
 }
 
 TEST(WavReaderTest, Decode_RefusesAFileWithNoDataChunk)
 {
     EXPECT_THROW(
-        (void)decode(build(Wav{.samples = {}, .withData = false})),
+        (void)getDecode(getBuild(Wav{.samples = {}, .withData = false})),
         SoundError);
 }
 
@@ -347,13 +347,13 @@ TEST(WavReaderTest, Decode_RefusesATooShortFormatChunk)
     allBytes.u32(4);
     allBytes.u32(0);
 
-    EXPECT_THROW((void)decode(allBytes.str()), SoundError);
+    EXPECT_THROW((void)getDecode(allBytes.getString()), SoundError);
 }
 
 TEST(WavReaderTest, Decode_RefusesNoSubFormatWhenExtensible)
 {
     EXPECT_THROW(
-        (void)decode(build(
+        (void)getDecode(getBuild(
             Wav{.encoding = 0xFFFE, .samples = {0, 0}, .fmtSize = 18})),
         SoundError);
 }
@@ -361,14 +361,14 @@ TEST(WavReaderTest, Decode_RefusesNoSubFormatWhenExtensible)
 TEST(WavReaderTest, Decode_RefusesAnUnknownCompression)
 {
     EXPECT_THROW(
-        (void)decode(build(Wav{.encoding = 6, .samples = {0, 0}})),
+        (void)getDecode(getBuild(Wav{.encoding = 6, .samples = {0, 0}})),
         SoundError);
 }
 
 TEST(WavReaderTest, Decode_RefusesANonThirtyTwoBitFloat)
 {
     EXPECT_THROW(
-        (void)decode(build(
+        (void)getDecode(getBuild(
             Wav{.encoding = 3, .bits = 64, .samples = {0, 0}})),
         SoundError);
 }
@@ -376,24 +376,24 @@ TEST(WavReaderTest, Decode_RefusesANonThirtyTwoBitFloat)
 TEST(WavReaderTest, Decode_RefusesAnUnknownSampleWidth)
 {
     EXPECT_THROW(
-        (void)decode(build(Wav{.bits = 12, .samples = {0, 0}})),
+        (void)getDecode(getBuild(Wav{.bits = 12, .samples = {0, 0}})),
         SoundError);
 }
 
 TEST(WavReaderTest, Decode_RefusesASampleRateOfZero)
 {
     EXPECT_THROW(
-        (void)decode(build(Wav{.rate = 0, .samples = {0, 0}})),
+        (void)getDecode(getBuild(Wav{.rate = 0, .samples = {0, 0}})),
         SoundError);
 }
 
 TEST(WavReaderTest, Decode_RefusesTooFewOrTooManyChannels)
 {
     EXPECT_THROW(
-        (void)decode(build(Wav{.channels = 0, .samples = {0, 0}})),
+        (void)getDecode(getBuild(Wav{.channels = 0, .samples = {0, 0}})),
         SoundError);
 
     EXPECT_THROW(
-        (void)decode(build(Wav{.channels = 99, .samples = {0, 0}})),
+        (void)getDecode(getBuild(Wav{.channels = 99, .samples = {0, 0}})),
         SoundError);
 }

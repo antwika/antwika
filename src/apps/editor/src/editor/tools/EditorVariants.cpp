@@ -9,14 +9,14 @@ namespace antwika::editor
 
     std::uint8_t Editor::variantWeightOf(const tilemap::Tile tile) const
     {
-        const auto *leads = groupLedBy(document.map.familyGroups, tile);
+        const auto *leads = getGroupLedBy(document.map.familyGroups, tile);
 
         if (leads != nullptr)
         {
             return leads->weight;
         }
 
-        const auto *family = groupContaining(document.map.familyGroups, tile);
+        const auto *family = getGroupContaining(document.map.familyGroups, tile);
 
         for (const auto &member :
              family != nullptr ? family->variants
@@ -34,7 +34,7 @@ namespace antwika::editor
     bool Editor::blockedAsVariant()
     {
         if (isDecorLayer() || !selectedTile.has_value()
-            || groupContaining(document.map.familyGroups,
+            || getGroupContaining(document.map.familyGroups,
                 *selectedTile) == nullptr)
         {
             return false;
@@ -48,7 +48,7 @@ namespace antwika::editor
     void Editor::pickedVariant(const tilemap::Tile tile)
     {
         const auto canonicalTile = *selectedTile;
-        const auto *family = groupContaining(document.map.familyGroups, tile);
+        const auto *family = getGroupContaining(document.map.familyGroups, tile);
         const auto mine =
             family != nullptr && family->canonicalTile == canonicalTile;
 
@@ -70,7 +70,7 @@ namespace antwika::editor
 
         pushUndo();
         document.map.familyGroups =
-            withVariantToggled(document.map.familyGroups, canonicalTile, tile);
+            getWithVariantToggled(document.map.familyGroups, canonicalTile, tile);
         rebuildWorld();
     }
 
@@ -111,7 +111,7 @@ namespace antwika::editor
         }
 
         const auto *family =
-            groupContaining(document.map.familyGroups, *selectedTile);
+            getGroupContaining(document.map.familyGroups, *selectedTile);
         const auto variantsPanel = context.column(
             antwika::ui::ContainerSpec{
                 .widthSizing = antwika::ui::kGrowSizing,
@@ -138,7 +138,7 @@ namespace antwika::editor
         }
 
         if (family != nullptr
-            || groupLedBy(document.map.familyGroups, *selectedTile) != nullptr)
+            || getGroupLedBy(document.map.familyGroups, *selectedTile) != nullptr)
         {
             context.label(
                 "weight "

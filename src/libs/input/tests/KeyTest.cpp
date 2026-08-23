@@ -10,14 +10,14 @@
 
 using antwika::input::InputError;
 using antwika::input::Key;
-using antwika::input::keyFromString;
-using antwika::input::keyIndex;
+using antwika::input::getKeyFromString;
+using antwika::input::getKeyIndex;
 using antwika::input::kKeyCount;
 using antwika::input::toString;
 
 TEST(KeyTest, KeyIndex_NumbersTheFirstKeyFromZero)
 {
-    EXPECT_EQ(keyIndex(Key::A), 0u);
+    EXPECT_EQ(getKeyIndex(Key::A), 0u);
 }
 
 TEST(KeyTest, KeyIndex_StaysBelowTheKeyCountForEveryNamedKey)
@@ -26,7 +26,7 @@ TEST(KeyTest, KeyIndex_StaysBelowTheKeyCountForEveryNamedKey)
     {
         const auto key = static_cast<Key>(index);
 
-        EXPECT_LT(keyIndex(key), kKeyCount) << toString(key);
+        EXPECT_LT(getKeyIndex(key), kKeyCount) << toString(key);
     }
 }
 
@@ -90,7 +90,7 @@ TEST(KeyTest, ToString_GivesEveryKeyItsOwnName)
 
 TEST(KeyTest, KeyFromString_FindsTheKeyANameRefersTo)
 {
-    EXPECT_EQ(keyFromString("Escape"), Key::Escape);
+    EXPECT_EQ(getKeyFromString("Escape"), Key::Escape);
 }
 
 TEST(KeyTest, KeyFromString_RoundTripsEveryKey)
@@ -99,20 +99,20 @@ TEST(KeyTest, KeyFromString_RoundTripsEveryKey)
     {
         const auto key = static_cast<Key>(index);
 
-        EXPECT_EQ(keyFromString(toString(key)), key) << toString(key);
+        EXPECT_EQ(getKeyFromString(toString(key)), key) << toString(key);
     }
 }
 
 TEST(KeyTest, KeyFromString_ThrowsOnANameNoKeyGoesBy)
 {
-    EXPECT_THROW(static_cast<void>(keyFromString("Nope")), InputError);
+    EXPECT_THROW(static_cast<void>(getKeyFromString("Nope")), InputError);
 }
 
 TEST(KeyTest, KeyFromString_SaysWhichNameItRejected)
 {
     try
     {
-        const auto key = keyFromString("Nope");
+        const auto key = getKeyFromString("Nope");
         FAIL() << "expected an InputError, got " << toString(key);
     }
     catch (const InputError &error)
@@ -123,5 +123,5 @@ TEST(KeyTest, KeyFromString_SaysWhichNameItRejected)
 
 TEST(KeyTest, KeyFromString_IsCaseSensitive)
 {
-    EXPECT_THROW(static_cast<void>(keyFromString("escape")), InputError);
+    EXPECT_THROW(static_cast<void>(getKeyFromString("escape")), InputError);
 }

@@ -85,7 +85,7 @@ namespace antwika::io
         return fileName.string();
     } // GCOVR_EXCL_LINE
 
-    std::string entryText(const FileEntry &entry)
+    std::string getEntryText(const FileEntry &entry)
     {
         std::string shownName = entry.name;
 

@@ -13,7 +13,7 @@
 using antwika::font::Font;
 using antwika::font::FontError;
 using antwika::font::TtfReader;
-using antwika::font::tests::buildFont;
+using antwika::font::tests::createFont;
 
 namespace
 {
@@ -27,7 +27,7 @@ namespace
 
 TEST(TtfReaderTest, Read_ParsesAFontOffAStream)
 {
-    std::istringstream stream = streamOf(buildFont());
+    std::istringstream stream = streamOf(createFont());
     const TtfReader reader;
     const Font font = reader.read(stream);
 

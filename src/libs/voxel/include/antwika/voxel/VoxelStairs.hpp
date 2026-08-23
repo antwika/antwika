@@ -23,7 +23,7 @@ namespace antwika::voxel
         Upper,
     };
 
-    [[nodiscard]] constexpr StairHalf lastEnumerator(StairHalf) noexcept
+    [[nodiscard]] constexpr StairHalf getLastEnumerator(StairHalf) noexcept
     {
         return StairHalf::Upper;
     }
@@ -38,7 +38,7 @@ namespace antwika::voxel
         Side,
     };
 
-    [[nodiscard]] constexpr StairPart lastEnumerator(StairPart) noexcept
+    [[nodiscard]] constexpr StairPart getLastEnumerator(StairPart) noexcept
     {
         return StairPart::Side;
     }
@@ -61,13 +61,13 @@ namespace antwika::voxel
             = default;
     };
 
-    [[nodiscard]] std::vector<StairQuad> stairQuads(
+    [[nodiscard]] std::vector<StairQuad> getStairQuads(
         VoxelPosition climbPosition);
 
-    [[nodiscard]] VoxelPosition inferredRampDirection(
+    [[nodiscard]] VoxelPosition getInferredRampDirection(
         const Voxels &filledVoxels, VoxelPosition position);
 
-    [[nodiscard]] Facing facingOfStep(VoxelPosition climbPosition);
+    [[nodiscard]] Facing getFacingOfStep(VoxelPosition climbPosition);
 
     [[nodiscard]] VoxelPosition stepVectorFor(Facing facing);
 

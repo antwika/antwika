@@ -17,12 +17,12 @@ namespace antwika::solver
         worldgen::ChunkShape shape,
         voxel::VoxelPosition originPointPosition);
 
-    [[nodiscard]] voxel::Voxels withChunkSpliced(
+    [[nodiscard]] voxel::Voxels getWithChunkSpliced(
         voxel::Voxels pileVoxels,
         worldgen::VoxelBox box,
         const voxel::Voxels &grownVoxels);
 
-    [[nodiscard]] std::string growTrouble(
+    [[nodiscard]] std::string getGrowTrouble(
         const worldgen::ChunkResult &result);
 
 }

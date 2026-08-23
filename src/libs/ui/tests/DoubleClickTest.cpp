@@ -6,7 +6,7 @@ using antwika::ui::ClickTrack;
 using antwika::ui::isDoubleClick;
 using antwika::ui::kDoubleClickFrames;
 using antwika::ui::kDoubleClickRadius;
-using antwika::ui::trackClick;
+using antwika::ui::getTrackClick;
 using antwika::gfx::PointF;
 
 namespace
@@ -22,14 +22,14 @@ TEST(DoubleClickTest, IsDoubleClick_TakesNoFirstClickForADouble)
 TEST(DoubleClickTest, IsDoubleClick_TakesASecondClickHardOnTheFirst)
 {
     EXPECT_TRUE(
-        isDoubleClick(trackClick(100, kSomewherePoint), 101, kSomewherePoint));
+        isDoubleClick(getTrackClick(100, kSomewherePoint), 101, kSomewherePoint));
 }
 
 TEST(DoubleClickTest, IsDoubleClick_TakesNoSlowPairForADouble)
 {
     EXPECT_FALSE(
         isDoubleClick(
-            trackClick(100, kSomewherePoint),
+            getTrackClick(100, kSomewherePoint),
             100 + kDoubleClickFrames + 1,
             kSomewherePoint));
 }
@@ -38,7 +38,7 @@ TEST(DoubleClickTest, IsDoubleClick_TakesAPairRightOnTheLimit)
 {
     EXPECT_TRUE(
         isDoubleClick(
-            trackClick(100, kSomewherePoint),
+            getTrackClick(100, kSomewherePoint),
             100 + kDoubleClickFrames,
             kSomewherePoint));
 }
@@ -49,7 +49,7 @@ TEST(DoubleClickTest, IsDoubleClick_TakesNoPairFarApartOnTheCanvas)
         kSomewherePoint.x + kDoubleClickRadius + 1.0F, kSomewherePoint.y};
 
     EXPECT_FALSE(
-        isDoubleClick(trackClick(100, kSomewherePoint), 101, awayPoint));
+        isDoubleClick(getTrackClick(100, kSomewherePoint), 101, awayPoint));
 }
 
 TEST(DoubleClickTest, IsDoubleClick_TakesAPairThatDriftedAWhisker)
@@ -58,7 +58,7 @@ TEST(DoubleClickTest, IsDoubleClick_TakesAPairThatDriftedAWhisker)
         kSomewherePoint.x + kDoubleClickRadius, kSomewherePoint.y};
 
     EXPECT_TRUE(
-        isDoubleClick(trackClick(100, kSomewherePoint), 101, nearPoint));
+        isDoubleClick(getTrackClick(100, kSomewherePoint), 101, nearPoint));
 }
 
 TEST(DoubleClickTest, IsDoubleClick_TakesNoPairDriftedEitherWay)
@@ -67,12 +67,12 @@ TEST(DoubleClickTest, IsDoubleClick_TakesNoPairDriftedEitherWay)
         kSomewherePoint.x, kSomewherePoint.y + kDoubleClickRadius + 1.0F};
 
     EXPECT_FALSE(
-        isDoubleClick(trackClick(100, kSomewherePoint), 101, belowPoint));
+        isDoubleClick(getTrackClick(100, kSomewherePoint), 101, belowPoint));
 }
 
 TEST(DoubleClickTest, TrackClick_HoldsWhatTheNextClickIsWeighedAgainst)
 {
-    const auto track = trackClick(7, kSomewherePoint);
+    const auto track = getTrackClick(7, kSomewherePoint);
 
     EXPECT_TRUE(track.hasClick);
     EXPECT_EQ(track.lastFrame, 7U);

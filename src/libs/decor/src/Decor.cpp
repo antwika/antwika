@@ -28,7 +28,7 @@ namespace antwika::decor
         return nullptr;
     }
 
-    std::vector<DecorTile> withDecorToggled(
+    std::vector<DecorTile> getWithDecorToggled(
         const std::vector<DecorTile> &decor,
         const tilemap::Tile tile,
         const std::size_t layer)
@@ -57,7 +57,7 @@ namespace antwika::decor
         return updatedDecor;
     } // GCOVR_EXCL_LINE
 
-    std::vector<DecorTile> withBaseToggled(
+    std::vector<DecorTile> getWithBaseToggled(
         const std::vector<DecorTile> &decor,
         const tilemap::Tile tile,
         const tilemap::Tile baseTile)
@@ -89,7 +89,7 @@ namespace antwika::decor
         return updatedDecor;
     } // GCOVR_EXCL_LINE
 
-    std::vector<DecorTile> withDecorLayerSet(
+    std::vector<DecorTile> getWithDecorLayerSet(
         const std::vector<DecorTile> &decor,
         const tilemap::Tile tile,
         const std::size_t layer)
@@ -107,7 +107,7 @@ namespace antwika::decor
         return updatedDecor;
     } // GCOVR_EXCL_LINE
 
-    std::vector<DecorTile> withWeightSet(
+    std::vector<DecorTile> getWithWeightSet(
         const std::vector<DecorTile> &decor,
         const tilemap::Tile tile,
         const std::uint8_t weight)
@@ -126,7 +126,7 @@ namespace antwika::decor
         return updatedDecor;
     } // GCOVR_EXCL_LINE
 
-    std::vector<DecorTile> withFrequencySet(
+    std::vector<DecorTile> getWithFrequencySet(
         const std::vector<DecorTile> &decor,
         const tilemap::Tile tile,
         const std::uint8_t frequency)
@@ -145,12 +145,12 @@ namespace antwika::decor
         return updatedDecor;
     } // GCOVR_EXCL_LINE
 
-    bool decorSpanned(const DecorTile &decor)
+    bool isDecorSpanned(const DecorTile &decor)
     {
         return decor.width > 1 || decor.height > 1;
     }
 
-    std::vector<DecorTile> withSpanSet(
+    std::vector<DecorTile> getWithSpanSet(
         const std::vector<DecorTile> &decor,
         const tilemap::Tile tile,
         const std::uint8_t acrossSpan,
@@ -197,7 +197,7 @@ namespace antwika::decor
             record.height = spanHeight;
             record.spanTiles = grownTiles;
 
-            if (decorSpanned(record))
+            if (isDecorSpanned(record))
             {
                 record.frameTiles = {tile};
             }
@@ -206,7 +206,7 @@ namespace antwika::decor
         return updatedDecor;
     } // GCOVR_EXCL_LINE
 
-    std::vector<DecorTile> withMemberSet(
+    std::vector<DecorTile> getWithMemberSet(
         const std::vector<DecorTile> &decor,
         const tilemap::Tile tile,
         const std::size_t member,
@@ -227,7 +227,7 @@ namespace antwika::decor
         return updatedDecor;
     } // GCOVR_EXCL_LINE
 
-    std::vector<DecorTile> compactedDecor(
+    std::vector<DecorTile> getCompactedDecor(
         const std::vector<DecorTile> &decor)
     {
         auto updatedDecor = decor;
@@ -246,7 +246,7 @@ namespace antwika::decor
         return updatedDecor;
     } // GCOVR_EXCL_LINE
 
-    std::vector<DecorTile> withFrameAdded(
+    std::vector<DecorTile> getWithFrameAdded(
         const std::vector<DecorTile> &decor, const tilemap::Tile tile)
     {
         auto updatedDecor = decor;
@@ -266,7 +266,7 @@ namespace antwika::decor
         return updatedDecor;
     } // GCOVR_EXCL_LINE
 
-    std::vector<DecorTile> withFrameSet(
+    std::vector<DecorTile> getWithFrameSet(
         const std::vector<DecorTile> &decor,
         const tilemap::Tile tile,
         const std::size_t frame,
@@ -286,7 +286,7 @@ namespace antwika::decor
         return updatedDecor;
     } // GCOVR_EXCL_LINE
 
-    gfx::MeshData decorMesh(
+    gfx::MeshData getDecorMesh(
         const std::vector<voxelmap::FaceRef> &faces,
         const std::map<std::size_t, tilemap::Tile> &placedTiles,
         const std::span<const DecorTile> decor,
@@ -307,16 +307,16 @@ namespace antwika::decor
             const auto frame = record != nullptr
                              ? decorFrameAt(*record, tick)
                              : identity;
-            const auto tile = tilemap::tileCoords(
+            const auto tile = tilemap::getTileCoords(
                 frame.index, tilemap::tileSizeOf(frame.atlas));
             const auto &face = faces[faceIndex];
-            const auto middlePoint = voxelmap::cellMiddle(face.cell.position);
+            const auto middlePoint = voxelmap::getCellMiddle(face.cell.position);
             const auto liftedPoint =
-                gfx::Vec3(voxelmap::faceNormal(face.side)) * lift;
+                gfx::Vec3(voxelmap::getFaceNormal(face.side)) * lift;
             const auto climbs =
                 face.climbPosition.x != 0 || face.climbPosition.z != 0;
             const auto flight = climbs
-                              ? voxel::stairQuads(face.climbPosition)
+                              ? voxel::getStairQuads(face.climbPosition)
                               : std::vector<voxel::StairQuad>{};
 
             std::vector<voxel::StairQuad> layingQuads;
@@ -338,7 +338,7 @@ namespace antwika::decor
                      ++corner)
                 {
                     wholeQuad.corners.at(corner) = gfx::Vec3(
-                        voxelmap::faceCorner(face.side, corner));
+                        voxelmap::getFaceCorner(face.side, corner));
                 }
 
                 layingQuads.push_back(wholeQuad);
@@ -346,7 +346,7 @@ namespace antwika::decor
 
             for (const auto &quad : layingQuads)
             {
-                const auto part = voxelmap::stairUvRect(tile, quad);
+                const auto part = voxelmap::getStairUvRect(tile, quad);
                 const auto first = static_cast<std::uint32_t>(
                     mesh.vertices.size());
 
@@ -359,7 +359,7 @@ namespace antwika::decor
                             .position =
                                 middlePoint + quad.corners[corner]
                                 + liftedPoint,
-                            .normal = voxelmap::faceNormal(face.side),
+                            .normal = voxelmap::getFaceNormal(face.side),
                             .texCoordinate =
                                 gfx::Vec2{
                                     part.originPoint.x
@@ -415,13 +415,13 @@ namespace antwika::decor
                || rules.allows(tile, edge, otherTile);
     }
 
-    widget::WidgetId frameWidget(const std::size_t frame)
+    widget::WidgetId getFrameWidget(const std::size_t frame)
     {
         return widget::WidgetId{
             kFirstFrameWidget + static_cast<std::uint64_t>(frame)};
     }
 
-    widget::WidgetId memberWidget(const std::size_t member)
+    widget::WidgetId getMemberWidget(const std::size_t member)
     {
         return widget::WidgetId{
             386 + static_cast<std::uint64_t>(member)};

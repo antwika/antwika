@@ -38,7 +38,7 @@ TEST(TickPacerTest, Update_AsksToWaitTheConfiguredInterval)
     pacer.update(world, 0);
 
     EXPECT_EQ(
-        sleeper.requestedSpans(),
+        sleeper.getRequestedSpans(),
         (std::vector<std::chrono::milliseconds>{2ms}));
 }
 
@@ -53,8 +53,8 @@ TEST(TickPacerTest, Update_WaitsOncePerTick)
     pacer.update(world, 1);
     pacer.update(world, 2);
 
-    EXPECT_EQ(sleeper.requestedSpans().size(), 3);
-    EXPECT_EQ(sleeper.total(), 15ms);
+    EXPECT_EQ(sleeper.getRequestedSpans().size(), 3);
+    EXPECT_EQ(sleeper.getTotal(), 15ms);
 }
 
 TEST(TickPacerTest, Update_AsksForNothingWhenGivenAZeroInterval)
@@ -67,7 +67,7 @@ TEST(TickPacerTest, Update_AsksForNothingWhenGivenAZeroInterval)
     pacer.update(world, 0);
 
     EXPECT_EQ(
-        sleeper.requestedSpans(),
+        sleeper.getRequestedSpans(),
         (std::vector<std::chrono::milliseconds>{0ms}));
 }
 

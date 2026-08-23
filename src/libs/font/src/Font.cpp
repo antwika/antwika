@@ -36,23 +36,23 @@ namespace antwika::font
                     "font: a pixel height of zero has no glyphs in it");
             }
 
-            return rasteriser.scaleForPixelHeight(pixelHeight);
+            return rasteriser.getScaleForPixelHeight(pixelHeight);
         }
 
         [[nodiscard]] GlyphMetrics metricsOf(
             const detail::Rasteriser &rasteriser, int glyph, float scale)
         {
             const detail::GlyphBox box
-                = rasteriser.glyphBox(glyph, scale);
+                = rasteriser.getGlyphBox(glyph, scale);
 
             return GlyphMetrics{
                 .advance
-                    = toPixels(rasteriser.advanceWidth(glyph), scale),
+                    = toPixels(rasteriser.getAdvanceWidth(glyph), scale),
                 .bearingX = box.left,
                 .bearingY = box.top};
         }
 
-        [[nodiscard]] std::unique_ptr<detail::Rasteriser> openFont(
+        [[nodiscard]] std::unique_ptr<detail::Rasteriser> getOpenFont(
             std::vector<std::uint8_t> bytes)
         {
             detail::requireReadableDirectory(bytes);
@@ -63,17 +63,17 @@ namespace antwika::font
     }
 
     Font::Font(std::vector<std::uint8_t> bytes)
-        : rasteriser(openFont(std::move(bytes)))
+        : rasteriser(getOpenFont(std::move(bytes)))
     {
     }
 
     Font::~Font() = default;
 
-    FontMetrics Font::metrics(std::uint32_t pixelHeight) const
+    FontMetrics Font::getMetrics(std::uint32_t pixelHeight) const
     {
         const float scale = scaleFor(*rasteriser, pixelHeight);
         const detail::VerticalMetrics vertical
-            = rasteriser->verticalMetrics();
+            = rasteriser->getVerticalMetrics();
 
         FontMetrics metrics{
             .ascent = toPixels(vertical.ascent, scale),
@@ -89,25 +89,25 @@ namespace antwika::font
 
     bool Font::has(char32_t codepoint) const
     {
-        return rasteriser->glyphIndex(codepoint) != 0;
+        return rasteriser->getGlyphIndex(codepoint) != 0;
     }
 
-    GlyphMetrics Font::glyphMetrics(
+    GlyphMetrics Font::getGlyphMetrics(
         char32_t codepoint, std::uint32_t pixelHeight) const
     {
         const float scale = scaleFor(*rasteriser, pixelHeight);
 
         return metricsOf(
-            *rasteriser, rasteriser->glyphIndex(codepoint), scale);
+            *rasteriser, rasteriser->getGlyphIndex(codepoint), scale);
     }
 
-    Glyph Font::rasterise(
+    Glyph Font::getRasterise(
         char32_t codepoint, std::uint32_t pixelHeight) const
     {
         const float scale = scaleFor(*rasteriser, pixelHeight);
-        const int glyph = rasteriser->glyphIndex(codepoint);
+        const int glyph = rasteriser->getGlyphIndex(codepoint);
         detail::RasterisedGlyph drawnGlyph
-            = rasteriser->rasteriseGlyph(glyph, scale);
+            = rasteriser->getRasteriseGlyph(glyph, scale);
 
         return Glyph{
             .metrics = metricsOf(*rasteriser, glyph, scale),

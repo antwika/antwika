@@ -66,9 +66,9 @@ namespace antwika::game
             gfx::Vec3 walkerPosition,
             bool upperSightOn);
 
-        [[nodiscard]] gfx::Mat4 worldRotation() const;
+        [[nodiscard]] gfx::Mat4 getWorldRotation() const;
 
-        [[nodiscard]] gfx::Camera3D worldCamera() const;
+        [[nodiscard]] gfx::Camera3D getWorldCamera() const;
 
         std::string mapPath;
         gfx::IGfxBackend &backend;
@@ -87,7 +87,7 @@ namespace antwika::game
         render::WorldShader worldShader;
         gameplay::Game playGame;
         input::InputState inputState;
-        input::ActionMap actions = defaultActions();
+        input::ActionMap actions = getDefaultActions();
 
         time::Tick tick = 0;
         time::SystemClock clockSource;

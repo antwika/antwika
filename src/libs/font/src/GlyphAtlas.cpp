@@ -19,7 +19,7 @@ namespace antwika::font
 
     namespace
     {
-        [[nodiscard]] std::vector<char32_t> distinctAscending(
+        [[nodiscard]] std::vector<char32_t> getDistinctAscending(
             std::span<const char32_t> codepoints)
         {
             std::vector<char32_t> codepointList(
@@ -98,12 +98,12 @@ namespace antwika::font
                 return placedRect;
             }
 
-            [[nodiscard]] std::uint32_t width() const
+            [[nodiscard]] std::uint32_t getWidth() const
             {
                 return usedWidth;
             }
 
-            [[nodiscard]] std::uint32_t height() const
+            [[nodiscard]] std::uint32_t getHeight() const
             {
                 return usedHeight;
             }
@@ -118,7 +118,7 @@ namespace antwika::font
         };
     }
 
-    const AtlasGlyph *GlyphAtlas::find(char32_t codepoint) const
+    const AtlasGlyph *GlyphAtlas::getFind(char32_t codepoint) const
     {
         const auto foundGlyph = std::ranges::lower_bound(
             glyphs, codepoint, {}, &AtlasGlyph::codepoint);
@@ -131,7 +131,7 @@ namespace antwika::font
         return &*foundGlyph;
     }
 
-    GlyphAtlas makeGlyphAtlas(
+    GlyphAtlas createGlyphAtlas(
         const Font &font,
         std::span<const char32_t> codepoints,
         std::uint32_t pixelHeight,
@@ -145,14 +145,14 @@ namespace antwika::font
         }
 
         GlyphAtlas atlas;
-        atlas.metrics = font.metrics(pixelHeight);
+        atlas.metrics = font.getMetrics(pixelHeight);
 
         std::vector<Coverage> coverageMasks;
         Shelves shelves{options};
 
-        for (const char32_t codepoint : distinctAscending(codepoints))
+        for (const char32_t codepoint : getDistinctAscending(codepoints))
         {
-            Glyph glyph = font.rasterise(codepoint, pixelHeight);
+            Glyph glyph = font.getRasterise(codepoint, pixelHeight);
             Rect sourceRect;
 
             if (!glyph.coverage.samples.empty())
@@ -169,10 +169,10 @@ namespace antwika::font
             coverageMasks.push_back(std::move(glyph.coverage));
         }
 
-        atlas.coverage.width = shelves.width();
-        atlas.coverage.height = shelves.height();
+        atlas.coverage.width = shelves.getWidth();
+        atlas.coverage.height = shelves.getHeight();
         atlas.coverage.samples.assign(
-            static_cast<std::size_t>(shelves.width()) * shelves.height(),
+            static_cast<std::size_t>(shelves.getWidth()) * shelves.getHeight(),
             0);
 
         for (std::size_t index = 0; index < coverageMasks.size(); ++index)

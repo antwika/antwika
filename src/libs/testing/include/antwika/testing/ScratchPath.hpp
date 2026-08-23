@@ -13,7 +13,7 @@
 namespace antwika::testing
 {
 
-    [[nodiscard]] inline std::filesystem::path scratchPath(
+    [[nodiscard]] inline std::filesystem::path getScratchPath(
         std::string_view prefix)
     {
         const auto *const running

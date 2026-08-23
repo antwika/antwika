@@ -18,7 +18,7 @@ namespace antwika::voxel
     namespace
     {
 
-        [[nodiscard]] std::optional<VoxelPosition> roofOver(
+        [[nodiscard]] std::optional<VoxelPosition> getRoofOver(
             const Voxels &filledVoxels,
             const VoxelPosition columnPosition,
             const std::int32_t lowest)
@@ -43,10 +43,10 @@ namespace antwika::voxel
             return std::nullopt;
         }
 
-        [[nodiscard]] bool solidCube(
+        [[nodiscard]] bool isSolidCube(
             const Voxels &filledVoxels, const VoxelPosition cornerPosition)
         {
-            for (const auto cellPosition : cubeCells(cornerPosition))
+            for (const auto cellPosition : getCubeCells(cornerPosition))
             {
                 const auto foundVoxel = filledVoxels.find(cellPosition);
 
@@ -60,7 +60,7 @@ namespace antwika::voxel
             return false;
         }
 
-        [[nodiscard]] std::set<VoxelPosition> shellAbout(
+        [[nodiscard]] std::set<VoxelPosition> getShellAbout(
             const Voxels &filledVoxels,
             const VoxelPosition columnPosition,
             const std::int32_t lowest,
@@ -143,7 +143,7 @@ namespace antwika::voxel
             Voxels &voxels)
         {
             const auto shellPositions =
-                shellAbout(filledVoxels, columnPosition, lowest, roofLevel);
+                getShellAbout(filledVoxels, columnPosition, lowest, roofLevel);
 
             if (shellPositions.empty())
             {
@@ -204,17 +204,17 @@ namespace antwika::voxel
 
     }
 
-    glm::vec3 lineOfSight(const glm::vec3 standing)
+    glm::vec3 getLineOfSight(const glm::vec3 standing)
     {
         return standing + glm::vec3{0.0F, kLineOfSightRise, 0.0F};
     }
 
-    glm::vec3 upperLineOfSight(const glm::vec3 standing)
+    glm::vec3 getUpperLineOfSight(const glm::vec3 standing)
     {
         return standing + glm::vec3{0.0F, kUpperSightRise, 0.0F};
     }
 
-    VoxelPosition voxelUnder(const glm::vec3 point)
+    VoxelPosition getVoxelUnder(const glm::vec3 point)
     {
         return VoxelPosition{
             .x = static_cast<std::int32_t>(std::floor(point.x / kVoxelSide)),
@@ -222,16 +222,16 @@ namespace antwika::voxel
             .z = static_cast<std::int32_t>(std::floor(point.z / kVoxelSide))};
     }
 
-    bool cubeAbove(
+    bool isCubeAbove(
         const Voxels &filledVoxels,
         const glm::vec3 standing,
         const float clearance)
     {
-        const auto sightPoint = upperLineOfSight(standing);
+        const auto sightPoint = getUpperLineOfSight(standing);
         const auto lowCorner =
-            cubeCornerOf(voxelUnder(sightPoint - glm::vec3{clearance}));
+            cubeCornerOf(getVoxelUnder(sightPoint - glm::vec3{clearance}));
         const auto highCorner =
-            cubeCornerOf(voxelUnder(sightPoint + glm::vec3{clearance}));
+            cubeCornerOf(getVoxelUnder(sightPoint + glm::vec3{clearance}));
 
         for (auto x = lowCorner.x; x <= highCorner.x; x += kCubeSide)
         {
@@ -241,7 +241,7 @@ namespace antwika::voxel
                      z <= highCorner.z;
                      z += kCubeSide)
                 {
-                    if (solidCube(
+                    if (isSolidCube(
                             filledVoxels,
                             VoxelPosition{.x = x, .y = y, .z = z}))
                     {
@@ -254,13 +254,13 @@ namespace antwika::voxel
         return false;
     }
 
-    Voxels occludingVoxels(
+    Voxels getOccludingVoxels(
         const Voxels &filledVoxels, const glm::vec3 standing)
     {
         Voxels voxels;
-        const auto columnPosition = voxelUnder(lineOfSight(standing));
+        const auto columnPosition = getVoxelUnder(getLineOfSight(standing));
         const auto overheadPosition =
-            roofOver(filledVoxels, columnPosition, columnPosition.y);
+            getRoofOver(filledVoxels, columnPosition, columnPosition.y);
 
         if (!overheadPosition.has_value())
         {

@@ -10,7 +10,7 @@ namespace
 {
 
     using antwika::pathfinding::GridPos;
-    using antwika::pathfinding::pathBetween;
+    using antwika::pathfinding::getPathBetween;
     using antwika::pathfinding::fakes::FakeStair;
     using antwika::pathfinding::fakes::FakeYard;
 
@@ -19,7 +19,7 @@ namespace
         const FakeYard yard(4, {});
 
         const auto path =
-            pathBetween(yard, GridPos{}, GridPos{}, 100);
+            getPathBetween(yard, GridPos{}, GridPos{}, 100);
 
         ASSERT_TRUE(path.has_value());
         EXPECT_EQ(path->size(), 1U);
@@ -30,7 +30,7 @@ namespace
     {
         const FakeYard yard(6, {});
 
-        const auto path = pathBetween(
+        const auto path = getPathBetween(
             yard, GridPos{}, GridPos{.x = 5}, 1000);
 
         ASSERT_TRUE(path.has_value());
@@ -43,7 +43,7 @@ namespace
     {
         const FakeYard yard(8, {});
 
-        const auto path = pathBetween(
+        const auto path = getPathBetween(
             yard, GridPos{}, GridPos{.x = 3, .z = 4}, 10000);
 
         ASSERT_TRUE(path.has_value());
@@ -59,7 +59,7 @@ namespace
              GridPos{.x = 2, .z = 2},
              GridPos{.x = 2, .z = 3}});
 
-        const auto path = pathBetween(
+        const auto path = getPathBetween(
             yard, GridPos{}, GridPos{.x = 4}, 10000);
 
         ASSERT_TRUE(path.has_value());
@@ -72,7 +72,7 @@ namespace
         const FakeYard yard(
             5, {GridPos{.x = 1, .z = 1}, GridPos{.x = 3, .z = 3}});
 
-        const auto path = pathBetween(
+        const auto path = getPathBetween(
             yard, GridPos{}, GridPos{.x = 4, .z = 4}, 10000);
 
         ASSERT_TRUE(path.has_value());
@@ -99,7 +99,7 @@ namespace
              GridPos{.x = 2, .z = 3},
              GridPos{.x = 2, .z = 4}});
 
-        const auto path = pathBetween(
+        const auto path = getPathBetween(
             yard, GridPos{}, GridPos{.x = 4}, 10000);
 
         EXPECT_FALSE(path.has_value());
@@ -109,7 +109,7 @@ namespace
     {
         const FakeYard yard(16, {});
 
-        const auto path = pathBetween(
+        const auto path = getPathBetween(
             yard, GridPos{}, GridPos{.x = 15, .z = 15}, 3);
 
         EXPECT_FALSE(path.has_value());
@@ -119,7 +119,7 @@ namespace
     {
         const FakeStair stair;
 
-        const auto path = pathBetween(
+        const auto path = getPathBetween(
             stair, GridPos{}, GridPos{.x = 4, .y = 4}, 1000);
 
         ASSERT_TRUE(path.has_value());
@@ -137,9 +137,9 @@ namespace
     {
         const FakeYard yard(
             7, {GridPos{.x = 3, .z = 2}, GridPos{.x = 3, .z = 4}});
-        const auto one = pathBetween(
+        const auto one = getPathBetween(
             yard, GridPos{}, GridPos{.x = 6, .z = 6}, 10000);
-        const auto two = pathBetween(
+        const auto two = getPathBetween(
             yard, GridPos{}, GridPos{.x = 6, .z = 6}, 10000);
 
         ASSERT_TRUE(one.has_value());

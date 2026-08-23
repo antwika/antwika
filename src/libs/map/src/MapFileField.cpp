@@ -24,7 +24,7 @@ namespace antwika::map::mapfile
         return shape;
     } // GCOVR_EXCL_LINE
 
-    nlohmann::json writtenObject(
+    nlohmann::json getWrittenObject(
         const Fields fields, const void *record)
     {
         nlohmann::json objectJson;
@@ -37,39 +37,39 @@ namespace antwika::map::mapfile
         return objectJson;
     } // GCOVR_EXCL_LINE
 
-    nlohmann::json plateSchema()
+    nlohmann::json getPlateSchema()
     {
         return shapeOf(kPlateFields);
     } // GCOVR_EXCL_LINE
 
-    nlohmann::json transitionSchema()
+    nlohmann::json getTransitionSchema()
     {
         return shapeOf(kTransitionFields);
     } // GCOVR_EXCL_LINE
 
-    nlohmann::json flipSchema()
+    nlohmann::json getFlipSchema()
     {
         return shapeOf(kFlipFields);
     } // GCOVR_EXCL_LINE
 
-    nlohmann::json familySchema()
+    nlohmann::json getFamilySchema()
     {
         return shapeOf(kFamilyFields);
     } // GCOVR_EXCL_LINE
 
-    nlohmann::json characterSchemaLatest()
+    nlohmann::json getCharacterSchemaLatest()
     {
         return shapeOf(kCharacterFields);
     } // GCOVR_EXCL_LINE
 
-    nlohmann::json decorSchema()
+    nlohmann::json getDecorSchema()
     {
         return shapeOf(kDecorFields);
     } // GCOVR_EXCL_LINE
 
-    nlohmann::json markedCubeSchema()
+    nlohmann::json getMarkedCubeSchema()
     {
-        return orNullShape(shapeOf(kMarkedCubeFields));
+        return getOrNullShape(shapeOf(kMarkedCubeFields));
     } // GCOVR_EXCL_LINE
 
     void readObject(

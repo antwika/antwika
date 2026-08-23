@@ -2,14 +2,14 @@
 
 #include "antwika/editor/ui/IconSheet.hpp"
 
-using antwika::editor::editedIconRect;
+using antwika::editor::getEditedIconRect;
 using antwika::editor::iconCellAt;
-using antwika::editor::iconCellRect;
-using antwika::editor::iconCount;
-using antwika::editor::iconPixelColor;
+using antwika::editor::getIconCellRect;
+using antwika::editor::getIconCount;
+using antwika::editor::getIconPixelColor;
 using antwika::editor::iconPixelAt;
-using antwika::editor::iconPixelRect;
-using antwika::editor::iconSource;
+using antwika::editor::getIconPixelRect;
+using antwika::editor::getIconSource;
 using antwika::editor::kIconCellSize;
 using antwika::editor::kIconColumns;
 using antwika::editor::setIconPixel;
@@ -20,7 +20,7 @@ namespace
 
     constexpr std::size_t kSomeIcons = 31;
 
-    [[nodiscard]] antwika::gfx::Bitmap blankSheet(
+    [[nodiscard]] antwika::gfx::Bitmap getBlankSheet(
         const std::size_t count)
     {
         return antwika::gfx::Bitmap{
@@ -37,13 +37,13 @@ namespace
 
 TEST(IconSheetTest, IconCount_CountsOneIconToACell)
 {
-    EXPECT_EQ(iconCount(blankSheet(kSomeIcons).size), kSomeIcons);
+    EXPECT_EQ(getIconCount(getBlankSheet(kSomeIcons).size), kSomeIcons);
 }
 
 TEST(IconSheetTest, IconSource_CutsEachIconFromItsOwnCell)
 {
-    const auto first = iconSource(0);
-    const auto second = iconSource(1);
+    const auto first = getIconSource(0);
+    const auto second = getIconSource(1);
 
     EXPECT_EQ(first.originPoint.x, 0);
     EXPECT_EQ(
@@ -54,10 +54,10 @@ TEST(IconSheetTest, IconSource_CutsEachIconFromItsOwnCell)
 
 TEST(IconSheetTest, IconCellRect_LaysTheIconsSoManyToARow)
 {
-    const auto first = iconCellRect(kCanvasSize, kSomeIcons, 0);
-    const auto besideRect = iconCellRect(kCanvasSize, kSomeIcons, 1);
+    const auto first = getIconCellRect(kCanvasSize, kSomeIcons, 0);
+    const auto besideRect = getIconCellRect(kCanvasSize, kSomeIcons, 1);
     const auto underRect =
-        iconCellRect(kCanvasSize, kSomeIcons, kIconColumns);
+        getIconCellRect(kCanvasSize, kSomeIcons, kIconColumns);
 
     EXPECT_GT(besideRect.originPoint.x, first.originPoint.x);
     EXPECT_EQ(besideRect.originPoint.y, first.originPoint.y);
@@ -70,7 +70,7 @@ TEST(IconSheetTest, IconCellAt_FindsTheCellUnderItsOwnMiddle)
     for (const std::size_t index : {0UL, 5UL, 12UL, 30UL})
     {
         const auto place =
-            iconCellRect(kCanvasSize, kSomeIcons, index);
+            getIconCellRect(kCanvasSize, kSomeIcons, index);
 
         EXPECT_EQ(
             iconCellAt(
@@ -92,12 +92,12 @@ TEST(IconSheetTest, IconCellAt_FindsNothingOffEveryCell)
 
 TEST(IconSheetTest, EditedIconRect_StandsClearOfEveryCell)
 {
-    const auto drawnRect = editedIconRect(kCanvasSize);
+    const auto drawnRect = getEditedIconRect(kCanvasSize);
 
     for (std::size_t index = 0; index < kSomeIcons; ++index)
     {
         const auto place =
-            iconCellRect(kCanvasSize, kSomeIcons, index);
+            getIconCellRect(kCanvasSize, kSomeIcons, index);
 
         EXPECT_LE(
             place.originPoint.x + place.size.width,
@@ -107,7 +107,7 @@ TEST(IconSheetTest, EditedIconRect_StandsClearOfEveryCell)
 
 TEST(IconSheetTest, IconPixelAt_FindsEveryPixelUnderItsPlace)
 {
-    const auto room = editedIconRect(kCanvasSize);
+    const auto room = getEditedIconRect(kCanvasSize);
 
     for (const std::uint32_t column : {0U, 7U, 15U})
     {
@@ -115,7 +115,7 @@ TEST(IconSheetTest, IconPixelAt_FindsEveryPixelUnderItsPlace)
         {
             const antwika::geometry::GridCell pixelCell{
                 column, row};
-            const auto place = iconPixelRect(room, pixelCell);
+            const auto place = getIconPixelRect(room, pixelCell);
 
             EXPECT_EQ(
                 iconPixelAt(
@@ -131,7 +131,7 @@ TEST(IconSheetTest, IconPixelAt_FindsEveryPixelUnderItsPlace)
 
 TEST(IconSheetTest, IconPixelAt_FindsNothingOutsideTheIcon)
 {
-    const auto room = editedIconRect(kCanvasSize);
+    const auto room = getEditedIconRect(kCanvasSize);
 
     EXPECT_FALSE(
         iconPixelAt(
@@ -142,20 +142,20 @@ TEST(IconSheetTest, IconPixelAt_FindsNothingOutsideTheIcon)
 
 TEST(IconSheetTest, SetIconPixel_SetsThePixelOfThatIconAlone)
 {
-    auto sheet = blankSheet(3);
+    auto sheet = getBlankSheet(3);
     constexpr antwika::gfx::Color kTextColor{
         .red = 255, .green = 255, .blue = 255, .alpha = 255};
 
     setIconPixel(sheet, 1, {2, 3}, kTextColor);
 
-    EXPECT_EQ(iconPixelColor(sheet, 1, {2, 3}), kTextColor);
-    EXPECT_EQ(iconPixelColor(sheet, 0, {2, 3}).alpha, 0);
-    EXPECT_EQ(iconPixelColor(sheet, 2, {2, 3}).alpha, 0);
+    EXPECT_EQ(getIconPixelColor(sheet, 1, {2, 3}), kTextColor);
+    EXPECT_EQ(getIconPixelColor(sheet, 0, {2, 3}).alpha, 0);
+    EXPECT_EQ(getIconPixelColor(sheet, 2, {2, 3}).alpha, 0);
 }
 
 TEST(IconSheetTest, SetIconPixel_LeavesAPixelOffTheSheetAlone)
 {
-    auto sheet = blankSheet(2);
+    auto sheet = getBlankSheet(2);
     const auto beforeSheet = sheet;
 
     setIconPixel(

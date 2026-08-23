@@ -9,7 +9,7 @@ namespace antwika::gfx::fakes
     class FakeForeignTexture final : public ITexture
     {
     public:
-        [[nodiscard]] Size size() const override
+        [[nodiscard]] Size getSize() const override
         {
             return Size{.width = 4, .height = 4};
         }

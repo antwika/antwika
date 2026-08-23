@@ -32,7 +32,7 @@ namespace antwika::schema
         }
     }
 
-    std::uint32_t documentVersion(
+    std::uint32_t getDocumentVersion(
         const nlohmann::json &document, std::string_view versionKey)
     {
         const std::string key(versionKey);

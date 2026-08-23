@@ -3,7 +3,7 @@
 namespace antwika::ui
 {
 
-    HoverTrack updateHover(
+    HoverTrack getUpdateHover(
         const HoverTrack track,
         const WidgetId nowWidget,
         const std::uint32_t clock)
@@ -16,7 +16,7 @@ namespace antwika::ui
         return HoverTrack{.widget = nowWidget, .sinceFrame = clock};
     }
 
-    bool tooltipDue(
+    bool isTooltipDue(
         const HoverTrack track,
         const std::uint32_t clock,
         const std::uint32_t delayFrames)

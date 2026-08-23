@@ -28,7 +28,7 @@ namespace
 
     constexpr std::uint32_t kHeight = 48;
 
-    WindowSpec demoSpec()
+    WindowSpec getDemoSpec()
     {
         return WindowSpec{
             .title = "Antwika raylib readback",
@@ -58,7 +58,7 @@ TEST(RaylibReadPixelsTest, ReadPixels_ComesBackTheSizeOfTheDrawable)
     NiceMock<MockLogger> logger;
     RaylibBackend backend(logger);
 
-    const auto window = backend.createWindow(demoSpec());
+    const auto window = backend.createWindow(getDemoSpec());
     auto &renderer = window->renderer();
 
     renderer.clear(Color{.red = 8, .green = 16, .blue = 32});
@@ -75,7 +75,7 @@ TEST(RaylibReadPixelsTest, ReadPixels_SeesWhatWasJustDrawn)
     NiceMock<MockLogger> logger;
     RaylibBackend backend(logger);
 
-    const auto window = backend.createWindow(demoSpec());
+    const auto window = backend.createWindow(getDemoSpec());
     auto &renderer = window->renderer();
 
     const Color backgroundColor{.red = 8, .green = 16, .blue = 32};
@@ -101,7 +101,7 @@ TEST(RaylibReadPixelsTest, ReadPixels_ComesBackEmptyOnceTheWindowCloses)
     NiceMock<MockLogger> logger;
     RaylibBackend backend(logger);
 
-    const auto window = backend.createWindow(demoSpec());
+    const auto window = backend.createWindow(getDemoSpec());
     auto &renderer = window->renderer();
 
     window->close();

@@ -23,18 +23,18 @@ namespace antwika::editor
 
     void Editor::pathTo(const input::Position position)
     {
-        const auto projectToScreen = viewportRenderer.viewport().toCanvas(
+        const auto projectToScreen = viewportRenderer.getViewport().toCanvas(
             antwika::gfx::Point{.x = position.x, .y = position.y});
         const antwika::gfx::PointF point{
             static_cast<float>(projectToScreen.x),
             static_cast<float>(projectToScreen.y)};
-        const auto ray = voxelmap::rayInModelSpace(
-            voxelmap::rayThrough(
+        const auto ray = voxelmap::getRayInModelSpace(
+            voxelmap::getRayThrough(
                 worldCamera(),
                 camera::kCanvasSize,
                 point),
             worldRotation());
-        const auto hit = voxelmap::raycastFace(document.map.voxels, ray);
+        const auto hit = voxelmap::getRaycastFace(document.map.voxels, ray);
 
         if (!hit.has_value())
         {
@@ -42,16 +42,16 @@ namespace antwika::editor
         }
 
         const auto standing =
-            play.game->world().get<component::Position>(play.game->player());
-        const auto fromStood = collision::supportingVoxel(
-            worldMeshes.cells(),
+            play.game->getWorld().get<component::Position>(play.game->getPlayer());
+        const auto fromStood = collision::getSupportingVoxel(
+            worldMeshes.getCells(),
             static_cast<std::int32_t>(
                 std::floor(standing.x / antwika::voxel::kVoxelSide)),
             static_cast<std::int32_t>(
                 std::floor(standing.z / antwika::voxel::kVoxelSide)),
             standing.y);
         const auto landing =
-            collision::restPositionOverColumn(worldMeshes.cells(),
+            collision::getRestPositionOverColumn(worldMeshes.getCells(),
                 hit->cell.position.x,
                 hit->cell.position.z);
 
@@ -60,8 +60,8 @@ namespace antwika::editor
             return;
         }
 
-        const auto toStood = collision::supportingVoxel(
-            worldMeshes.cells(
+        const auto toStood = collision::getSupportingVoxel(
+            worldMeshes.getCells(
                 ), hit->cell.position.x, hit->cell.position.z, landing->y);
 
         if (!toStood.has_value())
@@ -69,8 +69,8 @@ namespace antwika::editor
             return;
         }
 
-        const collision::VoxelWalkGraph walkGraph(worldMeshes.cells());
-        const auto walk = antwika::pathfinding::pathBetween(
+        const collision::VoxelWalkGraph walkGraph(worldMeshes.getCells());
+        const auto walk = antwika::pathfinding::getPathBetween(
             walkGraph,
             antwika::pathfinding::GridPos{
                 .x = fromStood->position.x,

@@ -45,7 +45,7 @@ namespace antwika::gfx::raylib
             std::free(mesh.indices);
         }
 
-        [[nodiscard]] ::Image lentImage(const Bitmap &bitmap)
+        [[nodiscard]] ::Image getLentImage(const Bitmap &bitmap)
         {
             return ::Image{
                 .data = const_cast<std::uint8_t *>(
@@ -73,7 +73,7 @@ namespace antwika::gfx::raylib
                 "closed");
         }
 
-        const ::Image source = lentImage(bitmap);
+        const ::Image source = getLentImage(bitmap);
 
         const ::Texture2D texture = LoadTextureFromImage(source);
 
@@ -95,12 +95,12 @@ namespace antwika::gfx::raylib
 
         if (mine == nullptr || !mine->isOwnedBy(*this)
             || !mine->isLoaded() || !bitmap.isValid()
-            || mine->size() != bitmap.size || !attached)
+            || mine->getSize() != bitmap.size || !attached)
         {
             return;
         }
 
-        ::UpdateTexture(mine->raw(), bitmap.pixels.data());
+        ::UpdateTexture(mine->getRawHandle(), bitmap.pixels.data());
     }
 
     std::unique_ptr<IMesh> RaylibRenderer::createMesh(const MeshData &mesh)
@@ -130,7 +130,7 @@ namespace antwika::gfx::raylib
 
         ::Mesh nativeMesh{};
         nativeMesh.vertexCount = static_cast<int>(vertexCount);
-        nativeMesh.triangleCount = static_cast<int>(mesh.triangleCount());
+        nativeMesh.triangleCount = static_cast<int>(mesh.getTriangleCount());
 
         try
         {
@@ -310,7 +310,7 @@ namespace antwika::gfx::raylib
             return nullptr;
         }
 
-        return &mine->raw();
+        return &mine->getRawHandle();
     }
 
     const ::Shader *RaylibRenderer::ownShaderOf(
@@ -324,7 +324,7 @@ namespace antwika::gfx::raylib
             return nullptr;
         }
 
-        return &mine->raw();
+        return &mine->getRawHandle();
     }
 
 }

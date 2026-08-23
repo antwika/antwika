@@ -9,7 +9,7 @@
 namespace antwika::app
 {
 
-    antwika::sound::Waveform readWavFile(
+    antwika::sound::Waveform getReadWavFile(
         const std::string &path, std::string_view name)
     {
         std::ifstream file(path, std::ios::binary);

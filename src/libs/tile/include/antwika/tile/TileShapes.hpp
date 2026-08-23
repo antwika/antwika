@@ -30,7 +30,7 @@ namespace antwika::tile
             const ShapedJunctions &other) const = default;
     };
 
-    [[nodiscard]] ShapedJunctions rulesFromShapes(
+    [[nodiscard]] ShapedJunctions getRulesFromShapes(
         const TileRules &rules, voxel::Kind kind);
 
 }

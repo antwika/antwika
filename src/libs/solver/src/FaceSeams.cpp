@@ -26,10 +26,10 @@ namespace antwika::solver
     using namespace weavedetail;
 
 
-    std::vector<FaceSeam> faceAdjacency(
+    std::vector<FaceSeam> getFaceAdjacency(
         const std::vector<voxelmap::FaceRef> &faces, const CornerSeams corners)
     {
-        const auto placedFaces = facesByPlace(faces);
+        const auto placedFaces = getFacesByPlace(faces);
 
         std::vector<FaceSeam> seams;
 
@@ -44,17 +44,17 @@ namespace antwika::solver
 
             for (const auto direction : directions)
             {
-                const auto side = sideTowards(face.side, direction);
+                const auto side = getSideTowards(face.side, direction);
 
                 const voxelmap::FaceRef besideRef{
                     .cell = voxel::VoxelCell{
                         .position =
-                            offsetBy(face.cell.position, direction)},
+                            getOffsetBy(face.cell.position, direction)},
                     .side = face.side};
                 const auto lying = placedFaces.find(besideRef);
 
                 if (lying != placedFaces.end() && lying->second > which
-                    && sameSurface(faces[lying->second], face))
+                    && isSameSurface(faces[lying->second], face))
                 {
                     const auto kind =
                         voxel::cubeCornerOf(face.cell.position)
@@ -70,7 +70,7 @@ namespace antwika::solver
                             .edgeA =
                                 tilemap::TileEdge{.side = side, .edge = kind},
                             .edgeB = tilemap::TileEdge{
-                                .side = voxel::facing(side), .edge = kind}});
+                                .side = voxel::getFacing(side), .edge = kind}});
                 }
 
                 if (corners == CornerSeams::Ignored)
@@ -88,10 +88,10 @@ namespace antwika::solver
                 }
 
                 const auto kind =
-                    atCubeFace(
+                    isAtCubeFace(
                         face.cell.position,
-                        voxelmap::faceNormal(face.side))
-                            && atCubeFace(face.cell.position, direction)
+                        voxelmap::getFaceNormal(face.side))
+                            && isAtCubeFace(face.cell.position, direction)
                         ? voxel::EdgeKind::Boundary
                         : voxel::EdgeKind::Interior;
 
@@ -102,9 +102,9 @@ namespace antwika::solver
                         .edgeA =
                             tilemap::TileEdge{.side = side, .edge = kind},
                         .edgeB = tilemap::TileEdge{
-                            .side = sideTowards(
+                            .side = getSideTowards(
                                 aroundRef.side,
-                                voxelmap::faceNormal(face.side)),
+                                voxelmap::getFaceNormal(face.side)),
                             .edge = kind}});
             }
         }
@@ -118,7 +118,7 @@ namespace antwika::solver
         return faces[seam.faceA].side != faces[seam.faceB].side;
     }
 
-    std::vector<FaceSeam> sameLevelSeams(
+    std::vector<FaceSeam> getSameLevelSeams(
         const std::vector<voxelmap::FaceRef> &faces,
         const std::vector<FaceSeam> &seams,
         const std::int32_t level)
@@ -137,7 +137,7 @@ namespace antwika::solver
         return hereSeams;
     } // GCOVR_EXCL_LINE
 
-    std::vector<FaceSeam> crossLevelSeams(
+    std::vector<FaceSeam> getCrossLevelSeams(
         const std::vector<voxelmap::FaceRef> &faces,
         const std::vector<FaceSeam> &seams,
         const std::int32_t level)
@@ -160,7 +160,7 @@ namespace antwika::solver
         return throughSeams;
     } // GCOVR_EXCL_LINE
 
-    std::vector<FaceSeam> satisfiedSeams(
+    std::vector<FaceSeam> getSatisfiedSeams(
         const std::vector<voxelmap::FaceRef> &faces,
         const std::span<const tilemap::Tile> drawnTiles,
         const tile::TileRules &rules,
@@ -168,7 +168,7 @@ namespace antwika::solver
     {
         std::vector<FaceSeam> tiedSeams;
 
-        for (const auto &seam : faceAdjacency(faces, corners))
+        for (const auto &seam : getFaceAdjacency(faces, corners))
         {
             const auto hereSeams = drawnTiles[seam.faceA];
             const auto thereTile = drawnTiles[seam.faceB];

@@ -42,9 +42,9 @@ namespace antwika::system
     void MoveIntentSystem::update(ecs::World &world, time::Tick)
     {
         const auto keyedX = std::clamp(
-            wasdKeys->axisX() + arrowKeys->axisX(), -1.0F, 1.0F);
+            wasdKeys->getAxisX() + arrowKeys->getAxisX(), -1.0F, 1.0F);
         const auto keyedZ = std::clamp(
-            wasdKeys->axisZ() + arrowKeys->axisZ(), -1.0F, 1.0F);
+            wasdKeys->getAxisZ() + arrowKeys->getAxisZ(), -1.0F, 1.0F);
         const auto steeringOnly = steering && keyedX == 0.0F
                             && keyedZ == 0.0F;
         const auto byX = steeringOnly ? steerX : keyedX;
@@ -77,7 +77,7 @@ namespace antwika::system
         {
             world.set<component::Position>(
                 entity,
-                collision::movedWithCollision(
+                collision::getMovedWithCollision(
                     *solidVoxels,
                     world.get<component::Position>(entity),
                     world.get<component::Velocity>(entity)));

@@ -62,7 +62,7 @@ namespace
     constexpr Point kOnTheRightPoint{.x = 17, .y = 4};
     constexpr Point kOnNeitherPoint{.x = 80, .y = 40};
 
-    Theme plainTheme()
+    Theme getPlainTheme()
     {
         return Theme{
             .buttonIdleColor = kIdleColor,
@@ -74,9 +74,9 @@ namespace
             .buttonPadding = 0};
     }
 
-    [[nodiscard]] Frame twoButtons(Pointer pointer = {})
+    [[nodiscard]] Frame getTwoButtons(Pointer pointer = {})
     {
-        Context uiContext{kCanvasSize, plainTheme(), pointer};
+        Context uiContext{kCanvasSize, getPlainTheme(), pointer};
 
         {
             const auto actions = uiContext.row();
@@ -88,7 +88,7 @@ namespace
         return uiContext.build();
     }
 
-    [[nodiscard]] Frame everything(Pointer pointer)
+    [[nodiscard]] Frame getEverything(Pointer pointer)
     {
         static constexpr std::array<std::string_view, 2> kOptions{
             "one", "two"};
@@ -96,7 +96,7 @@ namespace
 
         Context uiContext{
             kCanvasSize,
-            plainTheme(),
+            getPlainTheme(),
             pointer,
             Keyboard{.keys = {Key::Character}, .typedText = "c"},
             kFieldWidget};
@@ -118,7 +118,7 @@ namespace
         return std::get<FillRect>(drawList.at(commandIndex)).color;
     }
 
-    [[nodiscard]] HoverPointer at(Point point)
+    [[nodiscard]] HoverPointer getEntryAt(Point point)
     {
         return HoverPointer{.positionPoint = point};
     }
@@ -138,7 +138,7 @@ namespace
 
 TEST(ContextHoverTest, Build_ReportsOneTargetPerInteractiveNamedWidget)
 {
-    const auto frame = twoButtons();
+    const auto frame = getTwoButtons();
 
     EXPECT_EQ(
         (std::vector<WidgetId>{kLeftWidget, kRightWidget}),
@@ -147,19 +147,19 @@ TEST(ContextHoverTest, Build_ReportsOneTargetPerInteractiveNamedWidget)
 
 TEST(ContextHoverTest, Build_PlacesEveryTargetWhereTheLayoutPutIt)
 {
-    const auto frame = twoButtons();
+    const auto frame = getTwoButtons();
 
     ASSERT_EQ(2U, frame.hoverTargets.size());
 
     for (const auto &target : frame.hoverTargets)
     {
-        EXPECT_EQ(frame.rects.find(target.widgetId), target.rect);
+        EXPECT_EQ(frame.rects.getFind(target.widgetId), target.rect);
     }
 }
 
 TEST(ContextHoverTest, Build_NamesTheCommandThatFillsEachWidget)
 {
-    const auto frame = twoButtons();
+    const auto frame = getTwoButtons();
 
     ASSERT_EQ(2U, frame.hoverTargets.size());
 
@@ -171,7 +171,7 @@ TEST(ContextHoverTest, Build_NamesTheCommandThatFillsEachWidget)
 
 TEST(ContextHoverTest, Build_ReportsNoTargetForAButtonTheCallerDressed)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.button(
         "ab",
@@ -182,7 +182,7 @@ TEST(ContextHoverTest, Build_ReportsNoTargetForAButtonTheCallerDressed)
 
 TEST(ContextHoverTest, Build_ReportsNoTargetForAnUnnamedButton)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.button("ab");
 
@@ -191,7 +191,7 @@ TEST(ContextHoverTest, Build_ReportsNoTargetForAnUnnamedButton)
 
 TEST(ContextHoverTest, Build_ReportsNoTargetForAFrameWithNoWidgets)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.label("just words");
 
@@ -200,11 +200,11 @@ TEST(ContextHoverTest, Build_ReportsNoTargetForAFrameWithNoWidgets)
 
 TEST(ContextHoverTest, ApplyHover_LightsAButtonTheEventStreamNeverSaw)
 {
-    auto frame = twoButtons();
+    auto frame = getTwoButtons();
 
     ASSERT_EQ(kNoWidget, frame.interactions.hoveredWidget);
 
-    applyHover(frame.drawList, frame.hoverTargets, at(kOnTheRightPoint));
+    applyHover(frame.drawList, frame.hoverTargets, getEntryAt(kOnTheRightPoint));
 
     EXPECT_EQ(
         kIdleColor,
@@ -219,7 +219,7 @@ TEST(ContextHoverTest, ApplyHover_LightsAButtonTheEventStreamNeverSaw)
 
 TEST(ContextHoverTest, ApplyHover_PutsOutWhatTheRecordedPointerLeftLit)
 {
-    auto frame = twoButtons(Pointer{.positionPoint = kOnTheLeftPoint});
+    auto frame = getTwoButtons(Pointer{.positionPoint = kOnTheLeftPoint});
 
     ASSERT_EQ(
         kLeftWidget,
@@ -228,7 +228,7 @@ TEST(ContextHoverTest, ApplyHover_PutsOutWhatTheRecordedPointerLeftLit)
     applyHover(
         frame.drawList,
         frame.hoverTargets,
-        at(kOnTheRightPoint));
+        getEntryAt(kOnTheRightPoint));
 
     EXPECT_EQ(
         kIdleColor,
@@ -243,7 +243,7 @@ TEST(ContextHoverTest, ApplyHover_PutsOutWhatTheRecordedPointerLeftLit)
 
 TEST(ContextHoverTest, ApplyHover_LeavesAHeldButtonLookingPressed)
 {
-    auto frame = twoButtons(
+    auto frame = getTwoButtons(
         Pointer{.positionPoint = kOnTheLeftPoint, .down = true});
 
     ASSERT_TRUE(
@@ -251,7 +251,7 @@ TEST(ContextHoverTest, ApplyHover_LeavesAHeldButtonLookingPressed)
     ASSERT_FALSE(
         frame.hoverTargets.at(1).held);
 
-    applyHover(frame.drawList, frame.hoverTargets, at(kOnTheLeftPoint));
+    applyHover(frame.drawList, frame.hoverTargets, getEntryAt(kOnTheLeftPoint));
 
     EXPECT_EQ(
         kPressedColor, fillOf(
@@ -261,7 +261,7 @@ TEST(ContextHoverTest, ApplyHover_LeavesAHeldButtonLookingPressed)
 
 TEST(ContextHoverTest, ApplyHover_DrawsTheSamePictureWithNoHoverPointer)
 {
-    auto frame = twoButtons(Pointer{.positionPoint = kOnTheLeftPoint});
+    auto frame = getTwoButtons(Pointer{.positionPoint = kOnTheLeftPoint});
     const auto beforeDrawList = frame.drawList;
 
     applyHover(frame.drawList, frame.hoverTargets, HoverPointer{});
@@ -271,12 +271,12 @@ TEST(ContextHoverTest, ApplyHover_DrawsTheSamePictureWithNoHoverPointer)
 
 TEST(ContextHoverTest, ApplyHover_LeavesEveryInteractionExactlyAsItWas)
 {
-    const auto probe = everything(Pointer{});
-    const auto option = probe.rects.find(kLeftWidget);
+    const auto probe = getEverything(Pointer{});
+    const auto option = probe.rects.getFind(kLeftWidget);
 
     ASSERT_TRUE(option.has_value());
 
-    auto frame = everything(Pointer{
+    auto frame = getEverything(Pointer{
         .positionPoint = Point{
             .x = option->originPoint.x + 1, .y = option->originPoint.y + 1},
         .pressed = true});
@@ -294,7 +294,7 @@ TEST(ContextHoverTest, ApplyHover_LeavesEveryInteractionExactlyAsItWas)
     for (const auto point :
          {kOnTheLeftPoint, kOnTheRightPoint, kOnNeitherPoint})
     {
-        applyHover(frame.drawList, frame.hoverTargets, at(point));
+        applyHover(frame.drawList, frame.hoverTargets, getEntryAt(point));
 
         EXPECT_EQ(beforeInteractions, frame.interactions);
     }
@@ -302,7 +302,7 @@ TEST(ContextHoverTest, ApplyHover_LeavesEveryInteractionExactlyAsItWas)
 
 TEST(ContextHoverTest, Build_PutsAnOpenListsOptionsInFrontOfTheBox)
 {
-    const auto frame = everything(Pointer{});
+    const auto frame = getEverything(Pointer{});
 
     EXPECT_EQ(
         (std::vector<WidgetId>{kListWidget, kLeftWidget, kRightWidget}),

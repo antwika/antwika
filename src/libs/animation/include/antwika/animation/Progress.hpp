@@ -14,9 +14,9 @@ namespace antwika::animation
 
         Progress(time::Tick numeratorTick, time::Tick denominatorTick);
 
-        [[nodiscard]] time::Tick numerator() const noexcept;
+        [[nodiscard]] time::Tick getNumerator() const noexcept;
 
-        [[nodiscard]] time::Tick denominator() const noexcept;
+        [[nodiscard]] time::Tick getDenominator() const noexcept;
 
         [[nodiscard]] bool operator==(
             const Progress &other) const noexcept = default;
@@ -26,7 +26,7 @@ namespace antwika::animation
         time::Tick denTick;
     };
 
-    [[nodiscard]] std::int64_t interpolate(
+    [[nodiscard]] std::int64_t getInterpolate(
         std::int64_t fromValue, std::int64_t toValue,
         Progress progress) noexcept;
 

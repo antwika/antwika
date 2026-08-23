@@ -43,7 +43,7 @@ namespace
     constexpr Point kInsidePoint{.x = 5, .y = 5};
     constexpr Point kOutsidePoint{.x = 50, .y = 50};
 
-    Node button(WidgetId widget)
+    Node getButton(WidgetId widget)
     {
         return Node{
             .backgroundColor = kIdleColor,
@@ -56,7 +56,7 @@ namespace
 TEST(ResolveTest, Resolve_ActivatesTheWidgetAPressLandsOn)
 {
     LayoutTree tree{Node{}};
-    tree.add(button(kButtonWidget));
+    tree.add(getButton(kButtonWidget));
 
     const auto interactions =
         resolve(tree, Pointer{.positionPoint = kInsidePoint, .pressed = true});
@@ -67,7 +67,7 @@ TEST(ResolveTest, Resolve_ActivatesTheWidgetAPressLandsOn)
 TEST(ResolveTest, Resolve_ActivatesNothingWhenAPressLandsOnNothing)
 {
     LayoutTree tree{Node{}};
-    tree.add(button(kButtonWidget));
+    tree.add(getButton(kButtonWidget));
 
     const auto interactions =
         resolve(tree, Pointer{.positionPoint = kOutsidePoint, .pressed = true});
@@ -79,7 +79,7 @@ TEST(ResolveTest, Resolve_ActivatesNothingWithoutAPress)
 {
     LayoutTree tree{Node{}};
     tree.add(
-        button(kButtonWidget));
+        getButton(kButtonWidget));
 
     const auto interactions = resolve(
         tree,
@@ -120,41 +120,41 @@ TEST(ResolveTest, Resolve_ReportsThePointerNotOverAnUnfilledNode)
 TEST(ResolveTest, Resolve_DressesAWidgetThePointerIsOffAsIdle)
 {
     LayoutTree tree{Node{}};
-    const auto node = tree.add(button(kButtonWidget));
+    const auto node = tree.add(getButton(kButtonWidget));
 
     resolve(tree, Pointer{.positionPoint = kOutsidePoint});
 
-    EXPECT_EQ(kIdleColor, tree.node(node).backgroundColor);
+    EXPECT_EQ(kIdleColor, tree.getNode(node).backgroundColor);
 }
 
 TEST(ResolveTest, Resolve_DressesAWidgetUnderThePointerAsHovered)
 {
     LayoutTree tree{Node{}};
-    const auto node = tree.add(button(kButtonWidget));
+    const auto node = tree.add(getButton(kButtonWidget));
 
     resolve(tree, Pointer{.positionPoint = kInsidePoint});
 
-    EXPECT_EQ(kHoveredColor, tree.node(node).backgroundColor);
+    EXPECT_EQ(kHoveredColor, tree.getNode(node).backgroundColor);
 }
 
 TEST(ResolveTest, Resolve_DressesAHeldWidgetAsPressed)
 {
     LayoutTree tree{Node{}};
-    const auto node = tree.add(button(kButtonWidget));
+    const auto node = tree.add(getButton(kButtonWidget));
 
     resolve(tree, Pointer{.positionPoint = kInsidePoint, .down = true});
 
-    EXPECT_EQ(kPressedColor, tree.node(node).backgroundColor);
+    EXPECT_EQ(kPressedColor, tree.getNode(node).backgroundColor);
 }
 
 TEST(ResolveTest, Resolve_LeavesAnUnnamedWidgetIdle)
 {
     LayoutTree tree{Node{}};
-    const auto node = tree.add(button(kNoWidget));
+    const auto node = tree.add(getButton(kNoWidget));
 
     resolve(tree, Pointer{.positionPoint = kInsidePoint, .down = true});
 
-    EXPECT_EQ(kIdleColor, tree.node(node).backgroundColor);
+    EXPECT_EQ(kIdleColor, tree.getNode(node).backgroundColor);
 }
 
 TEST(ResolveTest, Resolve_LeavesANodeWithNoStyleAlone)
@@ -168,5 +168,5 @@ TEST(ResolveTest, Resolve_LeavesANodeWithNoStyleAlone)
 
     resolve(tree, Pointer{.positionPoint = kInsidePoint});
 
-    EXPECT_EQ(kPressedColor, tree.node(node).backgroundColor);
+    EXPECT_EQ(kPressedColor, tree.getNode(node).backgroundColor);
 }

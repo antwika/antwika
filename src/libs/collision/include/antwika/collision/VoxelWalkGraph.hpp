@@ -16,7 +16,7 @@ namespace antwika::collision
         {
         }
 
-        [[nodiscard]] std::vector<pathfinding::GridPos> neighbors(
+        [[nodiscard]] std::vector<pathfinding::GridPos> getNeighbors(
             const pathfinding::GridPos fromPos) const override
         {
             std::vector<pathfinding::GridPos> gridPositions;
@@ -30,7 +30,7 @@ namespace antwika::collision
                   std::pair{0, 1},
                   std::pair{0, -1}})
             {
-                const auto supportingCell = supportingVoxel(
+                const auto supportingCell = getSupportingVoxel(
                     *filledVoxels, fromPos.x + byX, fromPos.z + byZ, feet);
 
                 if (supportingCell.has_value())

@@ -25,7 +25,7 @@ TEST(KeyboardTest, IsDown_ReportsNothingHeldBeforeAnyEvent)
     EXPECT_FALSE(keyboard.isDown(Key::A));
     EXPECT_FALSE(keyboard.wasPressed(Key::A));
     EXPECT_FALSE(keyboard.wasReleased(Key::A));
-    EXPECT_EQ(keyboard.modifiers(), KeyModifiers{});
+    EXPECT_EQ(keyboard.getModifiers(), KeyModifiers{});
 }
 
 TEST(KeyboardTest, Apply_MarksAPressedKeyHeldAndPressed)
@@ -87,8 +87,8 @@ TEST(KeyboardTest, Apply_RecordsTheModifiersAPressWasCarrying)
     keyboard.apply(
         KeyPressed{.key = Key::S, .modifiers = {.control = true}});
 
-    EXPECT_TRUE(keyboard.modifiers().control);
-    EXPECT_FALSE(keyboard.modifiers().shift);
+    EXPECT_TRUE(keyboard.getModifiers().control);
+    EXPECT_FALSE(keyboard.getModifiers().shift);
 }
 
 TEST(KeyboardTest, Apply_RecordsTheModifiersAReleaseWasCarrying)
@@ -98,7 +98,7 @@ TEST(KeyboardTest, Apply_RecordsTheModifiersAReleaseWasCarrying)
     keyboard.apply(
         KeyReleased{.key = Key::S, .modifiers = {.shift = true}});
 
-    EXPECT_TRUE(keyboard.modifiers().shift);
+    EXPECT_TRUE(keyboard.getModifiers().shift);
 }
 
 TEST(KeyboardTest, ApplyModifiers_ReplacesWhatIsHeld)
@@ -108,8 +108,8 @@ TEST(KeyboardTest, ApplyModifiers_ReplacesWhatIsHeld)
 
     keyboard.applyModifiers(KeyModifiers{.alt = true});
 
-    EXPECT_TRUE(keyboard.modifiers().alt);
-    EXPECT_FALSE(keyboard.modifiers().super);
+    EXPECT_TRUE(keyboard.getModifiers().alt);
+    EXPECT_FALSE(keyboard.getModifiers().super);
 }
 
 TEST(KeyboardTest, BeginTick_ClearsTheEdgesButKeepsWhatIsHeld)
@@ -133,7 +133,7 @@ TEST(KeyboardTest, BeginTick_KeepsTheModifiersHeld)
 
     keyboard.beginTick();
 
-    EXPECT_TRUE(keyboard.modifiers().shift);
+    EXPECT_TRUE(keyboard.getModifiers().shift);
 }
 
 TEST(KeyboardTest, WasPressed_GivesTheSameAnswerTwice)
@@ -155,7 +155,7 @@ TEST(KeyboardTest, Apply_IgnoresAKeyOutsideTheEnumeration)
     EXPECT_FALSE(keyboard.isDown(kUnnamedKey));
     EXPECT_FALSE(keyboard.wasPressed(kUnnamedKey));
     EXPECT_FALSE(keyboard.wasReleased(kUnnamedKey));
-    EXPECT_EQ(KeyModifiers{}, keyboard.pressModifiers(kUnnamedKey));
+    EXPECT_EQ(KeyModifiers{}, keyboard.getPressModifiers(kUnnamedKey));
 }
 
 TEST(KeyboardTest, Apply_IgnoresTheFirstKeyPastTheEnumeration)
@@ -168,7 +168,7 @@ TEST(KeyboardTest, Apply_IgnoresTheFirstKeyPastTheEnumeration)
 
     EXPECT_FALSE(keyboard.isDown(kJustPastTheLastKey));
     EXPECT_FALSE(keyboard.wasPressed(kJustPastTheLastKey));
-    EXPECT_EQ(KeyModifiers{}, keyboard.pressModifiers(kJustPastTheLastKey));
+    EXPECT_EQ(KeyModifiers{}, keyboard.getPressModifiers(kJustPastTheLastKey));
 }
 
 TEST(KeyboardTest, Apply_IgnoresTheFirstKeyPastTheEnumerationOnRelease)
@@ -188,8 +188,8 @@ TEST(KeyboardTest, PressModifiers_KeepsWhatOneKeysPressEdgeCarried)
         KeyPressed{.key = Key::S, .modifiers = {.control = true}});
     keyboard.apply(KeyReleased{.key = Key::LeftControl, .modifiers = {}});
 
-    EXPECT_TRUE(keyboard.pressModifiers(Key::S).control);
-    EXPECT_FALSE(keyboard.modifiers().control);
+    EXPECT_TRUE(keyboard.getPressModifiers(Key::S).control);
+    EXPECT_FALSE(keyboard.getModifiers().control);
 }
 
 TEST(KeyboardTest, PressModifiers_ReportsNoneForAKeyThatDidNotGoDown)
@@ -199,7 +199,7 @@ TEST(KeyboardTest, PressModifiers_ReportsNoneForAKeyThatDidNotGoDown)
     keyboard.apply(
         KeyPressed{.key = Key::W, .modifiers = {.shift = true}});
 
-    EXPECT_EQ(KeyModifiers{}, keyboard.pressModifiers(Key::S));
+    EXPECT_EQ(KeyModifiers{}, keyboard.getPressModifiers(Key::S));
 }
 
 TEST(KeyboardTest, PressModifiers_IgnoresARepeat)
@@ -210,7 +210,7 @@ TEST(KeyboardTest, PressModifiers_IgnoresARepeat)
         KeyPressed{
             .key = Key::W, .modifiers = {.shift = true}, .repeat = true});
 
-    EXPECT_EQ(KeyModifiers{}, keyboard.pressModifiers(Key::W));
+    EXPECT_EQ(KeyModifiers{}, keyboard.getPressModifiers(Key::W));
 }
 
 TEST(KeyboardTest, BeginTick_ForgetsThePressEdgesModifiers)
@@ -221,7 +221,7 @@ TEST(KeyboardTest, BeginTick_ForgetsThePressEdgesModifiers)
 
     keyboard.beginTick();
 
-    EXPECT_EQ(KeyModifiers{}, keyboard.pressModifiers(Key::S));
+    EXPECT_EQ(KeyModifiers{}, keyboard.getPressModifiers(Key::S));
 }
 
 TEST(KeyboardTest, Apply_StillRecordsTheModifiersOfAnUnnamedKey)
@@ -231,7 +231,7 @@ TEST(KeyboardTest, Apply_StillRecordsTheModifiersOfAnUnnamedKey)
     keyboard.apply(
         KeyPressed{.key = kUnnamedKey, .modifiers = {.shift = true}});
 
-    EXPECT_TRUE(keyboard.modifiers().shift);
+    EXPECT_TRUE(keyboard.getModifiers().shift);
 }
 
 TEST(KeyboardTest, Apply_IgnoresAnUnnamedKeyOnRelease)
@@ -241,6 +241,6 @@ TEST(KeyboardTest, Apply_IgnoresAnUnnamedKeyOnRelease)
     keyboard.apply(
         KeyReleased{.key = kUnnamedKey, .modifiers = {.alt = true}});
 
-    EXPECT_TRUE(keyboard.modifiers().alt);
+    EXPECT_TRUE(keyboard.getModifiers().alt);
     EXPECT_FALSE(keyboard.wasReleased(kUnnamedKey));
 }

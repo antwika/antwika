@@ -22,9 +22,9 @@
 
 using antwika::app::RunContext;
 using antwika::app::runRecorded;
-using antwika::app::loadReplayEvents;
+using antwika::app::getLoadReplayEvents;
 using antwika::event::TickEvent;
-using antwika::replay::loadReplayFile;
+using antwika::replay::getLoadReplayFile;
 using antwika::replay::ReplayFormatError;
 using antwika::replay::saveReplayFile;
 
@@ -90,7 +90,7 @@ TEST(RunRecordedTest, RunRecorded_AttachesNoRecorderWithoutRecord)
 TEST(RunRecordedTest, RunRecorded_SavesWhatTheRecorderWasGiven)
 {
     const antwika::testing::ScratchFile file("antwika-app-recorded.json");
-    const std::string path = file.string();
+    const std::string path = file.getString();
     std::array<char *, 3> argv{
         const_cast<char *>("antwika_test"),
         const_cast<char *>("--record"),
@@ -110,13 +110,13 @@ TEST(RunRecordedTest, RunRecorded_SavesWhatTheRecorderWasGiven)
         errors);
 
     EXPECT_EQ(exitCode, EXIT_SUCCESS);
-    EXPECT_EQ(loadReplayFile(file.string()), std::vector{kScripted});
+    EXPECT_EQ(getLoadReplayFile(file.getString()), std::vector{kScripted});
 }
 
 TEST(RunRecordedTest, RunRecorded_SavesWhatAFailedRunGotTo)
 {
     const antwika::testing::ScratchFile file("antwika-app-failed.json");
-    const std::string path = file.string();
+    const std::string path = file.getString();
     std::array<char *, 3> argv{
         const_cast<char *>("antwika_test"),
         const_cast<char *>("--record"),
@@ -136,7 +136,7 @@ TEST(RunRecordedTest, RunRecorded_SavesWhatAFailedRunGotTo)
         errors);
 
     EXPECT_EQ(exitCode, EXIT_FAILURE);
-    EXPECT_EQ(loadReplayFile(file.string()), std::vector{kScripted});
+    EXPECT_EQ(getLoadReplayFile(file.getString()), std::vector{kScripted});
 }
 
 TEST(RunRecordedTest, RunRecorded_RefusesAPathBeforeTheSession)
@@ -170,7 +170,7 @@ TEST(RunRecordedTest, RunRecorded_RefusesAPathBeforeTheSession)
 TEST(RunRecordedTest, RunRecorded_KeepsWhatAKilledRunGotTo)
 {
     const antwika::testing::ScratchFile file("antwika-app-killed.jsonl");
-    const std::string path = file.string();
+    const std::string path = file.getString();
     std::array<char *, 3> argv{
         const_cast<char *>("antwika_test"),
         const_cast<char *>("--record"),
@@ -190,7 +190,7 @@ TEST(RunRecordedTest, RunRecorded_KeepsWhatAKilledRunGotTo)
                     .tick = antwika::time::Tick{2},
                     .event = {.name = "test.event", .payload = "more"}});
 
-            midRunEvents = loadReplayFile(path);
+            midRunEvents = getLoadReplayFile(path);
         },
         {},
         errors));
@@ -219,33 +219,33 @@ TEST(RunRecordedTest, RunRecorded_HandsTheBodyThePathToReplay)
 
 TEST(ScriptedEventsTest, ScriptedEvents_StartEmptyWithNoPath)
 {
-    EXPECT_TRUE(loadReplayEvents(std::nullopt).empty());
+    EXPECT_TRUE(getLoadReplayEvents(std::nullopt).empty());
 }
 
 TEST(ScriptedEventsTest, ScriptedEvents_LoadTheFallbackWithNoPath)
 {
     const antwika::testing::ScratchFile file("antwika-app-fallback.json");
-    saveReplayFile({kScripted}, file.string());
+    saveReplayFile({kScripted}, file.getString());
 
     EXPECT_EQ(
-        loadReplayEvents(std::nullopt, file.string()),
+        getLoadReplayEvents(std::nullopt, file.getString()),
         std::vector{kScripted});
 }
 
 TEST(ScriptedEventsTest, ScriptedEvents_PreferThePathToTheFallback)
 {
     const antwika::testing::ScratchFile file("antwika-app-named.json");
-    saveReplayFile({kScripted}, file.string());
+    saveReplayFile({kScripted}, file.getString());
 
     EXPECT_EQ(
-        loadReplayEvents(file.string(), "no-such-fallback.json"),
+        getLoadReplayEvents(file.getString(), "no-such-fallback.json"),
         std::vector{kScripted});
 }
 
 TEST(ScriptedEventsTest, ScriptedEvents_ThrowWhenTheFileIsNotThere)
 {
     EXPECT_THROW(
-        static_cast<void>(loadReplayEvents("no-such-replay.json")),
+        static_cast<void>(getLoadReplayEvents("no-such-replay.json")),
         ReplayFormatError);
 }
 
@@ -305,7 +305,7 @@ TEST(RunRecordedTest, RunRecorded_AcceptsACallersOwnFlag)
         argv.data(),
         "antwika_test",
         [&output](const RunContext &run)
-        { output = run.commandLine.value("--tick-delay-ms").value_or(""); },
+        { output = run.commandLine.getValue("--tick-delay-ms").value_or(""); },
         extra,
         errors);
 
@@ -374,7 +374,7 @@ TEST(RunRecordedTest, RunRecorded_ListsTheReplayFlagsAndTheCallersOwn)
 TEST(RunRecordedTest, RunRecorded_WritesNoRecordingForHelp)
 {
     const antwika::testing::ScratchFile file("antwika-app-help.json");
-    const std::string path = file.string();
+    const std::string path = file.getString();
     std::array<char *, 4> argv{
         const_cast<char *>("antwika_test"),
         const_cast<char *>("--record"),

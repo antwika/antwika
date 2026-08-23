@@ -23,7 +23,7 @@ namespace antwika::ui::detail
     {
         using antwika::gfx::Rect;
 
-        [[nodiscard]] std::int32_t offset(
+        [[nodiscard]] std::int32_t getOffset(
             std::int32_t start, std::uint32_t extent,
             std::uint32_t bar) noexcept
         {
@@ -51,14 +51,14 @@ namespace antwika::ui::detail
                      Rect{
                          .originPoint =
                              {.x = left,
-                              .y = offset(top, height, ringHeight)},
+                              .y = getOffset(top, height, ringHeight)},
                          .size = {.width = width, .height = ringHeight}},
                      Rect{
                          .originPoint = {.x = left, .y = top},
                          .size = {.width = ringWidth, .height = height}},
                      Rect{
                          .originPoint =
-                             {.x = offset(left, width, ringWidth), .y = top},
+                             {.x = getOffset(left, width, ringWidth), .y = top},
                          .size = {.width = ringWidth, .height = height}}})
             {
                 drawList.push_back(
@@ -66,22 +66,22 @@ namespace antwika::ui::detail
             }
         }
 
-        [[nodiscard]] std::size_t subtreeEnd(
+        [[nodiscard]] std::size_t getSubtreeEnd(
             const LayoutTree &tree, const std::size_t index)
         {
             auto commandIndex = index;
 
             while (commandIndex != kNoNode)
             {
-                if (tree.node(commandIndex).nextSibling != kNoNode)
+                if (tree.getNode(commandIndex).nextSibling != kNoNode)
                 {
-                    return tree.node(commandIndex).nextSibling;
+                    return tree.getNode(commandIndex).nextSibling;
                 }
 
-                commandIndex = tree.node(commandIndex).parent;
+                commandIndex = tree.getNode(commandIndex).parent;
             }
 
-            return tree.size();
+            return tree.getSize();
         }
 
         void emitLayer(
@@ -92,7 +92,7 @@ namespace antwika::ui::detail
         {
             std::vector<std::size_t> clippedNodes;
 
-            for (std::size_t index = 0; index < tree.size(); ++index)
+            for (std::size_t index = 0; index < tree.getSize(); ++index)
             {
                 while (!clippedNodes.empty()
                        && clippedNodes.back() == index)
@@ -101,7 +101,7 @@ namespace antwika::ui::detail
                     clippedNodes.pop_back();
                 }
 
-                const auto &node = tree.node(index);
+                const auto &node = tree.getNode(index);
 
                 if (node.overlay != overlay)
                 {
@@ -112,7 +112,7 @@ namespace antwika::ui::detail
                 {
                     drawList.push_back(
                         PushClip{.rect = node.arrangedRect});
-                    clippedNodes.push_back(subtreeEnd(tree, index));
+                    clippedNodes.push_back(getSubtreeEnd(tree, index));
                 }
 
                 if (node.backgroundColor)
@@ -154,7 +154,7 @@ namespace antwika::ui::detail
                 }
 
                 const auto measuredSize =
-                    antwika::text::textSize(node.text, node.textScale);
+                    antwika::text::getTextSize(node.text, node.textScale);
 
                 if (node.arrangedRect.size.height < measuredSize.height)
                 {
@@ -162,7 +162,7 @@ namespace antwika::ui::detail
                 }
 
                 const auto cell =
-                    antwika::gfx::scaledGlyphAdvance(node.textScale);
+                    antwika::gfx::getScaledGlyphAdvance(node.textScale);
                 const auto cells =
                     cell > 0 ? node.arrangedRect.size.width / cell : 0U;
 
@@ -184,9 +184,9 @@ namespace antwika::ui::detail
                 clippedNodes.pop_back();
             }
 
-            for (std::size_t index = 0; index < tree.size(); ++index)
+            for (std::size_t index = 0; index < tree.getSize(); ++index)
             {
-                const auto &node = tree.node(index);
+                const auto &node = tree.getNode(index);
 
                 if (node.overlay != overlay || !node.focusRing
                     || node.focusRing->thickness == 0)
@@ -199,7 +199,7 @@ namespace antwika::ui::detail
         }
     }
 
-    DrawList buildDrawList(const LayoutTree &tree, HoverTargets *targets)
+    DrawList createDrawList(const LayoutTree &tree, HoverTargets *targets)
     {
         DrawList drawList;
 

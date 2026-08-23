@@ -33,7 +33,7 @@ namespace antwika::map
         void mapV10ToV11(nlohmann::json &document)
         {
             const auto solid =
-                std::string(kKindNames.name(voxel::Kind::Normal));
+                std::string(kKindNames.getName(voxel::Kind::Normal));
 
             if (document.contains(std::string(kVoxelsKey))
                 && document[std::string(kVoxelsKey)].is_array())
@@ -166,61 +166,61 @@ namespace antwika::map
         void lateMapMigrations(
             schema::MigrationList &migrations)
         {
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 10,
                 11,
                 "antwika::map: a voxel now says what it is "
                 "made of",
                 mapV10ToV11));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 9,
                 10,
                 "antwika::map: a map now says how the "
                 "editor was left standing",
                 mapV9ToV10));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 8,
                 9,
                 "antwika::map: a map now says how much the "
                 "camera showed",
                 mapV8ToV9));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 7,
                 8,
                 "antwika::map: a map now says where the "
                 "camera stood",
                 mapV7ToV8));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 6,
                 7,
                 "antwika::map: a tile may now ask what "
                 "stands beyond its corners",
                 mapV6ToV7));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 5,
                 6,
                 "antwika::map: an edge now says whether it "
                 "may lie at the rim",
                 mapV5ToV6));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 4,
                 5,
                 "antwika::map: an edge may now be shut "
                 "against everything",
                 mapV4ToV5));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 3,
                 4,
                 "antwika::map: a map carries a palette, the "
                 "pixels living in the atlas files",
                 mapV3ToV4));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 19,
                 20,
                 "antwika::map: a map now says where the "
                 "character starts",
                 mapV19ToV20));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 20,
                 21,
                 "antwika::map: a character now starts facing "

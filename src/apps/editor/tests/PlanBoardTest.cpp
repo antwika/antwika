@@ -12,16 +12,16 @@ using antwika::editor::Board;
 using antwika::editor::Card;
 using antwika::editor::Column;
 using antwika::editor::addCard;
-using antwika::editor::cardOfWidget;
+using antwika::editor::getCardOfWidget;
 using antwika::editor::cardsOf;
-using antwika::editor::columnName;
-using antwika::editor::dropIndex;
+using antwika::editor::getColumnName;
+using antwika::editor::getDropIndex;
 using antwika::editor::kEveryColumn;
 using antwika::editor::kMaxCardsPerColumn;
 using antwika::editor::moveCard;
-using antwika::editor::planAddWidget;
-using antwika::editor::planCardWidget;
-using antwika::editor::planColumnWidget;
+using antwika::editor::getPlanAddWidget;
+using antwika::editor::getPlanCardWidget;
+using antwika::editor::getPlanColumnWidget;
 using antwika::editor::removeCard;
 using antwika::gfx::Rect;
 
@@ -79,10 +79,10 @@ namespace
 
 TEST(PlanBoardTest, ColumnName_NamesEveryColumnAndNothingElse)
 {
-    EXPECT_EQ(columnName(Column::Todo), "To do");
-    EXPECT_EQ(columnName(Column::Doing), "Doing");
-    EXPECT_EQ(columnName(Column::Done), "Done");
-    EXPECT_TRUE(columnName(static_cast<Column>(9)).empty());
+    EXPECT_EQ(getColumnName(Column::Todo), "To do");
+    EXPECT_EQ(getColumnName(Column::Doing), "Doing");
+    EXPECT_EQ(getColumnName(Column::Done), "Done");
+    EXPECT_TRUE(getColumnName(static_cast<Column>(9)).empty());
 }
 
 TEST(PlanBoardTest, AddCard_PutsACardAtTheFootOfItsColumn)
@@ -235,20 +235,20 @@ TEST(PlanBoardTest, DropIndex_DropsBeforeACardThePointerStandsAbove)
 {
     const auto drawnCards = stackOf(3);
 
-    EXPECT_EQ(dropIndex(drawnCards, 0), 0U);
-    EXPECT_EQ(dropIndex(drawnCards, 4), 0U);
-    EXPECT_EQ(dropIndex(drawnCards, 6), 1U);
-    EXPECT_EQ(dropIndex(drawnCards, 16), 2U);
+    EXPECT_EQ(getDropIndex(drawnCards, 0), 0U);
+    EXPECT_EQ(getDropIndex(drawnCards, 4), 0U);
+    EXPECT_EQ(getDropIndex(drawnCards, 6), 1U);
+    EXPECT_EQ(getDropIndex(drawnCards, 16), 2U);
 }
 
 TEST(PlanBoardTest, DropIndex_DropsPastTheFootOfTheLastCard)
 {
-    EXPECT_EQ(dropIndex(stackOf(3), 900), 3U);
+    EXPECT_EQ(getDropIndex(stackOf(3), 900), 3U);
 }
 
 TEST(PlanBoardTest, DropIndex_DropsAtTheHeadOfAColumnHoldingNothing)
 {
-    EXPECT_EQ(dropIndex(stackOf(0), 400), 0U);
+    EXPECT_EQ(getDropIndex(stackOf(0), 400), 0U);
 }
 
 TEST(PlanBoardTest, PlanCardWidget_HandsOutANumberToEveryCard)
@@ -257,13 +257,13 @@ TEST(PlanBoardTest, PlanCardWidget_HandsOutANumberToEveryCard)
 
     for (const auto which : kEveryColumn)
     {
-        EXPECT_TRUE(seenWidgets.insert(planColumnWidget(which)).second);
-        EXPECT_TRUE(seenWidgets.insert(planAddWidget(which)).second);
+        EXPECT_TRUE(seenWidgets.insert(getPlanColumnWidget(which)).second);
+        EXPECT_TRUE(seenWidgets.insert(getPlanAddWidget(which)).second);
 
         for (std::size_t index = 0; index < kMaxCardsPerColumn; ++index)
         {
             EXPECT_TRUE(
-                seenWidgets.insert(planCardWidget(which, index)).second);
+                seenWidgets.insert(getPlanCardWidget(which, index)).second);
         }
     }
 }
@@ -275,7 +275,7 @@ TEST(PlanBoardTest, CardOfWidget_ReadsBackWhateverPlanCardWidgetWrote)
         for (std::size_t index = 0; index < kMaxCardsPerColumn; ++index)
         {
             EXPECT_EQ(
-                cardOfWidget(planCardWidget(which, index)),
+                getCardOfWidget(getPlanCardWidget(which, index)),
                 (std::optional{std::pair{which, index}}));
         }
     }
@@ -283,9 +283,9 @@ TEST(PlanBoardTest, CardOfWidget_ReadsBackWhateverPlanCardWidgetWrote)
 
 TEST(PlanBoardTest, CardOfWidget_ReadsNoCardFromAnotherNumber)
 {
-    EXPECT_FALSE(cardOfWidget(antwika::widget::kNoWidget).has_value());
+    EXPECT_FALSE(getCardOfWidget(antwika::widget::kNoWidget).has_value());
     EXPECT_FALSE(
-        cardOfWidget(planColumnWidget(Column::Todo)).has_value());
+        getCardOfWidget(getPlanColumnWidget(Column::Todo)).has_value());
     EXPECT_FALSE(
-        cardOfWidget(antwika::widget::WidgetId{9000}).has_value());
+        getCardOfWidget(antwika::widget::WidgetId{9000}).has_value());
 }

@@ -25,8 +25,8 @@ TEST(InputStateTest, Apply_RoutesAKeyPressToTheKeyboard)
 
     state.apply(KeyPressed{.key = Key::W});
 
-    EXPECT_TRUE(state.keyboard().isDown(Key::W));
-    EXPECT_TRUE(state.keyboard().wasPressed(Key::W));
+    EXPECT_TRUE(state.getKeyboard().isDown(Key::W));
+    EXPECT_TRUE(state.getKeyboard().wasPressed(Key::W));
 }
 
 TEST(InputStateTest, Apply_RoutesAKeyReleaseToTheKeyboard)
@@ -36,8 +36,8 @@ TEST(InputStateTest, Apply_RoutesAKeyReleaseToTheKeyboard)
 
     state.apply(KeyReleased{.key = Key::W});
 
-    EXPECT_FALSE(state.keyboard().isDown(Key::W));
-    EXPECT_TRUE(state.keyboard().wasReleased(Key::W));
+    EXPECT_FALSE(state.getKeyboard().isDown(Key::W));
+    EXPECT_TRUE(state.getKeyboard().wasReleased(Key::W));
 }
 
 TEST(InputStateTest, Apply_RoutesAMovementToTheMouse)
@@ -46,7 +46,7 @@ TEST(InputStateTest, Apply_RoutesAMovementToTheMouse)
 
     state.apply(PointerMoved{.position = {.x = 20, .y = 30}});
 
-    EXPECT_EQ(state.mouse().position(), (Position{.x = 20, .y = 30}));
+    EXPECT_EQ(state.getMouse().getPosition(), (Position{.x = 20, .y = 30}));
 }
 
 TEST(InputStateTest, Apply_RoutesAButtonPressToTheMouse)
@@ -55,8 +55,8 @@ TEST(InputStateTest, Apply_RoutesAButtonPressToTheMouse)
 
     state.apply(PointerButtonPressed{.button = MouseButton::Left});
 
-    EXPECT_TRUE(state.mouse().isDown(MouseButton::Left));
-    EXPECT_TRUE(state.mouse().wasPressed(MouseButton::Left));
+    EXPECT_TRUE(state.getMouse().isDown(MouseButton::Left));
+    EXPECT_TRUE(state.getMouse().wasPressed(MouseButton::Left));
 }
 
 TEST(InputStateTest, Apply_RoutesAButtonReleaseToTheMouse)
@@ -66,7 +66,7 @@ TEST(InputStateTest, Apply_RoutesAButtonReleaseToTheMouse)
 
     state.apply(PointerButtonReleased{.button = MouseButton::Left});
 
-    EXPECT_TRUE(state.mouse().wasReleased(MouseButton::Left));
+    EXPECT_TRUE(state.getMouse().wasReleased(MouseButton::Left));
 }
 
 TEST(InputStateTest, Apply_RoutesAScrollToTheMouse)
@@ -75,7 +75,7 @@ TEST(InputStateTest, Apply_RoutesAScrollToTheMouse)
 
     state.apply(PointerScrolled{.vertical = 2});
 
-    EXPECT_EQ(state.mouse().scroll(), (Offset{.x = 0, .y = 2}));
+    EXPECT_EQ(state.getMouse().getScroll(), (Offset{.x = 0, .y = 2}));
 }
 
 TEST(InputStateTest, Apply_FoldsAButtonPressesModifiersIntoTheKeyboard)
@@ -86,7 +86,7 @@ TEST(InputStateTest, Apply_FoldsAButtonPressesModifiersIntoTheKeyboard)
         PointerButtonPressed{
             .button = MouseButton::Left, .modifiers = {.shift = true}});
 
-    EXPECT_TRUE(state.keyboard().modifiers().shift);
+    EXPECT_TRUE(state.getKeyboard().getModifiers().shift);
 }
 
 TEST(InputStateTest, Apply_FoldsAButtonReleasesModifiersIntoTheKeyboard)
@@ -97,7 +97,7 @@ TEST(InputStateTest, Apply_FoldsAButtonReleasesModifiersIntoTheKeyboard)
         PointerButtonReleased{
             .button = MouseButton::Left, .modifiers = {.control = true}});
 
-    EXPECT_TRUE(state.keyboard().modifiers().control);
+    EXPECT_TRUE(state.getKeyboard().getModifiers().control);
 }
 
 TEST(InputStateTest, BeginTick_ClearsBothDevicesEdges)
@@ -109,9 +109,9 @@ TEST(InputStateTest, BeginTick_ClearsBothDevicesEdges)
 
     state.beginTick();
 
-    EXPECT_FALSE(state.keyboard().wasPressed(Key::W));
-    EXPECT_FALSE(state.mouse().wasPressed(MouseButton::Left));
-    EXPECT_EQ(state.mouse().scroll(), Offset{});
+    EXPECT_FALSE(state.getKeyboard().wasPressed(Key::W));
+    EXPECT_FALSE(state.getMouse().wasPressed(MouseButton::Left));
+    EXPECT_EQ(state.getMouse().getScroll(), Offset{});
 }
 
 TEST(InputStateTest, BeginTick_KeepsWhatBothDevicesStillHold)
@@ -122,6 +122,6 @@ TEST(InputStateTest, BeginTick_KeepsWhatBothDevicesStillHold)
 
     state.beginTick();
 
-    EXPECT_TRUE(state.keyboard().isDown(Key::W));
-    EXPECT_TRUE(state.mouse().isDown(MouseButton::Left));
+    EXPECT_TRUE(state.getKeyboard().isDown(Key::W));
+    EXPECT_TRUE(state.getMouse().isDown(MouseButton::Left));
 }

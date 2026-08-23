@@ -56,7 +56,7 @@ namespace antwika::tile
         const bool allowed)
     {
         set(tile, edge, neighbourTile, allowed);
-        set(neighbourTile, voxel::facing(edge), tile, allowed);
+        set(neighbourTile, voxel::getFacing(edge), tile, allowed);
     }
 
     void TileRules::allow(
@@ -106,7 +106,7 @@ namespace antwika::tile
                && !foundEntry->second.air;
     }
 
-    bool TileRules::boundaryOnly(
+    bool TileRules::isBoundaryOnly(
         const tilemap::Tile tile, const tilemap::TileEdge edge) const
     {
         const auto foundEntry = allowedByEdge.find(Edge{tile, edge});
@@ -151,7 +151,7 @@ namespace antwika::tile
         allowedByEdge.erase(Edge{tile, edge});
     }
 
-    std::optional<bool> TileRules::corner(
+    std::optional<bool> TileRules::getCorner(
         const tilemap::Tile tile, const voxel::Corner corner) const
     {
         const auto foundEntry = byCorner.find({tile, corner});
@@ -214,7 +214,7 @@ namespace antwika::tile
         byKind[tile] = kind;
     }
 
-    std::vector<std::pair<tilemap::Tile, voxel::Kind>> TileRules::kinds() const
+    std::vector<std::pair<tilemap::Tile, voxel::Kind>> TileRules::getKinds() const
     {
         return {byKind.begin(), byKind.end()};
     } // GCOVR_EXCL_LINE
@@ -262,7 +262,7 @@ namespace antwika::tile
     }
 
     std::vector<std::pair<tilemap::Tile, voxel::StairHalf>>
-    TileRules::levels() const
+    TileRules::getLevels() const
     {
         return {halfByLevel.begin(), halfByLevel.end()};
     } // GCOVR_EXCL_LINE
@@ -289,18 +289,18 @@ namespace antwika::tile
     }
 
     std::vector<std::pair<tilemap::Tile, voxel::StairPart>>
-    TileRules::parts() const
+    TileRules::getParts() const
     {
         return {byPart.begin(), byPart.end()};
     } // GCOVR_EXCL_LINE
 
     std::vector<std::pair<tilemap::Tile, voxel::Facing>>
-    TileRules::facings() const
+    TileRules::getFacings() const
     {
         return {byFacing.begin(), byFacing.end()};
     } // GCOVR_EXCL_LINE
 
-    std::vector<TileRule> TileRules::allRules() const
+    std::vector<TileRule> TileRules::getAllRules() const
     {
         std::vector<TileRule> rules;
 
@@ -319,7 +319,7 @@ namespace antwika::tile
         return rules;
     } // GCOVR_EXCL_LINE
 
-    std::set<tilemap::Tile> TileRules::allowed(
+    std::set<tilemap::Tile> TileRules::getAllowed(
         const tilemap::Tile tile, const tilemap::TileEdge edge) const
     {
         const auto foundEntry = allowedByEdge.find(Edge{tile, edge});
@@ -328,7 +328,7 @@ namespace antwika::tile
                            : foundEntry->second.tiles;
     } // GCOVR_EXCL_LINE
 
-    std::size_t TileRules::size() const
+    std::size_t TileRules::getSize() const
     {
         std::size_t count = 0;
 

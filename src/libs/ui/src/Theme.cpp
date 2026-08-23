@@ -11,33 +11,33 @@ namespace antwika::ui
     {
         constexpr std::uint32_t kCanvasPerPixel = 240;
 
-        std::uint32_t scaled(
+        std::uint32_t getScaled(
             std::uint32_t value, std::uint32_t scale) noexcept
         {
-            return detail::clampToU32(
+            return detail::getClampToU32(
                 std::uint64_t{value} * std::uint64_t{scale});
         }
     }
 
-    std::uint32_t scaleForCanvas(Size canvasSize) noexcept
+    std::uint32_t getScaleForCanvas(Size canvasSize) noexcept
     {
         const auto scale = canvasSize.height / kCanvasPerPixel;
 
         return scale > 0 ? scale : 1;
     }
 
-    Theme scaledTheme(Theme baseTheme, std::uint32_t scale) noexcept
+    Theme getScaledTheme(Theme baseTheme, std::uint32_t scale) noexcept
     {
-        baseTheme.textScale = scaled(baseTheme.textScale, scale);
-        baseTheme.padding = scaled(baseTheme.padding, scale);
-        baseTheme.gap = scaled(baseTheme.gap, scale);
-        baseTheme.buttonPadding = scaled(baseTheme.buttonPadding, scale);
-        baseTheme.focusRingThickness = scaled(
+        baseTheme.textScale = getScaled(baseTheme.textScale, scale);
+        baseTheme.padding = getScaled(baseTheme.padding, scale);
+        baseTheme.gap = getScaled(baseTheme.gap, scale);
+        baseTheme.buttonPadding = getScaled(baseTheme.buttonPadding, scale);
+        baseTheme.focusRingThickness = getScaled(
             baseTheme.focusRingThickness,
             scale);
-        baseTheme.scrollbarWidth = scaled(baseTheme.scrollbarWidth, scale);
+        baseTheme.scrollbarWidth = getScaled(baseTheme.scrollbarWidth, scale);
         baseTheme.dividerThickness =
-            scaled(baseTheme.dividerThickness, scale);
+            getScaled(baseTheme.dividerThickness, scale);
 
         return baseTheme;
     }

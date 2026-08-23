@@ -24,17 +24,17 @@ namespace antwika::gfx::raylib
         }
     }
 
-    std::string_view RaylibBackend::name() const
+    std::string_view RaylibBackend::getName() const
     {
         return "raylib";
     }
 
-    std::size_t RaylibBackend::maxWindows() const
+    std::size_t RaylibBackend::getMaxWindows() const
     {
         return 1;
     }
 
-    GfxCapabilities RaylibBackend::capabilities() const
+    GfxCapabilities RaylibBackend::getCapabilities() const
     {
         return GfxCapabilities{
             .readsPixels = true, .resizesWindows = true};

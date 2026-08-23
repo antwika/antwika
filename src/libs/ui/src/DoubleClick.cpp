@@ -22,7 +22,7 @@ namespace antwika::ui
                       <= withinThresholds.radius;
     }
 
-    ClickTrack trackClick(
+    ClickTrack getTrackClick(
         const std::uint32_t nowTick, const gfx::PointF point)
     {
         return ClickTrack{

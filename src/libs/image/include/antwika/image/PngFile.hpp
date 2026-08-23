@@ -8,7 +8,7 @@
 namespace antwika::image
 {
 
-    [[nodiscard]] gfx::Bitmap readPngFile(
+    [[nodiscard]] gfx::Bitmap getReadPngFile(
         const std::string &path, std::string_view name);
 
     void writePngFile(

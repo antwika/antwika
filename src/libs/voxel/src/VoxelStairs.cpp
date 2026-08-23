@@ -14,7 +14,7 @@ namespace antwika::voxel
     namespace detail
     {
 
-        FaceUv uvWithinFace(
+        FaceUv getUvWithinFace(
             const Face &face, const glm::vec3 one, const glm::vec3 two)
         {
             const auto acrossVector = face.corners[1] - face.corners[0];
@@ -42,7 +42,7 @@ namespace antwika::voxel
     namespace
     {
 
-        [[nodiscard]] std::size_t sideTowards(const VoxelPosition wayPosition)
+        [[nodiscard]] std::size_t getSideTowards(const VoxelPosition wayPosition)
         {
             for (std::size_t side = 0; side < kFaces; ++side)
             {
@@ -55,7 +55,7 @@ namespace antwika::voxel
             return 0;
         }
 
-        [[nodiscard]] glm::vec3 within(
+        [[nodiscard]] glm::vec3 getWithin(
             const VoxelPosition climbPosition,
             const float alongDistance,
             const float acrossDistance,
@@ -72,7 +72,7 @@ namespace antwika::voxel
                     + (static_cast<float>(acrossStep.z) * acrossDistance)};
         }
 
-        [[nodiscard]] glm::vec3 uponFace(
+        [[nodiscard]] glm::vec3 getUponFace(
             const Face &face, const float u, const float v)
         {
             const auto acrossVector = face.corners[1] - face.corners[0];
@@ -87,21 +87,21 @@ namespace antwika::voxel
             const glm::vec3 two)
         {
             const auto &face = kVoxelFaces[side];
-            const auto uv = uvWithinFace(face, one, two);
+            const auto uv = getUvWithinFace(face, one, two);
             const auto push = face.normal * uv.depth;
 
             return StairQuad{
                 .side = side,
                 .corners = {
-                    uponFace(face, uv.leastU, uv.leastV) - push,
-                    uponFace(face, uv.mostU, uv.leastV) - push,
-                    uponFace(face, uv.mostU, uv.mostV) - push,
-                    uponFace(face, uv.leastU, uv.mostV) - push}};
+                    getUponFace(face, uv.leastU, uv.leastV) - push,
+                    getUponFace(face, uv.mostU, uv.leastV) - push,
+                    getUponFace(face, uv.mostU, uv.mostV) - push,
+                    getUponFace(face, uv.leastU, uv.mostV) - push}};
         }
 
     }
 
-    std::vector<StairQuad> stairQuads(const VoxelPosition climbPosition)
+    std::vector<StairQuad> getStairQuads(const VoxelPosition climbPosition)
     {
         const auto acrossStep =
             VoxelPosition{.x = -climbPosition.z, .z = climbPosition.x};
@@ -121,15 +121,15 @@ namespace antwika::voxel
 
             quads.push_back(
                 quadOf(
-                    sideTowards(VoxelPosition{.y = 1}),
-                    within(climbPosition, nearHeight, -kHalf, nearHeight),
-                    within(climbPosition, farHeight, kHalf, nearHeight)));
+                    getSideTowards(VoxelPosition{.y = 1}),
+                    getWithin(climbPosition, nearHeight, -kHalf, nearHeight),
+                    getWithin(climbPosition, farHeight, kHalf, nearHeight)));
 
             quads.push_back(
                 quadOf(
-                    sideTowards(backStep),
-                    within(climbPosition, farHeight, -kHalf, nearHeight),
-                    within(climbPosition, farHeight, kHalf, farHeight)));
+                    getSideTowards(backStep),
+                    getWithin(climbPosition, farHeight, -kHalf, nearHeight),
+                    getWithin(climbPosition, farHeight, kHalf, farHeight)));
 
             if (step == 0)
             {
@@ -138,22 +138,22 @@ namespace antwika::voxel
 
             quads.push_back(
                 quadOf(
-                    sideTowards(acrossStep),
-                    within(climbPosition, nearHeight, kHalf, -kHalf),
-                    within(climbPosition, farHeight, kHalf, nearHeight)));
+                    getSideTowards(acrossStep),
+                    getWithin(climbPosition, nearHeight, kHalf, -kHalf),
+                    getWithin(climbPosition, farHeight, kHalf, nearHeight)));
 
             quads.push_back(
                 quadOf(
-                    sideTowards(
+                    getSideTowards(
                         VoxelPosition{
                             .x = -acrossStep.x, .z = -acrossStep.z}),
-                    within(climbPosition, nearHeight, -kHalf, -kHalf),
-                    within(climbPosition, farHeight, -kHalf, nearHeight)));
+                    getWithin(climbPosition, nearHeight, -kHalf, -kHalf),
+                    getWithin(climbPosition, farHeight, -kHalf, nearHeight)));
         }
 
         for (const auto axis : {climbPosition, VoxelPosition{.y = -1}})
         {
-            const auto side = sideTowards(axis);
+            const auto side = getSideTowards(axis);
 
             quads.push_back(
                 StairQuad{

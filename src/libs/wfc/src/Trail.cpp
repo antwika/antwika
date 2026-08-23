@@ -8,7 +8,7 @@ namespace antwika::wfc::detail
         entries.emplace_back(cell, value);
     }
 
-    std::size_t Trail::checkpoint() const
+    std::size_t Trail::getCheckpoint() const
     {
         return entries.size();
     }

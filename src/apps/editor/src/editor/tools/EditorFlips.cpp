@@ -9,7 +9,7 @@ namespace antwika::editor
 
     bool Editor::shouldAdvanceTileAnimation() const
     {
-        return anyTileAnimated(document.map.flipAnimations)
+        return isAnyTileAnimated(document.map.flipAnimations)
                && tick % decor::kDecorPaceTick == 0
                && !strokeActive;
     }
@@ -25,7 +25,7 @@ namespace antwika::editor
         {
             pushUndo();
             document.map.flipAnimations =
-                withAnimationToggled(document.map.flipAnimations,
+                getWithAnimationToggled(document.map.flipAnimations,
                     *selectedTile);
             assignMode.flipFramePicked = 0;
             assignMode.flipFrameAssigning = false;
@@ -38,7 +38,7 @@ namespace antwika::editor
              ++frame)
         {
             if (interactions.activatedWidget
-                != decor::flipFrameWidget(frame))
+                != decor::getFlipFrameWidget(frame))
             {
                 continue;
             }
@@ -55,7 +55,7 @@ namespace antwika::editor
         {
             pushUndo();
             document.map.flipAnimations =
-                withAnimationFrameAdded(document.map.flipAnimations,
+                getWithAnimationFrameAdded(document.map.flipAnimations,
                     *selectedTile);
 
             const auto *animation =
@@ -116,7 +116,7 @@ namespace antwika::editor
                 context.button(
                     std::to_string(frame + 1),
                     antwika::ui::ButtonSpec{
-                        .widgetId = decor::flipFrameWidget(
+                        .widgetId = decor::getFlipFrameWidget(
                             frame),
                         .fillColor = frame == assignMode.flipFramePicked
                                    ? kSelectionAccentColor
@@ -135,7 +135,7 @@ namespace antwika::editor
         }
 
         const auto walking = animationFrameAt(*animation, tick);
-        const auto shownFrom = tilemap::tileSource(walking);
+        const auto shownFrom = tilemap::getTileSource(walking);
         const antwika::gfx::Rect walkCutRect{
             .originPoint =
                 {.x = static_cast<std::int32_t>(
@@ -147,8 +147,8 @@ namespace antwika::editor
         context.image(
             antwika::ui::Icon{
                 .sheetTexture = walking.atlas == tilemap::Atlas::Wall
-                              ? atlasSheets.texture(tilemap::Atlas::Wall)
-                              : atlasSheets.texture(tilemap::Atlas::Floor),
+                              ? atlasSheets.getTexture(tilemap::Atlas::Wall)
+                              : atlasSheets.getTexture(tilemap::Atlas::Floor),
                 .sourceRect = walkCutRect,
                 .scale = kUiScale},
             kWhiteColor);

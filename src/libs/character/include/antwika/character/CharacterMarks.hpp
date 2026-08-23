@@ -16,15 +16,15 @@
 namespace antwika::character
 {
 
-    [[nodiscard]] geometry::GridCell selectionOrigin(
+    [[nodiscard]] geometry::GridCell getSelectionOrigin(
         PixelSelection selection);
 
-    [[nodiscard]] gfx::Size selectionSize(PixelSelection selection);
+    [[nodiscard]] gfx::Size getSelectionSize(PixelSelection selection);
 
-    [[nodiscard]] bool selectionContains(
+    [[nodiscard]] bool isSelectionContains(
         PixelSelection selection, geometry::GridCell pixelCell);
 
-    [[nodiscard]] PixelSelection movedSelection(
+    [[nodiscard]] PixelSelection getMovedSelection(
         PixelSelection selection, std::int32_t column, std::int32_t row);
 
     [[nodiscard]] PixelBuffer copiedFrom(
@@ -39,7 +39,7 @@ namespace antwika::character
         std::size_t frame,
         PixelSelection selection);
 
-    [[nodiscard]] PixelBuffer mirroredHorizontally(
+    [[nodiscard]] PixelBuffer getMirroredHorizontally(
         const PixelBuffer &buffer);
 
     void pasteInto(
@@ -49,7 +49,7 @@ namespace antwika::character
         geometry::GridCell cell,
         const PixelBuffer &buffer);
 
-    [[nodiscard]] gfx::RectF selectionRect(
+    [[nodiscard]] gfx::RectF getSelectionRect(
         gfx::RectF whereRect, PixelSelection selection);
 
 }

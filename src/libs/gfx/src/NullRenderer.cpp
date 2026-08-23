@@ -90,7 +90,7 @@ namespace antwika::gfx::detail
         logger.log(Level::Trace, "gfx.null: create mesh");
 
         return std::make_unique<NullMesh>(
-            mesh.vertices.size(), mesh.triangleCount());
+            mesh.vertices.size(), mesh.getTriangleCount());
     }
 
     std::unique_ptr<IShader> NullRenderer::createShader(

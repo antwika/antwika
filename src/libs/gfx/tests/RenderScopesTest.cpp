@@ -120,7 +120,7 @@ TEST(RenderScopesTest, TransformScope_PopsTheTransformWhenItGoesOutOfScope)
 
     {
         const auto scope =
-            renderer.transformScope(antwika::gfx::identityMatrix());
+            renderer.transformScope(antwika::gfx::getIdentityMatrix());
     }
 }
 
@@ -133,7 +133,7 @@ TEST(RenderScopesTest, TransformScope_PopsWhenAThrowLeavesTheScope)
     EXPECT_THROW(
         {
             const auto scope =
-                renderer.transformScope(antwika::gfx::identityMatrix());
+                renderer.transformScope(antwika::gfx::getIdentityMatrix());
 
             throw std::runtime_error("the pass gave up part way");
         },

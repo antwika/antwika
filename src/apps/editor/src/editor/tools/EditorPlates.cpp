@@ -118,7 +118,7 @@ namespace antwika::editor
                     }
                 }
 
-                document.map.voxels = voxel::withRampsRebuilt(
+                document.map.voxels = voxel::getWithRampsRebuilt(
                     stands
                         ? voxel::withoutBlockAt(document.map.voxels, swayCorner)
                         : voxel::withBlockAt(document.map.voxels, swayCorner),

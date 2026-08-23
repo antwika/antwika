@@ -35,7 +35,7 @@ namespace antwika::map
 
     namespace
     {
-            [[nodiscard]] nlohmann::json writtenVoxels(
+            [[nodiscard]] nlohmann::json getWrittenVoxels(
                 const voxel::Voxels &voxels)
             {
                 auto arrayJson = nlohmann::json::array();
@@ -60,7 +60,7 @@ namespace antwika::map
 
                 return arrayJson;
             } // GCOVR_EXCL_LINE
-            [[nodiscard]] nlohmann::json writtenLayers(
+            [[nodiscard]] nlohmann::json getWrittenLayers(
                 const std::vector<Layer> &layers)
             {
                 auto arrayJson = nlohmann::json::array();
@@ -72,7 +72,7 @@ namespace antwika::map
 
                 return arrayJson;
             } // GCOVR_EXCL_LINE
-            [[nodiscard]] nlohmann::json writtenLamps(
+            [[nodiscard]] nlohmann::json getWrittenLamps(
                 const std::vector<light::Lamp> &lamps)
             {
                 auto arrayJson = nlohmann::json::array();
@@ -84,7 +84,7 @@ namespace antwika::map
 
                 return arrayJson;
             } // GCOVR_EXCL_LINE
-            [[nodiscard]] nlohmann::json writtenMarkedCube(
+            [[nodiscard]] nlohmann::json getWrittenMarkedCube(
                 const std::optional<voxel::VoxelPosition> &position)
             {
                 if (!position.has_value())
@@ -98,24 +98,24 @@ namespace antwika::map
 
                 return objectJson;
             } // GCOVR_EXCL_LINE
-            [[nodiscard]] nlohmann::json writtenRules(
+            [[nodiscard]] nlohmann::json getWrittenRules(
                 const tile::TileRules &rules)
             {
                 auto arrayJson = nlohmann::json::array();
 
-                for (const auto &rule : rules.allRules())
+                for (const auto &rule : rules.getAllRules())
                 {
                     auto may = nlohmann::json::array();
 
                     for (const auto tile : rule.allowedTiles)
                     {
-                        may.push_back(writtenTile(tile));
+                        may.push_back(getWrittenTile(tile));
                     }
 
                     nlohmann::json ruleJson;
 
                     ruleJson[std::string(kTileKey)] =
-                        writtenTile(rule.tile);
+                        getWrittenTile(rule.tile);
                     ruleJson[std::string(kSideKey)] =
                         std::string(nameOf(rule.edge.side));
                     ruleJson[std::string(kEdgeKey)] =
@@ -138,10 +138,10 @@ namespace antwika::map
         document[std::string(kMagicKey)] = std::string(kMapMagic);
         document[std::string(schema::kSchemaVersionKey)] =
             kMapVersion;
-        document[std::string(kVoxelsKey)] = writtenVoxels(map.voxels);
+        document[std::string(kVoxelsKey)] = getWrittenVoxels(map.voxels);
         document[std::string(kTilemapKey)] =
             written(kTilemapFields, map.tilemap);
-        document[std::string(kRulesKey)] = writtenRules(map.rules);
+        document[std::string(kRulesKey)] = getWrittenRules(map.rules);
         auto colors = nlohmann::json::array();
 
         for (const auto color : map.paletteColors)
@@ -151,7 +151,7 @@ namespace antwika::map
 
         auto corners = nlohmann::json::array();
 
-        for (const auto &rule : map.rules.allRules())
+        for (const auto &rule : map.rules.getAllRules())
         {
             for (const auto &[corner, cornerFilled] :
                  map.rules.cornersOf(rule.tile))
@@ -177,7 +177,7 @@ namespace antwika::map
 
         auto kinds = nlohmann::json::array();
 
-        for (const auto &row : map.rules.kinds())
+        for (const auto &row : map.rules.getKinds())
         {
             kinds.push_back(written(kTileKindFields, row));
         }
@@ -186,21 +186,21 @@ namespace antwika::map
         document[std::string(kSettingsKey)] = settings;
         auto facings = nlohmann::json::array();
 
-        for (const auto &row : map.rules.facings())
+        for (const auto &row : map.rules.getFacings())
         {
             facings.push_back(written(kTileFacingFields, row));
         }
 
         auto levels = nlohmann::json::array();
 
-        for (const auto &row : map.rules.levels())
+        for (const auto &row : map.rules.getLevels())
         {
             levels.push_back(written(kTileLevelFields, row));
         }
 
         auto parts = nlohmann::json::array();
 
-        for (const auto &row : map.rules.parts())
+        for (const auto &row : map.rules.getParts())
         {
             parts.push_back(written(kTilePartFields, row));
         }
@@ -221,9 +221,9 @@ namespace antwika::map
 
         document[std::string(kGlowsKey)] = glows;
         document[std::string(kAmbientKey)] = map.ambient;
-        document[std::string(kLampsKey)] = writtenLamps(map.lamps);
+        document[std::string(kLampsKey)] = getWrittenLamps(map.lamps);
         document[std::string(kLayersKey)] =
-            writtenLayers(map.layers);
+            getWrittenLayers(map.layers);
 
         auto decor = nlohmann::json::array();
 
@@ -234,13 +234,13 @@ namespace antwika::map
 
         document[std::string(kDecorKey)] = decor;
         document[std::string(kDecorRulesKey)] =
-            writtenRules(map.decorRules);
+            getWrittenRules(map.decorRules);
 
         writeLatest(document, map);
         document[std::string(kStartKey)] =
-            writtenMarkedCube(map.spawnCubePosition);
+            getWrittenMarkedCube(map.spawnCubePosition);
         document[std::string(kExitKey)] =
-            writtenMarkedCube(map.exitCubePosition);
+            getWrittenMarkedCube(map.exitCubePosition);
         document[std::string(kExitTargetKey)] = map.exitTarget;
 
         auto figures = nlohmann::json::array();
@@ -264,7 +264,7 @@ namespace antwika::map
         outputStream << document.dump(kIndent) << '\n';
     }
 
-    std::string serializeMap(const Map &map)
+    std::string getSerializeMap(const Map &map)
     {
         std::ostringstream outputStream;
 
@@ -279,16 +279,16 @@ namespace antwika::map
 
         {
             auto outputStream = io::openToWriteAs<MapFileError>(
-                writingFile.path(), "the map");
+                writingFile.getPath(), "the map");
 
             writeMap(outputStream, map);
 
             io::requireStreamOkAs<MapFileError>(
-                outputStream, "the map", writingFile.path());
+                outputStream, "the map", writingFile.getPath());
         }
 
         io::putInPlaceKeepingBackup<MapFileError>(
-            writingFile.path(), path, "the map");
+            writingFile.getPath(), path, "the map");
         writingFile.keep();
     }
 

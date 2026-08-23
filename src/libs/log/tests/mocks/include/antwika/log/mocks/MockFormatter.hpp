@@ -18,7 +18,7 @@ namespace antwika::log::mocks
     public:
         MOCK_METHOD(
             std::string,
-            format,
+            getFormat,
             (std::chrono::system_clock::time_point time,
              Level level,
              std::string_view message),

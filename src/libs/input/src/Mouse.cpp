@@ -7,7 +7,7 @@ namespace antwika::input
 
     namespace
     {
-        [[nodiscard]] bool named(std::size_t index) noexcept
+        [[nodiscard]] bool isNamed(std::size_t index) noexcept
         {
             return index < kMouseButtonCount;
         }
@@ -31,8 +31,8 @@ namespace antwika::input
     {
         moveTo(eventPressed.position);
 
-        const auto index = mouseButtonIndex(eventPressed.button);
-        if (!named(index))
+        const auto index = getMouseButtonIndex(eventPressed.button);
+        if (!isNamed(index))
         {
             return;
         }
@@ -46,8 +46,8 @@ namespace antwika::input
     {
         moveTo(eventReleased.position);
 
-        const auto index = mouseButtonIndex(eventReleased.button);
-        if (!named(index))
+        const auto index = getMouseButtonIndex(eventReleased.button);
+        if (!isNamed(index))
         {
             return;
         }
@@ -62,48 +62,48 @@ namespace antwika::input
         scrolledOffset.y += eventScrolled.vertical;
     }
 
-    Position Mouse::position() const noexcept
+    Position Mouse::getPosition() const noexcept
     {
         return pointerPosition;
     }
 
-    Offset Mouse::delta() const noexcept
+    Offset Mouse::getDelta() const noexcept
     {
         return movedOffset;
     }
 
-    Offset Mouse::scroll() const noexcept
+    Offset Mouse::getScroll() const noexcept
     {
         return scrolledOffset;
     }
 
     bool Mouse::isDown(MouseButton button) const noexcept
     {
-        const auto index = mouseButtonIndex(button);
-        return named(index) && downButtons.test(index);
+        const auto index = getMouseButtonIndex(button);
+        return isNamed(index) && downButtons.test(index);
     }
 
-    bool Mouse::anyDown() const noexcept
+    bool Mouse::isAnyDown() const noexcept
     {
         return downButtons.any();
     }
 
     bool Mouse::wasPressed(MouseButton button) const noexcept
     {
-        const auto index = mouseButtonIndex(button);
-        return named(index) && pressedButtons.test(index);
+        const auto index = getMouseButtonIndex(button);
+        return isNamed(index) && pressedButtons.test(index);
     }
 
     bool Mouse::wasReleased(MouseButton button) const noexcept
     {
-        const auto index = mouseButtonIndex(button);
-        return named(index) && releasedButtons.test(index);
+        const auto index = getMouseButtonIndex(button);
+        return isNamed(index) && releasedButtons.test(index);
     }
 
-    KeyModifiers Mouse::pressModifiers(MouseButton button) const noexcept
+    KeyModifiers Mouse::getPressModifiers(MouseButton button) const noexcept
     {
-        const auto index = mouseButtonIndex(button);
-        return named(index) ? pressedWithModifiers[index] : KeyModifiers{};
+        const auto index = getMouseButtonIndex(button);
+        return isNamed(index) ? pressedWithModifiers[index] : KeyModifiers{};
     }
 
     void Mouse::moveTo(Position position) noexcept

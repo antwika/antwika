@@ -11,7 +11,7 @@
 #include "antwika/schema/JsonSchemas.hpp"
 #include "antwika/schema/PayloadJson.hpp"
 
-using antwika::schema::countSchema;
+using antwika::schema::getCountSchema;
 using antwika::schema::kMaxDocumentDepth;
 using antwika::schema::parseAndValidatePayload;
 
@@ -23,24 +23,24 @@ namespace
         using std::runtime_error::runtime_error;
     };
 
-    nlohmann::json toySchema()
+    nlohmann::json getToySchema()
     {
         nlohmann::json schema;
         schema["type"] = "object";
         schema["additionalProperties"] = false;
         schema["required"] = {"count"};
-        schema["properties"]["count"] = countSchema();
+        schema["properties"]["count"] = getCountSchema();
         return schema;
     }
 
-    const nlohmann::json_schema::json_validator &toyValidator()
+    const nlohmann::json_schema::json_validator &getToyValidator()
     {
         static const nlohmann::json_schema::json_validator validator(
-            toySchema());
+            getToySchema());
         return validator;
     }
 
-    std::string pastTheBound()
+    std::string getPastTheBound()
     {
         std::string text = "7";
 
@@ -57,7 +57,7 @@ namespace
 TEST(PayloadJsonTest, ParsePayload_ReturnsAnAcceptedPayload)
 {
     const auto parsedPayload = parseAndValidatePayload<ToyPayloadError>(
-        R"({"count": 4})", toyValidator(), "toy payload");
+        R"({"count": 4})", getToyValidator(), "toy payload");
 
     EXPECT_EQ(parsedPayload["count"], 4);
 }
@@ -66,7 +66,7 @@ TEST(PayloadJsonTest, ParsePayload_RefusesAPayloadThatIsNotJson)
 {
     EXPECT_THROW(
         (void)parseAndValidatePayload<ToyPayloadError>(
-            "{count", toyValidator(), "toy payload"),
+            "{count", getToyValidator(), "toy payload"),
         ToyPayloadError);
 }
 
@@ -74,7 +74,7 @@ TEST(PayloadJsonTest, ParsePayload_RefusesWhatTheSchemaRejects)
 {
     EXPECT_THROW(
         (void)parseAndValidatePayload<ToyPayloadError>(
-            R"({"count": "four"})", toyValidator(), "toy payload"),
+            R"({"count": "four"})", getToyValidator(), "toy payload"),
         ToyPayloadError);
 }
 
@@ -84,7 +84,7 @@ TEST(PayloadJsonTest, ParsePayload_RefusesNestingPastTheBound)
         []
         {
             (void)parseAndValidatePayload<ToyPayloadError>(
-                pastTheBound(), toyValidator(), "toy payload");
+                getPastTheBound(), getToyValidator(), "toy payload");
         },
         testing::ThrowsMessage<ToyPayloadError>(
             testing::HasSubstr("nests deeper")));

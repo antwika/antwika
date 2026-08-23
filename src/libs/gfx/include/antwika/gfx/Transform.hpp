@@ -11,7 +11,7 @@ namespace antwika::gfx
         Vec3 rotationRadians{0.0F, 0.0F, 0.0F};
         Vec3 scale{1.0F, 1.0F, 1.0F};
 
-        [[nodiscard]] Mat4 matrix() const;
+        [[nodiscard]] Mat4 getMatrix() const;
     };
 
 }

@@ -12,7 +12,7 @@
 
 using antwika::io::ContentKind;
 using antwika::io::openToReadAs;
-using antwika::io::openToReadIfPresent;
+using antwika::io::getOpenToReadIfPresent;
 using antwika::io::openToWriteAs;
 using antwika::io::requireStreamOkAs;
 using antwika::io::writeFileAs;
@@ -37,19 +37,19 @@ namespace
 TEST(FileTest, ReadMode_AsksForBinaryOnlyForBytes)
 {
     EXPECT_EQ(
-        antwika::io::detail::readMode(ContentKind::Bytes),
+        antwika::io::detail::getReadMode(ContentKind::Bytes),
         std::ios_base::in | std::ios_base::binary);
     EXPECT_EQ(
-        antwika::io::detail::readMode(ContentKind::Text), std::ios_base::in);
+        antwika::io::detail::getReadMode(ContentKind::Text), std::ios_base::in);
 }
 
 TEST(FileTest, WriteMode_AsksForBinaryOnlyForBytes)
 {
     EXPECT_EQ(
-        antwika::io::detail::writeMode(ContentKind::Bytes),
+        antwika::io::detail::getWriteMode(ContentKind::Bytes),
         std::ios_base::out | std::ios_base::binary);
     EXPECT_EQ(
-        antwika::io::detail::writeMode(ContentKind::Text),
+        antwika::io::detail::getWriteMode(ContentKind::Text),
         std::ios_base::out);
 }
 
@@ -57,7 +57,7 @@ TEST(FileTest, OpenToReadIfPresent_AnswersNothingForAnAbsentFile)
 {
     const ScratchFile file("antwika_io_absent.txt");
 
-    EXPECT_FALSE(openToReadIfPresent(file.string()).has_value());
+    EXPECT_FALSE(getOpenToReadIfPresent(file.getString()).has_value());
 }
 
 TEST(FileTest, OpenToReadIfPresent_OpensWhatIsThere)
@@ -65,7 +65,7 @@ TEST(FileTest, OpenToReadIfPresent_OpensWhatIsThere)
     const ScratchFile file("antwika_io_present.txt");
     file.write("present");
 
-    auto openedStream = openToReadIfPresent(file.string());
+    auto openedStream = getOpenToReadIfPresent(file.getString());
 
     ASSERT_TRUE(openedStream.has_value());
     EXPECT_EQ("present", readWholeFile(*openedStream));
@@ -77,7 +77,7 @@ TEST(FileTest, OpenToReadAs_RefusesAnAbsentFile)
 
     try
     {
-        (void)openToReadAs<TestError>(file.string(), "a fixture");
+        (void)openToReadAs<TestError>(file.getString(), "a fixture");
         FAIL() << "an absent file was opened";
     }
     catch (const TestError &error)
@@ -87,7 +87,7 @@ TEST(FileTest, OpenToReadAs_RefusesAnAbsentFile)
         EXPECT_NE(message.find("could not open"), std::string::npos);
         EXPECT_NE(message.find("to read"), std::string::npos);
         EXPECT_NE(message.find("a fixture"), std::string::npos);
-        EXPECT_NE(message.find(file.string()), std::string::npos);
+        EXPECT_NE(message.find(file.getString()), std::string::npos);
     }
 }
 
@@ -96,7 +96,7 @@ TEST(FileTest, OpenToReadAs_OpensWhatIsThere)
     const ScratchFile file("antwika_io_read.txt");
     file.write("held");
 
-    auto openedStream = openToReadAs<TestError>(file.string(), "a fixture");
+    auto openedStream = openToReadAs<TestError>(file.getString(), "a fixture");
 
     EXPECT_EQ("held", readWholeFile(openedStream));
 }
@@ -156,11 +156,11 @@ TEST(FileTest, WriteFileAs_WritesWhatTheBodyPutsOn)
     const ScratchFile file("antwika_io_written.txt");
 
     writeFileAs<TestError>(
-        file.string(), "a fixture", [](std::ostream &outputStream) {
+        file.getString(), "a fixture", [](std::ostream &outputStream) {
             outputStream << "whole";
         });
 
-    auto openedStream = openToReadIfPresent(file.string());
+    auto openedStream = getOpenToReadIfPresent(file.getString());
 
     ASSERT_TRUE(openedStream.has_value());
     EXPECT_EQ("whole", readWholeFile(*openedStream));
@@ -197,7 +197,7 @@ TEST(FileTest, WriteFileAs_CarriesBytesThroughUntouched)
     const std::string bytes("\r\n\0\n", 4);
 
     writeFileAs<TestError>(
-        file.string(),
+        file.getString(),
         "a fixture",
         [&bytes](std::ostream &outputStream) {
             outputStream.write(bytes.data(),
@@ -206,7 +206,7 @@ TEST(FileTest, WriteFileAs_CarriesBytesThroughUntouched)
         ContentKind::Bytes);
 
     auto openedStream = openToReadAs<TestError>(
-        file.string(), "a fixture", ContentKind::Bytes);
+        file.getString(), "a fixture", ContentKind::Bytes);
 
     EXPECT_EQ(bytes, readWholeFile(openedStream));
 }

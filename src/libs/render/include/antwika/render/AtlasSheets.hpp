@@ -29,12 +29,12 @@ namespace antwika::render
 
         [[nodiscard]] gfx::Bitmap &sheet(tilemap::Atlas atlas) noexcept;
 
-        [[nodiscard]] const std::array<gfx::Bitmap, 2> &sheets()
+        [[nodiscard]] const std::array<gfx::Bitmap, 2> &getSheets()
             const noexcept;
 
         void touch() noexcept;
 
-        [[nodiscard]] bool touched() const noexcept;
+        [[nodiscard]] bool isTouched() const noexcept;
 
         void refresh(
             gfx::IRenderer &viewportRenderer,
@@ -42,13 +42,13 @@ namespace antwika::render
             std::uint32_t tick,
             bool animating);
 
-        [[nodiscard]] gfx::ITexture *texture(
+        [[nodiscard]] gfx::ITexture *getTexture(
             tilemap::Atlas atlas) const noexcept;
 
-        [[nodiscard]] gfx::ITexture *keyed(
+        [[nodiscard]] gfx::ITexture *getKeyed(
             tilemap::Atlas atlas) const noexcept;
 
-        [[nodiscard]] gfx::ITexture *checker(
+        [[nodiscard]] gfx::ITexture *getChecker(
             tilemap::Atlas atlas) const noexcept;
 
     private:

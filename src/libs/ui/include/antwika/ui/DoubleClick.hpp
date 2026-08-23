@@ -16,7 +16,7 @@ namespace antwika::ui
         gfx::PointF point,
         ClickThresholds withinThresholds = {});
 
-    [[nodiscard]] ClickTrack trackClick(
+    [[nodiscard]] ClickTrack getTrackClick(
         std::uint32_t nowTick, gfx::PointF point);
 
 }

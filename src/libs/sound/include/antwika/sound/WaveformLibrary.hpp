@@ -14,9 +14,9 @@ namespace antwika::sound
     public:
         WaveformId add(Waveform waveform);
 
-        [[nodiscard]] const Waveform &get(WaveformId idWaveform) const;
+        [[nodiscard]] const Waveform &getWaveform(WaveformId idWaveform) const;
 
-        [[nodiscard]] std::size_t size() const noexcept;
+        [[nodiscard]] std::size_t getSize() const noexcept;
 
     private:
         std::vector<Waveform> waveforms;

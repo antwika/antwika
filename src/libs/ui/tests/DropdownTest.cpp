@@ -28,7 +28,7 @@
 using antwika::gfx::Color;
 using antwika::gfx::Point;
 using antwika::gfx::Size;
-using antwika::ui::support::fillsColored;
+using antwika::ui::support::getFillsColored;
 using antwika::ui::support::textsOf;
 using antwika::ui::Context;
 using antwika::ui::DrawList;
@@ -62,7 +62,7 @@ namespace
 
     constexpr std::array<std::string_view, 2> kSaves{"one", "two"};
 
-    Theme plainTheme()
+    Theme getPlainTheme()
     {
         return Theme{
             .panelColor = kPanelColor,
@@ -75,7 +75,7 @@ namespace
             .buttonPadding = 0};
     }
 
-    [[nodiscard]] DropdownSpec pickerSpec()
+    [[nodiscard]] DropdownSpec getPickerSpec()
     {
         return DropdownSpec{
             .widgetId = kPickerWidget,
@@ -88,9 +88,9 @@ namespace
 
 TEST(DropdownTest, Dropdown_ClosedItShowsOnlyWhatIsSelected)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
-    uiContext.dropdown(pickerSpec());
+    uiContext.dropdown(getPickerSpec());
 
     const auto texts = textsOf(uiContext.build().drawList);
 
@@ -101,11 +101,11 @@ TEST(DropdownTest, Dropdown_ClosedItShowsOnlyWhatIsSelected)
 
 TEST(DropdownTest, Dropdown_ClosedWithNothingSelectedItShowsThePlaceholder)
 {
-    auto spec = pickerSpec();
+    auto spec = getPickerSpec();
     spec.selectedIndex = kNoOption;
     spec.placeholder = "pick";
 
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.dropdown(spec);
 
@@ -114,10 +114,10 @@ TEST(DropdownTest, Dropdown_ClosedWithNothingSelectedItShowsThePlaceholder)
 
 TEST(DropdownTest, Dropdown_OpenItDrawsEveryOptionUnderTheBox)
 {
-    auto spec = pickerSpec();
+    auto spec = getPickerSpec();
     spec.open = true;
 
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.dropdown(spec);
 
@@ -143,10 +143,10 @@ TEST(DropdownTest, Dropdown_OpenItDrawsEveryOptionUnderTheBox)
 
 TEST(DropdownTest, Dropdown_TheOpenListIsPaintedAfterEverythingElse)
 {
-    auto spec = pickerSpec();
+    auto spec = getPickerSpec();
     spec.open = true;
 
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.dropdown(spec);
     uiContext.button("below");
@@ -161,15 +161,15 @@ TEST(DropdownTest, Dropdown_TheOpenListIsPaintedAfterEverythingElse)
 
 TEST(DropdownTest, Dropdown_AnOpenListTakesNoRoomFromWhatFollowsIt)
 {
-    Context closedContext{kCanvasSize, plainTheme()};
+    Context closedContext{kCanvasSize, getPlainTheme()};
 
-    closedContext.dropdown(pickerSpec());
+    closedContext.dropdown(getPickerSpec());
     closedContext.button("below");
 
-    auto spec = pickerSpec();
+    auto spec = getPickerSpec();
     spec.open = true;
 
-    Context openContext{kCanvasSize, plainTheme()};
+    Context openContext{kCanvasSize, getPlainTheme()};
 
     openContext.dropdown(spec);
     openContext.button("below");
@@ -184,13 +184,13 @@ TEST(DropdownTest, Dropdown_AnOpenListTakesNoRoomFromWhatFollowsIt)
 
 TEST(DropdownTest, Dropdown_PressingAnOptionReportsItsIndex)
 {
-    auto spec = pickerSpec();
+    auto spec = getPickerSpec();
     spec.open = true;
 
     const Pointer pointer{
         .positionPoint = Point{.x = 2, .y = 20}, .pressed = true};
 
-    Context uiContext{kCanvasSize, plainTheme(), pointer};
+    Context uiContext{kCanvasSize, getPlainTheme(), pointer};
 
     uiContext.dropdown(spec);
 
@@ -205,12 +205,12 @@ TEST(DropdownTest, Dropdown_PressingAnOptionReportsItsIndex)
 
 TEST(DropdownTest, Dropdown_HoveringAnOptionLightsUpThatOptionAlone)
 {
-    auto spec = pickerSpec();
+    auto spec = getPickerSpec();
     spec.open = true;
 
     const Pointer pointer{.positionPoint = Point{.x = 2, .y = 20}};
 
-    Context uiContext{kCanvasSize, plainTheme(), pointer};
+    Context uiContext{kCanvasSize, getPlainTheme(), pointer};
 
     uiContext.dropdown(spec);
 
@@ -225,14 +225,14 @@ TEST(DropdownTest, Dropdown_HoveringAnOptionLightsUpThatOptionAlone)
 
 TEST(DropdownTest, Dropdown_AnUnnamedOptionStillReportsItsIndex)
 {
-    auto spec = pickerSpec();
+    auto spec = getPickerSpec();
     spec.open = true;
     spec.optionIdBaseWidget = kNoWidget;
 
     const Pointer pointer{
         .positionPoint = Point{.x = 2, .y = 20}, .pressed = true};
 
-    Context uiContext{kCanvasSize, plainTheme(), pointer};
+    Context uiContext{kCanvasSize, getPlainTheme(), pointer};
 
     uiContext.dropdown(spec);
 
@@ -248,9 +248,9 @@ TEST(DropdownTest, Dropdown_PressingTheClosedBoxNamesTheDropdownAndNoOption)
     const Pointer pointer{
         .positionPoint = Point{.x = 2, .y = 2}, .pressed = true};
 
-    Context uiContext{kCanvasSize, plainTheme(), pointer};
+    Context uiContext{kCanvasSize, getPlainTheme(), pointer};
 
-    uiContext.dropdown(pickerSpec());
+    uiContext.dropdown(getPickerSpec());
 
     const auto interactions = uiContext.build().interactions;
 
@@ -260,13 +260,13 @@ TEST(DropdownTest, Dropdown_PressingTheClosedBoxNamesTheDropdownAndNoOption)
 
 TEST(DropdownTest, Dropdown_TheOpenListIsHitBeforeWhateverItCovers)
 {
-    auto spec = pickerSpec();
+    auto spec = getPickerSpec();
     spec.open = true;
 
     const Pointer pointer{
         .positionPoint = Point{.x = 2, .y = 10}, .pressed = true};
 
-    Context uiContext{kCanvasSize, plainTheme(), pointer};
+    Context uiContext{kCanvasSize, getPlainTheme(), pointer};
 
     uiContext.dropdown(spec);
     uiContext.button("below", {.widgetId = kBelowWidget});
@@ -280,14 +280,14 @@ TEST(DropdownTest, Dropdown_TheOpenListIsHitBeforeWhateverItCovers)
 
 TEST(DropdownTest, Dropdown_AnUnnamedOptionOverAButtonPressesNoButton)
 {
-    auto spec = pickerSpec();
+    auto spec = getPickerSpec();
     spec.optionIdBaseWidget = kNoWidget;
     spec.open = true;
 
     const Pointer pointer{
         .positionPoint = Point{.x = 2, .y = 10}, .pressed = true};
 
-    Context uiContext{kCanvasSize, plainTheme(), pointer};
+    Context uiContext{kCanvasSize, getPlainTheme(), pointer};
 
     uiContext.dropdown(spec);
     uiContext.button("below", {.widgetId = kBelowWidget});
@@ -302,13 +302,13 @@ TEST(DropdownTest, Dropdown_AnUnnamedOptionOverAButtonPressesNoButton)
 
 TEST(DropdownTest, Dropdown_AnOptionOverAFocusedAreaMovesNoCaret)
 {
-    auto spec = pickerSpec();
+    auto spec = getPickerSpec();
     spec.open = true;
 
     const Pointer pointer{
         .positionPoint = Point{.x = 2, .y = 18}, .pressed = true};
 
-    Context uiContext{kCanvasSize, plainTheme(), pointer};
+    Context uiContext{kCanvasSize, getPlainTheme(), pointer};
 
     uiContext.dropdown(spec);
     uiContext.textArea(TextAreaSpec{
@@ -333,7 +333,7 @@ TEST(DropdownTest, Dropdown_AnOpenListWithNoOptionsDrawsJustItsPanel)
         .placeholder = "pick",
         .open = true};
 
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.dropdown(spec);
 
@@ -345,10 +345,10 @@ TEST(DropdownTest, Dropdown_AnOpenListWithNoOptionsDrawsJustItsPanel)
 
 TEST(DropdownTest, Dropdown_TheFrontmostOfTwoOverlappingListsAnswers)
 {
-    auto openSpec = pickerSpec();
+    auto openSpec = getPickerSpec();
     openSpec.open = true;
 
-    auto belowSpec = pickerSpec();
+    auto belowSpec = getPickerSpec();
     belowSpec.widgetId = kBelowWidget;
     belowSpec.optionIdBaseWidget = WidgetId{200};
     belowSpec.open = true;
@@ -356,7 +356,7 @@ TEST(DropdownTest, Dropdown_TheFrontmostOfTwoOverlappingListsAnswers)
     const Pointer pointer{
         .positionPoint = Point{.x = 2, .y = 18}, .pressed = true};
 
-    Context uiContext{kCanvasSize, plainTheme(), pointer};
+    Context uiContext{kCanvasSize, getPlainTheme(), pointer};
 
     uiContext.dropdown(openSpec);
     uiContext.dropdown(belowSpec);
@@ -372,12 +372,12 @@ TEST(DropdownTest, Dropdown_TheFrontmostOfTwoOverlappingListsAnswers)
 
 TEST(DropdownTest, Dropdown_TabWalksTheBoxAndThenItsOpenOptions)
 {
-    auto spec = pickerSpec();
+    auto spec = getPickerSpec();
     spec.open = true;
 
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::FocusNext, Key::FocusNext}}};
 
@@ -388,11 +388,11 @@ TEST(DropdownTest, Dropdown_TabWalksTheBoxAndThenItsOpenOptions)
 
 TEST(DropdownTest, Dropdown_AFocusedOptionsRingIsDrawnWithTheListItIsIn)
 {
-    auto spec = pickerSpec();
+    auto spec = getPickerSpec();
     spec.open = true;
 
     Context uiContext{
-        kCanvasSize, plainTheme(), Pointer{}, Keyboard{}, WidgetId{100}};
+        kCanvasSize, getPlainTheme(), Pointer{}, Keyboard{}, WidgetId{100}};
 
     uiContext.dropdown(spec);
 
@@ -410,12 +410,12 @@ TEST(DropdownTest, Dropdown_AFocusedOptionsRingIsDrawnWithTheListItIsIn)
 
 TEST(DropdownTest, Dropdown_EnterChoosesTheOptionItIsOn)
 {
-    auto spec = pickerSpec();
+    auto spec = getPickerSpec();
     spec.open = true;
 
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::Activate}},
         WidgetId{101}};
@@ -433,12 +433,12 @@ TEST(DropdownTest, Dropdown_EnterChoosesTheOptionItIsOn)
 
 TEST(DropdownTest, Dropdown_EnterOnTheBoxItselfChoosesNothing)
 {
-    auto spec = pickerSpec();
+    auto spec = getPickerSpec();
     spec.open = true;
 
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::Activate}},
         kPickerWidget};
@@ -453,25 +453,25 @@ TEST(DropdownTest, Dropdown_EnterOnTheBoxItselfChoosesNothing)
 
 TEST(DropdownTest, Dropdown_ClosedItReportsNoOverlay)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
-    uiContext.dropdown(pickerSpec());
+    uiContext.dropdown(getPickerSpec());
 
     EXPECT_TRUE(uiContext.build().overlayRects.empty());
 }
 
 TEST(DropdownTest, Dropdown_AnOpenListReportsAnOverlayOverWhatItCovers)
 {
-    auto spec = pickerSpec();
+    auto spec = getPickerSpec();
     spec.open = true;
 
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.dropdown(spec);
     uiContext.button("below", {.widgetId = kBelowWidget});
 
     const auto frame = uiContext.build();
-    const auto foundRect = frame.rects.find(kBelowWidget);
+    const auto foundRect = frame.rects.getFind(kBelowWidget);
 
     ASSERT_TRUE(foundRect.has_value());
     ASSERT_FALSE(frame.overlayRects.empty());
@@ -486,11 +486,11 @@ TEST(DropdownTest, Dropdown_BoxesTheOptionsThatTurnSomethingOn)
     constexpr std::array kMarked{
         antwika::ui::OptionMark::Off, antwika::ui::OptionMark::On};
 
-    auto spec = pickerSpec();
+    auto spec = getPickerSpec();
     spec.open = true;
     spec.markedOptions = kMarked;
 
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.dropdown(spec);
 
@@ -505,8 +505,8 @@ TEST(DropdownTest, Dropdown_BoxesTheOptionsThatTurnSomethingOn)
         const auto *fill = std::get_if<FillRect>(&command);
 
         if (fill != nullptr
-            && fill->rect.size.width == plainTheme().checkboxSize
-            && fill->rect.size.height == plainTheme().checkboxSize)
+            && fill->rect.size.width == getPlainTheme().checkboxSize
+            && fill->rect.size.height == getPlainTheme().checkboxSize)
         {
             ++boxes;
         }
@@ -517,10 +517,10 @@ TEST(DropdownTest, Dropdown_BoxesTheOptionsThatTurnSomethingOn)
 
 TEST(DropdownTest, Dropdown_KeepsNoMarkColumnWhereNoneIsAskedFor)
 {
-    auto spec = pickerSpec();
+    auto spec = getPickerSpec();
     spec.open = true;
 
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.dropdown(spec);
 
@@ -531,11 +531,11 @@ TEST(DropdownTest, Dropdown_LeavesOptionsItWasToldNothingOfBare)
 {
     constexpr std::array kMarked{antwika::ui::OptionMark::On};
 
-    auto spec = pickerSpec();
+    auto spec = getPickerSpec();
     spec.open = true;
     spec.markedOptions = kMarked;
 
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.dropdown(spec);
 
@@ -546,7 +546,7 @@ TEST(DropdownTest, Dropdown_LeavesOptionsItWasToldNothingOfBare)
         const auto *fill = std::get_if<FillRect>(&command);
 
         if (fill != nullptr
-            && fill->rect.size.width == plainTheme().checkboxSize)
+            && fill->rect.size.width == getPlainTheme().checkboxSize)
         {
             ++boxes;
         }

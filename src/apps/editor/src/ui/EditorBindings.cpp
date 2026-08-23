@@ -225,28 +225,28 @@ namespace antwika::editor
         static_assert(enums::tagsInOrder(kActionRows, &ActionRow::action));
     }
 
-    std::array<Action, kActionCount> allActions()
+    std::array<Action, kActionCount> getAllActions()
     {
         return enums::kAll<Action>;
     } // GCOVR_EXCL_LINE
 
-    std::string_view actionLabel(const Action action)
+    std::string_view getActionLabel(const Action action)
     {
         return enums::lookup(kActionRows, action).label;
     }
 
-    std::string_view actionKey(const Action action)
+    std::string_view getActionKey(const Action action)
     {
         return enums::lookup(kActionRows, action).key;
     }
 
-    widget::WidgetId keyRowWidget(const std::size_t rowIndex)
+    widget::WidgetId getKeyRowWidget(const std::size_t rowIndex)
     {
         return widget::WidgetId{
             300 + static_cast<std::uint64_t>(rowIndex)};
     }
 
-    KeyBindings defaultChords()
+    KeyBindings getDefaultChords()
     {
         KeyBindings bindings;
 
@@ -258,14 +258,14 @@ namespace antwika::editor
         return bindings;
     } // GCOVR_EXCL_LINE
 
-    std::string heldAction(const Action action)
+    std::string getHeldAction(const Action action)
     {
-        return std::string(actionKey(action)) + ".held";
+        return std::string(getActionKey(action)) + ".held";
     }
 
-    std::string shiftedAction(const Action action)
+    std::string getShiftedAction(const Action action)
     {
-        return std::string(actionKey(action)) + ".shift";
+        return std::string(getActionKey(action)) + ".shift";
     }
 
     input::ActionMap actionMapFrom(const KeyBindings &keyBindings)
@@ -280,7 +280,7 @@ namespace antwika::editor
             }
 
             actions.bind(
-                std::string(actionKey(action)),
+                std::string(getActionKey(action)),
                 chord->key,
                 input::KeyModifiers{
                     .shift = chord->shift,
@@ -288,12 +288,12 @@ namespace antwika::editor
                     .alt = chord->alt},
                 input::ExtraModifiers::Refused);
 
-            actions.bind(heldAction(action), chord->key);
+            actions.bind(getHeldAction(action), chord->key);
 
             if (!chord->shift)
             {
                 actions.bind(
-                    shiftedAction(action),
+                    getShiftedAction(action),
                     chord->key,
                     input::KeyModifiers{.shift = true},
                     input::ExtraModifiers::Refused);

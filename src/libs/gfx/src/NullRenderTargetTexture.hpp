@@ -13,7 +13,7 @@ namespace antwika::gfx::detail
     public:
         explicit NullRenderTargetTexture(Size size) noexcept;
 
-        [[nodiscard]] Size size() const override;
+        [[nodiscard]] Size getSize() const override;
 
     private:
         Size extent;

@@ -124,7 +124,7 @@ namespace antwika::editor
 
     inline constexpr std::uint32_t kPickerWidth = 150;
 
-    [[nodiscard]] inline ui::Theme gameTheme()
+    [[nodiscard]] inline ui::Theme getGameTheme()
     {
         return ui::Theme{
             .panelColor = kPanelColor,
@@ -143,9 +143,9 @@ namespace antwika::editor
             .focusRingThickness = 0};
     } // GCOVR_EXCL_LINE
 
-    [[nodiscard]] inline ui::Theme menuTheme()
+    [[nodiscard]] inline ui::Theme getMenuTheme()
     {
-        auto look = gameTheme();
+        auto look = getGameTheme();
 
         look.face = ui::TextFace::Small;
         look.textScale = (3 * kUiScale) / 2;
@@ -157,7 +157,7 @@ namespace antwika::editor
         return look;
     } // GCOVR_EXCL_LINE
 
-    [[nodiscard]] inline std::string capitalized(
+    [[nodiscard]] inline std::string getCapitalized(
         const std::string_view text)
     {
         std::string capitalText{text};

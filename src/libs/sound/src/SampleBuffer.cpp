@@ -6,7 +6,7 @@
 namespace antwika::sound
 {
 
-    ChannelCount SampleBuffer::channelCount() const noexcept
+    ChannelCount SampleBuffer::getChannelCount() const noexcept
     {
         return static_cast<ChannelCount>(channels.size());
     }

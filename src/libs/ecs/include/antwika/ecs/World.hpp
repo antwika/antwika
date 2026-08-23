@@ -101,7 +101,7 @@ namespace antwika::ecs
                 throw EcsError("World: entity has no such component");
             }
 
-            return storage->read(entity);
+            return storage->getContents(entity);
         }
 
         template <Component T>
@@ -148,14 +148,14 @@ namespace antwika::ecs
         [[nodiscard]] std::size_t slotFor(
             ComponentKey key, std::string_view name);
 
-        [[nodiscard]] std::size_t slotCapacity() const noexcept
+        [[nodiscard]] std::size_t getSlotCapacity() const noexcept
         {
             return keys.size() / 2;
         }
 
         void growSlots();
 
-        [[nodiscard]] std::size_t findSlot(
+        [[nodiscard]] std::size_t getFindSlot(
             const ComponentKey key) const noexcept
         {
             const auto slotMask = keys.size() - 1;
@@ -213,7 +213,7 @@ namespace antwika::ecs
         template <Component T>
         [[nodiscard]] const ComponentStorage<T> *findStorage() const noexcept
         {
-            const auto id = findSlot(detail::componentKey<T>());
+            const auto id = getFindSlot(detail::componentKey<T>());
             if (id == kNoSlot || pools[id] == nullptr)
             {
                 return nullptr;

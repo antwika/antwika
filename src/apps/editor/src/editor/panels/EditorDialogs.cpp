@@ -12,7 +12,7 @@
 namespace antwika::editor
 {
 
-    widget::WidgetId Editor::widgetForField(const FocusedField focusedField)
+    widget::WidgetId Editor::getWidgetForField(const FocusedField focusedField)
     {
         switch (focusedField)
         {
@@ -48,7 +48,7 @@ namespace antwika::editor
             {
                 const auto sheet = context.column(
                     antwika::ui::ContainerSpec{
-                        .widthSizing = antwika::ui::fixedSize(
+                        .widthSizing = antwika::ui::getFixedSize(
                             kPickerWidth * kUiScale * 2.0F),
                         .backgroundColor = kPanelColor,
                         .padding = kPanelPadding});
@@ -91,7 +91,7 @@ namespace antwika::editor
             {
                 const auto sheet = context.column(
                     antwika::ui::ContainerSpec{
-                        .widthSizing = antwika::ui::fixedSize(
+                        .widthSizing = antwika::ui::getFixedSize(
                             kPickerWidth * kUiScale * 4.0F),
                         .backgroundColor = kPanelColor,
                         .padding = kPanelPadding});
@@ -103,7 +103,7 @@ namespace antwika::editor
                           "lets it be"
                         : "Keys - press a row, then the keys");
 
-                const auto actionList = allActions();
+                const auto actionList = getAllActions();
 
                 {
                     const auto ranks = context.row(
@@ -128,15 +128,15 @@ namespace antwika::editor
                             const auto act = actionList.at(index);
 
                             context.button(
-                                std::string(actionLabel(act))
+                                std::string(getActionLabel(act))
                                     + " - "
                                     + (rebindingAction == act
                                                         ? "..."
-                                                        : chordName(
+                                                        : getChordName(
                                                bindings.at(
                                                    act))),
                                 antwika::ui::ButtonSpec{
-                                    .widgetId = keyRowWidget(index),
+                                    .widgetId = getKeyRowWidget(index),
                                     .widthSizing =
                                         antwika::ui::kGrowSizing,
                                     .fillColor = rebindingAction == act
@@ -168,7 +168,7 @@ namespace antwika::editor
         return dialogs.quitConfirmOpen || keysOpen;
     }
 
-    bool Editor::handleModalWidgets(
+    bool Editor::consumeModalWidgets(
         const ui::Interactions &interactions)
     {
         if (dialogs.quitConfirmOpen)
@@ -201,11 +201,11 @@ namespace antwika::editor
 
         if (keysOpen)
         {
-            const auto actionList = allActions();
+            const auto actionList = getAllActions();
 
             for (std::size_t index = 0; index < kActionCount; ++index)
             {
-                if (interactions.activatedWidget == keyRowWidget(index))
+                if (interactions.activatedWidget == getKeyRowWidget(index))
                 {
                     rebindingAction = actionList.at(index);
                 }
@@ -221,9 +221,9 @@ namespace antwika::editor
             if (interactions.activatedWidget
                 == antwika::editor::kKeysResetWidget)
             {
-                setBindings(defaultChords());
+                setBindings(getDefaultChords());
                 rebindingAction.reset();
-                saveChords(bindings, chordsPath());
+                saveChords(bindings, getChordsPath());
             }
 
             return true;
@@ -265,7 +265,7 @@ namespace antwika::editor
                 input::Key::End, ui::Key::MoveLineEnd,
                 ui::Key::SelectLineEnd}};
 
-        [[nodiscard]] std::optional<ui::Key> movingKey(
+        [[nodiscard]] std::optional<ui::Key> getMovingKey(
             const input::Key key, const bool shiftHeld)
         {
             const auto foundRow =
@@ -284,8 +284,8 @@ namespace antwika::editor
     {
         if (dialogs.fileDialog.has_value())
         {
-            const auto typedText = antwika::input::charTypedBy(
-                pressedKey.key, heldModifiers().shift);
+            const auto typedText = antwika::input::getCharTypedBy(
+                pressedKey.key, getHeldModifiers().shift);
 
             if (!typedText.empty())
             {
@@ -315,8 +315,8 @@ namespace antwika::editor
 
         if (inkPicker.editingInk.has_value())
         {
-            const auto typedText = antwika::input::charTypedBy(
-                pressedKey.key, heldModifiers().shift);
+            const auto typedText = antwika::input::getCharTypedBy(
+                pressedKey.key, getHeldModifiers().shift);
 
             if (!typedText.empty())
             {
@@ -355,11 +355,11 @@ namespace antwika::editor
 
         if (focusedField != FocusedField::Nothing)
         {
-            const auto keyModifiers = heldModifiers();
+            const auto keyModifiers = getHeldModifiers();
             const auto typedText =
                 keyModifiers.control
                     ? std::string{}
-                    : antwika::input::charTypedBy(
+                    : antwika::input::getCharTypedBy(
                           pressedKey.key, keyModifiers.shift);
 
             if (!typedText.empty())
@@ -369,7 +369,7 @@ namespace antwika::editor
                     antwika::ui::Key::Character);
             }
 
-            const auto moving = movingKey(pressedKey.key, keyModifiers.shift);
+            const auto moving = getMovingKey(pressedKey.key, keyModifiers.shift);
 
             if (moving.has_value())
             {

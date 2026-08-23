@@ -27,9 +27,9 @@ TEST(SolverBacktrackingTest, Solve_AbandonsAWrongBranch)
     static const std::vector<std::size_t> cellIndices{0};
 
     MockConstraint constraint;
-    ON_CALL(constraint, cells())
+    ON_CALL(constraint, getCells())
         .WillByDefault(Return(std::span<const std::size_t>(cellIndices)));
-    EXPECT_CALL(constraint, cells()).WillRepeatedly(Return(
+    EXPECT_CALL(constraint, getCells()).WillRepeatedly(Return(
         std::span<const std::size_t>(cellIndices)));
     EXPECT_CALL(constraint, prune(_))
         .WillRepeatedly(Invoke(
@@ -45,7 +45,7 @@ TEST(SolverBacktrackingTest, Solve_AbandonsAWrongBranch)
 
     std::vector<Domain> waveDomains{Domain(2)};
     Solver solver(waveDomains, {std::cref(constraint)});
-    const auto result = solver.solve();
+    const auto result = solver.getSolve();
 
     EXPECT_EQ(result.outcome, SolveOutcome::Solved);
     EXPECT_EQ(result.assignment, (std::vector<std::size_t>{1}));
@@ -56,9 +56,9 @@ TEST(SolverBacktrackingTest, Solve_PopsToAnOuterChoicePoint)
     static const std::vector<std::size_t> cellIndices{0, 1};
 
     MockConstraint constraint;
-    ON_CALL(constraint, cells())
+    ON_CALL(constraint, getCells())
         .WillByDefault(Return(std::span<const std::size_t>(cellIndices)));
-    EXPECT_CALL(constraint, cells()).WillRepeatedly(Return(
+    EXPECT_CALL(constraint, getCells()).WillRepeatedly(Return(
         std::span<const std::size_t>(cellIndices)));
     EXPECT_CALL(constraint, prune(_))
         .WillRepeatedly(Invoke(
@@ -85,7 +85,7 @@ TEST(SolverBacktrackingTest, Solve_PopsToAnOuterChoicePoint)
     cell0Domain.remove(2);
     std::vector<Domain> waveDomains{cell0Domain, Domain(3)};
     Solver solver(waveDomains, {std::cref(constraint)});
-    const auto result = solver.solve();
+    const auto result = solver.getSolve();
 
     EXPECT_EQ(result.outcome, SolveOutcome::Solved);
     EXPECT_EQ(result.assignment, (std::vector<std::size_t>{1, 0}));
@@ -109,7 +109,7 @@ TEST(
     AdjacencyConstraint adjacency(1, 0, table);
 
     Solver solver(waveDomains, {std::cref(allDifferent), std::cref(adjacency)});
-    const auto result = solver.solve();
+    const auto result = solver.getSolve();
 
     EXPECT_EQ(result.outcome, SolveOutcome::Solved);
     EXPECT_EQ(result.assignment, (std::vector<std::size_t>{2, 0}));

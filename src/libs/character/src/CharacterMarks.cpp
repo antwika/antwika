@@ -11,14 +11,14 @@ namespace antwika::character
 {
 
 
-    geometry::GridCell selectionOrigin(const PixelSelection selection)
+    geometry::GridCell getSelectionOrigin(const PixelSelection selection)
     {
         return geometry::GridCell{
             std::min(selection.fromCell.column, selection.toCell.column),
             std::min(selection.fromCell.row, selection.toCell.row)};
     }
 
-    gfx::Size selectionSize(const PixelSelection selection)
+    gfx::Size getSelectionSize(const PixelSelection selection)
     {
         return gfx::Size{
             .width =
@@ -31,12 +31,12 @@ namespace antwika::character
                 - std::min(selection.fromCell.row, selection.toCell.row) + 1};
     }
 
-    bool selectionContains(
+    bool isSelectionContains(
         const PixelSelection selection,
         const geometry::GridCell pixelCell)
     {
-        const auto corner = selectionOrigin(selection);
-        const auto size = selectionSize(selection);
+        const auto corner = getSelectionOrigin(selection);
+        const auto size = getSelectionSize(selection);
 
         return pixelCell.column >= corner.column
                && pixelCell.row >= corner.row
@@ -44,13 +44,13 @@ namespace antwika::character
                && pixelCell.row < corner.row + size.height;
     }
 
-    PixelSelection movedSelection(
+    PixelSelection getMovedSelection(
         const PixelSelection selection,
         const std::int32_t column,
         const std::int32_t row)
     {
-        const auto corner = selectionOrigin(selection);
-        const auto size = selectionSize(selection);
+        const auto corner = getSelectionOrigin(selection);
+        const auto size = getSelectionSize(selection);
         const auto clamped = [](const std::uint32_t was,
                                 const std::int32_t step,
                                 const std::uint32_t span,
@@ -103,7 +103,7 @@ namespace antwika::character
             for (auto column = left; column <= right; ++column)
             {
                 pixels.pixelColors.push_back(
-                    characterPixelColor(
+                    getCharacterPixelColor(
                         sheetBitmap,
                         direction,
                         frame,
@@ -122,8 +122,8 @@ namespace antwika::character
     {
         auto copiedBitmap = copiedFrom(sheetBitmap, direction, frame,
         selection);
-        const auto corner = selectionOrigin(selection);
-        const auto size = selectionSize(selection);
+        const auto corner = getSelectionOrigin(selection);
+        const auto size = getSelectionSize(selection);
 
         for (std::uint32_t row = 0; row < size.height; ++row)
         {
@@ -147,7 +147,7 @@ namespace antwika::character
         return copiedBitmap;
     } // GCOVR_EXCL_LINE
 
-    PixelBuffer mirroredHorizontally(const PixelBuffer &buffer)
+    PixelBuffer getMirroredHorizontally(const PixelBuffer &buffer)
     {
         PixelBuffer pixels{.size = buffer.size, .pixelColors = {}};
 
@@ -203,13 +203,13 @@ namespace antwika::character
         }
     }
 
-    gfx::RectF selectionRect(
+    gfx::RectF getSelectionRect(
         const gfx::RectF whereRect, const PixelSelection selection)
     {
-        const auto corner = selectionOrigin(selection);
-        const auto size = selectionSize(selection);
-        const auto first = characterPixelPlace(whereRect, corner);
-        const auto lastRect = characterPixelPlace(
+        const auto corner = getSelectionOrigin(selection);
+        const auto size = getSelectionSize(selection);
+        const auto first = getCharacterPixelPlace(whereRect, corner);
+        const auto lastRect = getCharacterPixelPlace(
             whereRect,
             geometry::GridCell{
                 corner.column + size.width - 1,

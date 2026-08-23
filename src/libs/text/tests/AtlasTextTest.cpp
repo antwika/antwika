@@ -22,8 +22,8 @@ using antwika::font::AtlasGlyph;
 using antwika::font::Coverage;
 using antwika::font::FontMetrics;
 using antwika::font::GlyphAtlas;
-using antwika::text::atlasTextBlits;
-using antwika::text::atlasTextSize;
+using antwika::text::getAtlasTextBlits;
+using antwika::text::getAtlasTextSize;
 using antwika::gfx::Color;
 using antwika::text::drawAtlasText;
 using antwika::text::GlyphBlit;
@@ -36,7 +36,7 @@ using testing::_;
 
 namespace
 {
-    [[nodiscard]] GlyphAtlas testAtlas()
+    [[nodiscard]] GlyphAtlas getTestAtlas()
     {
         GlyphAtlas atlas;
         atlas.metrics = FontMetrics{
@@ -90,54 +90,54 @@ namespace
 TEST(AtlasTextTest, AtlasTextSize_SumsTheAdvancesOverOneLine)
 {
     EXPECT_EQ(
-        atlasTextSize(testAtlas(), "AB"),
+        getAtlasTextSize(getTestAtlas(), "AB"),
         (Size{.width = 9, .height = 11}));
 }
 
 TEST(AtlasTextTest, AtlasTextSize_CountsASpaceLikeAnyOtherCharacter)
 {
     EXPECT_EQ(
-        atlasTextSize(testAtlas(), "A B"),
+        getAtlasTextSize(getTestAtlas(), "A B"),
         (Size{.width = 12, .height = 11}));
 }
 
 TEST(AtlasTextTest, AtlasTextSize_IsZeroForEmptyText)
 {
-    EXPECT_EQ(atlasTextSize(testAtlas(), ""), Size{});
+    EXPECT_EQ(getAtlasTextSize(getTestAtlas(), ""), Size{});
 }
 
 TEST(AtlasTextTest, AtlasTextSize_MeasuresNothingForAnAbsentCharacter)
 {
     EXPECT_EQ(
-        atlasTextSize(testAtlas(), "AzB"),
+        getAtlasTextSize(getTestAtlas(), "AzB"),
         (Size{.width = 9, .height = 11}));
 }
 
 TEST(AtlasTextTest, AtlasTextSize_ReportsANegativeTotalAsZero)
 {
-    GlyphAtlas atlas = testAtlas();
+    GlyphAtlas atlas = getTestAtlas();
     atlas.glyphs[1].metrics.advance = -100;
 
     EXPECT_EQ(
-        atlasTextSize(atlas, "AB"), (Size{.width = 0, .height = 11}));
+        getAtlasTextSize(atlas, "AB"), (Size{.width = 0, .height = 11}));
 }
 
 TEST(AtlasTextTest, AtlasTextBlits_WalksThePenAlongTheBaseline)
 {
     EXPECT_EQ(
-        atlasTextBlits(testAtlas(), kOriginPoint, "AB"),
+        getAtlasTextBlits(getTestAtlas(), kOriginPoint, "AB"),
         (std::vector<GlyphBlit>{kBlitForA, kBlitForB}));
 }
 
 TEST(AtlasTextTest, AtlasTextBlits_IsEmptyForEmptyText)
 {
-    EXPECT_TRUE(atlasTextBlits(testAtlas(), kOriginPoint, "").empty());
+    EXPECT_TRUE(getAtlasTextBlits(getTestAtlas(), kOriginPoint, "").empty());
 }
 
 TEST(AtlasTextTest, AtlasTextBlits_DrawsNoSpaceAndStillMovesThePen)
 {
     const std::vector<GlyphBlit> blits
-        = atlasTextBlits(testAtlas(), kOriginPoint, " B");
+        = getAtlasTextBlits(getTestAtlas(), kOriginPoint, " B");
 
     ASSERT_EQ(blits.size(), 1U);
     EXPECT_EQ(
@@ -148,7 +148,7 @@ TEST(AtlasTextTest, AtlasTextBlits_DrawsNoSpaceAndStillMovesThePen)
 TEST(AtlasTextTest, AtlasTextBlits_MovesThePenNowhereForAnAbsentGlyph)
 {
     const std::vector<GlyphBlit> blits
-        = atlasTextBlits(testAtlas(), kOriginPoint, "zB");
+        = getAtlasTextBlits(getTestAtlas(), kOriginPoint, "zB");
 
     ASSERT_EQ(blits.size(), 1U);
     EXPECT_EQ(
@@ -158,21 +158,21 @@ TEST(AtlasTextTest, AtlasTextBlits_MovesThePenNowhereForAnAbsentGlyph)
 
 TEST(AtlasTextTest, AtlasTextBlits_SkipsAGlyphReachingOutsideTheMask)
 {
-    GlyphAtlas atlas = testAtlas();
+    GlyphAtlas atlas = getTestAtlas();
     atlas.glyphs[1].sourceRect.width = 99;
 
-    EXPECT_TRUE(atlasTextBlits(atlas, kOriginPoint, "A").empty());
+    EXPECT_TRUE(getAtlasTextBlits(atlas, kOriginPoint, "A").empty());
 }
 
 TEST(AtlasTextTest, AtlasTextBlits_ReadsAHighByteAsALatin1Codepoint)
 {
-    GlyphAtlas atlas = testAtlas();
+    GlyphAtlas atlas = getTestAtlas();
     atlas.glyphs.push_back(AtlasGlyph{
         .codepoint = 0xc4,
         .sourceRect = {.x = 0, .y = 3, .width = 2, .height = 1},
         .metrics = {.advance = 5, .bearingX = 0, .bearingY = -9}});
 
-    EXPECT_EQ(atlasTextBlits(atlas, kOriginPoint, "\xc4").size(), 1U);
+    EXPECT_EQ(getAtlasTextBlits(atlas, kOriginPoint, "\xc4").size(), 1U);
 }
 TEST(AtlasTextTest, DrawAtlasText_BlitsOncePerDrawableCharacter)
 {
@@ -195,7 +195,7 @@ TEST(AtlasTextTest, DrawAtlasText_BlitsOncePerDrawableCharacter)
             kTintColor));
 
     drawAtlasText(
-        renderer, texture, testAtlas(), kOriginPoint, "AB", kTintColor);
+        renderer, texture, getTestAtlas(), kOriginPoint, "AB", kTintColor);
 }
 
 TEST(AtlasTextTest, DrawAtlasText_DrawsNothingWhenNothingIsDrawable)
@@ -206,5 +206,5 @@ TEST(AtlasTextTest, DrawAtlasText_DrawsNothingWhenNothingIsDrawable)
     EXPECT_CALL(renderer, drawTexture(_, _, _, _)).Times(0);
 
     drawAtlasText(
-        renderer, texture, testAtlas(), kOriginPoint, "zz", kTintColor);
+        renderer, texture, getTestAtlas(), kOriginPoint, "zz", kTintColor);
 }

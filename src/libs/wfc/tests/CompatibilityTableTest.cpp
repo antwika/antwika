@@ -11,7 +11,7 @@ TEST(CompatibilityTableTest, Compatible_DefaultsToEveryPair)
     {
         for (std::size_t right = 0; right < 3; ++right)
         {
-            EXPECT_TRUE(table.compatible(left, right));
+            EXPECT_TRUE(table.isCompatible(left, right));
         }
     }
 }
@@ -21,8 +21,8 @@ TEST(CompatibilityTableTest, Set_MarksExactlyThatOrderedPair)
     CompatibilityTable table(3);
     table.set(0, 2, false);
 
-    EXPECT_FALSE(table.compatible(0, 2));
-    EXPECT_TRUE(table.compatible(2, 0));
+    EXPECT_FALSE(table.isCompatible(0, 2));
+    EXPECT_TRUE(table.isCompatible(2, 0));
 }
 
 TEST(CompatibilityTableTest, AlphabetSize_IsPreserved)
@@ -35,9 +35,9 @@ TEST(CompatibilityTableTest, Compatible_IsFalseOnAnOutOfRangePair)
 {
     CompatibilityTable table(2);
 
-    EXPECT_FALSE(table.compatible(2, 0));
-    EXPECT_FALSE(table.compatible(0, 2));
-    EXPECT_FALSE(table.compatible(2, 2));
+    EXPECT_FALSE(table.isCompatible(2, 0));
+    EXPECT_FALSE(table.isCompatible(0, 2));
+    EXPECT_FALSE(table.isCompatible(2, 2));
 }
 
 TEST(CompatibilityTableTest, Set_IgnoresAnOutOfRangePair)
@@ -47,8 +47,8 @@ TEST(CompatibilityTableTest, Set_IgnoresAnOutOfRangePair)
     table.set(2, 0, false);
     table.set(0, 2, false);
 
-    EXPECT_TRUE(table.compatible(0, 0));
-    EXPECT_TRUE(table.compatible(0, 1));
-    EXPECT_TRUE(table.compatible(1, 0));
-    EXPECT_TRUE(table.compatible(1, 1));
+    EXPECT_TRUE(table.isCompatible(0, 0));
+    EXPECT_TRUE(table.isCompatible(0, 1));
+    EXPECT_TRUE(table.isCompatible(1, 0));
+    EXPECT_TRUE(table.isCompatible(1, 1));
 }

@@ -35,9 +35,9 @@ namespace antwika::tile
 
     inline constexpr float kSwatchGap = 3.0F;
 
-    [[nodiscard]] widget::WidgetId swatchWidget(std::size_t which);
+    [[nodiscard]] widget::WidgetId getSwatchWidget(std::size_t which);
 
-    [[nodiscard]] gfx::RectF pixelPlace(
+    [[nodiscard]] gfx::RectF getPixelPlace(
         tilemap::Tile tile, gfx::RectF whereRect, geometry::GridCell pixelCell);
 
     [[nodiscard]] std::optional<geometry::GridCell> pixelAt(
@@ -49,13 +49,13 @@ namespace antwika::tile
         geometry::GridCell pixelCell,
         gfx::Color color);
 
-    [[nodiscard]] std::vector<geometry::GridCell> linePixels(
+    [[nodiscard]] std::vector<geometry::GridCell> getLinePixels(
         geometry::GridCell fromCell, geometry::GridCell toCell);
 
-    [[nodiscard]] std::vector<geometry::GridCell> rectPixels(
+    [[nodiscard]] std::vector<geometry::GridCell> getRectPixels(
         geometry::GridCell fromCell, geometry::GridCell toCell);
 
-    [[nodiscard]] std::vector<geometry::GridCell> circlePixels(
+    [[nodiscard]] std::vector<geometry::GridCell> getCirclePixels(
         geometry::GridCell fromCell, geometry::GridCell toCell);
 
     void paintPixels(
@@ -71,7 +71,7 @@ namespace antwika::tile
         geometry::GridCell toCell,
         gfx::Color color);
 
-    [[nodiscard]] std::vector<geometry::GridCell> filledPixels(
+    [[nodiscard]] std::vector<geometry::GridCell> getFilledPixels(
         const gfx::Bitmap &atlasBitmap,
         tilemap::Tile tile,
         geometry::GridCell cell);
@@ -87,10 +87,10 @@ namespace antwika::tile
         tilemap::Tile tile,
         geometry::GridCell pixelCell);
 
-    [[nodiscard]] bool soleInk(
+    [[nodiscard]] bool isSoleInk(
         std::span<const gfx::Color> paletteColors, std::size_t which);
 
-    [[nodiscard]] std::vector<std::size_t> paintedWith(
+    [[nodiscard]] std::vector<std::size_t> getPaintedWith(
         const gfx::Bitmap &atlasBitmap, gfx::Color color);
 
     void repaintAt(

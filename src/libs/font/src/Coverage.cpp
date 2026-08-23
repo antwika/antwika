@@ -15,7 +15,7 @@ namespace antwika::font
             == static_cast<std::size_t>(width) * height;
     }
 
-    std::uint8_t Coverage::at(std::uint32_t x, std::uint32_t y) const
+    std::uint8_t Coverage::getEntryAt(std::uint32_t x, std::uint32_t y) const
     {
         if (x >= width || y >= height || !isValid())
         {

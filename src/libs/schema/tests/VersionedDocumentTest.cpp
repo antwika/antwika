@@ -16,7 +16,7 @@
 #include "antwika/schema/SchemaVersionError.hpp"
 #include "antwika/schema/VersionedDocument.hpp"
 
-using antwika::schema::countSchema;
+using antwika::schema::getCountSchema;
 using antwika::schema::IMigration;
 using antwika::schema::fakes::FakeCountMigration;
 using antwika::schema::kSchemaVersionKey;
@@ -38,7 +38,7 @@ namespace
 
     constexpr std::uint32_t kToyVersion = 2;
 
-    MigrationChain toyMigrations()
+    MigrationChain getToyMigrations()
     {
         MigrationList migrations;
         migrations.push_back(std::make_shared<FakeCountMigration>(
@@ -46,22 +46,22 @@ namespace
         return MigrationChain(std::move(migrations), kToyVersion);
     }
 
-    nlohmann::json toySchema()
+    nlohmann::json getToySchema()
     {
         nlohmann::json schema;
         schema["type"] = "object";
         schema["additionalProperties"] = false;
         schema["required"] = {"count"};
-        schema["properties"]["count"] = countSchema();
+        schema["properties"]["count"] = getCountSchema();
         schema["properties"][std::string(kSchemaVersionKey)]["const"] =
             kToyVersion;
         return schema;
     }
 
-    const nlohmann::json_schema::json_validator &toyValidator()
+    const nlohmann::json_schema::json_validator &getToyValidator()
     {
         static const nlohmann::json_schema::json_validator validator(
-            toySchema());
+            getToySchema());
         return validator;
     }
 
@@ -70,18 +70,18 @@ namespace
     {
         return readVersionedDocument<ErrorT>(
             document,
-            toyMigrations(),
-            toyValidator(),
+            getToyMigrations(),
+            getToyValidator(),
             "antwika::schema: a toy document is not one: ");
     }
 
-    nlohmann::json current()
+    nlohmann::json getCurrent()
     {
         return nlohmann::json{
             {std::string(kSchemaVersionKey), kToyVersion}, {"count", 4}};
     }
 
-    nlohmann::json pastTheBound()
+    nlohmann::json getPastTheBound()
     {
         nlohmann::json value = 7;
 
@@ -99,7 +99,7 @@ namespace
 
 TEST(VersionedDocumentTest, Current_ReturnsADocumentAtTheVersion)
 {
-    const auto document = read<ToyFormatError>(current());
+    const auto document = read<ToyFormatError>(getCurrent());
 
     EXPECT_EQ(document.at("count"), 4);
     EXPECT_EQ(document.at(std::string(kSchemaVersionKey)), kToyVersion);
@@ -109,7 +109,7 @@ TEST(VersionedDocumentTest, Current_RefusesADocumentNestedTooDeep)
 {
     try
     {
-        (void)read<ToyFormatError>(pastTheBound());
+        (void)read<ToyFormatError>(getPastTheBound());
         FAIL() << "a document nested past the bound should have thrown";
     }
     catch (const ToyFormatError &error)
@@ -125,10 +125,10 @@ TEST(VersionedDocumentTest, Current_RefusesARecordNestedTooDeep)
 {
     EXPECT_THROW(
         (void)readVersionedRecord<ToyFormatError>(
-            pastTheBound(),
+            getPastTheBound(),
             kToyVersion,
-            toyMigrations(),
-            toyValidator(),
+            getToyMigrations(),
+            getToyValidator(),
             "antwika::schema: a toy record is not one: "),
         ToyFormatError);
 }
@@ -144,7 +144,7 @@ TEST(VersionedDocumentTest, Current_MigratesBeforeItValidates)
 
 TEST(VersionedDocumentTest, Current_ReportsAVersionFailureAsTheType)
 {
-    auto document = current();
+    auto document = getCurrent();
     document[std::string(kSchemaVersionKey)] = kToyVersion + 1;
 
     EXPECT_THROW((void)read<ToyFormatError>(document), ToyFormatError);
@@ -152,7 +152,7 @@ TEST(VersionedDocumentTest, Current_ReportsAVersionFailureAsTheType)
 
 TEST(VersionedDocumentTest, Current_KeepsTheChainsWording)
 {
-    auto document = current();
+    auto document = getCurrent();
     document[std::string(kSchemaVersionKey)] = 99;
 
     try
@@ -169,7 +169,7 @@ TEST(VersionedDocumentTest, Current_KeepsTheChainsWording)
 
 TEST(VersionedDocumentTest, Current_ReportsASchemaFailureAsTheType)
 {
-    auto document = current();
+    auto document = getCurrent();
     document["colour"] = "blue";
 
     EXPECT_THROW((void)read<ToyFormatError>(document), ToyFormatError);
@@ -177,7 +177,7 @@ TEST(VersionedDocumentTest, Current_ReportsASchemaFailureAsTheType)
 
 TEST(VersionedDocumentTest, Current_NamesTheFormatOnASchemaFailure)
 {
-    auto document = current();
+    auto document = getCurrent();
     document["count"] = -1;
 
     try
@@ -194,7 +194,7 @@ TEST(VersionedDocumentTest, Current_NamesTheFormatOnASchemaFailure)
 
 TEST(VersionedDocumentTest, Current_LetsTheNarrowerErrorThrough)
 {
-    auto document = current();
+    auto document = getCurrent();
     document[std::string(kSchemaVersionKey)] = kToyVersion + 1;
 
     EXPECT_THROW(
@@ -203,7 +203,7 @@ TEST(VersionedDocumentTest, Current_LetsTheNarrowerErrorThrough)
 
 TEST(VersionedDocumentTest, Current_StillReportsSchemaAsTheBaseType)
 {
-    auto document = current();
+    auto document = getCurrent();
     document.erase("count");
 
     EXPECT_THROW(

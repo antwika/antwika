@@ -70,14 +70,14 @@ namespace antwika::system
                     world.get<component::Position>(entity);
                 const auto &goal = stopRound.at(
                     patrolState.nextStopIndex % stopRound.size());
-                const auto fromCell = collision::supportingVoxel(
+                const auto fromCell = collision::getSupportingVoxel(
                     *solidVoxels,
                     static_cast<std::int32_t>(
                         std::floor(stoodPosition.x / voxel::kVoxelSide)),
                     static_cast<std::int32_t>(
                         std::floor(stoodPosition.z / voxel::kVoxelSide)),
                     stoodPosition.y);
-                const auto toCell = collision::supportingVoxel(
+                const auto toCell = collision::getSupportingVoxel(
                     *solidVoxels,
                     goal.x,
                     goal.z,
@@ -100,7 +100,7 @@ namespace antwika::system
                     continue;
                 }
 
-                const auto walk = pathfinding::pathBetween(
+                const auto walk = pathfinding::getPathBetween(
                     collision::VoxelWalkGraph(*solidVoxels),
                     pathfinding::GridPos{
                         .x =

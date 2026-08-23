@@ -25,7 +25,7 @@ TEST(SolverPropagationTest, Solve_FinishesOnNakedSinglesAlone)
         {std::cref(allDifferent)},
         {},
         SolverLimits{.maxSteps = 0});
-    const auto result = solver.solve();
+    const auto result = solver.getSolve();
 
     EXPECT_EQ(result.outcome, SolveOutcome::Solved);
     EXPECT_EQ(result.assignment, (std::vector<std::size_t>{0, 1, 2}));

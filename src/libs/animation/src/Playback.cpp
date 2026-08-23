@@ -14,13 +14,13 @@
 namespace antwika::animation
 {
 
-    Frame resolve(const Clip &clip, time::Tick elapsedTicks)
+    Frame getResolve(const Clip &clip, time::Tick elapsedTicks)
     {
-        const time::Tick durationTick = clip.durationTicks();
+        const time::Tick durationTick = clip.getDurationTicks();
 
-        if (clip.loop() == LoopMode::Once && elapsedTicks >= durationTick)
+        if (clip.getLoop() == LoopMode::Once && elapsedTicks >= durationTick)
         {
-            const KeyFrame &lastFrame = clip.frames().back();
+            const KeyFrame &lastFrame = clip.getFrames().back();
 
             return Frame{
                 .index = lastFrame.index,
@@ -33,13 +33,13 @@ namespace antwika::animation
         time::Tick remainingTick = elapsedTicks % durationTick;
         std::size_t index = 0;
 
-        while (remainingTick >= clip.frames()[index].durationTicks)
+        while (remainingTick >= clip.getFrames()[index].durationTicks)
         {
-            remainingTick -= clip.frames()[index].durationTicks;
+            remainingTick -= clip.getFrames()[index].durationTicks;
             ++index;
         }
 
-        const KeyFrame &currentFrame = clip.frames()[index];
+        const KeyFrame &currentFrame = clip.getFrames()[index];
 
         return Frame{
             .index = currentFrame.index,
@@ -48,7 +48,7 @@ namespace antwika::animation
         };
     }
 
-    Progress stepProgress(time::Tick elapsedTicks, time::Tick ticksPerStep)
+    Progress getStepProgress(time::Tick elapsedTicks, time::Tick ticksPerStep)
     {
         if (ticksPerStep == 0)
         {

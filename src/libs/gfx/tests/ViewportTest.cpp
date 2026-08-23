@@ -56,8 +56,8 @@ TEST(ViewportTest, ViewportFor_ScalesByHeightWhateverTheWidthIs)
     const auto narrow =
         viewportFor(Size{.width = 2100, .height = 1280}, kCanvasSize);
 
-    EXPECT_EQ(wideViewport.frame(kCanvasSize).size, (Size{2048, 1280}));
-    EXPECT_EQ(narrow.frame(kCanvasSize).size, (Size{2048, 1280}));
+    EXPECT_EQ(wideViewport.getFrame(kCanvasSize).size, (Size{2048, 1280}));
+    EXPECT_EQ(narrow.getFrame(kCanvasSize).size, (Size{2048, 1280}));
 
     EXPECT_EQ(wideViewport.offsetPoint, (Point{256, 0}));
     EXPECT_EQ(narrow.offsetPoint, (Point{26, 0}));
@@ -68,7 +68,7 @@ TEST(ViewportTest, ViewportFor_PillarboxesAWindowWiderThanTheCanvas)
     const auto viewport =
         viewportFor(Size{.width = 1920, .height = 640}, kCanvasSize);
 
-    EXPECT_EQ(viewport.frame(kCanvasSize).size, kCanvasSize);
+    EXPECT_EQ(viewport.getFrame(kCanvasSize).size, kCanvasSize);
     EXPECT_EQ(viewport.offsetPoint, (Point{448, 0}));
 }
 
@@ -77,7 +77,7 @@ TEST(ViewportTest, ViewportFor_LetterboxesAWindowNarrowerThanTheCanvas)
     const auto viewport =
         viewportFor(Size{.width = 512, .height = 640}, kCanvasSize);
 
-    EXPECT_EQ(viewport.frame(kCanvasSize).size, (Size{512, 320}));
+    EXPECT_EQ(viewport.getFrame(kCanvasSize).size, (Size{512, 320}));
     EXPECT_EQ(viewport.offsetPoint, (Point{0, 160}));
 }
 
@@ -86,7 +86,7 @@ TEST(ViewportTest, ViewportFor_FitsAWindowSmallerThanTheCanvas)
     const auto viewport =
         viewportFor(Size{.width = 256, .height = 320}, kCanvasSize);
 
-    const auto frame = viewport.frame(kCanvasSize);
+    const auto frame = viewport.getFrame(kCanvasSize);
 
     EXPECT_LE(frame.size.width, 256u);
     EXPECT_LE(frame.size.height, 320u);

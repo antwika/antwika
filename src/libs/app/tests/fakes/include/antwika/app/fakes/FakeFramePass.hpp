@@ -20,12 +20,12 @@ namespace antwika::app::fakes
             frames.push_back(subTickProgress);
         }
 
-        [[nodiscard]] const std::vector<Progress> &drawn() const noexcept
+        [[nodiscard]] const std::vector<Progress> &getDrawn() const noexcept
         {
             return frames;
         }
 
-        [[nodiscard]] std::size_t count() const noexcept
+        [[nodiscard]] std::size_t getCount() const noexcept
         {
             return frames.size();
         }

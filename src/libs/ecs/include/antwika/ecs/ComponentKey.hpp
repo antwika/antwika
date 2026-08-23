@@ -26,7 +26,7 @@ namespace antwika::ecs::detail
         return signature.substr(nameStart, nameEnd - nameStart);
     }
 
-    [[nodiscard]] constexpr ComponentKey keyOfName(
+    [[nodiscard]] constexpr ComponentKey getKeyOfName(
         const std::string_view name) noexcept
     {
         constexpr ComponentKey kOffsetBasisKey = 14695981039346656037ULL;
@@ -47,7 +47,7 @@ namespace antwika::ecs::detail
     template <Component T>
     [[nodiscard]] constexpr ComponentKey componentKey() noexcept
     {
-        return keyOfName(typeName<T>());
+        return getKeyOfName(typeName<T>());
     }
 
 }

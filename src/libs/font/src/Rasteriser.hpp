@@ -25,18 +25,18 @@ namespace antwika::font::detail
         Rasteriser &operator=(const Rasteriser &other) = delete;
         Rasteriser &operator=(Rasteriser &&other) = delete;
 
-        [[nodiscard]] VerticalMetrics verticalMetrics() const;
+        [[nodiscard]] VerticalMetrics getVerticalMetrics() const;
 
-        [[nodiscard]] float scaleForPixelHeight(
+        [[nodiscard]] float getScaleForPixelHeight(
             std::uint32_t pixelHeight) const;
 
-        [[nodiscard]] int glyphIndex(char32_t codepoint) const;
+        [[nodiscard]] int getGlyphIndex(char32_t codepoint) const;
 
-        [[nodiscard]] int advanceWidth(int glyph) const;
+        [[nodiscard]] int getAdvanceWidth(int glyph) const;
 
-        [[nodiscard]] GlyphBox glyphBox(int glyph, float scale) const;
+        [[nodiscard]] GlyphBox getGlyphBox(int glyph, float scale) const;
 
-        [[nodiscard]] RasterisedGlyph rasteriseGlyph(
+        [[nodiscard]] RasterisedGlyph getRasteriseGlyph(
             int glyph, float scale) const;
 
     private:

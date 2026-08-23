@@ -27,7 +27,7 @@ namespace
 {
     constexpr std::uint32_t kPollLimit = 1000;
 
-    WindowSpec resizableSpec()
+    WindowSpec getResizableSpec()
     {
         return WindowSpec{
             .title = "Antwika raylib",
@@ -48,7 +48,7 @@ TEST(RaylibBackendTest, PollEvent_DrainsAfterTheWindowIsResized)
     NiceMock<MockLogger> logger;
     RaylibBackend backend(logger);
 
-    const auto window = backend.createWindow(resizableSpec());
+    const auto window = backend.createWindow(getResizableSpec());
     auto &renderer = window->renderer();
 
     drawAFrame(renderer);
@@ -78,7 +78,7 @@ TEST(RaylibBackendTest, PollEvent_ReportsANewSizeOnlyOnce)
     NiceMock<MockLogger> logger;
     RaylibBackend backend(logger);
 
-    const auto window = backend.createWindow(resizableSpec());
+    const auto window = backend.createWindow(getResizableSpec());
     auto &renderer = window->renderer();
 
     drawAFrame(renderer);
@@ -94,7 +94,7 @@ TEST(RaylibBackendTest, PollEvent_ReportsANewSizeOnlyOnce)
         {
             ++resizes;
 
-            EXPECT_EQ(resized->size, window->size());
+            EXPECT_EQ(resized->size, window->getSize());
         }
 
         if (resizes > kPollLimit)
@@ -117,7 +117,7 @@ TEST(RaylibBackendDeathTest, CreateWindow_FailsCleanlyWithNoDisplay)
 
             try
             {
-                (void)backend.createWindow(resizableSpec());
+                (void)backend.createWindow(getResizableSpec());
             }
             catch (const antwika::gfx::GfxError &)
             {

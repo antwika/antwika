@@ -17,7 +17,7 @@ namespace antwika::editor
             && decor::decorOf(document.map.decor, *selectedTile)
                    == nullptr)
         {
-            document.map.decor = decor::withDecorToggled(
+            document.map.decor = decor::getWithDecorToggled(
                 document.map.decor, *selectedTile, chosenLayer);
         }
     }
@@ -73,7 +73,7 @@ namespace antwika::editor
         {
             const tilemap::Tile tile{.atlas = atlas, .index = index};
 
-            if (!tilemap::cellHoldingTile(document.map.tilemap,
+            if (!tilemap::getCellHoldingTile(document.map.tilemap,
                     tile).has_value()
                 && !takenTiles.contains(tile))
             {
@@ -158,14 +158,14 @@ namespace antwika::editor
 
         panelTitle(context, "Decor");
         context.label(
-            "on " + map::layerLabel(decorShown.layer),
+            "on " + map::getLayerLabel(decorShown.layer),
             decorShown.layer == chosenLayer ? kGridLineColor
                               : kSelectionAccentColor);
 
         if (decor != nullptr && decorShown.layer != chosenLayer)
         {
             context.button(
-                "move to " + map::layerLabel(chosenLayer),
+                "move to " + map::getLayerLabel(chosenLayer),
                 antwika::ui::ButtonSpec{
                     .widgetId = decor::kDecorMoveWidget,
                     .widthSizing = antwika::ui::kGrowSizing});
@@ -200,7 +200,7 @@ namespace antwika::editor
                     == decor::kDecorWeightWidget});
         layoutSpanRows(context, decorShown);
 
-        if (decor::decorSpanned(decorShown))
+        if (decor::isDecorSpanned(decorShown))
         {
             return;
         }
@@ -222,7 +222,7 @@ namespace antwika::editor
                 context.button(
                     std::to_string(frame + 1),
                     antwika::ui::ButtonSpec{
-                        .widgetId = decor::frameWidget(
+                        .widgetId = decor::getFrameWidget(
                             frame),
                         .fillColor =
                             frame == assignMode.framePicked
@@ -242,7 +242,7 @@ namespace antwika::editor
         }
 
         const auto strolling = decor::decorFrameAt(decorShown, tick);
-        const auto shownFrom = tilemap::tileSource(strolling);
+        const auto shownFrom = tilemap::getTileSource(strolling);
         const antwika::gfx::Rect walkCutRect{
             .originPoint =
                 {.x = static_cast<std::int32_t>(
@@ -254,8 +254,8 @@ namespace antwika::editor
         context.image(
             antwika::ui::Icon{
                 .sheetTexture = strolling.atlas == tilemap::Atlas::Wall
-                              ? atlasSheets.texture(tilemap::Atlas::Wall)
-                              : atlasSheets.texture(tilemap::Atlas::Floor),
+                              ? atlasSheets.getTexture(tilemap::Atlas::Wall)
+                              : atlasSheets.getTexture(tilemap::Atlas::Floor),
                 .sourceRect = walkCutRect,
                 .scale = kUiScale * 2},
             kWhiteColor);

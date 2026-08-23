@@ -22,9 +22,9 @@ namespace antwika::ui::detail
             return std::min(begin + column, end);
         }
 
-        [[nodiscard]] std::size_t lineAbove(const TextEdit &edit) noexcept
+        [[nodiscard]] std::size_t getLineAbove(const TextEdit &edit) noexcept
         {
-            const auto begin = beginOfLine(edit.text, edit.cursor);
+            const auto begin = getBeginOfLine(edit.text, edit.cursor);
 
             if (begin == 0)
             {
@@ -33,13 +33,13 @@ namespace antwika::ui::detail
 
             return sameColumnIn(
                 edit.cursor - begin,
-                beginOfLine(edit.text, begin - 1),
+                getBeginOfLine(edit.text, begin - 1),
                 begin - 1);
         }
 
-        [[nodiscard]] std::size_t lineBelow(const TextEdit &edit) noexcept
+        [[nodiscard]] std::size_t getLineBelow(const TextEdit &edit) noexcept
         {
-            const auto end = endOfLine(edit.text, edit.cursor);
+            const auto end = getEndOfLine(edit.text, edit.cursor);
 
             if (end == edit.text.size())
             {
@@ -47,9 +47,9 @@ namespace antwika::ui::detail
             }
 
             return sameColumnIn(
-                edit.cursor - beginOfLine(edit.text, edit.cursor),
+                edit.cursor - getBeginOfLine(edit.text, edit.cursor),
                 end + 1,
-                endOfLine(edit.text, end + 1));
+                getEndOfLine(edit.text, end + 1));
         }
 
         [[nodiscard]] bool selects(const TextEdit &edit) noexcept
@@ -57,12 +57,12 @@ namespace antwika::ui::detail
             return edit.cursor != edit.anchor;
         }
 
-        [[nodiscard]] std::size_t lowEnd(const TextEdit &edit) noexcept
+        [[nodiscard]] std::size_t getLowEnd(const TextEdit &edit) noexcept
         {
             return std::min(edit.cursor, edit.anchor);
         }
 
-        [[nodiscard]] std::size_t highEnd(const TextEdit &edit) noexcept
+        [[nodiscard]] std::size_t getHighEnd(const TextEdit &edit) noexcept
         {
             return std::max(edit.cursor, edit.anchor);
         }
@@ -75,17 +75,17 @@ namespace antwika::ui::detail
 
         void takeSelection(TextEdit &edit)
         {
-            const auto lowIndex = lowEnd(edit);
+            const auto lowIndex = getLowEnd(edit);
 
-            edit.text.erase(lowIndex, highEnd(edit) - lowIndex);
+            edit.text.erase(lowIndex, getHighEnd(edit) - lowIndex);
             putCaret(edit, lowIndex);
         }
 
-        [[nodiscard]] std::string selectedText(const TextEdit &edit)
+        [[nodiscard]] std::string getSelectedText(const TextEdit &edit)
         {
-            const auto lowIndex = lowEnd(edit);
+            const auto lowIndex = getLowEnd(edit);
 
-            return edit.text.substr(lowIndex, highEnd(edit) - lowIndex);
+            return edit.text.substr(lowIndex, getHighEnd(edit) - lowIndex);
         }
 
         void insert(TextEdit &edit, const char character)
@@ -100,7 +100,7 @@ namespace antwika::ui::detail
         }
     }
 
-    std::size_t beginOfLine(
+    std::size_t getBeginOfLine(
         const std::string_view text, const std::size_t charIndex) noexcept
     {
         if (charIndex == 0)
@@ -113,7 +113,7 @@ namespace antwika::ui::detail
         return foundIndex == std::string_view::npos ? 0 : foundIndex + 1;
     }
 
-    std::size_t endOfLine(
+    std::size_t getEndOfLine(
         const std::string_view text, const std::size_t charIndex) noexcept
     {
         const auto foundIndex = text.find('\n', charIndex);
@@ -163,7 +163,7 @@ namespace antwika::ui::detail
 
             if (key == Key::MoveLeft && selects(edit))
             {
-                putCaret(edit, lowEnd(edit));
+                putCaret(edit, getLowEnd(edit));
             }
             else if (key == Key::MoveLeft)
             {
@@ -172,7 +172,7 @@ namespace antwika::ui::detail
 
             if (key == Key::MoveRight && selects(edit))
             {
-                putCaret(edit, highEnd(edit));
+                putCaret(edit, getHighEnd(edit));
             }
             else if (key == Key::MoveRight)
             {
@@ -182,22 +182,22 @@ namespace antwika::ui::detail
 
             if (key == Key::MoveUp)
             {
-                putCaret(edit, lineAbove(edit));
+                putCaret(edit, getLineAbove(edit));
             }
 
             if (key == Key::MoveDown)
             {
-                putCaret(edit, lineBelow(edit));
+                putCaret(edit, getLineBelow(edit));
             }
 
             if (key == Key::MoveLineStart)
             {
-                putCaret(edit, beginOfLine(edit.text, edit.cursor));
+                putCaret(edit, getBeginOfLine(edit.text, edit.cursor));
             }
 
             if (key == Key::MoveLineEnd)
             {
-                putCaret(edit, endOfLine(edit.text, edit.cursor));
+                putCaret(edit, getEndOfLine(edit.text, edit.cursor));
             }
 
             if (key == Key::SelectLeft && edit.cursor > 0)
@@ -212,22 +212,22 @@ namespace antwika::ui::detail
 
             if (key == Key::SelectUp)
             {
-                edit.cursor = lineAbove(edit);
+                edit.cursor = getLineAbove(edit);
             }
 
             if (key == Key::SelectDown)
             {
-                edit.cursor = lineBelow(edit);
+                edit.cursor = getLineBelow(edit);
             }
 
             if (key == Key::SelectLineStart)
             {
-                edit.cursor = beginOfLine(edit.text, edit.cursor);
+                edit.cursor = getBeginOfLine(edit.text, edit.cursor);
             }
 
             if (key == Key::SelectLineEnd)
             {
-                edit.cursor = endOfLine(edit.text, edit.cursor);
+                edit.cursor = getEndOfLine(edit.text, edit.cursor);
             }
 
             if (key == Key::SelectAll)
@@ -238,7 +238,7 @@ namespace antwika::ui::detail
 
             if ((key == Key::Copy || key == Key::Cut) && selects(edit))
             {
-                edit.copiedText = selectedText(edit);
+                edit.copiedText = getSelectedText(edit);
             }
 
             if (key == Key::Cut && selects(edit))

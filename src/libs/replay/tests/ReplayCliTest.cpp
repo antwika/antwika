@@ -21,8 +21,8 @@
 using antwika::cli::CommandLineError;
 using antwika::event::Event;
 using antwika::event::TickEvent;
-using antwika::replay::loadReplayFile;
-using antwika::replay::openReplayFile;
+using antwika::replay::getLoadReplayFile;
+using antwika::replay::getOpenReplayFile;
 using antwika::replay::ReplayFormatError;
 using antwika::replay::saveReplayFile;
 
@@ -47,7 +47,7 @@ namespace
             antwika::cli::parseCommandLine(
                 static_cast<int>(argv.size()),
                 argv.data(),
-                antwika::replay::replayCliFlags()));
+                antwika::replay::getReplayCliFlags()));
     }
 }
 
@@ -109,7 +109,7 @@ TEST(ReplayCliTest, OptionsFrom_ReportsThatHelpWasAsked)
 
 TEST(ReplayCliTest, ReplayCliFlags_AreTheTwoEveryAppTakes)
 {
-    const auto flags = antwika::replay::replayCliFlags();
+    const auto flags = antwika::replay::getReplayCliFlags();
 
     ASSERT_EQ(flags.size(), 2U);
     EXPECT_EQ(flags[0].name, "--record");
@@ -120,13 +120,13 @@ TEST(ReplayCliTest, LoadReplayFile_DecodesASavedDocument)
 {
     antwika::testing::ScratchFile file("antwika_replay_cli_load_test.jsonl");
     {
-        std::ofstream outputStream(file.string());
+        std::ofstream outputStream(file.getString());
         outputStream << R"({"magic":"antwika-replay","version":1,"events":)"
             << R"([{"tick":0,"event":{"name":"life.step","payload":""}}])"
             << "}";
     }
 
-    const auto events = loadReplayFile(file.string());
+    const auto events = getLoadReplayFile(file.getString());
 
     EXPECT_EQ(
         events,
@@ -140,11 +140,11 @@ TEST(ReplayCliTest, LoadReplayFile_ThrowsOnAnUnparsableFile)
     antwika::testing::ScratchFile file(
         "antwika_replay_cli_load_malformed_test.jsonl");
     {
-        std::ofstream outputStream(file.string());
+        std::ofstream outputStream(file.getString());
         outputStream << "not a replay document";
     }
 
-    EXPECT_THROW((void)loadReplayFile(file.string()), ReplayFormatError);
+    EXPECT_THROW((void)getLoadReplayFile(file.getString()), ReplayFormatError);
 }
 
 TEST(ReplayCliTest, SaveReplayFile_FiltersOutBuiltInTicks)
@@ -159,9 +159,9 @@ TEST(ReplayCliTest, SaveReplayFile_FiltersOutBuiltInTicks)
         TickEvent{.tick = 1, .event = Event{.name = "engine.tick"}},
     };
 
-    saveReplayFile(events, file.string());
+    saveReplayFile(events, file.getString());
 
-    const auto reloadedEvents = loadReplayFile(file.string());
+    const auto reloadedEvents = getLoadReplayFile(file.getString());
     EXPECT_EQ(
         reloadedEvents,
         (std::vector<TickEvent>{
@@ -179,11 +179,11 @@ TEST(ReplayCliTest, OpenReplayFile_GivesAnAppendableStream)
         "antwika_replay_cli_open_test.jsonl");
 
     {
-        std::ofstream outputStream = openReplayFile(file.string());
+        std::ofstream outputStream = getOpenReplayFile(file.getString());
         EXPECT_TRUE(outputStream.is_open());
     }
 
-    EXPECT_TRUE(std::filesystem::exists(file.string()));
+    EXPECT_TRUE(std::filesystem::exists(file.getString()));
 }
 
 TEST(ReplayCliTest, OpenReplayFile_ThrowsOnAnUnusablePath)
@@ -194,7 +194,7 @@ TEST(ReplayCliTest, OpenReplayFile_ThrowsOnAnUnusablePath)
             .string();
 
     EXPECT_THROW(
-        std::ignore = openReplayFile(path), ReplayFormatError);
+        std::ignore = getOpenReplayFile(path), ReplayFormatError);
 }
 
 TEST(ReplayCliTest, LoadReplayFile_NamesAMissingFile)
@@ -204,7 +204,7 @@ TEST(ReplayCliTest, LoadReplayFile_NamesAMissingFile)
 
     try
     {
-        (void)loadReplayFile(file.string());
+        (void)getLoadReplayFile(file.getString());
         FAIL() << "loading an absent replay should have thrown";
     }
     catch (const ReplayFormatError &error)
@@ -212,7 +212,7 @@ TEST(ReplayCliTest, LoadReplayFile_NamesAMissingFile)
         const std::string message = error.what();
         EXPECT_NE(message.find("could not open"), std::string::npos)
             << message;
-        EXPECT_NE(message.find(file.string()), std::string::npos)
+        EXPECT_NE(message.find(file.getString()), std::string::npos)
             << message;
     }
 }

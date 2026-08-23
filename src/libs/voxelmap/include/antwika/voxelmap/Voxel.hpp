@@ -30,19 +30,19 @@ namespace antwika::voxelmap
 
     inline constexpr std::size_t kVoxelFaceCount = 6;
 
-    [[nodiscard]] gfx::Vec3 faceNormal(std::size_t side);
+    [[nodiscard]] gfx::Vec3 getFaceNormal(std::size_t side);
 
     [[nodiscard]] voxel::StairPart stairPartOf(
         voxel::VoxelPosition climbPosition, std::size_t side);
 
-    [[nodiscard]] gfx::Vec3 voxelsCenter(const voxel::Voxels &voxels);
+    [[nodiscard]] gfx::Vec3 getVoxelsCenter(const voxel::Voxels &voxels);
 
-    [[nodiscard]] gfx::Vec3 cellMiddle(voxel::VoxelPosition position);
+    [[nodiscard]] gfx::Vec3 getCellMiddle(voxel::VoxelPosition position);
 
-    [[nodiscard]] gfx::Vec3 faceCorner(
+    [[nodiscard]] gfx::Vec3 getFaceCorner(
         std::size_t side, std::size_t corner);
 
-    [[nodiscard]] std::size_t defaultTileIndex(
+    [[nodiscard]] std::size_t getDefaultTileIndex(
         voxel::VoxelPosition position, std::size_t face);
 
     struct FaceRef final
@@ -82,23 +82,23 @@ namespace antwika::voxelmap
 
     [[nodiscard]] std::int32_t levelOf(voxel::VoxelPosition position);
 
-    [[nodiscard]] std::int32_t topLevel(const voxel::Voxels &voxels);
+    [[nodiscard]] std::int32_t getTopLevel(const voxel::Voxels &voxels);
 
-    [[nodiscard]] std::int32_t bottomLevel(const voxel::Voxels &voxels);
+    [[nodiscard]] std::int32_t getBottomLevel(const voxel::Voxels &voxels);
 
-    [[nodiscard]] std::vector<tilemap::Tile> defaultTiles(
+    [[nodiscard]] std::vector<tilemap::Tile> getDefaultTiles(
         const std::vector<FaceRef> &faces);
 
-    [[nodiscard]] voxel::Voxels demoCells();
+    [[nodiscard]] voxel::Voxels getDemoCells();
 
-    [[nodiscard]] gfx::MeshData voxelMesh(const voxel::Voxels &voxels);
+    [[nodiscard]] gfx::MeshData getVoxelMesh(const voxel::Voxels &voxels);
 
-    [[nodiscard]] gfx::MeshData voxelMesh(
+    [[nodiscard]] gfx::MeshData getVoxelMesh(
         const voxel::Voxels &voxels,
         std::span<const tilemap::Tile> wovenTiles,
         Pass pass = Pass::Solid);
 
-    [[nodiscard]] gfx::MeshData voxelMesh(
+    [[nodiscard]] gfx::MeshData getVoxelMesh(
         const voxel::Voxels &voxels,
         std::span<const FaceRef> faces,
         std::span<const tilemap::Tile> wovenTiles,
@@ -106,7 +106,7 @@ namespace antwika::voxelmap
 
     inline constexpr std::size_t kMeshPieceVertices = 60000;
 
-    [[nodiscard]] gfx::Mat4 modelRotation(
+    [[nodiscard]] gfx::Mat4 getModelRotation(
         float yawRadians, float pitchRadians);
 
 }

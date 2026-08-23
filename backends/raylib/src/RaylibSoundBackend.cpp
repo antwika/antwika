@@ -18,12 +18,12 @@ namespace antwika::sound
     {
     }
 
-    std::string_view RaylibSoundBackend::name() const
+    std::string_view RaylibSoundBackend::getName() const
     {
         return "raylib";
     }
 
-    SoundCapabilities RaylibSoundBackend::capabilities() const
+    SoundCapabilities RaylibSoundBackend::getCapabilities() const
     {
         return SoundCapabilities{
             .playback = audio->isReady(), .selfDriven = false};

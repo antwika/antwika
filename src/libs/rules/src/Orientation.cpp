@@ -6,7 +6,7 @@
 namespace antwika::rules
 {
 
-    component::Orientation turnedBy(
+    component::Orientation getTurnedBy(
         const component::Orientation orientation,
         const float byYaw,
         const float byPitch)
@@ -19,11 +19,11 @@ namespace antwika::rules
                 kMaxPitch)};
     }
 
-    component::Orientation rotatedBy(
+    component::Orientation getRotatedBy(
         const component::Orientation orientation,
         const component::TurnIntent intent)
     {
-        return turnedBy(
+        return getTurnedBy(
             orientation,
             intent.axisX * kTurnRate,
             intent.axisZ * kTurnRate);

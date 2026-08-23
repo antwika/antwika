@@ -45,12 +45,12 @@ namespace antwika::input::fakes
             roundEvents.back().push_back(std::move(event));
         }
 
-        [[nodiscard]] std::string_view name() const override
+        [[nodiscard]] std::string_view getName() const override
         {
             return "fake";
         }
 
-        [[nodiscard]] InputCapabilities capabilities() const override
+        [[nodiscard]] InputCapabilities getCapabilities() const override
         {
             return deviceCapabilities;
         }

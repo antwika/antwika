@@ -16,7 +16,7 @@ namespace antwika::tilemap
             static_cast<std::size_t>(kAtlasColumns * kAtlasRows);
     }
 
-    gfx::Size atlasSize(const gfx::Size tileSize)
+    gfx::Size getAtlasSize(const gfx::Size tileSize)
     {
         const auto columns =
             static_cast<std::uint32_t>(kAtlasColumns);
@@ -29,9 +29,9 @@ namespace antwika::tilemap
             .height = rows * tileSize.height + (rows - 1) * padding};
     }
 
-    gfx::Bitmap blankAtlas(const gfx::Size tileSize)
+    gfx::Bitmap getBlankAtlas(const gfx::Size tileSize)
     {
-        const auto wholeSize = atlasSize(tileSize);
+        const auto wholeSize = getAtlasSize(tileSize);
 
         return gfx::Bitmap{
             .size = wholeSize,
@@ -41,7 +41,7 @@ namespace antwika::tilemap
                 0)};
     } // GCOVR_EXCL_LINE
 
-    gfx::RectF tilePixels(
+    gfx::RectF getTilePixels(
         const std::size_t index, const gfx::Size tileSize)
     {
         const auto tileIndex = index % kTiles;
@@ -61,11 +61,11 @@ namespace antwika::tilemap
                 static_cast<float>(tileSize.height)});
     }
 
-    gfx::RectF tileCoords(
+    gfx::RectF getTileCoords(
         const std::size_t index, const gfx::Size tileSize)
     {
-        const auto wholeSize = atlasSize(tileSize);
-        const auto tileRect = tilePixels(index, tileSize);
+        const auto wholeSize = getAtlasSize(tileSize);
+        const auto tileRect = getTilePixels(index, tileSize);
         const auto width = static_cast<float>(wholeSize.width);
         const auto height = static_cast<float>(wholeSize.height);
 

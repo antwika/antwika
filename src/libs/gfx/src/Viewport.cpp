@@ -11,7 +11,7 @@ namespace antwika::gfx
 
     namespace
     {
-        [[nodiscard]] std::int32_t scaleBy(
+        [[nodiscard]] std::int32_t getScaleBy(
             std::int32_t value,
             std::uint32_t numerator,
             std::uint32_t denominator) noexcept
@@ -31,8 +31,8 @@ namespace antwika::gfx
     Point Viewport::toWindow(Point point) const noexcept
     {
         return Point{
-            .x = offsetPoint.x + scaleBy(point.x, numerator, denominator),
-            .y = offsetPoint.y + scaleBy(point.y, numerator, denominator)};
+            .x = offsetPoint.x + getScaleBy(point.x, numerator, denominator),
+            .y = offsetPoint.y + getScaleBy(point.y, numerator, denominator)};
     }
 
     Rect Viewport::toWindow(Rect rect) const noexcept
@@ -77,8 +77,8 @@ namespace antwika::gfx
     Point Viewport::toCanvas(Point point) const noexcept
     {
         return Point{
-            .x = scaleBy(point.x - offsetPoint.x, denominator, numerator),
-            .y = scaleBy(point.y - offsetPoint.y, denominator, numerator)};
+            .x = getScaleBy(point.x - offsetPoint.x, denominator, numerator),
+            .y = getScaleBy(point.y - offsetPoint.y, denominator, numerator)};
     }
 
     std::uint32_t Viewport::toWindowScale(
@@ -96,7 +96,7 @@ namespace antwika::gfx
         return scaledValue == 0 ? 1 : scaledValue;
     }
 
-    Rect Viewport::frame(Size canvasSize) const noexcept
+    Rect Viewport::getFrame(Size canvasSize) const noexcept
     {
         return toWindow(Rect{.originPoint = Point{}, .size = canvasSize});
     }
@@ -134,7 +134,7 @@ namespace antwika::gfx
             viewport.denominator = 1;
         }
 
-        const auto usedSize = viewport.frame(canvasSize).size;
+        const auto usedSize = viewport.getFrame(canvasSize).size;
 
         viewport.offsetPoint = Point{
             .x = static_cast<std::int32_t>(

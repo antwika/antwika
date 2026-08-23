@@ -33,7 +33,7 @@ namespace antwika::app
 
     void WindowCloseSource::pollEvents()
     {
-        if (closeRequestedOn(backend, window.id()))
+        if (closeRequestedOn(backend, window.getId()))
         {
             window.close();
         }

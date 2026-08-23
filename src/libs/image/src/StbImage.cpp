@@ -8,7 +8,7 @@
 namespace antwika::image::detail
 {
 
-    DecodedImage decodeImage(
+    DecodedImage getDecodeImage(
         const unsigned char *bytes, int length, int desiredChannels)
     {
         DecodedImage decodedImage;
@@ -30,7 +30,7 @@ namespace antwika::image::detail
         stbi_image_free(pixels);
     }
 
-    const char *decodeFailureReason()
+    const char *getDecodeFailureReason()
     {
         return stbi_failure_reason();
     }

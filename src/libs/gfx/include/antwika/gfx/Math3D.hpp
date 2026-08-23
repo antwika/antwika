@@ -16,7 +16,7 @@ namespace antwika::gfx
 
     using Mat4 = glm::mat4;
 
-    [[nodiscard]] inline Mat4 identityMatrix()
+    [[nodiscard]] inline Mat4 getIdentityMatrix()
     {
         return Mat4(1.0F);
     }

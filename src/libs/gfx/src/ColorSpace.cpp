@@ -13,7 +13,7 @@ namespace antwika::gfx
     {
         constexpr float kFullByte = 255.0F;
 
-        [[nodiscard]] float wrapped(const float turns)
+        [[nodiscard]] float getWrapped(const float turns)
         {
             return turns - std::floor(turns);
         }
@@ -31,7 +31,7 @@ namespace antwika::gfx
         }
     }
 
-    std::string colorToHex(const Color color)
+    std::string getColorToHex(const Color color)
     {
         constexpr std::string_view kDigits = "0123456789abcdef";
         std::string hexText = "#";
@@ -46,7 +46,7 @@ namespace antwika::gfx
         return hexText;
     } // GCOVR_EXCL_LINE
 
-    std::optional<Color> colorFromHex(std::string_view hex)
+    std::optional<Color> getColorFromHex(std::string_view hex)
     {
         if (!hex.empty() && hex.front() == '#')
         {
@@ -94,7 +94,7 @@ namespace antwika::gfx
 
     Color colorOf(const Hsv colorHsv)
     {
-        const auto hue = wrapped(colorHsv.hue);
+        const auto hue = getWrapped(colorHsv.hue);
         const auto saturation =
             std::clamp(colorHsv.saturation, 0.0F, 1.0F);
         const auto value = std::clamp(colorHsv.value, 0.0F, 1.0F);
@@ -142,7 +142,7 @@ namespace antwika::gfx
                   : 4.0F + ((red - green) / span);
 
         return Hsv{
-            .hue = wrapped(hueTurn / 6.0F),
+            .hue = getWrapped(hueTurn / 6.0F),
             .saturation = span / most,
             .value = most};
     }

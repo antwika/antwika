@@ -43,7 +43,7 @@ namespace
 
     constexpr float kTolerance = 0.0001F;
 
-    [[nodiscard]] Voxels floorOver(
+    [[nodiscard]] Voxels getFloorOver(
         const std::int32_t reach)
     {
         Voxels voxels;
@@ -65,27 +65,27 @@ namespace
     protected:
         void stand(const float x = 0.0F, const float z = 0.0F)
         {
-            const auto entity = game.world().create();
+            const auto entity = game.getWorld().create();
 
             {
-                const OpenPhase phase(game.world());
+                const OpenPhase phase(game.getWorld());
 
                 game.setPlayer(entity);
-                game.world().add<Player>(entity, Player{});
-                game.world().add<Velocity>(entity, Velocity{});
-                game.world().add<Position>(
+                game.getWorld().add<Player>(entity, Player{});
+                game.getWorld().add<Velocity>(entity, Velocity{});
+                game.getWorld().add<Position>(
                     entity,
                     Position{
                         .x = x,
                         .y = antwika::voxel::kVoxelSide,
                         .z = z});
-                game.world().add<AnimationState>(
+                game.getWorld().add<AnimationState>(
                     entity, AnimationState{.direction = 3});
             }
         }
 
         NiceMock<MockLogger> logger;
-        Voxels solids = floorOver(6);
+        Voxels solids = getFloorOver(6);
         std::vector<std::vector<VoxelPosition>> patrolPositions;
         World world{logger};
         Game game{logger, world, solids, patrolPositions};
@@ -97,16 +97,16 @@ TEST_F(GameTest, Game_StandsAnEyeTheViewIsTurnedBy)
 {
     const auto &constGame = game;
 
-    EXPECT_TRUE(constGame.world().isAlive(game.eye()));
-    EXPECT_EQ(game.world().get<Orientation>(game.eye()).yaw, 0.0F);
+    EXPECT_TRUE(constGame.getWorld().isAlive(game.getEye()));
+    EXPECT_EQ(game.getWorld().get<Orientation>(game.getEye()).yaw, 0.0F);
 }
 
 TEST_F(GameTest, SetPlayer_NamesWhoTheGameIsPlayedAs)
 {
     stand();
 
-    EXPECT_TRUE(game.world().isAlive(game.player()));
-    EXPECT_NE(game.player(), game.eye());
+    EXPECT_TRUE(game.getWorld().isAlive(game.getPlayer()));
+    EXPECT_NE(game.getPlayer(), game.getEye());
 }
 
 TEST_F(GameTest, PlayerAt_GivesWhereThePlayerStands)
@@ -156,13 +156,13 @@ TEST_F(GameTest, SetRunning_SendsTheWalkerFurtherInOneStep)
 
 TEST_F(GameTest, Gates_StartEmptyAndAreKeptAsTheyAreSet)
 {
-    EXPECT_EQ(game.gates().keysHeld, 0U);
+    EXPECT_EQ(game.getGates().keysHeld, 0U);
 
-    game.gates().keysHeld = 2;
+    game.getGates().keysHeld = 2;
 
     const auto &constGame = game;
 
-    EXPECT_EQ(constGame.gates().keysHeld, 2U);
+    EXPECT_EQ(constGame.getGates().keysHeld, 2U);
 }
 
 TEST_F(GameTest, CameraTransform_StartsAtTheDefaultAndZoomAtTheDefaultZoom)
@@ -170,8 +170,8 @@ TEST_F(GameTest, CameraTransform_StartsAtTheDefaultAndZoomAtTheDefaultZoom)
     const auto &constGame = game;
 
     EXPECT_EQ(
-        constGame.cameraTransform().yaw,
-        antwika::camera::defaultTransform().yaw);
+        constGame.getCameraTransform().yaw,
+        antwika::camera::getDefaultTransform().yaw);
     EXPECT_EQ(game.zoom(), antwika::camera::kDefaultZoom);
 }
 
@@ -182,7 +182,7 @@ TEST_F(GameTest, AimAt_PutsThePlayedCameraOnAPlaceAtOnce)
         antwika::gfx::Vec3{4.0F, 0.0F, 5.0F});
 
     EXPECT_NEAR(game.cameraTarget().x, 4.0F, kTolerance);
-    EXPECT_NEAR(game.cameraTransform().position.x, 4.0F, kTolerance);
+    EXPECT_NEAR(game.getCameraTransform().position.x, 4.0F, kTolerance);
 }
 
 TEST_F(GameTest, Follow_ClosesOnlyAShareOfTheWayToThePlace)
@@ -203,9 +203,9 @@ TEST_F(GameTest, FollowPath_TakesUpTheStopsAndTheGoal)
         {antwika::gfx::Vec3{1.0F, 0.0F, 0.0F}},
         VoxelPosition{.x = 1, .y = 0, .z = 0});
 
-    EXPECT_EQ(game.path().size(), 1U);
-    ASSERT_TRUE(game.pathGoal().has_value());
-    EXPECT_EQ(game.pathGoal()->x, 1);
+    EXPECT_EQ(game.getPath().size(), 1U);
+    ASSERT_TRUE(game.getPathGoal().has_value());
+    EXPECT_EQ(game.getPathGoal()->x, 1);
 }
 
 TEST_F(GameTest, StepAlongPath_SendsTheWalkerAtTheStopItMakesFor)
@@ -229,8 +229,8 @@ TEST_F(GameTest, StepAlongPath_DropsThePathOnceTheLastStopIsReached)
         VoxelPosition{.x = 0, .y = 0, .z = 0});
     game.stepAlongPath(true);
 
-    EXPECT_TRUE(game.path().empty());
-    EXPECT_FALSE(game.pathGoal().has_value());
+    EXPECT_TRUE(game.getPath().empty());
+    EXPECT_FALSE(game.getPathGoal().has_value());
 }
 
 TEST_F(GameTest, StepAlongPath_LeavesThePathAloneWhileNotPlaying)
@@ -241,7 +241,7 @@ TEST_F(GameTest, StepAlongPath_LeavesThePathAloneWhileNotPlaying)
         VoxelPosition{.x = 3, .y = 0, .z = 0});
     game.stepAlongPath(false);
 
-    EXPECT_EQ(game.path().size(), 1U);
+    EXPECT_EQ(game.getPath().size(), 1U);
 }
 
 TEST_F(GameTest, StepAlongPath_LetsTheKeysWinOverThePath)
@@ -265,8 +265,8 @@ TEST_F(GameTest, ClearPath_DropsWhateverWasBeingFollowed)
         VoxelPosition{.x = 3, .y = 0, .z = 0});
     game.clearPath();
 
-    EXPECT_TRUE(game.path().empty());
-    EXPECT_FALSE(game.pathGoal().has_value());
+    EXPECT_TRUE(game.getPath().empty());
+    EXPECT_FALSE(game.getPathGoal().has_value());
 }
 
 TEST_F(GameTest, ClearSteering_LeavesTheWalkerStandingStill)
@@ -290,7 +290,7 @@ TEST_F(GameTest, SetWorldFrozen_HoldsWhatTheWorldDoesOfItsOwnAccord)
     game.setSpeaking(std::optional<std::uint32_t>{0});
     game.run(1);
 
-    EXPECT_TRUE(game.world().isAlive(game.player()));
+    EXPECT_TRUE(game.getWorld().isAlive(game.getPlayer()));
 }
 
 TEST_F(GameTest, ForgetPatrols_LeavesTheWorldStandingAsItWas)
@@ -299,14 +299,14 @@ TEST_F(GameTest, ForgetPatrols_LeavesTheWorldStandingAsItWas)
     game.forgetPatrols();
     game.run(1);
 
-    EXPECT_TRUE(game.world().isAlive(game.player()));
+    EXPECT_TRUE(game.getWorld().isAlive(game.getPlayer()));
 }
 
 TEST_F(GameTest, Progress_SaysWhichMapAndWhereThePlayerStands)
 {
     stand(1.0F, 2.0F);
 
-    const auto savedProgress = game.progress(std::string("map.json"));
+    const auto savedProgress = game.getProgress(std::string("map.json"));
 
     EXPECT_EQ(savedProgress.map, "map.json");
     EXPECT_NEAR(savedProgress.stancePlacement.position.x, 1.0F, kTolerance);

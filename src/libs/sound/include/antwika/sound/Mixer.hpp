@@ -29,7 +29,7 @@ namespace antwika::sound
 
         void stopAll() noexcept;
 
-        [[nodiscard]] std::size_t activeVoices() const noexcept;
+        [[nodiscard]] std::size_t getActiveVoices() const noexcept;
 
         void render(SampleBuffer samples, FrameIndex firstFrame) noexcept
             override;

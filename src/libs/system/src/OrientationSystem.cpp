@@ -19,11 +19,11 @@ namespace antwika::system
         {
             world.set<component::Orientation>(
                 entity,
-                rules::rotatedBy(
+                rules::getRotatedBy(
                     world.get<component::Orientation>(entity),
                     component::TurnIntent{
-                        .axisX = lookKeys->axisX(),
-                        .axisZ = lookKeys->axisZ()}));
+                        .axisX = lookKeys->getAxisX(),
+                        .axisZ = lookKeys->getAxisZ()}));
         }
     }
 

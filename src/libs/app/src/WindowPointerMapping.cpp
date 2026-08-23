@@ -15,7 +15,7 @@ namespace antwika::app
     Position WindowPointerMapping::toCanvas(Position position) const
     {
         const auto viewport =
-            antwika::gfx::viewportFor(window.size(), canvasSize);
+            antwika::gfx::viewportFor(window.getSize(), canvasSize);
 
         const auto onCanvas = viewport.toCanvas(
             antwika::gfx::Point{.x = position.x, .y = position.y});

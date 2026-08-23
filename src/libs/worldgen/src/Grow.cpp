@@ -45,7 +45,7 @@ namespace antwika::worldgen
             std::vector<std::size_t> pinnedIndexes{};
         };
 
-        [[nodiscard]] voxel::VoxelPosition inTheWorld(
+        [[nodiscard]] voxel::VoxelPosition getInTheWorld(
             const voxel::VoxelPosition originPosition,
             const voxel::VoxelPosition cubePosition)
         {
@@ -65,7 +65,7 @@ namespace antwika::worldgen
             for (const voxel::VoxelPosition cube : cubePositions)
             {
                 result.culpritPositions.push_back(
-                    inTheWorld(originPosition, cube));
+                    getInTheWorld(originPosition, cube));
             }
 
             return result;
@@ -100,7 +100,7 @@ namespace antwika::worldgen
                     for (const std::size_t which : domainValues)
                     {
                         const Socket shownSocket =
-                            growing.compiledRuleset.at(which)
+                            growing.compiledRuleset.getEntryAt(which)
                                 .sockets[static_cast<std::size_t>(face)];
 
                         if (isDemand(shownSocket))
@@ -114,11 +114,11 @@ namespace antwika::worldgen
 
         void layDistricts(GrowState &growing)
         {
-            const std::size_t count = growing.compiledRuleset.size();
+            const std::size_t count = growing.compiledRuleset.getSize();
 
             growing.waveDomains.assign(
-                cubeCount(growing.shape), wfc::Domain(count));
-            growing.settledFlags.assign(cubeCount(growing.shape), false);
+                getCubeCount(growing.shape), wfc::Domain(count));
+            growing.settledFlags.assign(getCubeCount(growing.shape), false);
 
             for (
                 std::size_t cell = 0; cell < growing.waveDomains.size(); ++cell)
@@ -149,7 +149,7 @@ namespace antwika::worldgen
                     .y = hintPosition.y - growing.originPosition.y,
                     .z = hintPosition.z - growing.originPosition.z};
 
-                if (!within(growing.shape, cubePosition))
+                if (!isWithin(growing.shape, cubePosition))
                 {
                     return troubleAt(
                         ChunkOutcome::HintOutside,
@@ -157,7 +157,7 @@ namespace antwika::worldgen
                         std::vector<voxel::VoxelPosition>{cubePosition});
                 }
 
-                const auto wantedPieces = growing.compiledRuleset.matching(
+                const auto wantedPieces = growing.compiledRuleset.getMatching(
                     material.kind, material.facing);
 
                 if (wantedPieces.empty())
@@ -192,9 +192,9 @@ namespace antwika::worldgen
             const auto depth = static_cast<std::size_t>(shape.depth);
 
             std::vector<Seam> seams;
-            seams.reserve(cubeCount(shape) * 3);
+            seams.reserve(getCubeCount(shape) * 3);
 
-            for (std::size_t cell = 0; cell < cubeCount(shape); ++cell)
+            for (std::size_t cell = 0; cell < getCubeCount(shape); ++cell)
             {
                 const auto cubePosition = cubeAt(shape, cell);
 
@@ -229,7 +229,7 @@ namespace antwika::worldgen
             return seams;
         } // GCOVR_EXCL_LINE
 
-        [[nodiscard]] bool anyPairFits(
+        [[nodiscard]] bool isAnyPairFits(
             const CompiledRuleset &compiledRuleset,
             const std::vector<wfc::Domain> &waveDomains,
             const Seam seam)
@@ -240,7 +240,7 @@ namespace antwika::worldgen
             {
                 for (const std::size_t highValue : waveDomains[seam.highIndex])
                 {
-                    if (table.compatible(lowValue, highValue))
+                    if (table.isCompatible(lowValue, highValue))
                     {
                         return true;
                     }
@@ -250,7 +250,7 @@ namespace antwika::worldgen
             return false;
         }
 
-        [[nodiscard]] std::optional<ChunkResult> weighSettledSeams(
+        [[nodiscard]] std::optional<ChunkResult> getWeighSettledSeams(
             const GrowState &growing, const std::vector<Seam> &seams)
         {
             for (const Seam seam : seams)
@@ -261,7 +261,7 @@ namespace antwika::worldgen
                     continue;
                 }
 
-                if (!anyPairFits(
+                if (!isAnyPairFits(
                         growing.compiledRuleset, growing.waveDomains, seam))
                 {
                     return troubleAt(
@@ -276,7 +276,7 @@ namespace antwika::worldgen
             return std::nullopt;
         }
 
-        [[nodiscard]] std::vector<voxel::VoxelPosition> thinnest(
+        [[nodiscard]] std::vector<voxel::VoxelPosition> getThinnest(
             const GrowState &growing)
         {
             std::vector<std::pair<std::size_t, std::size_t>> rankedPairs;
@@ -289,7 +289,7 @@ namespace antwika::worldgen
                     continue;
                 }
 
-                rankedPairs.emplace_back(growing.waveDomains[cell].count(),
+                rankedPairs.emplace_back(growing.waveDomains[cell].getCount(),
                     cell);
             }
 
@@ -304,7 +304,7 @@ namespace antwika::worldgen
                 }
 
                 namedPositions.push_back(
-                    inTheWorld(
+                    getInTheWorld(
                         growing.originPosition, cubeAt(growing.shape, cell)));
             }
 
@@ -351,16 +351,16 @@ namespace antwika::worldgen
         } // GCOVR_EXCL_LINE
     }
 
-    ChunkResult growChunk(
+    ChunkResult getGrowChunk(
         const CompiledRuleset &compiledRuleset, const ChunkRequest &request)
     {
         rng::SplitMix64Rng waysRng(request.seed);
         rng::SplitMix64Rng fillRng(request.seed ^ kFillSalt);
 
-        return growChunk(compiledRuleset, request, waysRng, fillRng);
+        return getGrowChunk(compiledRuleset, request, waysRng, fillRng);
     }
 
-    ChunkResult growChunk(
+    ChunkResult getGrowChunk(
         const CompiledRuleset &compiledRuleset,
         const ChunkRequest &request,
         rng::IRng &waysRng,
@@ -383,7 +383,7 @@ namespace antwika::worldgen
         {
             return ChunkResult{
                 .outcome = ChunkOutcome::Unsatisfiable,
-                .culpritPositions = thinnest(growing)};
+                .culpritPositions = getThinnest(growing)};
         }
 
         if (const auto troubleFailure =
@@ -394,7 +394,7 @@ namespace antwika::worldgen
 
         const auto seams = seamsOf(request.shape);
 
-        if (const auto troubleFailure = weighSettledSeams(growing, seams))
+        if (const auto troubleFailure = getWeighSettledSeams(growing, seams))
         {
             return *troubleFailure;
         }
@@ -404,7 +404,7 @@ namespace antwika::worldgen
         {
             return ChunkResult{
                 .outcome = ChunkOutcome::HintsConflict,
-                .culpritPositions = thinnest(growing)};
+                .culpritPositions = getThinnest(growing)};
         }
 
         const auto laidWays =
@@ -447,7 +447,7 @@ namespace antwika::worldgen
             wfc::SolverLimits{.maxSteps = request.maxSteps},
             std::move(wishes));
 
-        const auto solution = solver.solve();
+        const auto solution = solver.getSolve();
 
         if (solution.outcome != wfc::SolveOutcome::Solved)
         {
@@ -455,14 +455,14 @@ namespace antwika::worldgen
                 .outcome = solution.outcome == wfc::SolveOutcome::Unsatisfiable
                          ? ChunkOutcome::Unsatisfiable
                          : ChunkOutcome::LimitExceeded,
-                .culpritPositions = thinnest(growing)};
+                .culpritPositions = getThinnest(growing)};
         }
 
         ChunkResult result;
 
         for (std::size_t cell = 0; cell < solution.assignment.size(); ++cell)
         {
-            const Prototype &prototype = compiledRuleset.at(
+            const Prototype &prototype = compiledRuleset.getEntryAt(
                 solution.assignment[cell]);
 
             if (prototype.air)
@@ -470,7 +470,7 @@ namespace antwika::worldgen
                 continue;
             }
 
-            const auto cubePosition = inTheWorld(
+            const auto cubePosition = getInTheWorld(
                 request.originPosition, cubeAt(request.shape, cell));
 
             result.cubeVoxels[cubePosition] = voxel::VoxelMaterial{

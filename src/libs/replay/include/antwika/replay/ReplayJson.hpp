@@ -15,18 +15,18 @@ namespace antwika::replay
 
     using schema::MigrationChain;
 
-    [[nodiscard]] nlohmann::json replayHeaderToJson(
+    [[nodiscard]] nlohmann::json getReplayHeaderToJson(
         const ReplayHeader &header);
 
-    [[nodiscard]] ReplayHeader replayHeaderFromJson(
+    [[nodiscard]] ReplayHeader getReplayHeaderFromJson(
         const nlohmann::json &j, const MigrationChain &migrations);
 
-    [[nodiscard]] std::vector<event::TickEvent> replayRecordsFromJson(
+    [[nodiscard]] std::vector<event::TickEvent> getReplayRecordsFromJson(
         const nlohmann::json &records,
         std::uint32_t version,
         const MigrationChain &migrations);
 
-    [[nodiscard]] ReplayDocument replayFromJson(
+    [[nodiscard]] ReplayDocument getReplayFromJson(
         const nlohmann::json &j, const MigrationChain &migrations);
 
 }

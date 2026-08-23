@@ -79,7 +79,7 @@ namespace antwika::editor
         WalkEastAlt,
     };
 
-    [[nodiscard]] constexpr Action lastEnumerator(Action) noexcept
+    [[nodiscard]] constexpr Action getLastEnumerator(Action) noexcept
     {
         return Action::WalkEastAlt;
     }
@@ -87,7 +87,7 @@ namespace antwika::editor
     inline constexpr std::size_t kActionCount =
         enums::kCount<Action>;
 
-    [[nodiscard]] std::array<Action, kActionCount> allActions();
+    [[nodiscard]] std::array<Action, kActionCount> getAllActions();
 
     struct Chord final
     {
@@ -105,30 +105,30 @@ namespace antwika::editor
 
     using KeyBindings = std::map<Action, std::optional<Chord>>;
 
-    [[nodiscard]] std::string_view actionLabel(Action action);
+    [[nodiscard]] std::string_view getActionLabel(Action action);
 
-    [[nodiscard]] std::string_view actionKey(Action action);
+    [[nodiscard]] std::string_view getActionKey(Action action);
 
-    [[nodiscard]] KeyBindings defaultChords();
+    [[nodiscard]] KeyBindings getDefaultChords();
 
-    [[nodiscard]] std::string heldAction(Action action);
+    [[nodiscard]] std::string getHeldAction(Action action);
 
-    [[nodiscard]] std::string shiftedAction(Action action);
+    [[nodiscard]] std::string getShiftedAction(Action action);
 
     [[nodiscard]] input::ActionMap actionMapFrom(
         const KeyBindings &keyBindings);
 
-    [[nodiscard]] std::string_view keyName(input::Key key);
+    [[nodiscard]] std::string_view getKeyName(input::Key key);
 
-    [[nodiscard]] std::string chordName(
+    [[nodiscard]] std::string getChordName(
         const std::optional<Chord> &chord);
 
     void saveChords(
         const KeyBindings &keyBindings, const std::string &path);
 
-    [[nodiscard]] KeyBindings loadChords(const std::string &path);
+    [[nodiscard]] KeyBindings getLoadChords(const std::string &path);
 
-    [[nodiscard]] widget::WidgetId keyRowWidget(std::size_t rowIndex);
+    [[nodiscard]] widget::WidgetId getKeyRowWidget(std::size_t rowIndex);
 
     inline constexpr widget::WidgetId kKeysDoneWidget{380};
 

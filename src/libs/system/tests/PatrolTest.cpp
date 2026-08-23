@@ -39,7 +39,7 @@ namespace
 
     constexpr float kTolerance = 1e-4F;
 
-    [[nodiscard]] Voxels floorOver(
+    [[nodiscard]] Voxels getFloorOver(
         const std::int32_t reach)
     {
         Voxels voxels;
@@ -68,20 +68,20 @@ namespace
 
         void begin(const Position stoodPosition)
         {
-            const OpenPhase phase(gameLoop.world());
+            const OpenPhase phase(gameLoop.getWorld());
 
             gameLoop.addSystem(Phase::Sending, system);
-            entity = gameLoop.world().create();
-            gameLoop.world().add<Position>(entity, stoodPosition);
-            gameLoop.world().add<Velocity>(entity, Velocity{});
-            gameLoop.world().add<Patrol>(entity, Patrol{});
-            gameLoop.world().add<RosterIndex>(
+            entity = gameLoop.getWorld().create();
+            gameLoop.getWorld().add<Position>(entity, stoodPosition);
+            gameLoop.getWorld().add<Velocity>(entity, Velocity{});
+            gameLoop.getWorld().add<Patrol>(entity, Patrol{});
+            gameLoop.getWorld().add<RosterIndex>(
                 entity, RosterIndex{.index = 0});
         }
 
-        [[nodiscard]] Velocity sent() const
+        [[nodiscard]] Velocity getSent() const
         {
-            return gameLoop.world().get<Velocity>(entity);
+            return gameLoop.getWorld().get<Velocity>(entity);
         }
     };
 
@@ -97,39 +97,39 @@ TEST(PatrolTest, Update_LeavesACharacterWithNoStopsStandingStill)
 {
     PatrolHarness harness;
 
-    harness.solidVoxels = floorOver(2);
+    harness.solidVoxels = getFloorOver(2);
     harness.stopPositions = {{}};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
 
-    EXPECT_NEAR(harness.sent().velocityX, 0.0F, kTolerance);
-    EXPECT_NEAR(harness.sent().velocityZ, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSent().velocityX, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSent().velocityZ, 0.0F, kTolerance);
 }
 
 TEST(PatrolTest, Update_SendsACharacterTowardItsFirstStop)
 {
     PatrolHarness harness;
 
-    harness.solidVoxels = floorOver(3);
+    harness.solidVoxels = getFloorOver(3);
     harness.stopPositions = {{groundAt(3, 0)}};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
 
-    EXPECT_NEAR(harness.sent().velocityX, 1.0F, kTolerance);
-    EXPECT_NEAR(harness.sent().velocityZ, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSent().velocityX, 1.0F, kTolerance);
+    EXPECT_NEAR(harness.getSent().velocityZ, 0.0F, kTolerance);
 }
 
 TEST(PatrolTest, Update_StrollsAtHalfAWalkersPace)
 {
     PatrolHarness harness;
 
-    harness.solidVoxels = floorOver(3);
+    harness.solidVoxels = getFloorOver(3);
     harness.stopPositions = {{groundAt(3, 0)}};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
 
     EXPECT_NEAR(
-        harness.sent().speedMultiplier,
+        harness.getSent().speedMultiplier,
         kStrollSpeedFactor,
         kTolerance);
 }
@@ -138,20 +138,20 @@ TEST(PatrolTest, Update_TurnsForTheNextStopOnceItArrives)
 {
     PatrolHarness harness;
 
-    harness.solidVoxels = floorOver(3);
+    harness.solidVoxels = getFloorOver(3);
     harness.stopPositions = {{groundAt(1, 0), groundAt(-1, 0)}};
     harness.begin(Position{.x = 1.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
     harness.gameLoop.run(1);
 
-    EXPECT_LT(harness.sent().velocityX, 0.0F);
+    EXPECT_LT(harness.getSent().velocityX, 0.0F);
 }
 
 TEST(PatrolTest, Update_WrapsBackToTheFirstStopAfterTheLast)
 {
     PatrolHarness harness;
 
-    harness.solidVoxels = floorOver(3);
+    harness.solidVoxels = getFloorOver(3);
     harness.stopPositions = {{groundAt(1, 0), groundAt(-1, 0)}};
     harness.begin(Position{.x = 1.0F, .y = 0.5F, .z = 0.0F});
 
@@ -161,7 +161,7 @@ TEST(PatrolTest, Update_WrapsBackToTheFirstStopAfterTheLast)
     }
 
     EXPECT_EQ(
-        harness.gameLoop.world()
+        harness.gameLoop.getWorld()
             .get<Patrol>(harness.entity)
             .nextStopIndex,
         0U);
@@ -171,19 +171,19 @@ TEST(PatrolTest, Update_ReplansOnceItsRouteRunsOut)
 {
     PatrolHarness harness;
 
-    harness.solidVoxels = floorOver(3);
+    harness.solidVoxels = getFloorOver(3);
     harness.stopPositions = {{groundAt(1, 0)}};
     harness.begin(Position{.x = 1.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
 
-    const auto first = harness.gameLoop.world()
+    const auto first = harness.gameLoop.getWorld()
                            .get<Patrol>(harness.entity)
                            .nextStopIndex;
 
     harness.gameLoop.run(1);
 
     EXPECT_EQ(
-        harness.gameLoop.world()
+        harness.gameLoop.getWorld()
             .get<Patrol>(harness.entity)
             .nextStopIndex,
         first);
@@ -193,61 +193,61 @@ TEST(PatrolTest, Update_LeavesACharacterStoodWhereItStandsOnNothing)
 {
     PatrolHarness harness;
 
-    harness.solidVoxels = floorOver(1);
+    harness.solidVoxels = getFloorOver(1);
     harness.stopPositions = {{groundAt(0, 0)}};
     harness.begin(Position{.x = 40.0F, .y = 0.5F, .z = 40.0F});
     harness.gameLoop.run(0);
 
-    EXPECT_NEAR(harness.sent().velocityX, 0.0F, kTolerance);
-    EXPECT_NEAR(harness.sent().velocityZ, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSent().velocityX, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSent().velocityZ, 0.0F, kTolerance);
 }
 
 TEST(PatrolTest, Update_LeavesACharacterStoodWhereItsStopStandsOnNothing)
 {
     PatrolHarness harness;
 
-    harness.solidVoxels = floorOver(1);
+    harness.solidVoxels = getFloorOver(1);
     harness.stopPositions = {{groundAt(40, 40)}};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
 
-    EXPECT_NEAR(harness.sent().velocityX, 0.0F, kTolerance);
-    EXPECT_NEAR(harness.sent().velocityZ, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSent().velocityX, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSent().velocityZ, 0.0F, kTolerance);
 }
 
 TEST(PatrolTest, Update_LeavesACharacterStoodWhereNoWalkReachesItsStop)
 {
     PatrolHarness harness;
 
-    harness.solidVoxels = floorOver(1);
+    harness.solidVoxels = getFloorOver(1);
     harness.solidVoxels.merge(voxelsOf({VoxelCell{.position = {.x = 8, .y = 0,
         .z = 8}}}));
     harness.stopPositions = {{groundAt(8, 8)}};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
 
-    EXPECT_NEAR(harness.sent().velocityX, 0.0F, kTolerance);
-    EXPECT_NEAR(harness.sent().velocityZ, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSent().velocityX, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSent().velocityZ, 0.0F, kTolerance);
 }
 
 TEST(PatrolTest, Update_HoldsACharacterStillWhileItSpeaks)
 {
     PatrolHarness harness;
 
-    harness.solidVoxels = floorOver(3);
+    harness.solidVoxels = getFloorOver(3);
     harness.stopPositions = {{groundAt(3, 0)}};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.system.setSpeaking(0U);
     harness.gameLoop.run(0);
 
-    EXPECT_NEAR(harness.sent().velocityX, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSent().velocityX, 0.0F, kTolerance);
 }
 
 TEST(PatrolTest, Update_LetsACharacterStrollAgainOnceItIsDone)
 {
     PatrolHarness harness;
 
-    harness.solidVoxels = floorOver(3);
+    harness.solidVoxels = getFloorOver(3);
     harness.stopPositions = {{groundAt(3, 0)}};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.system.setSpeaking(0U);
@@ -255,52 +255,52 @@ TEST(PatrolTest, Update_LetsACharacterStrollAgainOnceItIsDone)
     harness.system.setSpeaking(std::nullopt);
     harness.gameLoop.run(1);
 
-    EXPECT_NEAR(harness.sent().velocityX, 1.0F, kTolerance);
+    EXPECT_NEAR(harness.getSent().velocityX, 1.0F, kTolerance);
 }
 
 TEST(PatrolTest, Update_HoldsEveryCharacterStillWhileFrozen)
 {
     PatrolHarness harness;
 
-    harness.solidVoxels = floorOver(3);
+    harness.solidVoxels = getFloorOver(3);
     harness.stopPositions = {{groundAt(3, 0)}};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.system.setFrozen(true);
     harness.gameLoop.run(0);
 
-    EXPECT_NEAR(harness.sent().velocityX, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSent().velocityX, 0.0F, kTolerance);
 }
 
 TEST(PatrolTest, Update_LeavesACharacterWithNoRosterEntryStandingStill)
 {
     PatrolHarness harness;
 
-    harness.solidVoxels = floorOver(3);
+    harness.solidVoxels = getFloorOver(3);
     harness.stopPositions = {};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
 
-    EXPECT_NEAR(harness.sent().velocityX, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSent().velocityX, 0.0F, kTolerance);
 }
 
 TEST(PatrolTest, Forget_LetsGoOfTheRoutesItPlanned)
 {
     PatrolHarness harness;
 
-    harness.solidVoxels = floorOver(3);
+    harness.solidVoxels = getFloorOver(3);
     harness.stopPositions = {{groundAt(3, 0)}};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
     harness.system.forget();
     harness.gameLoop.run(1);
 
-    EXPECT_NEAR(harness.sent().velocityX, 1.0F, kTolerance);
+    EXPECT_NEAR(harness.getSent().velocityX, 1.0F, kTolerance);
 }
 
 TEST(PatrolTest, Update_StrollsEveryCharacterOfTheRoster)
 {
     NiceMock<MockLogger> logger;
-    Voxels solidVoxels = floorOver(3);
+    Voxels solidVoxels = getFloorOver(3);
     std::vector<std::vector<VoxelPosition>> stopPositions{
         {groundAt(3, 0)}, {groundAt(-3, 0)}};
     World world(logger);
@@ -312,17 +312,17 @@ TEST(PatrolTest, Update_StrollsEveryCharacterOfTheRoster)
     std::vector<Entity> folkEntities;
 
     {
-        const OpenPhase phase(gameLoop.world());
+        const OpenPhase phase(gameLoop.getWorld());
 
         for (std::uint32_t index = 0; index < 2U; ++index)
         {
-            const auto entity = gameLoop.world().create();
+            const auto entity = gameLoop.getWorld().create();
 
-            gameLoop.world().add<Position>(
+            gameLoop.getWorld().add<Position>(
                 entity, Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
-            gameLoop.world().add<Velocity>(entity, Velocity{});
-            gameLoop.world().add<Patrol>(entity, Patrol{});
-            gameLoop.world().add<RosterIndex>(
+            gameLoop.getWorld().add<Velocity>(entity, Velocity{});
+            gameLoop.getWorld().add<Patrol>(entity, Patrol{});
+            gameLoop.getWorld().add<RosterIndex>(
                 entity, RosterIndex{.index = index});
             folkEntities.push_back(entity);
         }
@@ -331,11 +331,11 @@ TEST(PatrolTest, Update_StrollsEveryCharacterOfTheRoster)
     gameLoop.run(0);
 
     EXPECT_NEAR(
-        gameLoop.world().get<Velocity>(folkEntities.at(0)).velocityX,
+        gameLoop.getWorld().get<Velocity>(folkEntities.at(0)).velocityX,
         1.0F,
         kTolerance);
     EXPECT_NEAR(
-        gameLoop.world().get<Velocity>(folkEntities.at(1)).velocityX,
+        gameLoop.getWorld().get<Velocity>(folkEntities.at(1)).velocityX,
         -1.0F,
         kTolerance);
 }

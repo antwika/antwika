@@ -18,7 +18,7 @@
 namespace antwika::app
 {
 
-    [[nodiscard]] std::vector<std::string> formatPacingReport(
+    [[nodiscard]] std::vector<std::string> getFormatPacingReport(
         const FramePacingReport &report);
 
     class FramePacingStats final : public IFramePacingSink

@@ -14,7 +14,7 @@
 namespace
 {
 
-    [[nodiscard]] antwika::map::View viewAfter(const antwika::map::View view)
+    [[nodiscard]] antwika::map::View getViewAfter(const antwika::map::View view)
     {
         switch (view)
         {
@@ -33,9 +33,9 @@ namespace
         return antwika::map::View::World;
     }
 
-    [[nodiscard]] antwika::map::View viewBefore(const antwika::map::View view)
+    [[nodiscard]] antwika::map::View getViewBefore(const antwika::map::View view)
     {
-        return viewAfter(viewAfter(viewAfter(viewAfter(view))));
+        return getViewAfter(getViewAfter(getViewAfter(getViewAfter(view))));
     }
 
 }
@@ -186,7 +186,7 @@ namespace antwika::editor
             {
                 window->setFullscreen(
                     !window->isFullscreen());
-                viewportRenderer.resize(window->size());
+                viewportRenderer.resize(window->getSize());
             }
 
             if (fresh(Action::Respawn))
@@ -219,7 +219,7 @@ namespace antwika::editor
             return;
         }
 
-        if (handleBindingsKey(pressedKey))
+        if (consumeBindingsKey(pressedKey))
         {
             return;
         }
@@ -368,7 +368,7 @@ namespace antwika::editor
                     characterView.mark.floatingPatchBuffer.has_value()
                           ? *characterView.mark.floatingPatchBuffer
                           : character::copiedFrom(
-                                characterView.sheet(),
+                                characterView.getSheet(),
                                 way,
                                 frame,
                                 *characterView.mark.selection);
@@ -380,7 +380,7 @@ namespace antwika::editor
                     characterView.mark.floatingPatchBuffer.has_value()
                           ? *characterView.mark.floatingPatchBuffer
                           : character::cutFrom(
-                                characterView.sheet(),
+                                characterView.getSheet(),
                                 way,
                                 frame,
                                 *characterView.mark.selection);
@@ -394,10 +394,10 @@ namespace antwika::editor
                 commitFloatingPatch();
                 pushUndo();
                 character::pasteInto(
-                    characterView.sheet(),
+                    characterView.getSheet(),
                     way,
                     frame,
-                    character::selectionOrigin(*characterView.mark.selection),
+                    character::getSelectionOrigin(*characterView.mark.selection),
                     characterView.mark.clipboardBuffer);
                 characterView.touch();
             }
@@ -412,7 +412,7 @@ namespace antwika::editor
                 {
                     pushUndo();
                     (void)character::cutFrom(
-                        characterView.sheet(),
+                        characterView.getSheet(),
                         way,
                         frame,
                         *characterView.mark.selection);
@@ -453,12 +453,12 @@ namespace antwika::editor
             const auto faces =
                 voxelmap::visibleFacesOf(visibleCells());
             const auto solvedTiles =
-                solver::solveTiles(faces, document.map.rules, cornerJoining);
+                solver::getSolveTiles(faces, document.map.rules, cornerJoining);
 
             rebuildWorld();
             logger.log(
                 antwika::log::Level::Info,
-                solver::weaveErrorMessage(
+                solver::getWeaveErrorMessage(
                     faces, document.map.rules, solvedTiles, cornerJoining));
         }
 
@@ -474,12 +474,12 @@ namespace antwika::editor
 
         if (matchesChord(Action::ViewNext, pressedKey.key))
         {
-            nextView = viewAfter(activeView);
+            nextView = getViewAfter(activeView);
         }
 
         if (matchesChord(Action::ViewBack, pressedKey.key))
         {
-            nextView = viewBefore(activeView);
+            nextView = getViewBefore(activeView);
         }
 
         setView(nextView);
@@ -537,7 +537,7 @@ namespace antwika::editor
         {
             window->setFullscreen(
                 !window->isFullscreen());
-            viewportRenderer.resize(window->size());
+            viewportRenderer.resize(window->getSize());
         }
 
         applyWalkKey(pressedKey.key, true);

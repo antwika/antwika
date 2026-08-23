@@ -25,13 +25,13 @@ namespace antwika::editor
 
         constexpr float kDrawnScale = 6.0F;
 
-                [[nodiscard]] float cellWide()
+                [[nodiscard]] float getCellWide()
         {
             return static_cast<float>(character::kCharacterCellSize.width)
                    * kSheetScale;
         }
 
-        [[nodiscard]] float cellTall()
+        [[nodiscard]] float getCellTall()
         {
             return static_cast<float>(character::kCharacterCellSize.height)
                    * kSheetScale;
@@ -41,10 +41,10 @@ namespace antwika::editor
 
         constexpr float kBankGap = 8.0F;
 
-        [[nodiscard]] float bankWide()
+        [[nodiscard]] float getBankWide()
         {
             return (static_cast<float>(character::kCharacterFrames)
-                    * (cellWide() + kCellGap))
+                    * (getCellWide() + kCellGap))
                    - kCellGap;
         }
 
@@ -66,13 +66,13 @@ namespace antwika::editor
         }
     }
 
-    gfx::RectF characterPlace(
+    gfx::RectF getCharacterPlace(
         const gfx::Size canvasSize,
         const std::size_t direction,
         const std::size_t frame)
     {
         const auto height =
-            ((cellTall() + kCellGap)
+            ((getCellTall() + kCellGap)
              * static_cast<float>(kBankWays))
             - kCellGap;
         const auto top =
@@ -83,13 +83,13 @@ namespace antwika::editor
             gfx::PointF{
                 kSheetLeft
                     + (static_cast<float>(bank)
-                       * (bankWide() + kBankGap))
+                       * (getBankWide() + kBankGap))
                     + (static_cast<float>(frame)
-                       * (cellWide() + kCellGap)),
+                       * (getCellWide() + kCellGap)),
                 top
                     + (static_cast<float>(direction % kBankWays)
-                       * (cellTall() + kCellGap))},
-            gfx::SizeF{cellWide(), cellTall()});
+                       * (getCellTall() + kCellGap))},
+            gfx::SizeF{getCellWide(), getCellTall()});
     }
 
     std::optional<std::size_t> characterAt(
@@ -103,7 +103,7 @@ namespace antwika::editor
                  ++frame)
             {
                 const auto where =
-                    characterPlace(canvasSize, direction, frame);
+                    getCharacterPlace(canvasSize, direction, frame);
 
                 if (point.x >= where.originPoint.x
                     && point.y >= where.originPoint.y
@@ -120,7 +120,7 @@ namespace antwika::editor
         return std::nullopt;
     }
 
-    gfx::RectF characterCanvasRect(const gfx::Size canvasSize)
+    gfx::RectF getCharacterCanvasRect(const gfx::Size canvasSize)
     {
         return drawnAt(canvasSize);
     }

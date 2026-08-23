@@ -68,7 +68,7 @@ namespace
     TEST(ColorSpaceTest, ColorToHex_WritesAHashAndSixDigits)
     {
         EXPECT_EQ(
-            antwika::gfx::colorToHex(
+            antwika::gfx::getColorToHex(
                 Color{.red = 214, .green = 96, .blue = 84}),
             "#d66054");
     }
@@ -77,7 +77,7 @@ namespace
     {
         const Color color{.red = 20, .green = 168, .blue = 224};
         const auto parsedColor =
-            antwika::gfx::colorFromHex(antwika::gfx::colorToHex(color));
+            antwika::gfx::getColorFromHex(antwika::gfx::getColorToHex(color));
 
         ASSERT_TRUE(parsedColor.has_value());
         EXPECT_EQ(*parsedColor, color);
@@ -85,7 +85,7 @@ namespace
 
     TEST(ColorSpaceTest, ColorFromHex_TakesEitherCaseAndNoHash)
     {
-        const auto parsedColor = antwika::gfx::colorFromHex("14A8E0");
+        const auto parsedColor = antwika::gfx::getColorFromHex("14A8E0");
 
         ASSERT_TRUE(parsedColor.has_value());
         EXPECT_EQ(
@@ -94,10 +94,10 @@ namespace
 
     TEST(ColorSpaceTest, ColorFromHex_ReadsNothingFromWhatIsNoColor)
     {
-        EXPECT_FALSE(antwika::gfx::colorFromHex("").has_value());
-        EXPECT_FALSE(antwika::gfx::colorFromHex("#12345").has_value());
+        EXPECT_FALSE(antwika::gfx::getColorFromHex("").has_value());
+        EXPECT_FALSE(antwika::gfx::getColorFromHex("#12345").has_value());
         EXPECT_FALSE(
-            antwika::gfx::colorFromHex("#12345g").has_value());
+            antwika::gfx::getColorFromHex("#12345g").has_value());
     }
 
 }

@@ -8,7 +8,7 @@
 namespace antwika::app
 {
 
-    [[nodiscard]] antwika::sound::Waveform readWavFile(
+    [[nodiscard]] antwika::sound::Waveform getReadWavFile(
         const std::string &path, std::string_view name);
 
 }

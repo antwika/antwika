@@ -31,7 +31,7 @@ namespace antwika::gfx::raylib
         }
     }
 
-    Size RaylibTexture::size() const
+    Size RaylibTexture::getSize() const
     {
         return textureSize;
     }
@@ -42,7 +42,7 @@ namespace antwika::gfx::raylib
         return owner == &candidateRenderer;
     }
 
-    const ::Texture2D &RaylibTexture::raw() const noexcept
+    const ::Texture2D &RaylibTexture::getRawHandle() const noexcept
     {
         return texture;
     }

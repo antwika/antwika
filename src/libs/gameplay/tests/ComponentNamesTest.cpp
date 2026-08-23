@@ -23,8 +23,8 @@
 
 using antwika::ecs::OpenPhase;
 using antwika::gameplay::addComponentsNamed;
-using antwika::gameplay::componentNamed;
-using antwika::gameplay::componentNames;
+using antwika::gameplay::isComponentNamed;
+using antwika::gameplay::getComponentNames;
 using antwika::gameplay::SpawnContext;
 using antwika::ecs::World;
 using antwika::log::mocks::MockLogger;
@@ -34,11 +34,11 @@ using ::testing::NiceMock;
 namespace
 {
 
-    [[nodiscard]] std::vector<std::string> everyName()
+    [[nodiscard]] std::vector<std::string> getEveryName()
     {
         std::vector<std::string> names;
 
-        for (const auto name : componentNames())
+        for (const auto name : getComponentNames())
         {
             names.emplace_back(name);
         }
@@ -58,20 +58,20 @@ namespace
 
     TEST(ComponentNamesTest, ComponentNames_NamesTheComponentsItKnows)
     {
-        const auto names = componentNames();
+        const auto names = getComponentNames();
 
         EXPECT_FALSE(names.empty());
 
         for (const auto name : names)
         {
-            EXPECT_TRUE(componentNamed(name)) << name;
+            EXPECT_TRUE(isComponentNamed(name)) << name;
         }
     }
 
     TEST(ComponentNamesTest, ComponentNamed_TurnsDownAnUnknownName)
     {
-        EXPECT_FALSE(componentNamed("component::Nothing"));
-        EXPECT_FALSE(componentNamed(""));
+        EXPECT_FALSE(isComponentNamed("component::Nothing"));
+        EXPECT_FALSE(isComponentNamed(""));
     }
 
     TEST(ComponentNamesTest, AddComponentsNamed_AddsEveryNameItKnows)
@@ -84,7 +84,7 @@ namespace
             const OpenPhase phase(world);
 
             addComponentsNamed(
-                world, entity, spawnContextOf(), everyName());
+                world, entity, spawnContextOf(), getEveryName());
         }
 
         EXPECT_TRUE(world.has<antwika::component::Position>(entity));

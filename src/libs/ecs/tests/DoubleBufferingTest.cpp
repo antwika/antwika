@@ -28,7 +28,7 @@ TEST(DoubleBufferingTest, Write_IsInvisibleToReadUntilCommit)
 
     storage.write(entity, Health{0});
 
-    EXPECT_EQ(storage.read(entity), (Health{10}));
+    EXPECT_EQ(storage.getContents(entity), (Health{10}));
 }
 
 TEST(DoubleBufferingTest, Commit_MakesAWriteVisible)
@@ -40,7 +40,7 @@ TEST(DoubleBufferingTest, Commit_MakesAWriteVisible)
     storage.write(entity, Health{0});
     storage.commit();
 
-    EXPECT_EQ(storage.read(entity), (Health{0}));
+    EXPECT_EQ(storage.getContents(entity), (Health{0}));
 }
 
 TEST(DoubleBufferingTest, Commit_TakesTheLastWriteByCallOrder)
@@ -53,7 +53,7 @@ TEST(DoubleBufferingTest, Commit_TakesTheLastWriteByCallOrder)
     storage.write(entity, Health{2});
     storage.commit();
 
-    EXPECT_EQ(storage.read(entity), (Health{2}));
+    EXPECT_EQ(storage.getContents(entity), (Health{2}));
 }
 
 TEST(DoubleBufferingTest, Commit_LeavesAnUntouchedEntityUnchanged)
@@ -67,7 +67,7 @@ TEST(DoubleBufferingTest, Commit_LeavesAnUntouchedEntityUnchanged)
     storage.write(touchedEntity, Health{99});
     storage.commit();
 
-    EXPECT_EQ(storage.read(untouchedEntity), (Health{20}));
+    EXPECT_EQ(storage.getContents(untouchedEntity), (Health{20}));
 }
 
 TEST(DoubleBufferingTest, Commit_KeepsTheComponentsAnEarlierRemovalShiftedDown)
@@ -80,8 +80,8 @@ TEST(DoubleBufferingTest, Commit_KeepsTheComponentsAnEarlierRemovalShiftedDown)
     storage.removeAll(std::vector<Entity>{Entity{2}});
     storage.commit();
 
-    EXPECT_EQ(storage.read(Entity{1}), (Health{10}));
-    EXPECT_EQ(storage.read(Entity{3}), (Health{30}));
+    EXPECT_EQ(storage.getContents(Entity{1}), (Health{10}));
+    EXPECT_EQ(storage.getContents(Entity{3}), (Health{30}));
 }
 
 TEST(DoubleBufferingTest, Commit_ReseedsTheBackFromTheFront)
@@ -94,7 +94,7 @@ TEST(DoubleBufferingTest, Commit_ReseedsTheBackFromTheFront)
 
     storage.commit();
 
-    EXPECT_EQ(storage.read(entity), (Health{1}));
+    EXPECT_EQ(storage.getContents(entity), (Health{1}));
 }
 
 TEST(DoubleBufferingTest, RemoveAll_KeepsAPendingWriteOnASurvivor)
@@ -111,8 +111,8 @@ TEST(DoubleBufferingTest, RemoveAll_KeepsAPendingWriteOnASurvivor)
     storage.removeAll(batchEntities);
     storage.commit();
 
-    EXPECT_EQ(storage.read(Entity{4}), (Health{99}));
-    EXPECT_EQ(storage.read(Entity{3}), (Health{77}));
+    EXPECT_EQ(storage.getContents(Entity{4}), (Health{99}));
+    EXPECT_EQ(storage.getContents(Entity{3}), (Health{77}));
 }
 
 TEST(DoubleBufferingTest, RemoveAll_DropsAPendingWriteOnARemovedEntity)
@@ -128,8 +128,8 @@ TEST(DoubleBufferingTest, RemoveAll_DropsAPendingWriteOnARemovedEntity)
     storage.commit();
 
     EXPECT_FALSE(storage.contains(Entity{1}));
-    EXPECT_EQ(storage.read(Entity{2}), (Health{20}));
-    EXPECT_EQ(storage.read(Entity{3}), (Health{30}));
+    EXPECT_EQ(storage.getContents(Entity{2}), (Health{20}));
+    EXPECT_EQ(storage.getContents(Entity{3}), (Health{30}));
 }
 
 TEST(DoubleBufferingTest, RemoveAll_KeepsAPendingWriteWhenNothingMatches)
@@ -143,8 +143,8 @@ TEST(DoubleBufferingTest, RemoveAll_KeepsAPendingWriteWhenNothingMatches)
     storage.commit();
     storage.commit();
 
-    EXPECT_EQ(storage.read(Entity{1}), (Health{99}));
-    EXPECT_EQ(storage.read(Entity{2}), (Health{20}));
+    EXPECT_EQ(storage.getContents(Entity{1}), (Health{99}));
+    EXPECT_EQ(storage.getContents(Entity{2}), (Health{20}));
 }
 
 TEST(DoubleBufferingTest, RemoveAll_LeavesAnUnwrittenSurvivorUntouched)
@@ -159,8 +159,8 @@ TEST(DoubleBufferingTest, RemoveAll_LeavesAnUnwrittenSurvivorUntouched)
     storage.commit();
     storage.commit();
 
-    EXPECT_EQ(storage.read(Entity{1}), (Health{10}));
-    EXPECT_EQ(storage.read(Entity{3}), (Health{30}));
+    EXPECT_EQ(storage.getContents(Entity{1}), (Health{10}));
+    EXPECT_EQ(storage.getContents(Entity{3}), (Health{30}));
 }
 
 TEST(DoubleBufferingTest, Write_AfterACommitIsStillTracked)
@@ -173,5 +173,5 @@ TEST(DoubleBufferingTest, Write_AfterACommitIsStillTracked)
     storage.write(Entity{1}, Health{2});
     storage.commit();
 
-    EXPECT_EQ(storage.read(Entity{1}), (Health{2}));
+    EXPECT_EQ(storage.getContents(Entity{1}), (Health{2}));
 }

@@ -125,7 +125,7 @@ namespace antwika::input
 
                 for (const auto &entry : kKeyNames)
                 {
-                    if (keyIndex(entry.key) == index)
+                    if (getKeyIndex(entry.key) == index)
                     {
                         ++rows;
                     }
@@ -177,10 +177,10 @@ namespace antwika::input
         }
 
         throw InputError(
-            "input: no name for key " + std::to_string(keyIndex(key)));
+            "input: no name for key " + std::to_string(getKeyIndex(key)));
     }
 
-    Key keyFromString(std::string_view name)
+    Key getKeyFromString(std::string_view name)
     {
         for (const auto &entry : kKeyNames)
         {

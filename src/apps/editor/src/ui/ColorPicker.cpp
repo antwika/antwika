@@ -13,7 +13,7 @@ namespace antwika::editor
 
     namespace
     {
-        [[nodiscard]] float wrapped(const float turns)
+        [[nodiscard]] float getWrapped(const float turns)
         {
             return turns - std::floor(turns);
         }
@@ -27,7 +27,7 @@ namespace antwika::editor
         }
     }
 
-    gfx::RectF pickerPlace(const gfx::Size canvasSize)
+    gfx::RectF getPickerPlace(const gfx::Size canvasSize)
     {
         const auto width = (2.0F * kPickerPad) + kFieldSide
                           + kPickerGap + kHueStripWidth;
@@ -41,9 +41,9 @@ namespace antwika::editor
                 width, (2.0F * kPickerPad) + kFieldSide});
     }
 
-    gfx::RectF fieldPlace(const gfx::Size canvasSize)
+    gfx::RectF getFieldPlace(const gfx::Size canvasSize)
     {
-        const auto panel = pickerPlace(canvasSize);
+        const auto panel = getPickerPlace(canvasSize);
 
         return gfx::RectF(
             gfx::PointF{
@@ -52,9 +52,9 @@ namespace antwika::editor
             gfx::SizeF{kFieldSide, kFieldSide});
     }
 
-    gfx::RectF huePlace(const gfx::Size canvasSize)
+    gfx::RectF getHuePlace(const gfx::Size canvasSize)
     {
-        const auto field = fieldPlace(canvasSize);
+        const auto field = getFieldPlace(canvasSize);
 
         return gfx::RectF(
             gfx::PointF{
@@ -63,18 +63,18 @@ namespace antwika::editor
             gfx::SizeF{kHueStripWidth, kFieldSide});
     }
 
-    bool onPicker(
+    bool isOnPicker(
         const gfx::Size canvasSize, const gfx::PointF point)
     {
-        return holds(pickerPlace(canvasSize), point);
+        return holds(getPickerPlace(canvasSize), point);
     }
 
-    std::optional<Hsv> colorAtPoint(
+    std::optional<Hsv> getColorAtPoint(
         const gfx::Size canvasSize,
         const Hsv currentHsv,
         const gfx::PointF point)
     {
-        const auto field = fieldPlace(canvasSize);
+        const auto field = getFieldPlace(canvasSize);
 
         if (holds(field, point))
         {
@@ -88,7 +88,7 @@ namespace antwika::editor
                         point.y, field.originPoint.y, field.size.height)};
         }
 
-        const auto strip = huePlace(canvasSize);
+        const auto strip = getHuePlace(canvasSize);
 
         if (holds(strip, point))
         {
@@ -102,10 +102,10 @@ namespace antwika::editor
         return std::nullopt;
     }
 
-    gfx::PointF fieldCursorPos(
+    gfx::PointF getFieldCursorPos(
         const gfx::Size canvasSize, const Hsv colorHsv)
     {
-        const auto field = fieldPlace(canvasSize);
+        const auto field = getFieldPlace(canvasSize);
 
         return gfx::PointF{
             field.originPoint.x
@@ -116,20 +116,20 @@ namespace antwika::editor
                    * field.size.height)};
     }
 
-    float hueCursorPos(const gfx::Size canvasSize, const Hsv colorHsv)
+    float getHueCursorPos(const gfx::Size canvasSize, const Hsv colorHsv)
     {
-        const auto strip = huePlace(canvasSize);
+        const auto strip = getHuePlace(canvasSize);
 
         return strip.originPoint.y
-               + (wrapped(colorHsv.hue) * strip.size.height);
+               + (getWrapped(colorHsv.hue) * strip.size.height);
     }
 
-    gfx::RectF bandPlace(
+    gfx::RectF getBandPlace(
         const gfx::Size canvasSize,
         const std::size_t column,
         const std::size_t row)
     {
-        const auto field = fieldPlace(canvasSize);
+        const auto field = getFieldPlace(canvasSize);
         const auto side =
             field.size.width / static_cast<float>(kPickerBands);
 
@@ -140,7 +140,7 @@ namespace antwika::editor
             gfx::SizeF{side, side});
     }
 
-    Hsv bandHsv(
+    Hsv getBandHsv(
         const Hsv colorHsv,
         const std::size_t column,
         const std::size_t row)
@@ -153,10 +153,10 @@ namespace antwika::editor
             .value = 1.0F - (static_cast<float>(row) / steps)};
     }
 
-    gfx::RectF hueBandPlace(
+    gfx::RectF getHueBandPlace(
         const gfx::Size canvasSize, const std::size_t bandIndex)
     {
-        const auto strip = huePlace(canvasSize);
+        const auto strip = getHuePlace(canvasSize);
         const auto height =
             strip.size.height / static_cast<float>(kPickerBands);
 
@@ -167,7 +167,7 @@ namespace antwika::editor
             gfx::SizeF{strip.size.width, height});
     }
 
-    float hueBand(const std::size_t bandIndex)
+    float getHueBand(const std::size_t bandIndex)
     {
         return static_cast<float>(bandIndex)
                / static_cast<float>(kPickerBands);

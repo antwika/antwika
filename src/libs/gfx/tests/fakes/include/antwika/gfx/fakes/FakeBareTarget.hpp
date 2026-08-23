@@ -10,17 +10,17 @@ namespace antwika::gfx::fakes
     class FakeBareTarget final : public IRenderTarget
     {
     public:
-        [[nodiscard]] Size size() const override
+        [[nodiscard]] Size getSize() const override
         {
             return Size{};
         }
 
-        [[nodiscard]] const ITexture *color() const override
+        [[nodiscard]] const ITexture *getColor() const override
         {
             return nullptr;
         }
 
-        [[nodiscard]] const ITexture *depth() const override
+        [[nodiscard]] const ITexture *getDepth() const override
         {
             return nullptr;
         }

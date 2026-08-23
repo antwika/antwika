@@ -7,6 +7,6 @@ namespace antwika::replay
 
     using schema::MigrationChain;
 
-    [[nodiscard]] MigrationChain standardReplayMigrations();
+    [[nodiscard]] MigrationChain getStandardReplayMigrations();
 
 }

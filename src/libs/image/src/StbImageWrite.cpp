@@ -24,7 +24,7 @@ namespace antwika::image::detail
         }
     }
 
-    std::string encodePng(
+    std::string getEncodePng(
         const unsigned char *pixels,
         const int width,
         const int height,

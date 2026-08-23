@@ -23,20 +23,20 @@ namespace antwika::schema
         for (std::size_t i = 0; i < this->migrations.size(); ++i)
         {
             const auto &migration = this->migrations[i];
-            if (migration->toVersion() != migration->fromVersion() + 1)
+            if (migration->toVersion() != migration->getFromVersion() + 1)
             {
                 throw SchemaVersionError(std::format(
                     "antwika::schema: migration \"{}\" is not a single "
                     "step: it reads version {} and produces version {}",
-                    migration->name(),
-                    migration->fromVersion(),
+                    migration->getName(),
+                    migration->getFromVersion(),
                     migration->toVersion()));
             }
 
             for (std::size_t j = 0; j < i; ++j)
             {
                 const auto &earlier = this->migrations[j];
-                if (earlier->fromVersion() != migration->fromVersion())
+                if (earlier->getFromVersion() != migration->getFromVersion())
                 {
                     continue;
                 }
@@ -45,14 +45,14 @@ namespace antwika::schema
                     "antwika::schema: migrations \"{}\" and \"{}\" both "
                     "read version {}; one of them would be applied and "
                     "the other silently shadowed",
-                    earlier->name(),
-                    migration->name(),
-                    migration->fromVersion()));
+                    earlier->getName(),
+                    migration->getName(),
+                    migration->getFromVersion()));
             }
         }
     }
 
-    std::uint32_t MigrationChain::currentVersion() const noexcept
+    std::uint32_t MigrationChain::getCurrentVersion() const noexcept
     {
         return current;
     }
@@ -62,7 +62,7 @@ namespace antwika::schema
     {
         for (const auto &migration : migrations)
         {
-            if (migration->fromVersion() == version)
+            if (migration->getFromVersion() == version)
             {
                 return migration.get();
             }
@@ -87,7 +87,7 @@ namespace antwika::schema
 
         for (const auto &migration : migrations)
         {
-            oldest = std::min(oldest, migration->fromVersion());
+            oldest = std::min(oldest, migration->getFromVersion());
         }
 
         if (statedVersion < oldest)
@@ -109,7 +109,7 @@ namespace antwika::schema
             return;
         }
 
-        migrateFrom(document, documentVersion(document, versionKey));
+        migrateFrom(document, getDocumentVersion(document, versionKey));
 
         document[versionKey] = current;
     }

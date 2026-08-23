@@ -28,15 +28,15 @@ namespace antwika::font
         Font &operator=(const Font &other) = delete;
         Font &operator=(Font &&other) = delete;
 
-        [[nodiscard]] FontMetrics metrics(
+        [[nodiscard]] FontMetrics getMetrics(
             std::uint32_t pixelHeight) const;
 
         [[nodiscard]] bool has(char32_t codepoint) const;
 
-        [[nodiscard]] GlyphMetrics glyphMetrics(
+        [[nodiscard]] GlyphMetrics getGlyphMetrics(
             char32_t codepoint, std::uint32_t pixelHeight) const;
 
-        [[nodiscard]] Glyph rasterise(
+        [[nodiscard]] Glyph getRasterise(
             char32_t codepoint, std::uint32_t pixelHeight) const;
 
     private:

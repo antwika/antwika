@@ -26,7 +26,7 @@ namespace antwika::sound
                 std::istreambuf_iterator<char>());
         }
 
-        [[nodiscard]] std::uint32_t readU32(
+        [[nodiscard]] std::uint32_t getReadU32(
             const std::vector<std::uint8_t> &bytes, std::size_t offset)
         {
             return static_cast<std::uint32_t>(bytes[offset])
@@ -35,7 +35,7 @@ namespace antwika::sound
                 | (static_cast<std::uint32_t>(bytes[offset + 3]) << 24U);
         }
 
-        [[nodiscard]] std::uint16_t readU16(
+        [[nodiscard]] std::uint16_t getReadU16(
             const std::vector<std::uint8_t> &bytes, std::size_t offset)
         {
             return static_cast<std::uint16_t>(
@@ -43,7 +43,7 @@ namespace antwika::sound
                 | static_cast<std::uint16_t>(bytes[offset + 1] << 8U));
         }
 
-        [[nodiscard]] bool tagAt(
+        [[nodiscard]] bool isTagAt(
             const std::vector<std::uint8_t> &bytes,
             std::size_t offset,
             const char *tag)
@@ -79,7 +79,7 @@ namespace antwika::sound
             if (fmt.bits == 16)
             {
                 const auto sampleValue =
-                    static_cast<std::int16_t>(readU16(bytes, offset));
+                    static_cast<std::int16_t>(getReadU16(bytes, offset));
                 return static_cast<float>(sampleValue) / 32768.0F;
             }
 
@@ -93,7 +93,7 @@ namespace antwika::sound
             }
 
             const auto sampleValue =
-                static_cast<std::int32_t>(readU32(bytes, offset));
+                static_cast<std::int32_t>(getReadU32(bytes, offset));
             return static_cast<float>(sampleValue) / 2147483648.0F;
         }
 
@@ -144,8 +144,8 @@ namespace antwika::sound
     {
         const auto bytes = readAll(inputStream);
 
-        if (bytes.size() < 12 || !tagAt(bytes, 0, "RIFF")
-            || !tagAt(bytes, 8, "WAVE"))
+        if (bytes.size() < 12 || !isTagAt(bytes, 0, "RIFF")
+            || !isTagAt(bytes, 8, "WAVE"))
         {
             throw SoundError(
                 "antwika::sound: a stream does not begin with a RIFF WAVE "
@@ -163,7 +163,7 @@ namespace antwika::sound
         while (offset + 8 <= bytes.size())
         {
             const auto size =
-            static_cast<std::size_t>(readU32(bytes, offset + 4));
+            static_cast<std::size_t>(getReadU32(bytes, offset + 4));
             const auto body = offset + 8;
 
             if (body + size > bytes.size())
@@ -173,7 +173,7 @@ namespace antwika::sound
                     "stream");
             }
 
-            if (tagAt(bytes, offset, "fmt "))
+            if (isTagAt(bytes, offset, "fmt "))
             {
                 if (size < 16)
                 {
@@ -182,10 +182,10 @@ namespace antwika::sound
                         "to describe anything");
                 }
 
-                fmt.encoding = readU16(bytes, body);
-                fmt.channels = readU16(bytes, body + 2);
-                fmt.rate = readU32(bytes, body + 4);
-                fmt.bits = readU16(bytes, body + 14);
+                fmt.encoding = getReadU16(bytes, body);
+                fmt.channels = getReadU16(bytes, body + 2);
+                fmt.rate = getReadU32(bytes, body + 4);
+                fmt.bits = getReadU16(bytes, body + 14);
 
                 if (fmt.encoding == kFormatExtensible)
                 {
@@ -196,12 +196,12 @@ namespace antwika::sound
                             "chunk names no sub-format");
                     }
 
-                    fmt.encoding = readU16(bytes, body + 24);
+                    fmt.encoding = getReadU16(bytes, body + 24);
                 }
 
                 haveFmt = true;
             }
-            else if (tagAt(bytes, offset, "data"))
+            else if (isTagAt(bytes, offset, "data"))
             {
                 dataAt = body;
                 dataSize = size;

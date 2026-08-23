@@ -10,7 +10,7 @@ namespace antwika::raylib
         inline std::uint64_t frameCounter = 0;
     }
 
-    [[nodiscard]] inline std::uint64_t frameCount() noexcept
+    [[nodiscard]] inline std::uint64_t getFrameCount() noexcept
     {
         return detail::frameCounter;
     }

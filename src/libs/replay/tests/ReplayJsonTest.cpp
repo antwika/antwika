@@ -21,34 +21,34 @@ using antwika::event::Event;
 using antwika::event::TickEvent;
 using antwika::geometry::Size;
 using antwika::replay::kReplayDocumentVersion;
-using antwika::replay::replayFromJson;
-using antwika::replay::replayHeaderFromJson;
-using antwika::replay::replayHeaderToJson;
-using antwika::replay::replayRecordsFromJson;
+using antwika::replay::getReplayFromJson;
+using antwika::replay::getReplayHeaderFromJson;
+using antwika::replay::getReplayHeaderToJson;
+using antwika::replay::getReplayRecordsFromJson;
 using antwika::replay::ReplayDocument;
 using antwika::replay::ReplayFormatError;
 using antwika::replay::ReplayHeader;
-using antwika::replay::standardReplayMigrations;
+using antwika::replay::getStandardReplayMigrations;
 
 namespace
 {
-    ReplayDocument read(const nlohmann::json &document)
+    ReplayDocument getContents(const nlohmann::json &document)
     {
-        return replayFromJson(document, standardReplayMigrations());
+        return getReplayFromJson(document, getStandardReplayMigrations());
     }
 
-    ReplayHeader readHeader(const nlohmann::json &header)
+    ReplayHeader getReadHeader(const nlohmann::json &header)
     {
-        return replayHeaderFromJson(header, standardReplayMigrations());
+        return getReplayHeaderFromJson(header, getStandardReplayMigrations());
     }
 
-    std::vector<TickEvent> readRecords(const nlohmann::json &records)
+    std::vector<TickEvent> getReadRecords(const nlohmann::json &records)
     {
-        return replayRecordsFromJson(
-            records, kReplayDocumentVersion, standardReplayMigrations());
+        return getReplayRecordsFromJson(
+            records, kReplayDocumentVersion, getStandardReplayMigrations());
     }
 
-    nlohmann::json aRecord(const int tick, const std::string &name)
+    nlohmann::json getARecord(const int tick, const std::string &name)
     {
         return nlohmann::json{
             {"tick", tick},
@@ -62,12 +62,12 @@ TEST(ReplayJsonTest, ReadHeader_RoundTripsItsOwnEncoding)
         .version = kReplayDocumentVersion,
         .canvasSize = Size{.width = 1024, .height = 640}};
 
-    EXPECT_EQ(readHeader(replayHeaderToJson(header)), header);
+    EXPECT_EQ(getReadHeader(getReplayHeaderToJson(header)), header);
 }
 
 TEST(ReplayJsonTest, ReplayHeaderToJson_StatesFormatAndVersion)
 {
-    const auto headerJson = replayHeaderToJson(ReplayHeader{});
+    const auto headerJson = getReplayHeaderToJson(ReplayHeader{});
 
     EXPECT_EQ(headerJson.at("magic"), "antwika-replay");
     EXPECT_EQ(headerJson.at("version"), kReplayDocumentVersion);
@@ -75,12 +75,12 @@ TEST(ReplayJsonTest, ReplayHeaderToJson_StatesFormatAndVersion)
 
 TEST(ReplayJsonTest, ReplayHeaderToJson_WritesNoCanvasWhenNone)
 {
-    EXPECT_FALSE(replayHeaderToJson(ReplayHeader{}).contains("canvas"));
+    EXPECT_FALSE(getReplayHeaderToJson(ReplayHeader{}).contains("canvas"));
 }
 
 TEST(ReplayJsonTest, ReplayHeaderToJson_DumpsToOneLine)
 {
-    const auto text = replayHeaderToJson(ReplayHeader{}).dump();
+    const auto text = getReplayHeaderToJson(ReplayHeader{}).dump();
 
     EXPECT_EQ(text.find('\n'), std::string::npos) << text;
 }
@@ -88,21 +88,21 @@ TEST(ReplayJsonTest, ReplayHeaderToJson_DumpsToOneLine)
 TEST(ReplayJsonTest, ReadHeader_ThrowsOnBadMagic)
 {
     EXPECT_THROW(
-        std::ignore = readHeader(nlohmann::json{{"magic", "nope"}}),
+        std::ignore = getReadHeader(nlohmann::json{{"magic", "nope"}}),
         ReplayFormatError);
 }
 
 TEST(ReplayJsonTest, ReadHeader_ThrowsOnMissingMagic)
 {
     EXPECT_THROW(
-        std::ignore = readHeader(nlohmann::json{{"version", 2}}),
+        std::ignore = getReadHeader(nlohmann::json{{"version", 2}}),
         ReplayFormatError);
 }
 
 TEST(ReplayJsonTest, ReadHeader_ThrowsOnAMalformedCanvas)
 {
     EXPECT_THROW(
-        std::ignore = readHeader(nlohmann::json{
+        std::ignore = getReadHeader(nlohmann::json{
             {"magic", "antwika-replay"},
             {"canvas", nlohmann::json{{"width", 1024}}}}),
         ReplayFormatError);
@@ -111,7 +111,7 @@ TEST(ReplayJsonTest, ReadHeader_ThrowsOnAMalformedCanvas)
 TEST(ReplayJsonTest, ReadHeader_ThrowsOnAnExtentPastUint32)
 {
     EXPECT_THROW(
-        std::ignore = readHeader(nlohmann::json{
+        std::ignore = getReadHeader(nlohmann::json{
             {"magic", "antwika-replay"},
             {"canvas",
              nlohmann::json{
@@ -121,7 +121,7 @@ TEST(ReplayJsonTest, ReadHeader_ThrowsOnAnExtentPastUint32)
 
 TEST(ReplayJsonTest, ReadHeader_ReadsAnExtentAtTheMaximum)
 {
-    const ReplayHeader header = readHeader(nlohmann::json{
+    const ReplayHeader header = getReadHeader(nlohmann::json{
         {"magic", "antwika-replay"},
         {"canvas",
          nlohmann::json{
@@ -136,7 +136,7 @@ TEST(ReplayJsonTest, ReadHeader_ReadsAnExtentAtTheMaximum)
 TEST(ReplayJsonTest, ReadHeader_ThrowsOnAnUnknownCanvasMember)
 {
     EXPECT_THROW(
-        std::ignore = readHeader(nlohmann::json{
+        std::ignore = getReadHeader(nlohmann::json{
             {"magic", "antwika-replay"},
             {"canvas",
              nlohmann::json{
@@ -146,7 +146,7 @@ TEST(ReplayJsonTest, ReadHeader_ThrowsOnAnUnknownCanvasMember)
 
 TEST(ReplayJsonTest, ReadHeader_PassesOverAnUnknownMember)
 {
-    const auto header = readHeader(
+    const auto header = getReadHeader(
         nlohmann::json{{"magic", "antwika-replay"}, {"novel", 4}});
 
     EXPECT_EQ(header.version, 1U);
@@ -166,59 +166,59 @@ TEST(ReplayJsonTest, ReadRecords_RoundTripInOrder)
         TickEvent{.tick = 2, .event = Event{.name = "life.step"}},
     };
 
-    EXPECT_EQ(readRecords(nlohmann::json(events)), events);
+    EXPECT_EQ(getReadRecords(nlohmann::json(events)), events);
 }
 
 TEST(ReplayJsonTest, ReadRecords_ThrowOnANonSequence)
 {
     EXPECT_THROW(
-        std::ignore = readRecords(nlohmann::json::object()),
+        std::ignore = getReadRecords(nlohmann::json::object()),
         ReplayFormatError);
 }
 
 TEST(ReplayJsonTest, ReadRecords_ThrowOnAMalformedRecord)
 {
     EXPECT_THROW(
-        std::ignore = readRecords(
+        std::ignore = getReadRecords(
             nlohmann::json::array({nlohmann::json{{"tick", 0}}})),
         ReplayFormatError);
 }
 
 TEST(ReplayJsonTest, ReadRecords_ThrowOnAnUnknownRecordMember)
 {
-    auto record = aRecord(0, "a.b");
+    auto record = getARecord(0, "a.b");
     record["colour"] = "blue";
 
     EXPECT_THROW(
-        std::ignore = readRecords(nlohmann::json::array({record})),
+        std::ignore = getReadRecords(nlohmann::json::array({record})),
         ReplayFormatError);
 }
 
 TEST(ReplayJsonTest, ReadRecords_ThrowOnAnUnknownEventMember)
 {
-    auto record = aRecord(0, "a.b");
+    auto record = getARecord(0, "a.b");
     record["event"]["colour"] = "blue";
 
     EXPECT_THROW(
-        std::ignore = readRecords(nlohmann::json::array({record})),
+        std::ignore = getReadRecords(nlohmann::json::array({record})),
         ReplayFormatError);
 }
 
 TEST(ReplayJsonTest, ReadRecords_ThrowOnANonObjectRecord)
 {
     EXPECT_THROW(
-        std::ignore = readRecords(nlohmann::json::array({42})),
+        std::ignore = getReadRecords(nlohmann::json::array({42})),
         ReplayFormatError);
 }
 
 TEST(ReplayJsonTest, ReadRecords_ThrowWhenATickGoesBackwards)
 {
     const auto records =
-        nlohmann::json::array({aRecord(4, "a.b"), aRecord(1, "a.b")});
+        nlohmann::json::array({getARecord(4, "a.b"), getARecord(1, "a.b")});
 
     try
     {
-        std::ignore = readRecords(records);
+        std::ignore = getReadRecords(records);
         FAIL() << "a tick going backwards should have been refused";
     }
     catch (const ReplayFormatError &error)
@@ -233,19 +233,19 @@ TEST(ReplayJsonTest, ReadRecords_ThrowWhenATickGoesBackwards)
 TEST(ReplayJsonTest, ReadRecords_AcceptSeveralOnOneTick)
 {
     const auto records = nlohmann::json::array(
-        {aRecord(4, "a.b"), aRecord(4, "c.d"), aRecord(5, "e.f")});
+        {getARecord(4, "a.b"), getARecord(4, "c.d"), getARecord(5, "e.f")});
 
-    EXPECT_EQ(readRecords(records).size(), 3U);
+    EXPECT_EQ(getReadRecords(records).size(), 3U);
 }
 
 TEST(ReplayJsonTest, ReadRecords_ThrowOnASecondHeader)
 {
     const auto records = nlohmann::json::array(
-        {aRecord(0, "a.b"), replayHeaderToJson(ReplayHeader{})});
+        {getARecord(0, "a.b"), getReplayHeaderToJson(ReplayHeader{})});
 
     try
     {
-        std::ignore = readRecords(records);
+        std::ignore = getReadRecords(records);
         FAIL() << "a second header should have been refused";
     }
     catch (const ReplayFormatError &error)
@@ -265,7 +265,7 @@ TEST(ReplayJsonTest, Read_TakesAWholeDocumentAsHeaderAndRecords)
             .event = Event{.name = "life.toggle_cell", .payload = "{}"}},
     };
 
-    const auto document = read(nlohmann::json{
+    const auto document = getContents(nlohmann::json{
         {"magic", "antwika-replay"},
         {"version", 1},
         {"events", nlohmann::json(events)},
@@ -276,7 +276,7 @@ TEST(ReplayJsonTest, Read_TakesAWholeDocumentAsHeaderAndRecords)
 
 TEST(ReplayJsonTest, Read_KeepsTheRecordedCanvas)
 {
-    const auto document = read(nlohmann::json{
+    const auto document = getContents(nlohmann::json{
         {"magic", "antwika-replay"},
         {"version", 1},
         {"events", nlohmann::json::array()},
@@ -289,13 +289,13 @@ TEST(ReplayJsonTest, Read_KeepsTheRecordedCanvas)
 TEST(ReplayJsonTest, Read_ThrowsOnANonObjectDocument)
 {
     EXPECT_THROW(
-        std::ignore = read(nlohmann::json::array()), ReplayFormatError);
+        std::ignore = getContents(nlohmann::json::array()), ReplayFormatError);
 }
 
 TEST(ReplayJsonTest, Read_ThrowsOnAMissingMagicField)
 {
     EXPECT_THROW(
-        std::ignore = read(nlohmann::json{
+        std::ignore = getContents(nlohmann::json{
             {"version", 1},
             {"events", nlohmann::json::array()},
         }),
@@ -305,7 +305,7 @@ TEST(ReplayJsonTest, Read_ThrowsOnAMissingMagicField)
 TEST(ReplayJsonTest, Read_ThrowsOnANonArrayEventsField)
 {
     EXPECT_THROW(
-        std::ignore = read(nlohmann::json{
+        std::ignore = getContents(nlohmann::json{
             {"magic", "antwika-replay"},
             {"version", 1},
             {"events", "not an array"},
@@ -315,7 +315,7 @@ TEST(ReplayJsonTest, Read_ThrowsOnANonArrayEventsField)
 
 TEST(ReplayJsonTest, Read_AcceptsADocumentWithNoCanvas)
 {
-    const auto document = read(nlohmann::json{
+    const auto document = getContents(nlohmann::json{
         {"magic", "antwika-replay"},
         {"version", 1},
         {"events", nlohmann::json::array()},
@@ -326,9 +326,9 @@ TEST(ReplayJsonTest, Read_AcceptsADocumentWithNoCanvas)
 
 TEST(ReplayJsonTest, Read_AcceptsADocumentStatingNoVersion)
 {
-    const auto document = read(nlohmann::json{
+    const auto document = getContents(nlohmann::json{
         {"magic", "antwika-replay"},
-        {"events", nlohmann::json::array({aRecord(0, "a.b")})},
+        {"events", nlohmann::json::array({getARecord(0, "a.b")})},
     });
 
     EXPECT_EQ(document.events.size(), 1U);
@@ -337,7 +337,7 @@ TEST(ReplayJsonTest, Read_AcceptsADocumentStatingNoVersion)
 TEST(ReplayJsonTest, Read_ThrowsOnAMalformedCanvas)
 {
     EXPECT_THROW(
-        std::ignore = read(nlohmann::json{
+        std::ignore = getContents(nlohmann::json{
             {"magic", "antwika-replay"},
             {"version", 1},
             {"events", nlohmann::json::array()},
@@ -349,7 +349,7 @@ TEST(ReplayJsonTest, Read_ThrowsOnAMalformedCanvas)
 TEST(ReplayJsonTest, Read_ThrowsOnAMalformedEvent)
 {
     EXPECT_THROW(
-        std::ignore = read(nlohmann::json{
+        std::ignore = getContents(nlohmann::json{
             {"magic", "antwika-replay"},
             {"version", 1},
             {"events",

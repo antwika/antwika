@@ -18,7 +18,7 @@ namespace antwika::replay
     void ReplayWriter::writeHeader(std::ostream &outputStream) const
     {
         outputStream
-            << replayHeaderToJson(ReplayHeader{.canvasSize = canvas}).dump()
+            << getReplayHeaderToJson(ReplayHeader{.canvasSize = canvas}).dump()
             << '\n';
     }
 

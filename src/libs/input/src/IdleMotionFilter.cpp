@@ -29,13 +29,13 @@ namespace antwika::input
 
         for (auto &event : events)
         {
-            const auto decodedEvent = codec.decode(event);
+            const auto decodedEvent = codec.getDecode(event);
 
             if (decodedEvent.has_value())
             {
                 const auto *movedEvent =
                 std::get_if<PointerMoved>(&*decodedEvent);
-                const auto idle = !state.mouse().anyDown();
+                const auto idle = !state.getMouse().isAnyDown();
 
                 state.apply(*decodedEvent);
 

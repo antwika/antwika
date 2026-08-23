@@ -20,7 +20,7 @@ namespace antwika::gfx::fakes
         {
         }
 
-        [[nodiscard]] WindowId id() const override
+        [[nodiscard]] WindowId getId() const override
         {
             return WindowId{1};
         }
@@ -30,12 +30,12 @@ namespace antwika::gfx::fakes
             return true;
         }
 
-        [[nodiscard]] std::string title() const override
+        [[nodiscard]] std::string getTitle() const override
         {
             return "Antwika";
         }
 
-        [[nodiscard]] Size size() const override
+        [[nodiscard]] Size getSize() const override
         {
             return reported;
         }

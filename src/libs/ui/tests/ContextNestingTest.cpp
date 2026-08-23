@@ -17,7 +17,7 @@ using antwika::ui::Context;
 using antwika::ui::DrawList;
 using antwika::ui::DrawText;
 using antwika::ui::FillRect;
-using antwika::ui::fixedSize;
+using antwika::ui::getFixedSize;
 using antwika::ui::kFitSizing;
 using antwika::ui::kGrowSizing;
 using antwika::ui::Theme;
@@ -28,7 +28,7 @@ namespace
     constexpr Color kAccentColor{.red = 90, .green = 40, .blue = 40};
     constexpr Color kInkColor{.red = 200, .green = 210, .blue = 220};
 
-    Theme plainTheme(std::uint32_t padding = 0)
+    Theme getPlainTheme(std::uint32_t padding = 0)
     {
         return Theme{
             .panelColor = kPanelColor,
@@ -42,14 +42,14 @@ namespace
 
 TEST(ContextNestingTest, Nesting_DrawsARowInsideAColumnInsideAPanel)
 {
-    Context uiContext{Size{.width = 100, .height = 50}, plainTheme()};
+    Context uiContext{Size{.width = 100, .height = 50}, getPlainTheme()};
 
     {
         const auto outer = uiContext.panel({.heightSizing = kGrowSizing});
 
         {
             const auto inner = uiContext.row({
-                .heightSizing = fixedSize(10),
+                .heightSizing = getFixedSize(10),
                 .backgroundColor = kAccentColor});
 
             uiContext.label("ab");
@@ -78,7 +78,7 @@ TEST(ContextNestingTest, Nesting_DrawsARowInsideAColumnInsideAPanel)
 
 TEST(ContextNestingTest, Nesting_LetsAFittingContainerSizeItself)
 {
-    Context uiContext{Size{.width = 100, .height = 100}, plainTheme(3)};
+    Context uiContext{Size{.width = 100, .height = 100}, getPlainTheme(3)};
 
     {
         const auto box = uiContext.panel(
@@ -104,7 +104,7 @@ TEST(ContextNestingTest, Nesting_LetsAFittingContainerSizeItself)
 
 TEST(ContextNestingTest, Nesting_PutsSiblingColumnsSideBySide)
 {
-    Context uiContext{Size{.width = 100, .height = 20}, plainTheme()};
+    Context uiContext{Size{.width = 100, .height = 20}, getPlainTheme()};
 
     {
         const auto body = uiContext.row({.heightSizing = kGrowSizing});

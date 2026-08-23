@@ -41,7 +41,7 @@ namespace antwika::map
 
 
 
-            [[nodiscard]] std::optional<voxel::VoxelPosition> readMarkedCube(
+            [[nodiscard]] std::optional<voxel::VoxelPosition> getReadMarkedCube(
                 const nlohmann::json &json)
             {
                 if (json.is_null())
@@ -56,7 +56,7 @@ namespace antwika::map
 
 
 
-            [[nodiscard]] tile::TileRules readRules(const nlohmann::json &json)
+            [[nodiscard]] tile::TileRules getReadRules(const nlohmann::json &json)
             {
                 tile::TileRules rules;
                 std::set<std::pair<tilemap::Tile, tilemap::TileEdge>> seenEdges;
@@ -64,7 +64,7 @@ namespace antwika::map
                 for (const auto &rule : json)
                 {
                     const auto tile =
-                        readTile(rule[std::string(kTileKey)]);
+                        getReadTile(rule[std::string(kTileKey)]);
                     const tilemap::TileEdge edge{
                         .side = enumFromName(
                             kSideNames,
@@ -92,7 +92,7 @@ namespace antwika::map
 
                     for (const auto &may : rule[std::string(kMayKey)])
                     {
-                        rules.allow(tile, edge, readTile(may));
+                        rules.allow(tile, edge, getReadTile(may));
                     }
 
                     if (air)
@@ -104,7 +104,7 @@ namespace antwika::map
                 return rules;
             } // GCOVR_EXCL_LINE
 
-            [[nodiscard]] tilemap::Tilemap readTilemap(
+            [[nodiscard]] tilemap::Tilemap getReadTilemap(
             const nlohmann::json &json)
             {
                 const auto tilemap =
@@ -122,7 +122,7 @@ namespace antwika::map
             } // GCOVR_EXCL_LINE
     }
 
-    std::optional<std::size_t> playerIndex(const Map &map)
+    std::optional<std::size_t> getPlayerIndex(const Map &map)
     {
         for (std::size_t index = 0; index < map.characters.size(); ++index)
         {
@@ -150,7 +150,7 @@ namespace antwika::map
         return positions;
     }
 
-    std::string sidecarPath(
+    std::string getSidecarPath(
         const std::string &mapPath, const std::string_view name)
     {
         const auto slash = mapPath.find_last_of("/\\");
@@ -164,7 +164,7 @@ namespace antwika::map
         return stem + "-" + std::string(name);
     } // GCOVR_EXCL_LINE
 
-    std::string sharedTexturePath(
+    std::string getSharedTexturePath(
         const std::string &mapPath, const std::string_view name)
     {
         return (std::filesystem::path(mapPath)
@@ -190,7 +190,7 @@ namespace antwika::map
         }
 
         const auto wholeDocument = schema::readVersionedDocument<MapFileError>(
-            document, mapMigrations(), mapValidator(), kFailed);
+            document, getMapMigrations(), getMapValidator(), kFailed);
 
         Map map;
 
@@ -219,8 +219,8 @@ namespace antwika::map
                         : voxel::Facing::Any};
         }
 
-        map.tilemap = readTilemap(wholeDocument[std::string(kTilemapKey)]);
-        map.rules = readRules(wholeDocument[std::string(kRulesKey)]);
+        map.tilemap = getReadTilemap(wholeDocument[std::string(kTilemapKey)]);
+        map.rules = getReadRules(wholeDocument[std::string(kRulesKey)]);
         for (const auto &corner : wholeDocument[std::string(kCornersKey)])
         {
             const auto row = read<CornerRow>(kCornerFields, corner);
@@ -235,7 +235,7 @@ namespace antwika::map
             map.camera =
                 read<CameraView>(kCameraFields, cameraJson);
 
-            map.camera->transform = camera::snappedPitch(map.camera->transform);
+            map.camera->transform = camera::getSnappedPitch(map.camera->transform);
         }
 
         map.paletteColors.clear();
@@ -302,14 +302,14 @@ namespace antwika::map
 
         readDecor(map, wholeDocument);
         map.decorRules =
-            readRules(wholeDocument[std::string(kDecorRulesKey)]);
+            getReadRules(wholeDocument[std::string(kDecorRulesKey)]);
         readFamilies(map, wholeDocument);
         readFlips(map, wholeDocument);
         readTransitions(map, wholeDocument);
         readGates(map, wholeDocument);
         map.spawnCubePosition =
-            readMarkedCube(wholeDocument[std::string(kStartKey)]);
-        map.exitCubePosition = readMarkedCube(wholeDocument[std::string(
+            getReadMarkedCube(wholeDocument[std::string(kStartKey)]);
+        map.exitCubePosition = getReadMarkedCube(wholeDocument[std::string(
             kExitKey)]);
         map.exitTarget = wholeDocument[std::string(kExitTargetKey)]
                              .get<std::string>();
@@ -320,7 +320,7 @@ namespace antwika::map
             const auto figureCharacter =
                 read<Character>(kCharacterFields, figureJson);
 
-            if (figureCharacter.player && playerIndex(map).has_value())
+            if (figureCharacter.player && getPlayerIndex(map).has_value())
             {
                 throw MapFileError(
                     "antwika::map: a map may hold but one player");
@@ -343,7 +343,7 @@ namespace antwika::map
         return map;
     } // GCOVR_EXCL_LINE
 
-    Map loadMap(const std::string &path)
+    Map getLoadMap(const std::string &path)
     {
         auto inputStream = io::openToReadAs<MapFileError>(path, "the map");
 

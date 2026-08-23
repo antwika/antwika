@@ -6,7 +6,7 @@
 namespace antwika::app
 {
 
-    [[nodiscard]] bool spawnDetached(
+    [[nodiscard]] bool isSpawnDetached(
         const std::string &program,
         const std::vector<std::string> &arguments);
 

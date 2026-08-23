@@ -26,12 +26,12 @@ namespace antwika::gfx
             });
     }
 
-    std::size_t MeshData::triangleCount() const
+    std::size_t MeshData::getTriangleCount() const
     {
         return indices.size() / 3U;
     }
 
-    std::vector<MeshData> splitMesh(
+    std::vector<MeshData> getSplitMesh(
         const MeshData &mesh, const std::size_t maxVertices)
     {
         if (!mesh.isComplete())

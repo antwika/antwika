@@ -50,13 +50,13 @@ namespace antwika::solver
         } // GCOVR_EXCL_LINE
     }
 
-    std::size_t tileToIndex(const tilemap::Tile tile)
+    std::size_t getTileToIndex(const tilemap::Tile tile)
     {
         return (tile.atlas == tilemap::Atlas::Floor ? kAtlasTiles : 0)
                + tile.index;
     }
 
-    tilemap::Tile tileFromIndex(const std::size_t value)
+    tilemap::Tile getTileFromIndex(const std::size_t value)
     {
         return tilemap::Tile{
             .atlas = value >= kAtlasTiles ? tilemap::Atlas::Floor
@@ -65,22 +65,22 @@ namespace antwika::solver
                 value % kAtlasTiles)};
     }
 
-    std::optional<std::vector<tilemap::Tile>> solvedTiles(
+    std::optional<std::vector<tilemap::Tile>> getSolvedTiles(
         const std::vector<voxelmap::FaceRef> &faces,
         const tile::TileRules &rules,
         const CornerSeams corners)
     {
-        return solveTiles(faces, rules, corners).tiles;
+        return getSolveTiles(faces, rules, corners).tiles;
     } // GCOVR_EXCL_LINE
 
-    TileSolve solveTiles(
+    TileSolve getSolveTiles(
         const std::vector<voxelmap::FaceRef> &faces,
         const tile::TileRules &rules,
         const CornerSeams corners)
     {
-        const auto tilesByDomain = ruledTilesByDomain(rules);
-        const auto standing = facesByPlace(faces);
-        auto keptTiles = voxelmap::defaultTiles(faces);
+        const auto tilesByDomain = getRuledTilesByDomain(rules);
+        const auto standing = getFacesByPlace(faces);
+        auto keptTiles = voxelmap::getDefaultTiles(faces);
 
         std::vector<std::size_t> cellOf(faces.size(), kNoFaceIndex);
         std::vector<std::size_t> faceOf;
@@ -119,12 +119,12 @@ namespace antwika::solver
             wfc::Domain domain(kTileDomainSize);
             const auto edges = edgesOf(standing, faces, faces[which]);
             const auto beyondCorners =
-                cornersBeyond(standing, faces, faces[which]);
+                getCornersBeyond(standing, faces, faces[which]);
 
             for (std::size_t value = 0; value < kTileDomainSize;
                  ++value)
             {
-                const auto tile = tileFromIndex(value);
+                const auto tile = getTileFromIndex(value);
 
                 if (tile.atlas != atlas || !mine.contains(tile))
                 {
@@ -137,7 +137,7 @@ namespace antwika::solver
                 for (const auto &[edge, atRim] : edges)
                 {
                     if (atRim ? !rules.allowsBoundary(tile, edge)
-                              : rules.boundaryOnly(tile, edge))
+                              : rules.isBoundaryOnly(tile, edge))
                     {
                         anyBarred = true;
                         break;
@@ -190,7 +190,7 @@ namespace antwika::solver
 
         std::vector<wfc::AdjacencyConstraint> adjacencies;
 
-        for (const auto &seam : faceAdjacency(faces, corners))
+        for (const auto &seam : getFaceAdjacency(faces, corners))
         {
             if (cellOf[seam.faceA] == kNoFaceIndex
                 || cellOf[seam.faceB] == kNoFaceIndex)
@@ -207,9 +207,9 @@ namespace antwika::solver
                 {
                     const auto both = edgesCompatible(
                         rules,
-                        tileFromIndex(one),
+                        getTileFromIndex(one),
                         seam.edgeA,
-                        tileFromIndex(other),
+                        getTileFromIndex(other),
                         seam.edgeB);
 
                     table.set(one, other, both);
@@ -262,7 +262,7 @@ namespace antwika::solver
             std::move(constraints),
             {},
             wfc::SolverLimits{.maxSteps = kMaxSteps});
-        const auto solution = solver.solve();
+        const auto solution = solver.getSolve();
 
         if (solution.outcome != wfc::SolveOutcome::Solved)
         {
@@ -277,7 +277,7 @@ namespace antwika::solver
         for (std::size_t cell = 0; cell < solution.assignment.size();
              ++cell)
         {
-            woven[faceOf[cell]] = tileFromIndex(solution.assignment[cell]);
+            woven[faceOf[cell]] = getTileFromIndex(solution.assignment[cell]);
         }
 
         return TileSolve{

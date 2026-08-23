@@ -22,7 +22,7 @@ namespace antwika::render
             return atlas == tilemap::Atlas::Wall ? 0U : 1U;
         }
 
-        [[nodiscard]] bool sheetAnimated(
+        [[nodiscard]] bool isSheetAnimated(
             const std::span<const decor::TileAnimation> flipAnimations,
             const tilemap::Atlas atlas)
         {
@@ -38,7 +38,7 @@ namespace antwika::render
             return false;
         }
 
-        [[nodiscard]] gfx::Bitmap withColorKeyed(
+        [[nodiscard]] gfx::Bitmap getWithColorKeyed(
             gfx::Bitmap bitmap, const map::Map &drawnMap)
         {
             const auto blank = drawnMap.paletteColors.empty()
@@ -60,7 +60,7 @@ namespace antwika::render
             return bitmap;
         }
 
-        [[nodiscard]] gfx::Bitmap encodeGlow(
+        [[nodiscard]] gfx::Bitmap getEncodeGlow(
             gfx::Bitmap bitmap, const map::Map &drawnMap)
         {
             for (std::size_t index = 0;
@@ -104,9 +104,9 @@ namespace antwika::render
     {
         bitmaps = std::move(sheetBitmaps);
         checkerTextures.at(indexOf(tilemap::Atlas::Wall)) =
-            viewportRenderer.createTexture(checkered(tilemap::kWallTileSize));
+            viewportRenderer.createTexture(getCheckered(tilemap::kWallTileSize));
         checkerTextures.at(indexOf(tilemap::Atlas::Floor)) =
-            viewportRenderer.createTexture(checkered(tilemap::kFloorTileSize));
+            viewportRenderer.createTexture(getCheckered(tilemap::kFloorTileSize));
         dirty = true;
         refresh(viewportRenderer, drawnMap, tick, false);
     }
@@ -128,7 +128,7 @@ namespace antwika::render
         return bitmaps.at(indexOf(atlas));
     }
 
-    const std::array<gfx::Bitmap, 2> &AtlasSheets::sheets()
+    const std::array<gfx::Bitmap, 2> &AtlasSheets::getSheets()
         const noexcept
     {
         return bitmaps;
@@ -139,7 +139,7 @@ namespace antwika::render
         dirty = true;
     }
 
-    bool AtlasSheets::touched() const noexcept
+    bool AtlasSheets::isTouched() const noexcept
     {
         return dirty;
     }
@@ -158,14 +158,14 @@ namespace antwika::render
         for (const auto atlas :
              {tilemap::Atlas::Wall, tilemap::Atlas::Floor})
         {
-            if (!dirty && !sheetAnimated(drawnMap.flipAnimations, atlas))
+            if (!dirty && !isSheetAnimated(drawnMap.flipAnimations, atlas))
             {
                 continue;
             }
 
             const auto atlasIndex = indexOf(atlas);
-            const auto compositedAtlasSheet = tile::compositedAtlas(
-                decor::atlasWithAnimationFrames(
+            const auto compositedAtlasSheet = tile::getCompositedAtlas(
+                decor::getAtlasWithAnimationFrames(
                     bitmaps.at(atlasIndex), atlas, drawnMap.flipAnimations,
                     tick),
                 atlas,
@@ -174,28 +174,28 @@ namespace antwika::render
 
             paintedTextures.at(atlasIndex) =
                 viewportRenderer.createTexture(
-                    encodeGlow(compositedAtlasSheet, drawnMap));
+                    getEncodeGlow(compositedAtlasSheet, drawnMap));
             keyedOutTextures.at(atlasIndex) = viewportRenderer.createTexture(
-                encodeGlow(withColorKeyed(compositedAtlasSheet, drawnMap),
+                getEncodeGlow(getWithColorKeyed(compositedAtlasSheet, drawnMap),
                 drawnMap));
         }
 
         dirty = false;
     }
 
-    gfx::ITexture *AtlasSheets::texture(
+    gfx::ITexture *AtlasSheets::getTexture(
         const tilemap::Atlas atlas) const noexcept
     {
         return paintedTextures.at(indexOf(atlas)).get();
     }
 
-    gfx::ITexture *AtlasSheets::keyed(
+    gfx::ITexture *AtlasSheets::getKeyed(
         const tilemap::Atlas atlas) const noexcept
     {
         return keyedOutTextures.at(indexOf(atlas)).get();
     }
 
-    gfx::ITexture *AtlasSheets::checker(
+    gfx::ITexture *AtlasSheets::getChecker(
         const tilemap::Atlas atlas) const noexcept
     {
         return checkerTextures.at(indexOf(atlas)).get();

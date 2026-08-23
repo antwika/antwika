@@ -14,9 +14,9 @@ namespace antwika::input
     public:
         virtual ~IInputBackend() = default;
 
-        [[nodiscard]] virtual std::string_view name() const = 0;
+        [[nodiscard]] virtual std::string_view getName() const = 0;
 
-        [[nodiscard]] virtual InputCapabilities capabilities() const = 0;
+        [[nodiscard]] virtual InputCapabilities getCapabilities() const = 0;
 
         [[nodiscard]] virtual std::optional<InputEvent> pollEvent() = 0;
     };

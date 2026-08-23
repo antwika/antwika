@@ -11,7 +11,7 @@ namespace antwika::ecs
 
     inline constexpr Entity kNullEntity{0};
 
-    [[nodiscard]] constexpr std::uint64_t rawValue(Entity entity) noexcept
+    [[nodiscard]] constexpr std::uint64_t getRawValue(Entity entity) noexcept
     {
         return static_cast<std::uint64_t>(entity);
     }

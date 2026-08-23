@@ -19,7 +19,7 @@
 
 using antwika::gfx::Color;
 using antwika::gfx::Size;
-using antwika::ui::support::fillsColored;
+using antwika::ui::support::getFillsColored;
 using antwika::ui::support::textsOf;
 using antwika::ui::Context;
 using antwika::ui::DrawList;
@@ -41,7 +41,7 @@ namespace
 
     constexpr Size kCanvasSize{.width = 200, .height = 100};
 
-    Theme plainTheme()
+    Theme getPlainTheme()
     {
         return Theme{
             .textColor = kInkColor,
@@ -57,14 +57,14 @@ namespace
     {
         spec.widgetId = kCodeWidget;
 
-        Context uiContext{kCanvasSize, plainTheme()};
+        Context uiContext{kCanvasSize, getPlainTheme()};
 
         uiContext.textArea(spec);
 
         return uiContext.build();
     }
 
-    [[nodiscard]] std::vector<std::string> piecesOn(
+    [[nodiscard]] std::vector<std::string> getPiecesOn(
         const DrawList &drawList, const Color groundColor)
     {
         std::vector<std::string> pieces;
@@ -102,7 +102,7 @@ TEST(TextAreaHighlightTest, TextArea_ASpanShowsAsItsOwnGround)
     const auto frame =
         frameOf(TextAreaSpec{.text = "abcdefgh", .highlights = highlightSpans});
 
-    const auto litPieces = piecesOn(frame.drawList, kLitColor);
+    const auto litPieces = getPiecesOn(frame.drawList, kLitColor);
 
     ASSERT_EQ(litPieces.size(), 1U);
     EXPECT_EQ(litPieces[0], "cde");
@@ -117,7 +117,7 @@ TEST(TextAreaHighlightTest, TextArea_TwoSpansLightTwoPieces)
     const auto frame =
         frameOf(TextAreaSpec{.text = "abcdefgh", .highlights = highlightSpans});
 
-    const auto litPieces = piecesOn(frame.drawList, kLitColor);
+    const auto litPieces = getPiecesOn(frame.drawList, kLitColor);
 
     ASSERT_EQ(litPieces.size(), 2U);
     EXPECT_EQ(litPieces[0], "a");
@@ -138,8 +138,8 @@ TEST(TextAreaHighlightTest, TextArea_TheSelectionWinsWhereTheyOverlap)
 
     const auto frame = frameOf(spec);
 
-    const auto pickedPieces = piecesOn(frame.drawList, kPickedColor);
-    const auto litPieces = piecesOn(frame.drawList, kLitColor);
+    const auto pickedPieces = getPiecesOn(frame.drawList, kPickedColor);
+    const auto litPieces = getPiecesOn(frame.drawList, kLitColor);
 
     ASSERT_EQ(pickedPieces.size(), 1U);
     EXPECT_EQ(pickedPieces[0], "cd");
@@ -157,7 +157,7 @@ TEST(TextAreaHighlightTest, TextArea_ASpanAcrossABreakLightsBothLines)
     const auto frame =
         frameOf(TextAreaSpec{.text = "abc\ndef", .highlights = highlightSpans});
 
-    const auto litPieces = piecesOn(frame.drawList, kLitColor);
+    const auto litPieces = getPiecesOn(frame.drawList, kLitColor);
 
     ASSERT_EQ(litPieces.size(), 2U);
     EXPECT_EQ(litPieces[0], "bc");
@@ -172,7 +172,7 @@ TEST(TextAreaHighlightTest, TextArea_EndsPastTheTextAreClamped)
     const auto frame =
         frameOf(TextAreaSpec{.text = "abcd", .highlights = highlightSpans});
 
-    const auto litPieces = piecesOn(frame.drawList, kLitColor);
+    const auto litPieces = getPiecesOn(frame.drawList, kLitColor);
 
     ASSERT_EQ(litPieces.size(), 1U);
     EXPECT_EQ(litPieces[0], "cd");
@@ -187,7 +187,7 @@ TEST(TextAreaHighlightTest, TextArea_ASpanOfNothingLightsNothing)
     const auto frame =
         frameOf(TextAreaSpec{.text = "abcd", .highlights = highlightSpans});
 
-    EXPECT_TRUE(piecesOn(frame.drawList, kLitColor).empty());
+    EXPECT_TRUE(getPiecesOn(frame.drawList, kLitColor).empty());
 }
 
 TEST(TextAreaHighlightTest, TextArea_ASpanOfNothingCutsNoPieceOffTheLine)

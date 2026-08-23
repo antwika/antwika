@@ -24,17 +24,17 @@
 namespace antwika::replay
 {
 
-    using schema::boundedCountSchema;
-    using schema::countSchema;
-    using schema::documentVersion;
+    using schema::getBoundedCountSchema;
+    using schema::getCountSchema;
+    using schema::getDocumentVersion;
     using schema::kSchemaVersionKey;
     using schema::readVersionedRecord;
 
     namespace
     {
-        nlohmann::json canvasSchema()
+        nlohmann::json getCanvasSchema()
         {
-            const nlohmann::json extent = boundedCountSchema(
+            const nlohmann::json extent = getBoundedCountSchema(
                 std::numeric_limits<std::uint32_t>::max());
 
             nlohmann::json shape;
@@ -46,7 +46,7 @@ namespace antwika::replay
             return shape;
         }
 
-        nlohmann::json headerSchema()
+        nlohmann::json getHeaderSchema()
         {
             nlohmann::json schema;
             schema["$schema"] = "http://json-schema.org/draft-07/schema#";
@@ -57,22 +57,22 @@ namespace antwika::replay
             schema["properties"][std::string(detail::kMagicKey)]
                   ["const"] = std::string(detail::kReplayMagic);
             schema["properties"][std::string(kSchemaVersionKey)] =
-                countSchema();
-            schema["properties"]["canvas"] = canvasSchema();
+                getCountSchema();
+            schema["properties"]["canvas"] = getCanvasSchema();
             return schema;
         }
 
-        const nlohmann::json_schema::json_validator &headerValidator()
+        const nlohmann::json_schema::json_validator &getHeaderValidator()
         {
             static const nlohmann::json_schema::json_validator validator(
-                headerSchema()); // GCOVR_EXCL_LINE
+                getHeaderSchema()); // GCOVR_EXCL_LINE
             return validator;
         }
 
-        const nlohmann::json_schema::json_validator &recordValidator()
+        const nlohmann::json_schema::json_validator &getRecordValidator()
         {
             static const nlohmann::json_schema::json_validator validator(
-                detail::tickEventSchema()); // GCOVR_EXCL_LINE
+                detail::getTickEventSchema()); // GCOVR_EXCL_LINE
             return validator;
         }
 
@@ -112,7 +112,7 @@ namespace antwika::replay
         }
     }
 
-    nlohmann::json replayHeaderToJson(const ReplayHeader &header)
+    nlohmann::json getReplayHeaderToJson(const ReplayHeader &header)
     {
         nlohmann::json headerJson;
         headerJson[std::string(detail::kMagicKey)] =
@@ -127,16 +127,16 @@ namespace antwika::replay
 
     } // GCOVR_EXCL_LINE
 
-    ReplayHeader replayHeaderFromJson(
+    ReplayHeader getReplayHeaderFromJson(
         const nlohmann::json &j, const MigrationChain &migrations)
     {
         ReplayHeader header;
-        header.version = documentVersion(j);
+        header.version = getDocumentVersion(j);
         migrations.requireReadable(header.version);
 
         try
         {
-            headerValidator().validate(j);
+            getHeaderValidator().validate(j);
         }
         catch (const std::exception &error) // GCOVR_EXCL_LINE
         {
@@ -157,7 +157,7 @@ namespace antwika::replay
         return header;
     }
 
-    std::vector<event::TickEvent> replayRecordsFromJson(
+    std::vector<event::TickEvent> getReplayRecordsFromJson(
         const nlohmann::json &records,
         const std::uint32_t version,
         const MigrationChain &migrations)
@@ -181,7 +181,7 @@ namespace antwika::replay
                 records[index],
                 version,
                 migrations,
-                recordValidator(),
+                getRecordValidator(),
                 std::format(
                     "antwika::replay: record {} failed schema "
                     "validation: ",
@@ -208,7 +208,7 @@ namespace antwika::replay
         return events;
     } // GCOVR_EXCL_LINE
 
-    ReplayDocument replayFromJson(
+    ReplayDocument getReplayFromJson(
         const nlohmann::json &j, const MigrationChain &migrations)
     {
         if (!j.is_object())
@@ -222,11 +222,11 @@ namespace antwika::replay
         header.erase(std::string(detail::kLegacyEventsKey));
 
         const ReplayHeader readHeader =
-            replayHeaderFromJson(header, migrations);
+            getReplayHeaderFromJson(header, migrations);
 
         ReplayDocument document;
         document.canvasSize = readHeader.canvasSize;
-        document.events = replayRecordsFromJson(
+        document.events = getReplayRecordsFromJson(
             j.value(
                 std::string(detail::kLegacyEventsKey), nlohmann::json()),
             readHeader.version,

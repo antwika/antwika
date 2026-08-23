@@ -34,7 +34,7 @@ namespace antwika::render
             voxel::Voxels behindVoxels,
             voxel::VoxelPosition aboutPosition);
 
-        [[nodiscard]] const voxel::Voxels &hidden()
+        [[nodiscard]] const voxel::Voxels &getHidden()
             const noexcept;
 
         void bakeLamps(
@@ -43,12 +43,12 @@ namespace antwika::render
             const std::vector<light::ActiveLight> &lights);
 
 
-        [[nodiscard]] std::span<const light::ActiveLight> lamps()
+        [[nodiscard]] std::span<const light::ActiveLight> getLamps()
             const noexcept;
 
-        [[nodiscard]] const gfx::ITexture *hiding() const noexcept;
+        [[nodiscard]] const gfx::ITexture *getHiding() const noexcept;
 
-        [[nodiscard]] const gfx::ITexture *lampShadows() const noexcept;
+        [[nodiscard]] const gfx::ITexture *getLampShadows() const noexcept;
 
 
     private:

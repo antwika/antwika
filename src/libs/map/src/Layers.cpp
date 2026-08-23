@@ -6,13 +6,13 @@
 namespace antwika::map
 {
 
-    std::vector<Layer> defaultLayers()
+    std::vector<Layer> getDefaultLayers()
     {
         return std::vector<Layer>{
             Layer{.name = std::string(kBaseLayerName)}};
     }
 
-    std::vector<Layer> withLayerAdded(
+    std::vector<Layer> getWithLayerAdded(
         const std::vector<Layer> &layers)
     {
         if (layers.size() >= kMaxLayers)
@@ -40,7 +40,7 @@ namespace antwika::map
         return updatedLayers;
     } // GCOVR_EXCL_LINE
 
-    std::vector<Layer> withLayerRemoved(
+    std::vector<Layer> getWithLayerRemoved(
         const std::vector<Layer> &layers, const std::size_t layerIndex)
     {
         if (layerIndex == kBaseLayer || layerIndex >= layers.size())
@@ -57,14 +57,14 @@ namespace antwika::map
         return updatedLayers;
     } // GCOVR_EXCL_LINE
 
-    std::string layerLabel(const std::size_t layerIndex)
+    std::string getLayerLabel(const std::size_t layerIndex)
     {
         return layerIndex == kBaseLayer
                            ? std::string(kBaseLayerName)
                            : "Decor " + std::to_string(layerIndex);
     } // GCOVR_EXCL_LINE
 
-    widget::WidgetId layerWidget(const std::size_t layerIndex)
+    widget::WidgetId getLayerWidget(const std::size_t layerIndex)
     {
         return static_cast<widget::WidgetId>(
             static_cast<std::uint64_t>(kFirstLayerWidget)

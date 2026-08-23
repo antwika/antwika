@@ -22,11 +22,11 @@ namespace antwika::gfx
     public:
         virtual ~IGfxBackend() = default;
 
-        [[nodiscard]] virtual std::string_view name() const = 0;
+        [[nodiscard]] virtual std::string_view getName() const = 0;
 
-        [[nodiscard]] virtual std::size_t maxWindows() const = 0;
+        [[nodiscard]] virtual std::size_t getMaxWindows() const = 0;
 
-        [[nodiscard]] virtual GfxCapabilities capabilities()
+        [[nodiscard]] virtual GfxCapabilities getCapabilities()
             const = 0;
 
         [[nodiscard]] virtual std::unique_ptr<IWindow> createWindow(

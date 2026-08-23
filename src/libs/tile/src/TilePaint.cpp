@@ -28,7 +28,7 @@ namespace antwika::tile
             const tilemap::Tile tile, const geometry::GridCell pixelCell)
         {
             const auto tileRect =
-                tilemap::tilePixels(
+                tilemap::getTilePixels(
                 tile.index, tilemap::tileSizeOf(tile.atlas));
 
             return gfx::Point{
@@ -39,7 +39,7 @@ namespace antwika::tile
         }
     }
 
-    widget::WidgetId swatchWidget(const std::size_t which)
+    widget::WidgetId getSwatchWidget(const std::size_t which)
     {
         return widget::WidgetId{
             kFirstSwatchWidget + static_cast<std::uint64_t>(which)};
@@ -76,7 +76,7 @@ namespace antwika::tile
             .row = static_cast<std::uint32_t>(downFraction)};
     }
 
-    gfx::RectF pixelPlace(
+    gfx::RectF getPixelPlace(
         const tilemap::Tile tile,
         const gfx::RectF whereRect,
         const geometry::GridCell pixelCell)
@@ -96,7 +96,7 @@ namespace antwika::tile
             gfx::SizeF{width, height});
     }
 
-    std::vector<geometry::GridCell> linePixels(
+    std::vector<geometry::GridCell> getLinePixels(
         const geometry::GridCell fromCell, const geometry::GridCell toCell)
     {
         const auto columnStep = static_cast<std::int64_t>(toCell.column)
@@ -139,13 +139,13 @@ namespace antwika::tile
         const geometry::GridCell toCell,
         const gfx::Color color)
     {
-        for (const auto pixel : linePixels(fromCell, toCell))
+        for (const auto pixel : getLinePixels(fromCell, toCell))
         {
             paint(atlasBitmap, tile, pixel, color);
         }
     }
 
-    std::vector<geometry::GridCell> rectPixels(
+    std::vector<geometry::GridCell> getRectPixels(
         const geometry::GridCell fromCell, const geometry::GridCell toCell)
     {
         const auto left = std::min(fromCell.column, toCell.column);
@@ -183,7 +183,7 @@ namespace antwika::tile
         return cells;
     } // GCOVR_EXCL_LINE
 
-    std::vector<geometry::GridCell> circlePixels(
+    std::vector<geometry::GridCell> getCirclePixels(
         const geometry::GridCell fromCell, const geometry::GridCell toCell)
     {
         const auto left = std::min(fromCell.column, toCell.column);
@@ -290,7 +290,7 @@ namespace antwika::tile
         }
     }
 
-    std::vector<geometry::GridCell> filledPixels(
+    std::vector<geometry::GridCell> getFilledPixels(
         const gfx::Bitmap &atlasBitmap,
         const tilemap::Tile tile,
         const geometry::GridCell cell)
@@ -343,7 +343,7 @@ namespace antwika::tile
         const geometry::GridCell cell,
         const gfx::Color color)
     {
-        for (const auto pixel : filledPixels(atlasBitmap, tile, cell))
+        for (const auto pixel : getFilledPixels(atlasBitmap, tile, cell))
         {
             paint(atlasBitmap, tile, pixel, color);
         }
@@ -371,7 +371,7 @@ namespace antwika::tile
             .value_or(gfx::Color{.alpha = 0});
     } // GCOVR_EXCL_LINE
 
-    bool soleInk(
+    bool isSoleInk(
         const std::span<const gfx::Color> paletteColors,
         const std::size_t which)
     {
@@ -389,7 +389,7 @@ namespace antwika::tile
         return true;
     }
 
-    std::vector<std::size_t> paintedWith(
+    std::vector<std::size_t> getPaintedWith(
         const gfx::Bitmap &atlasBitmap, const gfx::Color color)
     {
         std::vector<std::size_t> places{};

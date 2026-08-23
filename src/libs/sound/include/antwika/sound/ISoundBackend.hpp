@@ -15,9 +15,9 @@ namespace antwika::sound
     public:
         virtual ~ISoundBackend() = default;
 
-        [[nodiscard]] virtual std::string_view name() const = 0;
+        [[nodiscard]] virtual std::string_view getName() const = 0;
 
-        [[nodiscard]] virtual SoundCapabilities capabilities() const = 0;
+        [[nodiscard]] virtual SoundCapabilities getCapabilities() const = 0;
 
         [[nodiscard]] virtual std::unique_ptr<IDevice> openDevice(
             const DeviceSpec &spec) = 0;

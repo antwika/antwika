@@ -42,25 +42,25 @@ namespace antwika::light
             const ActiveLight &other) const = default;
     };
 
-    [[nodiscard]] std::vector<ActiveLight> activeLights(
+    [[nodiscard]] std::vector<ActiveLight> getActiveLights(
         const ecs::World &world, const std::vector<Lamp> &lamps);
 
-    [[nodiscard]] std::vector<ActiveLight> activeLights(
+    [[nodiscard]] std::vector<ActiveLight> getActiveLights(
         const std::vector<Lamp> &lamps);
 
-    [[nodiscard]] std::vector<ActiveLight> activeLights(
+    [[nodiscard]] std::vector<ActiveLight> getActiveLights(
         const ecs::World &world,
         const std::vector<ActiveLight> &folkLights,
         const std::vector<Lamp> &lamps);
 
-    [[nodiscard]] std::vector<ActiveLight> activeLights(
+    [[nodiscard]] std::vector<ActiveLight> getActiveLights(
         const std::vector<ActiveLight> &folkLights,
         const std::vector<Lamp> &lamps);
 
-    [[nodiscard]] std::optional<std::size_t> carriedLightSlot(
+    [[nodiscard]] std::optional<std::size_t> getCarriedLightSlot(
         const ecs::World &world, ecs::Entity entity);
 
-    [[nodiscard]] std::vector<std::size_t> dirtyShadowSlots(
+    [[nodiscard]] std::vector<std::size_t> getDirtyShadowSlots(
         const std::vector<ActiveLight> &bakedLight,
         const std::vector<ActiveLight> &currentLight);
 

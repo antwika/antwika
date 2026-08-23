@@ -41,7 +41,7 @@ namespace
     constexpr Point kOnTheButtonPoint{.x = 5, .y = 4};
     constexpr Point kOffTheButtonPoint{.x = 50, .y = 40};
 
-    Theme plainTheme()
+    Theme getPlainTheme()
     {
         return Theme{
             .panelColor = kPanelColor,
@@ -64,7 +64,7 @@ TEST(ContextInteractionTest, Button_IsHoveredWhenThePointerIsOverIt)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{.positionPoint = kOnTheButtonPoint}};
 
     uiContext.button("ab", {.widgetId = kOkWidget});
@@ -79,7 +79,7 @@ TEST(ContextInteractionTest, Button_LooksPressedWhileItIsHeld)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{.positionPoint = kOnTheButtonPoint, .down = true}};
 
     uiContext.button("ab", {.widgetId = kOkWidget});
@@ -91,7 +91,7 @@ TEST(ContextInteractionTest, Button_ActivatesOnThePress)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{.positionPoint = kOnTheButtonPoint,
             .down = true,
             .pressed = true}};
@@ -105,7 +105,7 @@ TEST(ContextInteractionTest, Button_IgnoresAPressLandingElsewhere)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{.positionPoint = kOffTheButtonPoint,
             .down = true,
             .pressed = true}};
@@ -122,7 +122,7 @@ TEST(ContextInteractionTest, Button_KeepsAnAppearanceItWasToldToHave)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{.positionPoint = kOnTheButtonPoint}};
 
     uiContext.button("ab", {.widgetId = kOkWidget, .state = ButtonState::Idle});
@@ -137,7 +137,7 @@ TEST(ContextInteractionTest, Button_IsNotHoveredWhenItWasNeverNamed)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{.positionPoint = kOnTheButtonPoint}};
 
     uiContext.button("ab");
@@ -152,7 +152,7 @@ TEST(ContextInteractionTest, Build_ReportsThePointerOverAPanel)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{.positionPoint = kOffTheButtonPoint}};
 
     {
@@ -167,7 +167,7 @@ TEST(ContextInteractionTest, Build_ReportsThePointerOverAPanel)
 
 TEST(ContextInteractionTest, Build_ReportsNothingWithoutAPointer)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.button("ab", {.widgetId = kOkWidget});
 

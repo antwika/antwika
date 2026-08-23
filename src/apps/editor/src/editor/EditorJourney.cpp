@@ -26,9 +26,9 @@ namespace antwika::editor
             return;
         }
 
-        const auto was = document.path();
+        const auto was = document.getPath();
 
-        document.openAt((std::filesystem::path(document.path()).parent_path()
+        document.openAt((std::filesystem::path(document.getPath()).parent_path()
                    / document.map.exitTarget)
                       .string());
 
@@ -49,9 +49,9 @@ namespace antwika::editor
         }
     }
 
-    std::string Editor::progressPath() const
+    std::string Editor::getProgressPath() const
     {
-        return (std::filesystem::path(document.startPath()).parent_path()
+        return (std::filesystem::path(document.getStartPath()).parent_path()
                 / "progress.json")
             .string();
     }
@@ -59,11 +59,11 @@ namespace antwika::editor
     void Editor::savePlayerProgress()
     {
         map::saveProgress(
-            play.game->progress(
-                std::filesystem::path(document.path())
+            play.game->getProgress(
+                std::filesystem::path(document.getPath())
                     .filename()
                     .string()),
-            progressPath());
+            getProgressPath());
     }
 
 }

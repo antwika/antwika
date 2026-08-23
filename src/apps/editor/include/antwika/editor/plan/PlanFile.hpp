@@ -25,7 +25,7 @@ namespace antwika::editor
 
     void saveBoard(const std::string &path, const Board &board);
 
-    [[nodiscard]] std::optional<Board> loadBoard(
+    [[nodiscard]] std::optional<Board> getLoadBoard(
         const std::string &path);
 
 }

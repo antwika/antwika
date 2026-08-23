@@ -5,6 +5,6 @@
 namespace antwika::worldgen
 {
 
-    [[nodiscard]] voxel::Voxels chunkVoxels(const voxel::Voxels &cubeVoxels);
+    [[nodiscard]] voxel::Voxels getChunkVoxels(const voxel::Voxels &cubeVoxels);
 
 }

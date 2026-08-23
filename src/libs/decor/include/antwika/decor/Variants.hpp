@@ -17,21 +17,21 @@
 namespace antwika::decor
 {
 
-    [[nodiscard]] const VariantGroup *groupLedBy(
+    [[nodiscard]] const VariantGroup *getGroupLedBy(
         std::span<const VariantGroup> familyGroups, tilemap::Tile tile);
 
-    [[nodiscard]] const VariantGroup *groupContaining(
+    [[nodiscard]] const VariantGroup *getGroupContaining(
         std::span<const VariantGroup> familyGroups, tilemap::Tile tile);
 
     [[nodiscard]] tilemap::Tile canonicalTileOf(
         std::span<const VariantGroup> familyGroups, tilemap::Tile tile);
 
-    [[nodiscard]] std::vector<VariantGroup> withVariantToggled(
+    [[nodiscard]] std::vector<VariantGroup> getWithVariantToggled(
         const std::vector<VariantGroup> &familyGroups,
         tilemap::Tile canonicalTile,
         tilemap::Tile tile);
 
-    [[nodiscard]] std::vector<VariantGroup> withVariantWeightSet(
+    [[nodiscard]] std::vector<VariantGroup> getWithVariantWeightSet(
         const std::vector<VariantGroup> &familyGroups,
         tilemap::Tile tile,
         std::uint8_t weight);
@@ -43,7 +43,7 @@ namespace antwika::decor
         tilemap::Tile canonicalTile,
         tilemap::Tile tile);
 
-    [[nodiscard]] std::vector<tilemap::Tile> withVariantsApplied(
+    [[nodiscard]] std::vector<tilemap::Tile> getWithVariantsApplied(
         const std::vector<voxelmap::FaceRef> &faces,
         std::span<const tilemap::Tile> wovenTiles,
         std::span<const VariantGroup> familyGroups,

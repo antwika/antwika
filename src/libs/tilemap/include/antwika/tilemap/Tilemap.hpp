@@ -26,7 +26,7 @@ namespace antwika::tilemap
 
         [[nodiscard]] bool isComplete() const;
 
-        [[nodiscard]] std::optional<Tile> at(
+        [[nodiscard]] std::optional<Tile> getEntryAt(
             std::uint32_t column, std::uint32_t row) const;
 
         [[nodiscard]] bool operator==(const Tilemap &other) const
@@ -35,13 +35,13 @@ namespace antwika::tilemap
 
     [[nodiscard]] gfx::Size tileSizeOf(Atlas atlas);
 
-    [[nodiscard]] gfx::RectF tileSource(Tile tile);
+    [[nodiscard]] gfx::RectF getTileSource(Tile tile);
 
-    [[nodiscard]] Tilemap defaultTilemap();
+    [[nodiscard]] Tilemap getDefaultTilemap();
 
-    [[nodiscard]] gfx::Size gridCellSize();
+    [[nodiscard]] gfx::Size getGridCellSize();
 
-    [[nodiscard]] std::optional<geometry::GridCell> cellHoldingTile(
+    [[nodiscard]] std::optional<geometry::GridCell> getCellHoldingTile(
         const Tilemap &tilemap, Tile tile);
 
     [[nodiscard]] std::optional<Tile> suggestedTileFor(

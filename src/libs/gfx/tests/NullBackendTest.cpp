@@ -7,7 +7,7 @@
 #include "antwika/gfx/NullBackend.hpp"
 
 using antwika::gfx::NullBackend;
-using antwika::gfx::rawValue;
+using antwika::gfx::getRawValue;
 using antwika::gfx::WindowSpec;
 using antwika::log::Level;
 using antwika::log::mocks::MockLogger;
@@ -18,7 +18,7 @@ TEST(NullBackendTest, Name_IsNull)
     NiceMock<MockLogger> logger;
     NullBackend backend(logger);
 
-    EXPECT_EQ(backend.name(), "null");
+    EXPECT_EQ(backend.getName(), "null");
 }
 
 TEST(NullBackendTest, CreateWindow_ReportsExactlyTheRequestedSize)
@@ -29,8 +29,8 @@ TEST(NullBackendTest, CreateWindow_ReportsExactlyTheRequestedSize)
     const auto window = backend.createWindow(
         WindowSpec{.title = "Antwika", .size = {.width = 640, .height = 480}});
 
-    EXPECT_EQ(window->size().width, 640u);
-    EXPECT_EQ(window->size().height, 480u);
+    EXPECT_EQ(window->getSize().width, 640u);
+    EXPECT_EQ(window->getSize().height, 480u);
 }
 
 TEST(NullBackendTest, CreateWindow_LogsThatAWindowWasCreated)
@@ -51,8 +51,8 @@ TEST(NullBackendTest, CreateWindow_NumbersWindowsFromOneUpwards)
     const auto first = backend.createWindow(WindowSpec{.title = "First"});
     const auto second = backend.createWindow(WindowSpec{.title = "Second"});
 
-    EXPECT_EQ(rawValue(first->id()), 1u);
-    EXPECT_EQ(rawValue(second->id()), 2u);
+    EXPECT_EQ(getRawValue(first->getId()), 1u);
+    EXPECT_EQ(getRawValue(second->getId()), 2u);
 }
 
 TEST(NullBackendTest, PollEvent_AlwaysReturnsNulloptWithNothingToReport)

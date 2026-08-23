@@ -28,7 +28,7 @@ namespace antwika::editor
         if (!sheetCheckerTexture)
         {
             sheetCheckerTexture = viewportRenderer.createTexture(
-                render::checkered(character::kCharacterCellSize, 4));
+                render::getCheckered(character::kCharacterCellSize, 4));
         }
     }
 
@@ -37,20 +37,20 @@ namespace antwika::editor
         std::vector<gfx::Bitmap> skinBitmaps)
     {
         rosterSkins.take(viewportRenderer, std::move(skinBitmaps));
-        editingAt = std::min(editingAt, rosterSkins.size() - 1);
-        editedSheet = rosterSkins.sheets().at(editingAt);
+        editingAt = std::min(editingAt, rosterSkins.getSize() - 1);
+        editedSheet = rosterSkins.getSheets().at(editingAt);
         sheetDirty = true;
     }
 
-    const std::vector<gfx::Bitmap> &CharacterSheetView::skins()
+    const std::vector<gfx::Bitmap> &CharacterSheetView::getSkins()
         const noexcept
     {
-        return rosterSkins.sheets();
+        return rosterSkins.getSheets();
     }
 
-    std::vector<gfx::Bitmap> CharacterSheetView::skinsAsDrawn() const
+    std::vector<gfx::Bitmap> CharacterSheetView::getSkinsAsDrawn() const
     {
-        auto sheets = rosterSkins.sheets();
+        auto sheets = rosterSkins.getSheets();
 
         if (editingAt < sheets.size())
         {
@@ -65,7 +65,7 @@ namespace antwika::editor
         rosterSkins.lay(viewportRenderer, editingAt, editedSheet);
     }
 
-    std::size_t CharacterSheetView::editing() const noexcept
+    std::size_t CharacterSheetView::getEditing() const noexcept
     {
         return editingAt;
     }
@@ -78,14 +78,14 @@ namespace antwika::editor
     void CharacterSheetView::switchTo(
         gfx::ViewportRenderer &viewportRenderer, const std::size_t skinIndex)
     {
-        if (editingAt == skinIndex || skinIndex >= rosterSkins.size())
+        if (editingAt == skinIndex || skinIndex >= rosterSkins.getSize())
         {
             return;
         }
 
         rosterSkins.lay(viewportRenderer, editingAt, editedSheet);
         editingAt = skinIndex;
-        editedSheet = rosterSkins.sheets().at(skinIndex);
+        editedSheet = rosterSkins.getSheets().at(skinIndex);
         sheetDirty = true;
     }
 
@@ -97,12 +97,12 @@ namespace antwika::editor
         rosterSkins.lay(viewportRenderer, skinIndex, std::move(skinBitmap));
     }
 
-    gfx::Bitmap &CharacterSheetView::sheet() noexcept
+    gfx::Bitmap &CharacterSheetView::getSheet() noexcept
     {
         return editedSheet;
     }
 
-    const gfx::Bitmap &CharacterSheetView::sheet() const noexcept
+    const gfx::Bitmap &CharacterSheetView::getSheet() const noexcept
     {
         return editedSheet;
     }
@@ -123,18 +123,18 @@ namespace antwika::editor
         sheetDirty = false;
     }
 
-    gfx::ITexture *CharacterSheetView::texture() const noexcept
+    gfx::ITexture *CharacterSheetView::getTexture() const noexcept
     {
         return sheetTexture.get();
     }
 
-    gfx::ITexture *CharacterSheetView::skinTexture(
+    gfx::ITexture *CharacterSheetView::getSkinTexture(
         const std::size_t skinIndex) const noexcept
     {
-        return rosterSkins.picture(skinIndex);
+        return rosterSkins.getPicture(skinIndex);
     }
 
-    gfx::ITexture *CharacterSheetView::checker() const noexcept
+    gfx::ITexture *CharacterSheetView::getChecker() const noexcept
     {
         return sheetCheckerTexture.get();
     }
@@ -153,7 +153,7 @@ namespace antwika::editor
                     == (way * character::kCharacterFrames) + frame;
 
                 const auto place =
-                    characterPlace(camera::kCanvasSize, way, frame);
+                    getCharacterPlace(camera::kCanvasSize, way, frame);
 
                 viewportRenderer.drawTexture(
                     *sheetCheckerTexture,
@@ -170,7 +170,7 @@ namespace antwika::editor
                     kWhiteColor);
                 viewportRenderer.drawTexture(
                     *sheetTexture,
-                    character::characterSource(way, frame),
+                    character::getCharacterSource(way, frame),
                     place,
                     chosenFrame ? kWhiteColor : kDisabledTintColor);
 
@@ -182,7 +182,7 @@ namespace antwika::editor
         }
 
         const auto drawnAt =
-            characterCanvasRect(camera::kCanvasSize);
+            getCharacterCanvasRect(camera::kCanvasSize);
 
         if (mark.selectedFrame.has_value())
         {
@@ -213,8 +213,8 @@ namespace antwika::editor
                         column, row};
 
                     viewportRenderer.drawRect(
-                        character::characterPixelPlace(drawnAt, pixelCell),
-                        character::characterPixelColor(
+                        character::getCharacterPixelPlace(drawnAt, pixelCell),
+                        character::getCharacterPixelColor(
                             editedSheet,
                             *mark.selectedFrame
                                 / character::kCharacterFrames,
@@ -228,7 +228,7 @@ namespace antwika::editor
                 && mark.selection.has_value())
             {
                 const auto corner =
-                    character::selectionOrigin(*mark.selection);
+                    character::getSelectionOrigin(*mark.selection);
 
                 for (std::uint32_t row = 0;
                      row < mark.floatingPatchBuffer->size.height;
@@ -239,7 +239,7 @@ namespace antwika::editor
                          ++column)
                     {
                         viewportRenderer.drawRect(
-                            character::characterPixelPlace(
+                            character::getCharacterPixelPlace(
                                 drawnAt,
                                 antwika::geometry::GridCell{
                                     corner.column + column,
@@ -255,7 +255,7 @@ namespace antwika::editor
             if (mark.selection.has_value())
             {
                 const auto place = character::
-                    selectionRect(drawnAt, *mark.selection);
+                    getSelectionRect(drawnAt, *mark.selection);
 
                 drawOutline(
                     viewportRenderer, place, kSelectionAccentColor);
@@ -267,7 +267,7 @@ namespace antwika::editor
                     drawnAt.originPoint.y + drawnAt.size.height
                         + 4.0F},
                 std::string(
-                    character::directionName(
+                    character::getDirectionName(
                         *mark.selectedFrame
                             / character::kCharacterFrames)),
                 1,

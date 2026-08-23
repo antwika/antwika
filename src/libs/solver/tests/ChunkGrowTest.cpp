@@ -10,10 +10,10 @@
 
 #include <antwika/solver/ChunkGrow.hpp>
 
-using antwika::solver::growTrouble;
+using antwika::solver::getGrowTrouble;
 using antwika::solver::hintsFrom;
-using antwika::solver::withChunkSpliced;
-using antwika::voxel::cubeVoxels;
+using antwika::solver::getWithChunkSpliced;
+using antwika::voxel::getCubeVoxels;
 using antwika::voxel::Facing;
 using antwika::voxel::kCubeSide;
 using antwika::voxel::Kind;
@@ -26,7 +26,7 @@ using antwika::voxel::Voxels;
 using antwika::worldgen::ChunkOutcome;
 using antwika::worldgen::ChunkResult;
 using antwika::worldgen::ChunkShape;
-using antwika::worldgen::chunkBox;
+using antwika::worldgen::getChunkBox;
 
 namespace
 {
@@ -42,7 +42,7 @@ namespace
             .y = cubePosition.y * kCubeSide,
             .z = cubePosition.z * kCubeSide};
 
-        auto cubeCells = cubeVoxels(cornerPosition, kind,
+        auto cubeCells = getCubeVoxels(cornerPosition, kind,
             stepVectorFor(facing));
 
         for (auto &[position, material] : cubeCells)
@@ -105,9 +105,9 @@ TEST(ChunkGrowTest, HintsFrom_NamesEveryHintWhereTheChunkStandsInTheWorld)
 TEST(ChunkGrowTest, WithChunkSpliced_TakesOutEveryVoxelTheChunkCovers)
 {
     const auto pile = cubeAt(VoxelPosition{.x = 1, .y = 1, .z = 1});
-    const auto box = chunkBox(kSmallShape, VoxelPosition{});
+    const auto box = getChunkBox(kSmallShape, VoxelPosition{});
 
-    const auto splicedPile = withChunkSpliced(pile, box, {});
+    const auto splicedPile = getWithChunkSpliced(pile, box, {});
 
     EXPECT_TRUE(splicedPile.empty());
 }
@@ -120,7 +120,7 @@ TEST(ChunkGrowTest, WithChunkSpliced_LeavesEveryVoxelBesideTheChunkWhereItStood)
     pile.insert(insideCube.begin(), insideCube.end());
 
     const auto splicedPile =
-        withChunkSpliced(pile, chunkBox(kSmallShape, VoxelPosition{}), {});
+        getWithChunkSpliced(pile, getChunkBox(kSmallShape, VoxelPosition{}), {});
 
     EXPECT_EQ(splicedPile, outsideCube);
 }
@@ -130,7 +130,7 @@ TEST(ChunkGrowTest, WithChunkSpliced_StandsEveryCubeGrown)
     const auto grownCube = cubeAt(VoxelPosition{.x = 2, .y = 2, .z = 2});
 
     const auto splicedPile =
-        withChunkSpliced({}, chunkBox(kSmallShape, VoxelPosition{}), grownCube);
+        getWithChunkSpliced({}, getChunkBox(kSmallShape, VoxelPosition{}), grownCube);
 
     EXPECT_EQ(splicedPile, grownCube);
 }
@@ -138,9 +138,9 @@ TEST(ChunkGrowTest, WithChunkSpliced_StandsEveryCubeGrown)
 TEST(ChunkGrowTest, GrowTrouble_TellsGivingUpApartFromCannotBeBuilt)
 {
     const auto gaveUp =
-        growTrouble(ChunkResult{.outcome = ChunkOutcome::LimitExceeded});
+        getGrowTrouble(ChunkResult{.outcome = ChunkOutcome::LimitExceeded});
     const auto never =
-        growTrouble(ChunkResult{.outcome = ChunkOutcome::Unsatisfiable});
+        getGrowTrouble(ChunkResult{.outcome = ChunkOutcome::Unsatisfiable});
 
     EXPECT_NE(gaveUp, never);
     EXPECT_FALSE(gaveUp.empty());
@@ -158,6 +158,6 @@ TEST(ChunkGrowTest, GrowTrouble_SaysSomethingOfEveryOutcome)
           ChunkOutcome::Unsatisfiable,
           ChunkOutcome::LimitExceeded})
     {
-        EXPECT_FALSE(growTrouble(ChunkResult{.outcome = outcome}).empty());
+        EXPECT_FALSE(getGrowTrouble(ChunkResult{.outcome = outcome}).empty());
     }
 }

@@ -15,15 +15,15 @@ using antwika::gfx::Size;
 
 namespace
 {
-    [[nodiscard]] std::uint32_t inkedPixels(
+    [[nodiscard]] std::uint32_t getInkedPixels(
         const GlyphCells &cells, char character)
     {
         std::uint32_t count = 0;
 
-        for (std::uint32_t row = 0; row < cells.cellSize().height; ++row)
+        for (std::uint32_t row = 0; row < cells.getCellSize().height; ++row)
         {
             for (std::uint32_t column = 0;
-                 column < cells.cellSize().width;
+                 column < cells.getCellSize().width;
                  ++column)
             {
                 count += cells.coverageAt(character, column, row) != 0
@@ -40,19 +40,19 @@ TEST(GlyphCellsTest, CellSize_IsTheFontMetricsTimesTheScale)
 {
     EXPECT_EQ(
         (Size{.width = kGlyphAdvance, .height = kGlyphLineHeight}),
-        GlyphCells{1}.cellSize());
+        GlyphCells{1}.getCellSize());
     EXPECT_EQ(
         (Size{
             .width = kGlyphAdvance * 3,
             .height = kGlyphLineHeight * 3}),
-        GlyphCells{3}.cellSize());
+        GlyphCells{3}.getCellSize());
 }
 
 TEST(GlyphCellsTest, CellSize_IsNothingAtZeroScale)
 {
     const GlyphCells cells{0};
 
-    EXPECT_EQ((Size{}), cells.cellSize());
+    EXPECT_EQ((Size{}), cells.getCellSize());
     EXPECT_EQ(0, cells.coverageAt('A', 0, 0));
 }
 
@@ -62,26 +62,26 @@ TEST(GlyphCellsTest, CoverageAt_InksEveryPrintableCharacterButSpace)
 
     for (char character = '!'; character <= '~'; ++character)
     {
-        EXPECT_GT(inkedPixels(cells, character), 0U) << character;
+        EXPECT_GT(getInkedPixels(cells, character), 0U) << character;
     }
 
-    EXPECT_EQ(0U, inkedPixels(cells, ' '));
+    EXPECT_EQ(0U, getInkedPixels(cells, ' '));
 }
 
 TEST(GlyphCellsTest, CoverageAt_IsBlankOutsideTheCoveredRange)
 {
     const GlyphCells cells{2};
 
-    EXPECT_EQ(0U, inkedPixels(cells, '\n'));
-    EXPECT_EQ(0U, inkedPixels(cells, '\x7f'));
-    EXPECT_EQ(0U, inkedPixels(cells, '\x80'));
-    EXPECT_EQ(0U, inkedPixels(cells, static_cast<char>(-1)));
+    EXPECT_EQ(0U, getInkedPixels(cells, '\n'));
+    EXPECT_EQ(0U, getInkedPixels(cells, '\x7f'));
+    EXPECT_EQ(0U, getInkedPixels(cells, '\x80'));
+    EXPECT_EQ(0U, getInkedPixels(cells, static_cast<char>(-1)));
 }
 
 TEST(GlyphCellsTest, CoverageAt_IsBlankOutsideTheCell)
 {
     const GlyphCells cells{2};
-    const Size cellSize = cells.cellSize();
+    const Size cellSize = cells.getCellSize();
 
     EXPECT_EQ(0, cells.coverageAt('A', cellSize.width, 0));
     EXPECT_EQ(0, cells.coverageAt('A', 0, cellSize.height));
@@ -90,7 +90,7 @@ TEST(GlyphCellsTest, CoverageAt_IsBlankOutsideTheCell)
 TEST(GlyphCellsTest, CoverageAt_IsBlankPastTheRightEdgeOfTheCell)
 {
     const GlyphCells cells{2};
-    const Size cellSize = cells.cellSize();
+    const Size cellSize = cells.getCellSize();
     std::uint32_t inkOnTheRowBelow = 0;
     std::uint32_t inkPastTheEdge = 0;
 
@@ -115,7 +115,7 @@ TEST(GlyphCellsTest, CoverageAt_IsBlankPastTheRightEdgeOfTheCell)
 TEST(GlyphCellsTest, CoverageAt_IsBlankBelowTheCell)
 {
     const GlyphCells cells{2};
-    const Size cellSize = cells.cellSize();
+    const Size cellSize = cells.getCellSize();
     std::uint32_t inkOnTheNextGlyph = 0;
     std::uint32_t inkBelowTheCell = 0;
 
@@ -142,10 +142,10 @@ TEST(GlyphCellsTest, CoverageAt_ReportsPartialInkAtAGlyphsEdge)
     const GlyphCells cells{2};
     bool partial = false;
 
-    for (std::uint32_t row = 0; row < cells.cellSize().height; ++row)
+    for (std::uint32_t row = 0; row < cells.getCellSize().height; ++row)
     {
         for (std::uint32_t column = 0;
-             column < cells.cellSize().width;
+             column < cells.getCellSize().width;
              ++column)
         {
             const auto coverage = cells.coverageAt('S', column, row);
@@ -160,16 +160,16 @@ TEST(GlyphCellsTest, GlyphCells_RastersTheRecordedCoverageForALetter)
 {
     const GlyphCells cells{2};
 
-    ASSERT_EQ(cells.cellSize().width, 12U);
-    ASSERT_EQ(cells.cellSize().height, 16U);
+    ASSERT_EQ(cells.getCellSize().width, 12U);
+    ASSERT_EQ(cells.getCellSize().height, 16U);
 
     unsigned long total = 0;
     unsigned long covered = 0;
 
-    for (std::uint32_t row = 0; row < cells.cellSize().height; ++row)
+    for (std::uint32_t row = 0; row < cells.getCellSize().height; ++row)
     {
         for (std::uint32_t column = 0;
-             column < cells.cellSize().width;
+             column < cells.getCellSize().width;
              ++column)
         {
             const auto value = cells.coverageAt('g', column, row);
@@ -193,14 +193,14 @@ TEST(GlyphCellsTest, GlyphCellsCache_KeepsOneSetOfCellsPerScale)
     EXPECT_EQ(&firstCells, &againCells);
     EXPECT_NE(&firstCells, &otherCells);
     EXPECT_EQ(&firstCells, &cache.at(2));
-    EXPECT_EQ(firstCells.cellSize(), againCells.cellSize());
-    EXPECT_NE(firstCells.cellSize(), otherCells.cellSize());
+    EXPECT_EQ(firstCells.getCellSize(), againCells.getCellSize());
+    EXPECT_NE(firstCells.getCellSize(), otherCells.getCellSize());
 }
 
 TEST(GlyphCellsTest, GlyphCellsCache_AnswersAZeroScaleWithEmptyCells)
 {
     GlyphCellsCache cache;
 
-    EXPECT_EQ((Size{}), cache.at(0).cellSize());
+    EXPECT_EQ((Size{}), cache.at(0).getCellSize());
 }
 

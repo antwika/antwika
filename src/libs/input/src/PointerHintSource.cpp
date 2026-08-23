@@ -54,7 +54,7 @@ namespace antwika::input
         std::optional<Position> position;
         for (const auto &event : events)
         {
-            const auto decodedEvent = codec.decode(event);
+            const auto decodedEvent = codec.getDecode(event);
 
             if (decodedEvent.has_value())
             {

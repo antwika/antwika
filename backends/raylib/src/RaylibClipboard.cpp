@@ -16,7 +16,7 @@ namespace antwika::input::raylib
         logger.log(Level::Debug, "input.raylib: holding the clipboard");
     }
 
-    std::string RaylibClipboard::text() const
+    std::string RaylibClipboard::getText() const
     {
         if (!IsWindowReady())
         {

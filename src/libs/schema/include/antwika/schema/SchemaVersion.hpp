@@ -12,7 +12,7 @@ namespace antwika::schema
 
     inline constexpr std::uint32_t kImplicitDocumentVersion = 1;
 
-    [[nodiscard]] std::uint32_t documentVersion(
+    [[nodiscard]] std::uint32_t getDocumentVersion(
         const nlohmann::json &document,
         std::string_view versionKey = kSchemaVersionKey);
 

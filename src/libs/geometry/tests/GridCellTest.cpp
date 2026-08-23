@@ -7,7 +7,7 @@
 #include <antwika/geometry/GridStep.hpp>
 #include <antwika/geometry/Size.hpp>
 
-using antwika::geometry::cellWithin;
+using antwika::geometry::getCellWithin;
 using antwika::geometry::GridCell;
 using antwika::geometry::GridStep;
 using antwika::geometry::kFourNeighbourSteps;
@@ -21,7 +21,7 @@ namespace
 
 TEST(GridCellTest, CellWithin_TakesAColumnAndRowInsideTheGrid)
 {
-    const auto foundCell = cellWithin(kBoardSize, 2, 1);
+    const auto foundCell = getCellWithin(kBoardSize, 2, 1);
 
     ASSERT_TRUE(foundCell.has_value());
     EXPECT_EQ(foundCell->column, 2U);
@@ -30,14 +30,14 @@ TEST(GridCellTest, CellWithin_TakesAColumnAndRowInsideTheGrid)
 
 TEST(GridCellTest, CellWithin_RefusesAColumnOrRowBeforeTheGrid)
 {
-    EXPECT_FALSE(cellWithin(kBoardSize, -1, 0).has_value());
-    EXPECT_FALSE(cellWithin(kBoardSize, 0, -1).has_value());
+    EXPECT_FALSE(getCellWithin(kBoardSize, -1, 0).has_value());
+    EXPECT_FALSE(getCellWithin(kBoardSize, 0, -1).has_value());
 }
 
 TEST(GridCellTest, CellWithin_RefusesAColumnOrRowPastTheGrid)
 {
-    EXPECT_FALSE(cellWithin(kBoardSize, 4, 0).has_value());
-    EXPECT_FALSE(cellWithin(kBoardSize, 0, 3).has_value());
+    EXPECT_FALSE(getCellWithin(kBoardSize, 4, 0).has_value());
+    EXPECT_FALSE(getCellWithin(kBoardSize, 0, 3).has_value());
 }
 
 TEST(GridCellTest, SteppedFrom_TakesTheCellTheStepLandsOn)

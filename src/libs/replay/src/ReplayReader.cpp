@@ -159,15 +159,15 @@ namespace antwika::replay
             {
                 requireNothingAfter(inputStream);
 
-                return replayFromJson(first, migrations);
+                return getReplayFromJson(first, migrations);
             }
 
             const ReplayHeader header =
-                replayHeaderFromJson(first, migrations);
+                getReplayHeaderFromJson(first, migrations);
 
             ReplayDocument document;
             document.canvasSize = header.canvasSize;
-            document.events = replayRecordsFromJson(
+            document.events = getReplayRecordsFromJson(
                 readRecordLines(inputStream), header.version, migrations);
             return document;
         } // GCOVR_EXCL_LINE

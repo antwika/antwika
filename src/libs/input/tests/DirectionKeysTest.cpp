@@ -13,8 +13,8 @@ TEST(DirectionKeysTest, DirectionKeys_AsksForNothingWithNoKeyDown)
 {
     const DirectionKeys keys;
 
-    EXPECT_FLOAT_EQ(keys.axisX(), 0.0F);
-    EXPECT_FLOAT_EQ(keys.axisZ(), 0.0F);
+    EXPECT_FLOAT_EQ(keys.getAxisX(), 0.0F);
+    EXPECT_FLOAT_EQ(keys.getAxisZ(), 0.0F);
 }
 
 TEST(DirectionKeysTest, ApplyArrowKey_TakesEachArrowDownAndBackUp)
@@ -24,16 +24,16 @@ TEST(DirectionKeysTest, ApplyArrowKey_TakesEachArrowDownAndBackUp)
     applyArrowKey(keys, Key::ArrowRight, true);
     applyArrowKey(keys, Key::ArrowDown, true);
 
-    EXPECT_FLOAT_EQ(keys.axisX(), 1.0F);
-    EXPECT_FLOAT_EQ(keys.axisZ(), 1.0F);
+    EXPECT_FLOAT_EQ(keys.getAxisX(), 1.0F);
+    EXPECT_FLOAT_EQ(keys.getAxisZ(), 1.0F);
 
     applyArrowKey(keys, Key::ArrowRight, false);
     applyArrowKey(keys, Key::ArrowDown, false);
     applyArrowKey(keys, Key::ArrowLeft, true);
     applyArrowKey(keys, Key::ArrowUp, true);
 
-    EXPECT_FLOAT_EQ(keys.axisX(), -1.0F);
-    EXPECT_FLOAT_EQ(keys.axisZ(), -1.0F);
+    EXPECT_FLOAT_EQ(keys.getAxisX(), -1.0F);
+    EXPECT_FLOAT_EQ(keys.getAxisZ(), -1.0F);
 }
 
 TEST(DirectionKeysTest, DirectionKeys_StandsStillWithBothWaysOfAnAxisDown)
@@ -45,8 +45,8 @@ TEST(DirectionKeysTest, DirectionKeys_StandsStillWithBothWaysOfAnAxisDown)
     applyArrowKey(keys, Key::ArrowUp, true);
     applyArrowKey(keys, Key::ArrowDown, true);
 
-    EXPECT_FLOAT_EQ(keys.axisX(), 0.0F);
-    EXPECT_FLOAT_EQ(keys.axisZ(), 0.0F);
+    EXPECT_FLOAT_EQ(keys.getAxisX(), 0.0F);
+    EXPECT_FLOAT_EQ(keys.getAxisZ(), 0.0F);
 }
 
 TEST(DirectionKeysTest, ApplyArrowKey_LeavesTheArrowsAloneForAnyOtherKey)
@@ -66,16 +66,16 @@ TEST(DirectionKeysTest, ApplyWasdKey_TakesEachOfTheFourDownAndBackUp)
     applyWasdKey(keys, Key::D, true);
     applyWasdKey(keys, Key::S, true);
 
-    EXPECT_FLOAT_EQ(keys.axisX(), 1.0F);
-    EXPECT_FLOAT_EQ(keys.axisZ(), 1.0F);
+    EXPECT_FLOAT_EQ(keys.getAxisX(), 1.0F);
+    EXPECT_FLOAT_EQ(keys.getAxisZ(), 1.0F);
 
     applyWasdKey(keys, Key::D, false);
     applyWasdKey(keys, Key::S, false);
     applyWasdKey(keys, Key::A, true);
     applyWasdKey(keys, Key::W, true);
 
-    EXPECT_FLOAT_EQ(keys.axisX(), -1.0F);
-    EXPECT_FLOAT_EQ(keys.axisZ(), -1.0F);
+    EXPECT_FLOAT_EQ(keys.getAxisX(), -1.0F);
+    EXPECT_FLOAT_EQ(keys.getAxisZ(), -1.0F);
 }
 
 TEST(DirectionKeysTest, ApplyWasdKey_LeavesTheFourAloneForAnyOtherKey)

@@ -26,8 +26,8 @@ namespace antwika::sound
         NullSoundBackend &operator=(const NullSoundBackend &) = delete;
         NullSoundBackend &operator=(NullSoundBackend &&) = delete;
 
-        [[nodiscard]] std::string_view name() const override;
-        [[nodiscard]] SoundCapabilities capabilities() const override;
+        [[nodiscard]] std::string_view getName() const override;
+        [[nodiscard]] SoundCapabilities getCapabilities() const override;
 
         [[nodiscard]] std::unique_ptr<IDevice> openDevice(
             const DeviceSpec &spec) override;

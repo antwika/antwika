@@ -19,13 +19,13 @@ namespace antwika::gfx
 
         [[nodiscard]] bool isComplete() const;
 
-        [[nodiscard]] std::size_t triangleCount() const;
+        [[nodiscard]] std::size_t getTriangleCount() const;
 
         [[nodiscard]] bool operator==(const MeshData &other) const
             = default;
     };
 
-    [[nodiscard]] std::vector<MeshData> splitMesh(
+    [[nodiscard]] std::vector<MeshData> getSplitMesh(
         const MeshData &mesh, std::size_t maxVertices);
 
 }

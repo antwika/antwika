@@ -21,7 +21,7 @@ namespace antwika::ui
         using detail::Node;
         using detail::SplitInfo;
 
-        [[nodiscard]] Sizing alongAxis(
+        [[nodiscard]] Sizing getAlongAxis(
             Axis axis,
             Axis wantedAxis,
             Sizing thickSizing,
@@ -33,7 +33,7 @@ namespace antwika::ui
 
     ContainerScope Context::split(const SplitSpec &spec)
     {
-        const auto thickness = fixedSize(themeValue.dividerThickness);
+        const auto thickness = getFixedSize(themeValue.dividerThickness);
 
         const auto index = tree->open(Node{ // GCOVR_EXCL_LINE
             .axis = spec.axis,
@@ -43,9 +43,9 @@ namespace antwika::ui
 
         const auto divider = tree->add(Node{ // GCOVR_EXCL_LINE
             .axis = spec.axis,
-            .widthSizing = alongAxis(spec.axis, Axis::Row, thickness,
+            .widthSizing = getAlongAxis(spec.axis, Axis::Row, thickness,
             kGrowSizing),
-            .heightSizing = alongAxis(
+            .heightSizing = getAlongAxis(
                 spec.axis,
                 Axis::Column,
                 thickness,
@@ -57,7 +57,7 @@ namespace antwika::ui
                 .hoveredColor = themeValue.dividerHoveredColor,
                 .pressedColor = themeValue.dividerHeldColor}});
 
-        tree->node(index).splitInfo = SplitInfo{
+        tree->getNode(index).splitInfo = SplitInfo{
             .ratio = std::min(spec.ratio, kSplitRatioScale),
             .minimum = spec.minimum,
             .divider = divider};

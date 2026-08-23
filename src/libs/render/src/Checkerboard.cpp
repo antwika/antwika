@@ -7,7 +7,7 @@
 namespace antwika::render
 {
 
-    gfx::Bitmap checkered(
+    gfx::Bitmap getCheckered(
         const antwika::gfx::Size size, const std::uint32_t check)
     {
         constexpr antwika::gfx::Color kDimColor{

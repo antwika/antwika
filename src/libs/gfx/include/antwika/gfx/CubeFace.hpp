@@ -29,7 +29,7 @@ namespace antwika::gfx
         CubeFace::South,
         CubeFace::North};
 
-    [[nodiscard]] constexpr CubeFace lastEnumerator(CubeFace) noexcept
+    [[nodiscard]] constexpr CubeFace getLastEnumerator(CubeFace) noexcept
     {
         return CubeFace::North;
     }

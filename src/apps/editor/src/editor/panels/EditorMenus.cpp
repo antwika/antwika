@@ -13,9 +13,9 @@
 namespace antwika::editor
 {
 
-    bool Editor::toolButtonActive(const ToolButton whichButton) const
+    bool Editor::isToolButtonActive(const ToolButton whichButton) const
     {
-        return antwika::editor::toolButtonActive(
+        return antwika::editor::isToolButtonActive(
             whichButton,
             settings.tool,
             ToolToggles{
@@ -55,11 +55,11 @@ namespace antwika::editor
         if (!cameraRig.freeLook)
         {
             cameraRig.view.transform =
-                camera::resetToIsometric(cameraRig.view.transform);
+                camera::getResetToIsometric(cameraRig.view.transform);
         }
     }
 
-    Editor::MenuFlag Editor::toggledFlag(const MenuItem item)
+    Editor::MenuFlag Editor::getToggledFlag(const MenuItem item)
     {
         struct FlagRow final
         {
@@ -118,7 +118,7 @@ namespace antwika::editor
 
     void Editor::onMenuItem(const MenuItem item)
     {
-        if (const auto flag = toggledFlag(item); flag != nullptr)
+        if (const auto flag = getToggledFlag(item); flag != nullptr)
         {
             bool &held = flag(*this);
 
@@ -191,7 +191,7 @@ namespace antwika::editor
 
     bool Editor::isChecked(const MenuItem item)
     {
-        if (const auto flag = toggledFlag(item); flag != nullptr)
+        if (const auto flag = getToggledFlag(item); flag != nullptr)
         {
             return flag(*this);
         }

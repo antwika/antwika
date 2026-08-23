@@ -11,7 +11,7 @@ namespace antwika::gfx
         Alpha,
     };
 
-    [[nodiscard]] constexpr BlendMode lastEnumerator(BlendMode) noexcept
+    [[nodiscard]] constexpr BlendMode getLastEnumerator(BlendMode) noexcept
     {
         return BlendMode::Alpha;
     }

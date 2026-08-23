@@ -20,7 +20,7 @@ namespace antwika::geometry
             = default;
     };
 
-    [[nodiscard]] constexpr std::optional<GridCell> cellWithin(
+    [[nodiscard]] constexpr std::optional<GridCell> getCellWithin(
         const Size gridSize,
         const std::int64_t column,
         const std::int64_t row) noexcept

@@ -23,7 +23,7 @@ using antwika::ui::Context;
 using antwika::ui::DrawList;
 using antwika::ui::DrawText;
 using antwika::ui::FillRect;
-using antwika::ui::fixedSize;
+using antwika::ui::getFixedSize;
 using antwika::ui::kGrowSizing;
 using antwika::ui::Theme;
 
@@ -38,7 +38,7 @@ namespace
     constexpr Color kPressedColor{.red = 15, .green = 25, .blue = 35};
     constexpr Color kButtonInkColor{.red = 250, .green = 250, .blue = 250};
 
-    Theme plainTheme(std::uint32_t padding = 0)
+    Theme getPlainTheme(std::uint32_t padding = 0)
     {
         return Theme{
             .panelColor = kPanelColor,
@@ -66,7 +66,7 @@ namespace
 
 TEST(ContextWidgetsTest, Label_UsesTheThemesTextColor)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.label("ab");
 
@@ -78,9 +78,9 @@ TEST(ContextWidgetsTest, Label_UsesTheThemesTextColor)
 
 TEST(ContextWidgetsTest, Label_TakesAColorOfItsOwn)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
-    uiContext.label("ab", uiContext.theme().mutedColor);
+    uiContext.label("ab", uiContext.getTheme().mutedColor);
 
     const auto commands = uiContext.build().drawList;
 
@@ -90,7 +90,7 @@ TEST(ContextWidgetsTest, Label_TakesAColorOfItsOwn)
 
 TEST(ContextWidgetsTest, Button_DrawsAFilledBoxAroundItsLabel)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.button("ab");
 
@@ -115,11 +115,11 @@ TEST(ContextWidgetsTest, Button_DrawsAFilledBoxAroundItsLabel)
 
 TEST(ContextWidgetsTest, Button_BreaksItsNameOverLinesToFitAWidth)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.button(
         "ab cd ef",
-        {.widthSizing = fixedSize(6 * kGlyph), .wrapWidth = 6 * kGlyph});
+        {.widthSizing = getFixedSize(6 * kGlyph), .wrapWidth = 6 * kGlyph});
 
     const auto commands = uiContext.build().drawList;
 
@@ -130,18 +130,18 @@ TEST(ContextWidgetsTest, Button_BreaksItsNameOverLinesToFitAWidth)
 
 TEST(ContextWidgetsTest, Button_GrowsTallerForEveryLineItBreaksInto)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.button("ab");
 
     const auto one =
         std::get<FillRect>(uiContext.build().drawList.at(0)).rect.size.height;
 
-    Context wrappedContext{kCanvasSize, plainTheme()};
+    Context wrappedContext{kCanvasSize, getPlainTheme()};
 
     wrappedContext.button(
         "ab cd ef",
-        {.widthSizing = fixedSize(6 * kGlyph), .wrapWidth = 6 * kGlyph});
+        {.widthSizing = getFixedSize(6 * kGlyph), .wrapWidth = 6 * kGlyph});
 
     const auto two =
         std::get<FillRect>(wrappedContext.build().drawList.at(0))
@@ -152,7 +152,7 @@ TEST(ContextWidgetsTest, Button_GrowsTallerForEveryLineItBreaksInto)
 
 TEST(ContextWidgetsTest, Button_LeavesItsNameWholeWhenNoWidthIsGiven)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.button("ab cd ef");
 
@@ -164,7 +164,7 @@ TEST(ContextWidgetsTest, Button_LeavesItsNameWholeWhenNoWidthIsGiven)
 
 TEST(ContextWidgetsTest, Button_UsesTheHoveredFillWhenToldTo)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.button("ab", {.state = ButtonState::Hovered});
 
@@ -173,7 +173,7 @@ TEST(ContextWidgetsTest, Button_UsesTheHoveredFillWhenToldTo)
 
 TEST(ContextWidgetsTest, Button_UsesThePressedFillWhenToldTo)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.button("ab", {.state = ButtonState::Pressed});
 
@@ -182,7 +182,7 @@ TEST(ContextWidgetsTest, Button_UsesThePressedFillWhenToldTo)
 
 TEST(ContextWidgetsTest, Button_CentresItsLabelWhenAskedToGrow)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.button("ab", {.widthSizing = kGrowSizing});
 
@@ -203,10 +203,10 @@ TEST(ContextWidgetsTest, Button_CentresItsLabelWhenAskedToGrow)
 
 TEST(ContextWidgetsTest, Spacer_PushesWhatFollowsToTheEndOfARow)
 {
-    Context uiContext{Size{.width = 100, .height = 10}, plainTheme()};
+    Context uiContext{Size{.width = 100, .height = 10}, getPlainTheme()};
 
     {
-        const auto row = uiContext.row({.heightSizing = fixedSize(10)});
+        const auto row = uiContext.row({.heightSizing = getFixedSize(10)});
 
         uiContext.spacer(kGrowSizing);
         uiContext.label("ab");
@@ -220,7 +220,7 @@ TEST(ContextWidgetsTest, Spacer_PushesWhatFollowsToTheEndOfARow)
 
 TEST(ContextWidgetsTest, Spacer_PushesWhatFollowsToTheBottomOfAColumn)
 {
-    Context uiContext{Size{.width = 100, .height = 100}, plainTheme()};
+    Context uiContext{Size{.width = 100, .height = 100}, getPlainTheme()};
 
     {
         const auto column = uiContext.column({.heightSizing = kGrowSizing});
@@ -237,10 +237,10 @@ TEST(ContextWidgetsTest, Spacer_PushesWhatFollowsToTheBottomOfAColumn)
 
 TEST(ContextWidgetsTest, Panel_FillsInTheThemesBackgroundAndPadding)
 {
-    Context uiContext{kCanvasSize, plainTheme(4)};
+    Context uiContext{kCanvasSize, getPlainTheme(4)};
 
     {
-        const auto panel = uiContext.panel({.heightSizing = fixedSize(20)});
+        const auto panel = uiContext.panel({.heightSizing = getFixedSize(20)});
 
         uiContext.label("ab");
     }
@@ -256,11 +256,11 @@ TEST(ContextWidgetsTest, Panel_FillsInTheThemesBackgroundAndPadding)
 
 TEST(ContextWidgetsTest, Panel_KeepsABackgroundAndPaddingAskedFor)
 {
-    Context uiContext{kCanvasSize, plainTheme(4)};
+    Context uiContext{kCanvasSize, getPlainTheme(4)};
 
     {
         const auto panel = uiContext.panel({
-            .heightSizing = fixedSize(20),
+            .heightSizing = getFixedSize(20),
             .backgroundColor = kAccentColor,
             .padding = 0});
 

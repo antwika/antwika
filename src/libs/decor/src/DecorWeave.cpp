@@ -23,7 +23,7 @@ namespace antwika::decor
 
     namespace decordetail
     {
-        std::uint32_t hashMix(std::uint32_t value)
+        std::uint32_t getHashMix(std::uint32_t value)
         {
             value ^= value << 13U;
             value ^= value >> 17U;
@@ -51,7 +51,7 @@ namespace antwika::decor
             mixedSeed ^= stir * 0x27d4eb2fU;
 
             return static_cast<std::uint8_t>(
-                hashMix(mixedSeed | 1U) % kFullFrequency);
+                getHashMix(mixedSeed | 1U) % kFullFrequency);
         }
 
         constexpr std::array<voxel::VoxelPosition, 4> kWallTangentPositions{
@@ -60,13 +60,13 @@ namespace antwika::decor
             voxel::VoxelPosition{.z = -1},
             voxel::VoxelPosition{.z = 1}};
 
-        voxel::VoxelPosition wallTangent(const std::size_t side)
+        voxel::VoxelPosition getWallTangent(const std::size_t side)
         {
             return kWallTangentPositions.at(
                 side % kWallTangentPositions.size());
         }
 
-        std::vector<std::size_t> shuffledValues(
+        std::vector<std::size_t> getShuffledValues(
             const std::size_t many, std::uint32_t seed)
         {
             std::vector<std::size_t> orderIndexes(many);
@@ -76,11 +76,11 @@ namespace antwika::decor
                 orderIndexes[index] = index;
             }
 
-            seed = hashMix(seed | 1U);
+            seed = getHashMix(seed | 1U);
 
             for (std::size_t index = many; index > 1; --index)
             {
-                seed = hashMix(seed);
+                seed = getHashMix(seed);
                 std::swap(orderIndexes[index - 1], orderIndexes[seed % index]);
             }
 
@@ -103,10 +103,10 @@ namespace antwika::decor
                      * 0x9e3779b9U;
             mixedSeed ^= seed * 2246822519U;
 
-            return hashMix(mixedSeed | 1U);
+            return getHashMix(mixedSeed | 1U);
         }
 
-        bool seamCompatible(
+        bool isSeamCompatible(
             const tile::TileRules &rules,
             const tilemap::Tile oneTile,
             const voxel::Side side,
@@ -114,7 +114,7 @@ namespace antwika::decor
             const tilemap::Tile otherTile)
         {
             const tilemap::TileEdge nearEdge{.side = side, .edge = kind};
-            const auto farFacing = voxel::facing(nearEdge);
+            const auto farFacing = voxel::getFacing(nearEdge);
 
             return tilesCompatible(rules, oneTile, nearEdge, otherTile)
                    && tilesCompatible(rules, otherTile, farFacing, oneTile);
@@ -122,7 +122,7 @@ namespace antwika::decor
     }
 
     std::vector<std::pair<std::size_t, std::map<std::size_t, tilemap::Tile>>>
-    solveDecorLayers(
+    getSolveDecorLayers(
         const std::vector<voxelmap::FaceRef> &faces,
         const std::span<const tilemap::Tile> drawnTiles,
         const std::span<const DecorTile> decor,
@@ -152,13 +152,13 @@ namespace antwika::decor
                 }
             }
 
-            auto placedDecor = solveDecor(
+            auto placedDecor = getSolveDecor(
                 faces,
                 drawnTiles,
                 ownTiles,
                 decorRules,
                 seed
-                    ^ hashMix(
+                    ^ getHashMix(
                         static_cast<std::uint32_t>(layer) | 1U));
 
             if (!placedDecor.empty())
@@ -170,7 +170,7 @@ namespace antwika::decor
         return layerGroups;
     } // GCOVR_EXCL_LINE
 
-    std::map<std::size_t, tilemap::Tile> solveDecor(
+    std::map<std::size_t, tilemap::Tile> getSolveDecor(
         const std::vector<voxelmap::FaceRef> &faces,
         const std::span<const tilemap::Tile> drawnTiles,
         const std::span<const DecorTile> decor,
@@ -183,9 +183,9 @@ namespace antwika::decor
         }
 
         const auto stampedTiles =
-            placeSpannedDecor(faces, drawnTiles, decor, seed);
+            getPlaceSpannedDecor(faces, drawnTiles, decor, seed);
         const auto blank = decor.size();
-        const auto order = shuffledValues(decor.size(), seed);
+        const auto order = getShuffledValues(decor.size(), seed);
 
         struct DecorPlacement final
         {
@@ -205,7 +205,7 @@ namespace antwika::decor
         for (std::size_t index = 0; index < faces.size(); ++index)
         {
             const auto looking =
-                gfx::Vec3(voxelmap::faceNormal(faces[index].side)).y;
+                gfx::Vec3(voxelmap::getFaceNormal(faces[index].side)).y;
             const auto upward = looking > 0.0F;
 
             if (looking < 0.0F || stampedTiles.contains(index))
@@ -227,7 +227,7 @@ namespace antwika::decor
                         drawnTiles[index])
                     != record.allowedBaseTiles.end();
 
-                if (fits && !decorSpanned(record)
+                if (fits && !isDecorSpanned(record)
                     && record.tile.atlas == drawnTiles[index].atlas
                     && frequencyRollFor(
                            faces[index].cell.position,
@@ -346,7 +346,7 @@ namespace antwika::decor
                 }
             }
 
-            return seamCompatible(
+            return isSeamCompatible(
                              decorRules,
                              decor[oneAt].tile,
                              side,
@@ -365,7 +365,7 @@ namespace antwika::decor
 
             if (decorPlacements[index].side != 4)
             {
-                const auto way = wallTangent(decorPlacements[index].side);
+                const auto way = getWallTangent(decorPlacements[index].side);
                 const auto sideways = voxel::VoxelPosition{
                     .x = mine.x + way.x,
                     .y = mine.y,
@@ -455,7 +455,7 @@ namespace antwika::decor
                 {},
                 wfc::SolverLimits{.maxSteps = kMaxSolveSteps},
                 std::move(preferences))
-                .solve();
+                .getSolve();
 
         auto updatedStamps = stampedTiles;
 

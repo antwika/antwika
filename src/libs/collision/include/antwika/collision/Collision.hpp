@@ -54,44 +54,44 @@ namespace antwika::collision
         const voxel::Voxels &filledVoxels,
         voxel::VoxelPosition groundPosition);
 
-    [[nodiscard]] std::optional<float> groundHeightAtColumn(
+    [[nodiscard]] std::optional<float> getGroundHeightAtColumn(
         const voxel::Voxels &filledVoxels,
         std::int32_t x,
         std::int32_t z,
         float feet);
 
-    [[nodiscard]] std::optional<voxel::VoxelCell> supportingVoxel(
+    [[nodiscard]] std::optional<voxel::VoxelCell> getSupportingVoxel(
         const voxel::Voxels &filledVoxels,
         std::int32_t x,
         std::int32_t z,
         float feet);
 
-    [[nodiscard]] float groundHeightOn(
+    [[nodiscard]] float getGroundHeightOn(
         const voxel::Voxels &filledVoxels,
         voxel::VoxelCell groundCell,
         float x,
         float z);
 
-    [[nodiscard]] std::optional<float> groundHeightUnderFootprint(
+    [[nodiscard]] std::optional<float> getGroundHeightUnderFootprint(
         const voxel::Voxels &filledVoxels,
         float x,
         float z,
         float feet);
 
-    [[nodiscard]] std::optional<component::Position> restPositionOverColumn(
+    [[nodiscard]] std::optional<component::Position> getRestPositionOverColumn(
         const voxel::Voxels &filledVoxels,
         std::int32_t x,
         std::int32_t z);
 
-    [[nodiscard]] std::optional<component::Position> spawnPosition(
+    [[nodiscard]] std::optional<component::Position> getSpawnPosition(
         const voxel::Voxels &filledVoxels);
 
-    [[nodiscard]] component::Position movedWithCollision(
+    [[nodiscard]] component::Position getMovedWithCollision(
         const voxel::Voxels &filledVoxels,
         component::Position position,
         component::Velocity velocity);
 
-    [[nodiscard]] std::array<voxel::VoxelPosition, 2> stoodCells(
+    [[nodiscard]] std::array<voxel::VoxelPosition, 2> getStoodCells(
         component::Position position);
 
 }

@@ -16,13 +16,13 @@ namespace antwika::ui::detail
     public:
         explicit LayoutTree(Node rootNode);
 
-        [[nodiscard]] std::size_t size() const noexcept;
+        [[nodiscard]] std::size_t getSize() const noexcept;
 
-        [[nodiscard]] Node &node(std::size_t index);
+        [[nodiscard]] Node &getNode(std::size_t index);
 
-        [[nodiscard]] const Node &node(std::size_t index) const;
+        [[nodiscard]] const Node &getNode(std::size_t index) const;
 
-        [[nodiscard]] std::size_t openIndex() const noexcept;
+        [[nodiscard]] std::size_t getOpenIndex() const noexcept;
 
         std::size_t open(Node containerNode);
 
@@ -32,15 +32,15 @@ namespace antwika::ui::detail
 
         void addArea(Area area);
 
-        [[nodiscard]] const std::vector<Area> &areas() const noexcept;
+        [[nodiscard]] const std::vector<Area> &getAreas() const noexcept;
 
         void addRail(ScrollBar railBar);
 
-        [[nodiscard]] const std::vector<ScrollBar> &rails() const noexcept;
+        [[nodiscard]] const std::vector<ScrollBar> &getRails() const noexcept;
 
         void addBar(Splitter barSplitter);
 
-        [[nodiscard]] const std::vector<Splitter> &bars() const noexcept;
+        [[nodiscard]] const std::vector<Splitter> &getBars() const noexcept;
 
     private:
         std::size_t append(Node valueNode);

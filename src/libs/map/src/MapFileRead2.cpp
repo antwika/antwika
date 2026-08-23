@@ -103,7 +103,7 @@ namespace antwika::map::mapfile
         for (const auto &row : kGateRows)
         {
             map.*(row.cells) =
-                readCells(documentJson[std::string(row.key)]);
+                getReadCells(documentJson[std::string(row.key)]);
         }
         map.exitLocked =
             documentJson[std::string(kExitLockedKey)].get<bool>();

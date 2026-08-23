@@ -43,7 +43,7 @@ namespace
 
     constexpr Size kCanvasSize{.width = 400, .height = 200};
 
-    [[nodiscard]] Theme plainTheme()
+    [[nodiscard]] Theme getPlainTheme()
     {
         Theme theme;
         theme.padding = 0;
@@ -66,7 +66,7 @@ namespace
         Size canvasSize = kCanvasSize,
         antwika::ui::Interactions *seenInteractions = nullptr)
     {
-        Context uiContext(canvasSize, plainTheme(), pointer);
+        Context uiContext(canvasSize, getPlainTheme(), pointer);
 
         {
             const auto pair = uiContext.split(spec);
@@ -94,12 +94,12 @@ namespace
         }
 
         return Panes{
-            .leftRect = frame.rects.find(kLeftWidget).value_or(Rect{}),
-            .dividerRect = frame.rects.find(kDividerWidget).value_or(Rect{}),
-            .rightRect = frame.rects.find(kRightWidget).value_or(Rect{})};
+            .leftRect = frame.rects.getFind(kLeftWidget).value_or(Rect{}),
+            .dividerRect = frame.rects.getFind(kDividerWidget).value_or(Rect{}),
+            .rightRect = frame.rects.getFind(kRightWidget).value_or(Rect{})};
     }
 
-    [[nodiscard]] SplitSpec evenly()
+    [[nodiscard]] SplitSpec getEvenly()
     {
         return SplitSpec{.widgetId = kDividerWidget, .axis = Axis::Row};
     }
@@ -115,7 +115,7 @@ namespace
 
 TEST(SplitTest, Split_HalvesWhatIsLeftOfTheDivider)
 {
-    const auto panes = panesOf(evenly());
+    const auto panes = panesOf(getEvenly());
 
     EXPECT_EQ(panes.dividerRect.size.width, 10U);
     EXPECT_EQ(panes.leftRect.size.width, 195U);
@@ -124,7 +124,7 @@ TEST(SplitTest, Split_HalvesWhatIsLeftOfTheDivider)
 
 TEST(SplitTest, Split_LaysThePanesEitherSideOfTheDivider)
 {
-    const auto panes = panesOf(evenly());
+    const auto panes = panesOf(getEvenly());
 
     EXPECT_EQ(panes.leftRect.originPoint.x, 0);
     EXPECT_EQ(panes.dividerRect.originPoint.x, 195);
@@ -133,7 +133,7 @@ TEST(SplitTest, Split_LaysThePanesEitherSideOfTheDivider)
 
 TEST(SplitTest, Split_GivesTheFirstPaneTheRatioItAsksFor)
 {
-    auto spec = evenly();
+    auto spec = getEvenly();
     spec.ratio = kSplitRatioScale / 4;
 
     const auto panes = panesOf(spec);
@@ -144,7 +144,7 @@ TEST(SplitTest, Split_GivesTheFirstPaneTheRatioItAsksFor)
 
 TEST(SplitTest, Split_GivesTheWholeAxisToTheFirstPaneAtTheTop)
 {
-    auto spec = evenly();
+    auto spec = getEvenly();
     spec.ratio = kSplitRatioScale;
 
     const auto panes = panesOf(spec);
@@ -155,7 +155,7 @@ TEST(SplitTest, Split_GivesTheWholeAxisToTheFirstPaneAtTheTop)
 
 TEST(SplitTest, Split_ClampsARatioPastTheWhole)
 {
-    auto spec = evenly();
+    auto spec = getEvenly();
     spec.ratio = kSplitRatioScale * 3;
 
     const auto panes = panesOf(spec);
@@ -165,7 +165,7 @@ TEST(SplitTest, Split_ClampsARatioPastTheWhole)
 
 TEST(SplitTest, Split_StopsThePaneAtItsMinimumRatherThanSquashingIt)
 {
-    auto spec = evenly();
+    auto spec = getEvenly();
     spec.ratio = 0;
     spec.minimum = 80;
 
@@ -177,7 +177,7 @@ TEST(SplitTest, Split_StopsThePaneAtItsMinimumRatherThanSquashingIt)
 
 TEST(SplitTest, Split_KeepsTheOtherPaneAtItsMinimumToo)
 {
-    auto spec = evenly();
+    auto spec = getEvenly();
     spec.ratio = kSplitRatioScale;
     spec.minimum = 80;
 
@@ -189,7 +189,7 @@ TEST(SplitTest, Split_KeepsTheOtherPaneAtItsMinimumToo)
 
 TEST(SplitTest, Split_SharesEvenlyWhenTwoMinimumsDoNotFit)
 {
-    auto spec = evenly();
+    auto spec = getEvenly();
     spec.ratio = 0;
     spec.minimum = 500;
 
@@ -201,7 +201,7 @@ TEST(SplitTest, Split_SharesEvenlyWhenTwoMinimumsDoNotFit)
 
 TEST(SplitTest, Split_StacksThePanesOnAColumnAxis)
 {
-    auto spec = evenly();
+    auto spec = getEvenly();
     spec.axis = Axis::Column;
 
     const auto panes = panesOf(spec);
@@ -215,7 +215,7 @@ TEST(SplitTest, Split_StacksThePanesOnAColumnAxis)
 TEST(SplitTest, Split_LeavesNoContentWhenTheDividerFillsTheAxis)
 {
     const auto panes =
-        panesOf(evenly(), {}, Size{.width = 6, .height = 200});
+        panesOf(getEvenly(), {}, Size{.width = 6, .height = 200});
 
     EXPECT_EQ(panes.dividerRect.size.width, 6U);
     EXPECT_EQ(panes.leftRect.size.width, 0U);
@@ -224,10 +224,10 @@ TEST(SplitTest, Split_LeavesNoContentWhenTheDividerFillsTheAxis)
 
 TEST(SplitTest, Build_RefusesASplitWithOnePane)
 {
-    Context uiContext(kCanvasSize, plainTheme());
+    Context uiContext(kCanvasSize, getPlainTheme());
 
     {
-        const auto pair = uiContext.split(evenly());
+        const auto pair = uiContext.split(getEvenly());
 
         {
             const auto only = uiContext.column({.widgetId = kLeftWidget});
@@ -239,10 +239,10 @@ TEST(SplitTest, Build_RefusesASplitWithOnePane)
 
 TEST(SplitTest, Build_RefusesASplitWithThreePanes)
 {
-    Context uiContext(kCanvasSize, plainTheme());
+    Context uiContext(kCanvasSize, getPlainTheme());
 
     {
-        const auto pair = uiContext.split(evenly());
+        const auto pair = uiContext.split(getEvenly());
 
         {
             const auto first = uiContext.column({.widgetId = kLeftWidget});
@@ -266,7 +266,7 @@ TEST(SplitTest, Split_ReportsTheRatioAPressOnTheDividerAsksFor)
 
     static_cast<void>(
         panesOf(
-            evenly(),
+            getEvenly(),
             pressedAt(197, 100),
             kCanvasSize,
             &seenInteractions));
@@ -282,7 +282,7 @@ TEST(SplitTest, Split_ReportsNothingForAPressBesideTheDivider)
 
     static_cast<void>(
         panesOf(
-            evenly(),
+            getEvenly(),
             pressedAt(20, 100),
             kCanvasSize,
             &seenInteractions));
@@ -295,7 +295,7 @@ TEST(SplitTest, Split_ReportsNothingWhileThePointerIsUp)
     antwika::ui::Interactions seenInteractions;
 
     static_cast<void>(panesOf(
-        evenly(),
+        getEvenly(),
         Pointer{.positionPoint = Point{.x = 197, .y = 100}},
         kCanvasSize,
         &seenInteractions));
@@ -305,7 +305,7 @@ TEST(SplitTest, Split_ReportsNothingWhileThePointerIsUp)
 
 TEST(SplitTest, Split_KeepsADragThatHasLeftTheDivider)
 {
-    auto spec = evenly();
+    auto spec = getEvenly();
     spec.dragging = true;
 
     antwika::ui::Interactions seenInteractions;
@@ -325,7 +325,7 @@ TEST(SplitTest, Split_KeepsADragThatHasLeftTheDivider)
 
 TEST(SplitTest, Split_ReportsTheEndsForADragPastEitherEdge)
 {
-    auto spec = evenly();
+    auto spec = getEvenly();
     spec.dragging = true;
 
     antwika::ui::Interactions beforeInteractions;
@@ -349,7 +349,7 @@ TEST(SplitTest, Split_ReportsTheEndsForADragPastEitherEdge)
 
 TEST(SplitTest, Split_ReportsNothingWhenTheDividerFillsTheAxis)
 {
-    auto spec = evenly();
+    auto spec = getEvenly();
     spec.dragging = true;
 
     antwika::ui::Interactions seenInteractions;
@@ -369,7 +369,7 @@ TEST(SplitTest, Split_LeavesTheDividerHoveredUnderThePointer)
     antwika::ui::Interactions seenInteractions;
 
     static_cast<void>(panesOf(
-        evenly(),
+        getEvenly(),
         Pointer{.positionPoint = Point{.x = 197, .y = 100}},
         kCanvasSize,
         &seenInteractions));
@@ -382,7 +382,7 @@ TEST(SplitTest, Split_ReportsNothingForADividerWithNoId)
 {
     antwika::ui::Interactions seenInteractions;
 
-    auto spec = evenly();
+    auto spec = getEvenly();
     spec.widgetId = antwika::widget::kNoWidget;
     spec.dragging = true;
 
@@ -411,7 +411,7 @@ TEST(SplitTest, OperatorEquals_ComparesTheDividerAndTheRatio)
 
 TEST(SplitTest, Split_ReportsTheRatioADragDownAColumnAsksFor)
 {
-    auto spec = evenly();
+    auto spec = getEvenly();
     spec.axis = Axis::Column;
     spec.dragging = true;
 
@@ -431,12 +431,12 @@ TEST(SplitTest, Split_ReportsNothingForADividerUnderAnOpenList)
 {
     constexpr std::array<std::string_view, 2> kOptions{"one", "two"};
 
-    auto spec = evenly();
+    auto spec = getEvenly();
     spec.dragging = true;
 
     Context uiContext(
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{.positionPoint = Point{.x = 10, .y = 30}, .down = true});
 
     {
@@ -465,7 +465,7 @@ TEST(SplitTest, Split_IgnoresAHeldPointerThatWanderedOntoTheDivider)
     antwika::ui::Interactions seenInteractions;
 
     static_cast<void>(panesOf(
-        evenly(),
+        getEvenly(),
         Pointer{
             .positionPoint = Point{.x = 197, .y = 100},
             .down = true,

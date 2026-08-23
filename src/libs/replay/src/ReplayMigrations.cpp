@@ -17,10 +17,10 @@ namespace antwika::replay
         }
     }
 
-    MigrationChain standardReplayMigrations()
+    MigrationChain getStandardReplayMigrations()
     {
         MigrationList migrations;
-        migrations.push_back(schema::step(
+        migrations.push_back(schema::getStep(
             1,
             2,
             "replay: a record is unchanged by JSON Lines",

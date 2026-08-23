@@ -46,7 +46,7 @@ namespace antwika::app
         std::chrono::time_point<std::chrono::system_clock> startTime,
         std::chrono::microseconds elapsedTime)
     {
-        const auto left = startTime + elapsedTime - clock.currentTime();
+        const auto left = startTime + elapsedTime - clock.getCurrentTime();
 
         if (left < left.zero())
         {
@@ -72,7 +72,7 @@ namespace antwika::app
         const auto frames =
             static_cast<antwika::time::Tick>(pacing.framesPerTick);
 
-        const auto startTime = clock.currentTime();
+        const auto startTime = clock.getCurrentTime();
 
         const std::chrono::microseconds interval = pacing.tickInterval;
 

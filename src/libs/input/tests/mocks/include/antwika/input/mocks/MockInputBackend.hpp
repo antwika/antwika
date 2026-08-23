@@ -17,10 +17,10 @@ namespace antwika::input::mocks
     class MockInputBackend : public IInputBackend
     {
     public:
-        MOCK_METHOD(std::string_view, name, (), (const, override));
+        MOCK_METHOD(std::string_view, getName, (), (const, override));
 
         MOCK_METHOD(
-            InputCapabilities, capabilities, (), (const, override));
+            InputCapabilities, getCapabilities, (), (const, override));
 
         MOCK_METHOD(std::optional<InputEvent>, pollEvent, (), (override));
     };

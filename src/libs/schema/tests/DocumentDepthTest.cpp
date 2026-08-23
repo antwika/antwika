@@ -11,7 +11,7 @@ using antwika::schema::exceedsMaxDepth;
 
 namespace
 {
-    [[nodiscard]] nlohmann::json nested(const std::size_t levels)
+    [[nodiscard]] nlohmann::json getNested(const std::size_t levels)
     {
         nlohmann::json value = 7;
 
@@ -38,18 +38,18 @@ TEST(DocumentDepthTest, ExceedsMaxDepth_IsFalseForAPrimitive)
 
 TEST(DocumentDepthTest, ExceedsMaxDepth_AllowsNestingUpToTheBound)
 {
-    EXPECT_FALSE(exceedsMaxDepth(nested(kMaxDocumentDepth)));
+    EXPECT_FALSE(exceedsMaxDepth(getNested(kMaxDocumentDepth)));
 }
 
 TEST(DocumentDepthTest, ExceedsMaxDepth_IsTrueJustPastTheBound)
 {
-    EXPECT_TRUE(exceedsMaxDepth(nested(kMaxDocumentDepth + 1)));
+    EXPECT_TRUE(exceedsMaxDepth(getNested(kMaxDocumentDepth + 1)));
 }
 
 TEST(DocumentDepthTest, ExceedsMaxDepth_CountsObjectsLikeArrays)
 {
     nlohmann::json document;
-    document["payload"] = nested(kMaxDocumentDepth);
+    document["payload"] = getNested(kMaxDocumentDepth);
 
     EXPECT_TRUE(exceedsMaxDepth(document));
 }

@@ -36,7 +36,7 @@ namespace antwika::font::detail
             return stbtt_InitFont(&info, bytes.data(), 0) != 0;
         }
 
-        [[nodiscard]] const stbtt_fontinfo &handle() const
+        [[nodiscard]] const stbtt_fontinfo &getHandle() const
         {
             return info;
         }
@@ -59,12 +59,12 @@ namespace antwika::font::detail
 
     Rasteriser::~Rasteriser() = default;
 
-    VerticalMetrics Rasteriser::verticalMetrics() const
+    VerticalMetrics Rasteriser::getVerticalMetrics() const
     {
         VerticalMetrics metrics;
 
         stbtt_GetFontVMetrics(
-            &font->handle(),
+            &font->getHandle(),
             &metrics.ascent,
             &metrics.descent,
             &metrics.lineGap);
@@ -72,36 +72,36 @@ namespace antwika::font::detail
         return metrics;
     }
 
-    float Rasteriser::scaleForPixelHeight(
+    float Rasteriser::getScaleForPixelHeight(
         std::uint32_t pixelHeight) const
     {
         return stbtt_ScaleForPixelHeight(
-            &font->handle(), static_cast<float>(pixelHeight));
+            &font->getHandle(), static_cast<float>(pixelHeight));
     }
 
-    int Rasteriser::glyphIndex(char32_t codepoint) const
+    int Rasteriser::getGlyphIndex(char32_t codepoint) const
     {
         return stbtt_FindGlyphIndex(
-            &font->handle(), static_cast<int>(codepoint));
+            &font->getHandle(), static_cast<int>(codepoint));
     }
 
-    int Rasteriser::advanceWidth(int glyph) const
+    int Rasteriser::getAdvanceWidth(int glyph) const
     {
         int advance = 0;
         int leftSideBearing = 0;
 
         stbtt_GetGlyphHMetrics(
-            &font->handle(), glyph, &advance, &leftSideBearing);
+            &font->getHandle(), glyph, &advance, &leftSideBearing);
 
         return advance;
     }
 
-    GlyphBox Rasteriser::glyphBox(int glyph, float scale) const
+    GlyphBox Rasteriser::getGlyphBox(int glyph, float scale) const
     {
         GlyphBox box;
 
         stbtt_GetGlyphBitmapBox(
-            &font->handle(),
+            &font->getHandle(),
             glyph,
             scale,
             scale,
@@ -113,7 +113,7 @@ namespace antwika::font::detail
         return box;
     }
 
-    RasterisedGlyph Rasteriser::rasteriseGlyph(
+    RasterisedGlyph Rasteriser::getRasteriseGlyph(
         int glyph, float scale) const
     {
         int width = 0;
@@ -122,7 +122,7 @@ namespace antwika::font::detail
         int offsetY = 0;
 
         unsigned char *samples = stbtt_GetGlyphBitmap(
-            &font->handle(),
+            &font->getHandle(),
             scale,
             scale,
             glyph,

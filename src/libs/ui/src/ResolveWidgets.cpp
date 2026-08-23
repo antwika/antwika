@@ -51,7 +51,7 @@ namespace antwika::ui::detail
 
             for (std::size_t lineIndex = 0; lineIndex < line; ++lineIndex)
             {
-                const auto end = endOfLine(text, begin);
+                const auto end = getEndOfLine(text, begin);
 
                 if (end == text.size())
                 {
@@ -61,7 +61,7 @@ namespace antwika::ui::detail
                 begin = end + 1;
             }
 
-            return std::min(begin + column, endOfLine(text, begin));
+            return std::min(begin + column, getEndOfLine(text, begin));
         }
 
         [[nodiscard]] std::size_t lineOf(
@@ -71,7 +71,7 @@ namespace antwika::ui::detail
                 std::ranges::count(text.substr(0, charIndex), '\n'));
         }
 
-        [[nodiscard]] std::uint32_t across(
+        [[nodiscard]] std::uint32_t getAcross(
             std::uint64_t value,
             std::uint64_t range,
             std::uint64_t span) noexcept
@@ -81,7 +81,7 @@ namespace antwika::ui::detail
                 return 0;
             }
 
-            return clampToU32(std::min(value, range) * span / range);
+            return getClampToU32(std::min(value, range) * span / range);
         }
 
         [[nodiscard]] std::size_t rowsOf(
@@ -100,7 +100,7 @@ namespace antwika::ui::detail
             return rows;
         }
 
-        [[nodiscard]] std::size_t rowsBefore(
+        [[nodiscard]] std::size_t getRowsBefore(
             const Area &area, const std::size_t line) noexcept
         {
             std::size_t rows = 0;
@@ -125,7 +125,7 @@ namespace antwika::ui::detail
         [[nodiscard]] PageView showingOf(
             const LayoutTree &tree, const Area &area) noexcept
         {
-            const auto &column = tree.node(area.column).arrangedRect;
+            const auto &column = tree.getNode(area.column).arrangedRect;
 
             const auto page = std::max<std::size_t>(
                 column.size.height / area.lineHeight, 1);
@@ -151,12 +151,12 @@ namespace antwika::ui::detail
         void placeThumb(
             LayoutTree &tree, const Area &area, const PageView &pageView)
         {
-            const auto track = tree.node(area.track).arrangedRect;
+            const auto track = tree.getNode(area.track).arrangedRect;
 
             const auto trackHeight = track.size.height;
 
-            const auto share = across(
-                pageView.page, rowsBefore(area, area.lines), trackHeight);
+            const auto share = getAcross(
+                pageView.page, getRowsBefore(area, area.lines), trackHeight);
 
             const auto thumb =
                 std::clamp(share, std::min(trackHeight, area.lineHeight),
@@ -164,18 +164,18 @@ namespace antwika::ui::detail
 
             const auto slack = trackHeight - thumb;
 
-            tree.node(area.thumb).arrangedRect = Rect{
+            tree.getNode(area.thumb).arrangedRect = Rect{
                 .originPoint =
                     {.x = track.originPoint.x,
                      .y = track.originPoint.y
-                          + static_cast<std::int32_t>(across(
-                              rowsBefore(area, area.scroll),
-                              rowsBefore(area, pageView.furthest),
+                          + static_cast<std::int32_t>(getAcross(
+                              getRowsBefore(area, area.scroll),
+                              getRowsBefore(area, pageView.furthest),
                               slack))},
                 .size = {.width = track.size.width, .height = thumb}};
         }
 
-        [[nodiscard]] std::size_t lineOnTrack(
+        [[nodiscard]] std::size_t getLineOnTrack(
             const Rect &trackRect,
             const Point point,
             const std::size_t furthest) noexcept
@@ -183,7 +183,7 @@ namespace antwika::ui::detail
             const auto downOffset = static_cast<std::uint64_t>(
                 point.y - trackRect.originPoint.y);
 
-            return across(
+            return getAcross(
                 downOffset, std::max(trackRect.size.height, 1U) - 1U, furthest);
         }
 
@@ -241,7 +241,7 @@ namespace antwika::ui::detail
             edit = nextEdit;
         }
 
-        [[nodiscard]] std::uint32_t valueOnRail(
+        [[nodiscard]] std::uint32_t getValueOnRail(
             const Rect &trackRect,
             const Point point,
             const std::uint32_t range) noexcept
@@ -256,7 +256,7 @@ namespace antwika::ui::detail
             const auto alongOffset = static_cast<std::uint64_t>(
                 point.x - trackRect.originPoint.x);
 
-            return across(std::min<std::uint64_t>(alongOffset, span), span,
+            return getAcross(std::min<std::uint64_t>(alongOffset, span), span,
                           range);
         }
 
@@ -266,21 +266,21 @@ namespace antwika::ui::detail
             const std::uint32_t value,
             const std::uint32_t width)
         {
-            const auto track = tree.node(railBar.track).arrangedRect;
+            const auto track = tree.getNode(railBar.track).arrangedRect;
 
             const auto thumb = std::min(width, track.size.width);
             const auto slack = track.size.width - thumb;
 
-            tree.node(railBar.thumb).arrangedRect = Rect{
+            tree.getNode(railBar.thumb).arrangedRect = Rect{
                 .originPoint =
                     {.x = track.originPoint.x
                           + static_cast<std::int32_t>(
-                              across(value, railBar.range, slack)),
+                              getAcross(value, railBar.range, slack)),
                      .y = track.originPoint.y},
                 .size = {.width = thumb, .height = track.size.height}};
         }
 
-        [[nodiscard]] std::uint32_t ratioOnBar(
+        [[nodiscard]] std::uint32_t getRatioOnBar(
             const Rect &boxRect,
             const Rect &dividerRect,
             const Point point,
@@ -320,7 +320,7 @@ namespace antwika::ui::detail
         Interactions &interactions,
         std::optional<TextEdit> &edit)
     {
-        for (const auto &area : tree.areas())
+        for (const auto &area : tree.getAreas())
         {
             const auto pageView = showingOf(tree, area);
 
@@ -334,12 +334,12 @@ namespace antwika::ui::detail
                 && (pointer.pressed
                     || area.dragging == DragOrigin::Track)
                 && contains(
-                    tree.node(area.track).arrangedRect, *pointer.positionPoint);
+                    tree.getNode(area.track).arrangedRect, *pointer.positionPoint);
 
             if (onTrack)
             {
-                top = lineOnTrack(
-                    tree.node(area.track).arrangedRect,
+                top = getLineOnTrack(
+                    tree.getNode(area.track).arrangedRect,
                     *pointer.positionPoint,
                     pageView.furthest);
             }
@@ -421,7 +421,7 @@ namespace antwika::ui::detail
         const std::uint32_t thumbWidth,
         Interactions &interactions)
     {
-        for (const auto &rail : tree.rails())
+        for (const auto &rail : tree.getRails())
         {
             auto value = rail.value;
 
@@ -429,13 +429,13 @@ namespace antwika::ui::detail
                 !underOverlay && pointer.positionPoint && pointer.down
                 && (pointer.pressed || rail.dragging)
                 && contains(
-                       tree.node(rail.track).arrangedRect,
+                       tree.getNode(rail.track).arrangedRect,
                        *pointer.positionPoint);
 
             if (onTrack && rail.range > 0)
             {
-                value = valueOnRail(
-                    tree.node(rail.track).arrangedRect,
+                value = getValueOnRail(
+                    tree.getNode(rail.track).arrangedRect,
                     *pointer.positionPoint,
                     rail.range);
             }
@@ -456,7 +456,7 @@ namespace antwika::ui::detail
         const bool underOverlay,
         Interactions &interactions)
     {
-        for (const auto &bar : tree.bars())
+        for (const auto &bar : tree.getBars())
         {
             if (underOverlay || !pointer.positionPoint || !pointer.down)
             {
@@ -467,7 +467,7 @@ namespace antwika::ui::detail
                 bar.dragging
                 || (pointer.pressed
                     && contains(
-                           tree.node(bar.divider).arrangedRect,
+                           tree.getNode(bar.divider).arrangedRect,
                            *pointer.positionPoint));
 
             if (!taken || bar.widgetId == kNoWidget)
@@ -477,9 +477,9 @@ namespace antwika::ui::detail
 
             interactions.split = SplitChange{
                 .dividerWidget = bar.widgetId,
-                .ratio = ratioOnBar(
-                    tree.node(bar.split).arrangedRect,
-                    tree.node(bar.divider).arrangedRect,
+                .ratio = getRatioOnBar(
+                    tree.getNode(bar.split).arrangedRect,
+                    tree.getNode(bar.divider).arrangedRect,
                     *pointer.positionPoint,
                     bar.axis)};
         }
@@ -490,9 +490,9 @@ namespace antwika::ui::detail
         const Interactions &interactions,
         bool down)
     {
-        for (std::size_t index = 0; index < tree.size(); ++index)
+        for (std::size_t index = 0; index < tree.getSize(); ++index)
         {
-            auto &node = tree.node(index);
+            auto &node = tree.getNode(index);
 
             if (node.styleColors)
             {

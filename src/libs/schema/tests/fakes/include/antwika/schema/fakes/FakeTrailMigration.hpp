@@ -23,7 +23,7 @@ namespace antwika::schema::fakes
         {
         }
 
-        [[nodiscard]] std::uint32_t fromVersion() const noexcept override
+        [[nodiscard]] std::uint32_t getFromVersion() const noexcept override
         {
             return startVersion;
         }
@@ -33,7 +33,7 @@ namespace antwika::schema::fakes
             return endVersion;
         }
 
-        [[nodiscard]] std::string_view name() const noexcept override
+        [[nodiscard]] std::string_view getName() const noexcept override
         {
             return label;
         }

@@ -19,14 +19,14 @@ namespace antwika::ui::detail
 
     namespace
     {
-        [[nodiscard]] std::vector<WidgetId> focusableIds(
+        [[nodiscard]] std::vector<WidgetId> getFocusableIds(
             const LayoutTree &tree)
         {
             std::vector<WidgetId> widgetIds;
 
-            for (std::size_t index = 0; index < tree.size(); ++index)
+            for (std::size_t index = 0; index < tree.getSize(); ++index)
             {
-                const auto &node = tree.node(index);
+                const auto &node = tree.getNode(index);
 
                 if (!node.focusStyle || node.widgetId == kNoWidget)
                 {
@@ -43,13 +43,13 @@ namespace antwika::ui::detail
             return widgetIds;
         } // GCOVR_EXCL_LINE
 
-        [[nodiscard]] bool listed(
+        [[nodiscard]] bool isListed(
             const std::vector<WidgetId> &widgetIds, WidgetId widgetId)
         {
             return std::ranges::find(widgetIds, widgetId) != widgetIds.end();
         }
 
-        [[nodiscard]] WidgetId step(
+        [[nodiscard]] WidgetId getStep(
             const std::vector<WidgetId> &widgetIds,
             WidgetId fromWidgetId,
             bool forward)
@@ -83,9 +83,9 @@ namespace antwika::ui::detail
             const auto scan = [&](bool overlay) {
                 bool contained = false;
 
-                for (std::size_t index = tree.size(); index-- > 0;)
+                for (std::size_t index = tree.getSize(); index-- > 0;)
                 {
-                    const auto &node = tree.node(index);
+                    const auto &node = tree.getNode(index);
 
                     if (node.overlay != overlay
                         || !contains(node.arrangedRect, *pointer.positionPoint))
@@ -141,9 +141,9 @@ namespace antwika::ui::detail
         [[nodiscard]] std::optional<OptionChoice> optionFor(
             const LayoutTree &tree, WidgetId widget)
         {
-            for (std::size_t index = 0; index < tree.size(); ++index)
+            for (std::size_t index = 0; index < tree.getSize(); ++index)
             {
-                const auto &node = tree.node(index);
+                const auto &node = tree.getNode(index);
 
                 if (node.widgetId == widget
                     && node.optionOwnerWidget != kNoWidget)
@@ -171,9 +171,9 @@ namespace antwika::ui::detail
                 focusWidget = interactions.activatedWidget;
             }
 
-            const auto focusables = focusableIds(tree);
+            const auto focusables = getFocusableIds(tree);
 
-            if (!listed(focusables, focusWidget))
+            if (!isListed(focusables, focusWidget))
             {
                 focusWidget = kNoWidget;
             }
@@ -198,7 +198,7 @@ namespace antwika::ui::detail
                 if (key == Key::FocusNext || key == Key::FocusPrevious)
                 {
                     focusWidget =
-                        step(focusables, focusWidget, key == Key::FocusNext);
+                        getStep(focusables, focusWidget, key == Key::FocusNext);
                 }
             }
 

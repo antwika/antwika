@@ -10,19 +10,19 @@
 #include "MatrixApprox.hpp"
 
 using antwika::gfx::Camera3D;
-using antwika::gfx::identityMatrix;
+using antwika::gfx::getIdentityMatrix;
 using antwika::gfx::Orthographic;
 using antwika::gfx::Perspective;
 using antwika::gfx::Vec3;
 using antwika::gfx::Vec4;
-using antwika::gfx::tests::approxEqual;
+using antwika::gfx::tests::getApproxEqual;
 using antwika::gfx::tests::kEpsilon;
 
 namespace
 {
     constexpr float kQuarterTurn = std::numbers::pi_v<float> / 2.0F;
 
-    Camera3D lookingAtOriginFromZ()
+    Camera3D getLookingAtOriginFromZ()
     {
         return Camera3D{
             Vec3{0.0F, 0.0F, 5.0F},
@@ -97,59 +97,59 @@ TEST(OrthographicTest, OperatorEquals_ComparesWhereTheRectangleSits)
 
 TEST(Camera3DTest, View_DefaultCameraLooksDownNegativeZ)
 {
-    EXPECT_TRUE(approxEqual(Camera3D{}.view(), identityMatrix()));
+    EXPECT_TRUE(getApproxEqual(Camera3D{}.getView(), getIdentityMatrix()));
 }
 
 TEST(Camera3DTest, View_PutsTheTargetInFrontOfTheEye)
 {
     const Vec4 targetPosition =
-        lookingAtOriginFromZ().view() * Vec4(0.0F, 0.0F, 0.0F, 1.0F);
+        getLookingAtOriginFromZ().getView() * Vec4(0.0F, 0.0F, 0.0F, 1.0F);
 
     EXPECT_TRUE(
-        approxEqual(targetPosition, Vec4(0.0F, 0.0F, -5.0F, 1.0F)));
+        getApproxEqual(targetPosition, Vec4(0.0F, 0.0F, -5.0F, 1.0F)));
 }
 
 TEST(Camera3DTest, View_EyeOnItsTargetIsTheIdentityRatherThanNaN)
 {
-    Camera3D camera = lookingAtOriginFromZ();
-    camera.setTarget(camera.position());
+    Camera3D camera = getLookingAtOriginFromZ();
+    camera.setTarget(camera.getPosition());
 
-    EXPECT_TRUE(approxEqual(camera.view(), identityMatrix()));
+    EXPECT_TRUE(getApproxEqual(camera.getView(), getIdentityMatrix()));
 }
 
 TEST(Camera3DTest, Accessors_ReportWhatTheCameraWasBuiltWith)
 {
-    const Camera3D camera = lookingAtOriginFromZ();
+    const Camera3D camera = getLookingAtOriginFromZ();
 
-    EXPECT_TRUE(approxEqual(camera.position(), Vec3(0.0F, 0.0F, 5.0F)));
-    EXPECT_TRUE(approxEqual(camera.target(), Vec3(0.0F, 0.0F, 0.0F)));
-    EXPECT_TRUE(approxEqual(camera.up(), Vec3(0.0F, 1.0F, 0.0F)));
-    EXPECT_EQ(Perspective{}, std::get<Perspective>(camera.projection()));
+    EXPECT_TRUE(getApproxEqual(camera.getPosition(), Vec3(0.0F, 0.0F, 5.0F)));
+    EXPECT_TRUE(getApproxEqual(camera.getTarget(), Vec3(0.0F, 0.0F, 0.0F)));
+    EXPECT_TRUE(getApproxEqual(camera.getUp(), Vec3(0.0F, 1.0F, 0.0F)));
+    EXPECT_EQ(Perspective{}, std::get<Perspective>(camera.getProjection()));
 }
 
 TEST(Camera3DTest, SetPosition_MovesTheEye)
 {
-    Camera3D camera = lookingAtOriginFromZ();
+    Camera3D camera = getLookingAtOriginFromZ();
     camera.setPosition(Vec3{0.0F, 0.0F, 9.0F});
 
     const Vec4 targetPoint =
-        camera.view() * Vec4(0.0F, 0.0F, 0.0F, 1.0F);
+        camera.getView() * Vec4(0.0F, 0.0F, 0.0F, 1.0F);
 
-    EXPECT_TRUE(approxEqual(camera.position(), Vec3(0.0F, 0.0F, 9.0F)));
-    EXPECT_TRUE(approxEqual(targetPoint, Vec4(0.0F, 0.0F, -9.0F, 1.0F)));
+    EXPECT_TRUE(getApproxEqual(camera.getPosition(), Vec3(0.0F, 0.0F, 9.0F)));
+    EXPECT_TRUE(getApproxEqual(targetPoint, Vec4(0.0F, 0.0F, -9.0F, 1.0F)));
 }
 
 TEST(Camera3DTest, SetTarget_AimsTheEye)
 {
-    Camera3D camera = lookingAtOriginFromZ();
+    Camera3D camera = getLookingAtOriginFromZ();
     camera.setTarget(Vec3{1.0F, 0.0F, 5.0F});
 
-    EXPECT_TRUE(approxEqual(camera.target(), Vec3(1.0F, 0.0F, 5.0F)));
+    EXPECT_TRUE(getApproxEqual(camera.getTarget(), Vec3(1.0F, 0.0F, 5.0F)));
 }
 
 TEST(Camera3DTest, SetProjection_ReplacesTheOneHeld)
 {
-    Camera3D camera = lookingAtOriginFromZ();
+    Camera3D camera = getLookingAtOriginFromZ();
     const Orthographic wantedOrthographic{
         .halfWidth = 2.0F,
         .halfHeight = 1.0F,
@@ -158,7 +158,7 @@ TEST(Camera3DTest, SetProjection_ReplacesTheOneHeld)
 
     camera.setProjection(wantedOrthographic);
 
-    EXPECT_EQ(wantedOrthographic, std::get<Orthographic>(camera.projection()));
+    EXPECT_EQ(wantedOrthographic, std::get<Orthographic>(camera.getProjection()));
 }
 
 TEST(Camera3DTest, ProjectionMatrix_PerspectiveScalesByFieldOfView)
@@ -170,7 +170,7 @@ TEST(Camera3DTest, ProjectionMatrix_PerspectiveScalesByFieldOfView)
         .nearPlane = 1.0F,
         .farPlane = 3.0F});
 
-    const auto matrix = camera.projectionMatrix();
+    const auto matrix = camera.getProjectionMatrix();
     const float focal = 1.0F / std::tan(kQuarterTurn / 2.0F);
 
     EXPECT_NEAR(focal / 2.0F, matrix[0][0], kEpsilon);
@@ -187,7 +187,7 @@ TEST(Camera3DTest, ProjectionMatrix_PerspectiveKeepsNearAndFarInRange)
         .nearPlane = 1.0F,
         .farPlane = 3.0F});
 
-    const auto matrix = camera.projectionMatrix();
+    const auto matrix = camera.getProjectionMatrix();
     const Vec4 onNearPoint = matrix * Vec4(0.0F, 0.0F, -1.0F, 1.0F);
     const Vec4 onFarPoint = matrix * Vec4(0.0F, 0.0F, -3.0F, 1.0F);
 
@@ -205,22 +205,22 @@ TEST(Camera3DTest, ProjectionMatrix_OrthographicMapsHalfExtentsToOne)
         .farPlane = 1.0F});
 
     const Vec4 corner =
-        camera.projectionMatrix() * Vec4(2.0F, 1.0F, 0.0F, 1.0F);
+        camera.getProjectionMatrix() * Vec4(2.0F, 1.0F, 0.0F, 1.0F);
 
-    EXPECT_TRUE(approxEqual(corner, Vec4(1.0F, 1.0F, 0.0F, 1.0F)));
+    EXPECT_TRUE(getApproxEqual(corner, Vec4(1.0F, 1.0F, 0.0F, 1.0F)));
 }
 
 TEST(Camera3DTest, ViewProjection_IsTheProjectionTimesTheView)
 {
-    const Camera3D camera = lookingAtOriginFromZ();
+    const Camera3D camera = getLookingAtOriginFromZ();
 
-    ASSERT_FALSE(approxEqual(camera.view(), identityMatrix()));
-    ASSERT_FALSE(approxEqual(camera.projectionMatrix(), identityMatrix()));
-    ASSERT_FALSE(approxEqual(
-        camera.projectionMatrix() * camera.view(),
-        camera.view() * camera.projectionMatrix()));
+    ASSERT_FALSE(getApproxEqual(camera.getView(), getIdentityMatrix()));
+    ASSERT_FALSE(getApproxEqual(camera.getProjectionMatrix(), getIdentityMatrix()));
+    ASSERT_FALSE(getApproxEqual(
+        camera.getProjectionMatrix() * camera.getView(),
+        camera.getView() * camera.getProjectionMatrix()));
 
-    EXPECT_TRUE(approxEqual(
-        camera.viewProjection(),
-        camera.projectionMatrix() * camera.view()));
+    EXPECT_TRUE(getApproxEqual(
+        camera.getViewProjection(),
+        camera.getProjectionMatrix() * camera.getView()));
 }

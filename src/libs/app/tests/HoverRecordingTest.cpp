@@ -66,7 +66,7 @@ namespace
     constexpr Color kIdleColor{.red = 40, .green = 50, .blue = 60};
     constexpr Color kHoveredColor{.red = 70, .green = 80, .blue = 90};
 
-    Theme plainTheme()
+    Theme getPlainTheme()
     {
         return Theme{
             .buttonIdleColor = kIdleColor,
@@ -77,7 +77,7 @@ namespace
             .buttonPadding = 0};
     }
 
-    [[nodiscard]] std::vector<std::vector<InputEvent>> script()
+    [[nodiscard]] std::vector<std::vector<InputEvent>> getScript()
     {
         std::vector<std::vector<InputEvent>> roundEvents;
 
@@ -94,9 +94,9 @@ namespace
         return roundEvents;
     }
 
-    [[nodiscard]] antwika::ui::Frame twoButtons()
+    [[nodiscard]] antwika::ui::Frame getTwoButtons()
     {
-        Context uiContext{kCanvasSize, plainTheme()};
+        Context uiContext{kCanvasSize, getPlainTheme()};
 
         {
             const auto actions = uiContext.row();
@@ -129,11 +129,11 @@ namespace
         std::vector<std::vector<Color>> pictureColors;
     };
 
-    [[nodiscard]] Run drive(bool withHover)
+    [[nodiscard]] Run getDrive(bool withHover)
     {
         const InputEventCodec codec;
         ReplaySource innerSource({});
-        FakeInputBackend backend(script());
+        FakeInputBackend backend(getScript());
         PointerHintChannel hints;
 
         InputPipelineOptions options{
@@ -158,14 +158,14 @@ namespace
                     TickEvent{.tick = tick, .event = std::move(event)});
             }
 
-            auto frame = twoButtons();
+            auto frame = getTwoButtons();
 
             if (withHover)
             {
                 applyHover(
                     frame.drawList,
                     frame.hoverTargets,
-                    hoverFrom(hints.latest()));
+                    hoverFrom(hints.getLatest()));
             }
 
             run.pictureColors.push_back(fillsOf(frame.drawList));
@@ -174,7 +174,7 @@ namespace
         return run;
     }
 
-    [[nodiscard]] std::size_t distinctPictures(const Run &run)
+    [[nodiscard]] std::size_t getDistinctPictures(const Run &run)
     {
         std::size_t distinct = 0;
 
@@ -193,8 +193,8 @@ namespace
 
 TEST(HoverRecordingTest, Recording_IsIdenticalWithAndWithoutHover)
 {
-    const auto plain = drive(false);
-    const auto hovering = drive(true);
+    const auto plain = getDrive(false);
+    const auto hovering = getDrive(true);
 
     ASSERT_EQ(2U, plain.recordedEvents.size());
     EXPECT_EQ(plain.recordedEvents, hovering.recordedEvents);
@@ -202,7 +202,7 @@ TEST(HoverRecordingTest, Recording_IsIdenticalWithAndWithoutHover)
 
 TEST(HoverRecordingTest, Recording_HoldsNoneOfTheMotionTheHoverFollowed)
 {
-    const auto hovering = drive(true);
+    const auto hovering = getDrive(true);
 
     ASSERT_EQ(2U, hovering.recordedEvents.size());
 
@@ -214,10 +214,10 @@ TEST(HoverRecordingTest, Recording_HoldsNoneOfTheMotionTheHoverFollowed)
 
 TEST(HoverRecordingTest, Picture_FollowsThePointerTheRecordingNeverSaw)
 {
-    const auto plain = drive(false);
-    const auto hovering = drive(true);
+    const auto plain = getDrive(false);
+    const auto hovering = getDrive(true);
 
-    EXPECT_EQ(1U, distinctPictures(plain));
+    EXPECT_EQ(1U, getDistinctPictures(plain));
 
-    EXPECT_LT(1U, distinctPictures(hovering));
+    EXPECT_LT(1U, getDistinctPictures(hovering));
 }

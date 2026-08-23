@@ -12,7 +12,7 @@
 namespace antwika::ui::support
 {
 
-    [[nodiscard]] inline std::optional<gfx::Point> widgetCentre(
+    [[nodiscard]] inline std::optional<gfx::Point> getWidgetCentre(
         const Frame &frame, const WidgetId widget)
     {
         const std::optional<gfx::Rect> rect = frame.rects.find(widget);

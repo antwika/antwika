@@ -21,16 +21,16 @@
 #include <antwika/enums/Enumeration.hpp>
 
 using antwika::tilemap::Atlas;
-using antwika::tilemap::defaultTilemap;
+using antwika::tilemap::getDefaultTilemap;
 using antwika::voxel::EdgeKind;
 using antwika::voxel::voxelsOf;
 using antwika::tilemap::kEveryTileEdge;
 using antwika::map::kMaxCellCoord;
-using antwika::map::loadMap;
+using antwika::map::getLoadMap;
 using antwika::map::Map;
 using antwika::map::MapFileError;
-using antwika::map::serializeMap;
-using antwika::voxelmap::demoCells;
+using antwika::map::getSerializeMap;
+using antwika::voxelmap::getDemoCells;
 using antwika::map::readMap;
 using antwika::map::saveMap;
 using antwika::voxel::Side;
@@ -42,7 +42,7 @@ using antwika::voxel::VoxelPosition;
 
 namespace
 {
-    [[nodiscard]] Map readText(const std::string &text)
+    [[nodiscard]] Map getReadText(const std::string &text)
     {
         std::istringstream inputStream(text);
 
@@ -74,13 +74,13 @@ namespace
         document["version"] = version;
     }
 
-    [[nodiscard]] Map demoMap()
+    [[nodiscard]] Map getDemoMap()
     {
         return Map{
-            .voxels = demoCells(), .tilemap = defaultTilemap()};
+            .voxels = getDemoCells(), .tilemap = getDefaultTilemap()};
     }
 
-    [[nodiscard]] std::string aroundTiles(const std::string &tiles)
+    [[nodiscard]] std::string getAroundTiles(const std::string &tiles)
     {
         return R"({"magic": "antwika.map", "version": 1,
                    "voxels": [], "tilemap": )"
@@ -108,7 +108,7 @@ namespace
         return false;
     }
 
-    [[nodiscard]] std::string somewhereToWrite(
+    [[nodiscard]] std::string getSomewhereToWrite(
         const std::string &name)
     {
         const auto path =
@@ -120,32 +120,32 @@ namespace
 
 TEST(MapFileTest, Map_ReadsBackTheMapItWrote)
 {
-    const auto map = demoMap();
+    const auto map = getDemoMap();
 
-    EXPECT_EQ(readText(serializeMap(map)), map);
+    EXPECT_EQ(getReadText(getSerializeMap(map)), map);
 }
 
 TEST(MapFileTest, Map_ReadsBackAMapHoldingNothingAtAll)
 {
     const Map bareMap;
 
-    EXPECT_EQ(readText(serializeMap(bareMap)), bareMap);
+    EXPECT_EQ(getReadText(getSerializeMap(bareMap)), bareMap);
 }
 
 TEST(MapFileTest, Map_KeepsHowTheTilesHaveBeenArranged)
 {
-    auto map = demoMap();
+    auto map = getDemoMap();
 
     swapTiles(map.tilemap, {.column = 0, .row = 0},
               {.column = 31, .row = 15});
     swapTiles(map.tilemap, {.column = 4, .row = 2},
               {.column = 5, .row = 2});
 
-    const auto reloadedMap = readText(serializeMap(map));
+    const auto reloadedMap = getReadText(getSerializeMap(map));
 
     EXPECT_EQ(reloadedMap, map);
-    EXPECT_EQ(reloadedMap.tilemap.at(0, 0), *map.tilemap.at(0, 0));
-    EXPECT_NE(reloadedMap.tilemap.at(0, 0), defaultTilemap().at(0, 0));
+    EXPECT_EQ(reloadedMap.tilemap.getEntryAt(0, 0), *map.tilemap.getEntryAt(0, 0));
+    EXPECT_NE(reloadedMap.tilemap.getEntryAt(0, 0), getDefaultTilemap().getEntryAt(0, 0));
 }
 
 TEST(MapFileTest, Map_KeepsItsDecorAndItsSpawnCubeAndItsExitCube)
@@ -170,7 +170,7 @@ TEST(MapFileTest, Map_KeepsItsDecorAndItsSpawnCubeAndItsExitCube)
     map.spawnCubePosition = VoxelPosition{.x = 2, .y = 0, .z = -2};
     map.exitCubePosition = VoxelPosition{.x = -4, .y = 2, .z = 6};
 
-    const auto reloadedMap = readText(serializeMap(map));
+    const auto reloadedMap = getReadText(getSerializeMap(map));
 
     EXPECT_EQ(reloadedMap, map);
     EXPECT_EQ(reloadedMap.decor, map.decor);
@@ -188,7 +188,7 @@ TEST(MapFileTest, Map_KeepsThePlacesItWasGiven)
             .z = kMaxCellCoord}},
         VoxelCell{.position = {.x = 7, .y = -3, .z = 11}}});
 
-    EXPECT_EQ(readText(serializeMap(map)).voxels, map.voxels);
+    EXPECT_EQ(getReadText(getSerializeMap(map)).voxels, map.voxels);
 }
 
 TEST(MapFileTest, HoldsAFloat_TellsAFloatFromAWholeNumber)
@@ -201,14 +201,14 @@ TEST(MapFileTest, HoldsAFloat_TellsAFloatFromAWholeNumber)
 
 TEST(MapFileTest, Map_WritesNoFloatAtAll)
 {
-    const auto documentJson = nlohmann::json::parse(serializeMap(demoMap()));
+    const auto documentJson = nlohmann::json::parse(getSerializeMap(getDemoMap()));
 
     EXPECT_FALSE(holdsAFloat(documentJson));
 }
 
 TEST(MapFileTest, Map_SaysWhatItIsAndWhichVersionItIs)
 {
-    const auto text = serializeMap(Map{});
+    const auto text = getSerializeMap(Map{});
 
     EXPECT_NE(text.find("antwika.map"), std::string::npos);
     EXPECT_NE(text.find("\"version\""), std::string::npos);
@@ -216,13 +216,13 @@ TEST(MapFileTest, Map_SaysWhatItIsAndWhichVersionItIs)
 
 TEST(MapFileTest, ReadMap_TurnsAwayTextThatIsNotJson)
 {
-    EXPECT_THROW((void)readText("this is not json"), MapFileError);
+    EXPECT_THROW((void)getReadText("this is not json"), MapFileError);
 }
 
 TEST(MapFileTest, ReadMap_TurnsAwayAFileOfAnotherKind)
 {
     EXPECT_THROW(
-        (void)readText(
+        (void)getReadText(
             R"({"magic": "antwika.voxels", "version": 1,
                 "voxels": [], "tilemap":
                 {"columns": 0, "rows": 0, "tiles": []}})"),
@@ -232,7 +232,7 @@ TEST(MapFileTest, ReadMap_TurnsAwayAFileOfAnotherKind)
 TEST(MapFileTest, ReadMap_TurnsAwayAVersionItDoesNotKnow)
 {
     EXPECT_THROW(
-        (void)readText(
+        (void)getReadText(
             R"({"magic": "antwika.map", "version": 99,
                 "voxels": [], "tilemap":
                 {"columns": 0, "rows": 0, "tiles": []}})"),
@@ -242,7 +242,7 @@ TEST(MapFileTest, ReadMap_TurnsAwayAVersionItDoesNotKnow)
 TEST(MapFileTest, ReadMap_TurnsAwayAMapWithNoTilemap)
 {
     EXPECT_THROW(
-        (void)readText(
+        (void)getReadText(
             R"({"magic": "antwika.map", "version": 1,
                 "voxels": []})"),
         MapFileError);
@@ -251,7 +251,7 @@ TEST(MapFileTest, ReadMap_TurnsAwayAMapWithNoTilemap)
 TEST(MapFileTest, ReadMap_TurnsAwayAMapWithNoVoxels)
 {
     EXPECT_THROW(
-        (void)readText(
+        (void)getReadText(
             R"({"magic": "antwika.map", "version": 1,
                 "tilemap":
                 {"columns": 0, "rows": 0, "tiles": []}})"),
@@ -261,7 +261,7 @@ TEST(MapFileTest, ReadMap_TurnsAwayAMapWithNoVoxels)
 TEST(MapFileTest, ReadMap_TurnsAwayAPlaceOfTheWrongLength)
 {
     EXPECT_THROW(
-        (void)readText(
+        (void)getReadText(
             R"({"magic": "antwika.map", "version": 1,
                 "voxels": [[1, 2]], "tilemap":
                 {"columns": 0, "rows": 0, "tiles": []}})"),
@@ -271,7 +271,7 @@ TEST(MapFileTest, ReadMap_TurnsAwayAPlaceOfTheWrongLength)
 TEST(MapFileTest, ReadMap_TurnsAwayTwoVoxelsStandingInOnePlace)
 {
     EXPECT_THROW(
-        (void)readText(
+        (void)getReadText(
             R"({"magic": "antwika.map", "version": 1,
                 "voxels": [[1, 2, 3], [1, 2, 3]], "tilemap":
                 {"columns": 0, "rows": 0, "tiles": []}})"),
@@ -280,7 +280,7 @@ TEST(MapFileTest, ReadMap_TurnsAwayTwoVoxelsStandingInOnePlace)
 
 TEST(MapFileTest, ReadMap_TakesTwoVoxelsThatStandApart)
 {
-    const auto loadedMap = readText(
+    const auto loadedMap = getReadText(
         R"({"magic": "antwika.map", "version": 1,
             "voxels": [[1, 2, 3], [1, 2, 4]], "tilemap":
             {"columns": 0, "rows": 0, "tiles": []}})");
@@ -291,7 +291,7 @@ TEST(MapFileTest, ReadMap_TakesTwoVoxelsThatStandApart)
 TEST(MapFileTest, ReadMap_TurnsAwayAPlaceThatIsNotAWholeNumber)
 {
     EXPECT_THROW(
-        (void)readText(
+        (void)getReadText(
             R"({"magic": "antwika.map", "version": 1,
                 "voxels": [[1.5, 2, 3]], "tilemap":
                 {"columns": 0, "rows": 0, "tiles": []}})"),
@@ -304,7 +304,7 @@ TEST(MapFileTest, ReadMap_TurnsAwayAPlaceTooFarOut)
         static_cast<std::int64_t>(kMaxCellCoord) + 1);
 
     EXPECT_THROW(
-        (void)readText(
+        (void)getReadText(
             R"({"magic": "antwika.map", "version": 1,
                 "voxels": [[)"
             + pastEndText
@@ -316,8 +316,8 @@ TEST(MapFileTest, ReadMap_TurnsAwayAPlaceTooFarOut)
 TEST(MapFileTest, ReadMap_TurnsAwayAnAtlasThereIsNot)
 {
     EXPECT_THROW(
-        (void)readText(
-            aroundTiles(
+        (void)getReadText(
+            getAroundTiles(
                 R"({"columns": 1, "rows": 1,
                     "tiles": [["sideways", 0]]})")),
         MapFileError);
@@ -326,8 +326,8 @@ TEST(MapFileTest, ReadMap_TurnsAwayAnAtlasThereIsNot)
 TEST(MapFileTest, ReadMap_TurnsAwayATileOfATilesThereIsNot)
 {
     EXPECT_THROW(
-        (void)readText(
-            aroundTiles(
+        (void)getReadText(
+            getAroundTiles(
                 R"({"columns": 1, "rows": 1,
                     "tiles": [["flat", 256]]})")),
         MapFileError);
@@ -336,8 +336,8 @@ TEST(MapFileTest, ReadMap_TurnsAwayATileOfATilesThereIsNot)
 TEST(MapFileTest, ReadMap_TurnsAwayATileOfTheWrongLength)
 {
     EXPECT_THROW(
-        (void)readText(
-            aroundTiles(
+        (void)getReadText(
+            getAroundTiles(
                 R"({"columns": 1, "rows": 1,
                     "tiles": [["flat"]]})")),
         MapFileError);
@@ -346,8 +346,8 @@ TEST(MapFileTest, ReadMap_TurnsAwayATileOfTheWrongLength)
 TEST(MapFileTest, ReadMap_TurnsAwayAGridItHoldsTooFewTilesFor)
 {
     EXPECT_THROW(
-        (void)readText(
-            aroundTiles(
+        (void)getReadText(
+            getAroundTiles(
                 R"({"columns": 8, "rows": 8,
                     "tiles": [["flat", 0]]})")),
         MapFileError);
@@ -355,20 +355,20 @@ TEST(MapFileTest, ReadMap_TurnsAwayAGridItHoldsTooFewTilesFor)
 
 TEST(MapFileTest, ReadMap_TakesAGridItHoldsEveryTileFor)
 {
-    const auto map = readText(
-        aroundTiles(
+    const auto map = getReadText(
+        getAroundTiles(
             R"({"columns": 2, "rows": 1,
                 "tiles": [["flat", 3], ["upright", 4]]})"));
 
     ASSERT_TRUE(map.tilemap.isComplete());
-    EXPECT_EQ(map.tilemap.at(0, 0)->index, 3U);
-    EXPECT_EQ(map.tilemap.at(1, 0)->index, 4U);
+    EXPECT_EQ(map.tilemap.getEntryAt(0, 0)->index, 3U);
+    EXPECT_EQ(map.tilemap.getEntryAt(1, 0)->index, 4U);
 }
 
 TEST(MapFileTest, ReadMap_TurnsAwayAMemberItDoesNotKnow)
 {
     EXPECT_THROW(
-        (void)readText(
+        (void)getReadText(
             R"({"magic": "antwika.map", "version": 1,
                 "voxels": [], "surprise": 1, "tilemap":
                 {"columns": 0, "rows": 0, "tiles": []}})"),
@@ -377,37 +377,37 @@ TEST(MapFileTest, ReadMap_TurnsAwayAMemberItDoesNotKnow)
 
 TEST(MapFileTest, SaveMap_WritesAMapLoadMapReadsBack)
 {
-    const auto path = somewhereToWrite("antwika-map.json");
-    const auto map = demoMap();
+    const auto path = getSomewhereToWrite("antwika-map.json");
+    const auto map = getDemoMap();
 
     saveMap(path, map);
 
-    EXPECT_EQ(loadMap(path), map);
+    EXPECT_EQ(getLoadMap(path), map);
 
     std::filesystem::remove(path);
 }
 
 TEST(MapFileTest, SaveMap_CarriesTheRulesThroughAFile)
 {
-    const auto path = somewhereToWrite("antwika-ruled-map.json");
-    auto map = demoMap();
+    const auto path = getSomewhereToWrite("antwika-ruled-map.json");
+    auto map = getDemoMap();
 
     map.rules.allow(
-        *map.tilemap.at(2, 0),
+        *map.tilemap.getEntryAt(2, 0),
         TileEdge{.side = Side::Bottom, .edge = EdgeKind::Boundary},
-        *map.tilemap.at(5, 3));
+        *map.tilemap.getEntryAt(5, 3));
     map.rules.allow(
-        *map.tilemap.at(2, 0),
+        *map.tilemap.getEntryAt(2, 0),
         TileEdge{.side = Side::Bottom, .edge = EdgeKind::Boundary},
-        *map.tilemap.at(6, 3));
+        *map.tilemap.getEntryAt(6, 3));
 
     saveMap(path, map);
 
-    const auto loadedMap = loadMap(path);
+    const auto loadedMap = getLoadMap(path);
 
     EXPECT_EQ(loadedMap, map);
     EXPECT_EQ(loadedMap.rules, map.rules);
-    EXPECT_EQ(loadedMap.rules.size(), 2U);
+    EXPECT_EQ(loadedMap.rules.getSize(), 2U);
 
     std::filesystem::remove(path);
 }
@@ -415,35 +415,35 @@ TEST(MapFileTest, SaveMap_CarriesTheRulesThroughAFile)
 TEST(MapFileTest, LoadMap_SaysSoWhenThereIsNoSuchFile)
 {
     EXPECT_THROW(
-        (void)loadMap(somewhereToWrite("antwika-no-such-map.json")),
+        (void)getLoadMap(getSomewhereToWrite("antwika-no-such-map.json")),
         MapFileError);
 }
 
 TEST(MapFileTest, WriteMap_CarriesTheRulesThroughAWrittenMap)
 {
-    Map map{.voxels = demoCells(), .tilemap = defaultTilemap()};
+    Map map{.voxels = getDemoCells(), .tilemap = getDefaultTilemap()};
     constexpr Tile wallTile{.atlas = Atlas::Wall, .index = 7};
     constexpr TileEdge aboveEdge{
         .side = Side::Top, .edge = EdgeKind::Boundary};
 
-    map.rules.allow(*map.tilemap.at(0, 0), aboveEdge, wallTile);
-    map.rules.allow(*map.tilemap.at(0, 0), aboveEdge, *map.tilemap.at(1, 0));
+    map.rules.allow(*map.tilemap.getEntryAt(0, 0), aboveEdge, wallTile);
+    map.rules.allow(*map.tilemap.getEntryAt(0, 0), aboveEdge, *map.tilemap.getEntryAt(1, 0));
     map.rules.allow(
-        *map.tilemap.at(4, 2),
+        *map.tilemap.getEntryAt(4, 2),
         TileEdge{.side = Side::Right, .edge = EdgeKind::Interior},
         wallTile);
 
-    const auto loadedMap = readText(serializeMap(map));
+    const auto loadedMap = getReadText(getSerializeMap(map));
 
     EXPECT_EQ(loadedMap.rules, map.rules);
-    EXPECT_EQ(loadedMap.rules.size(), 3U);
+    EXPECT_EQ(loadedMap.rules.getSize(), 3U);
     EXPECT_TRUE(
-        loadedMap.rules.allows(*map.tilemap.at(0, 0), aboveEdge, wallTile));
+        loadedMap.rules.allows(*map.tilemap.getEntryAt(0, 0), aboveEdge, wallTile));
 }
 
 TEST(MapFileTest, WriteMap_KeepsTheRulesOfEveryEdgeApart)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
     constexpr Tile oneTile{.atlas = Atlas::Wall, .index = 1};
     constexpr Tile otherTile{.atlas = Atlas::Floor, .index = 2};
 
@@ -452,7 +452,7 @@ TEST(MapFileTest, WriteMap_KeepsTheRulesOfEveryEdgeApart)
         map.rules.allow(oneTile, edge, otherTile);
     }
 
-    const auto loadedMap = readText(serializeMap(map));
+    const auto loadedMap = getReadText(getSerializeMap(map));
 
     EXPECT_EQ(loadedMap.rules, map.rules);
 
@@ -464,34 +464,34 @@ TEST(MapFileTest, WriteMap_KeepsTheRulesOfEveryEdgeApart)
 
 TEST(MapFileTest, WriteMap_HoldsNoFloatEvenOnceRulesAreKept)
 {
-    Map map{.voxels = demoCells(), .tilemap = defaultTilemap()};
+    Map map{.voxels = getDemoCells(), .tilemap = getDefaultTilemap()};
 
     map.rules.allow(
-        *map.tilemap.at(3, 1),
+        *map.tilemap.getEntryAt(3, 1),
         TileEdge{.side = Side::Left, .edge = EdgeKind::Interior},
-        *map.tilemap.at(9, 4));
+        *map.tilemap.getEntryAt(9, 4));
 
-    EXPECT_FALSE(holdsAFloat(nlohmann::json::parse(serializeMap(map))));
+    EXPECT_FALSE(holdsAFloat(nlohmann::json::parse(getSerializeMap(map))));
 }
 
 TEST(MapFileTest, ReadMap_TakesAMapThatKeptNoRulesYet)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document.erase(std::string("rules"));
     ageTo(document, 1);
 
-    const auto loadedMap = readText(document.dump());
+    const auto loadedMap = getReadText(document.dump());
 
-    EXPECT_EQ(loadedMap.rules.size(), 0U);
-    EXPECT_EQ(loadedMap.tilemap, defaultTilemap());
+    EXPECT_EQ(loadedMap.rules.getSize(), 0U);
+    EXPECT_EQ(loadedMap.tilemap, getDefaultTilemap());
 }
 
 TEST(MapFileTest, ReadMap_RefusesARuleForAnEdgeThatIsNot)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document["rules"].push_back(
         {{"tile", {"upright", 0}},
@@ -499,12 +499,12 @@ TEST(MapFileTest, ReadMap_RefusesARuleForAnEdgeThatIsNot)
          {"edge", "outward"},
          {"may", {{"flat", 1}}}});
 
-    EXPECT_THROW((void)readText(document.dump()), MapFileError);
+    EXPECT_THROW((void)getReadText(document.dump()), MapFileError);
 }
 
 TEST(MapFileTest, WriteMap_CarriesAnEdgeShutAgainstEverything)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
     constexpr Tile tile{.atlas = Atlas::Floor, .index = 3};
     constexpr TileEdge shutEdge{
         .side = Side::Left, .edge = EdgeKind::Interior};
@@ -514,7 +514,7 @@ TEST(MapFileTest, WriteMap_CarriesAnEdgeShutAgainstEverything)
     map.rules.forbidAll(tile, shutEdge);
     map.rules.allow(tile, openEdge, tile);
 
-    const auto loadedMap = readText(serializeMap(map));
+    const auto loadedMap = getReadText(getSerializeMap(map));
 
     EXPECT_TRUE(loadedMap.rules.isForbidden(tile, shutEdge));
     EXPECT_FALSE(loadedMap.rules.hasNoRule(tile, shutEdge));
@@ -525,7 +525,7 @@ TEST(MapFileTest, WriteMap_CarriesAnEdgeShutAgainstEverything)
 
 TEST(MapFileTest, ReadMap_TellsAShutEdgeFromOneNeverSpokenOf)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
     constexpr Tile tile{.atlas = Atlas::Floor, .index = 3};
     constexpr TileEdge shutEdge{
         .side = Side::Left, .edge = EdgeKind::Interior};
@@ -534,7 +534,7 @@ TEST(MapFileTest, ReadMap_TellsAShutEdgeFromOneNeverSpokenOf)
 
     map.rules.forbidAll(tile, shutEdge);
 
-    const auto loadedMap = readText(serializeMap(map));
+    const auto loadedMap = getReadText(getSerializeMap(map));
 
     EXPECT_TRUE(loadedMap.rules.isForbidden(tile, shutEdge));
     EXPECT_TRUE(loadedMap.rules.hasNoRule(tile, neverEdge));
@@ -544,7 +544,7 @@ TEST(MapFileTest, ReadMap_TellsAShutEdgeFromOneNeverSpokenOf)
 TEST(MapFileTest, ReadMap_RefusesTheSameNeighbourAllowedTwice)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document["rules"].push_back(
         {{"tile", {"upright", 0}},
@@ -552,13 +552,13 @@ TEST(MapFileTest, ReadMap_RefusesTheSameNeighbourAllowedTwice)
          {"edge", "outward"},
          {"may", {{"flat", 1}, {"flat", 1}}}});
 
-    EXPECT_THROW((void)readText(document.dump()), MapFileError);
+    EXPECT_THROW((void)getReadText(document.dump()), MapFileError);
 }
 
 TEST(MapFileTest, ReadMap_RefusesOneEdgeOfOneTileSpokenOfTwice)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
     const nlohmann::json rule = {
         {"tile", {"upright", 0}},
         {"side", "top"},
@@ -568,19 +568,19 @@ TEST(MapFileTest, ReadMap_RefusesOneEdgeOfOneTileSpokenOfTwice)
     document["rules"].push_back(rule);
     document["rules"].push_back(rule);
 
-    EXPECT_THROW((void)readText(document.dump()), MapFileError);
+    EXPECT_THROW((void)getReadText(document.dump()), MapFileError);
 }
 
 TEST(MapFileTest, WriteMap_CarriesTheColorsAMapIsDrawnWith)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.paletteColors[0] = antwika::gfx::Color{
         .red = 9, .green = 8, .blue = 7, .alpha = 255};
     map.paletteColors[3] = antwika::gfx::Color{
         .red = 1, .green = 2, .blue = 3, .alpha = 4};
 
-    const auto loadedMap = readText(serializeMap(map));
+    const auto loadedMap = getReadText(getSerializeMap(map));
 
     EXPECT_EQ(loadedMap.paletteColors, map.paletteColors);
 }
@@ -590,18 +590,18 @@ TEST(MapFileTest, WriteMap_HoldsNoFloatEvenWithAPalette)
     EXPECT_FALSE(
         holdsAFloat(
             nlohmann::json::parse(
-                serializeMap(Map{.tilemap = defaultTilemap()}))));
+                getSerializeMap(Map{.tilemap = getDefaultTilemap()}))));
 }
 
 TEST(MapFileTest, ReadMap_GivesAMapWithNoPaletteTheBuiltInOne)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document.erase(std::string("palette"));
     ageTo(document, 2);
 
-    const auto loadedMap = readText(document.dump());
+    const auto loadedMap = getReadText(document.dump());
 
     EXPECT_EQ(
         loadedMap.paletteColors,
@@ -613,7 +613,7 @@ TEST(MapFileTest, ReadMap_GivesAMapWithNoPaletteTheBuiltInOne)
 TEST(MapFileTest, ReadMap_KeepsThePaletteOfAMapThatCarriedPixels)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
     nlohmann::json tileset;
 
     tileset["palette"] = {
@@ -625,7 +625,7 @@ TEST(MapFileTest, ReadMap_KeepsThePaletteOfAMapThatCarriedPixels)
     document["tileset"] = tileset;
     ageTo(document, 3);
 
-    const auto loadedMap = readText(document.dump());
+    const auto loadedMap = getReadText(document.dump());
 
     EXPECT_EQ(loadedMap.paletteColors[0].red, 1);
     EXPECT_EQ(loadedMap.paletteColors[3].red, 10);
@@ -634,16 +634,16 @@ TEST(MapFileTest, ReadMap_KeepsThePaletteOfAMapThatCarriedPixels)
 TEST(MapFileTest, ReadMap_RefusesAColorBeyondWhatAColorHolds)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document["palette"][0][0] = 300;
 
-    EXPECT_THROW((void)readText(document.dump()), MapFileError);
+    EXPECT_THROW((void)getReadText(document.dump()), MapFileError);
 }
 
 TEST(MapFileTest, WriteMap_CarriesWhatATileAsksOfItsCorners)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
     constexpr Tile tile{.atlas = Atlas::Floor, .index = 3};
 
     map.rules.allow(
@@ -655,28 +655,28 @@ TEST(MapFileTest, WriteMap_CarriesWhatATileAsksOfItsCorners)
     map.rules.setCorner(
         tile, antwika::voxel::Corner::BottomRight, true);
 
-    const auto loadedMap = readText(serializeMap(map));
+    const auto loadedMap = getReadText(getSerializeMap(map));
 
     EXPECT_EQ(
-        loadedMap.rules.corner(tile, antwika::voxel::Corner::TopLeft),
+        loadedMap.rules.getCorner(tile, antwika::voxel::Corner::TopLeft),
         false);
     EXPECT_EQ(
-        loadedMap.rules.corner(tile, antwika::voxel::Corner::BottomRight),
+        loadedMap.rules.getCorner(tile, antwika::voxel::Corner::BottomRight),
         true);
     EXPECT_FALSE(
-        loadedMap.rules.corner(tile, antwika::voxel::Corner::TopRight)
+        loadedMap.rules.getCorner(tile, antwika::voxel::Corner::TopRight)
             .has_value());
 }
 
 TEST(MapFileTest, ReadMap_TakesAMapThatAskedNothingOfCorners)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document.erase(std::string("corners"));
     ageTo(document, 6);
 
-    const auto loadedMap = readText(document.dump());
+    const auto loadedMap = getReadText(document.dump());
 
     EXPECT_TRUE(
         loadedMap.rules
@@ -686,7 +686,7 @@ TEST(MapFileTest, ReadMap_TakesAMapThatAskedNothingOfCorners)
 
 TEST(MapFileTest, WriteMap_CarriesWhereTheCameraStood)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.camera = antwika::map::CameraView{
         .transform =
@@ -696,7 +696,7 @@ TEST(MapFileTest, WriteMap_CarriesWhereTheCameraStood)
                 .pitch = -0.5F},
         .zoom = 45};
 
-    const auto loadedMap = readText(serializeMap(map));
+    const auto loadedMap = getReadText(getSerializeMap(map));
 
     ASSERT_TRUE(loadedMap.camera.has_value());
     EXPECT_NEAR(loadedMap.camera->transform.position.x, 3.25F, 1e-3F);
@@ -719,13 +719,13 @@ TEST(MapFileTest, WriteMap_CarriesWhereTheCameraStood)
 
 TEST(MapFileTest, WriteMap_CarriesWhereTheCharacterStarts)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.characters = {
         heroAt(antwika::gfx::Vec3{3.25F, 6.5F, -2.125F}, 5)};
 
-    const auto loadedMap = readText(serializeMap(map));
-    const auto hero = antwika::map::playerIndex(loadedMap);
+    const auto loadedMap = getReadText(getSerializeMap(map));
+    const auto hero = antwika::map::getPlayerIndex(loadedMap);
 
     ASSERT_TRUE(hero.has_value());
 
@@ -739,59 +739,59 @@ TEST(MapFileTest, WriteMap_CarriesWhereTheCharacterStarts)
 
 TEST(MapFileTest, WriteMap_HoldsNoFloatEvenWithACharacter)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.characters = {
         heroAt(antwika::gfx::Vec3{1.5F, 2.5F, 3.5F}, 3)};
 
-    EXPECT_FALSE(holdsAFloat(nlohmann::json::parse(serializeMap(map))));
+    EXPECT_FALSE(holdsAFloat(nlohmann::json::parse(getSerializeMap(map))));
 }
 
 TEST(MapFileTest, ReadMap_TakesAMapThatKeptNoCharacter)
 {
     const auto loadedMap =
-    readText(serializeMap(Map{.tilemap = defaultTilemap()}));
+    getReadText(getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
-    EXPECT_FALSE(antwika::map::playerIndex(loadedMap).has_value());
+    EXPECT_FALSE(antwika::map::getPlayerIndex(loadedMap).has_value());
 }
 
 TEST(MapFileTest, ReadMap_TakesAMapWrittenBeforeCharactersWereKept)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     ageTo(document, 19);
     document.erase(std::string("figures"));
 
     EXPECT_FALSE(
-        antwika::map::playerIndex(readText(document.dump()))
+        antwika::map::getPlayerIndex(getReadText(document.dump()))
             .has_value());
 }
 
 TEST(MapFileTest, ReadMap_RefusesACharacterStandingAtAFraction)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.characters = {heroAt(antwika::gfx::Vec3{}, 0)};
 
-    auto document = nlohmann::json::parse(serializeMap(map));
+    auto document = nlohmann::json::parse(getSerializeMap(map));
 
     document["characters"][0]["home"]["at"] = {0.5, 0, 0};
 
-    EXPECT_THROW((void)readText(document.dump()), MapFileError);
+    EXPECT_THROW((void)getReadText(document.dump()), MapFileError);
 }
 
 TEST(MapFileTest, ReadMap_FacesACharacterKeptBeforeFacingsWereFirst)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     ageTo(document, 20);
     document.erase(std::string("figures"));
     document["walker"] = {{"at", {1000, 2000, 3000}}};
 
-    const auto loadedMap = readText(document.dump());
-    const auto hero = antwika::map::playerIndex(loadedMap);
+    const auto loadedMap = getReadText(document.dump());
+    const auto hero = antwika::map::getPlayerIndex(loadedMap);
 
     ASSERT_TRUE(hero.has_value());
     EXPECT_EQ(loadedMap.characters.at(*hero).idlePlacement.way, 0);
@@ -799,20 +799,20 @@ TEST(MapFileTest, ReadMap_FacesACharacterKeptBeforeFacingsWereFirst)
 
 TEST(MapFileTest, ReadMap_RefusesACharacterFacingNoWayAtAll)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.characters = {heroAt(antwika::gfx::Vec3{}, 0)};
 
-    auto document = nlohmann::json::parse(serializeMap(map));
+    auto document = nlohmann::json::parse(getSerializeMap(map));
 
     document["characters"][0]["home"]["way"] = 8;
 
-    EXPECT_THROW((void)readText(document.dump()), MapFileError);
+    EXPECT_THROW((void)getReadText(document.dump()), MapFileError);
 }
 
 TEST(MapFileTest, WriteMap_HoldsNoFloatEvenWithACamera)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.camera = antwika::map::CameraView{
         .transform =
@@ -822,13 +822,13 @@ TEST(MapFileTest, WriteMap_HoldsNoFloatEvenWithACamera)
                 .pitch = -0.875F},
         .zoom = 30};
 
-    EXPECT_FALSE(holdsAFloat(nlohmann::json::parse(serializeMap(map))));
+    EXPECT_FALSE(holdsAFloat(nlohmann::json::parse(getSerializeMap(map))));
 }
 
 TEST(MapFileTest, ReadMap_TakesAMapThatKeptNoCamera)
 {
     const auto loadedMap =
-    readText(serializeMap(Map{.tilemap = defaultTilemap()}));
+    getReadText(getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     EXPECT_FALSE(loadedMap.camera.has_value());
 }
@@ -836,38 +836,38 @@ TEST(MapFileTest, ReadMap_TakesAMapThatKeptNoCamera)
 TEST(MapFileTest, ReadMap_TakesAMapWrittenBeforeCamerasWereKept)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document.erase(std::string("camera"));
     ageTo(document, 7);
 
-    EXPECT_FALSE(readText(document.dump()).camera.has_value());
+    EXPECT_FALSE(getReadText(document.dump()).camera.has_value());
 }
 
 TEST(MapFileTest, ReadMap_RefusesACameraStandingAtAFraction)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document["camera"] = {{"at", {0, 0, 0}}, {"yaw", 0.5},
                           {"pitch", 0}, {"zoom", 1000}};
 
-    EXPECT_THROW((void)readText(document.dump()), MapFileError);
+    EXPECT_THROW((void)getReadText(document.dump()), MapFileError);
 }
 
 TEST(MapFileTest, ReadMap_GivesACameraKeptBeforeZoomTheOpeningOne)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.camera = antwika::map::CameraView{
         .transform = antwika::camera::CameraTransform{}, .zoom = 30};
 
-    auto document = nlohmann::json::parse(serializeMap(map));
+    auto document = nlohmann::json::parse(getSerializeMap(map));
 
     document["camera"].erase(std::string("zoom"));
     ageTo(document, 8);
 
-    const auto loadedMap = readText(document.dump());
+    const auto loadedMap = getReadText(document.dump());
 
     ASSERT_TRUE(loadedMap.camera.has_value());
     EXPECT_EQ(loadedMap.camera->zoom, antwika::camera::kDefaultZoom);
@@ -876,17 +876,17 @@ TEST(MapFileTest, ReadMap_GivesACameraKeptBeforeZoomTheOpeningOne)
 TEST(MapFileTest, ReadMap_RefusesACameraShowingNothing)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document["camera"] = {{"at", {0, 0, 0}}, {"yaw", 0},
                           {"pitch", 0}, {"zoom", 0}};
 
-    EXPECT_THROW((void)readText(document.dump()), MapFileError);
+    EXPECT_THROW((void)getReadText(document.dump()), MapFileError);
 }
 
 TEST(MapFileTest, WriteMap_KeepsHowTheEditorWasLeftStanding)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.settings = antwika::map::Settings{
         .lighting = false,
@@ -895,18 +895,18 @@ TEST(MapFileTest, WriteMap_KeepsHowTheEditorWasLeftStanding)
         .paint = antwika::map::Paint::Fill,
         .view = antwika::map::View::Atlases};
 
-    const auto loadedMap = readText(serializeMap(map));
+    const auto loadedMap = getReadText(getSerializeMap(map));
 
     EXPECT_EQ(loadedMap.settings, map.settings);
 }
 
 TEST(MapFileTest, WriteMap_NamesTheToolsRatherThanNumbersThem)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.settings.paint = antwika::map::Paint::Line;
 
-    const auto document = nlohmann::json::parse(serializeMap(map));
+    const auto document = nlohmann::json::parse(getSerializeMap(map));
 
     EXPECT_EQ(document["settings"]["drawing"], "line");
     EXPECT_EQ(document["settings"]["view"], "world");
@@ -917,12 +917,12 @@ TEST(MapFileTest, WriteMap_NamesTheToolsRatherThanNumbersThem)
 TEST(MapFileTest, ReadMap_GivesAMapKeptBeforeSettingsTheOpeningOnes)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document.erase(std::string("settings"));
     ageTo(document, 9);
 
-    const auto loadedMap = readText(document.dump());
+    const auto loadedMap = getReadText(document.dump());
 
     EXPECT_EQ(loadedMap.settings, antwika::map::Settings{});
 }
@@ -930,16 +930,16 @@ TEST(MapFileTest, ReadMap_GivesAMapKeptBeforeSettingsTheOpeningOnes)
 TEST(MapFileTest, ReadMap_RefusesAToolItDoesNotKnow)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document["settings"]["tool"] = "chisel";
 
-    EXPECT_THROW((void)readText(document.dump()), MapFileError);
+    EXPECT_THROW((void)getReadText(document.dump()), MapFileError);
 }
 
 TEST(MapFileTest, WriteMap_KeepsWhatEachVoxelIsMadeOf)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.voxels = antwika::voxel::voxelsOf({
         antwika::voxel::VoxelCell{.position = {.x = 0, .y = 0, .z = 0},
@@ -948,7 +948,7 @@ TEST(MapFileTest, WriteMap_KeepsWhatEachVoxelIsMadeOf)
             .material = {.kind = antwika::voxel::Kind::Ramp}}});
     map.settings.kind = antwika::voxel::Kind::Ramp;
 
-    const auto loadedMap = readText(serializeMap(map));
+    const auto loadedMap = getReadText(getSerializeMap(map));
 
     ASSERT_EQ(loadedMap.voxels.size(), 2U);
     EXPECT_EQ(
@@ -958,7 +958,7 @@ TEST(MapFileTest, WriteMap_KeepsWhatEachVoxelIsMadeOf)
         antwika::voxel::Kind::Ramp);
     EXPECT_EQ(loadedMap.settings.kind, antwika::voxel::Kind::Ramp);
 
-    const auto document = nlohmann::json::parse(serializeMap(map));
+    const auto document = nlohmann::json::parse(getSerializeMap(map));
 
     EXPECT_EQ(document["voxels"][0]["kind"], "water");
     EXPECT_EQ(document["settings"]["kind"], "ramp");
@@ -966,18 +966,18 @@ TEST(MapFileTest, WriteMap_KeepsWhatEachVoxelIsMadeOf)
 
 TEST(MapFileTest, ReadMap_MakesEveryVoxelKeptBeforeTheKindsASolidOne)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.voxels = voxelsOf({antwika::voxel::VoxelCell{.position = {.x = 3,
         .y = 2, .z = 1}}});
 
-    auto document = nlohmann::json::parse(serializeMap(map));
+    auto document = nlohmann::json::parse(getSerializeMap(map));
 
     document["voxels"] = nlohmann::json::array({{3, 2, 1}});
     document["settings"].erase(std::string("kind"));
     ageTo(document, 10);
 
-    const auto loadedMap = readText(document.dump());
+    const auto loadedMap = getReadText(document.dump());
 
     ASSERT_EQ(loadedMap.voxels.size(), 1U);
     EXPECT_EQ(loadedMap.voxels.begin()->first.x, 3);
@@ -988,33 +988,33 @@ TEST(MapFileTest, ReadMap_MakesEveryVoxelKeptBeforeTheKindsASolidOne)
 
 TEST(MapFileTest, ReadMap_RefusesAKindItDoesNotKnow)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.voxels = voxelsOf({antwika::voxel::VoxelCell{}});
 
-    auto document = nlohmann::json::parse(serializeMap(map));
+    auto document = nlohmann::json::parse(getSerializeMap(map));
 
     document["voxels"][0]["kind"] = "lava";
 
-    EXPECT_THROW((void)readText(document.dump()), MapFileError);
+    EXPECT_THROW((void)getReadText(document.dump()), MapFileError);
 }
 
 TEST(MapFileTest, WriteMap_KeepsWhichTilesAreGivenToWhichKind)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
     const antwika::tilemap::Tile poolTile{
         .atlas = antwika::tilemap::Atlas::Floor, .index = 4};
 
     map.rules.setKind(poolTile, antwika::voxel::Kind::Water);
 
-    const auto loadedMap = readText(serializeMap(map));
+    const auto loadedMap = getReadText(getSerializeMap(map));
 
     EXPECT_EQ(loadedMap.rules.kindOf(poolTile), antwika::voxel::Kind::Water);
     EXPECT_EQ(
         loadedMap.rules.kindOf(antwika::tilemap::Tile{}),
         antwika::voxel::Kind::Normal);
 
-    const auto document = nlohmann::json::parse(serializeMap(map));
+    const auto document = nlohmann::json::parse(getSerializeMap(map));
 
     EXPECT_EQ(document["tileKinds"][0]["kind"], "water");
 }
@@ -1022,27 +1022,27 @@ TEST(MapFileTest, WriteMap_KeepsWhichTilesAreGivenToWhichKind)
 TEST(MapFileTest, ReadMap_LeavesTilesKeptBeforeTheKindsSolid)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document.erase(std::string("tileKinds"));
     ageTo(document, 11);
 
-    const auto loadedMap = readText(document.dump());
+    const auto loadedMap = getReadText(document.dump());
 
-    EXPECT_TRUE(loadedMap.rules.kinds().empty());
+    EXPECT_TRUE(loadedMap.rules.getKinds().empty());
 }
 
 TEST(MapFileTest, SidecarPath_NamesTheAtlasAfterItsMap)
 {
     EXPECT_EQ(
-        antwika::map::sidecarPath("map.json", "atlas-15x9.png"),
+        antwika::map::getSidecarPath("map.json", "atlas-15x9.png"),
         "map-atlas-15x9.png");
 }
 
 TEST(MapFileTest, SidecarPath_KeepsItInTheMapsOwnDirectory)
 {
     EXPECT_EQ(
-        antwika::map::sidecarPath(
+        antwika::map::getSidecarPath(
             "worlds/first.json", "atlas-15x12.png"),
         "worlds/first-atlas-15x12.png");
 }
@@ -1050,129 +1050,129 @@ TEST(MapFileTest, SidecarPath_KeepsItInTheMapsOwnDirectory)
 TEST(MapFileTest, SidecarPath_TakesAMapWithNoEndingWhole)
 {
     EXPECT_EQ(
-        antwika::map::sidecarPath("worlds/first", "atlas-15x9.png"),
+        antwika::map::getSidecarPath("worlds/first", "atlas-15x9.png"),
         "worlds/first-atlas-15x9.png");
 }
 
 TEST(MapFileTest, SidecarPath_LeavesADottedDirectoryAlone)
 {
     EXPECT_EQ(
-        antwika::map::sidecarPath("a.b/first", "atlas-15x9.png"),
+        antwika::map::getSidecarPath("a.b/first", "atlas-15x9.png"),
         "a.b/first-atlas-15x9.png");
 }
 
 TEST(MapFileTest, SidecarPath_KeepsTwoMapsApart)
 {
     EXPECT_NE(
-        antwika::map::sidecarPath("one.json", "atlas-15x9.png"),
-        antwika::map::sidecarPath("two.json", "atlas-15x9.png"));
+        antwika::map::getSidecarPath("one.json", "atlas-15x9.png"),
+        antwika::map::getSidecarPath("two.json", "atlas-15x9.png"));
 }
 
 TEST(MapFileTest, WriteMap_KeepsWhichWayATileWasDrawnFor)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
     const antwika::tilemap::Tile tile{
         .atlas = antwika::tilemap::Atlas::Wall, .index = 115};
 
     map.rules.setFacing(tile, antwika::voxel::Facing::West);
 
-    const auto loadedMap = readText(serializeMap(map));
+    const auto loadedMap = getReadText(getSerializeMap(map));
 
     EXPECT_EQ(
         loadedMap.rules.facingOf(tile), antwika::voxel::Facing::West);
 
-    const auto document = nlohmann::json::parse(serializeMap(map));
+    const auto document = nlohmann::json::parse(getSerializeMap(map));
 
     EXPECT_EQ(document["tileFacings"][0]["facing"], "west");
 }
 
 TEST(MapFileTest, WriteMap_KeepsWhichLevelOfAFlightATileWasDrawnFor)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
     const antwika::tilemap::Tile tile{
         .atlas = antwika::tilemap::Atlas::Wall, .index = 160};
 
     map.rules.setLevel(tile, antwika::voxel::StairHalf::Lower);
 
-    const auto loadedMap = readText(serializeMap(map));
+    const auto loadedMap = getReadText(getSerializeMap(map));
 
     EXPECT_EQ(
         loadedMap.rules.levelOf(tile), antwika::voxel::StairHalf::Lower);
 
-    const auto document = nlohmann::json::parse(serializeMap(map));
+    const auto document = nlohmann::json::parse(getSerializeMap(map));
 
     EXPECT_EQ(document["tileLevels"][0]["level"], "lower");
 }
 
 TEST(MapFileTest, WriteMap_KeepsWhichPartOfAFlightATileWasDrawnFor)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
     const antwika::tilemap::Tile tile{
         .atlas = antwika::tilemap::Atlas::Wall, .index = 160};
 
     map.rules.setPart(tile, antwika::voxel::StairPart::Side);
 
-    const auto loadedMap = readText(serializeMap(map));
+    const auto loadedMap = getReadText(getSerializeMap(map));
 
     EXPECT_EQ(
         loadedMap.rules.partOf(tile), antwika::voxel::StairPart::Side);
 
-    const auto document = nlohmann::json::parse(serializeMap(map));
+    const auto document = nlohmann::json::parse(getSerializeMap(map));
 
     EXPECT_EQ(document["tileParts"][0]["part"], "side");
 }
 
 TEST(MapFileTest, WriteMap_KeepsHowStronglyADecorIsWeighed)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
     const antwika::tilemap::Tile tile{
         .atlas = antwika::tilemap::Atlas::Floor, .index = 26};
 
-    map.decor = antwika::decor::withDecorToggled({}, tile);
-    map.decor = antwika::decor::withWeightSet(map.decor, tile, 35);
+    map.decor = antwika::decor::getWithDecorToggled({}, tile);
+    map.decor = antwika::decor::getWithWeightSet(map.decor, tile, 35);
 
-    const auto loadedMap = readText(serializeMap(map));
+    const auto loadedMap = getReadText(getSerializeMap(map));
 
     ASSERT_EQ(loadedMap.decor.size(), 1U);
     EXPECT_EQ(loadedMap.decor.front().weight, 35);
 
-    const auto document = nlohmann::json::parse(serializeMap(map));
+    const auto document = nlohmann::json::parse(getSerializeMap(map));
 
     EXPECT_EQ(document["decor"][0]["weight"], 35);
 }
 
 TEST(MapFileTest, WriteMap_KeepsWhichLayerADecorDressesFor)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
     const antwika::tilemap::Tile tile{
         .atlas = antwika::tilemap::Atlas::Floor, .index = 26};
 
-    map.decor = antwika::decor::withDecorToggled({}, tile, 2);
+    map.decor = antwika::decor::getWithDecorToggled({}, tile, 2);
 
-    const auto loadedMap = readText(serializeMap(map));
+    const auto loadedMap = getReadText(getSerializeMap(map));
 
     ASSERT_EQ(loadedMap.decor.size(), 1U);
     EXPECT_EQ(loadedMap.decor.front().layer, 2U);
 
-    const auto document = nlohmann::json::parse(serializeMap(map));
+    const auto document = nlohmann::json::parse(getSerializeMap(map));
 
     EXPECT_EQ(document["decor"][0]["layer"], 2);
 }
 
 TEST(MapFileTest, ReadMap_GathersDecorKeptBeforeTheLayersOntoTheFirst)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
     const antwika::tilemap::Tile tile{
         .atlas = antwika::tilemap::Atlas::Floor, .index = 26};
 
-    map.decor = antwika::decor::withDecorToggled({}, tile, 2);
+    map.decor = antwika::decor::getWithDecorToggled({}, tile, 2);
 
-    auto document = nlohmann::json::parse(serializeMap(map));
+    auto document = nlohmann::json::parse(getSerializeMap(map));
 
     document["decor"][0].erase(std::string("layer"));
     ageTo(document, 39);
 
-    const auto loadedMap = readText(document.dump());
+    const auto loadedMap = getReadText(document.dump());
 
     ASSERT_EQ(loadedMap.decor.size(), 1U);
     EXPECT_EQ(loadedMap.decor.front().layer, 1U);
@@ -1180,18 +1180,18 @@ TEST(MapFileTest, ReadMap_GathersDecorKeptBeforeTheLayersOntoTheFirst)
 
 TEST(MapFileTest, ReadMap_GivesADecorKeptBeforeTheWeightsFullWeight)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
     const antwika::tilemap::Tile tile{
         .atlas = antwika::tilemap::Atlas::Floor, .index = 26};
 
-    map.decor = antwika::decor::withDecorToggled({}, tile);
+    map.decor = antwika::decor::getWithDecorToggled({}, tile);
 
-    auto document = nlohmann::json::parse(serializeMap(map));
+    auto document = nlohmann::json::parse(getSerializeMap(map));
 
     document["decor"][0].erase(std::string("weight"));
     ageTo(document, 38);
 
-    const auto loadedMap = readText(document.dump());
+    const auto loadedMap = getReadText(document.dump());
 
     ASSERT_EQ(loadedMap.decor.size(), 1U);
     EXPECT_EQ(
@@ -1202,28 +1202,28 @@ TEST(MapFileTest, ReadMap_GivesADecorKeptBeforeTheWeightsFullWeight)
 TEST(MapFileTest, ReadMap_LeavesTilesKeptBeforeThePartsToEitherPart)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document.erase(std::string("tileParts"));
     ageTo(document, 37);
 
-    const auto loadedMap = readText(document.dump());
+    const auto loadedMap = getReadText(document.dump());
 
-    EXPECT_TRUE(loadedMap.rules.parts().empty());
+    EXPECT_TRUE(loadedMap.rules.getParts().empty());
 }
 
 TEST(MapFileTest, ReadMap_TakesAZoomKeptAsHowMuchWorldStoodInView)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.camera = antwika::map::CameraView{.zoom = 45};
 
-    auto document = nlohmann::json::parse(serializeMap(map));
+    auto document = nlohmann::json::parse(getSerializeMap(map));
 
     ageTo(document, 14);
     document["camera"]["zoom"] = 9000;
 
-    const auto loadedMap = readText(document.dump());
+    const auto loadedMap = getReadText(document.dump());
 
     ASSERT_TRUE(loadedMap.camera.has_value());
     EXPECT_EQ(loadedMap.camera->zoom, antwika::camera::kVoxelPixels);
@@ -1231,16 +1231,16 @@ TEST(MapFileTest, ReadMap_TakesAZoomKeptAsHowMuchWorldStoodInView)
 
 TEST(MapFileTest, ReadMap_BringsAZoomBetweenScalesToAWholeOne)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.camera = antwika::map::CameraView{.zoom = 45};
 
-    auto document = nlohmann::json::parse(serializeMap(map));
+    auto document = nlohmann::json::parse(getSerializeMap(map));
 
     ageTo(document, 14);
     document["camera"]["zoom"] = 3600;
 
-    const auto loadedMap = readText(document.dump());
+    const auto loadedMap = getReadText(document.dump());
 
     ASSERT_TRUE(loadedMap.camera.has_value());
     EXPECT_EQ(loadedMap.camera->zoom % antwika::camera::kVoxelPixels, 0);
@@ -1248,37 +1248,37 @@ TEST(MapFileTest, ReadMap_BringsAZoomBetweenScalesToAWholeOne)
 
 TEST(MapFileTest, WriteMap_KeepsWhichWayARampWasToldToClimb)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.voxels.merge(antwika::voxel::voxelsOf(
         {antwika::voxel::VoxelCell{.position = {.x = 1, .y = 0, .z = 2},
             .material = {.kind = antwika::voxel::Kind::Ramp,
                 .facing = antwika::voxel::Facing::North}}}));
 
-    const auto loadedMap = readText(serializeMap(map));
+    const auto loadedMap = getReadText(getSerializeMap(map));
 
     ASSERT_EQ(loadedMap.voxels.size(), 1U);
     EXPECT_EQ(
         loadedMap.voxels.begin()->second.facing, antwika::voxel::Facing::North);
 
-    const auto document = nlohmann::json::parse(serializeMap(map));
+    const auto document = nlohmann::json::parse(getSerializeMap(map));
 
     EXPECT_EQ(document["voxels"][0]["climb"], "north");
 }
 
 TEST(MapFileTest, WriteMap_SaysNothingOfARampToldNothing)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.voxels.merge(antwika::voxel::voxelsOf(
         {antwika::voxel::VoxelCell{
             .material = {.kind = antwika::voxel::Kind::Ramp}}}));
 
-    const auto document = nlohmann::json::parse(serializeMap(map));
+    const auto document = nlohmann::json::parse(getSerializeMap(map));
 
     EXPECT_FALSE(document["voxels"][0].contains("climb"));
 
-    const auto loadedMap = readText(serializeMap(map));
+    const auto loadedMap = getReadText(getSerializeMap(map));
 
     ASSERT_EQ(loadedMap.voxels.size(), 1U);
     EXPECT_EQ(loadedMap.voxels.begin()->second.facing,
@@ -1287,52 +1287,52 @@ TEST(MapFileTest, WriteMap_SaysNothingOfARampToldNothing)
 
 TEST(MapFileTest, ReadMap_MakesASquaredPitchExactAgain)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.camera = antwika::map::CameraView{
         .transform =
             antwika::camera::CameraTransform{
-                .pitch = antwika::camera::isometricPitch()},
+                .pitch = antwika::camera::getIsometricPitch()},
         .zoom = 45};
 
-    const auto loadedMap = readText(serializeMap(map));
+    const auto loadedMap = getReadText(getSerializeMap(map));
 
     ASSERT_TRUE(loadedMap.camera.has_value());
     EXPECT_EQ(
-        loadedMap.camera->transform.pitch, antwika::camera::isometricPitch());
+        loadedMap.camera->transform.pitch, antwika::camera::getIsometricPitch());
 }
 
 TEST(MapFileTest, ReadMap_LeavesTilesKeptBeforeTheLevelsToEither)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document.erase(std::string("tileLevels"));
     ageTo(document, 13);
 
-    const auto loadedMap = readText(document.dump());
+    const auto loadedMap = getReadText(document.dump());
 
-    EXPECT_TRUE(loadedMap.rules.levels().empty());
+    EXPECT_TRUE(loadedMap.rules.getLevels().empty());
 }
 
 TEST(MapFileTest, ReadMap_LeavesTilesKeptBeforeTheFacingsToAnyFlight)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document.erase(std::string("tileFacings"));
     ageTo(document, 12);
 
-    const auto loadedMap = readText(document.dump());
+    const auto loadedMap = getReadText(document.dump());
 
-    EXPECT_TRUE(loadedMap.rules.facings().empty());
+    EXPECT_TRUE(loadedMap.rules.getFacings().empty());
 }
 
 TEST(MapFileTest, WriteMap_CarriesTheLampsSetDownAboutThePile)
 {
     using antwika::light::Lamp;
 
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.lamps.push_back(
         Lamp{
@@ -1344,7 +1344,7 @@ TEST(MapFileTest, WriteMap_CarriesTheLampsSetDownAboutThePile)
                     .blue = 7,
                     .alpha = 200}});
 
-    const auto loadedMap = readText(serializeMap(map));
+    const auto loadedMap = getReadText(getSerializeMap(map));
 
     ASSERT_EQ(loadedMap.lamps.size(), 1U);
     EXPECT_EQ(loadedMap.lamps.front(), map.lamps.front());
@@ -1354,23 +1354,23 @@ TEST(MapFileTest, WriteMap_WritesALampInWholeNumbers)
 {
     using antwika::light::Lamp;
 
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.lamps.push_back(Lamp{.position = VoxelPosition{.x = -1, .y = 5}});
 
     EXPECT_FALSE(
-        holdsAFloat(nlohmann::json::parse(serializeMap(map))));
+        holdsAFloat(nlohmann::json::parse(getSerializeMap(map))));
 }
 
 TEST(MapFileTest, ReadMap_LeavesAMapDrawnBeforeLampsWithNone)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document.erase(std::string("lamps"));
     ageTo(document, 16);
 
-    EXPECT_TRUE(readText(document.dump()).lamps.empty());
+    EXPECT_TRUE(getReadText(document.dump()).lamps.empty());
 }
 
 TEST(MapFileTest, ReadMap_RefusesMoreLampsThanTheWorldDrawsBy)
@@ -1378,7 +1378,7 @@ TEST(MapFileTest, ReadMap_RefusesMoreLampsThanTheWorldDrawsBy)
     using antwika::light::kMaxLamps;
 
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     auto lamps = nlohmann::json::array();
 
@@ -1393,7 +1393,7 @@ TEST(MapFileTest, ReadMap_RefusesMoreLampsThanTheWorldDrawsBy)
     document["lamps"] = lamps;
 
     EXPECT_THROW(
-        (void)readText(document.dump()),
+        (void)getReadText(document.dump()),
         antwika::map::MapFileError);
 }
 
@@ -1403,12 +1403,12 @@ TEST(MapFileTest, ReadMap_LeavesAMapDrawnBeforeLayersHoldingTheBase)
     using antwika::map::kBaseLayerName;
 
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document.erase(std::string("layers"));
     ageTo(document, 17);
 
-    const auto layers = readText(document.dump()).layers;
+    const auto layers = getReadText(document.dump()).layers;
 
     ASSERT_EQ(layers.size(), 1U);
     EXPECT_EQ(layers.at(kBaseLayer).name, kBaseLayerName);
@@ -1418,11 +1418,11 @@ TEST(MapFileTest, WriteMap_CarriesTheLayersAMapIsDrawnIn)
 {
     using antwika::map::Layer;
 
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.layers.push_back(Layer{.name = "another"});
 
-    EXPECT_EQ(readText(serializeMap(map)).layers, map.layers);
+    EXPECT_EQ(getReadText(getSerializeMap(map)).layers, map.layers);
 }
 
 TEST(MapFileTest, ReadMap_RefusesMoreLayersThanAMapMayHold)
@@ -1430,7 +1430,7 @@ TEST(MapFileTest, ReadMap_RefusesMoreLayersThanAMapMayHold)
     using antwika::map::kMaxLayers;
 
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     auto layers = nlohmann::json::array();
 
@@ -1443,40 +1443,40 @@ TEST(MapFileTest, ReadMap_RefusesMoreLayersThanAMapMayHold)
 
     EXPECT_THROW(
         [[maybe_unused]] const auto map =
-            readText(document.dump()),
+            getReadText(document.dump()),
         MapFileError);
 }
 
 TEST(MapFileTest, WriteMap_CarriesAPaletteAddedTo)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.paletteColors.push_back(
         antwika::gfx::Color{
             .red = 1, .green = 2, .blue = 3, .alpha = 4});
 
-    EXPECT_EQ(readText(serializeMap(map)).paletteColors, map.paletteColors);
+    EXPECT_EQ(getReadText(getSerializeMap(map)).paletteColors, map.paletteColors);
 }
 
 TEST(MapFileTest, WriteMap_CarriesAPaletteTakenFrom)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.paletteColors.resize(1);
 
-    EXPECT_EQ(readText(serializeMap(map)).paletteColors, map.paletteColors);
+    EXPECT_EQ(getReadText(getSerializeMap(map)).paletteColors, map.paletteColors);
 }
 
 TEST(MapFileTest, ReadMap_RefusesAPaletteOfNothingAtAll)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document["palette"] = nlohmann::json::array();
 
     EXPECT_THROW(
         [[maybe_unused]] const auto map =
-            readText(document.dump()),
+            getReadText(document.dump()),
         MapFileError);
 }
 
@@ -1485,7 +1485,7 @@ TEST(MapFileTest, ReadMap_RefusesMoreInksThanAMapMayHold)
     using antwika::tile::kMaxInks;
 
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     auto colors = nlohmann::json::array();
 
@@ -1498,19 +1498,19 @@ TEST(MapFileTest, ReadMap_RefusesMoreInksThanAMapMayHold)
 
     EXPECT_THROW(
         [[maybe_unused]] const auto map =
-            readText(document.dump()),
+            getReadText(document.dump()),
         MapFileError);
 }
 
 TEST(MapFileTest, ReadMap_LeavesAMapMixedBeforeWithTheInksItHad)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     ageTo(document, 18);
 
     EXPECT_EQ(
-        readText(document.dump()).paletteColors.size(),
+        getReadText(document.dump()).paletteColors.size(),
         antwika::tile::kPaletteSize);
 }
 
@@ -1519,7 +1519,7 @@ TEST(MapFileTest, WriteMap_CarriesTheVariantFamilies)
     using antwika::decor::VariantGroup;
     using antwika::decor::VariantMember;
 
-    auto map = demoMap();
+    auto map = getDemoMap();
 
     map.familyGroups = {
         VariantGroup{
@@ -1534,24 +1534,24 @@ TEST(MapFileTest, WriteMap_CarriesTheVariantFamilies)
                     .tile = Tile{
                         .atlas = Atlas::Floor, .index = 3}}}}};
 
-    EXPECT_EQ(readText(serializeMap(map)).familyGroups, map.familyGroups);
+    EXPECT_EQ(getReadText(getSerializeMap(map)).familyGroups, map.familyGroups);
 }
 
 TEST(MapFileTest, ReadMap_LeavesAMapDrawnBeforeFamiliesWithNone)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document.erase(std::string("families"));
     ageTo(document, 30);
 
-    EXPECT_TRUE(readText(document.dump()).familyGroups.empty());
+    EXPECT_TRUE(getReadText(document.dump()).familyGroups.empty());
 }
 
 TEST(MapFileTest, ReadMap_RefusesAWeightPastFullFrequency)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document["families"] = nlohmann::json::array(
         {nlohmann::json{
@@ -1565,14 +1565,14 @@ TEST(MapFileTest, ReadMap_RefusesAWeightPastFullFrequency)
                      {"weight", 100}}})}}});
 
     EXPECT_THROW(
-        (void)readText(document.dump()),
+        (void)getReadText(document.dump()),
         antwika::map::MapFileError);
 }
 
 TEST(MapFileTest, ReadMap_RefusesAGroupOfNoVariantsAtAll)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document["families"] = nlohmann::json::array(
         {nlohmann::json{
@@ -1581,7 +1581,7 @@ TEST(MapFileTest, ReadMap_RefusesAGroupOfNoVariantsAtAll)
             {"members", nlohmann::json::array()}}});
 
     EXPECT_THROW(
-        (void)readText(document.dump()),
+        (void)getReadText(document.dump()),
         antwika::map::MapFileError);
 }
 
@@ -1589,30 +1589,30 @@ TEST(MapFileTest, WriteMap_CarriesASpannedDecorWhole)
 {
     using antwika::tilemap::Atlas;
 
-    auto map = demoMap();
-    auto decor = antwika::decor::withDecorToggled(
+    auto map = getDemoMap();
+    auto decor = antwika::decor::getWithDecorToggled(
         {}, Tile{.atlas = Atlas::Floor, .index = 3});
 
-    decor = antwika::decor::withSpanSet(
+    decor = antwika::decor::getWithSpanSet(
         decor, Tile{.atlas = Atlas::Floor, .index = 3}, 2, 2);
-    decor = antwika::decor::withMemberSet(
+    decor = antwika::decor::getWithMemberSet(
         decor,
         Tile{.atlas = Atlas::Floor, .index = 3},
         2,
         Tile{.atlas = Atlas::Floor, .index = 5});
     map.decor = decor;
 
-    EXPECT_EQ(readText(serializeMap(map)).decor, map.decor);
+    EXPECT_EQ(getReadText(getSerializeMap(map)).decor, map.decor);
 }
 
 TEST(MapFileTest, ReadMap_GivesADecorMarkedBeforeSpansOneFace)
 {
-    auto map = Map{.tilemap = defaultTilemap()};
+    auto map = Map{.tilemap = getDefaultTilemap()};
 
-    map.decor = antwika::decor::withDecorToggled(
+    map.decor = antwika::decor::getWithDecorToggled(
         {}, Tile{.atlas = antwika::tilemap::Atlas::Floor, .index = 3});
 
-    auto document = nlohmann::json::parse(serializeMap(map));
+    auto document = nlohmann::json::parse(getSerializeMap(map));
 
     for (auto &entry : document["decor"])
     {
@@ -1622,7 +1622,7 @@ TEST(MapFileTest, ReadMap_GivesADecorMarkedBeforeSpansOneFace)
 
     ageTo(document, 31);
 
-    const auto reloadedMap = readText(document.dump());
+    const auto reloadedMap = getReadText(document.dump());
 
     ASSERT_EQ(reloadedMap.decor.size(), 1U);
     EXPECT_EQ(reloadedMap.decor.at(0).width, 1);
@@ -1635,35 +1635,35 @@ TEST(MapFileTest, ReadMap_GivesADecorMarkedBeforeSpansOneFace)
 
 TEST(MapFileTest, ReadMap_RefusesASpanTooWideToStamp)
 {
-    auto map = Map{.tilemap = defaultTilemap()};
+    auto map = Map{.tilemap = getDefaultTilemap()};
 
-    map.decor = antwika::decor::withDecorToggled(
+    map.decor = antwika::decor::getWithDecorToggled(
         {}, Tile{.atlas = antwika::tilemap::Atlas::Floor, .index = 3});
 
-    auto document = nlohmann::json::parse(serializeMap(map));
+    auto document = nlohmann::json::parse(getSerializeMap(map));
 
     document["decor"][0]["span"] =
         nlohmann::json::array({5, 1});
 
     EXPECT_THROW(
-        (void)readText(document.dump()),
+        (void)getReadText(document.dump()),
         antwika::map::MapFileError);
 }
 
 TEST(MapFileTest, ReadMap_RefusesSpanTilesThatDoNotFillTheSpan)
 {
-    auto map = Map{.tilemap = defaultTilemap()};
+    auto map = Map{.tilemap = getDefaultTilemap()};
 
-    map.decor = antwika::decor::withDecorToggled(
+    map.decor = antwika::decor::getWithDecorToggled(
         {}, Tile{.atlas = antwika::tilemap::Atlas::Floor, .index = 3});
 
-    auto document = nlohmann::json::parse(serializeMap(map));
+    auto document = nlohmann::json::parse(getSerializeMap(map));
 
     document["decor"][0]["span"] =
         nlohmann::json::array({2, 2});
 
     EXPECT_THROW(
-        (void)readText(document.dump()),
+        (void)getReadText(document.dump()),
         antwika::map::MapFileError);
 }
 
@@ -1671,37 +1671,37 @@ TEST(MapFileTest, WriteMap_CarriesTheFlipsOfItsTiles)
 {
     using antwika::tilemap::Atlas;
 
-    auto map = demoMap();
-    auto flips = antwika::decor::withAnimationToggled(
+    auto map = getDemoMap();
+    auto flips = antwika::decor::getWithAnimationToggled(
         {}, Tile{.atlas = Atlas::Floor, .index = 3});
 
-    flips = antwika::decor::withAnimationFrameAdded(
+    flips = antwika::decor::getWithAnimationFrameAdded(
         flips, Tile{.atlas = Atlas::Floor, .index = 3});
-    flips = antwika::decor::withAnimationFrameSet(
+    flips = antwika::decor::getWithAnimationFrameSet(
         flips,
         Tile{.atlas = Atlas::Floor, .index = 3},
         1,
         Tile{.atlas = Atlas::Floor, .index = 9});
     map.flipAnimations = flips;
 
-    EXPECT_EQ(readText(serializeMap(map)).flipAnimations, map.flipAnimations);
+    EXPECT_EQ(getReadText(getSerializeMap(map)).flipAnimations, map.flipAnimations);
 }
 
 TEST(MapFileTest, ReadMap_LeavesAMapDrawnBeforeFlipsStill)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document.erase(std::string("flips"));
     ageTo(document, 32);
 
-    EXPECT_TRUE(readText(document.dump()).flipAnimations.empty());
+    EXPECT_TRUE(getReadText(document.dump()).flipAnimations.empty());
 }
 
 TEST(MapFileTest, ReadMap_RefusesAFlipOfNineFrames)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     auto frames = nlohmann::json::array();
 
@@ -1717,14 +1717,14 @@ TEST(MapFileTest, ReadMap_RefusesAFlipOfNineFrames)
             {"frames", frames}}});
 
     EXPECT_THROW(
-        (void)readText(document.dump()),
+        (void)getReadText(document.dump()),
         antwika::map::MapFileError);
 }
 
 TEST(MapFileTest, ReadMap_RefusesAFlipAcrossTheAtlases)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document["flips"] = nlohmann::json::array(
         {nlohmann::json{
@@ -1735,7 +1735,7 @@ TEST(MapFileTest, ReadMap_RefusesAFlipAcrossTheAtlases)
                   nlohmann::json::array({"upright", 1})})}}});
 
     EXPECT_THROW(
-        (void)readText(document.dump()),
+        (void)getReadText(document.dump()),
         antwika::map::MapFileError);
 }
 
@@ -1743,7 +1743,7 @@ TEST(MapFileTest, WriteMap_CarriesTheTransitionsItWove)
 {
     using antwika::tilemap::Atlas;
 
-    auto map = demoMap();
+    auto map = getDemoMap();
 
     map.transitions = {
         antwika::tile::TransitionTile{
@@ -1753,24 +1753,24 @@ TEST(MapFileTest, WriteMap_CarriesTheTransitionsItWove)
             .outputTile = Tile{.atlas = Atlas::Floor, .index = 9}}};
 
     EXPECT_EQ(
-        readText(serializeMap(map)).transitions, map.transitions);
+        getReadText(getSerializeMap(map)).transitions, map.transitions);
 }
 
 TEST(MapFileTest, ReadMap_LeavesAMapDrawnBeforeTransitionsBare)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document.erase(std::string("transitions"));
     ageTo(document, 33);
 
-    EXPECT_TRUE(readText(document.dump()).transitions.empty());
+    EXPECT_TRUE(getReadText(document.dump()).transitions.empty());
 }
 
 TEST(MapFileTest, ReadMap_RefusesATransitionAcrossAtlases)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document["transitions"] = nlohmann::json::array(
         {nlohmann::json{
@@ -1780,14 +1780,14 @@ TEST(MapFileTest, ReadMap_RefusesATransitionAcrossAtlases)
             {"slot", nlohmann::json::array({"flat", 9})}}});
 
     EXPECT_THROW(
-        (void)readText(document.dump()),
+        (void)getReadText(document.dump()),
         antwika::map::MapFileError);
 }
 
 TEST(MapFileTest, ReadMap_RefusesATransitionIntoItself)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document["transitions"] = nlohmann::json::array(
         {nlohmann::json{
@@ -1797,13 +1797,13 @@ TEST(MapFileTest, ReadMap_RefusesATransitionIntoItself)
             {"slot", nlohmann::json::array({"flat", 9})}}});
 
     EXPECT_THROW(
-        (void)readText(document.dump()),
+        (void)getReadText(document.dump()),
         antwika::map::MapFileError);
 }
 
 TEST(MapFileTest, WriteMap_CarriesTheGatesItHolds)
 {
-    auto map = demoMap();
+    auto map = getDemoMap();
 
     map.keyPositions = {VoxelPosition{.x = 1, .y = 0, .z = 2}};
     map.doorPositions = {
@@ -1812,7 +1812,7 @@ TEST(MapFileTest, WriteMap_CarriesTheGatesItHolds)
     map.checkpointPositions = {VoxelPosition{.x = 5, .y = 0, .z = 5}};
     map.exitLocked = true;
 
-    const auto reloadedMap = readText(serializeMap(map));
+    const auto reloadedMap = getReadText(getSerializeMap(map));
 
     EXPECT_EQ(reloadedMap.keyPositions, map.keyPositions);
     EXPECT_EQ(reloadedMap.doorPositions, map.doorPositions);
@@ -1823,7 +1823,7 @@ TEST(MapFileTest, WriteMap_CarriesTheGatesItHolds)
 TEST(MapFileTest, ReadMap_LeavesAMapDrawnBeforeGatesBare)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document.erase(std::string("keys"));
     document.erase(std::string("doors"));
@@ -1831,7 +1831,7 @@ TEST(MapFileTest, ReadMap_LeavesAMapDrawnBeforeGatesBare)
     document.erase(std::string("exitLocked"));
     ageTo(document, 34);
 
-    const auto reloadedMap = readText(document.dump());
+    const auto reloadedMap = getReadText(document.dump());
 
     EXPECT_TRUE(reloadedMap.keyPositions.empty());
     EXPECT_TRUE(reloadedMap.doorPositions.empty());
@@ -1841,14 +1841,14 @@ TEST(MapFileTest, ReadMap_LeavesAMapDrawnBeforeGatesBare)
 
 TEST(MapFileTest, WriteMap_CarriesTheItemsItHolds)
 {
-    auto map = demoMap();
+    auto map = getDemoMap();
 
     map.foodPositions = {VoxelPosition{.x = 1, .y = 0, .z = 2}};
     map.waterPositions = {
         VoxelPosition{.x = 3, .y = 0, .z = 2},
         VoxelPosition{.x = 3, .y = 1, .z = 2}};
 
-    const auto reloadedMap = readText(serializeMap(map));
+    const auto reloadedMap = getReadText(getSerializeMap(map));
 
     EXPECT_EQ(reloadedMap.foodPositions, map.foodPositions);
     EXPECT_EQ(reloadedMap.waterPositions, map.waterPositions);
@@ -1857,11 +1857,11 @@ TEST(MapFileTest, WriteMap_CarriesTheItemsItHolds)
 TEST(MapFileTest, ReadMap_LeavesAMapDrawnBeforeItemsBare)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     ageTo(document, 41);
 
-    const auto reloadedMap = readText(document.dump());
+    const auto reloadedMap = getReadText(document.dump());
 
     EXPECT_TRUE(reloadedMap.foodPositions.empty());
     EXPECT_TRUE(reloadedMap.waterPositions.empty());
@@ -1870,38 +1870,38 @@ TEST(MapFileTest, ReadMap_LeavesAMapDrawnBeforeItemsBare)
 TEST(MapFileTest, ReadMap_RefusesAnItemBeyondTheLattice)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document["water"] = nlohmann::json::array(
         {nlohmann::json::array({kMaxCellCoord + 1, 0, 0})});
 
     EXPECT_THROW(
-        (void)readText(document.dump()),
+        (void)getReadText(document.dump()),
         antwika::map::MapFileError);
 }
 
 TEST(MapFileTest, WriteMap_CarriesTheChosenGateTool)
 {
-    auto map = demoMap();
+    auto map = getDemoMap();
 
     map.settings.tool = antwika::map::Tool::Checkpoint;
 
     EXPECT_EQ(
-        readText(serializeMap(map)).settings.tool,
+        getReadText(getSerializeMap(map)).settings.tool,
         antwika::map::Tool::Checkpoint);
 }
 
 TEST(MapFileTest, ReadMap_RefusesAKeyBeyondTheLattice)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     document["keys"] = nlohmann::json::array(
         {nlohmann::json::array(
             {kMaxCellCoord + 1, 0, 0})});
 
     EXPECT_THROW(
-        (void)readText(document.dump()),
+        (void)getReadText(document.dump()),
         antwika::map::MapFileError);
 }
 
@@ -1915,23 +1915,23 @@ TEST(MapFileTest, ReadMap_RefusesAKeyBeyondTheLattice)
 
 TEST(MapFileTest, WriteMap_CarriesTheComponentsAFigureNames)
 {
-    auto map = demoMap();
+    auto map = getDemoMap();
 
     map.characters = {
         antwika::map::Character{.components = {"component::CarriedLight"}}};
 
     EXPECT_TRUE(carries(
-        readText(serializeMap(map)).characters.at(0),
+        getReadText(getSerializeMap(map)).characters.at(0),
         "component::CarriedLight"));
 }
 
 TEST(MapFileTest, ReadMap_LeavesAFigureDrawnBeforeLampsCarryingNothing)
 {
-    auto map = Map{.tilemap = defaultTilemap()};
+    auto map = Map{.tilemap = getDefaultTilemap()};
 
     map.characters = {antwika::map::Character{}};
 
-    auto document = nlohmann::json::parse(serializeMap(map));
+    auto document = nlohmann::json::parse(getSerializeMap(map));
 
     ageTo(document, 35);
 
@@ -1941,7 +1941,7 @@ TEST(MapFileTest, ReadMap_LeavesAFigureDrawnBeforeLampsCarryingNothing)
     }
 
     EXPECT_FALSE(carries(
-        readText(document.dump()).characters.at(0),
+        getReadText(document.dump()).characters.at(0),
         "component::CarriedLight"));
 }
 
@@ -1963,8 +1963,8 @@ TEST(MapFileTest, LoadMap_TakesEveryMapTheRepositoryShips)
             std::istreambuf_iterator<char>(inputStream),
             std::istreambuf_iterator<char>()};
 
-        const auto loadedMap = readText(text);
-        const auto hero = antwika::map::playerIndex(loadedMap);
+        const auto loadedMap = getReadText(text);
+        const auto hero = antwika::map::getPlayerIndex(loadedMap);
 
         ASSERT_TRUE(hero.has_value());
         EXPECT_TRUE(carries(
@@ -1978,11 +1978,11 @@ TEST(MapFileTest, LoadMap_TakesEveryMapTheRepositoryShips)
 
 TEST(MapFileTest, ReadMap_TurnsAnOlderLampFlagIntoACarriedLight)
 {
-    auto map = Map{.tilemap = defaultTilemap()};
+    auto map = Map{.tilemap = getDefaultTilemap()};
 
     map.characters = {antwika::map::Character{}};
 
-    auto document = nlohmann::json::parse(serializeMap(map));
+    auto document = nlohmann::json::parse(getSerializeMap(map));
 
     ageTo(document, 42);
 
@@ -1992,17 +1992,17 @@ TEST(MapFileTest, ReadMap_TurnsAnOlderLampFlagIntoACarriedLight)
     }
 
     EXPECT_TRUE(carries(
-        readText(document.dump()).characters.at(0),
+        getReadText(document.dump()).characters.at(0),
         "component::CarriedLight"));
 }
 
 TEST(MapFileTest, ReadMap_MovesOlderComponentNamesIntoComponent)
 {
-    auto map = Map{.tilemap = defaultTilemap()};
+    auto map = Map{.tilemap = getDefaultTilemap()};
 
     map.characters = {antwika::map::Character{}};
 
-    auto document = nlohmann::json::parse(serializeMap(map));
+    auto document = nlohmann::json::parse(getSerializeMap(map));
 
     ageTo(document, 44);
 
@@ -2020,7 +2020,7 @@ TEST(MapFileTest, ReadMap_MovesOlderComponentNamesIntoComponent)
     }
 
     const auto loadedCharacter =
-        readText(document.dump()).characters.at(0);
+        getReadText(document.dump()).characters.at(0);
 
     EXPECT_TRUE(carries(loadedCharacter, "component::Position"));
     EXPECT_TRUE(carries(loadedCharacter, "component::Velocity"));
@@ -2034,11 +2034,11 @@ TEST(MapFileTest, ReadMap_MovesOlderComponentNamesIntoComponent)
 
 TEST(MapFileTest, ReadMap_LeavesAComponentItDoesNotRenameAlone)
 {
-    auto map = Map{.tilemap = defaultTilemap()};
+    auto map = Map{.tilemap = getDefaultTilemap()};
 
     map.characters = {antwika::map::Character{}};
 
-    auto document = nlohmann::json::parse(serializeMap(map));
+    auto document = nlohmann::json::parse(getSerializeMap(map));
 
     ageTo(document, 44);
 
@@ -2049,46 +2049,46 @@ TEST(MapFileTest, ReadMap_LeavesAComponentItDoesNotRenameAlone)
     }
 
     EXPECT_TRUE(carries(
-        readText(document.dump()).characters.at(0),
+        getReadText(document.dump()).characters.at(0),
         "component::Health"));
 }
 
 TEST(MapFileTest, ReadMap_RefusesFigureComponentsOfNumbers)
 {
-    auto map = Map{.tilemap = defaultTilemap()};
+    auto map = Map{.tilemap = getDefaultTilemap()};
 
     map.characters = {antwika::map::Character{}};
 
-    auto document = nlohmann::json::parse(serializeMap(map));
+    auto document = nlohmann::json::parse(getSerializeMap(map));
 
     document["characters"][0]["components"] = {3};
 
     EXPECT_THROW(
-        (void)readText(document.dump()),
+        (void)getReadText(document.dump()),
         antwika::map::MapFileError);
 }
 
 TEST(MapFileTest, ReadMap_LetsGoOfWhatADecorWasCalled)
 {
-    auto map = Map{.tilemap = defaultTilemap()};
+    auto map = Map{.tilemap = getDefaultTilemap()};
 
-    map.decor = antwika::decor::withDecorToggled(
+    map.decor = antwika::decor::getWithDecorToggled(
         {}, Tile{.atlas = antwika::tilemap::Atlas::Floor, .index = 3});
 
-    auto document = nlohmann::json::parse(serializeMap(map));
+    auto document = nlohmann::json::parse(getSerializeMap(map));
 
     document["decor"][0]["name"] = "moss";
     ageTo(document, 36);
 
-    EXPECT_EQ(readText(document.dump()).decor, map.decor);
+    EXPECT_EQ(getReadText(document.dump()).decor, map.decor);
 }
 
 TEST(MapFileTest, SaveMap_KeepsWhatItWroteOverUnderTheBackupName)
 {
-    const auto path = somewhereToWrite("antwika-backup-map.json");
+    const auto path = getSomewhereToWrite("antwika-backup-map.json");
     const auto backupPath =
         path + std::string(antwika::map::kBackupSuffix);
-    auto first = demoMap();
+    auto first = getDemoMap();
 
     first.ambient = 11;
 
@@ -2106,8 +2106,8 @@ TEST(MapFileTest, SaveMap_KeepsWhatItWroteOverUnderTheBackupName)
     saveMap(path, second);
 
     ASSERT_TRUE(std::filesystem::exists(backupPath));
-    EXPECT_EQ(loadMap(path), second);
-    EXPECT_EQ(loadMap(backupPath), first);
+    EXPECT_EQ(getLoadMap(path), second);
+    EXPECT_EQ(getLoadMap(backupPath), first);
 
     std::filesystem::remove(path);
     std::filesystem::remove(backupPath);
@@ -2115,7 +2115,7 @@ TEST(MapFileTest, SaveMap_KeepsWhatItWroteOverUnderTheBackupName)
 
 TEST(MapFileTest, SaveMap_LeavesNothingLyingHalfWritten)
 {
-    const auto path = somewhereToWrite("antwika-halfway-map.json");
+    const auto path = getSomewhereToWrite("antwika-halfway-map.json");
     const auto backupPath =
         path + std::string(antwika::map::kBackupSuffix);
     const auto writingPath =
@@ -2124,11 +2124,11 @@ TEST(MapFileTest, SaveMap_LeavesNothingLyingHalfWritten)
     std::filesystem::remove(path);
     std::filesystem::remove(backupPath);
 
-    saveMap(path, demoMap());
+    saveMap(path, getDemoMap());
 
     EXPECT_FALSE(std::filesystem::exists(writingPath));
 
-    saveMap(path, demoMap());
+    saveMap(path, getDemoMap());
 
     EXPECT_FALSE(std::filesystem::exists(writingPath));
 
@@ -2138,7 +2138,7 @@ TEST(MapFileTest, SaveMap_LeavesNothingLyingHalfWritten)
 
 TEST(MapFileTest, SaveMap_KeepsOnlyTheLastMapItWroteOver)
 {
-    const auto path = somewhereToWrite("antwika-onebak-map.json");
+    const auto path = getSomewhereToWrite("antwika-onebak-map.json");
     const auto backupPath =
         path + std::string(antwika::map::kBackupSuffix);
 
@@ -2147,14 +2147,14 @@ TEST(MapFileTest, SaveMap_KeepsOnlyTheLastMapItWroteOver)
 
     for (const std::int32_t ambient : {1, 2, 3})
     {
-        auto map = demoMap();
+        auto map = getDemoMap();
 
         map.ambient = ambient;
         saveMap(path, map);
     }
 
-    EXPECT_EQ(loadMap(path).ambient, 3);
-    EXPECT_EQ(loadMap(backupPath).ambient, 2);
+    EXPECT_EQ(getLoadMap(path).ambient, 3);
+    EXPECT_EQ(getLoadMap(backupPath).ambient, 2);
 
     std::filesystem::remove(path);
     std::filesystem::remove(backupPath);
@@ -2163,7 +2163,7 @@ TEST(MapFileTest, SaveMap_KeepsOnlyTheLastMapItWroteOver)
 TEST(MapFileTest, SharedTexturePath_PutsItBesideTheMapsOwnFolder)
 {
     EXPECT_EQ(
-        antwika::map::sharedTexturePath(
+        antwika::map::getSharedTexturePath(
             "assets/maps/map.json", "character-20x28.png"),
         "assets/textures/character-20x28.png");
 }
@@ -2171,9 +2171,9 @@ TEST(MapFileTest, SharedTexturePath_PutsItBesideTheMapsOwnFolder)
 TEST(MapFileTest, SharedTexturePath_IsTheSameForEveryMapOfAFolder)
 {
     EXPECT_EQ(
-        antwika::map::sharedTexturePath(
+        antwika::map::getSharedTexturePath(
             "assets/maps/one.json", "icons-16.png"),
-        antwika::map::sharedTexturePath(
+        antwika::map::getSharedTexturePath(
             "assets/maps/another.json", "icons-16.png"));
 }
 
@@ -2181,7 +2181,7 @@ TEST(MapFileTest, SharedTexturePath_KeepsTheNameWhole)
 {
     EXPECT_EQ(
         std::filesystem::path(
-            antwika::map::sharedTexturePath(
+            antwika::map::getSharedTexturePath(
                 "assets/maps/map.json", "icons-16.png"))
             .filename()
             .string(),
@@ -2193,20 +2193,20 @@ TEST(MapFileTest, SharedTexturePath_IsNotBesideTheMapItself)
     const std::string mapPath = "assets/maps/map.json";
 
     EXPECT_NE(
-        antwika::map::sharedTexturePath(
+        antwika::map::getSharedTexturePath(
             mapPath, "character-20x28.png"),
-        antwika::map::sidecarPath(mapPath, "character-20x28.png"));
+        antwika::map::getSidecarPath(mapPath, "character-20x28.png"));
 }
 
 TEST(MapFileTest, WriteMap_KeepsTheRosterOfCharacters)
 {
-    auto map = demoMap();
+    auto map = getDemoMap();
 
     map.characters = {
         antwika::map::Character{.name = "Ada"},
         antwika::map::Character{.name = "Bel"}};
 
-    const auto loadedMap = readText(serializeMap(map));
+    const auto loadedMap = getReadText(getSerializeMap(map));
 
     ASSERT_EQ(loadedMap.characters.size(), 2U);
     EXPECT_EQ(loadedMap.characters.at(0).name, "Ada");
@@ -2215,50 +2215,50 @@ TEST(MapFileTest, WriteMap_KeepsTheRosterOfCharacters)
 
 TEST(MapFileTest, WriteMap_MarksThePlayerAmongTheCharacters)
 {
-    auto map = demoMap();
+    auto map = getDemoMap();
 
     map.characters = {
         antwika::map::Character{.name = "Ada"},
         antwika::map::Character{.name = "Bel", .player = true}};
 
-    const auto loadedMap = readText(serializeMap(map));
+    const auto loadedMap = getReadText(getSerializeMap(map));
 
     EXPECT_EQ(
-        antwika::map::playerIndex(loadedMap),
+        antwika::map::getPlayerIndex(loadedMap),
         std::optional<std::size_t>{1});
 }
 
 TEST(MapFileTest, WriteMap_NoLongerWritesAWalkerBesideTheRoster)
 {
     const auto document = nlohmann::json::parse(
-        serializeMap(demoMap()));
+        getSerializeMap(getDemoMap()));
 
     EXPECT_FALSE(document.contains("walker"));
 }
 
 TEST(MapFileTest, ReadMap_TurnsAwayAMapWithTwoPlayers)
 {
-    auto map = demoMap();
+    auto map = getDemoMap();
 
     map.characters = {
         antwika::map::Character{.player = true},
         antwika::map::Character{.player = true}};
 
     EXPECT_THROW(
-        (void)readText(serializeMap(map)),
+        (void)getReadText(getSerializeMap(map)),
         antwika::map::MapFileError);
 }
 
 TEST(MapFileTest, ReadMap_MakesAPlayerOfTheWalkerOfAnOlderMap)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     ageTo(document, 40);
     document["walker"] = {{"at", {1000, 2000, 3000}}, {"way", 3}};
 
-    const auto loadedMap = readText(document.dump());
-    const auto hero = antwika::map::playerIndex(loadedMap);
+    const auto loadedMap = getReadText(document.dump());
+    const auto hero = antwika::map::getPlayerIndex(loadedMap);
 
     ASSERT_TRUE(hero.has_value());
 
@@ -2274,35 +2274,35 @@ TEST(MapFileTest, ReadMap_MakesAPlayerOfTheWalkerOfAnOlderMap)
 TEST(MapFileTest, ReadMap_LeavesAnOlderMapWithNoWalkerWithNoPlayer)
 {
     auto document = nlohmann::json::parse(
-        serializeMap(Map{.tilemap = defaultTilemap()}));
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
     ageTo(document, 40);
 
     EXPECT_FALSE(
-        antwika::map::playerIndex(readText(document.dump()))
+        antwika::map::getPlayerIndex(getReadText(document.dump()))
             .has_value());
 }
 
 TEST(MapFileTest, ReadMap_KeepsTheFiguresOfAnOlderMapBeforeThePlayer)
 {
-    auto map = Map{.tilemap = defaultTilemap()};
+    auto map = Map{.tilemap = getDefaultTilemap()};
 
     map.characters = {
         antwika::map::Character{.name = "Ada"},
         antwika::map::Character{.name = "Bel"}};
 
-    auto document = nlohmann::json::parse(serializeMap(map));
+    auto document = nlohmann::json::parse(getSerializeMap(map));
 
     ageTo(document, 40);
     document["walker"] = {{"at", {0, 0, 0}}, {"way", 0}};
 
-    const auto loadedMap = readText(document.dump());
+    const auto loadedMap = getReadText(document.dump());
 
     ASSERT_EQ(loadedMap.characters.size(), 3U);
     EXPECT_EQ(loadedMap.characters.at(0).name, "Ada");
     EXPECT_EQ(loadedMap.characters.at(1).name, "Bel");
     EXPECT_EQ(
-        antwika::map::playerIndex(loadedMap),
+        antwika::map::getPlayerIndex(loadedMap),
         std::optional<std::size_t>{2});
 }
 
@@ -2313,17 +2313,17 @@ TEST(MapFileTest, ReadMap_TurnsAFigureOfAnOlderMapTheWayItStood)
 
     for (const auto &[was, becomes] : turns)
     {
-        auto map = Map{.tilemap = defaultTilemap()};
+        auto map = Map{.tilemap = getDefaultTilemap()};
 
         map.characters = {antwika::map::Character{}};
 
-        auto document = nlohmann::json::parse(serializeMap(map));
+        auto document = nlohmann::json::parse(getSerializeMap(map));
 
         ageTo(document, 40);
         document["figures"][0]["home"]["way"] = was;
 
         EXPECT_EQ(
-            readText(document.dump())
+            getReadText(document.dump())
                 .characters.at(0)
                 .idlePlacement.way,
             becomes);
@@ -2332,44 +2332,44 @@ TEST(MapFileTest, ReadMap_TurnsAFigureOfAnOlderMapTheWayItStood)
 
 TEST(MapFileTest, ReadMap_RefusesACharacterPlayerFlagOfNumbers)
 {
-    auto map = Map{.tilemap = defaultTilemap()};
+    auto map = Map{.tilemap = getDefaultTilemap()};
 
     map.characters = {antwika::map::Character{}};
 
-    auto document = nlohmann::json::parse(serializeMap(map));
+    auto document = nlohmann::json::parse(getSerializeMap(map));
 
     document["characters"][0]["player"] = 3;
 
     EXPECT_THROW(
-        (void)readText(document.dump()),
+        (void)getReadText(document.dump()),
         antwika::map::MapFileError);
 }
 
 TEST(MapFileTest, PlayerIndex_FindsTheOnePlayerOfARoster)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.characters = {
         antwika::map::Character{},
         antwika::map::Character{.player = true}};
 
     EXPECT_EQ(
-        antwika::map::playerIndex(map),
+        antwika::map::getPlayerIndex(map),
         std::optional<std::size_t>{1});
 }
 
 TEST(MapFileTest, PlayerIndex_GivesNothingWhereNoneIsMarked)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.characters = {antwika::map::Character{}};
 
-    EXPECT_FALSE(antwika::map::playerIndex(map).has_value());
+    EXPECT_FALSE(antwika::map::getPlayerIndex(map).has_value());
 }
 
 TEST(MapFileTest, PatrolStopsOf_GivesEveryCharacterItsStopsInOrder)
 {
-    Map map{.tilemap = defaultTilemap()};
+    Map map{.tilemap = getDefaultTilemap()};
 
     map.characters = {
         antwika::map::Character{

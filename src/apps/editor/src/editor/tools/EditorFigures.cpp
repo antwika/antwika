@@ -45,18 +45,18 @@ namespace
 namespace antwika::editor
 {
 
-    std::string Editor::characterSheetPath(
+    std::string Editor::getCharacterSheetPath(
         const std::size_t figureIndex) const
     {
         if (figureIndex < document.map.characters.size()
             && document.map.characters.at(figureIndex).player)
         {
-            return map::sharedTexturePath(document.path(),
+            return map::getSharedTexturePath(document.getPath(),
                 character::kCharacterSheet);
         }
 
-        return map::sidecarPath(
-            document.path(),
+        return map::getSidecarPath(
+            document.getPath(),
             "figure-" + std::to_string(figureIndex) + "-20x28.png");
     }
 
@@ -73,17 +73,17 @@ namespace antwika::editor
 
             try
             {
-                skinBitmap = image::readPngFile(
-                    characterSheetPath(index), kAppName);
+                skinBitmap = image::getReadPngFile(
+                    getCharacterSheetPath(index), kAppName);
             }
             catch (...)
             {
-                skinBitmap = map::loadCharacterSheet(document.path(), kAppName);
+                skinBitmap = map::getLoadCharacterSheet(document.getPath(), kAppName);
             }
 
-            if (skinBitmap.size != character::characterSheetSize())
+            if (skinBitmap.size != character::getCharacterSheetSize())
             {
-                skinBitmap = map::loadCharacterSheet(document.path(), kAppName);
+                skinBitmap = map::getLoadCharacterSheet(document.getPath(), kAppName);
             }
 
             skinBitmaps.push_back(std::move(skinBitmap));
@@ -97,16 +97,16 @@ namespace antwika::editor
         characterView.keepEdits(viewportRenderer);
 
         for (std::size_t index = 0;
-             index < characterView.skins().size();
+             index < characterView.getSkins().size();
              ++index)
         {
-            const auto sheetPath = characterSheetPath(index);
+            const auto sheetPath = getCharacterSheetPath(index);
             std::error_code errorCode;
 
             std::filesystem::create_directories(
                 std::filesystem::path(sheetPath).parent_path(), errorCode);
             image::writePngFile(
-                characterView.skins().at(index), sheetPath, kAppName);
+                characterView.getSkins().at(index), sheetPath, kAppName);
         }
     }
 
@@ -150,8 +150,8 @@ namespace antwika::editor
                 (static_cast<float>(position.y) + 0.5F)
                 * voxel::kVoxelSide;
             const auto groundHeight =
-                collision::groundHeightAtColumn(
-                    worldMeshes.cells(), position.x, position.z, feet);
+                collision::getGroundHeightAtColumn(
+                    worldMeshes.getCells(), position.x, position.z, feet);
 
             if (!groundHeight.has_value())
             {
@@ -184,10 +184,10 @@ namespace antwika::editor
         }
 
         const auto stoodPosition =
-            play.game->world().get<component::Position>(play.game->player());
+            play.game->getWorld().get<component::Position>(play.game->getPlayer());
 
-        return !antwika::voxel::cubeAbove(
-            worldMeshes.cells(),
+        return !antwika::voxel::isCubeAbove(
+            worldMeshes.getCells(),
             antwika::gfx::Vec3{
                 stoodPosition.x, stoodPosition.y, stoodPosition.z},
             light::kSightClearance);
@@ -197,17 +197,17 @@ namespace antwika::editor
     {
         if (!play.playing)
         {
-            return light::activeLights(document.map.lamps);
+            return light::getActiveLights(document.map.lamps);
         }
 
         const auto stoodPosition =
-            play.game->world().get<component::Position>(play.game->player());
+            play.game->getWorld().get<component::Position>(play.game->getPlayer());
         const antwika::gfx::Vec3 walkerPosition{
             stoodPosition.x, stoodPosition.y, stoodPosition.z};
         const auto sightPoint =
-            antwika::voxel::lineOfSight(walkerPosition);
+            antwika::voxel::getLineOfSight(walkerPosition);
         const auto upperSightPoint =
-            antwika::voxel::upperLineOfSight(walkerPosition);
+            antwika::voxel::getUpperLineOfSight(walkerPosition);
 
         std::vector<light::ActiveLight> lights{
             light::ActiveLight{
@@ -220,7 +220,7 @@ namespace antwika::editor
                     .position = upperSightPoint, .brightness = 0.0F});
         }
 
-        for (const auto &lamp : light::activeLights(document.map.lamps))
+        for (const auto &lamp : light::getActiveLights(document.map.lamps))
         {
             if (lights.size() >= light::kMaxLamps)
             {
@@ -250,7 +250,7 @@ namespace antwika::editor
 
     void Editor::ensurePlayerInRoster()
     {
-        if (playerIndex(document.map).has_value())
+        if (getPlayerIndex(document.map).has_value())
         {
             return;
         }
@@ -270,36 +270,36 @@ namespace antwika::editor
         play.patrolPositions = patrolStopsOf(document.map);
         play.game->setPlayer(
             gameplay::spawnRoster(
-                play.game->world(),
+                play.game->getWorld(),
                 document.map,
-                *playerIndex(document.map),
+                *getPlayerIndex(document.map),
                 startingPlacement()));
     }
 
     void Editor::spawnItems()
     {
-        const ecs::OpenPhase phase(play.game->world());
+        const ecs::OpenPhase phase(play.game->getWorld());
 
-        gameplay::spawnItems(play.game->world(), document.map);
+        gameplay::spawnItems(play.game->getWorld(), document.map);
     }
 
     void Editor::playApart()
     {
         saveCurrentMap();
 
-        if (document.path().empty())
+        if (document.getPath().empty())
         {
             return;
         }
 
         const auto assetFolder =
-            (std::filesystem::path(io::assetPath(std::string(kAppName)))
+            (std::filesystem::path(io::getAssetPath(std::string(kAppName)))
                  .parent_path()
                  .parent_path()
              / "antwika_game" / "antwika_game")
                 .string();
 
-        if (!app::spawnDetached(assetFolder, {"--map", document.path()}))
+        if (!app::isSpawnDetached(assetFolder, {"--map", document.getPath()}))
         {
             showStatus("no game to play it with", true, 180);
 
@@ -318,14 +318,14 @@ namespace antwika::editor
     {
         sprites.drawCharacter(
             viewportRenderer,
-            worldShader.program(),
+            worldShader.getProgram(),
             camera,
             modelMatrix,
             sheetTexture,
             stoodPosition,
             posedState,
             tick,
-            lightPasses.lampShadows());
+            lightPasses.getLampShadows());
     }
 
     void Editor::interact()
@@ -344,24 +344,24 @@ namespace antwika::editor
             return;
         }
 
-        auto &gameWorld = play.game->world();
+        auto &gameWorld = play.game->getWorld();
         const ecs::OpenPhase phase(gameWorld);
 
         gameWorld.add<component::TalkIntent>(
-            play.game->player(), component::TalkIntent{});
+            play.game->getPlayer(), component::TalkIntent{});
     }
 
     void Editor::sayDialogueLine()
     {
-        auto &gameWorld = play.game->world();
+        auto &gameWorld = play.game->getWorld();
 
-        if (!gameWorld.has<component::DialogueLine>(play.game->player()))
+        if (!gameWorld.has<component::DialogueLine>(play.game->getPlayer()))
         {
             return;
         }
 
         const auto dialogueLine =
-            gameWorld.get<component::DialogueLine>(play.game->player());
+            gameWorld.get<component::DialogueLine>(play.game->getPlayer());
 
         if (dialogueLine.rosterIndex < document.map.characters.size())
         {
@@ -382,7 +382,7 @@ namespace antwika::editor
 
         const ecs::OpenPhase phase(gameWorld);
 
-        gameWorld.remove<component::DialogueLine>(play.game->player());
+        gameWorld.remove<component::DialogueLine>(play.game->getPlayer());
     }
 
 }

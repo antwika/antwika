@@ -18,13 +18,13 @@ namespace antwika::schema
         IMigration &operator=(IMigration &&) = delete;
         virtual ~IMigration() = default;
 
-        [[nodiscard]] virtual std::uint32_t fromVersion() const
+        [[nodiscard]] virtual std::uint32_t getFromVersion() const
             noexcept = 0;
 
         [[nodiscard]] virtual std::uint32_t toVersion() const
             noexcept = 0;
 
-        [[nodiscard]] virtual std::string_view name() const noexcept = 0;
+        [[nodiscard]] virtual std::string_view getName() const noexcept = 0;
 
         virtual void apply(nlohmann::json &document) const = 0;
     };

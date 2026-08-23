@@ -32,7 +32,7 @@ TEST(ComponentStorageTest, Insert_MakesAnEntityContainedAndReadable)
     storage.insert(entity, Position{1, 2});
 
     EXPECT_TRUE(storage.contains(entity));
-    EXPECT_EQ(storage.read(entity), (Position{1, 2}));
+    EXPECT_EQ(storage.getContents(entity), (Position{1, 2}));
 }
 
 TEST(ComponentStorageTest, Contains_IsFalseForAnUnknownEntity)
@@ -47,7 +47,7 @@ TEST(ComponentStorageTest, Read_ThrowsOnAnUnknownEntity)
     ComponentStorage<Position> storage;
 
     EXPECT_THROW(
-        static_cast<void>(storage.read(Entity{7})), EcsError);
+        static_cast<void>(storage.getContents(Entity{7})), EcsError);
 }
 
 TEST(ComponentStorageTest, Write_ThrowsOnAnUnknownEntity)
@@ -66,7 +66,7 @@ TEST(ComponentStorageTest, RemoveAll_LeavesAnEntityNoLongerContained)
     storage.removeAll(std::vector<Entity>{entity});
 
     EXPECT_FALSE(storage.contains(entity));
-    EXPECT_THROW(static_cast<void>(storage.read(entity)), EcsError);
+    EXPECT_THROW(static_cast<void>(storage.getContents(entity)), EcsError);
 }
 
 TEST(ComponentStorageTest, Insert_OverwritesAnExistingEntity)
@@ -77,7 +77,7 @@ TEST(ComponentStorageTest, Insert_OverwritesAnExistingEntity)
 
     storage.insert(entity, Position{9, 9});
 
-    EXPECT_EQ(storage.read(entity), (Position{9, 9}));
+    EXPECT_EQ(storage.getContents(entity), (Position{9, 9}));
 }
 
 TEST(ComponentStorageTest, Entities_KeepOrderAcrossInsertAndRemove)
@@ -96,7 +96,7 @@ TEST(ComponentStorageTest, Entities_KeepOrderAcrossInsertAndRemove)
     storage.removeAll(std::vector<Entity>{bEntity});
     storage.insert(entity, Position{});
 
-    const auto entities = storage.entities();
+    const auto entities = storage.getEntities();
     const std::vector<Entity> orderEntities(entities.begin(), entities.end());
 
     EXPECT_EQ(
@@ -114,9 +114,9 @@ TEST(ComponentStorageTest, RemoveAll_MovesEachRemainingComponentWithItsEntity)
 
     storage.removeAll(std::vector<Entity>{Entity{2}});
 
-    EXPECT_EQ(storage.read(Entity{1}), (Position{10, 11}));
-    EXPECT_EQ(storage.read(Entity{3}), (Position{30, 31}));
-    EXPECT_EQ(storage.read(Entity{4}), (Position{40, 41}));
+    EXPECT_EQ(storage.getContents(Entity{1}), (Position{10, 11}));
+    EXPECT_EQ(storage.getContents(Entity{3}), (Position{30, 31}));
+    EXPECT_EQ(storage.getContents(Entity{4}), (Position{40, 41}));
 }
 
 TEST(ComponentStorageTest, RemoveAll_ShiftsRatherThanSwappingWithTheLast)
@@ -131,7 +131,7 @@ TEST(ComponentStorageTest, RemoveAll_ShiftsRatherThanSwappingWithTheLast)
     storage.removeAll(std::vector<Entity>{Entity{4}});
     storage.insert(Entity{6}, Position{});
 
-    const auto entities = storage.entities();
+    const auto entities = storage.getEntities();
     const std::vector<Entity> orderEntities(entities.begin(), entities.end());
 
     EXPECT_EQ(
@@ -168,7 +168,7 @@ TEST(ComponentStorageTest, RemoveAll_KeepsTheOrderOfTheSurvivors)
     const std::vector<Entity> batchEntities{Entity{2}, Entity{5}};
     storage.removeAll(batchEntities);
 
-    const auto entities = storage.entities();
+    const auto entities = storage.getEntities();
     const std::vector<Entity> orderEntities(entities.begin(), entities.end());
 
     EXPECT_EQ(
@@ -188,8 +188,8 @@ TEST(ComponentStorageTest, RemoveAll_MovesEachSurvivingComponentWithItsEntity)
     const std::vector<Entity> batchEntities{Entity{1}, Entity{3}};
     storage.removeAll(batchEntities);
 
-    EXPECT_EQ(storage.read(Entity{2}), (Position{20, 21}));
-    EXPECT_EQ(storage.read(Entity{4}), (Position{40, 41}));
+    EXPECT_EQ(storage.getContents(Entity{2}), (Position{20, 21}));
+    EXPECT_EQ(storage.getContents(Entity{4}), (Position{40, 41}));
 }
 
 TEST(ComponentStorageTest, RemoveAll_IgnoresAnEntityItDoesNotHold)
@@ -202,7 +202,7 @@ TEST(ComponentStorageTest, RemoveAll_IgnoresAnEntityItDoesNotHold)
     storage.removeAll(batchEntities);
 
     EXPECT_FALSE(storage.contains(Entity{1}));
-    EXPECT_EQ(storage.read(Entity{2}), (Position{20, 21}));
+    EXPECT_EQ(storage.getContents(Entity{2}), (Position{20, 21}));
 }
 
 TEST(ComponentStorageTest, RemoveAll_LeavesTheStorageAloneWhenNothingMatches)
@@ -214,11 +214,11 @@ TEST(ComponentStorageTest, RemoveAll_LeavesTheStorageAloneWhenNothingMatches)
     const std::vector<Entity> batchEntities{Entity{8}, Entity{9}};
     storage.removeAll(batchEntities);
 
-    const auto entities = storage.entities();
+    const auto entities = storage.getEntities();
     const std::vector<Entity> orderEntities(entities.begin(), entities.end());
 
     EXPECT_EQ(orderEntities, (std::vector<Entity>{Entity{1}, Entity{2}}));
-    EXPECT_EQ(storage.read(Entity{1}), (Position{10, 11}));
+    EXPECT_EQ(storage.getContents(Entity{1}), (Position{10, 11}));
 }
 
 TEST(ComponentStorageTest, RemoveAll_AcceptsAnEmptyBatch)
@@ -243,7 +243,7 @@ TEST(ComponentStorageTest, RemoveAll_LeavesALaterInsertAddressable)
     storage.removeAll(batchEntities);
     storage.insert(Entity{7}, Position{70, 71});
 
-    EXPECT_EQ(storage.read(Entity{7}), (Position{70, 71}));
-    EXPECT_EQ(storage.read(Entity{3}), (Position{}));
+    EXPECT_EQ(storage.getContents(Entity{7}), (Position{70, 71}));
+    EXPECT_EQ(storage.getContents(Entity{3}), (Position{}));
     EXPECT_TRUE(storage.contains(Entity{4}));
 }

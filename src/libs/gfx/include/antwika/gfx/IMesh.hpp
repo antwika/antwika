@@ -10,9 +10,9 @@ namespace antwika::gfx
     public:
         virtual ~IMesh() = default;
 
-        [[nodiscard]] virtual std::size_t vertexCount() const = 0;
+        [[nodiscard]] virtual std::size_t getVertexCount() const = 0;
 
-        [[nodiscard]] virtual std::size_t triangleCount() const = 0;
+        [[nodiscard]] virtual std::size_t getTriangleCount() const = 0;
     };
 
 }

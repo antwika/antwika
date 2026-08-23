@@ -15,12 +15,12 @@ namespace antwika::editor
         constexpr std::uint32_t kPlanNoticeTicks = 120;
     }
 
-    bool Editor::handleWidgets(
+    bool Editor::consumeWidgets(
         const ui::Interactions &interactions)
     {
         auto consumedKey = false;
 
-        if (handleModalWidgets(interactions))
+        if (consumeModalWidgets(interactions))
         {
             return true;
         }
@@ -28,7 +28,7 @@ namespace antwika::editor
         if (activeView == map::View::Plan)
         {
             std::optional<std::string> notice;
-            const auto took = plan.handleWidgets(
+            const auto took = plan.consumeWidgets(
                 interactions, pointer.pointerInWindow, focusedField, notice);
 
             if (notice.has_value())
@@ -49,7 +49,7 @@ namespace antwika::editor
               antwika::editor::Menu::Settings})
         {
             if (interactions.activatedWidget
-                == menuWidget(menu))
+                == getMenuWidget(menu))
             {
                 dialogs.openMenu = dialogs.openMenu == menu
                          ? std::nullopt
@@ -61,7 +61,7 @@ namespace antwika::editor
 
         for (const auto tab : map::kEveryView)
         {
-            if (interactions.activatedWidget == tabWidget(tab))
+            if (interactions.activatedWidget == getTabWidget(tab))
             {
                 setView(tab);
                 consumedKey = true;
@@ -72,7 +72,7 @@ namespace antwika::editor
              kEveryToolButton)
         {
             if (interactions.activatedWidget
-                == toolWidget(which))
+                == getToolWidget(which))
             {
                 pressTool(which);
                 consumedKey = true;
@@ -82,7 +82,7 @@ namespace antwika::editor
         for (const auto which : kEveryPaint)
         {
             if (interactions.activatedWidget
-                == paintWidget(which))
+                == getPaintWidget(which))
             {
                 settings.paint = which;
                 consumedKey = true;
@@ -92,7 +92,7 @@ namespace antwika::editor
         for (const auto kind : voxel::kEveryKind)
         {
             if (interactions.activatedWidget
-                != kindWidget(kind))
+                != getKindWidget(kind))
             {
                 continue;
             }
@@ -120,7 +120,7 @@ namespace antwika::editor
              kMarkedFacings)
         {
             if (interactions.activatedWidget
-                != facingWidget(facing))
+                != getFacingWidget(facing))
             {
                 continue;
             }
@@ -157,7 +157,7 @@ namespace antwika::editor
         for (const auto level : kMarkedStairHalves)
         {
             if (interactions.activatedWidget
-                    != levelWidget(level)
+                    != getLevelWidget(level)
                 || !selectedTile.has_value())
             {
                 continue;
@@ -184,7 +184,7 @@ namespace antwika::editor
         for (const auto part : kMarkedParts)
         {
             if (interactions.activatedWidget
-                    != partWidget(part)
+                    != getPartWidget(part)
                 || !selectedTile.has_value())
             {
                 continue;
@@ -211,7 +211,7 @@ namespace antwika::editor
         for (const auto which : kEveryEdgeToggle)
         {
             if (interactions.activatedWidget
-                == edgeToggleWidget(which))
+                == getEdgeToggleWidget(which))
             {
                 flipEdgeToggle(which);
                 consumedKey = true;
@@ -229,7 +229,7 @@ namespace antwika::editor
              ++index)
         {
             if (interactions.activatedWidget
-                == map::layerWidget(index))
+                == map::getLayerWidget(index))
             {
                 chosenLayer = index;
                 selectedEdges.reset();
@@ -267,7 +267,7 @@ namespace antwika::editor
 
         if (interactions.activatedWidget != antwika::widget::kNoWidget
             && interactions.activatedWidget
-                   != widgetForField(focusedField))
+                   != getWidgetForField(focusedField))
         {
             focusedField = FocusedField::Nothing;
         }
@@ -329,7 +329,7 @@ namespace antwika::editor
             && isDecorLayer() && selectedTile.has_value())
         {
             pushUndo();
-            document.map.decor = decor::withDecorLayerSet(
+            document.map.decor = decor::getWithDecorLayerSet(
                 document.map.decor, *selectedTile, chosenLayer);
             rebuildWorld();
             consumedKey = true;
@@ -342,7 +342,7 @@ namespace antwika::editor
         {
             if (interactions.activatedWidget
                 != decor::
-                    frameWidget(frame))
+                    getFrameWidget(frame))
             {
                 continue;
             }
@@ -373,7 +373,7 @@ namespace antwika::editor
             {
                 pushUndo();
                 ensureDecor();
-                document.map.decor = decor::withFrameAdded(
+                document.map.decor = decor::getWithFrameAdded(
                     document.map.decor, *selectedTile);
 
                 const auto *decor =
@@ -384,7 +384,7 @@ namespace antwika::editor
 
                 copyTilePixels(
                     decor->frameTiles.at(lastIndex - 1), *spare);
-                document.map.decor = decor::withFrameSet(
+                document.map.decor = decor::getWithFrameSet(
                     document.map.decor, *selectedTile, lastIndex, *spare);
                 clearAssignModes();
                 assignMode.framePicked = lastIndex;
@@ -401,7 +401,7 @@ namespace antwika::editor
             {
                 if (interactions.activatedWidget
                     != antwika::editor::
-                        mapRowWidget(index))
+                        getMapRowWidget(index))
                 {
                     continue;
                 }
@@ -432,13 +432,13 @@ namespace antwika::editor
                     const auto pickedAgain =
                         pointer.lastPickedWidget
                             == antwika::editor::
-                                mapRowWidget(index)
+                                getMapRowWidget(index)
                         && tick
                                < pointer.lastPickedAt + 30;
 
                     pointer.lastPickedWidget =
                         antwika::editor::
-                            mapRowWidget(index);
+                            getMapRowWidget(index);
                     pointer.lastPickedAt = tick;
 
                     if (pickedAgain)
@@ -483,7 +483,7 @@ namespace antwika::editor
                 kAddLayerWidget)
         {
             pushUndo();
-            document.map.layers = map::withLayerAdded(
+            document.map.layers = map::getWithLayerAdded(
                 document.map.layers);
             chosenLayer =
                 document.map.layers.size() - 1;
@@ -495,7 +495,7 @@ namespace antwika::editor
                 kRemoveLayerWidget)
         {
             pushUndo();
-            document.map.layers = map::withLayerRemoved(
+            document.map.layers = map::getWithLayerRemoved(
                 document.map.layers, chosenLayer);
             chosenLayer = std::min(
                 chosenLayer,
@@ -503,7 +503,7 @@ namespace antwika::editor
             consumedKey = true;
         }
 
-        if (handlePaletteWidgets(interactions))
+        if (consumePaletteWidgets(interactions))
         {
             consumedKey = true;
         }

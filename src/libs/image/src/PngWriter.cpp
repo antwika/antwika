@@ -22,7 +22,7 @@ namespace antwika::image
                 "the pixels it claims to");
         }
 
-        const std::string encodedBytes = detail::encodePng(
+        const std::string encodedBytes = detail::getEncodePng(
             bitmap.pixels.data(),
             static_cast<int>(bitmap.size.width),
             static_cast<int>(bitmap.size.height),

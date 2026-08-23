@@ -10,7 +10,7 @@ using antwika::wfc::detail::EntropyIndex;
 
 namespace
 {
-    std::vector<Domain> makeWave()
+    std::vector<Domain> createWave()
     {
         Domain cell0Domain(3);
         Domain cell1Domain(3);
@@ -21,27 +21,27 @@ namespace
 
 TEST(WeightedEntropyTest, PickNext_FollowsPlainCountWhenUnweighted)
 {
-    EntropyIndex entropyIndex(makeWave(), {});
-    ASSERT_TRUE(entropyIndex.pickNext().has_value());
-    EXPECT_EQ(*entropyIndex.pickNext(), 1U);
+    EntropyIndex entropyIndex(createWave(), {});
+    ASSERT_TRUE(entropyIndex.getPickNext().has_value());
+    EXPECT_EQ(*entropyIndex.getPickNext(), 1U);
 }
 
 TEST(WeightedEntropyTest, PickNext_FlipsTheSelectionOnSkewedWeights)
 {
     const std::vector<double> weights{1000.0, 1.0, 1.0};
-    EntropyIndex entropyIndex(makeWave(), weights);
-    ASSERT_TRUE(entropyIndex.pickNext().has_value());
-    EXPECT_EQ(*entropyIndex.pickNext(), 0U);
+    EntropyIndex entropyIndex(createWave(), weights);
+    ASSERT_TRUE(entropyIndex.getPickNext().has_value());
+    EXPECT_EQ(*entropyIndex.getPickNext(), 0U);
 }
 
 TEST(WeightedEntropyTest, PickNext_MatchesUnweightedOnUniformWeights)
 {
     const std::vector<double> uniform{1.0, 1.0, 1.0};
-    EntropyIndex weightedIndex(makeWave(), uniform);
-    EntropyIndex unweightedIndex(makeWave(), {});
+    EntropyIndex weightedIndex(createWave(), uniform);
+    EntropyIndex unweightedIndex(createWave(), {});
 
-    ASSERT_TRUE(weightedIndex.pickNext().has_value());
-    ASSERT_TRUE(unweightedIndex.pickNext().has_value());
-    EXPECT_EQ(*weightedIndex.pickNext(), 1U);
-    EXPECT_EQ(*unweightedIndex.pickNext(), 1U);
+    ASSERT_TRUE(weightedIndex.getPickNext().has_value());
+    ASSERT_TRUE(unweightedIndex.getPickNext().has_value());
+    EXPECT_EQ(*weightedIndex.getPickNext(), 1U);
+    EXPECT_EQ(*unweightedIndex.getPickNext(), 1U);
 }

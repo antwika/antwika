@@ -35,7 +35,7 @@ namespace
 
     [[nodiscard]] Bitmap sheetOf(const std::uint8_t shade)
     {
-        const auto size = antwika::character::characterSheetSize();
+        const auto size = antwika::character::getCharacterSheetSize();
 
         return Bitmap{
             .size = size,
@@ -66,9 +66,9 @@ TEST(CharacterSheetViewTest, Open_CarriesTheSheetAndItsBackingToPictures)
 
     sheets.open(viewportRenderer, sheetOf(1));
 
-    EXPECT_NE(sheets.texture(), nullptr);
-    EXPECT_NE(sheets.checker(), nullptr);
-    EXPECT_EQ(sheets.sheet().pixels.front(), 1);
+    EXPECT_NE(sheets.getTexture(), nullptr);
+    EXPECT_NE(sheets.getChecker(), nullptr);
+    EXPECT_EQ(sheets.getSheet().pixels.front(), 1);
 }
 
 TEST(CharacterSheetViewTest, TakeSkins_PutsTheOneBeingEditedOnTheBoard)
@@ -81,11 +81,11 @@ TEST(CharacterSheetViewTest, TakeSkins_PutsTheOneBeingEditedOnTheBoard)
     sheets.open(viewportRenderer, sheetOf(1));
     sheets.takeSkins(viewportRenderer, {sheetOf(7), sheetOf(9)});
 
-    EXPECT_EQ(sheets.skins().size(), 2U);
-    EXPECT_EQ(sheets.editing(), 0U);
-    EXPECT_EQ(sheets.sheet().pixels.front(), 7);
-    EXPECT_NE(sheets.skinTexture(1), nullptr);
-    EXPECT_EQ(sheets.skinTexture(2), nullptr);
+    EXPECT_EQ(sheets.getSkins().size(), 2U);
+    EXPECT_EQ(sheets.getEditing(), 0U);
+    EXPECT_EQ(sheets.getSheet().pixels.front(), 7);
+    EXPECT_NE(sheets.getSkinTexture(1), nullptr);
+    EXPECT_EQ(sheets.getSkinTexture(2), nullptr);
 }
 
 TEST(CharacterSheetViewTest, TakeSkins_KeepsToTheRosterWhereItShrank)
@@ -100,8 +100,8 @@ TEST(CharacterSheetViewTest, TakeSkins_KeepsToTheRosterWhereItShrank)
     sheets.switchTo(viewportRenderer, 1);
     sheets.takeSkins(viewportRenderer, {sheetOf(3)});
 
-    EXPECT_EQ(sheets.editing(), 0U);
-    EXPECT_EQ(sheets.sheet().pixels.front(), 3);
+    EXPECT_EQ(sheets.getEditing(), 0U);
+    EXPECT_EQ(sheets.getSheet().pixels.front(), 3);
 }
 
 TEST(CharacterSheetViewTest, SwitchTo_PutsWhatWasDrawnBackOnItsSkin)
@@ -113,12 +113,12 @@ TEST(CharacterSheetViewTest, SwitchTo_PutsWhatWasDrawnBackOnItsSkin)
 
     sheets.open(viewportRenderer, sheetOf(1));
     sheets.takeSkins(viewportRenderer, {sheetOf(7), sheetOf(9)});
-    sheets.sheet().pixels.front() = 42;
+    sheets.getSheet().pixels.front() = 42;
     sheets.switchTo(viewportRenderer, 1);
 
-    EXPECT_EQ(sheets.editing(), 1U);
-    EXPECT_EQ(sheets.sheet().pixels.front(), 9);
-    EXPECT_EQ(sheets.skins().at(0).pixels.front(), 42);
+    EXPECT_EQ(sheets.getEditing(), 1U);
+    EXPECT_EQ(sheets.getSheet().pixels.front(), 9);
+    EXPECT_EQ(sheets.getSkins().at(0).pixels.front(), 42);
 }
 
 TEST(CharacterSheetViewTest, SwitchTo_LeavesTheBoardAloneWhereThereIsNoSuchSkin)
@@ -132,8 +132,8 @@ TEST(CharacterSheetViewTest, SwitchTo_LeavesTheBoardAloneWhereThereIsNoSuchSkin)
     sheets.takeSkins(viewportRenderer, {sheetOf(7)});
     sheets.switchTo(viewportRenderer, 4);
 
-    EXPECT_EQ(sheets.editing(), 0U);
-    EXPECT_EQ(sheets.sheet().pixels.front(), 7);
+    EXPECT_EQ(sheets.getEditing(), 0U);
+    EXPECT_EQ(sheets.getSheet().pixels.front(), 7);
 }
 
 TEST(CharacterSheetViewTest, EditFirst_GoesBackToTheHeadOfTheRoster)
@@ -148,7 +148,7 @@ TEST(CharacterSheetViewTest, EditFirst_GoesBackToTheHeadOfTheRoster)
     sheets.switchTo(viewportRenderer, 1);
     sheets.editFirst();
 
-    EXPECT_EQ(sheets.editing(), 0U);
+    EXPECT_EQ(sheets.getEditing(), 0U);
 }
 
 TEST(CharacterSheetViewTest, SkinsAsDrawn_CarryTheUnkeptEditsOfTheBoard)
@@ -160,14 +160,14 @@ TEST(CharacterSheetViewTest, SkinsAsDrawn_CarryTheUnkeptEditsOfTheBoard)
 
     sheets.open(viewportRenderer, sheetOf(1));
     sheets.takeSkins(viewportRenderer, {sheetOf(7), sheetOf(9)});
-    sheets.sheet().pixels.front() = 42;
+    sheets.getSheet().pixels.front() = 42;
 
-    EXPECT_EQ(sheets.skinsAsDrawn().at(0).pixels.front(), 42);
-    EXPECT_EQ(sheets.skins().at(0).pixels.front(), 7);
+    EXPECT_EQ(sheets.getSkinsAsDrawn().at(0).pixels.front(), 42);
+    EXPECT_EQ(sheets.getSkins().at(0).pixels.front(), 7);
 
     sheets.keepEdits(viewportRenderer);
 
-    EXPECT_EQ(sheets.skins().at(0).pixels.front(), 42);
+    EXPECT_EQ(sheets.getSkins().at(0).pixels.front(), 42);
 }
 
 TEST(CharacterSheetViewTest, Repaint_LaysASkinDownOverOneOfTheRoster)
@@ -182,8 +182,8 @@ TEST(CharacterSheetViewTest, Repaint_LaysASkinDownOverOneOfTheRoster)
     sheets.repaint(viewportRenderer, 1, sheetOf(5));
     sheets.repaint(viewportRenderer, 9, sheetOf(6));
 
-    EXPECT_EQ(sheets.skins().at(1).pixels.front(), 5);
-    EXPECT_EQ(sheets.skins().size(), 2U);
+    EXPECT_EQ(sheets.getSkins().at(1).pixels.front(), 5);
+    EXPECT_EQ(sheets.getSkins().size(), 2U);
 }
 
 TEST(CharacterSheetViewTest, Refresh_MakesThePictureAfreshOnlyOnceDrawnOn)

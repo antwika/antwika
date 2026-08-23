@@ -14,7 +14,7 @@ namespace antwika::rules
 
     namespace
     {
-        [[nodiscard]] std::uint16_t worn(
+        [[nodiscard]] std::uint16_t getWorn(
             const std::uint16_t level,
             const time::Tick tick,
             const time::Tick paceTick) noexcept
@@ -27,7 +27,7 @@ namespace antwika::rules
             return static_cast<std::uint16_t>(level - 1U);
         }
 
-        [[nodiscard]] std::uint16_t filled(
+        [[nodiscard]] std::uint16_t getFilled(
             const std::uint16_t level) noexcept
         {
             return static_cast<std::uint16_t>(
@@ -46,50 +46,50 @@ namespace antwika::rules
                                                  : health.water;
     }
 
-    component::Health drainedHealth(
+    component::Health getDrainedHealth(
         const component::Health health, const time::Tick tick) noexcept
     {
         return component::Health{
-            .food = worn(health.food, tick, component::kHungerTicks),
-            .water = worn(health.water, tick, component::kThirstTicks)};
+            .food = getWorn(health.food, tick, component::kHungerTicks),
+            .water = getWorn(health.water, tick, component::kThirstTicks)};
     }
 
-    component::Vitals consumedVitals(
+    component::Vitals getConsumedVitals(
         component::Vitals vitals, const component::ItemKind kind) noexcept
     {
-        if (!inventoryHolds(vitals.inventory, kind))
+        if (!isInventoryHolds(vitals.inventory, kind))
         {
             return vitals;
         }
 
-        vitals.inventory = inventoryWithout(vitals.inventory, kind);
+        vitals.inventory = getInventoryWithout(vitals.inventory, kind);
 
         if (kind == component::ItemKind::Food)
         {
-            vitals.health.food = filled(vitals.health.food);
+            vitals.health.food = getFilled(vitals.health.food);
         }
         else
         {
-            vitals.health.water = filled(vitals.health.water);
+            vitals.health.water = getFilled(vitals.health.water);
         }
 
         return vitals;
     }
 
-    component::Vitals autoConsumed(component::Vitals vitals) noexcept
+    component::Vitals getAutoConsumed(component::Vitals vitals) noexcept
     {
         for (const auto kind : component::kEveryItemKind)
         {
             if (levelOf(vitals.health, kind) < component::kHungryAt)
             {
-                vitals = consumedVitals(vitals, kind);
+                vitals = getConsumedVitals(vitals, kind);
             }
         }
 
         return vitals;
     }
 
-    bool depleted(const component::Health health) noexcept
+    bool isDepleted(const component::Health health) noexcept
     {
         return health.food == 0 || health.water == 0;
     }

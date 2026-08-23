@@ -22,30 +22,30 @@
 using antwika::ecs::OpenPhase;
 using antwika::ecs::World;
 using antwika::gameplay::Phase;
-using antwika::character::blankCharacter;
+using antwika::character::getBlankCharacter;
 using antwika::editor::characterAt;
-using antwika::character::characterPaletteColor;
-using antwika::character::characterCell;
-using antwika::character::characterPixel;
+using antwika::character::getCharacterPaletteColor;
+using antwika::character::getCharacterCell;
+using antwika::character::getCharacterPixel;
 using antwika::character::characterPixelAt;
-using antwika::editor::characterPlace;
-using antwika::character::characterSheetSize;
-using antwika::editor::characterCanvasRect;
-using antwika::character::currentFrame;
+using antwika::editor::getCharacterPlace;
+using antwika::character::getCharacterSheetSize;
+using antwika::editor::getCharacterCanvasRect;
+using antwika::character::getCurrentFrame;
 using antwika::character::headTopOf;
 using antwika::character::kCharacterCellSize;
 using antwika::character::kCharacterFrames;
 using antwika::character::kCharacterPaceTick;
 using antwika::character::kCharacterWays;
-using antwika::character::characterPixelColor;
+using antwika::character::getCharacterPixelColor;
 using antwika::character::paintCharacter;
 using antwika::character::paintCharacterFill;
 using antwika::component::AnimationState;
 using antwika::system::AnimationSystem;
 using antwika::gameplay::GameLoop;
 using antwika::component::Velocity;
-using antwika::character::directionName;
-using antwika::character::facingFromVelocity;
+using antwika::character::getDirectionName;
+using antwika::character::getFacingFromVelocity;
 using antwika::log::mocks::MockLogger;
 using ::testing::NiceMock;
 
@@ -55,7 +55,7 @@ namespace
     constexpr antwika::gfx::Size kCanvasSize{
         .width = 480, .height = 270};
 
-    [[nodiscard]] antwika::gfx::Mat4 viewTiltedBy(const float pitch)
+    [[nodiscard]] antwika::gfx::Mat4 getViewTiltedBy(const float pitch)
     {
         return antwika::gfx::Camera3D{
             antwika::gfx::Vec3{
@@ -69,19 +69,19 @@ namespace
                 .halfHeight = 8.0F,
                 .nearPlane = -64.0F,
                 .farPlane = 64.0F}}
-            .view();
+            .getView();
     }
 
-    [[nodiscard]] antwika::gfx::Mat4 squaredView()
+    [[nodiscard]] antwika::gfx::Mat4 getSquaredView()
     {
-        return viewTiltedBy(antwika::camera::isometricPitch());
+        return getViewTiltedBy(antwika::camera::getIsometricPitch());
     }
 
 }
 
 TEST(CharacterTest, CharacterSheetSize_HoldsAFrameForEveryWayAbout)
 {
-    const auto size = characterSheetSize();
+    const auto size = getCharacterSheetSize();
 
     EXPECT_EQ(size.width, kCharacterCellSize.width * kCharacterFrames);
     EXPECT_EQ(size.height, kCharacterCellSize.height * kCharacterWays);
@@ -89,10 +89,10 @@ TEST(CharacterTest, CharacterSheetSize_HoldsAFrameForEveryWayAbout)
 
 TEST(CharacterTest, BlankCharacter_IsTheSizeTheSheetIs)
 {
-    const auto sheet = blankCharacter();
+    const auto sheet = getBlankCharacter();
 
     EXPECT_TRUE(sheet.isValid());
-    EXPECT_EQ(sheet.size, characterSheetSize());
+    EXPECT_EQ(sheet.size, getCharacterSheetSize());
 }
 
 TEST(CharacterTest, CharacterCell_GivesEveryFrameAPlaceOfItsOwn)
@@ -104,7 +104,7 @@ TEST(CharacterTest, CharacterCell_GivesEveryFrameAPlaceOfItsOwn)
         for (std::size_t frame = 0; frame < kCharacterFrames;
              ++frame)
         {
-            const auto cell = characterCell(way, frame);
+            const auto cell = getCharacterCell(way, frame);
 
             EXPECT_TRUE(
                 corners.insert({cell.originPoint.x, cell.originPoint.y})
@@ -112,11 +112,11 @@ TEST(CharacterTest, CharacterCell_GivesEveryFrameAPlaceOfItsOwn)
             EXPECT_LE(
                 static_cast<std::uint32_t>(cell.originPoint.x)
                     + cell.size.width,
-                characterSheetSize().width);
+                getCharacterSheetSize().width);
             EXPECT_LE(
                 static_cast<std::uint32_t>(cell.originPoint.y)
                     + cell.size.height,
-                characterSheetSize().height);
+                getCharacterSheetSize().height);
         }
     }
 }
@@ -127,25 +127,25 @@ TEST(CharacterTest, DirectionName_NamesEveryWayAbout)
 
     for (std::size_t way = 0; way < kCharacterWays; ++way)
     {
-        EXPECT_TRUE(names.insert(directionName(way)).second);
+        EXPECT_TRUE(names.insert(getDirectionName(way)).second);
     }
 }
 
 TEST(CharacterTest, FacingFromVelocity_TakesTheWayAHeadingFallsNearest)
 {
-    EXPECT_EQ(facingFromVelocity(Velocity{.velocityX = 1.0F}), 0U);
+    EXPECT_EQ(getFacingFromVelocity(Velocity{.velocityX = 1.0F}), 0U);
     EXPECT_EQ(
-        facingFromVelocity(
+        getFacingFromVelocity(
             Velocity{.velocityX = 1.0F, .velocityZ = 1.0F}),
         1U);
-    EXPECT_EQ(facingFromVelocity(Velocity{.velocityZ = 1.0F}), 2U);
-    EXPECT_EQ(facingFromVelocity(Velocity{.velocityX = -1.0F}), 4U);
-    EXPECT_EQ(facingFromVelocity(Velocity{.velocityZ = -1.0F}), 6U);
+    EXPECT_EQ(getFacingFromVelocity(Velocity{.velocityZ = 1.0F}), 2U);
+    EXPECT_EQ(getFacingFromVelocity(Velocity{.velocityX = -1.0F}), 4U);
+    EXPECT_EQ(getFacingFromVelocity(Velocity{.velocityZ = -1.0F}), 6U);
 }
 
 TEST(CharacterTest, FacingFromVelocity_GivesNothingForOneSentNowhere)
 {
-    EXPECT_FALSE(facingFromVelocity(Velocity{}).has_value());
+    EXPECT_FALSE(getFacingFromVelocity(Velocity{}).has_value());
 }
 
 TEST(CharacterTest, CurrentFrame_WalksTheFramesOfTheWayItFaces)
@@ -153,8 +153,8 @@ TEST(CharacterTest, CurrentFrame_WalksTheFramesOfTheWayItFaces)
     const AnimationState posedState{
         .direction = 2, .walking = true, .startedAtTick = 0};
 
-    EXPECT_EQ(currentFrame(posedState, 0), 2U * kCharacterFrames);
-    EXPECT_EQ(currentFrame(posedState, kCharacterPaceTick),
+    EXPECT_EQ(getCurrentFrame(posedState, 0), 2U * kCharacterFrames);
+    EXPECT_EQ(getCurrentFrame(posedState, kCharacterPaceTick),
               (2U * kCharacterFrames) + 1U);
 }
 
@@ -163,9 +163,9 @@ TEST(CharacterTest, CurrentFrame_HoldsOneFrameWhileItStandsStill)
     const AnimationState posedState{
         .direction = 3, .walking = false, .startedAtTick = 0};
 
-    EXPECT_EQ(currentFrame(posedState, 0), 3U * kCharacterFrames);
+    EXPECT_EQ(getCurrentFrame(posedState, 0), 3U * kCharacterFrames);
     EXPECT_EQ(
-        currentFrame(
+        getCurrentFrame(
             posedState,
             kCharacterPaceTick * 9), 3U * kCharacterFrames);
 }
@@ -173,7 +173,7 @@ TEST(CharacterTest, CurrentFrame_HoldsOneFrameWhileItStandsStill)
 TEST(CharacterTest, CharacterPixel_KeepsAPixelInsideItsOwnFrame)
 {
     const auto pixelCell =
-        characterPixel(2, 1, antwika::geometry::GridCell{1, 3});
+        getCharacterPixel(2, 1, antwika::geometry::GridCell{1, 3});
 
     EXPECT_EQ(pixelCell.column, kCharacterCellSize.width + 1);
     EXPECT_EQ(pixelCell.row, (2 * kCharacterCellSize.height) + 3);
@@ -181,14 +181,14 @@ TEST(CharacterTest, CharacterPixel_KeepsAPixelInsideItsOwnFrame)
 
 TEST(CharacterTest, PaintCharacter_ColorsOnePixelOfOneFrame)
 {
-    auto sheet = blankCharacter();
+    auto sheet = getBlankCharacter();
     constexpr antwika::gfx::Color kRedColor{
         .red = 255, .green = 0, .blue = 0, .alpha = 255};
 
     paintCharacter(
         sheet, 1, 2, antwika::geometry::GridCell{0, 0}, kRedColor);
 
-    const auto pixelCell = characterPixel(
+    const auto pixelCell = getCharacterPixel(
         1, 2, antwika::geometry::GridCell{0, 0});
     const auto byteIndex =
         ((pixelCell.row * sheet.size.width) + pixelCell.column)
@@ -200,7 +200,7 @@ TEST(CharacterTest, PaintCharacter_ColorsOnePixelOfOneFrame)
 
 TEST(CharacterTest, PaintCharacterFill_FloodsAPatchUpToItsBounds)
 {
-    auto sheet = blankCharacter();
+    auto sheet = getBlankCharacter();
     constexpr antwika::gfx::Color kRedColor{
         .red = 255, .green = 0, .blue = 0, .alpha = 255};
     constexpr antwika::gfx::Color kBlueColor{
@@ -226,21 +226,21 @@ TEST(CharacterTest, PaintCharacterFill_FloodsAPatchUpToItsBounds)
         kBlueColor);
 
     EXPECT_EQ(
-        antwika::character::characterPixelColor(
+        antwika::character::getCharacterPixelColor(
             sheet,
             1,
             2,
             antwika::geometry::GridCell{.column = 4, .row = 20}),
         kBlueColor);
     EXPECT_EQ(
-        antwika::character::characterPixelColor(
+        antwika::character::getCharacterPixelColor(
             sheet,
             1,
             2,
             antwika::geometry::GridCell{.column = 5, .row = 20}),
         kRedColor);
     EXPECT_EQ(
-        antwika::character::characterPixelColor(
+        antwika::character::getCharacterPixelColor(
             sheet,
             1,
             2,
@@ -251,7 +251,7 @@ TEST(CharacterTest, PaintCharacterFill_FloodsAPatchUpToItsBounds)
 
 TEST(CharacterTest, PaintCharacterFill_StaysWithinItsOwnFrame)
 {
-    auto sheet = blankCharacter();
+    auto sheet = getBlankCharacter();
     constexpr antwika::gfx::Color kRedColor{
         .red = 255, .green = 0, .blue = 0, .alpha = 255};
 
@@ -263,7 +263,7 @@ TEST(CharacterTest, PaintCharacterFill_StaysWithinItsOwnFrame)
         kRedColor);
 
     EXPECT_EQ(
-        antwika::character::characterPixelColor(
+        antwika::character::getCharacterPixelColor(
             sheet,
             1,
             2,
@@ -272,7 +272,7 @@ TEST(CharacterTest, PaintCharacterFill_StaysWithinItsOwnFrame)
                 .row = kCharacterCellSize.height - 1}),
         kRedColor);
     EXPECT_EQ(
-        antwika::character::characterPixelColor(
+        antwika::character::getCharacterPixelColor(
             sheet,
             1,
             3,
@@ -280,7 +280,7 @@ TEST(CharacterTest, PaintCharacterFill_StaysWithinItsOwnFrame)
             .alpha,
         0);
     EXPECT_EQ(
-        antwika::character::characterPixelColor(
+        antwika::character::getCharacterPixelColor(
             sheet,
             2,
             2,
@@ -291,7 +291,7 @@ TEST(CharacterTest, PaintCharacterFill_StaysWithinItsOwnFrame)
 
 TEST(CharacterTest, CharacterAt_FindsTheFrameAPointFallsOn)
 {
-    const auto where = characterPlace(kCanvasSize, 3, 2);
+    const auto where = getCharacterPlace(kCanvasSize, 3, 2);
     const antwika::gfx::PointF middlePoint{
         where.originPoint.x + (where.size.width / 2.0F),
         where.originPoint.y + (where.size.height / 2.0F)};
@@ -309,7 +309,7 @@ TEST(CharacterTest, CharacterAt_FindsNothingBeyondTheSheet)
 
 TEST(CharacterTest, CharacterPixelAt_NamesThePixelAPressColors)
 {
-    const auto where = characterCanvasRect(kCanvasSize);
+    const auto where = getCharacterCanvasRect(kCanvasSize);
     const auto pixel = antwika::character::characterPixelAt(
         where,
         antwika::gfx::PointF{
@@ -322,7 +322,7 @@ TEST(CharacterTest, CharacterPixelAt_NamesThePixelAPressColors)
 
 TEST(CharacterTest, CharacterPixelAt_FindsNothingOutsideTheFrame)
 {
-    const auto where = characterCanvasRect(kCanvasSize);
+    const auto where = getCharacterCanvasRect(kCanvasSize);
 
     EXPECT_FALSE(
         antwika::character::characterPixelAt(
@@ -341,18 +341,18 @@ TEST(CharacterTest, Update_TurnsAPoseTheWayItIsBeingSent)
 
     gameLoop.addSystem(Phase::Walking, posingSystem);
 
-    const auto entity = gameLoop.world().create();
+    const auto entity = gameLoop.getWorld().create();
 
     {
-        const OpenPhase phase(gameLoop.world());
+        const OpenPhase phase(gameLoop.getWorld());
 
-        gameLoop.world().add<Velocity>(entity, Velocity{.velocityZ = 1.0F});
-        gameLoop.world().add<AnimationState>(entity, AnimationState{});
+        gameLoop.getWorld().add<Velocity>(entity, Velocity{.velocityZ = 1.0F});
+        gameLoop.getWorld().add<AnimationState>(entity, AnimationState{});
     }
 
     gameLoop.run(7);
 
-    const auto animationState = gameLoop.world().get<AnimationState>(entity);
+    const auto animationState = gameLoop.getWorld().get<AnimationState>(entity);
 
     EXPECT_EQ(animationState.direction, 2);
     EXPECT_TRUE(animationState.walking);
@@ -368,13 +368,13 @@ TEST(CharacterTest, Update_KeepsTheWayAPoseFacedWhenItStops)
 
     gameLoop.addSystem(Phase::Walking, posingSystem);
 
-    const auto entity = gameLoop.world().create();
+    const auto entity = gameLoop.getWorld().create();
 
     {
-        const OpenPhase phase(gameLoop.world());
+        const OpenPhase phase(gameLoop.getWorld());
 
-        gameLoop.world().add<Velocity>(entity, Velocity{});
-        gameLoop.world().add<AnimationState>(
+        gameLoop.getWorld().add<Velocity>(entity, Velocity{});
+        gameLoop.getWorld().add<AnimationState>(
             entity,
             AnimationState{
                 .direction = 5, .walking = true, .startedAtTick = 2});
@@ -382,7 +382,7 @@ TEST(CharacterTest, Update_KeepsTheWayAPoseFacedWhenItStops)
 
     gameLoop.run(9);
 
-    const auto animationState = gameLoop.world().get<AnimationState>(entity);
+    const auto animationState = gameLoop.getWorld().get<AnimationState>(entity);
 
     EXPECT_EQ(animationState.direction, 5);
     EXPECT_FALSE(animationState.walking);
@@ -398,17 +398,17 @@ TEST(CharacterTest, Update_PosesEveryCharacterInTheWorld)
 
     gameLoop.addSystem(Phase::Walking, posingSystem);
 
-    const auto walking = gameLoop.world().create();
-    const auto position = gameLoop.world().create();
+    const auto walking = gameLoop.getWorld().create();
+    const auto position = gameLoop.getWorld().create();
 
     {
-        const OpenPhase phase(gameLoop.world());
+        const OpenPhase phase(gameLoop.getWorld());
 
-        gameLoop.world().add<Velocity>(
+        gameLoop.getWorld().add<Velocity>(
             walking, Velocity{.velocityX = 1.0F});
-        gameLoop.world().add<AnimationState>(walking, AnimationState{});
-        gameLoop.world().add<Velocity>(position, Velocity{});
-        gameLoop.world().add<AnimationState>(
+        gameLoop.getWorld().add<AnimationState>(walking, AnimationState{});
+        gameLoop.getWorld().add<Velocity>(position, Velocity{});
+        gameLoop.getWorld().add<AnimationState>(
             position,
             AnimationState{
                 .direction = 4, .walking = true, .startedAtTick = 1});
@@ -416,8 +416,8 @@ TEST(CharacterTest, Update_PosesEveryCharacterInTheWorld)
 
     gameLoop.run(6);
 
-    const auto animationState = gameLoop.world().get<AnimationState>(walking);
-    const auto restingState = gameLoop.world().get<AnimationState>(position);
+    const auto animationState = gameLoop.getWorld().get<AnimationState>(walking);
+    const auto restingState = gameLoop.getWorld().get<AnimationState>(position);
 
     EXPECT_EQ(animationState.direction, 0);
     EXPECT_TRUE(animationState.walking);
@@ -432,9 +432,9 @@ TEST(
     CharacterPaletteColor_RubsOutWithTheInkACharacterIsBlankIn)
 {
     const auto paletteColor =
-        characterPaletteColor(antwika::tile::kPaletteColors, 0).alpha;
+        getCharacterPaletteColor(antwika::tile::kPaletteColors, 0).alpha;
     const auto color =
-        characterPaletteColor(antwika::tile::kPaletteColors, 2);
+        getCharacterPaletteColor(antwika::tile::kPaletteColors, 2);
 
     EXPECT_EQ(paletteColor, 0);
     EXPECT_EQ(color, antwika::tile::kPaletteColors.at(2));
@@ -442,7 +442,7 @@ TEST(
 
 TEST(CharacterTest, BlankCharacter_HasNothingDrawnOnItAtAll)
 {
-    const auto sheet = blankCharacter();
+    const auto sheet = getBlankCharacter();
 
     for (std::size_t index = antwika::gfx::kBytesPerPixel - 1;
          index < sheet.pixels.size();
@@ -454,11 +454,11 @@ TEST(CharacterTest, BlankCharacter_HasNothingDrawnOnItAtAll)
 
 TEST(CharacterTest, CharacterMesh_HangsAQuadOnWhereItsFootprintIs)
 {
-    const auto mesh = antwika::character::characterMesh();
+    const auto mesh = antwika::character::getCharacterMesh();
 
     ASSERT_EQ(mesh.vertices.size(), 6U);
     EXPECT_TRUE(mesh.isComplete());
-    EXPECT_EQ(mesh.triangleCount(), 4U);
+    EXPECT_EQ(mesh.getTriangleCount(), 4U);
 
     auto lowest = mesh.vertices.front().position.y;
     auto tallest = lowest;
@@ -487,9 +487,9 @@ TEST(CharacterTest, SpriteBillboardMatrix_StandsTheQuadOverWhereItIsPut)
             .aspectRatio = 1.0F,
             .nearPlane = 0.1F,
             .farPlane = 100.0F}};
-    const auto view = camera.view();
+    const auto view = camera.getView();
     const auto stood =
-        antwika::character::spriteBillboardMatrix(position, view)
+        antwika::character::getSpriteBillboardMatrix(position, view)
         * antwika::gfx::Vec4{0.0F, 0.0F, 0.0F, 1.0F};
 
     EXPECT_NEAR(stood.x, position.x, 0.0001F);
@@ -516,8 +516,8 @@ TEST(CharacterTest, SpriteBillboardMatrix_LaysTheQuadSquareToTheCamera)
             .aspectRatio = 1.0F,
             .nearPlane = 0.1F,
             .farPlane = 100.0F}};
-    const auto view = camera.view();
-    const auto billboardMatrix = antwika::character::spriteBillboardMatrix(
+    const auto view = camera.getView();
+    const auto billboardMatrix = antwika::character::getSpriteBillboardMatrix(
         antwika::gfx::Vec3{3.0F, 1.5F, -2.0F}, view);
 
     for (const auto &[cornerPoint, wantedPoint] :
@@ -538,14 +538,14 @@ TEST(CharacterTest, SpriteBillboardMatrix_LaysTheQuadSquareToTheCamera)
 
 TEST(CharacterTest, FrameUvOffset_NamesEveryFrameOfTheSheet)
 {
-    const auto span = antwika::character::frameUvSize();
+    const auto span = antwika::character::getFrameUvSize();
 
     EXPECT_NEAR(
         span.x, 1.0F / static_cast<float>(kCharacterFrames), 0.0001F);
     EXPECT_NEAR(
         span.y, 1.0F / static_cast<float>(kCharacterWays), 0.0001F);
 
-    const auto fromOffset = antwika::character::frameUvOffset(3, 2);
+    const auto fromOffset = antwika::character::getFrameUvOffset(3, 2);
 
     EXPECT_NEAR(fromOffset.x, 2.0F * span.x, 0.0001F);
     EXPECT_NEAR(fromOffset.y, 3.0F * span.y, 0.0001F);
@@ -553,12 +553,12 @@ TEST(CharacterTest, FrameUvOffset_NamesEveryFrameOfTheSheet)
 
 TEST(CharacterTest, CharacterPixelPlace_LeavesOnePixelClearOfTheNext)
 {
-    const auto where = characterCanvasRect(kCanvasSize);
+    const auto where = getCharacterCanvasRect(kCanvasSize);
     const auto overRect =
-        antwika::character::characterPixelPlace(
+        antwika::character::getCharacterPixelPlace(
             where, antwika::geometry::GridCell{2, 3});
     const auto underRect =
-        antwika::character::characterPixelPlace(
+        antwika::character::getCharacterPixelPlace(
             where, antwika::geometry::GridCell{2, 4});
 
     EXPECT_LT(
@@ -568,12 +568,12 @@ TEST(CharacterTest, CharacterPixelPlace_LeavesOnePixelClearOfTheNext)
 
 TEST(CharacterTest, CharacterPixelPlace_LeavesAsMuchClearAcrossAsDown)
 {
-    const auto where = characterCanvasRect(kCanvasSize);
-    const auto first = antwika::character::characterPixelPlace(
+    const auto where = getCharacterCanvasRect(kCanvasSize);
+    const auto first = antwika::character::getCharacterPixelPlace(
         where, antwika::geometry::GridCell{1, 1});
-    const auto besideRect = antwika::character::characterPixelPlace(
+    const auto besideRect = antwika::character::getCharacterPixelPlace(
         where, antwika::geometry::GridCell{2, 1});
-    const auto belowRect = antwika::character::characterPixelPlace(
+    const auto belowRect = antwika::character::getCharacterPixelPlace(
         where, antwika::geometry::GridCell{1, 2});
 
     EXPECT_NEAR(
@@ -584,10 +584,10 @@ TEST(CharacterTest, CharacterPixelPlace_LeavesAsMuchClearAcrossAsDown)
 
 TEST(CharacterTest, CharacterPixelPlace_KeepsAPixelWhereAPressLandsIt)
 {
-    const auto where = characterCanvasRect(kCanvasSize);
+    const auto where = getCharacterCanvasRect(kCanvasSize);
     const antwika::geometry::GridCell pixelCell{5, 7};
     const auto place =
-        antwika::character::characterPixelPlace(where, pixelCell);
+        antwika::character::getCharacterPixelPlace(where, pixelCell);
     const antwika::gfx::PointF middlePoint{
         place.originPoint.x + (place.size.width / 2.0F),
         place.originPoint.y + (place.size.height / 2.0F)};
@@ -599,7 +599,7 @@ TEST(CharacterTest, CharacterPixelPlace_KeepsAPixelWhereAPressLandsIt)
 
 TEST(CharacterTest, CharacterPixelColor_ReadsBackWhatWasLaidDown)
 {
-    auto sheet = blankCharacter();
+    auto sheet = getBlankCharacter();
     constexpr antwika::gfx::Color kRedColor{
         .red = 255, .green = 0, .blue = 0, .alpha = 255};
 
@@ -607,11 +607,11 @@ TEST(CharacterTest, CharacterPixelColor_ReadsBackWhatWasLaidDown)
         sheet, 4, 1, antwika::geometry::GridCell{2, 2}, kRedColor);
 
     EXPECT_EQ(
-        antwika::character::characterPixelColor(
+        antwika::character::getCharacterPixelColor(
             sheet, 4, 1, antwika::geometry::GridCell{2, 2}),
         kRedColor);
     EXPECT_EQ(
-        antwika::character::characterPixelColor(
+        antwika::character::getCharacterPixelColor(
             sheet, 4, 1, antwika::geometry::GridCell{3, 2})
             .alpha,
         0);
@@ -619,7 +619,7 @@ TEST(CharacterTest, CharacterPixelColor_ReadsBackWhatWasLaidDown)
 
 TEST(CharacterTest, CharacterMesh_LaysWhatIsUnderTheGroundLineFlat)
 {
-    const auto mesh = antwika::character::characterMesh();
+    const auto mesh = antwika::character::getCharacterMesh();
 
     for (const auto &corner : mesh.vertices)
     {
@@ -637,7 +637,7 @@ TEST(CharacterTest, CharacterMesh_LaysWhatIsUnderTheGroundLineFlat)
 
 TEST(CharacterTest, CharacterMesh_StandsWhatIsOverTheGroundLineUp)
 {
-    const auto mesh = antwika::character::characterMesh();
+    const auto mesh = antwika::character::getCharacterMesh();
 
     for (const auto &corner : mesh.vertices)
     {
@@ -655,7 +655,7 @@ TEST(CharacterTest, CharacterMesh_StandsWhatIsOverTheGroundLineUp)
 
 TEST(CharacterTest, CharacterMesh_StandsItsFootClearOfItsOwnGround)
 {
-    const auto mesh = antwika::character::characterMesh();
+    const auto mesh = antwika::character::getCharacterMesh();
     auto lowest = mesh.vertices.front();
 
     for (const auto &corner : mesh.vertices)
@@ -676,7 +676,7 @@ TEST(CharacterTest, CharacterMesh_StandsItsFootClearOfItsOwnGround)
 
 TEST(CharacterTest, CopiedFrom_TakesWhatLiesBetweenTwoCorners)
 {
-    auto sheet = blankCharacter();
+    auto sheet = getBlankCharacter();
     constexpr antwika::gfx::Color kRedColor{
         .red = 255, .green = 0, .blue = 0, .alpha = 255};
 
@@ -698,7 +698,7 @@ TEST(CharacterTest, CopiedFrom_TakesWhatLiesBetweenTwoCorners)
 
 TEST(CharacterTest, CopiedFrom_TakesTheSameEitherWayRound)
 {
-    const auto sheet = blankCharacter();
+    const auto sheet = getBlankCharacter();
     const antwika::geometry::GridCell oneCell{1, 2};
     const antwika::geometry::GridCell otherCell{5, 7};
 
@@ -719,7 +719,7 @@ TEST(CharacterTest, CopiedFrom_TakesTheSameEitherWayRound)
 
 TEST(CharacterTest, PasteInto_LaysABufferDownWhereItIsPut)
 {
-    auto sheet = blankCharacter();
+    auto sheet = getBlankCharacter();
     constexpr antwika::gfx::Color kRedColor{
         .red = 255, .green = 0, .blue = 0, .alpha = 255};
 
@@ -738,14 +738,14 @@ TEST(CharacterTest, PasteInto_LaysABufferDownWhereItIsPut)
         sheet, 1, 2, antwika::geometry::GridCell{4, 5}, buffer);
 
     EXPECT_EQ(
-        antwika::character::characterPixelColor(
+        antwika::character::getCharacterPixelColor(
             sheet, 1, 2, antwika::geometry::GridCell{4, 5}),
         kRedColor);
 }
 
 TEST(CharacterTest, PasteInto_LeavesOffWhatWouldFallOutsideTheFrame)
 {
-    auto sheet = blankCharacter();
+    auto sheet = getBlankCharacter();
     constexpr antwika::gfx::Color kRedColor{
         .red = 255, .green = 0, .blue = 0, .alpha = 255};
 
@@ -779,12 +779,12 @@ TEST(CharacterTest, PasteInto_LeavesOffWhatWouldFallOutsideTheFrame)
         buffer);
 
     EXPECT_EQ(
-        antwika::character::characterPixelColor(
+        antwika::character::getCharacterPixelColor(
             sheet, 1, 0, antwika::geometry::GridCell{0, 0})
             .alpha,
         0);
     EXPECT_EQ(
-        antwika::character::characterPixelColor(
+        antwika::character::getCharacterPixelColor(
             sheet,
             0,
             0,
@@ -796,17 +796,17 @@ TEST(CharacterTest, PasteInto_LeavesOffWhatWouldFallOutsideTheFrame)
 
 TEST(CharacterTest, SelectionRect_HoldsBothCornersItIsMarkedBy)
 {
-    const auto where = characterCanvasRect(kCanvasSize);
+    const auto where = getCharacterCanvasRect(kCanvasSize);
     const antwika::geometry::GridCell oneCell{2, 3};
     const antwika::geometry::GridCell otherCell{6, 8};
-    const auto markedRect = antwika::character::selectionRect(
+    const auto markedRect = antwika::character::getSelectionRect(
         where, antwika::character::PixelSelection{
             .fromCell = otherCell,
             .toCell = oneCell});
     const auto first =
-        antwika::character::characterPixelPlace(where, oneCell);
+        antwika::character::getCharacterPixelPlace(where, oneCell);
     const auto lastRect =
-        antwika::character::characterPixelPlace(where, otherCell);
+        antwika::character::getCharacterPixelPlace(where, otherCell);
 
     EXPECT_NEAR(markedRect.originPoint.x, first.originPoint.x, 0.0001F);
     EXPECT_NEAR(markedRect.originPoint.y, first.originPoint.y, 0.0001F);
@@ -822,7 +822,7 @@ TEST(CharacterTest, SelectionRect_HoldsBothCornersItIsMarkedBy)
 
 TEST(CharacterTest, PaintCharacterLine_LeavesNoGapBetweenTwoPixels)
 {
-    auto sheet = blankCharacter();
+    auto sheet = getBlankCharacter();
     constexpr antwika::gfx::Color kRedColor{
         .red = 255, .green = 0, .blue = 0, .alpha = 255};
 
@@ -834,19 +834,19 @@ TEST(CharacterTest, PaintCharacterLine_LeavesNoGapBetweenTwoPixels)
         antwika::geometry::GridCell{6, 4},
         kRedColor);
 
-    for (const auto pixel : antwika::tile::linePixels(
+    for (const auto pixel : antwika::tile::getLinePixels(
              antwika::geometry::GridCell{2, 2},
              antwika::geometry::GridCell{6, 4}))
     {
         EXPECT_EQ(
-            antwika::character::characterPixelColor(sheet, 1, 2, pixel),
+            antwika::character::getCharacterPixelColor(sheet, 1, 2, pixel),
             kRedColor);
     }
 }
 
 TEST(CharacterTest, PaintCharacterLine_ColorsOnePixelForNoLength)
 {
-    auto sheet = blankCharacter();
+    auto sheet = getBlankCharacter();
     constexpr antwika::gfx::Color kRedColor{
         .red = 255, .green = 0, .blue = 0, .alpha = 255};
     const antwika::geometry::GridCell onlyCell{3, 3};
@@ -860,13 +860,13 @@ TEST(CharacterTest, PaintCharacterLine_ColorsOnePixelForNoLength)
         kRedColor);
 
     EXPECT_EQ(
-        antwika::character::characterPixelColor(
+        antwika::character::getCharacterPixelColor(
             sheet,
             0,
             0,
             onlyCell), kRedColor);
     EXPECT_EQ(
-        antwika::character::characterPixelColor(
+        antwika::character::getCharacterPixelColor(
             sheet, 0, 0, antwika::geometry::GridCell{4, 3})
             .alpha,
         0);
@@ -878,13 +878,13 @@ TEST(CharacterTest, SelectionOrigin_TakesTheSameCornerEitherWayRound)
     const antwika::geometry::GridCell otherCell{6, 3};
 
     EXPECT_EQ(
-        antwika::character::selectionOrigin(
+        antwika::character::getSelectionOrigin(
             antwika::character::PixelSelection{
                 .fromCell = oneCell,
                 .toCell = otherCell}),
         (antwika::geometry::GridCell{2, 3}));
     EXPECT_EQ(
-        antwika::character::selectionOrigin(
+        antwika::character::getSelectionOrigin(
             antwika::character::PixelSelection{
                 .fromCell = otherCell,
                 .toCell = oneCell}),
@@ -894,7 +894,7 @@ TEST(CharacterTest, SelectionOrigin_TakesTheSameCornerEitherWayRound)
 TEST(CharacterTest, SelectionSize_CountsBothPixelsItIsMarkedBy)
 {
     EXPECT_EQ(
-        antwika::character::selectionSize(
+        antwika::character::getSelectionSize(
             antwika::character::PixelSelection{
                 .fromCell = antwika::geometry::GridCell{2, 5},
                 .toCell = antwika::geometry::GridCell{6, 3}}),
@@ -906,7 +906,7 @@ TEST(CharacterTest, SelectionSize_HoldsOnePixelForASelectionOfOne)
     const antwika::geometry::GridCell onlyCell{4, 4};
 
     EXPECT_EQ(
-        antwika::character::selectionSize(
+        antwika::character::getSelectionSize(
             antwika::character::PixelSelection{
                 .fromCell = onlyCell,
                 .toCell = onlyCell}),
@@ -924,7 +924,7 @@ TEST(CharacterTest, SelectionContains_TakesEveryPixelWithinTheSelection)
         for (std::uint32_t column = 2; column <= 4; ++column)
         {
             EXPECT_TRUE(
-                antwika::character::selectionContains(
+                antwika::character::isSelectionContains(
                     selection,
                     antwika::geometry::GridCell{column, row}));
         }
@@ -938,13 +938,13 @@ TEST(CharacterTest, SelectionContains_TakesNoPixelBesideTheSelection)
         .toCell = antwika::geometry::GridCell{4, 5}};
 
     EXPECT_FALSE(
-        antwika::character::selectionContains(
+        antwika::character::isSelectionContains(
             selection, antwika::geometry::GridCell{1, 3}));
     EXPECT_FALSE(
-        antwika::character::selectionContains(
+        antwika::character::isSelectionContains(
             selection, antwika::geometry::GridCell{5, 5}));
     EXPECT_FALSE(
-        antwika::character::selectionContains(
+        antwika::character::isSelectionContains(
             selection, antwika::geometry::GridCell{3, 6}));
 }
 
@@ -953,13 +953,13 @@ TEST(CharacterTest, MovedSelection_KeepsTheSizeItWasGiven)
     const antwika::character::PixelSelection selection{
         .fromCell = antwika::geometry::GridCell{2, 3},
         .toCell = antwika::geometry::GridCell{5, 7}};
-    const auto movedRect = antwika::character::movedSelection(selection, 3, -2);
+    const auto movedRect = antwika::character::getMovedSelection(selection, 3, -2);
 
     EXPECT_EQ(
-        antwika::character::selectionSize(movedRect),
-        antwika::character::selectionSize(selection));
+        antwika::character::getSelectionSize(movedRect),
+        antwika::character::getSelectionSize(selection));
     EXPECT_EQ(
-        antwika::character::selectionOrigin(movedRect),
+        antwika::character::getSelectionOrigin(movedRect),
         (antwika::geometry::GridCell{5, 1}));
 }
 
@@ -968,26 +968,26 @@ TEST(CharacterTest, MovedSelection_HoldsASelectionWithinTheFrame)
     const antwika::character::PixelSelection selection{
         .fromCell = antwika::geometry::GridCell{0, 0},
         .toCell = antwika::geometry::GridCell{3, 3}};
-    const auto clampedLow = antwika::character::movedSelection(selection, -4,
+    const auto clampedLow = antwika::character::getMovedSelection(selection, -4,
         -4);
-    const auto clampedHigh = antwika::character::movedSelection(selection, 999,
+    const auto clampedHigh = antwika::character::getMovedSelection(selection, 999,
         999);
 
     EXPECT_EQ(
-        antwika::character::selectionOrigin(clampedLow),
+        antwika::character::getSelectionOrigin(clampedLow),
         (antwika::geometry::GridCell{0, 0}));
     EXPECT_EQ(
-        antwika::character::selectionOrigin(clampedHigh),
+        antwika::character::getSelectionOrigin(clampedHigh),
         (antwika::geometry::GridCell{
             kCharacterCellSize.width - 4, kCharacterCellSize.height - 4}));
     EXPECT_EQ(
-        antwika::character::selectionSize(clampedHigh),
-        antwika::character::selectionSize(selection));
+        antwika::character::getSelectionSize(clampedHigh),
+        antwika::character::getSelectionSize(selection));
 }
 
 TEST(CharacterTest, CutFrom_TakesThePixelsItLeavesBlank)
 {
-    auto sheet = blankCharacter();
+    auto sheet = getBlankCharacter();
     constexpr antwika::gfx::Color kRedColor{
         .red = 255, .green = 0, .blue = 0, .alpha = 255};
     const antwika::character::PixelSelection selection{
@@ -1002,7 +1002,7 @@ TEST(CharacterTest, CutFrom_TakesThePixelsItLeavesBlank)
 
     EXPECT_EQ(cutBuffer, was);
     EXPECT_EQ(
-        antwika::character::characterPixelColor(
+        antwika::character::getCharacterPixelColor(
             sheet, 0, 0, antwika::geometry::GridCell{1, 1})
             .alpha,
         0);
@@ -1010,7 +1010,7 @@ TEST(CharacterTest, CutFrom_TakesThePixelsItLeavesBlank)
 
 TEST(CharacterTest, CutFrom_LeavesTheFrameAsItStoodWhenLaidBack)
 {
-    auto sheet = blankCharacter();
+    auto sheet = getBlankCharacter();
     constexpr antwika::gfx::Color kRedColor{
         .red = 255, .green = 0, .blue = 0, .alpha = 255};
     const antwika::character::PixelSelection selection{
@@ -1024,7 +1024,7 @@ TEST(CharacterTest, CutFrom_LeavesTheFrameAsItStoodWhenLaidBack)
     const auto cutBuffer = antwika::character::cutFrom(sheet, 1, 1, selection);
 
     antwika::character::pasteInto(
-        sheet, 1, 1, antwika::character::selectionOrigin(selection), cutBuffer);
+        sheet, 1, 1, antwika::character::getSelectionOrigin(selection), cutBuffer);
 
     EXPECT_EQ(sheet.pixels, was.pixels);
 }
@@ -1032,10 +1032,10 @@ TEST(CharacterTest, CutFrom_LeavesTheFrameAsItStoodWhenLaidBack)
 TEST(CharacterTest, SpriteBillboardMatrix_HoldsEveryCornerOverTheGround)
 {
     const antwika::gfx::Vec3 position{3.0F, 1.5F, -2.0F};
-    const auto billboardMatrix = antwika::character::spriteBillboardMatrix(
-        position, squaredView());
+    const auto billboardMatrix = antwika::character::getSpriteBillboardMatrix(
+        position, getSquaredView());
 
-    for (const auto &corner : antwika::character::characterMesh().vertices)
+    for (const auto &corner : antwika::character::getCharacterMesh().vertices)
     {
         const auto stoodPoint =
             billboardMatrix
@@ -1048,10 +1048,10 @@ TEST(CharacterTest, SpriteBillboardMatrix_HoldsEveryCornerOverTheGround)
 TEST(CharacterTest, SpriteBillboardMatrix_StandsTheBodyOverTheFootprint)
 {
     const antwika::gfx::Vec3 position{3.0F, 1.5F, -2.0F};
-    const auto billboardMatrix = antwika::character::spriteBillboardMatrix(
-        position, squaredView());
+    const auto billboardMatrix = antwika::character::getSpriteBillboardMatrix(
+        position, getSquaredView());
 
-    for (const auto &corner : antwika::character::characterMesh().vertices)
+    for (const auto &corner : antwika::character::getCharacterMesh().vertices)
     {
         const auto stoodPoint =
             billboardMatrix * antwika::gfx::Vec4{corner.position, 1.0F};
@@ -1078,7 +1078,7 @@ TEST(CharacterTest, SpriteBillboardMatrix_StandsTheBodyOverTheFootprint)
 
 TEST(CharacterTest, MirroredHorizontally_ReadsEveryRowTheOtherWayAbout)
 {
-    auto sheet = blankCharacter();
+    auto sheet = getBlankCharacter();
     constexpr antwika::gfx::Color kRedColor{
         .red = 255, .green = 0, .blue = 0, .alpha = 255};
     const antwika::character::PixelSelection selection{
@@ -1088,7 +1088,7 @@ TEST(CharacterTest, MirroredHorizontally_ReadsEveryRowTheOtherWayAbout)
     paintCharacter(
         sheet, 0, 0, antwika::geometry::GridCell{0, 1}, kRedColor);
 
-    const auto mirroredBuffer = antwika::character::mirroredHorizontally(
+    const auto mirroredBuffer = antwika::character::getMirroredHorizontally(
         antwika::character::copiedFrom(sheet, 0, 0, selection));
 
     EXPECT_EQ(mirroredBuffer.size.width, 3U);
@@ -1099,7 +1099,7 @@ TEST(CharacterTest, MirroredHorizontally_ReadsEveryRowTheOtherWayAbout)
 
 TEST(CharacterTest, MirroredHorizontally_GivesBackWhatItWasGivenTwiceOver)
 {
-    auto sheet = blankCharacter();
+    auto sheet = getBlankCharacter();
     constexpr antwika::gfx::Color kRedColor{
         .red = 255, .green = 0, .blue = 0, .alpha = 255};
     const antwika::character::PixelSelection selection{
@@ -1117,8 +1117,8 @@ TEST(CharacterTest, MirroredHorizontally_GivesBackWhatItWasGivenTwiceOver)
     const auto buffer = antwika::character::copiedFrom(sheet, 1, 2, selection);
 
     EXPECT_EQ(
-        antwika::character::mirroredHorizontally(
-            antwika::character::mirroredHorizontally(buffer)),
+        antwika::character::getMirroredHorizontally(
+            antwika::character::getMirroredHorizontally(buffer)),
         buffer);
 }
 
@@ -1126,7 +1126,7 @@ TEST(
     CharacterTest,
     MirroredHorizontally_LeavesASelectionOfOneColumnAsItWas)
 {
-    auto sheet = blankCharacter();
+    auto sheet = getBlankCharacter();
     constexpr antwika::gfx::Color kRedColor{
         .red = 255, .green = 0, .blue = 0, .alpha = 255};
     const antwika::character::PixelSelection selection{
@@ -1138,7 +1138,7 @@ TEST(
 
     const auto buffer = antwika::character::copiedFrom(sheet, 0, 0, selection);
 
-    EXPECT_EQ(antwika::character::mirroredHorizontally(buffer), buffer);
+    EXPECT_EQ(antwika::character::getMirroredHorizontally(buffer), buffer);
 }
 
 TEST(CharacterTest, SpriteBillboardMatrix_KeepsThePictureOutOfTheGround)
@@ -1149,11 +1149,11 @@ TEST(CharacterTest, SpriteBillboardMatrix_KeepsThePictureOutOfTheGround)
          {0.35F, 0.7F, 0.927F, 1.2F, 1.45F})
     {
         const auto billboardMatrix =
-            antwika::character::spriteBillboardMatrix(
-                position, viewTiltedBy(-tilt));
+            antwika::character::getSpriteBillboardMatrix(
+                position, getViewTiltedBy(-tilt));
 
         for (const auto &corner :
-             antwika::character::characterMesh().vertices)
+             antwika::character::getCharacterMesh().vertices)
         {
             const auto stoodPoint =
                 billboardMatrix
@@ -1169,10 +1169,10 @@ TEST(
     SpriteBillboardMatrix_CarriesThePictureNoHigherThanItMust)
 {
     const antwika::gfx::Vec3 position{};
-    const auto squareMatrix = antwika::character::spriteBillboardMatrix(
-        position, squaredView());
-    const auto tiltMatrix = antwika::character::spriteBillboardMatrix(
-        position, viewTiltedBy(-0.35F));
+    const auto squareMatrix = antwika::character::getSpriteBillboardMatrix(
+        position, getSquaredView());
+    const auto tiltMatrix = antwika::character::getSpriteBillboardMatrix(
+        position, getViewTiltedBy(-0.35F));
     const antwika::gfx::Vec4 originPoint{0.0F, 0.0F, 0.0F, 1.0F};
 
     EXPECT_NEAR(

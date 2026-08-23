@@ -14,7 +14,7 @@ namespace antwika::render
 
     namespace
     {
-    [[nodiscard]] gfx::MeshData screenQuad()
+    [[nodiscard]] gfx::MeshData getScreenQuad()
     {
         gfx::MeshData mesh;
 
@@ -54,7 +54,7 @@ namespace antwika::render
         const gfx::ShaderSource &bloomSource)
     {
         bloomShader = viewportRenderer.createShader(bloomSource);
-        screenMesh = viewportRenderer.createMesh(screenQuad());
+        screenMesh = viewportRenderer.createMesh(getScreenQuad());
     }
 
     void ScenePass::draw(
@@ -64,7 +64,7 @@ namespace antwika::render
         const std::function<void()> &pile,
         const std::function<void()> &afterPass)
     {
-        const auto port = viewportRenderer.viewport();
+        const auto port = viewportRenderer.getViewport();
         const gfx::Size framePixelsSize{
             .width = static_cast<std::uint32_t>(
                 static_cast<std::uint64_t>(camera::kCanvasSize.width)
@@ -73,7 +73,7 @@ namespace antwika::render
                 static_cast<std::uint64_t>(camera::kCanvasSize.height)
                 * port.numerator / port.denominator)};
 
-        if (!sceneTarget || sceneTarget->size() != framePixelsSize)
+        if (!sceneTarget || sceneTarget->getSize() != framePixelsSize)
         {
             sceneTarget = viewportRenderer.createRenderTarget(
                 gfx::RenderTargetSpec{
@@ -127,11 +127,11 @@ namespace antwika::render
             *bloomShader, "bloomStrength", kBloomStrength);
         viewportRenderer.drawMesh(
             *screenMesh,
-            gfx::identityMatrix(),
+            gfx::getIdentityMatrix(),
             screenCamera,
             gfx::MeshMaterial{
-                .texture = sceneTarget->color(),
-                .materialMapTexture = glowTarget->color(),
+                .texture = sceneTarget->getColor(),
+                .materialMapTexture = glowTarget->getColor(),
                 .shader = bloomShader.get()});
     }
 

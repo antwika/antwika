@@ -17,9 +17,9 @@ namespace antwika::time
         void record(std::chrono::nanoseconds span);
 
         [[nodiscard]] std::optional<std::chrono::nanoseconds>
-            averageFrameTime() const;
+            getAverageFrameTime() const;
 
-        [[nodiscard]] std::optional<float> perSecond() const;
+        [[nodiscard]] std::optional<float> getPerSecond() const;
 
     private:
         std::array<std::chrono::nanoseconds, kFrameSampleCount> spans{};
@@ -27,10 +27,10 @@ namespace antwika::time
         std::size_t sampleCount = 0;
     };
 
-    [[nodiscard]] std::string formatFrameRate(
+    [[nodiscard]] std::string getFormatFrameRate(
         std::optional<float> perSecond);
 
-    [[nodiscard]] std::string formatFrameTime(
+    [[nodiscard]] std::string getFormatFrameTime(
         std::optional<std::chrono::nanoseconds> averageFrameTime);
 
 }

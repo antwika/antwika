@@ -27,17 +27,17 @@ namespace antwika::decor::decordetail
         wfc::CompatibilityTable verticalBoundaryTable;
     };
 
-    [[nodiscard]] bool seamCompatible(
+    [[nodiscard]] bool isSeamCompatible(
         const tile::TileRules &rules,
         tilemap::Tile oneTile,
         voxel::Side side,
         voxel::EdgeKind kind,
         tilemap::Tile otherTile);
 
-    [[nodiscard]] std::vector<std::size_t> shuffledValues(
+    [[nodiscard]] std::vector<std::size_t> getShuffledValues(
         std::size_t many, std::uint32_t seed);
 
-    [[nodiscard]] std::uint32_t hashMix(std::uint32_t value);
+    [[nodiscard]] std::uint32_t getHashMix(std::uint32_t value);
 
     [[nodiscard]] std::uint8_t frequencyRollFor(
         voxel::VoxelPosition position,
@@ -45,10 +45,10 @@ namespace antwika::decor::decordetail
         std::uint32_t seed,
         std::uint32_t stir);
 
-    [[nodiscard]] voxel::VoxelPosition wallTangent(std::size_t side);
+    [[nodiscard]] voxel::VoxelPosition getWallTangent(std::size_t side);
 
 
-    [[nodiscard]] std::map<std::size_t, tilemap::Tile> placeSpannedDecor(
+    [[nodiscard]] std::map<std::size_t, tilemap::Tile> getPlaceSpannedDecor(
         const std::vector<voxelmap::FaceRef> &faces,
         std::span<const tilemap::Tile> drawnTiles,
         std::span<const DecorTile> decor,

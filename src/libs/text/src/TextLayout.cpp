@@ -9,9 +9,9 @@
 namespace antwika::text
 {
 
-    gfx::Size textSize(std::string_view text, std::uint32_t scale) noexcept
+    gfx::Size getTextSize(std::string_view text, std::uint32_t scale) noexcept
     {
-        const auto height = gfx::scaledGlyphLineHeight(scale);
+        const auto height = gfx::getScaledGlyphLineHeight(scale);
 
         if (text.empty() || height == 0)
         {
@@ -20,7 +20,7 @@ namespace antwika::text
 
         const auto cells = static_cast<std::uint32_t>(text.size());
         return gfx::Size{
-            .width = cells * gfx::scaledGlyphAdvance(scale),
+            .width = cells * gfx::getScaledGlyphAdvance(scale),
             .height = height,
         };
     }

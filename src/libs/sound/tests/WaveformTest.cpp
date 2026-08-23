@@ -9,7 +9,7 @@ TEST(WaveformTest, Ctor_StartsHoldingNothing)
 {
     const Waveform waveform;
 
-    EXPECT_EQ(waveform.frameCount(), 0U);
+    EXPECT_EQ(waveform.getFrameCount(), 0U);
     EXPECT_TRUE(waveform.isValid());
 }
 
@@ -19,7 +19,7 @@ TEST(WaveformTest, FrameCount_DividesTheSamplesByTheChannels)
         .format = WaveFormat{.rate = 48000, .channels = 2},
         .samples = {0.0F, 0.1F, 0.2F, 0.3F, 0.4F, 0.5F}};
 
-    EXPECT_EQ(waveform.frameCount(), 3U);
+    EXPECT_EQ(waveform.getFrameCount(), 3U);
 }
 
 TEST(WaveformTest, FrameCount_ReportsNothingForAFormatWithNoChannels)
@@ -28,7 +28,7 @@ TEST(WaveformTest, FrameCount_ReportsNothingForAFormatWithNoChannels)
         .format = WaveFormat{.rate = 48000, .channels = 0},
         .samples = {0.0F, 0.1F}};
 
-    EXPECT_EQ(waveform.frameCount(), 0U);
+    EXPECT_EQ(waveform.getFrameCount(), 0U);
 }
 
 TEST(WaveformTest, IsValid_RefusesAPartialFrame)

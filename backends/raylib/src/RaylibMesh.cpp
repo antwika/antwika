@@ -29,12 +29,12 @@ namespace antwika::gfx::raylib
         }
     }
 
-    std::size_t RaylibMesh::vertexCount() const
+    std::size_t RaylibMesh::getVertexCount() const
     {
         return vertices;
     }
 
-    std::size_t RaylibMesh::triangleCount() const
+    std::size_t RaylibMesh::getTriangleCount() const
     {
         return triangles;
     }
@@ -45,7 +45,7 @@ namespace antwika::gfx::raylib
         return owner == &candidateRenderer;
     }
 
-    const ::Mesh &RaylibMesh::raw() const noexcept
+    const ::Mesh &RaylibMesh::getRawHandle() const noexcept
     {
         return mesh;
     }

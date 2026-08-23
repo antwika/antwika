@@ -26,7 +26,7 @@ namespace antwika::time
             sampleCount < kFrameSampleCount ? sampleCount + 1 : sampleCount;
     }
 
-    std::optional<std::chrono::nanoseconds> FrameRate::averageFrameTime()
+    std::optional<std::chrono::nanoseconds> FrameRate::getAverageFrameTime()
         const
     {
         if (sampleCount == 0)
@@ -46,9 +46,9 @@ namespace antwika::time
                         sampleCount)};
     }
 
-    std::optional<float> FrameRate::perSecond() const
+    std::optional<float> FrameRate::getPerSecond() const
     {
-        const auto each = averageFrameTime();
+        const auto each = getAverageFrameTime();
 
         if (!each.has_value())
         {
@@ -58,7 +58,7 @@ namespace antwika::time
         return kASecond / static_cast<float>(each->count());
     }
 
-    std::string formatFrameRate(const std::optional<float> perSecond)
+    std::string getFormatFrameRate(const std::optional<float> perSecond)
     {
         if (!perSecond.has_value())
         {
@@ -70,7 +70,7 @@ namespace antwika::time
                + " fps";
     }
 
-    std::string formatFrameTime(
+    std::string getFormatFrameTime(
         const std::optional<std::chrono::nanoseconds> averageFrameTime)
     {
         if (!averageFrameTime.has_value())

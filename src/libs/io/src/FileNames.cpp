@@ -17,7 +17,7 @@ namespace antwika::io
         }
     }
 
-    std::vector<std::string> filteredBySuffix(
+    std::vector<std::string> getFilteredBySuffix(
         const std::span<const std::string> names,
         const std::string_view suffix,
         const std::size_t most)
@@ -42,7 +42,7 @@ namespace antwika::io
         return matchedNames;
     } // GCOVR_EXCL_LINE
 
-    std::string withSuffix(
+    std::string getWithSuffix(
         const std::string_view name, const std::string_view suffix)
     {
         std::string safeName(name);

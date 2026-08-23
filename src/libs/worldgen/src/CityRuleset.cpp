@@ -25,7 +25,7 @@ namespace antwika::worldgen
             return gatheredCount;
         }
 
-        [[nodiscard]] Prototype air(
+        [[nodiscard]] Prototype getAir(
             const char *name,
             const Socket sideSocket,
             const Socket bottomSocket)
@@ -47,7 +47,7 @@ namespace antwika::worldgen
                        : std::uint8_t{0}};
         }
 
-        [[nodiscard]] Prototype block(
+        [[nodiscard]] Prototype getBlock(
             const char *name,
             const Socket sideSocket,
             const Socket topSocket,
@@ -69,9 +69,9 @@ namespace antwika::worldgen
                 .roles = roles};
         }
 
-        [[nodiscard]] Prototype corbel(const char *name, const Face rootFace)
+        [[nodiscard]] Prototype getCorbel(const char *name, const Face rootFace)
         {
-            Prototype madePrototype = block(
+            Prototype madePrototype = getBlock(
                 name,
                 Socket::Facade,
                 Socket::Carries,
@@ -84,7 +84,7 @@ namespace antwika::worldgen
             return madePrototype;
         }
 
-        [[nodiscard]] Prototype stair(
+        [[nodiscard]] Prototype getStair(
             const char *name,
             const Facing facing,
             const Face headFace,
@@ -113,7 +113,7 @@ namespace antwika::worldgen
             return madePrototype;
         }
 
-        [[nodiscard]] Prototype ladder(
+        [[nodiscard]] Prototype getLadder(
             const char *name,
             const Facing facing,
             const Face openFace,
@@ -141,7 +141,7 @@ namespace antwika::worldgen
             return madePrototype;
         }
 
-        [[nodiscard]] District quarter(
+        [[nodiscard]] District getQuarter(
             const char *name,
             const std::uint8_t untilShare,
             const std::initializer_list<
@@ -166,70 +166,70 @@ namespace antwika::worldgen
         return static_cast<std::size_t>(piece);
     }
 
-    Ruleset cityRuleset()
+    Ruleset getCityRuleset()
     {
         Ruleset ruleset;
 
         ruleset.prototypes = {
-            air("air open", Socket::OpenSide, Socket::Floats),
-            air("air room", Socket::RoomSide, Socket::Stands),
-            block(
+            getAir("air open", Socket::OpenSide, Socket::Floats),
+            getAir("air room", Socket::RoomSide, Socket::Stands),
+            getBlock(
                 "bedrock",
                 Socket::Facade,
                 Socket::Carries,
                 Socket::Rooted,
                 rolesOf({Role::Bear})),
-            block(
+            getBlock(
                 "fill",
                 Socket::Buried,
                 Socket::Carries,
                 Socket::Rests,
                 rolesOf({Role::Bear})),
-            block(
+            getBlock(
                 "wall",
                 Socket::Facade,
                 Socket::Carries,
                 Socket::Rests,
                 rolesOf({Role::Bear})),
-            block(
+            getBlock(
                 "floor",
                 Socket::LandingSide,
                 Socket::Terrace,
                 Socket::Rests,
                 rolesOf({Role::Bear, Role::Land})),
-            corbel("corbel east", Face::East),
-            corbel("corbel west", Face::West),
-            corbel("corbel north", Face::North),
-            corbel("corbel south", Face::South),
-            stair(
+            getCorbel("corbel east", Face::East),
+            getCorbel("corbel west", Face::West),
+            getCorbel("corbel north", Face::North),
+            getCorbel("corbel south", Face::South),
+            getStair(
                 "stair east",
                 Facing::East,
                 Face::East,
                 Face::West,
                 Socket::StairSideEast),
-            stair(
+            getStair(
                 "stair west",
                 Facing::West,
                 Face::West,
                 Face::East,
                 Socket::StairSideWest),
-            stair(
+            getStair(
                 "stair north",
                 Facing::North,
                 Face::North,
                 Face::South,
                 Socket::StairSideNorth),
-            stair(
+            getStair(
                 "stair south",
                 Facing::South,
                 Face::South,
                 Face::North,
                 Socket::StairSideSouth),
-            ladder("ladder east", Facing::East, Face::East, Face::West),
-            ladder("ladder west", Facing::West, Face::West, Face::East),
-            ladder("ladder north", Facing::North, Face::North, Face::South),
-            ladder("ladder south", Facing::South, Face::South, Face::North),
-            block(
+            getLadder("ladder east", Facing::East, Face::East, Face::West),
+            getLadder("ladder west", Facing::West, Face::West, Face::East),
+            getLadder("ladder north", Facing::North, Face::North, Face::South),
+            getLadder("ladder south", Facing::South, Face::South, Face::North),
+            getBlock(
                 "cistern",
                 Socket::WaterSide,
                 Socket::WaterTop,
@@ -239,7 +239,7 @@ namespace antwika::worldgen
         ruleset.prototypes[indexOf(CityPiece::Cistern)].kind = Kind::Water;
 
         ruleset.districts = {
-            quarter(
+            getQuarter(
                 "bedrock",
                 5,
                 {{CityPiece::Bedrock, 40},
@@ -257,7 +257,7 @@ namespace antwika::worldgen
                  {CityPiece::LadderWest, 1},
                  {CityPiece::LadderNorth, 1},
                  {CityPiece::LadderSouth, 1}}),
-            quarter(
+            getQuarter(
                 "undercroft",
                 16,
                 {{CityPiece::AirOpen, 6},
@@ -274,7 +274,7 @@ namespace antwika::worldgen
                  {CityPiece::LadderWest, 3},
                  {CityPiece::LadderNorth, 3},
                  {CityPiece::LadderSouth, 3}}),
-            quarter(
+            getQuarter(
                 "slums",
                 40,
                 {{CityPiece::AirOpen, 18},
@@ -294,7 +294,7 @@ namespace antwika::worldgen
                  {CityPiece::LadderWest, 4},
                  {CityPiece::LadderNorth, 4},
                  {CityPiece::LadderSouth, 4}}),
-            quarter(
+            getQuarter(
                 "middling",
                 68,
                 {{CityPiece::AirOpen, 30},
@@ -314,7 +314,7 @@ namespace antwika::worldgen
                  {CityPiece::LadderWest, 2},
                  {CityPiece::LadderNorth, 2},
                  {CityPiece::LadderSouth, 2}}),
-            quarter(
+            getQuarter(
                 "heights",
                 90,
                 {{CityPiece::AirOpen, 52},
@@ -333,7 +333,7 @@ namespace antwika::worldgen
                  {CityPiece::LadderWest, 1},
                  {CityPiece::LadderNorth, 1},
                  {CityPiece::LadderSouth, 1}}),
-            quarter(
+            getQuarter(
                 "sky",
                 100,
                 {{CityPiece::AirOpen, 60}, {CityPiece::AirRoom, 2}})};

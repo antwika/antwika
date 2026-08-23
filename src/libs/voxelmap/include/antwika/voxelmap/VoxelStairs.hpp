@@ -6,7 +6,7 @@
 namespace antwika::voxelmap
 {
 
-    [[nodiscard]] gfx::RectF stairUvRect(
+    [[nodiscard]] gfx::RectF getStairUvRect(
         gfx::RectF tileRect,
         const voxel::StairQuad &quad,
         bool mirrored = false);

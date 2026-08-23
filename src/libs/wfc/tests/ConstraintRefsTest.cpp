@@ -16,7 +16,7 @@ using antwika::wfc::referencesTo;
 
 namespace
 {
-    AdjacencyConstraint between(std::size_t left, std::size_t right)
+    AdjacencyConstraint getBetween(std::size_t left, std::size_t right)
     {
         return AdjacencyConstraint(left, right, CompatibilityTable(2));
     }
@@ -25,7 +25,7 @@ namespace
 TEST(ConstraintRefsTest, ReferencesTo_ReferencesEachElementInOrder)
 {
     const std::vector<AdjacencyConstraint> constraints{
-        between(0, 1), between(1, 2), between(2, 3)};
+        getBetween(0, 1), getBetween(1, 2), getBetween(2, 3)};
 
     const auto refs = referencesTo(constraints);
 
@@ -38,7 +38,7 @@ TEST(ConstraintRefsTest, ReferencesTo_ReferencesEachElementInOrder)
 
 TEST(ConstraintRefsTest, ReferencesTo_ReferencesRatherThanCopies)
 {
-    const std::vector<AdjacencyConstraint> constraints{between(0, 1)};
+    const std::vector<AdjacencyConstraint> constraints{getBetween(0, 1)};
 
     const auto refs = referencesTo(constraints);
 
@@ -56,9 +56,9 @@ TEST(ConstraintRefsTest, ReferencesTo_YieldsNothingForAnEmptyRange)
 TEST(ConstraintRefsTest, ReferencesTo_AcceptsAnyRangeOfConstraints)
 {
     const std::array<AdjacencyConstraint, 2> asArrayConstraints{
-        between(0, 1), between(1, 2)};
+        getBetween(0, 1), getBetween(1, 2)};
     const std::deque<AdjacencyConstraint> asDequeConstraints{
-        between(0, 1), between(1, 2)};
+        getBetween(0, 1), getBetween(1, 2)};
 
     EXPECT_EQ(referencesTo(asArrayConstraints).size(), 2U);
     EXPECT_EQ(

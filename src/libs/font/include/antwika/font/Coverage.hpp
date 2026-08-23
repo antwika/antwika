@@ -14,7 +14,7 @@ namespace antwika::font
 
         [[nodiscard]] bool isValid() const noexcept;
 
-        [[nodiscard]] std::uint8_t at(
+        [[nodiscard]] std::uint8_t getEntryAt(
             std::uint32_t x, std::uint32_t y) const;
 
         [[nodiscard]] bool operator==(const Coverage &other) const

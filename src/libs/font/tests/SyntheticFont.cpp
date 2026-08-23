@@ -60,7 +60,7 @@ namespace antwika::font::tests
             }
         }
 
-        [[nodiscard]] Bytes headTable()
+        [[nodiscard]] Bytes getHeadTable()
         {
             Bytes tableBytes;
 
@@ -88,7 +88,7 @@ namespace antwika::font::tests
             return tableBytes;
         }
 
-        [[nodiscard]] Bytes hheaTable()
+        [[nodiscard]] Bytes getHheaTable()
         {
             Bytes tableBytes;
 
@@ -115,7 +115,7 @@ namespace antwika::font::tests
             return tableBytes;
         }
 
-        [[nodiscard]] Bytes maxpTable()
+        [[nodiscard]] Bytes getMaxpTable()
         {
             Bytes tableBytes;
 
@@ -130,7 +130,7 @@ namespace antwika::font::tests
             return tableBytes;
         }
 
-        [[nodiscard]] Bytes hmtxTable()
+        [[nodiscard]] Bytes getHmtxTable()
         {
             Bytes tableBytes;
 
@@ -146,7 +146,7 @@ namespace antwika::font::tests
             return tableBytes;
         }
 
-        [[nodiscard]] Bytes rectangleGlyph(
+        [[nodiscard]] Bytes getRectangleGlyph(
             int xMin, int yMin, int xMax, int yMax)
         {
             Bytes glyphBytes;
@@ -179,10 +179,10 @@ namespace antwika::font::tests
             return glyphBytes;
         }
 
-        [[nodiscard]] Bytes glyfTable()
+        [[nodiscard]] Bytes getGlyfTable()
         {
-            Bytes tableBytes = rectangleGlyph(110, 10, 890, 710);
-            const Bytes secondBytes = rectangleGlyph(10, 10, 410, 410);
+            Bytes tableBytes = getRectangleGlyph(110, 10, 890, 710);
+            const Bytes secondBytes = getRectangleGlyph(10, 10, 410, 410);
 
             tableBytes.insert(
                 tableBytes.end(),
@@ -192,12 +192,12 @@ namespace antwika::font::tests
             return tableBytes;
         }
 
-        [[nodiscard]] Bytes locaTable()
+        [[nodiscard]] Bytes getLocaTable()
         {
             const auto first = static_cast<std::uint32_t>(
-                rectangleGlyph(110, 10, 890, 710).size());
+                getRectangleGlyph(110, 10, 890, 710).size());
             const auto secondBytes = static_cast<std::uint32_t>(
-                rectangleGlyph(10, 10, 410, 410).size());
+                getRectangleGlyph(10, 10, 410, 410).size());
 
             Bytes tableBytes;
 
@@ -210,7 +210,7 @@ namespace antwika::font::tests
             return tableBytes;
         }
 
-        [[nodiscard]] Bytes cmapTable()
+        [[nodiscard]] Bytes getCmapTable()
         {
             constexpr std::uint16_t kFirstCode = 0x20;
             constexpr std::uint16_t kEntryCount = 35;
@@ -262,18 +262,18 @@ namespace antwika::font::tests
         };
     }
 
-    std::vector<std::uint8_t> buildFont(FontRecipe recipe)
+    std::vector<std::uint8_t> createFont(FontRecipe recipe)
     {
         std::vector<Table> tables;
 
-        tables.push_back({"cmap", cmapTable()});
-        tables.push_back({"glyf", glyfTable()});
-        tables.push_back({"head", headTable()});
-        tables.push_back({"hhea", hheaTable()});
-        tables.push_back({"hmtx", hmtxTable()});
+        tables.push_back({"cmap", getCmapTable()});
+        tables.push_back({"glyf", getGlyfTable()});
+        tables.push_back({"head", getHeadTable()});
+        tables.push_back({"hhea", getHheaTable()});
+        tables.push_back({"hmtx", getHmtxTable()});
 
-        tables.push_back({"loca", locaTable()});
-        tables.push_back({"maxp", maxpTable()});
+        tables.push_back({"loca", getLocaTable()});
+        tables.push_back({"maxp", getMaxpTable()});
 
         Bytes fontBytes;
 
@@ -308,7 +308,7 @@ namespace antwika::font::tests
         return fontBytes;
     }
 
-    std::vector<std::uint8_t> buildDirectory(
+    std::vector<std::uint8_t> createDirectory(
         std::uint32_t flavour,
         std::uint16_t declaredTables,
         std::span<const TableRecord> records,

@@ -29,7 +29,7 @@ namespace antwika::ecs
             }
 
             growSparseFor(entity);
-            sparse[rawValue(entity)] = denseEntities.size();
+            sparse[getRawValue(entity)] = denseEntities.size();
             denseEntities.push_back(entity);
             front.push_back(value);
             dense.push_back(value);
@@ -50,7 +50,7 @@ namespace antwika::ecs
                 }
 
                 toRemove[*index] = 1;
-                sparse[rawValue(entity)] = kNotPresent;
+                sparse[getRawValue(entity)] = kNotPresent;
                 any = true;
             }
 
@@ -75,7 +75,7 @@ namespace antwika::ecs
                     front[count] = front[index];
                     dense[count] = dense[index];
                     writtenFlags[count] = writtenFlags[index];
-                    sparse[rawValue(denseEntities[count])] = count;
+                    sparse[getRawValue(denseEntities[count])] = count;
                 }
 
                 if (writtenFlags[count] == 1)
@@ -99,7 +99,7 @@ namespace antwika::ecs
             return indexOf(entity).has_value();
         }
 
-        [[nodiscard]] const T &read(Entity entity) const
+        [[nodiscard]] const T &getContents(Entity entity) const
         {
             const auto index = indexOf(entity);
             if (!index.has_value())
@@ -127,7 +127,7 @@ namespace antwika::ecs
             }
         }
 
-        [[nodiscard]] std::span<const Entity> entities() const noexcept
+        [[nodiscard]] std::span<const Entity> getEntities() const noexcept
         {
             return denseEntities;
         }
@@ -151,7 +151,7 @@ namespace antwika::ecs
 
         void growSparseFor(Entity entity)
         {
-            const auto value = rawValue(entity);
+            const auto value = getRawValue(entity);
             if (value >= sparse.size())
             {
                 sparse.resize(value + 1, kNotPresent);
@@ -161,7 +161,7 @@ namespace antwika::ecs
         [[nodiscard]] std::optional<std::size_t> indexOf(
             Entity entity) const noexcept
         {
-            const auto value = rawValue(entity);
+            const auto value = getRawValue(entity);
             if (value >= sparse.size() || sparse[value] == kNotPresent)
             {
                 return std::nullopt;

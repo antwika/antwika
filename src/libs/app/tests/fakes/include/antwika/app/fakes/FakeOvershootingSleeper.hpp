@@ -27,7 +27,7 @@ namespace antwika::app::fakes
         }
 
         [[nodiscard]] const std::vector<std::chrono::milliseconds>
-            &requestedSpans() const noexcept
+            &getRequestedSpans() const noexcept
         {
             return durations;
         }

@@ -16,10 +16,10 @@ using antwika::font::AtlasGlyph;
 using antwika::font::Font;
 using antwika::font::GlyphAtlas;
 using antwika::font::GlyphMetrics;
-using antwika::font::makeGlyphAtlas;
+using antwika::font::createGlyphAtlas;
 using antwika::font::Rect;
 using antwika::font::FontError;
-using antwika::font::tests::buildFont;
+using antwika::font::tests::createFont;
 
 namespace
 {
@@ -30,9 +30,9 @@ namespace
 
 TEST(GlyphAtlasTest, MakeGlyphAtlas_PacksEveryGlyphIntoOneMask)
 {
-    const Font font{buildFont()};
+    const Font font{createFont()};
     const GlyphAtlas atlas
-        = makeGlyphAtlas(font, kAlphabet, kHeight);
+        = createGlyphAtlas(font, kAlphabet, kHeight);
 
     ASSERT_EQ(atlas.glyphs.size(), 3u);
     EXPECT_EQ(atlas.coverage.width, 28u);
@@ -48,32 +48,32 @@ TEST(GlyphAtlasTest, MakeGlyphAtlas_PacksEveryGlyphIntoOneMask)
 
 TEST(GlyphAtlasTest, MakeGlyphAtlas_BlitsGlyphsIntoOwnRectangles)
 {
-    const Font font{buildFont()};
+    const Font font{createFont()};
     const GlyphAtlas atlas
-        = makeGlyphAtlas(font, kAlphabet, kHeight);
+        = createGlyphAtlas(font, kAlphabet, kHeight);
 
-    EXPECT_EQ(atlas.coverage.at(1 + 8, 1 + 7),
-        font.rasterise(U'A', kHeight).coverage.at(8, 7));
-    EXPECT_EQ(atlas.coverage.at(18 + 4, 1 + 4),
-        font.rasterise(U'B', kHeight).coverage.at(4, 4));
-    EXPECT_EQ(atlas.coverage.at(0, 0), 0);
+    EXPECT_EQ(atlas.coverage.getEntryAt(1 + 8, 1 + 7),
+        font.getRasterise(U'A', kHeight).coverage.getEntryAt(8, 7));
+    EXPECT_EQ(atlas.coverage.getEntryAt(18 + 4, 1 + 4),
+        font.getRasterise(U'B', kHeight).coverage.getEntryAt(4, 4));
+    EXPECT_EQ(atlas.coverage.getEntryAt(0, 0), 0);
 }
 
 TEST(GlyphAtlasTest, MakeGlyphAtlas_BlitsTheTopRowOfAGlyphToo)
 {
-    const Font font{buildFont()};
+    const Font font{createFont()};
     const GlyphAtlas atlas
-        = makeGlyphAtlas(font, kAlphabet, kHeight);
+        = createGlyphAtlas(font, kAlphabet, kHeight);
     const antwika::font::Coverage maskCoverage
-        = font.rasterise(U'A', kHeight).coverage;
+        = font.getRasterise(U'A', kHeight).coverage;
 
     std::vector<std::uint8_t> drawnBytes;
     std::vector<std::uint8_t> packedBytes;
 
     for (std::uint32_t x = 0; x < maskCoverage.width; ++x)
     {
-        drawnBytes.push_back(maskCoverage.at(x, 0));
-        packedBytes.push_back(atlas.coverage.at(1 + x, 1));
+        drawnBytes.push_back(maskCoverage.getEntryAt(x, 0));
+        packedBytes.push_back(atlas.coverage.getEntryAt(1 + x, 1));
     }
 
     ASSERT_NE(drawnBytes, std::vector<std::uint8_t>(maskCoverage.width, 0));
@@ -89,18 +89,18 @@ TEST(GlyphAtlasTest, AtlasGlyph_StartsOnNoCharacterAtAll)
 
 TEST(GlyphAtlasTest, MakeGlyphAtlas_CarriesTheFontsLineMetrics)
 {
-    const Font font{buildFont()};
+    const Font font{createFont()};
     const GlyphAtlas atlas
-        = makeGlyphAtlas(font, kAlphabet, kHeight);
+        = createGlyphAtlas(font, kAlphabet, kHeight);
 
-    EXPECT_EQ(atlas.metrics, font.metrics(kHeight));
+    EXPECT_EQ(atlas.metrics, font.getMetrics(kHeight));
 }
 
 TEST(GlyphAtlasTest, MakeGlyphAtlas_GivesABlankGlyphNoRectangle)
 {
-    const Font font{buildFont()};
+    const Font font{createFont()};
     const GlyphAtlas atlas
-        = makeGlyphAtlas(font, kAlphabet, kHeight);
+        = createGlyphAtlas(font, kAlphabet, kHeight);
 
     EXPECT_EQ(atlas.glyphs[0].sourceRect, Rect{});
     EXPECT_EQ(atlas.glyphs[0].metrics.advance, 8);
@@ -108,9 +108,9 @@ TEST(GlyphAtlasTest, MakeGlyphAtlas_GivesABlankGlyphNoRectangle)
 
 TEST(GlyphAtlasTest, MakeGlyphAtlas_MakesNoMaskForOnlyBlanks)
 {
-    const Font font{buildFont()};
+    const Font font{createFont()};
     const std::array<char32_t, 1> blank{U' '};
-    const GlyphAtlas atlas = makeGlyphAtlas(font, blank, kHeight);
+    const GlyphAtlas atlas = createGlyphAtlas(font, blank, kHeight);
 
     EXPECT_EQ(atlas.coverage.width, 0u);
     EXPECT_EQ(atlas.coverage.height, 0u);
@@ -119,8 +119,8 @@ TEST(GlyphAtlasTest, MakeGlyphAtlas_MakesNoMaskForOnlyBlanks)
 
 TEST(GlyphAtlasTest, MakeGlyphAtlas_StartsANewShelfWhenARowIsFull)
 {
-    const Font font{buildFont()};
-    const GlyphAtlas atlas = makeGlyphAtlas(
+    const Font font{createFont()};
+    const GlyphAtlas atlas = createGlyphAtlas(
         font, kAlphabet, kHeight, GlyphAtlas::Options{.maxWidth = 20});
 
     EXPECT_EQ(
@@ -135,21 +135,21 @@ TEST(GlyphAtlasTest, MakeGlyphAtlas_StartsANewShelfWhenARowIsFull)
 
 TEST(GlyphAtlasTest, MakeGlyphAtlas_IgnoresOrderAndRepetition)
 {
-    const Font font{buildFont()};
+    const Font font{createFont()};
     const std::array<char32_t, 5> jumbledCodepoints{
         U'B', U'A', U'B', U' ', U'A'};
 
     EXPECT_EQ(
-        makeGlyphAtlas(font, jumbledCodepoints, kHeight),
-        makeGlyphAtlas(font, kAlphabet, kHeight));
+        createGlyphAtlas(font, jumbledCodepoints, kHeight),
+        createGlyphAtlas(font, kAlphabet, kHeight));
 }
 
 TEST(GlyphAtlasTest, Find_AnswersForACharacterItHolds)
 {
-    const Font font{buildFont()};
+    const Font font{createFont()};
     const GlyphAtlas atlas
-        = makeGlyphAtlas(font, kAlphabet, kHeight);
-    const AtlasGlyph *foundGlyph = atlas.find(U'A');
+        = createGlyphAtlas(font, kAlphabet, kHeight);
+    const AtlasGlyph *foundGlyph = atlas.getFind(U'A');
 
     ASSERT_NE(foundGlyph, nullptr);
     EXPECT_EQ(foundGlyph->codepoint, U'A');
@@ -160,20 +160,20 @@ TEST(GlyphAtlasTest, Find_AnswersForACharacterItHolds)
 
 TEST(GlyphAtlasTest, Find_AnswersNothingForACharacterPastTheEnd)
 {
-    const Font font{buildFont()};
+    const Font font{createFont()};
     const GlyphAtlas atlas
-        = makeGlyphAtlas(font, kAlphabet, kHeight);
+        = createGlyphAtlas(font, kAlphabet, kHeight);
 
-    EXPECT_EQ(atlas.find(U'Z'), nullptr);
+    EXPECT_EQ(atlas.getFind(U'Z'), nullptr);
 }
 
 TEST(GlyphAtlasTest, Find_AnswersNothingForAGapInTheMiddle)
 {
-    const Font font{buildFont()};
+    const Font font{createFont()};
     const GlyphAtlas atlas
-        = makeGlyphAtlas(font, kAlphabet, kHeight);
+        = createGlyphAtlas(font, kAlphabet, kHeight);
 
-    EXPECT_EQ(atlas.find(U'0'), nullptr);
+    EXPECT_EQ(atlas.getFind(U'0'), nullptr);
 }
 
 TEST(GlyphAtlasTest, AtlasGlyph_ComparesCodepointRectangleAndMetrics)
@@ -200,9 +200,9 @@ TEST(GlyphAtlasTest, AtlasGlyph_ComparesCodepointRectangleAndMetrics)
 
 TEST(GlyphAtlasTest, OperatorEquals_ComparesMaskMetricsAndEntries)
 {
-    const Font font{buildFont()};
+    const Font font{createFont()};
     const GlyphAtlas atlas
-        = makeGlyphAtlas(font, kAlphabet, kHeight);
+        = createGlyphAtlas(font, kAlphabet, kHeight);
 
     GlyphAtlas repaintedAtlas = atlas;
     repaintedAtlas.coverage.samples[0] = 7;
@@ -213,7 +213,7 @@ TEST(GlyphAtlasTest, OperatorEquals_ComparesMaskMetricsAndEntries)
     GlyphAtlas shortenedAtlas = atlas;
     shortenedAtlas.glyphs.pop_back();
 
-    EXPECT_EQ(atlas, makeGlyphAtlas(font, kAlphabet, kHeight));
+    EXPECT_EQ(atlas, createGlyphAtlas(font, kAlphabet, kHeight));
     EXPECT_NE(atlas, repaintedAtlas);
     EXPECT_NE(atlas, remeasuredAtlas);
     EXPECT_NE(atlas, shortenedAtlas);
@@ -221,26 +221,26 @@ TEST(GlyphAtlasTest, OperatorEquals_ComparesMaskMetricsAndEntries)
 
 TEST(GlyphAtlasTest, MakeGlyphAtlas_RefusesNoCharacters)
 {
-    const Font font{buildFont()};
+    const Font font{createFont()};
     const std::array<char32_t, 0> nothing{};
 
     EXPECT_THROW(
-        (void)makeGlyphAtlas(font, nothing, kHeight), FontError);
+        (void)createGlyphAtlas(font, nothing, kHeight), FontError);
 }
 
 TEST(GlyphAtlasTest, MakeGlyphAtlas_RefusesAPixelHeightOfZero)
 {
-    const Font font{buildFont()};
+    const Font font{createFont()};
 
-    EXPECT_THROW((void)makeGlyphAtlas(font, kAlphabet, 0), FontError);
+    EXPECT_THROW((void)createGlyphAtlas(font, kAlphabet, 0), FontError);
 }
 
 TEST(GlyphAtlasTest, MakeGlyphAtlas_RefusesAGlyphWiderThanTheAtlas)
 {
-    const Font font{buildFont()};
+    const Font font{createFont()};
 
     EXPECT_THROW(
-        (void)makeGlyphAtlas(
+        (void)createGlyphAtlas(
             font,
             kAlphabet,
             kHeight,

@@ -32,12 +32,12 @@ namespace antwika::time::fakes
         }
 
         [[nodiscard]] const std::vector<std::chrono::milliseconds> &
-        requestedSpans() const noexcept
+        getRequestedSpans() const noexcept
         {
             return durations;
         }
 
-        [[nodiscard]] std::chrono::milliseconds total() const
+        [[nodiscard]] std::chrono::milliseconds getTotal() const
         {
             std::chrono::milliseconds sum{0};
             for (const auto duration : durations)

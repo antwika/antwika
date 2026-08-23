@@ -15,7 +15,7 @@ namespace antwika::voxelmap
     namespace
     {
 
-        [[nodiscard]] bool facedByAClimb(
+        [[nodiscard]] bool isFacedByAClimb(
             const voxel::VoxelPosition climbPosition, const gfx::Vec3 normal)
         {
             return ((normal.x * static_cast<float>(climbPosition.x))
@@ -32,13 +32,13 @@ namespace antwika::voxelmap
         for (const auto &[position, material] : voxels)
         {
             const auto climb = voxel::isRamped(material.kind)
-                             ? voxel::inferredRampDirection(voxels, position)
+                             ? voxel::getInferredRampDirection(voxels, position)
                              : voxel::VoxelPosition{};
             const auto level = voxel::stairHalfOf(voxels, position);
 
             for (std::size_t side = 0; side < kFaces; ++side)
             {
-                const auto neighbourPosition = offsetBy(
+                const auto neighbourPosition = getOffsetBy(
                     position, kVoxelFaces[side].neighbourOffsetPosition);
                 const auto beyondKind =
                     effectiveKindAt(voxels, neighbourPosition);
@@ -62,8 +62,8 @@ namespace antwika::voxelmap
                 }
 
                 if (voxel::isRamped(kindAt(voxels, neighbourPosition))
-                    && facedByAClimb(
-                        voxel::inferredRampDirection(
+                    && isFacedByAClimb(
+                        voxel::getInferredRampDirection(
                             voxels, neighbourPosition),
                         kVoxelFaces[side].normal))
                 {

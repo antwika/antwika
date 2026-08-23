@@ -11,9 +11,9 @@ namespace antwika::wfc
     public:
         explicit CompatibilityTable(std::size_t alphabetSize);
 
-        void set(std::size_t left, std::size_t right, bool isCompatible);
+        void set(std::size_t left, std::size_t right, bool compatible);
 
-        [[nodiscard]] bool compatible(
+        [[nodiscard]] bool isCompatible(
             std::size_t left, std::size_t right) const;
 
         [[nodiscard]] std::size_t getAlphabetSize() const;

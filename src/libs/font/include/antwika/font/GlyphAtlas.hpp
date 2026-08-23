@@ -26,13 +26,13 @@ namespace antwika::font
         FontMetrics metrics;
         std::vector<AtlasGlyph> glyphs;
 
-        [[nodiscard]] const AtlasGlyph *find(char32_t codepoint) const;
+        [[nodiscard]] const AtlasGlyph *getFind(char32_t codepoint) const;
 
         [[nodiscard]] bool operator==(const GlyphAtlas &other) const
             = default;
     };
 
-    [[nodiscard]] GlyphAtlas makeGlyphAtlas(
+    [[nodiscard]] GlyphAtlas createGlyphAtlas(
         const Font &font,
         std::span<const char32_t> codepoints,
         std::uint32_t pixelHeight,

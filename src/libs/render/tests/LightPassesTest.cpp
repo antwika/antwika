@@ -86,7 +86,7 @@ namespace
                 });
     }
 
-    [[nodiscard]] std::vector<std::unique_ptr<IMesh>> onePiece()
+    [[nodiscard]] std::vector<std::unique_ptr<IMesh>> getOnePiece()
     {
         std::vector<std::unique_ptr<IMesh>> meshes;
 
@@ -121,8 +121,8 @@ TEST(LightPassesTest, Hide_DrawsTheMaskOnceForTheSameCubesAndPlace)
     passes.open(viewportRenderer, ShaderSource{});
     passes.hide(viewportRenderer, behindCells, VoxelPosition{});
 
-    EXPECT_EQ(passes.hidden(), behindCells);
-    EXPECT_NE(passes.hiding(), nullptr);
+    EXPECT_EQ(passes.getHidden(), behindCells);
+    EXPECT_NE(passes.getHiding(), nullptr);
 
     EXPECT_CALL(innerRenderer, createTexture).Times(0);
     EXPECT_CALL(innerRenderer, updateTexture).Times(0);
@@ -148,7 +148,7 @@ TEST(LightPassesTest, Hide_DrawsTheMaskAfreshWhereTheCubesChanged)
         .z = 4}}}),
         VoxelPosition{});
 
-    EXPECT_EQ(passes.hidden().size(), 1U);
+    EXPECT_EQ(passes.getHidden().size(), 1U);
 }
 
 TEST(LightPassesTest, BakeLamps_DrawsEveryFaceOfALampThatHasMoved)
@@ -157,7 +157,7 @@ TEST(LightPassesTest, BakeLamps_DrawsEveryFaceOfALampThatHasMoved)
     handsOutResources(innerRenderer);
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     LightPasses passes;
-    const auto pile = onePiece();
+    const auto pile = getOnePiece();
     const std::vector<ActiveLight> activeLights{
         ActiveLight{.position = Vec3{1.0F, 2.0F, 3.0F}}};
 
@@ -167,8 +167,8 @@ TEST(LightPassesTest, BakeLamps_DrawsEveryFaceOfALampThatHasMoved)
 
     passes.bakeLamps(viewportRenderer, pile, activeLights);
 
-    EXPECT_EQ(passes.lamps().size(), 1U);
-    EXPECT_EQ(passes.lamps()[0].position, activeLights.front().position);
+    EXPECT_EQ(passes.getLamps().size(), 1U);
+    EXPECT_EQ(passes.getLamps()[0].position, activeLights.front().position);
 }
 
 TEST(LightPassesTest, BakeLamps_LeavesALampThatHasNotMovedAlone)
@@ -177,7 +177,7 @@ TEST(LightPassesTest, BakeLamps_LeavesALampThatHasNotMovedAlone)
     handsOutResources(innerRenderer);
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     LightPasses passes;
-    const auto pile = onePiece();
+    const auto pile = getOnePiece();
     const std::vector<ActiveLight> activeLights{
         ActiveLight{.position = Vec3{1.0F, 2.0F, 3.0F}}};
 
@@ -195,7 +195,7 @@ TEST(LightPassesTest, Forget_BakesTheLampsAfreshThoughNoneHasMoved)
     handsOutResources(innerRenderer);
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     LightPasses passes;
-    const auto pile = onePiece();
+    const auto pile = getOnePiece();
     const std::vector<ActiveLight> activeLights{
         ActiveLight{.position = Vec3{1.0F, 2.0F, 3.0F}}};
 
@@ -222,6 +222,6 @@ TEST(LightPassesTest, BakeLamps_DrawsNothingWithNoPileToDraw)
 
     passes.bakeLamps(viewportRenderer, {}, activeLights);
 
-    EXPECT_TRUE(passes.lamps().empty());
+    EXPECT_TRUE(passes.getLamps().empty());
 }
 

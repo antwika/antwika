@@ -13,9 +13,9 @@ namespace antwika::input
     class InputEventCodec final : public IInputEventCodec
     {
     public:
-        [[nodiscard]] Event encode(const InputEvent &event) const override;
+        [[nodiscard]] Event getEncode(const InputEvent &event) const override;
 
-        [[nodiscard]] std::optional<InputEvent> decode(
+        [[nodiscard]] std::optional<InputEvent> getDecode(
             const Event &event) const override;
     };
 

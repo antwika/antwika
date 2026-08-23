@@ -3,12 +3,12 @@
 namespace antwika::editor
 {
 
-    const std::string &EditorDocument::path() const noexcept
+    const std::string &EditorDocument::getPath() const noexcept
     {
         return mapPath;
     }
 
-    const std::string &EditorDocument::startPath() const noexcept
+    const std::string &EditorDocument::getStartPath() const noexcept
     {
         return startMapPath;
     }

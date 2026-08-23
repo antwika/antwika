@@ -5,8 +5,8 @@
 
 #include "antwika/io/FileNames.hpp"
 
-using antwika::io::filteredBySuffix;
-using antwika::io::withSuffix;
+using antwika::io::getFilteredBySuffix;
+using antwika::io::getWithSuffix;
 
 TEST(FileNamesTest, FilteredBySuffix_TakesOnlyWhatEndsInTheSuffix)
 {
@@ -14,7 +14,7 @@ TEST(FileNamesTest, FilteredBySuffix_TakesOnlyWhatEndsInTheSuffix)
         "keep.json", "atlas-15x9.png", "notes", "map.json.bak"};
 
     EXPECT_EQ(
-        filteredBySuffix(names, ".json", 24),
+        getFilteredBySuffix(names, ".json", 24),
         (std::vector<std::string>{"keep.json"}));
 }
 
@@ -24,7 +24,7 @@ TEST(FileNamesTest, FilteredBySuffix_ListsThemInTheSameOrderEveryTime)
         "second.json", "first.json", "third.json"};
 
     EXPECT_EQ(
-        filteredBySuffix(names, ".json", 24),
+        getFilteredBySuffix(names, ".json", 24),
         (std::vector<std::string>{
             "first.json", "second.json", "third.json"}));
 }
@@ -39,13 +39,13 @@ TEST(FileNamesTest, FilteredBySuffix_ListsNoMoreThanThereIsRoomFor)
             "map" + std::to_string(100 + index) + ".json");
     }
 
-    EXPECT_EQ(filteredBySuffix(names, ".json", 8).size(), 8U);
+    EXPECT_EQ(getFilteredBySuffix(names, ".json", 8).size(), 8U);
 }
 
 TEST(FileNamesTest, FilteredBySuffix_TakesNothingFromAnEmptyFolder)
 {
     EXPECT_TRUE(
-        filteredBySuffix(std::vector<std::string>{}, ".json", 24)
+        getFilteredBySuffix(std::vector<std::string>{}, ".json", 24)
             .empty());
 }
 
@@ -54,17 +54,17 @@ TEST(FileNamesTest, FilteredBySuffix_AsksForMoreThanOnlyTheSuffix)
     const std::vector<std::string> names{".json", "a.json"};
 
     EXPECT_EQ(
-        filteredBySuffix(names, ".json", 24),
+        getFilteredBySuffix(names, ".json", 24),
         (std::vector<std::string>{"a.json"}));
 }
 
 TEST(FileNamesTest, WithSuffix_PutsTheSuffixOnAName)
 {
-    EXPECT_EQ(withSuffix("keep", ".json"), "keep.json");
+    EXPECT_EQ(getWithSuffix("keep", ".json"), "keep.json");
 }
 
 TEST(FileNamesTest, WithSuffix_LeavesANameThatHasItAlone)
 {
-    EXPECT_EQ(withSuffix("keep.json", ".json"), "keep.json");
-    EXPECT_EQ(withSuffix(".json", ".json"), ".json.json");
+    EXPECT_EQ(getWithSuffix("keep.json", ".json"), "keep.json");
+    EXPECT_EQ(getWithSuffix(".json", ".json"), ".json.json");
 }

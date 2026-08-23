@@ -66,7 +66,7 @@ using antwika::replay::ReplaySource;
 
 namespace
 {
-    [[nodiscard]] std::vector<InputEvent> scriptedSession()
+    [[nodiscard]] std::vector<InputEvent> getScriptedSession()
     {
         return {
             PointerMoved{.position = {.x = 100, .y = 100}},
@@ -86,7 +86,7 @@ namespace
         };
     }
 
-    [[nodiscard]] std::vector<std::vector<InputEvent>> wanderingSession()
+    [[nodiscard]] std::vector<std::vector<InputEvent>> getWanderingSession()
     {
         std::vector<std::vector<InputEvent>> roundEvents;
 
@@ -126,7 +126,7 @@ namespace
         std::size_t count = 0;
         for (const auto &event : events)
         {
-            if (codec.decode(event.event).has_value())
+            if (codec.getDecode(event.event).has_value())
             {
                 ++count;
             }
@@ -158,7 +158,7 @@ namespace
         loop.run(stopSignal, maxTicks);
 
         return RunResult{
-            .summary = sink.result(), .recordedEvents = recorder.getEvents()};
+            .summary = sink.getResult(), .recordedEvents = recorder.getEvents()};
     }
 }
 
@@ -172,7 +172,7 @@ TEST(
         {TickEvent{
             .tick = 2,
             .event = {.name = antwika::engine::events::kStop}}});
-    FakeInputBackend backend(scriptedSession());
+    FakeInputBackend backend(getScriptedSession());
     const InputEventCodec codec;
     LiveInputSource liveSource(stopAtTwoSource, backend, codec);
 
@@ -183,8 +183,8 @@ TEST(
 
     const antwika::testing::ScratchFile file(
         "antwika-input-determinism.replay");
-    antwika::replay::saveReplayFile(liveRun.recordedEvents, file.string());
-    auto loadedEvents = antwika::replay::loadReplayFile(file.string());
+    antwika::replay::saveReplayFile(liveRun.recordedEvents, file.getString());
+    auto loadedEvents = antwika::replay::getLoadReplayFile(file.getString());
 
     ReplaySource replaySource(std::move(loadedEvents));
     const auto replayedRun = run(replaySource, kMaxTicks);
@@ -201,7 +201,7 @@ TEST(InputDeterminismTest, Live_FoldsSomething)
         {TickEvent{
             .tick = 2,
             .event = {.name = antwika::engine::events::kStop}}});
-    FakeInputBackend backend(scriptedSession());
+    FakeInputBackend backend(getScriptedSession());
     const InputEventCodec codec;
     LiveInputSource liveSource(stopAtTwoSource, backend, codec);
 
@@ -222,28 +222,28 @@ TEST(InputDeterminismTest, Recording_KeepsInputAndDropsTicks)
         {TickEvent{
             .tick = 2,
             .event = {.name = antwika::engine::events::kStop}}});
-    FakeInputBackend backend(scriptedSession());
+    FakeInputBackend backend(getScriptedSession());
     const InputEventCodec codec;
     LiveInputSource liveSource(stopAtTwoSource, backend, codec);
 
     const auto liveRun = run(liveSource, kMaxTicks);
 
     const antwika::testing::ScratchFile file("antwika-input-recording.replay");
-    antwika::replay::saveReplayFile(liveRun.recordedEvents, file.string());
-    const auto loadedEvents = antwika::replay::loadReplayFile(file.string());
+    antwika::replay::saveReplayFile(liveRun.recordedEvents, file.getString());
+    const auto loadedEvents = antwika::replay::getLoadReplayFile(file.getString());
 
     std::size_t inputEvents = 0;
     for (const auto &event : loadedEvents)
     {
         EXPECT_NE(event.event.name, antwika::engine::events::kTick);
 
-        if (codec.decode(event.event).has_value())
+        if (codec.getDecode(event.event).has_value())
         {
             ++inputEvents;
         }
     }
 
-    EXPECT_EQ(inputEvents, scriptedSession().size());
+    EXPECT_EQ(inputEvents, getScriptedSession().size());
 }
 
 TEST(InputDeterminismTest, IdleMotionGate_ChangesNothingTheAppFolds)
@@ -256,7 +256,7 @@ TEST(InputDeterminismTest, IdleMotionGate_ChangesNothingTheAppFolds)
         {TickEvent{
             .tick = kWanderingTicks,
             .event = {.name = antwika::engine::events::kStop}}});
-    FakeInputBackend ungatedBackend(wanderingSession());
+    FakeInputBackend ungatedBackend(getWanderingSession());
     LiveInputSource ungatedLive(ungatedStopSource, ungatedBackend, codec);
 
     const auto ungatedRun = run(ungatedLive, kMaxTicks);
@@ -268,7 +268,7 @@ TEST(InputDeterminismTest, IdleMotionGate_ChangesNothingTheAppFolds)
         {TickEvent{
             .tick = kWanderingTicks,
             .event = {.name = antwika::engine::events::kStop}}});
-    FakeInputBackend gatedBackend(wanderingSession());
+    FakeInputBackend gatedBackend(getWanderingSession());
     LiveInputSource gatedLive(gatedStopSource, gatedBackend, codec);
     IdleMotionFilter gatedFilter(gatedLive, codec);
 
@@ -286,7 +286,7 @@ TEST(InputDeterminismTest, IdleMotionGate_KeepsOnlyMotionThatDidSomething)
         {TickEvent{
             .tick = kWanderingTicks,
             .event = {.name = antwika::engine::events::kStop}}});
-    FakeInputBackend backend(wanderingSession());
+    FakeInputBackend backend(getWanderingSession());
     LiveInputSource liveSource(stoppingSource, backend, codec);
     IdleMotionFilter gatedFilter(liveSource, codec);
 
@@ -304,7 +304,7 @@ TEST(InputDeterminismTest, Replay_ReachesTheSameStateWhenGated)
         {TickEvent{
             .tick = kWanderingTicks,
             .event = {.name = antwika::engine::events::kStop}}});
-    FakeInputBackend backend(wanderingSession());
+    FakeInputBackend backend(getWanderingSession());
     LiveInputSource liveSource(stoppingSource, backend, codec);
     IdleMotionFilter gatedFilter(liveSource, codec);
 
@@ -314,8 +314,8 @@ TEST(InputDeterminismTest, Replay_ReachesTheSameStateWhenGated)
     ASSERT_FALSE(liveRun.recordedEvents.empty());
 
     const antwika::testing::ScratchFile file("antwika-input-gated.replay");
-    antwika::replay::saveReplayFile(liveRun.recordedEvents, file.string());
-    auto loadedEvents = antwika::replay::loadReplayFile(file.string());
+    antwika::replay::saveReplayFile(liveRun.recordedEvents, file.getString());
+    auto loadedEvents = antwika::replay::getLoadReplayFile(file.getString());
 
     ReplaySource replaySource(std::move(loadedEvents));
     IdleMotionFilter replayedGateFilter(replaySource, codec);

@@ -26,7 +26,7 @@ namespace antwika::ui
 
         constexpr std::string_view kMarker = "v";
 
-        WidgetId optionId(WidgetId baseWidget, std::size_t index) noexcept
+        WidgetId getOptionId(WidgetId baseWidget, std::size_t index) noexcept
         {
             if (baseWidget == kNoWidget)
             {
@@ -94,7 +94,7 @@ namespace antwika::ui
                 .crossAlignment = Alignment::Center,
                 .padding = themeValue.buttonPadding,
                 .backgroundColor = themeValue.buttonIdleColor,
-                .widgetId = optionId(spec.optionIdBaseWidget, index),
+                .widgetId = getOptionId(spec.optionIdBaseWidget, index),
                 .styleColors = styleColors,
                 .focusStyle = ring,
                 .optionOwnerWidget = spec.widgetId,
@@ -116,9 +116,9 @@ namespace antwika::ui
 
         closeContainer();
 
-        for (auto index = first; index < tree->size(); ++index)
+        for (auto index = first; index < tree->getSize(); ++index)
         {
-            tree->node(index).overlay = true;
+            tree->getNode(index).overlay = true;
         }
     }
 

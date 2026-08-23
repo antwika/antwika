@@ -27,13 +27,13 @@
 using antwika::gfx::Color;
 using antwika::gfx::Point;
 using antwika::gfx::Size;
-using antwika::ui::support::fillsColored;
+using antwika::ui::support::getFillsColored;
 using antwika::ui::support::textsOf;
 using antwika::ui::Context;
 using antwika::ui::DrawList;
 using antwika::ui::DrawText;
 using antwika::ui::FillRect;
-using antwika::ui::fixedSize;
+using antwika::ui::getFixedSize;
 using antwika::ui::Frame;
 using antwika::ui::Key;
 using antwika::ui::Keyboard;
@@ -57,7 +57,7 @@ namespace
     constexpr std::size_t kPage = 8;
     constexpr std::uint32_t kBarWidth = 8;
 
-    Theme plainTheme()
+    Theme getPlainTheme()
     {
         return Theme{
             .textColor = kInkColor,
@@ -78,7 +78,7 @@ namespace
         spec.widgetId = kCodeWidget;
         spec.focused = true;
 
-        Context uiContext{kCanvasSize, plainTheme(), pointer, keyboard};
+        Context uiContext{kCanvasSize, getPlainTheme(), pointer, keyboard};
 
         uiContext.textArea(spec);
 
@@ -103,7 +103,7 @@ namespace
         return fills;
     }
 
-    [[nodiscard]] Point onTheBar(std::int32_t downPixels)
+    [[nodiscard]] Point getOnTheBar(std::int32_t downPixels)
     {
         return Point{
             .x = static_cast<std::int32_t>(kCanvasSize.width - 4),
@@ -125,12 +125,12 @@ TEST(TextAreaScrollTest, TextArea_ADocumentLongerThanThePaneStillDrawsItsLines)
 
 TEST(TextAreaScrollTest, TextArea_APaneAsksForNoRoomOnItsDocumentsBehalf)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.textArea(
         TextAreaSpec{.widgetId = kCodeWidget, .text = linesOf(40)});
 
-    const auto foundRect = uiContext.build().rects.find(kCodeWidget);
+    const auto foundRect = uiContext.build().rects.getFind(kCodeWidget);
 
     ASSERT_TRUE(foundRect.has_value());
     EXPECT_EQ(foundRect->size.height, kCanvasSize.height);
@@ -319,7 +319,7 @@ TEST(TextAreaScrollTest, TextArea_PressingTheBarScrollsToWhereItWasPressed)
         Keyboard{},
         Pointer{
             .positionPoint =
-                onTheBar(static_cast<std::int32_t>(kCanvasSize.height - 1)),
+                getOnTheBar(static_cast<std::int32_t>(kCanvasSize.height - 1)),
             .down = true,
             .pressed = true});
 
@@ -331,9 +331,9 @@ TEST(TextAreaScrollTest, TextArea_ABarPressCountsFromTheTracksOwnTop)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{
-            .positionPoint = onTheBar(36), .down = true, .pressed = true}};
+            .positionPoint = getOnTheBar(36), .down = true, .pressed = true}};
 
     uiContext.label("hd");
     uiContext.textArea(TextAreaSpec{
@@ -359,7 +359,7 @@ TEST(TextAreaScrollTest, TextArea_PressingTheTopOfTheBarScrollsBackToTheStart)
             .scrollbar = true},
         Keyboard{},
         Pointer{
-            .positionPoint = onTheBar(0), .down = true, .pressed = true});
+            .positionPoint = getOnTheBar(0), .down = true, .pressed = true});
 
     ASSERT_TRUE(frame.interactions.scrollChange.has_value());
     EXPECT_EQ(frame.interactions.scrollChange->line, 0U);
@@ -377,7 +377,7 @@ TEST(TextAreaScrollTest, TextArea_ADragOnTheBarBeatsTheCaretItLeavesBehind)
         Keyboard{.keys = {Key::MoveRight}},
         Pointer{
             .positionPoint =
-                onTheBar(static_cast<std::int32_t>(kCanvasSize.height - 1)),
+                getOnTheBar(static_cast<std::int32_t>(kCanvasSize.height - 1)),
             .down = true});
 
     ASSERT_TRUE(frame.interactions.scrollChange.has_value());
@@ -395,7 +395,7 @@ TEST(TextAreaScrollTest, TextArea_ASelectionStrayingOntoTheBarMovesNoScroll)
             .dragging = antwika::ui::DragOrigin::Text},
         Keyboard{},
         Pointer{
-            .positionPoint = onTheBar(
+            .positionPoint = getOnTheBar(
                 60), .down = true, .extendsSelection = true});
 
     EXPECT_FALSE(frame.interactions.scrollChange.has_value());
@@ -403,7 +403,7 @@ TEST(TextAreaScrollTest, TextArea_ASelectionStrayingOntoTheBarMovesNoScroll)
 
 TEST(TextAreaScrollTest, TextArea_AnUnnamedAreaReportsNoScroll)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.textArea(TextAreaSpec{
         .text = linesOf(20), .cursor = 0, .scroll = 500});
@@ -416,7 +416,7 @@ TEST(TextAreaScrollTest, TextArea_AnUnnamedAreaReportsNoPress)
     const Pointer pointer{
         .positionPoint = Point{.x = 2, .y = 2}, .down = true, .pressed = true};
 
-    Context uiContext{kCanvasSize, plainTheme(), pointer};
+    Context uiContext{kCanvasSize, getPlainTheme(), pointer};
 
     uiContext.textArea(TextAreaSpec{
         .text = linesOf(20), .cursor = 0, .focused = true});
@@ -444,7 +444,7 @@ TEST(TextAreaScrollTest, TextArea_APressOnTheBarReportsATrackHome)
             .scrollbar = true},
         Keyboard{},
         Pointer{
-            .positionPoint = onTheBar(12), .down = true, .pressed = true});
+            .positionPoint = getOnTheBar(12), .down = true, .pressed = true});
 
     ASSERT_TRUE(frame.interactions.areaPress.has_value());
     EXPECT_EQ(frame.interactions.areaPress->areaWidget, kCodeWidget);
@@ -460,7 +460,7 @@ TEST(TextAreaScrollTest, TextArea_PressingTheBarMovesNoCaret)
             .text = linesOf(40), .cursor = 0, .scrollbar = true},
         Keyboard{},
         Pointer{
-            .positionPoint = onTheBar(12), .down = true, .pressed = true});
+            .positionPoint = getOnTheBar(12), .down = true, .pressed = true});
 
     EXPECT_FALSE(frame.interactions.edit.has_value());
 }
@@ -471,18 +471,18 @@ TEST(TextAreaScrollTest, TextArea_RestingOverTheBarScrollsNothing)
         TextAreaSpec{
             .text = linesOf(40), .cursor = 0, .scrollbar = true},
         Keyboard{},
-        Pointer{.positionPoint = onTheBar(60)});
+        Pointer{.positionPoint = getOnTheBar(60)});
 
     EXPECT_FALSE(frame.interactions.scrollChange.has_value());
 }
 
 TEST(TextAreaScrollTest, TextArea_AnAreaShorterThanALineStillShowsOne)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.textArea(TextAreaSpec{
         .widgetId = kCodeWidget,
-        .heightSizing = fixedSize(3),
+        .heightSizing = getFixedSize(3),
         .text = linesOf(40),
         .scroll = 100,
         .focused = true});

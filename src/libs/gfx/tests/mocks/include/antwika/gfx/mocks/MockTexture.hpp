@@ -13,7 +13,7 @@ namespace antwika::gfx::mocks
     class MockTexture : public ITexture
     {
     public:
-        MOCK_METHOD(Size, size, (), (const, override));
+        MOCK_METHOD(Size, getSize, (), (const, override));
     };
 
 }

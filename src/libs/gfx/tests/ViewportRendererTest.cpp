@@ -23,7 +23,7 @@
 using antwika::gfx::Bitmap;
 using antwika::gfx::Color;
 using antwika::gfx::Camera3D;
-using antwika::gfx::identityMatrix;
+using antwika::gfx::getIdentityMatrix;
 using antwika::gfx::IMesh;
 using antwika::gfx::Mat4;
 using antwika::gfx::MeshData;
@@ -61,7 +61,7 @@ namespace
 
     constexpr float kSubPixel = 0.01F;
 
-    Camera3D canvasCamera()
+    Camera3D getCanvasCamera()
     {
         const auto halfWidth =
             static_cast<float>(kCanvasSize.width) / 2.0F;
@@ -88,7 +88,7 @@ namespace
         const Size windowSize = kWindowSize)
     {
         const auto clip =
-            camera.viewProjection()
+            camera.getViewProjection()
             * antwika::gfx::Vec4{canvasPoint.x, -canvasPoint.y, 0.0F, 1.0F};
 
         return PointF{
@@ -108,7 +108,7 @@ TEST(ViewportRendererTest, Viewport_IsTheOneViewportForBothSizes)
         kCanvasSize);
 
     EXPECT_EQ(
-        viewportRenderer.viewport(),
+        viewportRenderer.getViewport(),
         (Viewport{
             .offsetPoint = {.x = 50, .y = 0},
             .numerator = 2,
@@ -308,7 +308,7 @@ TEST(ViewportRendererTest, DrawMesh_ReachesTheWrappedRenderer)
             _,
             MeshMaterial{.tintColor = tintColor}));
 
-    viewportRenderer.drawMesh(mesh, identityMatrix(), camera, tintColor);
+    viewportRenderer.drawMesh(mesh, getIdentityMatrix(), camera, tintColor);
 }
 
 TEST(ViewportRendererTest, DrawMesh_CarriesTheWholeMaterialThrough)
@@ -325,7 +325,7 @@ TEST(ViewportRendererTest, DrawMesh_CarriesTheWholeMaterialThrough)
 
     EXPECT_CALL(innerRenderer, drawMesh(Ref(mesh), _, _, material));
 
-    viewportRenderer.drawMesh(mesh, identityMatrix(), Camera3D{}, material);
+    viewportRenderer.drawMesh(mesh, getIdentityMatrix(), Camera3D{}, material);
 }
 
 TEST(ViewportRendererTest, DrawMesh_LandsAWorldPointWhereTheCanvasPixelIs)
@@ -346,8 +346,8 @@ TEST(ViewportRendererTest, DrawMesh_LandsAWorldPointWhereTheCanvasPixelIs)
 
     viewportRenderer.drawMesh(
         mesh,
-        identityMatrix(),
-        canvasCamera(),
+        getIdentityMatrix(),
+        getCanvasCamera(),
         kWhiteColor);
 
     for (const auto sample : {
@@ -386,8 +386,8 @@ TEST(ViewportRendererTest, DrawMesh_KeepsTheCanvasCentredWhenLetterboxed)
 
     viewportRenderer.drawMesh(
         mesh,
-        identityMatrix(),
-        canvasCamera(),
+        getIdentityMatrix(),
+        getCanvasCamera(),
         kWhiteColor);
 
     for (const auto sample : {
@@ -427,8 +427,8 @@ TEST(ViewportRendererTest, DrawMesh_TracksAResize)
 
     viewportRenderer.drawMesh(
         mesh,
-        identityMatrix(),
-        canvasCamera(),
+        getIdentityMatrix(),
+        getCanvasCamera(),
         kWhiteColor);
 
     const auto got = windowOf(placedCamera, {0.0F, 0.0F}, kGrownSize);
@@ -459,10 +459,10 @@ TEST(ViewportRendererTest, DrawMesh_LeavesAPerspectiveCameraAlone)
                 const Camera3D &seenCamera,
                 const MeshMaterial &) { placedCamera = seenCamera; });
 
-    viewportRenderer.drawMesh(mesh, identityMatrix(), camera, kWhiteColor);
+    viewportRenderer.drawMesh(mesh, getIdentityMatrix(), camera, kWhiteColor);
 
-    EXPECT_EQ(camera.position(), placedCamera.position());
-    EXPECT_EQ(camera.projection(), placedCamera.projection());
+    EXPECT_EQ(camera.getPosition(), placedCamera.getPosition());
+    EXPECT_EQ(camera.getProjection(), placedCamera.getProjection());
 }
 
 TEST(ViewportRendererTest, CreateShader_ReachesTheWrappedRenderer)
@@ -603,7 +603,7 @@ TEST(ViewportRendererTest, PushTransform_ReachesTheWrappedRenderer)
 
     EXPECT_CALL(innerRenderer, pushTransform(_));
 
-    viewportRenderer.pushTransform(identityMatrix());
+    viewportRenderer.pushTransform(getIdentityMatrix());
 }
 
 TEST(ViewportRendererTest, PopTransform_ReachesTheWrappedRenderer)
@@ -621,11 +621,11 @@ TEST(ViewportRendererTest, Resize_RebuildsTheTransformForTheNewSize)
     NiceMock<MockRenderer> innerRenderer;
     ViewportRenderer renderer(
         innerRenderer, Size{.width = 200, .height = 100}, kCanvasSize);
-    const auto beforeViewport = renderer.viewport();
+    const auto beforeViewport = renderer.getViewport();
 
     renderer.resize(Size{.width = 400, .height = 400});
 
-    const auto afterViewport = renderer.viewport();
+    const auto afterViewport = renderer.getViewport();
 
     EXPECT_NE(beforeViewport, afterViewport);
     EXPECT_EQ(

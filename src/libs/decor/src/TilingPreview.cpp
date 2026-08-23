@@ -19,12 +19,12 @@ namespace antwika::decor
 
     namespace
     {
-        [[nodiscard]] std::vector<tilemap::Tile> spokenTiles(
+        [[nodiscard]] std::vector<tilemap::Tile> getSpokenTiles(
             const tile::TileRules &rules, const tilemap::Tile middleTile)
         {
             std::set<tilemap::Tile> tiles{middleTile};
 
-            for (const auto &rule : rules.allRules())
+            for (const auto &rule : rules.getAllRules())
             {
                 tiles.insert(rule.tile);
                 tiles.insert(
@@ -36,14 +36,14 @@ namespace antwika::decor
     }
 
     std::optional<std::vector<std::optional<tilemap::Tile>>>
-    previewNeighbourhood(
+    getPreviewNeighbourhood(
         const tile::TileRules &rules,
         const tilemap::Tile middleTile,
         const std::size_t side,
         const std::uint32_t seed)
     {
-        const auto spokenTileSet = spokenTiles(rules, middleTile);
-        const auto order = shuffledValues(spokenTileSet.size() + 1, seed);
+        const auto spokenTileSet = getSpokenTiles(rules, middleTile);
+        const auto order = getShuffledValues(spokenTileSet.size() + 1, seed);
         std::vector<std::optional<tilemap::Tile>> alphabetTiles(
             spokenTileSet.size() + 1);
 
@@ -63,7 +63,7 @@ namespace antwika::decor
 
             if (oneTile.has_value() && otherTile.has_value())
             {
-                return seamCompatible(rules, *oneTile, side, kind, *otherTile);
+                return isSeamCompatible(rules, *oneTile, side, kind, *otherTile);
             }
 
             const auto rims = [&rules, kind](
@@ -77,7 +77,7 @@ namespace antwika::decor
                                .side = side, .edge = kind});
             };
 
-            return rims(oneTile, side) && rims(otherTile, voxel::facing(side));
+            return rims(oneTile, side) && rims(otherTile, voxel::getFacing(side));
         };
 
         const auto tables =
@@ -145,7 +145,7 @@ namespace antwika::decor
                 std::move(constraints),
                 {},
                 wfc::SolverLimits{.maxSteps = kMaxSolveSteps})
-                .solve();
+                .getSolve();
 
         if (solution.outcome != wfc::SolveOutcome::Solved)
         {

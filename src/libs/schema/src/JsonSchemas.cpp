@@ -6,7 +6,7 @@
 namespace antwika::schema
 {
 
-    nlohmann::json countSchema()
+    nlohmann::json getCountSchema()
     {
         nlohmann::json shape;
         shape["type"] = "integer";
@@ -14,14 +14,14 @@ namespace antwika::schema
         return shape;
     } // GCOVR_EXCL_LINE
 
-    nlohmann::json boundedCountSchema(std::int64_t maximum)
+    nlohmann::json getBoundedCountSchema(std::int64_t maximum)
     {
-        nlohmann::json shape = countSchema();
+        nlohmann::json shape = getCountSchema();
         shape["maximum"] = maximum;
         return shape;
     } // GCOVR_EXCL_LINE
 
-    nlohmann::json coordinateSchema()
+    nlohmann::json getCoordinateSchema()
     {
         nlohmann::json shape;
         shape["type"] = "integer";
@@ -30,14 +30,14 @@ namespace antwika::schema
         return shape;
     } // GCOVR_EXCL_LINE
 
-    nlohmann::json wordSchema()
+    nlohmann::json getWordSchema()
     {
         nlohmann::json shape;
         shape["type"] = "string";
         return shape;
     } // GCOVR_EXCL_LINE
 
-    nlohmann::json requiredSchema(
+    nlohmann::json getRequiredSchema(
         std::initializer_list<std::string_view> members)
     {
         auto shape = nlohmann::json::array();
@@ -50,21 +50,21 @@ namespace antwika::schema
         return shape;
     } // GCOVR_EXCL_LINE
 
-    nlohmann::json objectSchema(
+    nlohmann::json getObjectSchema(
         std::initializer_list<std::string_view> requiredKeys)
     {
         nlohmann::json shape;
         shape["type"] = "object";
         shape["additionalProperties"] = false;
-        shape["required"] = requiredSchema(requiredKeys);
+        shape["required"] = getRequiredSchema(requiredKeys);
         return shape;
     } // GCOVR_EXCL_LINE
 
-    nlohmann::json documentSchema(
+    nlohmann::json getDocumentSchema(
         std::string_view title,
         std::initializer_list<std::string_view> requiredKeys)
     {
-        nlohmann::json shape = objectSchema(requiredKeys);
+        nlohmann::json shape = getObjectSchema(requiredKeys);
         shape["$schema"] = "http://json-schema.org/draft-07/schema#";
         shape["title"] = std::string(title);
         return shape;

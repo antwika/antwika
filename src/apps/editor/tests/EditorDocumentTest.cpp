@@ -10,7 +10,7 @@ using antwika::map::Snapshot;
 namespace
 {
 
-    [[nodiscard]] Snapshot snapshotHiding(const bool hiding)
+    [[nodiscard]] Snapshot getSnapshotHiding(const bool hiding)
     {
         Snapshot stepSnapshot{};
         stepSnapshot.map.settings.hideAboveLevel = hiding;
@@ -26,8 +26,8 @@ TEST(EditorDocumentTest, StartFrom_KeepsThePathItWasStartedAt)
 
     document.startFrom("assets/maps/map.json");
 
-    EXPECT_EQ(document.path(), "assets/maps/map.json");
-    EXPECT_EQ(document.startPath(), "assets/maps/map.json");
+    EXPECT_EQ(document.getPath(), "assets/maps/map.json");
+    EXPECT_EQ(document.getStartPath(), "assets/maps/map.json");
 }
 
 TEST(EditorDocumentTest, OpenAt_LeavesTheStartingPathWhereItWas)
@@ -37,8 +37,8 @@ TEST(EditorDocumentTest, OpenAt_LeavesTheStartingPathWhereItWas)
     document.startFrom("assets/maps/first.json");
     document.openAt("assets/maps/second.json");
 
-    EXPECT_EQ(document.path(), "assets/maps/second.json");
-    EXPECT_EQ(document.startPath(), "assets/maps/first.json");
+    EXPECT_EQ(document.getPath(), "assets/maps/second.json");
+    EXPECT_EQ(document.getStartPath(), "assets/maps/first.json");
 }
 
 TEST(EditorDocumentTest, IsDirty_ReadsFalseOnADocumentNobodyHasTouched)
@@ -52,7 +52,7 @@ TEST(EditorDocumentTest, Push_LeavesTheDocumentDirty)
 {
     EditorDocument document;
 
-    document.push(snapshotHiding(false));
+    document.push(getSnapshotHiding(false));
 
     EXPECT_TRUE(document.isDirty());
 }
@@ -71,10 +71,10 @@ TEST(EditorDocumentTest, Undo_GivesBackTheStepThatWasPushed)
 {
     EditorDocument document;
 
-    const auto keptSnapshot = snapshotHiding(true);
+    const auto keptSnapshot = getSnapshotHiding(true);
     document.push(keptSnapshot);
 
-    const auto stepSnapshot = document.undo(snapshotHiding(false));
+    const auto stepSnapshot = document.undo(getSnapshotHiding(false));
 
     ASSERT_TRUE(stepSnapshot.has_value());
     EXPECT_TRUE(stepSnapshot->map.settings.hideAboveLevel);
@@ -84,17 +84,17 @@ TEST(EditorDocumentTest, Undo_GivesNothingBackWithNoStepToTake)
 {
     EditorDocument document;
 
-    EXPECT_FALSE(document.undo(snapshotHiding(false)).has_value());
+    EXPECT_FALSE(document.undo(getSnapshotHiding(false)).has_value());
 }
 
 TEST(EditorDocumentTest, Redo_GivesBackWhatAnUndoStepAwayFrom)
 {
     EditorDocument document;
 
-    const auto keptSnapshot = snapshotHiding(false);
+    const auto keptSnapshot = getSnapshotHiding(false);
     document.push(keptSnapshot);
 
-    (void)document.undo(snapshotHiding(true));
+    (void)document.undo(getSnapshotHiding(true));
 
     const auto stepSnapshot = document.redo(keptSnapshot);
 
@@ -106,8 +106,8 @@ TEST(EditorDocumentTest, ForgetHistory_LeavesNothingToUndo)
 {
     EditorDocument document;
 
-    document.push(snapshotHiding(false));
+    document.push(getSnapshotHiding(false));
     document.forgetHistory();
 
-    EXPECT_FALSE(document.undo(snapshotHiding(false)).has_value());
+    EXPECT_FALSE(document.undo(getSnapshotHiding(false)).has_value());
 }

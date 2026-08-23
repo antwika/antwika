@@ -11,6 +11,6 @@ namespace antwika::time
         virtual ~IClock() = default;
 
         [[nodiscard]] virtual std::chrono::time_point<std::chrono::system_clock>
-        currentTime() const noexcept = 0;
+        getCurrentTime() const noexcept = 0;
     };
 }

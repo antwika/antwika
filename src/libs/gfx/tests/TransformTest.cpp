@@ -7,20 +7,20 @@
 
 #include "MatrixApprox.hpp"
 
-using antwika::gfx::identityMatrix;
+using antwika::gfx::getIdentityMatrix;
 using antwika::gfx::Transform;
 using antwika::gfx::Vec3;
 using antwika::gfx::Vec4;
-using antwika::gfx::tests::approxEqual;
+using antwika::gfx::tests::getApproxEqual;
 
 namespace
 {
     constexpr float kQuarterTurn =
         std::numbers::pi_v<float> / 2.0F;
 
-    Vec3 apply(const Transform &transform, Vec3 point)
+    Vec3 getApply(const Transform &transform, Vec3 point)
     {
-        const Vec4 transformedPoint = transform.matrix() * Vec4(point, 1.0F);
+        const Vec4 transformedPoint = transform.getMatrix() * Vec4(point, 1.0F);
 
         return Vec3(transformedPoint);
     }
@@ -28,7 +28,7 @@ namespace
 
 TEST(TransformTest, Matrix_DefaultTransformIsTheIdentity)
 {
-    EXPECT_TRUE(approxEqual(Transform{}.matrix(), identityMatrix()));
+    EXPECT_TRUE(getApproxEqual(Transform{}.getMatrix(), getIdentityMatrix()));
 }
 
 TEST(TransformTest, Matrix_TranslationMovesThePoint)
@@ -36,7 +36,7 @@ TEST(TransformTest, Matrix_TranslationMovesThePoint)
     const Transform transform{.position = {1.0F, 2.0F, 3.0F}};
 
     EXPECT_TRUE(
-        approxEqual(apply(transform, {0.0F, 0.0F, 0.0F}),
+        getApproxEqual(getApply(transform, {0.0F, 0.0F, 0.0F}),
                     Vec3(1.0F, 2.0F, 3.0F)));
 }
 
@@ -45,7 +45,7 @@ TEST(TransformTest, Matrix_ScaleMultipliesEachAxis)
     const Transform transform{.scale = {2.0F, 3.0F, 4.0F}};
 
     EXPECT_TRUE(
-        approxEqual(apply(transform, {1.0F, 1.0F, 1.0F}),
+        getApproxEqual(getApply(transform, {1.0F, 1.0F, 1.0F}),
                     Vec3(2.0F, 3.0F, 4.0F)));
 }
 
@@ -55,7 +55,7 @@ TEST(TransformTest, Matrix_RotationAboutZTurnsXTowardsY)
         .rotationRadians = {0.0F, 0.0F, kQuarterTurn}};
 
     EXPECT_TRUE(
-        approxEqual(apply(transform, {1.0F, 0.0F, 0.0F}),
+        getApproxEqual(getApply(transform, {1.0F, 0.0F, 0.0F}),
                     Vec3(0.0F, 1.0F, 0.0F)));
 }
 
@@ -65,7 +65,7 @@ TEST(TransformTest, Matrix_RotationAboutYTurnsZTowardsX)
         .rotationRadians = {0.0F, kQuarterTurn, 0.0F}};
 
     EXPECT_TRUE(
-        approxEqual(apply(transform, {0.0F, 0.0F, 1.0F}),
+        getApproxEqual(getApply(transform, {0.0F, 0.0F, 1.0F}),
                     Vec3(1.0F, 0.0F, 0.0F)));
 }
 
@@ -75,7 +75,7 @@ TEST(TransformTest, Matrix_RotationAboutXTurnsYTowardsZ)
         .rotationRadians = {kQuarterTurn, 0.0F, 0.0F}};
 
     EXPECT_TRUE(
-        approxEqual(apply(transform, {0.0F, 1.0F, 0.0F}),
+        getApproxEqual(getApply(transform, {0.0F, 1.0F, 0.0F}),
                     Vec3(0.0F, 0.0F, 1.0F)));
 }
 
@@ -87,6 +87,6 @@ TEST(TransformTest, Matrix_ScalesThenRotatesThenTranslates)
         .scale = {2.0F, 1.0F, 1.0F}};
 
     EXPECT_TRUE(
-        approxEqual(apply(transform, {1.0F, 0.0F, 0.0F}),
+        getApproxEqual(getApply(transform, {1.0F, 0.0F, 0.0F}),
                     Vec3(10.0F, 2.0F, 0.0F)));
 }

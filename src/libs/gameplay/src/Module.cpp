@@ -19,7 +19,7 @@ extern "C" void antwikaGameDestroy(antwika::gameplay::IGame *const game)
     delete game;
 }
 
-extern "C" std::uint64_t antwikaGameStamp()
+extern "C" std::uint64_t getAntwikaGameStamp()
 {
     return antwika::gameplay::kSeamStamp;
 }

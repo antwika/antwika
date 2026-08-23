@@ -7,7 +7,7 @@
 namespace antwika::game
 {
 
-    input::ActionMap defaultActions()
+    input::ActionMap getDefaultActions()
     {
         input::ActionMap actions;
 

@@ -101,7 +101,7 @@ namespace antwika::tile
                     kOtherTile));
 
             const auto theirs =
-                borderedAt(kOtherTile, voxel::facing(kRightOutEdge));
+                borderedAt(kOtherTile, voxel::getFacing(kRightOutEdge));
 
             EXPECT_FALSE(
                 tile::shapesCompatible(
@@ -182,7 +182,7 @@ namespace antwika::tile
                     tile::shapesCompatible(
                         rules, kFieldTile, edge, kOtherTile),
                     tile::shapesCompatible(
-                        rules, kOtherTile, voxel::facing(edge), kFieldTile));
+                        rules, kOtherTile, voxel::getFacing(edge), kFieldTile));
             }
         }
 
@@ -195,7 +195,7 @@ namespace antwika::tile
             rules.setKind(kOtherTile, voxel::Kind::Water);
 
             const auto shapedRules =
-                tile::rulesFromShapes(rules, voxel::Kind::Normal);
+                tile::getRulesFromShapes(rules, voxel::Kind::Normal);
 
             EXPECT_FALSE(shapedRules.toAddRules.empty());
 
@@ -220,7 +220,7 @@ namespace antwika::tile
             rules.setAllowsBoundary(kOtherTile, kTopOutEdge, true);
 
             for (const auto &rule :
-                 tile::rulesFromShapes(rules, voxel::Kind::Normal).toAddRules)
+                 tile::getRulesFromShapes(rules, voxel::Kind::Normal).toAddRules)
             {
                 for (const auto tile : rule.allowedTiles)
                 {
@@ -229,7 +229,7 @@ namespace antwika::tile
             }
 
             const auto secondRules =
-                tile::rulesFromShapes(rules, voxel::Kind::Normal);
+                tile::getRulesFromShapes(rules, voxel::Kind::Normal);
 
             EXPECT_TRUE(secondRules.toAddRules.empty());
             EXPECT_TRUE(secondRules.conflictingRules.empty());
@@ -246,7 +246,7 @@ namespace antwika::tile
             rules.allow(kFieldTile, kTopOutEdge, kOtherTile);
 
             const auto shapedRules =
-                tile::rulesFromShapes(rules, voxel::Kind::Normal);
+                tile::getRulesFromShapes(rules, voxel::Kind::Normal);
 
             EXPECT_TRUE(
                 names(

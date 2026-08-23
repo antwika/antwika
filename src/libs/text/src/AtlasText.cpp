@@ -28,7 +28,7 @@ namespace antwika::text
                 static_cast<unsigned char>(character));
         }
 
-        [[nodiscard]] std::uint32_t clampToPixels(
+        [[nodiscard]] std::uint32_t getClampToPixels(
             std::int64_t value) noexcept
         {
             if (value < 0)
@@ -52,7 +52,7 @@ namespace antwika::text
         }
     }
 
-    gfx::Size atlasTextSize(
+    gfx::Size getAtlasTextSize(
         const font::GlyphAtlas &atlas, std::string_view text) noexcept
     {
         if (text.empty())
@@ -65,7 +65,7 @@ namespace antwika::text
         for (const char character : text)
         {
             const font::AtlasGlyph *glyph
-                = atlas.find(codepointOf(character));
+                = atlas.getFind(codepointOf(character));
 
             if (glyph == nullptr)
             {
@@ -76,11 +76,11 @@ namespace antwika::text
         }
 
         return gfx::Size{
-            .width = clampToPixels(width),
-            .height = clampToPixels(atlas.metrics.lineHeight)};
+            .width = getClampToPixels(width),
+            .height = getClampToPixels(atlas.metrics.lineHeight)};
     }
 
-    std::vector<GlyphBlit> atlasTextBlits(
+    std::vector<GlyphBlit> getAtlasTextBlits(
         const font::GlyphAtlas &atlas,
         gfx::Point originPoint,
         std::string_view text)
@@ -97,7 +97,7 @@ namespace antwika::text
         for (const char character : text)
         {
             const font::AtlasGlyph *glyph
-                = atlas.find(codepointOf(character));
+                = atlas.getFind(codepointOf(character));
 
             if (glyph == nullptr)
             {
@@ -117,7 +117,7 @@ namespace antwika::text
 
             pen += glyph->metrics.advance;
 
-            if (!gfx::blitIsInBounds(
+            if (!gfx::isBlitIsInBounds(
                     maskSize, blit.sourceRect, blit.destinationRect))
             {
                 continue;
@@ -137,7 +137,7 @@ namespace antwika::text
         std::string_view text,
         gfx::Color tintColor)
     {
-        for (const GlyphBlit &blit : atlasTextBlits(atlas, gfx::Point{}, text))
+        for (const GlyphBlit &blit : getAtlasTextBlits(atlas, gfx::Point{}, text))
         {
             const gfx::RectF destinationRect{
                 gfx::PointF{

@@ -17,7 +17,7 @@ namespace antwika::text
 
     namespace
     {
-        [[nodiscard]] std::vector<char32_t> coveredCodepoints()
+        [[nodiscard]] std::vector<char32_t> getCoveredCodepoints()
         {
             std::vector<char32_t> codepoints;
             codepoints.reserve(gfx::kGlyphCount);
@@ -35,16 +35,16 @@ namespace antwika::text
 
     GlyphCells::GlyphCells(std::uint32_t scale)
         : cell{
-              .width = gfx::scaledGlyphAdvance(scale),
-              .height = gfx::scaledGlyphLineHeight(scale)}
+              .width = gfx::getScaledGlyphAdvance(scale),
+              .height = gfx::getScaledGlyphLineHeight(scale)}
     {
         if (cell.height == 0)
         {
             return;
         }
 
-        const font::GlyphAtlas atlas = font::makeGlyphAtlas(
-            detail::builtInFont(), coveredCodepoints(), cell.height);
+        const font::GlyphAtlas atlas = font::createGlyphAtlas(
+            detail::getBuiltInFont(), getCoveredCodepoints(), cell.height);
 
         samples.assign(gfx::kGlyphCount * cell.width * cell.height, 0);
 
@@ -77,14 +77,14 @@ namespace antwika::text
                         ((index * cell.height) + row) * cell.width
                         + column;
 
-                    samples[sampleIndex] = atlas.coverage.at(
+                    samples[sampleIndex] = atlas.coverage.getEntryAt(
                         glyph.sourceRect.x + x, glyph.sourceRect.y + y);
                 }
             }
         }
     }
 
-    gfx::Size GlyphCells::cellSize() const noexcept
+    gfx::Size GlyphCells::getCellSize() const noexcept
     {
         return cell;
     }

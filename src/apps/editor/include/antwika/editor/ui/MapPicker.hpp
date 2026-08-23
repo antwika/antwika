@@ -25,11 +25,11 @@ namespace antwika::editor
 
     inline constexpr std::size_t kMaxPicked = 24;
 
-    [[nodiscard]] widget::WidgetId mapRowWidget(std::size_t rowIndex);
+    [[nodiscard]] widget::WidgetId getMapRowWidget(std::size_t rowIndex);
 
-    [[nodiscard]] std::vector<std::string> filterMapNames(
+    [[nodiscard]] std::vector<std::string> getFilterMapNames(
         std::span<const std::string> names);
 
-    [[nodiscard]] std::string ensureMapExtension(std::string_view name);
+    [[nodiscard]] std::string getEnsureMapExtension(std::string_view name);
 
 }

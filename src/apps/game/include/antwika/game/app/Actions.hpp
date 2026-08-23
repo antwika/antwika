@@ -19,6 +19,6 @@ namespace antwika::game
 
     inline constexpr std::string_view kLeave = "leave";
 
-    [[nodiscard]] input::ActionMap defaultActions();
+    [[nodiscard]] input::ActionMap getDefaultActions();
 
 }

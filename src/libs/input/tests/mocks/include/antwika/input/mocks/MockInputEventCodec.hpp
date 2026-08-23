@@ -18,11 +18,11 @@ namespace antwika::input::mocks
     {
     public:
         MOCK_METHOD(
-            Event, encode, (const InputEvent &event), (const, override));
+            Event, getEncode, (const InputEvent &event), (const, override));
 
         MOCK_METHOD(
             std::optional<InputEvent>,
-            decode,
+            getDecode,
             (const Event &event),
             (const, override));
     };

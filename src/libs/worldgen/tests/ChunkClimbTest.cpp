@@ -15,7 +15,7 @@
 #include "Stairs.hpp"
 
 using antwika::pathfinding::GridPos;
-using antwika::pathfinding::pathBetween;
+using antwika::pathfinding::getPathBetween;
 using antwika::voxel::Kind;
 using antwika::voxel::VoxelCell;
 using antwika::voxel::voxelsOf;
@@ -24,35 +24,35 @@ using antwika::worldgen::ChunkOutcome;
 using antwika::worldgen::ChunkRequest;
 using antwika::worldgen::ChunkResult;
 using antwika::worldgen::ChunkShape;
-using antwika::worldgen::cityRuleset;
+using antwika::worldgen::getCityRuleset;
 using antwika::worldgen::CompiledRuleset;
-using antwika::worldgen::cubeCount;
-using antwika::worldgen::growChunk;
+using antwika::worldgen::getCubeCount;
+using antwika::worldgen::getGrowChunk;
 using antwika::worldgen::fakes::FakeChunkWalkGraph;
 
 namespace
 {
     constexpr ChunkShape kSmallShape{.width = 6, .depth = 6, .height = 16};
 
-    const CompiledRuleset &city()
+    const CompiledRuleset &getCity()
     {
-        static const CompiledRuleset compiledRuleset(cityRuleset());
+        static const CompiledRuleset compiledRuleset(getCityRuleset());
 
         return compiledRuleset;
     }
 
     [[nodiscard]] std::int32_t roofOf()
     {
-        return antwika::worldgen::detail::highestTerrace(city(), kSmallShape);
+        return antwika::worldgen::detail::getHighestTerrace(getCity(), kSmallShape);
     }
 
-    [[nodiscard]] bool climbable(
+    [[nodiscard]] bool isClimbable(
         const ChunkResult &result, const std::int32_t roof)
     {
         const FakeChunkWalkGraph graph(kSmallShape, result.cubeVoxels);
-        const auto cap = static_cast<std::uint64_t>(cubeCount(kSmallShape));
+        const auto cap = static_cast<std::uint64_t>(getCubeCount(kSmallShape));
 
-        for (const GridPos street : graph.streets())
+        for (const GridPos street : graph.getStreets())
         {
             for (std::int32_t x = 0; x < kSmallShape.width; ++x)
             {
@@ -60,8 +60,8 @@ namespace
                 {
                     const GridPos topPos{.x = x, .y = roof, .z = z};
 
-                    if (graph.roomy(topPos)
-                        && pathBetween(graph, street, topPos, cap).has_value())
+                    if (graph.isRoomy(topPos)
+                        && getPathBetween(graph, street, topPos, cap).has_value())
                     {
                         return true;
                     }
@@ -78,10 +78,10 @@ TEST(ChunkClimbTest, Grow_LeavesAWayFromTheStreetToTheHighestTerrace)
     for (std::uint64_t seed = 1; seed <= 4; ++seed)
     {
         const auto result =
-            growChunk(city(), ChunkRequest{.seed = seed, .shape = kSmallShape});
+            getGrowChunk(getCity(), ChunkRequest{.seed = seed, .shape = kSmallShape});
 
         ASSERT_EQ(result.outcome, ChunkOutcome::Grown) << seed;
-        EXPECT_TRUE(climbable(result, roofOf())) << seed;
+        EXPECT_TRUE(isClimbable(result, roofOf())) << seed;
     }
 }
 
@@ -95,23 +95,23 @@ TEST(ChunkClimbTest, Grow_LeavesAWayUpAroundTheCubesTheArtistPainted)
         VoxelCell{.position = {.x = 2, .y = 4, .z = 3},
             .material = {.kind = Kind::Normal}}});
 
-    const auto result = growChunk(
-        city(),
+    const auto result = getGrowChunk(
+        getCity(),
         ChunkRequest{
             .seed = 3, .shape = kSmallShape, .hintVoxels = hintVoxels});
 
     ASSERT_EQ(result.outcome, ChunkOutcome::Grown);
-    EXPECT_TRUE(climbable(result, roofOf()));
+    EXPECT_TRUE(isClimbable(result, roofOf()));
 }
 
 TEST(ChunkClimbTest, Grow_LeavesAStreetToSetOutFromEvenWithNoWayUp)
 {
-    const auto result = growChunk(
-        city(), ChunkRequest{.seed = 1, .shape = kSmallShape, .ways = 0});
+    const auto result = getGrowChunk(
+        getCity(), ChunkRequest{.seed = 1, .shape = kSmallShape, .ways = 0});
 
     ASSERT_EQ(result.outcome, ChunkOutcome::Grown);
 
     const FakeChunkWalkGraph graph(kSmallShape, result.cubeVoxels);
 
-    EXPECT_FALSE(graph.streets().empty());
+    EXPECT_FALSE(graph.getStreets().empty());
 }

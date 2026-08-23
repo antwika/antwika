@@ -24,7 +24,7 @@ namespace antwika::voxelmap
     namespace
     {
 
-        [[nodiscard]] voxel::VoxelPosition acrossStep(
+        [[nodiscard]] voxel::VoxelPosition getAcrossStep(
             const std::size_t side)
         {
             const auto &face = kVoxelFaces[side];
@@ -37,13 +37,13 @@ namespace antwika::voxelmap
                 acrossVector.z > 0.0F ? 1 : (acrossVector.z < 0.0F ? -1 : 0)};
         }
 
-        [[nodiscard]] bool surfaceContinues(
+        [[nodiscard]] bool isSurfaceContinues(
             const voxel::Voxels &voxels,
             const FaceRef &face,
             const voxel::VoxelPosition wayPosition)
         {
             const auto besidePosition =
-                offsetBy(face.cell.position, wayPosition);
+                getOffsetBy(face.cell.position, wayPosition);
             const auto besideKind = kindAt(voxels, besidePosition);
 
             if (besideKind != face.cell.material.kind)
@@ -53,7 +53,7 @@ namespace antwika::voxelmap
 
             const auto neighbourKind = effectiveKindAt(
                 voxels,
-                offsetBy(
+                getOffsetBy(
                     besidePosition,
                     kVoxelFaces[face.side].neighbourOffsetPosition));
 
@@ -61,7 +61,7 @@ namespace antwika::voxelmap
                    || !voxel::occludes(*neighbourKind, face.cell.material.kind);
         }
 
-        [[nodiscard]] bool mirroredWithin(
+        [[nodiscard]] bool isMirroredWithin(
             const voxel::Voxels &voxels, const FaceRef &faceRef)
         {
             const auto &face = kVoxelFaces[faceRef.side];
@@ -82,16 +82,16 @@ namespace antwika::voxelmap
                 return false;
             }
 
-            const auto way = acrossStep(faceRef.side);
+            const auto way = getAcrossStep(faceRef.side);
             const auto backPosition =
                 voxel::VoxelPosition{.x = -way.x, .y = -way.y, .z = -way.z};
 
-            return surfaceContinues(voxels, faceRef, way)
-                   == surfaceContinues(voxels, faceRef, backPosition);
+            return isSurfaceContinues(voxels, faceRef, way)
+                   == isSurfaceContinues(voxels, faceRef, backPosition);
         }
     }
 
-    gfx::Vec3 faceNormal(const std::size_t side)
+    gfx::Vec3 getFaceNormal(const std::size_t side)
     {
         return kVoxelFaces.at(side).normal;
     }
@@ -104,7 +104,7 @@ namespace antwika::voxelmap
             return voxel::StairPart::Any;
         }
 
-        const auto normal = faceNormal(side);
+        const auto normal = getFaceNormal(side);
 
         if (normal.y != 0.0F)
         {
@@ -119,7 +119,7 @@ namespace antwika::voxelmap
                          : voxel::StairPart::Side;
     }
 
-    gfx::Vec3 faceCorner(
+    gfx::Vec3 getFaceCorner(
         const std::size_t side, const std::size_t corner)
     {
         return kVoxelFaces.at(side).corners.at(corner);
@@ -128,15 +128,15 @@ namespace antwika::voxelmap
     bool usesMirroredUv(
         const voxel::Voxels &voxels, const FaceRef &face)
     {
-        return mirroredWithin(voxels, face);
+        return isMirroredWithin(voxels, face);
     }
 
-    gfx::RectF stairUvRect(
+    gfx::RectF getStairUvRect(
         const gfx::RectF tileRect,
         const voxel::StairQuad &quad,
         const bool mirrored)
     {
-        const auto uv = uvWithinFace(
+        const auto uv = getUvWithinFace(
             kVoxelFaces[quad.side], quad.corners[0], quad.corners[2]);
 
         if (mirrored)
@@ -162,24 +162,24 @@ namespace antwika::voxelmap
                 (uv.mostV - uv.leastV) * tileRect.size.height});
     } // GCOVR_EXCL_LINE
 
-    gfx::MeshData voxelMesh(const voxel::Voxels &voxels)
+    gfx::MeshData getVoxelMesh(const voxel::Voxels &voxels)
     {
         const auto faces = visibleFacesOf(voxels);
 
-        return voxelMesh(voxels, defaultTiles(faces));
+        return getVoxelMesh(voxels, getDefaultTiles(faces));
     } // GCOVR_EXCL_LINE
 
-    gfx::MeshData voxelMesh(
+    gfx::MeshData getVoxelMesh(
         const voxel::Voxels &voxels,
         const std::span<const tilemap::Tile> wovenTiles,
         const Pass pass)
     {
         const auto faces = visibleFacesOf(voxels);
 
-        return voxelMesh(voxels, faces, wovenTiles, pass);
+        return getVoxelMesh(voxels, faces, wovenTiles, pass);
     } // GCOVR_EXCL_LINE
 
-    gfx::MeshData voxelMesh(
+    gfx::MeshData getVoxelMesh(
         const voxel::Voxels &voxels,
         const std::span<const FaceRef> faces,
         const std::span<const tilemap::Tile> wovenTiles,
@@ -199,9 +199,9 @@ namespace antwika::voxelmap
             }
 
             const auto &face = kVoxelFaces[faceRef.side];
-            const auto middlePoint = cellMiddle(faceRef.cell.position);
+            const auto middlePoint = getCellMiddle(faceRef.cell.position);
             const auto wovenTile = wovenTiles[index];
-            const auto tile = tilemap::tileCoords(
+            const auto tile = tilemap::getTileCoords(
                 wovenTile.index, tilemap::tileSizeOf(wovenTile.atlas));
             const auto veil = watery
                             ? gfx::Color{
@@ -212,7 +212,7 @@ namespace antwika::voxelmap
                                                : kNoTintColor;
             const auto flight =
                 isRampStep(voxels, faceRef.cell.position)
-                    ? voxel::stairQuads(faceRef.climbPosition)
+                    ? voxel::getStairQuads(faceRef.climbPosition)
                     : std::vector<voxel::StairQuad>{};
 
             std::vector<voxel::StairQuad> layingQuads;
@@ -235,8 +235,8 @@ namespace antwika::voxelmap
 
             for (const auto &quad : layingQuads)
             {
-                const auto part = stairUvRect(
-                    tile, quad, mirroredWithin(voxels, faceRef));
+                const auto part = getStairUvRect(
+                    tile, quad, isMirroredWithin(voxels, faceRef));
                 const auto first =
                     static_cast<std::uint32_t>(mesh.vertices.size());
 

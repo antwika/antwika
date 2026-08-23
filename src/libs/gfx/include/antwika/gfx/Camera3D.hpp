@@ -22,13 +22,13 @@ namespace antwika::gfx
             Vec3 upVector,
             Projection projection);
 
-        [[nodiscard]] Vec3 position() const;
+        [[nodiscard]] Vec3 getPosition() const;
 
-        [[nodiscard]] Vec3 target() const;
+        [[nodiscard]] Vec3 getTarget() const;
 
-        [[nodiscard]] Vec3 up() const;
+        [[nodiscard]] Vec3 getUp() const;
 
-        [[nodiscard]] const Projection &projection() const;
+        [[nodiscard]] const Projection &getProjection() const;
 
         void setPosition(Vec3 position);
 
@@ -36,11 +36,11 @@ namespace antwika::gfx
 
         void setProjection(Projection valueProjection);
 
-        [[nodiscard]] Mat4 view() const;
+        [[nodiscard]] Mat4 getView() const;
 
-        [[nodiscard]] Mat4 projectionMatrix() const;
+        [[nodiscard]] Mat4 getProjectionMatrix() const;
 
-        [[nodiscard]] Mat4 viewProjection() const;
+        [[nodiscard]] Mat4 getViewProjection() const;
 
     private:
         Vec3 positionValue{0.0F, 0.0F, 0.0F};

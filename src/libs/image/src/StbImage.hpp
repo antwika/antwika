@@ -10,11 +10,11 @@ namespace antwika::image::detail
         int height = 0;
     };
 
-    [[nodiscard]] DecodedImage decodeImage(
+    [[nodiscard]] DecodedImage getDecodeImage(
         const unsigned char *bytes, int length, int desiredChannels);
 
     void freeDecodedImage(unsigned char *pixels);
 
-    [[nodiscard]] const char *decodeFailureReason();
+    [[nodiscard]] const char *getDecodeFailureReason();
 
 }

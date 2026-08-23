@@ -117,7 +117,7 @@ namespace antwika::input
         RightSuper,
     };
 
-    [[nodiscard]] constexpr Key lastEnumerator(Key) noexcept
+    [[nodiscard]] constexpr Key getLastEnumerator(Key) noexcept
     {
         return Key::RightSuper;
     }
@@ -125,13 +125,13 @@ namespace antwika::input
     inline constexpr std::size_t kKeyCount =
         antwika::enums::kCount<Key>;
 
-    [[nodiscard]] constexpr std::size_t keyIndex(Key key) noexcept
+    [[nodiscard]] constexpr std::size_t getKeyIndex(Key key) noexcept
     {
         return static_cast<std::size_t>(key);
     }
 
     [[nodiscard]] std::string_view toString(Key key);
 
-    [[nodiscard]] Key keyFromString(std::string_view name);
+    [[nodiscard]] Key getKeyFromString(std::string_view name);
 
 }

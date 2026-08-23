@@ -26,7 +26,7 @@ TEST(LoggerTest, log_WhenPolicyRejects_DoesNothing)
 
     EXPECT_CALL(mockLogPolicy, accepts(Level::Info))
         .WillOnce(::testing::Return(false));
-    EXPECT_CALL(mockFormatter, format(::testing::_, ::testing::_, ::testing::_))
+    EXPECT_CALL(mockFormatter, getFormat(::testing::_, ::testing::_, ::testing::_))
         .Times(0);
     EXPECT_CALL(mockAppender, append(::testing::_)).Times(0);
 
@@ -44,7 +44,7 @@ TEST(LoggerTest, log_WhenPolicyAccepts_FormatsAndAppendsToAppender)
 
     EXPECT_CALL(mockLogPolicy, accepts(Level::Info))
         .WillOnce(::testing::Return(true));
-    EXPECT_CALL(mockFormatter, format(time, Level::Info, "Message"))
+    EXPECT_CALL(mockFormatter, getFormat(time, Level::Info, "Message"))
         .WillOnce(::testing::Return("Formatted message"));
     EXPECT_CALL(mockAppender, append("Formatted message"));
 
@@ -62,7 +62,7 @@ TEST(LoggerTest, log_MustNotPropagateExceptionIfFormatterFails)
 
     EXPECT_CALL(mockLogPolicy, accepts(Level::Info))
         .WillOnce(::testing::Return(true));
-    EXPECT_CALL(mockFormatter, format(time, Level::Info, "Message"))
+    EXPECT_CALL(mockFormatter, getFormat(time, Level::Info, "Message"))
         .WillRepeatedly(::testing::Throw(std::exception{}));
     EXPECT_CALL(mockAppender, append(::testing::_)).Times(0);
 
@@ -85,7 +85,7 @@ TEST(LoggerTest, log_MustNotPropagateExceptionIfAppenderFails)
 
     EXPECT_CALL(mockLogPolicy, accepts(Level::Info))
         .WillOnce(::testing::Return(true));
-    EXPECT_CALL(mockFormatter, format(time, Level::Info, "Message"))
+    EXPECT_CALL(mockFormatter, getFormat(time, Level::Info, "Message"))
         .WillOnce(::testing::Return("Formatted message"));
     EXPECT_CALL(mockAppender, append(::testing::_))
         .WillRepeatedly(::testing::Throw(std::exception{}));

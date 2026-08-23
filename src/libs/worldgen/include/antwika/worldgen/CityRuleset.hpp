@@ -32,7 +32,7 @@ namespace antwika::worldgen
         Cistern,
     };
 
-    [[nodiscard]] constexpr CityPiece lastEnumerator(CityPiece) noexcept
+    [[nodiscard]] constexpr CityPiece getLastEnumerator(CityPiece) noexcept
     {
         return CityPiece::Cistern;
     }
@@ -52,6 +52,6 @@ namespace antwika::worldgen
         Sky,
     };
 
-    [[nodiscard]] Ruleset cityRuleset();
+    [[nodiscard]] Ruleset getCityRuleset();
 
 }

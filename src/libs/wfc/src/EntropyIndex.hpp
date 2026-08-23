@@ -22,7 +22,7 @@ namespace antwika::wfc::detail
 
         void update(std::size_t cell, const Domain &domain);
 
-        [[nodiscard]] std::optional<std::size_t> pickNext() const;
+        [[nodiscard]] std::optional<std::size_t> getPickNext() const;
 
     private:
         std::vector<double> valueWeights;
@@ -30,7 +30,7 @@ namespace antwika::wfc::detail
         std::vector<std::optional<std::pair<double, std::size_t>>>
             cellKey;
 
-        [[nodiscard]] double sortKey(const Domain &domain) const;
+        [[nodiscard]] double getSortKey(const Domain &domain) const;
     };
 
 }

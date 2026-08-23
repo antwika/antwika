@@ -72,7 +72,7 @@ namespace antwika::ui
 
         if (focused)
         {
-            tree->add(detail::caretNode(themeValue)); // GCOVR_EXCL_LINE
+            tree->add(detail::getCaretNode(themeValue)); // GCOVR_EXCL_LINE
         }
 
         if (!tail.empty())

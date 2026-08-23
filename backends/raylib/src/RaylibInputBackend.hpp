@@ -31,9 +31,9 @@ namespace antwika::input::raylib
         RaylibInputBackend &operator=(const RaylibInputBackend &) = delete;
         RaylibInputBackend &operator=(RaylibInputBackend &&) = delete;
 
-        [[nodiscard]] std::string_view name() const override;
+        [[nodiscard]] std::string_view getName() const override;
 
-        [[nodiscard]] InputCapabilities capabilities() const override;
+        [[nodiscard]] InputCapabilities getCapabilities() const override;
 
         [[nodiscard]] std::optional<InputEvent> pollEvent() override;
 

@@ -48,7 +48,7 @@ namespace antwika::editor
             context.label("down", kTextColor);
         }
 
-        if (!decor::decorSpanned(decor))
+        if (!decor::isDecorSpanned(decor))
         {
             return;
         }
@@ -71,7 +71,7 @@ namespace antwika::editor
                 context.button(
                     std::to_string(place + 1),
                     antwika::ui::ButtonSpec{
-                        .widgetId = decor::memberWidget(
+                        .widgetId = decor::getMemberWidget(
                             place),
                         .fillColor =
                             assignMode.memberAssigning

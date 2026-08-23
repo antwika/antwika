@@ -11,6 +11,6 @@ namespace antwika::time
     {
     public:
         [[nodiscard]] std::chrono::time_point<std::chrono::system_clock>
-        currentTime() const noexcept override;
+        getCurrentTime() const noexcept override;
     };
 }

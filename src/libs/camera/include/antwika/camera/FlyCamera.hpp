@@ -26,9 +26,9 @@ namespace antwika::camera
 
     inline constexpr std::int32_t kMaxZoom = kVoxelPixels * 8;
 
-    [[nodiscard]] float isometricPitch();
+    [[nodiscard]] float getIsometricPitch();
 
-    [[nodiscard]] float orthoHalfHeight(
+    [[nodiscard]] float getOrthoHalfHeight(
         gfx::Size canvasSize, std::int32_t pixelsPerVoxel);
 
     inline constexpr float kMouseTurn = 0.006F;
@@ -47,29 +47,29 @@ namespace antwika::camera
             = default;
     };
 
-    [[nodiscard]] CameraTransform defaultTransform();
+    [[nodiscard]] CameraTransform getDefaultTransform();
 
-    [[nodiscard]] CameraTransform resetToIsometric(CameraTransform transform);
+    [[nodiscard]] CameraTransform getResetToIsometric(CameraTransform transform);
 
-    [[nodiscard]] CameraTransform snappedPitch(CameraTransform transform);
+    [[nodiscard]] CameraTransform getSnappedPitch(CameraTransform transform);
 
-    [[nodiscard]] CameraTransform centeredOn(
+    [[nodiscard]] CameraTransform getCenteredOn(
         CameraTransform transform, gfx::Vec3 position);
 
-    [[nodiscard]] gfx::Vec3 forward(const CameraTransform &transform);
+    [[nodiscard]] gfx::Vec3 getForward(const CameraTransform &transform);
 
-    [[nodiscard]] gfx::Vec3 forwardOnGround(const CameraTransform &transform);
+    [[nodiscard]] gfx::Vec3 getForwardOnGround(const CameraTransform &transform);
 
-    [[nodiscard]] CameraTransform rotated(
+    [[nodiscard]] CameraTransform getRotated(
         CameraTransform transform, float byYaw, float byPitch);
 
-    [[nodiscard]] CameraTransform movedOnGround(
+    [[nodiscard]] CameraTransform getMovedOnGround(
         CameraTransform transform, float ahead, float acrossDistance,
         float step);
 
     inline constexpr float kPanStep = 0.01F;
 
-    [[nodiscard]] CameraTransform panned(
+    [[nodiscard]] CameraTransform getPanned(
         CameraTransform transform, float acrossDistance, float upDistance,
         float step);
 
@@ -91,7 +91,7 @@ namespace antwika::camera
 
     inline constexpr float kZoomLerpRate = 0.25F;
 
-    [[nodiscard]] CameraTransform movedAlongView(
+    [[nodiscard]] CameraTransform getMovedAlongView(
         CameraTransform transform,
         float ahead,
         float acrossDistance,

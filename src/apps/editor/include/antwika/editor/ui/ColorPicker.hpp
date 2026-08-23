@@ -17,9 +17,9 @@
 namespace antwika::editor
 {
 
-    using gfx::colorFromHex;
+    using gfx::getColorFromHex;
     using gfx::colorOf;
-    using gfx::colorToHex;
+    using gfx::getColorToHex;
     using gfx::Hsv;
     using gfx::hsvOf;
 
@@ -35,31 +35,31 @@ namespace antwika::editor
 
     inline constexpr std::size_t kPickerBands = 22;
 
-    [[nodiscard]] gfx::RectF pickerPlace(gfx::Size canvasSize);
+    [[nodiscard]] gfx::RectF getPickerPlace(gfx::Size canvasSize);
 
-    [[nodiscard]] gfx::RectF fieldPlace(gfx::Size canvasSize);
+    [[nodiscard]] gfx::RectF getFieldPlace(gfx::Size canvasSize);
 
-    [[nodiscard]] gfx::RectF huePlace(gfx::Size canvasSize);
+    [[nodiscard]] gfx::RectF getHuePlace(gfx::Size canvasSize);
 
-    [[nodiscard]] bool onPicker(gfx::Size canvasSize, gfx::PointF point);
+    [[nodiscard]] bool isOnPicker(gfx::Size canvasSize, gfx::PointF point);
 
-    [[nodiscard]] std::optional<Hsv> colorAtPoint(
+    [[nodiscard]] std::optional<Hsv> getColorAtPoint(
         gfx::Size canvasSize, Hsv currentHsv, gfx::PointF point);
 
-    [[nodiscard]] gfx::PointF fieldCursorPos(
+    [[nodiscard]] gfx::PointF getFieldCursorPos(
         gfx::Size canvasSize, Hsv colorHsv);
 
-    [[nodiscard]] float hueCursorPos(gfx::Size canvasSize, Hsv colorHsv);
+    [[nodiscard]] float getHueCursorPos(gfx::Size canvasSize, Hsv colorHsv);
 
-    [[nodiscard]] gfx::RectF bandPlace(
+    [[nodiscard]] gfx::RectF getBandPlace(
         gfx::Size canvasSize, std::size_t column, std::size_t row);
 
-    [[nodiscard]] Hsv bandHsv(
+    [[nodiscard]] Hsv getBandHsv(
         Hsv colorHsv, std::size_t column, std::size_t row);
 
-    [[nodiscard]] gfx::RectF hueBandPlace(
+    [[nodiscard]] gfx::RectF getHueBandPlace(
         gfx::Size canvasSize, std::size_t bandIndex);
 
-    [[nodiscard]] float hueBand(std::size_t bandIndex);
+    [[nodiscard]] float getHueBand(std::size_t bandIndex);
 
 }

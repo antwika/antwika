@@ -13,7 +13,7 @@ TEST(StopSignalTest, Stopped_IsFalseBeforeAnyEventIsHandled)
 {
     StopSignal stopSignal;
 
-    EXPECT_FALSE(stopSignal.stopped());
+    EXPECT_FALSE(stopSignal.isStopped());
 }
 
 TEST(StopSignalTest, Stopped_StaysFalseForUnrelatedEvents)
@@ -25,7 +25,7 @@ TEST(StopSignalTest, Stopped_StaysFalseForUnrelatedEvents)
     stopSignal.handle(
         TickEvent{.tick = 1, .event = Event{.name = "game.score_increment"}});
 
-    EXPECT_FALSE(stopSignal.stopped());
+    EXPECT_FALSE(stopSignal.isStopped());
 }
 
 TEST(StopSignalTest, Stopped_BecomesTrueOnceStopIsHandled)
@@ -36,7 +36,7 @@ TEST(StopSignalTest, Stopped_BecomesTrueOnceStopIsHandled)
         .tick = 2,
         .event = Event{.name = antwika::engine::events::kStop}});
 
-    EXPECT_TRUE(stopSignal.stopped());
+    EXPECT_TRUE(stopSignal.isStopped());
 }
 
 TEST(StopSignalTest, Stopped_StaysTrueAfterFurtherEventsAreHandled)
@@ -49,5 +49,5 @@ TEST(StopSignalTest, Stopped_StaysTrueAfterFurtherEventsAreHandled)
     stopSignal.handle(
         TickEvent{.tick = 3, .event = Event{.name = "engine.tick"}});
 
-    EXPECT_TRUE(stopSignal.stopped());
+    EXPECT_TRUE(stopSignal.isStopped());
 }

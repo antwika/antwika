@@ -18,11 +18,11 @@ namespace antwika::animation
             std::vector<KeyFrame> keyFrames,
             LoopMode loop = LoopMode::Loop);
 
-        [[nodiscard]] const std::vector<KeyFrame> &frames() const noexcept;
+        [[nodiscard]] const std::vector<KeyFrame> &getFrames() const noexcept;
 
-        [[nodiscard]] LoopMode loop() const noexcept;
+        [[nodiscard]] LoopMode getLoop() const noexcept;
 
-        [[nodiscard]] time::Tick durationTicks() const noexcept;
+        [[nodiscard]] time::Tick getDurationTicks() const noexcept;
 
     private:
         std::vector<KeyFrame> keyFrames;
@@ -30,7 +30,7 @@ namespace antwika::animation
         time::Tick durationTick;
     };
 
-    [[nodiscard]] Clip uniformClip(
+    [[nodiscard]] Clip getUniformClip(
         std::size_t firstIndex,
         std::size_t frameCount,
         time::Tick ticksPerFrame,

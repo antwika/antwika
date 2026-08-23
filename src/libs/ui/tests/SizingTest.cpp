@@ -2,7 +2,7 @@
 
 #include "antwika/ui/Sizing.hpp"
 
-using antwika::ui::fixedSize;
+using antwika::ui::getFixedSize;
 using antwika::ui::kFitSizing;
 using antwika::ui::kGrowSizing;
 using antwika::ui::SizeMode;
@@ -10,7 +10,7 @@ using antwika::ui::Sizing;
 
 TEST(SizingTest, FixedSize_AsksForExactlyThePixelsGiven)
 {
-    const auto sizing = fixedSize(120);
+    const auto sizing = getFixedSize(120);
 
     EXPECT_EQ(SizeMode::Fixed, sizing.mode);
     EXPECT_EQ(120U, sizing.pixels);
@@ -34,7 +34,7 @@ TEST(SizingTest, Grow_AsksToShareWhatIsLeftOver)
 
 TEST(SizingTest, OperatorEquals_IsTrueForTheSameModeAndPixels)
 {
-    const auto left = fixedSize(40);
+    const auto left = getFixedSize(40);
     const Sizing rightSizing{.mode = SizeMode::Fixed, .pixels = 40};
 
     EXPECT_EQ(left, rightSizing);
@@ -50,8 +50,8 @@ TEST(SizingTest, OperatorEquals_IsFalseWhenTheModeDiffers)
 
 TEST(SizingTest, OperatorEquals_IsFalseWhenThePixelsDiffer)
 {
-    const auto left = fixedSize(40);
-    const auto right = fixedSize(41);
+    const auto left = getFixedSize(40);
+    const auto right = getFixedSize(41);
 
     EXPECT_NE(left, right);
 }

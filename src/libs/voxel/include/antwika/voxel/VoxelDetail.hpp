@@ -70,10 +70,10 @@ namespace antwika::voxel::detail
                  glm::vec3{kHalf, -kHalf, kHalf},
                  glm::vec3{-kHalf, -kHalf, kHalf}}}};
 
-    [[nodiscard]] VoxelPosition offsetBy(
+    [[nodiscard]] VoxelPosition getOffsetBy(
         VoxelPosition fromPosition, VoxelPosition byPosition);
 
-    [[nodiscard]] VoxelPosition opposite(VoxelPosition stepPosition);
+    [[nodiscard]] VoxelPosition getOpposite(VoxelPosition stepPosition);
 
     [[nodiscard]] std::optional<Kind> kindAt(
         const Voxels &filledVoxels, VoxelPosition position);
@@ -90,7 +90,7 @@ namespace antwika::voxel::detail
     constexpr float kStepHeightFraction =
         1.0F / static_cast<float>(kStepsPerVoxel);
 
-    [[nodiscard]] FaceUv uvWithinFace(
+    [[nodiscard]] FaceUv getUvWithinFace(
         const Face &face, glm::vec3 one, glm::vec3 two);
 
 }

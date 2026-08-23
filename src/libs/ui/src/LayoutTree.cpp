@@ -11,22 +11,22 @@ namespace antwika::ui::detail
         nodes.push_back(std::move(rootNode));
     }
 
-    std::size_t LayoutTree::size() const noexcept
+    std::size_t LayoutTree::getSize() const noexcept
     {
         return nodes.size();
     }
 
-    Node &LayoutTree::node(std::size_t index)
+    Node &LayoutTree::getNode(std::size_t index)
     {
         return nodes[index];
     }
 
-    const Node &LayoutTree::node(std::size_t index) const
+    const Node &LayoutTree::getNode(std::size_t index) const
     {
         return nodes[index];
     }
 
-    std::size_t LayoutTree::openIndex() const noexcept
+    std::size_t LayoutTree::getOpenIndex() const noexcept
     {
         return openNode;
     }
@@ -53,7 +53,7 @@ namespace antwika::ui::detail
         areaList.push_back(area);
     }
 
-    const std::vector<Area> &LayoutTree::areas() const noexcept
+    const std::vector<Area> &LayoutTree::getAreas() const noexcept
     {
         return areaList;
     }
@@ -63,7 +63,7 @@ namespace antwika::ui::detail
         scrollBars.push_back(railBar);
     }
 
-    const std::vector<ScrollBar> &LayoutTree::rails() const noexcept
+    const std::vector<ScrollBar> &LayoutTree::getRails() const noexcept
     {
         return scrollBars;
     }
@@ -73,7 +73,7 @@ namespace antwika::ui::detail
         splitters.push_back(barSplitter);
     }
 
-    const std::vector<Splitter> &LayoutTree::bars() const noexcept
+    const std::vector<Splitter> &LayoutTree::getBars() const noexcept
     {
         return splitters;
     }

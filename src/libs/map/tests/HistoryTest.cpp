@@ -26,7 +26,7 @@ namespace
         History history;
 
         EXPECT_FALSE(history.undo(stepOf(1)).has_value());
-        EXPECT_EQ(history.undoCount(), 0U);
+        EXPECT_EQ(history.getUndoCount(), 0U);
     }
 
     TEST(HistoryTest, Undo_GivesBackTheSnapshotKeptBefore)
@@ -39,8 +39,8 @@ namespace
 
         ASSERT_TRUE(undone.has_value());
         EXPECT_EQ(undone->mark, 1);
-        EXPECT_EQ(history.undoCount(), 0U);
-        EXPECT_EQ(history.redoCount(), 1U);
+        EXPECT_EQ(history.getUndoCount(), 0U);
+        EXPECT_EQ(history.getRedoCount(), 1U);
     }
 
     TEST(HistoryTest, Redo_GivesBackWhatUndoingLeft)
@@ -57,8 +57,8 @@ namespace
 
         ASSERT_TRUE(redone.has_value());
         EXPECT_EQ(redone->mark, 2);
-        EXPECT_EQ(history.undoCount(), 1U);
-        EXPECT_EQ(history.redoCount(), 0U);
+        EXPECT_EQ(history.getUndoCount(), 1U);
+        EXPECT_EQ(history.getRedoCount(), 0U);
     }
 
     TEST(HistoryTest, Redo_GivesNothingWithNothingUndone)
@@ -82,7 +82,7 @@ namespace
 
         history.push(stepOf(3));
 
-        EXPECT_EQ(history.redoCount(), 0U);
+        EXPECT_EQ(history.getRedoCount(), 0U);
         EXPECT_FALSE(history.redo(stepOf(4)).has_value());
     }
 
@@ -98,7 +98,7 @@ namespace
             history.push(stepOf(mark));
         }
 
-        EXPECT_EQ(history.undoCount(), kDefaultHistoryDepth);
+        EXPECT_EQ(history.getUndoCount(), kDefaultHistoryDepth);
     }
 
     TEST(HistoryTest, Push_HoldsToADepthAskedForInstead)
@@ -110,7 +110,7 @@ namespace
             history.push(stepOf(mark));
         }
 
-        EXPECT_EQ(history.undoCount(), 2U);
+        EXPECT_EQ(history.getUndoCount(), 2U);
     }
 
     TEST(HistoryTest, Undo_WalksBackStepByStep)
@@ -147,8 +147,8 @@ namespace
 
         history.clear();
 
-        EXPECT_EQ(history.undoCount(), 0U);
-        EXPECT_EQ(history.redoCount(), 0U);
+        EXPECT_EQ(history.getUndoCount(), 0U);
+        EXPECT_EQ(history.getRedoCount(), 0U);
     }
 
 }

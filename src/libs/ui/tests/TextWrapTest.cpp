@@ -8,7 +8,7 @@
 
 #include "antwika/ui/TextWrap.hpp"
 
-using antwika::ui::wrapText;
+using antwika::ui::getWrapText;
 
 namespace
 {
@@ -23,7 +23,7 @@ namespace
     {
         std::vector<std::string> lines;
 
-        for (const auto line : wrapText(text, columns))
+        for (const auto line : getWrapText(text, columns))
         {
             lines.emplace_back(line);
         }
@@ -135,7 +135,7 @@ TEST(TextWrapTest, WrapColumns_CountsWhatFitsOnceThePaddingIsOff)
         .textScale = 1, .buttonPadding = 4};
 
     EXPECT_EQ(
-        antwika::ui::wrapColumns(theme, 8 + (10 * kAdvance)), 10U);
+        antwika::ui::getWrapColumns(theme, 8 + (10 * kAdvance)), 10U);
 }
 
 TEST(TextWrapTest, WrapColumns_CountsNothingWhereThePaddingTakesItAll)
@@ -143,8 +143,8 @@ TEST(TextWrapTest, WrapColumns_CountsNothingWhereThePaddingTakesItAll)
     const antwika::ui::Theme theme{
         .textScale = 1, .buttonPadding = 40};
 
-    EXPECT_EQ(antwika::ui::wrapColumns(theme, 20), 0U);
-    EXPECT_EQ(antwika::ui::wrapColumns(theme, 80), 0U);
+    EXPECT_EQ(antwika::ui::getWrapColumns(theme, 20), 0U);
+    EXPECT_EQ(antwika::ui::getWrapColumns(theme, 80), 0U);
 }
 
 TEST(TextWrapTest, WrapColumns_CountsNothingForAFaceWithNoWidth)
@@ -152,5 +152,5 @@ TEST(TextWrapTest, WrapColumns_CountsNothingForAFaceWithNoWidth)
     const antwika::ui::Theme theme{
         .textScale = 0, .buttonPadding = 0};
 
-    EXPECT_EQ(antwika::ui::wrapColumns(theme, 200), 0U);
+    EXPECT_EQ(antwika::ui::getWrapColumns(theme, 200), 0U);
 }

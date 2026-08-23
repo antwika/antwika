@@ -94,7 +94,7 @@ namespace antwika::worldgen
             Socket::NeedsOpen,
             Socket::NeedsBack};
 
-        [[nodiscard]] Face opposing(const Face face)
+        [[nodiscard]] Face getOpposing(const Face face)
         {
             switch (face)
             {
@@ -115,7 +115,7 @@ namespace antwika::worldgen
             return Face::North;
         }
 
-        [[nodiscard]] Socket shows(const Prototype &prototype, const Face face)
+        [[nodiscard]] Socket getShows(const Prototype &prototype, const Face face)
         {
             return prototype.sockets[static_cast<std::size_t>(face)];
         }
@@ -125,12 +125,12 @@ namespace antwika::worldgen
             const Prototype &prototype,
             const Face face)
         {
-            const Socket mineSocket = shows(prototype, face);
-            const Face againstFace = opposing(face);
+            const Socket mineSocket = getShows(prototype, face);
+            const Face againstFace = getOpposing(face);
 
             for (const Prototype &other : prototypes)
             {
-                const Socket theirsSocket = shows(other, againstFace);
+                const Socket theirsSocket = getShows(other, againstFace);
 
                 if (face == Face::Up && matesUpright(mineSocket, theirsSocket))
                 {
@@ -328,15 +328,15 @@ namespace antwika::worldgen
                     const bool fits =
                         axis == Axis::Across
                               ? matesAcross(
-                                  shows(underPrototype, Face::East),
-                                  shows(overPrototype, Face::West))
+                                  getShows(underPrototype, Face::East),
+                                  getShows(overPrototype, Face::West))
                         : axis == Axis::Upright
                             ? matesUpright(
-                                  shows(underPrototype, Face::Up),
-                                  shows(overPrototype, Face::Down))
+                                  getShows(underPrototype, Face::Up),
+                                  getShows(overPrototype, Face::Down))
                             : matesAcross(
-                                  shows(underPrototype, Face::South),
-                                  shows(overPrototype, Face::North));
+                                  getShows(underPrototype, Face::South),
+                                  getShows(overPrototype, Face::North));
 
                     table.set(lowIndex, highIndex, fits);
                 }
@@ -385,17 +385,17 @@ namespace antwika::worldgen
         }
     }
 
-    const Ruleset &CompiledRuleset::source() const
+    const Ruleset &CompiledRuleset::getSource() const
     {
         return ruleset;
     }
 
-    std::size_t CompiledRuleset::size() const
+    std::size_t CompiledRuleset::getSize() const
     {
         return ruleset.prototypes.size();
     }
 
-    const Prototype &CompiledRuleset::at(const std::size_t which) const
+    const Prototype &CompiledRuleset::getEntryAt(const std::size_t which) const
     {
         if (which >= ruleset.prototypes.size())
         {
@@ -408,16 +408,16 @@ namespace antwika::worldgen
     bool CompiledRuleset::wears(
         const std::size_t which, const Role role) const
     {
-        return (at(which).roles & maskOf(role)) != 0;
+        return (getEntryAt(which).roles & maskOf(role)) != 0;
     }
 
-    std::span<const std::size_t> CompiledRuleset::wearing(
+    std::span<const std::size_t> CompiledRuleset::getWearing(
         const Role role) const
     {
         return byRole[static_cast<std::size_t>(role)];
     }
 
-    std::span<const std::size_t> CompiledRuleset::matching(
+    std::span<const std::size_t> CompiledRuleset::getMatching(
         const voxel::Kind kind, const voxel::Facing facing) const
     {
         return byKindAndFacing[keyOf(kind, facing)];

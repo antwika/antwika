@@ -17,7 +17,7 @@ using antwika::replay::ReplaySource;
 
 namespace
 {
-    std::vector<TickEvent> oneEventOnTickTwo()
+    std::vector<TickEvent> getOneEventOnTickTwo()
     {
         return {TickEvent{
             .tick = 2, .event = Event{.name = "app.something"}}};
@@ -39,7 +39,7 @@ namespace
 
 TEST(TickLimitSourceTest, EventsFor_PassesEveryTickBeforeTheCapThrough)
 {
-    ReplaySource innerSource(oneEventOnTickTwo());
+    ReplaySource innerSource(getOneEventOnTickTwo());
     TickLimitSource source(innerSource, 3);
 
     const auto events = source.eventsFor(2);
@@ -50,7 +50,7 @@ TEST(TickLimitSourceTest, EventsFor_PassesEveryTickBeforeTheCapThrough)
 
 TEST(TickLimitSourceTest, EventsFor_AsksToStopOnceTheCapIsReached)
 {
-    ReplaySource innerSource(oneEventOnTickTwo());
+    ReplaySource innerSource(getOneEventOnTickTwo());
     TickLimitSource source(innerSource, 2);
 
     const auto events = source.eventsFor(2);
@@ -63,7 +63,7 @@ TEST(TickLimitSourceTest, EventsFor_AsksToStopOnceTheCapIsReached)
 
 TEST(TickLimitSourceTest, EventsFor_NeverStopsWhenThereIsNoCap)
 {
-    ReplaySource innerSource(oneEventOnTickTwo());
+    ReplaySource innerSource(getOneEventOnTickTwo());
     TickLimitSource source(innerSource, std::nullopt);
 
     EXPECT_FALSE(holdsStop(source.eventsFor(2)));

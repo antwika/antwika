@@ -11,5 +11,5 @@ TEST(NullTextureTest, Size_ReportsTheSizeItWasCreatedWith)
 {
     const NullTexture texture(Size{.width = 16, .height = 9});
 
-    EXPECT_EQ(texture.size(), (Size{.width = 16, .height = 9}));
+    EXPECT_EQ(texture.getSize(), (Size{.width = 16, .height = 9}));
 }

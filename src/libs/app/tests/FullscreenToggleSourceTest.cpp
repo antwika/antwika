@@ -36,7 +36,7 @@ namespace
 {
     const InputEventCodec kCodec;
 
-    [[nodiscard]] TickEvent at(Tick tick, Event event)
+    [[nodiscard]] TickEvent getEntryAt(Tick tick, Event event)
     {
         return TickEvent{.tick = tick, .event = std::move(event)};
     }
@@ -53,7 +53,7 @@ namespace
                                { filling = wantedFullscreen; });
         }
 
-        [[nodiscard]] bool filled() const noexcept
+        [[nodiscard]] bool isFilled() const noexcept
         {
             return filling;
         }
@@ -66,7 +66,7 @@ namespace
 TEST(FullscreenToggleSourceTest, EventsFor_FillsTheScreenOnTheKey)
 {
     ReplaySource innerSource(
-        {at(0, kCodec.encode(KeyPressed{.key = Key::F10}))});
+        {getEntryAt(0, kCodec.getEncode(KeyPressed{.key = Key::F10}))});
     NiceMock<MockWindow> window;
     const FullscreenState state(window);
 
@@ -74,18 +74,18 @@ TEST(FullscreenToggleSourceTest, EventsFor_FillsTheScreenOnTheKey)
 
     const auto events = source.eventsFor(0);
 
-    EXPECT_TRUE(state.filled());
+    EXPECT_TRUE(state.isFilled());
 
     EXPECT_EQ(
         events,
-        (std::vector<Event>{kCodec.encode(KeyPressed{.key = Key::F10})}));
+        (std::vector<Event>{kCodec.getEncode(KeyPressed{.key = Key::F10})}));
 }
 
 TEST(FullscreenToggleSourceTest, EventsFor_PutsTheWindowBackOnTheNextPress)
 {
     ReplaySource innerSource(
-        {at(0, kCodec.encode(KeyPressed{.key = Key::F10})),
-         at(1, kCodec.encode(KeyPressed{.key = Key::F10}))});
+        {getEntryAt(0, kCodec.getEncode(KeyPressed{.key = Key::F10})),
+         getEntryAt(1, kCodec.getEncode(KeyPressed{.key = Key::F10}))});
 
     NiceMock<MockWindow> window;
     const FullscreenState state(window);
@@ -93,17 +93,17 @@ TEST(FullscreenToggleSourceTest, EventsFor_PutsTheWindowBackOnTheNextPress)
     FullscreenToggleSource source(innerSource, window, kCodec, Key::F10);
 
     EXPECT_EQ(source.eventsFor(0).size(), 1U);
-    EXPECT_TRUE(state.filled());
+    EXPECT_TRUE(state.isFilled());
 
     EXPECT_EQ(source.eventsFor(1).size(), 1U);
-    EXPECT_FALSE(state.filled());
+    EXPECT_FALSE(state.isFilled());
 }
 
 TEST(FullscreenToggleSourceTest, EventsFor_IgnoresARepeat)
 {
     ReplaySource innerSource(
-        {at(0,
-            kCodec.encode(
+        {getEntryAt(0,
+            kCodec.getEncode(
                 KeyPressed{.key = Key::F10, .repeat = true}))});
 
     NiceMock<MockWindow> window;
@@ -118,8 +118,8 @@ TEST(FullscreenToggleSourceTest, EventsFor_IgnoresARepeat)
 TEST(FullscreenToggleSourceTest, EventsFor_IgnoresAnotherKey)
 {
     ReplaySource innerSource(
-        {at(0, kCodec.encode(KeyPressed{.key = Key::F11})),
-         at(0, kCodec.encode(KeyReleased{.key = Key::F10}))});
+        {getEntryAt(0, kCodec.getEncode(KeyPressed{.key = Key::F11})),
+         getEntryAt(0, kCodec.getEncode(KeyReleased{.key = Key::F10}))});
 
     NiceMock<MockWindow> window;
 
@@ -133,9 +133,9 @@ TEST(FullscreenToggleSourceTest, EventsFor_IgnoresAnotherKey)
 TEST(FullscreenToggleSourceTest, EventsFor_IgnoresAnEventThatIsNotInput)
 {
     ReplaySource innerSource(
-        {at(0, Event{.name = "game.score_increment", .payload = "{}"}),
-         at(0,
-            kCodec.encode(
+        {getEntryAt(0, Event{.name = "game.score_increment", .payload = "{}"}),
+         getEntryAt(0,
+            kCodec.getEncode(
                 PointerButtonPressed{.button = MouseButton::Left}))});
 
     NiceMock<MockWindow> window;
@@ -150,7 +150,7 @@ TEST(FullscreenToggleSourceTest, EventsFor_IgnoresAnEventThatIsNotInput)
 TEST(FullscreenToggleSourceTest, EventsFor_LetsABadPayloadThrough)
 {
     ReplaySource innerSource(
-        {at(0,
+        {getEntryAt(0,
             Event{
                 .name = "input.key_down",
                 .payload = R"({"key":"NotAKey"})"})});

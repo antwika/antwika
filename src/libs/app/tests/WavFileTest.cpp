@@ -14,7 +14,7 @@
 #include <antwika/testing/ScratchPath.hpp>
 #include <antwika/testing/ScratchFile.hpp>
 
-using antwika::app::readWavFile;
+using antwika::app::getReadWavFile;
 using antwika::sound::SoundError;
 
 namespace
@@ -31,17 +31,17 @@ TEST(WavFileTest, ReadWavFile_ReadsAWavOffDisk)
 {
     const antwika::testing::ScratchFile file("antwika-app-two-frames.wav");
     {
-        std::ofstream outputStream(file.string(), std::ios::binary);
+        std::ofstream outputStream(file.getString(), std::ios::binary);
         outputStream.write(
             reinterpret_cast<const char *>(kTwoFrameWav.data()),
             static_cast<std::streamsize>(kTwoFrameWav.size()));
     }
 
-    const auto wave = readWavFile(file.string(), "antwika_test");
+    const auto wave = getReadWavFile(file.getString(), "antwika_test");
 
     EXPECT_EQ(wave.format.rate, 48000U);
     EXPECT_EQ(wave.format.channels, 1U);
-    EXPECT_EQ(wave.frameCount(), 2U);
+    EXPECT_EQ(wave.getFrameCount(), 2U);
 }
 
 TEST(WavFileTest, ReadWavFile_NamesTheMissingFileAndCaller)
@@ -52,7 +52,7 @@ TEST(WavFileTest, ReadWavFile_NamesTheMissingFileAndCaller)
 
     try
     {
-        static_cast<void>(readWavFile(missing, "antwika_test"));
+        static_cast<void>(getReadWavFile(missing, "antwika_test"));
         FAIL() << "expected a SoundError";
     }
     catch (const SoundError &error)

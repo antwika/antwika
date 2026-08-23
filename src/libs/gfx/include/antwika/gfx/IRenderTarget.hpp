@@ -11,11 +11,11 @@ namespace antwika::gfx
     public:
         virtual ~IRenderTarget() = default;
 
-        [[nodiscard]] virtual Size size() const = 0;
+        [[nodiscard]] virtual Size getSize() const = 0;
 
-        [[nodiscard]] virtual const ITexture *color() const = 0;
+        [[nodiscard]] virtual const ITexture *getColor() const = 0;
 
-        [[nodiscard]] virtual const ITexture *depth() const = 0;
+        [[nodiscard]] virtual const ITexture *getDepth() const = 0;
     };
 
 }

@@ -15,11 +15,11 @@ namespace antwika::gfx::detail
     public:
         explicit NullRenderTarget(const RenderTargetSpec &spec);
 
-        [[nodiscard]] Size size() const override;
+        [[nodiscard]] Size getSize() const override;
 
-        [[nodiscard]] const ITexture *color() const override;
+        [[nodiscard]] const ITexture *getColor() const override;
 
-        [[nodiscard]] const ITexture *depth() const override;
+        [[nodiscard]] const ITexture *getDepth() const override;
 
     private:
         Size extent;

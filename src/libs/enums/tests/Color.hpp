@@ -12,7 +12,7 @@ namespace antwika::enums::tests
         Blue,
     };
 
-    [[nodiscard]] constexpr Color lastEnumerator(Color) noexcept
+    [[nodiscard]] constexpr Color getLastEnumerator(Color) noexcept
     {
         return Color::Blue;
     }
@@ -23,7 +23,7 @@ namespace antwika::enums::tests
         Far,
     };
 
-    [[nodiscard]] constexpr Side lastEnumerator(Side) noexcept
+    [[nodiscard]] constexpr Side getLastEnumerator(Side) noexcept
     {
         return Side::Far;
     }

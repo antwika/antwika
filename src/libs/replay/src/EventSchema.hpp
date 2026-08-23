@@ -5,6 +5,6 @@
 namespace antwika::replay::detail
 {
 
-    const nlohmann::json &tickEventSchema();
+    const nlohmann::json &getTickEventSchema();
 
 }

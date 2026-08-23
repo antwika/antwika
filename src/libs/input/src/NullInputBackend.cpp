@@ -15,12 +15,12 @@ namespace antwika::input
         logger.log(Level::Debug, "input.null: reporting no input");
     }
 
-    std::string_view NullInputBackend::name() const
+    std::string_view NullInputBackend::getName() const
     {
         return "null";
     }
 
-    InputCapabilities NullInputBackend::capabilities() const
+    InputCapabilities NullInputBackend::getCapabilities() const
     {
         return InputCapabilities{.keyboard = true, .pointer = true};
     }

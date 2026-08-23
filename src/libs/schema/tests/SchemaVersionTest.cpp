@@ -10,7 +10,7 @@
 #include <antwika/schema/SchemaVersion.hpp>
 #include <antwika/schema/SchemaVersionError.hpp>
 
-using antwika::schema::documentVersion;
+using antwika::schema::getDocumentVersion;
 using antwika::schema::DocumentFormatError;
 using antwika::schema::kImplicitDocumentVersion;
 using antwika::schema::kSchemaVersionKey;
@@ -25,14 +25,14 @@ TEST(SchemaVersionTest, CurrentVersion_IsWhatThisBuildSupports)
 TEST(SchemaVersionTest, DocumentVersion_IsNoneForANonObject)
 {
     EXPECT_EQ(
-        documentVersion(nlohmann::json::array()),
+        getDocumentVersion(nlohmann::json::array()),
         kImplicitDocumentVersion);
 }
 
 TEST(SchemaVersionTest, DocumentVersion_ReadsAnAbsentMemberAsOne)
 {
     EXPECT_EQ(
-        documentVersion(nlohmann::json::object()),
+        getDocumentVersion(nlohmann::json::object()),
         kImplicitDocumentVersion);
 }
 
@@ -40,14 +40,14 @@ TEST(SchemaVersionTest, DocumentVersion_ReadsBackAStatedVersion)
 {
     nlohmann::json document;
     document["version"] = 7;
-    EXPECT_EQ(documentVersion(document), 7U);
+    EXPECT_EQ(getDocumentVersion(document), 7U);
 }
 
 TEST(SchemaVersionTest, DocumentVersion_AcceptsAnotherKey)
 {
     nlohmann::json document;
     document["schemaVersion"] = 4;
-    EXPECT_EQ(documentVersion(document, "schemaVersion"), 4U);
+    EXPECT_EQ(getDocumentVersion(document, "schemaVersion"), 4U);
 }
 
 TEST(SchemaVersionTest, DocumentVersion_RefusesANonInteger)
@@ -55,7 +55,7 @@ TEST(SchemaVersionTest, DocumentVersion_RefusesANonInteger)
     nlohmann::json document;
     document["version"] = "one";
     EXPECT_THROW(
-        { std::ignore = documentVersion(document); },
+        { std::ignore = getDocumentVersion(document); },
         SchemaVersionError);
 }
 
@@ -66,7 +66,7 @@ TEST(SchemaVersionTest, DocumentVersion_NamesAContainerVersion)
 
     try
     {
-        std::ignore = documentVersion(document);
+        std::ignore = getDocumentVersion(document);
         FAIL() << "a container version should have thrown";
     }
     catch (const SchemaVersionError &error)
@@ -83,7 +83,7 @@ TEST(SchemaVersionTest, DocumentVersion_RefusesANegativeVersion)
     nlohmann::json document;
     document["version"] = -1;
     EXPECT_THROW(
-        { std::ignore = documentVersion(document); },
+        { std::ignore = getDocumentVersion(document); },
         SchemaVersionError);
 }
 
@@ -92,7 +92,7 @@ TEST(SchemaVersionTest, DocumentVersion_RefusesAVersionPastUint32)
     nlohmann::json document;
     document["version"] = 4294967296ULL;
     EXPECT_THROW(
-        { std::ignore = documentVersion(document); },
+        { std::ignore = getDocumentVersion(document); },
         SchemaVersionError);
 }
 
@@ -101,7 +101,7 @@ TEST(SchemaVersionTest, DocumentVersion_RefusesASignedOverflow)
     nlohmann::json document;
     document["version"] = std::int64_t{4294967296};
     EXPECT_THROW(
-        { std::ignore = documentVersion(document); },
+        { std::ignore = getDocumentVersion(document); },
         SchemaVersionError);
 }
 
@@ -111,7 +111,7 @@ TEST(SchemaVersionTest, DocumentVersion_ReadsTheLargestVersionAUint32Holds)
     document["version"] = std::numeric_limits<std::uint32_t>::max();
 
     EXPECT_EQ(
-        documentVersion(document),
+        getDocumentVersion(document),
         std::numeric_limits<std::uint32_t>::max());
 }
 
@@ -121,7 +121,7 @@ TEST(SchemaVersionTest, DocumentVersion_ReadsThatSameVersionWrittenSigned)
     document["version"] = std::int64_t{4294967295};
 
     EXPECT_EQ(
-        documentVersion(document),
+        getDocumentVersion(document),
         std::numeric_limits<std::uint32_t>::max());
 }
 
@@ -132,7 +132,7 @@ TEST(SchemaVersionTest, DocumentVersion_SaysWhichNumbersItWouldHaveTaken)
 
     try
     {
-        std::ignore = documentVersion(document);
+        std::ignore = getDocumentVersion(document);
         FAIL() << "a version that is not a number should have thrown";
     }
     catch (const SchemaVersionError &error)
@@ -149,6 +149,6 @@ TEST(SchemaVersionTest, DocumentVersion_ThrowsADocumentFormatError)
     nlohmann::json document;
     document["version"] = "one";
     EXPECT_THROW(
-        { std::ignore = documentVersion(document); },
+        { std::ignore = getDocumentVersion(document); },
         DocumentFormatError);
 }

@@ -14,7 +14,7 @@ namespace antwika::rng
 
         [[nodiscard]] std::uint64_t next() noexcept override;
 
-        [[nodiscard]] std::uint64_t currentState() const noexcept;
+        [[nodiscard]] std::uint64_t getCurrentState() const noexcept;
 
         void restoreState(std::uint64_t value) noexcept;
 

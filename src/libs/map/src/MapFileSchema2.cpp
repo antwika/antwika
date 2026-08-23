@@ -12,7 +12,7 @@
 namespace antwika::map::mapfile
 {
 
-    nlohmann::json settingsSchema()
+    nlohmann::json getSettingsSchema()
     {
         return shapeOf(kSettingsFields);
     } // GCOVR_EXCL_LINE
@@ -25,7 +25,7 @@ namespace antwika::map::mapfile
             schema["properties"][std::string(row.key)]["type"] =
                 "array";
             schema["properties"][std::string(row.key)]["items"] =
-                cellSchema();
+                getCellSchema();
         }
 
         schema["required"].push_back(

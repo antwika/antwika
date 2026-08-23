@@ -24,7 +24,7 @@ namespace antwika::gameplay
         Health,
     };
 
-    [[nodiscard]] constexpr Phase lastEnumerator(Phase) noexcept
+    [[nodiscard]] constexpr Phase getLastEnumerator(Phase) noexcept
     {
         return Phase::Health;
     }
@@ -39,9 +39,9 @@ namespace antwika::gameplay
     public:
         explicit GameLoop(ecs::World &world);
 
-        [[nodiscard]] ecs::World &world() noexcept;
+        [[nodiscard]] ecs::World &getWorld() noexcept;
 
-        [[nodiscard]] const ecs::World &world() const noexcept;
+        [[nodiscard]] const ecs::World &getWorld() const noexcept;
 
         void addSystem(Phase phase, ecs::ISystem &system);
 
@@ -53,6 +53,6 @@ namespace antwika::gameplay
         std::array<ecs::PhaseId, kPhaseCount> phases{};
     };
 
-    [[nodiscard]] std::string_view phaseName(Phase phase);
+    [[nodiscard]] std::string_view getPhaseName(Phase phase);
 
 }

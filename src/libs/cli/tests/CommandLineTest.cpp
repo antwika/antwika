@@ -12,7 +12,7 @@
 using antwika::cli::CommandLine;
 using antwika::cli::CommandLineError;
 using antwika::cli::FlagSpec;
-using antwika::cli::helpText;
+using antwika::cli::getHelpText;
 using antwika::cli::kHelpFlag;
 using antwika::cli::parseCommandLine;
 
@@ -31,7 +31,7 @@ namespace
         },
     };
 
-    [[nodiscard]] CommandLine parse(std::vector<std::string> args)
+    [[nodiscard]] CommandLine getParse(std::vector<std::string> args)
     {
         std::vector<char *> argv;
         argv.reserve(args.size());
@@ -48,54 +48,54 @@ namespace
 
 TEST(CommandLineTest, Parse_FindsNothingInABareInvocation)
 {
-    const auto parsedLine = parse({"antwika_app"});
+    const auto parsedLine = getParse({"antwika_app"});
 
     EXPECT_FALSE(parsedLine.has("--record"));
-    EXPECT_FALSE(parsedLine.value("--record").has_value());
+    EXPECT_FALSE(parsedLine.getValue("--record").has_value());
 }
 
 TEST(CommandLineTest, Parse_ReadsAFlagsValue)
 {
-    const auto parsedLine = parse({"antwika_app", "--record", "out.json"});
+    const auto parsedLine = getParse({"antwika_app", "--record", "out.json"});
 
     EXPECT_TRUE(parsedLine.has("--record"));
-    EXPECT_EQ(parsedLine.value("--record"), "out.json");
+    EXPECT_EQ(parsedLine.getValue("--record"), "out.json");
 }
 
 TEST(CommandLineTest, Parse_AcceptsAFlagThatTakesNoValue)
 {
-    const auto parsedLine = parse({"antwika_app", "--verbose"});
+    const auto parsedLine = getParse({"antwika_app", "--verbose"});
 
     EXPECT_TRUE(parsedLine.has("--verbose"));
-    EXPECT_EQ(parsedLine.value("--verbose"), "");
+    EXPECT_EQ(parsedLine.getValue("--verbose"), "");
 }
 
 TEST(CommandLineTest, Parse_KeepsTheLastOfARepeatedFlag)
 {
-    const auto parsedLine = parse(
+    const auto parsedLine = getParse(
         {"antwika_app", "--record", "first.json", "--record", "last.json"});
 
-    EXPECT_EQ(parsedLine.value("--record"), "last.json");
+    EXPECT_EQ(parsedLine.getValue("--record"), "last.json");
 }
 
 TEST(CommandLineTest, Parse_ThrowsOnAFlagNoProgramKnows)
 {
     EXPECT_THROW(
-        (void)parse({"antwika_app", "--recrd", "out.json"}),
+        (void)getParse({"antwika_app", "--recrd", "out.json"}),
         CommandLineError);
 }
 
 TEST(CommandLineTest, Parse_ThrowsOnAnArgumentThatIsNotAFlagAtAll)
 {
     EXPECT_THROW(
-        (void)parse({"antwika_app", "out.json"}), CommandLineError);
+        (void)getParse({"antwika_app", "out.json"}), CommandLineError);
 }
 
 TEST(CommandLineTest, Parse_ThrowsWhenAFlagIsMissingItsValue)
 {
     try
     {
-        (void)parse({"antwika_app", "--record"});
+        (void)getParse({"antwika_app", "--record"});
         FAIL() << "a flag with no value should have been refused";
     }
     catch (const CommandLineError &error)
@@ -110,19 +110,19 @@ TEST(CommandLineTest, Parse_ThrowsWhenAFlagIsMissingItsValue)
 TEST(CommandLineTest, Parse_DoesNotSwallowWhatFollowsAValuelessFlag)
 {
     EXPECT_THROW(
-        (void)parse({"antwika_app", "--verbose", "out.json"}),
+        (void)getParse({"antwika_app", "--verbose", "out.json"}),
         CommandLineError);
 }
 
 TEST(CommandLineTest, Parse_AcceptsHelpWithoutItBeingInTheTable)
 {
-    EXPECT_TRUE(parse({"antwika_app", "--help"}).has(kHelpFlag));
+    EXPECT_TRUE(getParse({"antwika_app", "--help"}).has(kHelpFlag));
 }
 
 TEST(CommandLineTest, HelpText_NamesEveryFlagInTheTableAndHelpItself)
 {
     const auto text =
-        helpText("antwika_app", std::span<const FlagSpec>(kFlags));
+        getHelpText("antwika_app", std::span<const FlagSpec>(kFlags));
 
     EXPECT_NE(text.find("Usage: antwika_app"), std::string::npos) << text;
     EXPECT_NE(text.find("--record <path>"), std::string::npos) << text;
@@ -136,7 +136,7 @@ TEST(CommandLineTest, HelpText_NamesEveryFlagInTheTableAndHelpItself)
 TEST(CommandLineTest, HelpText_GivesAValuelessFlagNoValueName)
 {
     const auto text =
-        helpText("antwika_app", std::span<const FlagSpec>(kFlags));
+        getHelpText("antwika_app", std::span<const FlagSpec>(kFlags));
 
     EXPECT_NE(text.find("--verbose  "), std::string::npos) << text;
 }
@@ -144,7 +144,7 @@ TEST(CommandLineTest, HelpText_GivesAValuelessFlagNoValueName)
 TEST(CommandLineTest, HelpText_LinesUpTheDescriptions)
 {
     const auto text =
-        helpText("antwika_app", std::span<const FlagSpec>(kFlags));
+        getHelpText("antwika_app", std::span<const FlagSpec>(kFlags));
 
     const auto first = text.find("Write the run's events");
     const auto second = text.find("Say more about");
@@ -159,7 +159,7 @@ TEST(CommandLineTest, HelpText_LinesUpTheDescriptions)
 TEST(CommandLineTest, HelpText_RendersTheTableExactly)
 {
     const auto text =
-        helpText("antwika_app", std::span<const FlagSpec>(kFlags));
+        getHelpText("antwika_app", std::span<const FlagSpec>(kFlags));
 
     EXPECT_EQ(
         text,
@@ -172,7 +172,7 @@ TEST(CommandLineTest, HelpText_RendersTheTableExactly)
 
 TEST(CommandLineTest, HelpText_RendersAnEmptyTableAsJustHelp)
 {
-    const auto text = helpText("antwika_app", {});
+    const auto text = getHelpText("antwika_app", {});
 
     EXPECT_NE(text.find("--help"), std::string::npos) << text;
     EXPECT_EQ(text.find("--record"), std::string::npos) << text;

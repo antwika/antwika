@@ -11,7 +11,7 @@ using antwika::ecs::ComponentKey;
 using antwika::ecs::EcsError;
 using antwika::ecs::detail::claimComponentKey;
 using antwika::ecs::detail::componentKey;
-using antwika::ecs::detail::keyOfName;
+using antwika::ecs::detail::getKeyOfName;
 using antwika::ecs::detail::typeName;
 
 namespace
@@ -49,14 +49,14 @@ TEST(ComponentKeyTest, ComponentKey_DoesNotDependOnWhichTypeIsTouchedFirst)
     const auto beta = componentKey<Beta>();
     const auto alpha = componentKey<Alpha>();
 
-    EXPECT_EQ(alpha, keyOfName(typeName<Alpha>()));
-    EXPECT_EQ(beta, keyOfName(typeName<Beta>()));
+    EXPECT_EQ(alpha, getKeyOfName(typeName<Alpha>()));
+    EXPECT_EQ(beta, getKeyOfName(typeName<Beta>()));
 }
 
 TEST(ComponentKeyTest, KeyOfName_IsNeverNought)
 {
-    EXPECT_NE(keyOfName(""), 0U);
-    EXPECT_NE(keyOfName("antwika::component::Position"), 0U);
+    EXPECT_NE(getKeyOfName(""), 0U);
+    EXPECT_NE(getKeyOfName("antwika::component::Position"), 0U);
 }
 
 TEST(ComponentKeyTest, KeyOfName_TellsNamesApart)
@@ -67,21 +67,21 @@ TEST(ComponentKeyTest, KeyOfName_TellsNamesApart)
          {"a", "b", "antwika::component::Position",
           "antwika::component::Velocity", "antwika::component::Health"})
     {
-        EXPECT_TRUE(seenKeys.insert(keyOfName(name)).second);
+        EXPECT_TRUE(seenKeys.insert(getKeyOfName(name)).second);
     }
 }
 
 TEST(ComponentKeyTest, ClaimComponentKey_LetsOneNameClaimItsKeyTwice)
 {
-    claimComponentKey(keyOfName("one"), "one");
+    claimComponentKey(getKeyOfName("one"), "one");
 
-    EXPECT_NO_THROW(claimComponentKey(keyOfName("one"), "one"));
+    EXPECT_NO_THROW(claimComponentKey(getKeyOfName("one"), "one"));
 }
 
 TEST(ComponentKeyTest, ClaimComponentKey_RefusesTwoNamesOnOneKey)
 {
-    claimComponentKey(keyOfName("first"), "first");
+    claimComponentKey(getKeyOfName("first"), "first");
 
     EXPECT_THROW(
-        claimComponentKey(keyOfName("first"), "second"), EcsError);
+        claimComponentKey(getKeyOfName("first"), "second"), EcsError);
 }

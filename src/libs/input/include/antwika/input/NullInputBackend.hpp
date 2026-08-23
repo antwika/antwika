@@ -25,9 +25,9 @@ namespace antwika::input
         NullInputBackend &operator=(const NullInputBackend &) = delete;
         NullInputBackend &operator=(NullInputBackend &&) = delete;
 
-        [[nodiscard]] std::string_view name() const override;
+        [[nodiscard]] std::string_view getName() const override;
 
-        [[nodiscard]] InputCapabilities capabilities() const override;
+        [[nodiscard]] InputCapabilities getCapabilities() const override;
 
         [[nodiscard]] std::optional<InputEvent> pollEvent() override;
     };

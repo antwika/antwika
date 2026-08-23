@@ -10,24 +10,24 @@ using antwika::component::kEmptySlot;
 using antwika::component::kEveryItemKind;
 using antwika::component::kInventorySlots;
 using antwika::component::kItemKindCount;
-using antwika::rules::inventoryCount;
-using antwika::rules::inventoryHolds;
-using antwika::rules::inventoryWith;
-using antwika::rules::inventoryWithout;
+using antwika::rules::getInventoryCount;
+using antwika::rules::isInventoryHolds;
+using antwika::rules::getInventoryWith;
+using antwika::rules::getInventoryWithout;
 using antwika::rules::slotFor;
-using antwika::rules::startingInventory;
+using antwika::rules::getStartingInventory;
 
 namespace
 {
 
-    [[nodiscard]] Inventory carrying(
+    [[nodiscard]] Inventory getCarrying(
         const ItemKind kind, const std::size_t many)
     {
         Inventory bagInventory{};
 
         for (std::size_t index = 0; index < many; ++index)
         {
-            bagInventory = *inventoryWith(bagInventory, kind);
+            bagInventory = *getInventoryWith(bagInventory, kind);
         }
 
         return bagInventory;
@@ -42,11 +42,11 @@ namespace
 
     TEST(ItemsTest, StartingInventory_CarriesOneOfEachKind)
     {
-        const auto bagInventory = startingInventory();
+        const auto bagInventory = getStartingInventory();
 
         for (const auto kind : antwika::component::kEveryItemKind)
         {
-            EXPECT_EQ(inventoryCount(bagInventory, kind), 1U);
+            EXPECT_EQ(getInventoryCount(bagInventory, kind), 1U);
         }
     }
 
@@ -63,7 +63,7 @@ namespace
 
     TEST(ItemsTest, InventoryWith_TakesAnItemIntoTheFirstFreeSlot)
     {
-        const auto bagInventory = inventoryWith(Inventory{}, ItemKind::Water);
+        const auto bagInventory = getInventoryWith(Inventory{}, ItemKind::Water);
 
         ASSERT_TRUE(bagInventory.has_value());
         EXPECT_EQ(bagInventory->slots.front(), slotFor(ItemKind::Water));
@@ -76,36 +76,36 @@ namespace
 
     TEST(ItemsTest, InventoryWith_TurnsAwayAnItemWhereEverySlotIsFull)
     {
-        const auto fullInventory = carrying(ItemKind::Food, kInventorySlots);
+        const auto fullInventory = getCarrying(ItemKind::Food, kInventorySlots);
 
         EXPECT_FALSE(
-            inventoryWith(fullInventory, ItemKind::Water).has_value());
+            getInventoryWith(fullInventory, ItemKind::Water).has_value());
     }
 
     TEST(ItemsTest, InventoryHolds_AnswersForEachKindOnItsOwn)
     {
-        const auto bag = carrying(ItemKind::Food, 1);
+        const auto bag = getCarrying(ItemKind::Food, 1);
 
-        EXPECT_TRUE(inventoryHolds(bag, ItemKind::Food));
-        EXPECT_FALSE(inventoryHolds(bag, ItemKind::Water));
+        EXPECT_TRUE(isInventoryHolds(bag, ItemKind::Food));
+        EXPECT_FALSE(isInventoryHolds(bag, ItemKind::Water));
     }
 
     TEST(ItemsTest, InventoryCount_CountsOnlyTheKindItWasAsked)
     {
-        auto bag = carrying(ItemKind::Food, 2);
+        auto bag = getCarrying(ItemKind::Food, 2);
 
-        bag = *inventoryWith(bag, ItemKind::Water);
+        bag = *getInventoryWith(bag, ItemKind::Water);
 
-        EXPECT_EQ(inventoryCount(bag, ItemKind::Food), 2U);
-        EXPECT_EQ(inventoryCount(bag, ItemKind::Water), 1U);
+        EXPECT_EQ(getInventoryCount(bag, ItemKind::Food), 2U);
+        EXPECT_EQ(getInventoryCount(bag, ItemKind::Water), 1U);
     }
 
     TEST(ItemsTest, InventoryWithout_TakesOneAndLeavesTheRest)
     {
-        const auto bag = inventoryWithout(
-            carrying(ItemKind::Food, 3), ItemKind::Food);
+        const auto bag = getInventoryWithout(
+            getCarrying(ItemKind::Food, 3), ItemKind::Food);
 
-        EXPECT_EQ(inventoryCount(bag, ItemKind::Food), 2U);
+        EXPECT_EQ(getInventoryCount(bag, ItemKind::Food), 2U);
         EXPECT_EQ(bag.slots.front(), kEmptySlot);
     }
 
@@ -113,10 +113,10 @@ namespace
         ItemsTest,
         InventoryWithout_LeavesAnInventoryHoldingNoneOfThatKind)
     {
-        const auto bag = carrying(ItemKind::Food, 2);
+        const auto bag = getCarrying(ItemKind::Food, 2);
 
         EXPECT_EQ(
-            inventoryWithout(bag, ItemKind::Water).slots,
+            getInventoryWithout(bag, ItemKind::Water).slots,
             bag.slots);
     }
 

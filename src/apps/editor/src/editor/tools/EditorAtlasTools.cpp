@@ -22,8 +22,8 @@ namespace antwika::editor
         const geometry::GridCell toCell)
     {
         const auto source =
-            document.map.tilemap.at(fromCell.column, fromCell.row);
-        auto target = document.map.tilemap.at(toCell.column, toCell.row);
+            document.map.tilemap.getEntryAt(fromCell.column, fromCell.row);
+        auto target = document.map.tilemap.getEntryAt(toCell.column, toCell.row);
 
         if (!target.has_value())
         {
@@ -70,7 +70,7 @@ namespace antwika::editor
                           decor::kFullFrequency)
                     : std::max<int>(weight - 1, 0);
 
-            document.map.familyGroups = withVariantWeightSet(
+            document.map.familyGroups = getWithVariantWeightSet(
                 document.map.familyGroups,
                 *selectedTile,
                 static_cast<std::uint8_t>(nextIndex));
@@ -100,7 +100,7 @@ namespace antwika::editor
                           decor::kFullFrequency)
                     : std::max<int>(nudgedDecor->frequency - 1, 0);
 
-            document.map.decor = withFrequencySet(
+            document.map.decor = getWithFrequencySet(
                 document.map.decor,
                 *selectedTile,
                 static_cast<std::uint8_t>(nextIndex));
@@ -131,7 +131,7 @@ namespace antwika::editor
                           decor::kFullFrequency)
                     : std::max<int>(nudgedDecor->weight - 1, 0);
 
-            document.map.decor = withWeightSet(
+            document.map.decor = getWithWeightSet(
                 document.map.decor,
                 *selectedTile,
                 static_cast<std::uint8_t>(nextIndex));
@@ -179,7 +179,7 @@ namespace antwika::editor
         {
             pushUndo();
             ensureDecor();
-            document.map.decor = withFrequencySet(
+            document.map.decor = getWithFrequencySet(
                 document.map.decor,
                 *selectedTile,
                 static_cast<std::uint8_t>(
@@ -196,7 +196,7 @@ namespace antwika::editor
         {
             pushUndo();
             ensureDecor();
-            document.map.decor = withWeightSet(
+            document.map.decor = getWithWeightSet(
                 document.map.decor,
                 *selectedTile,
                 static_cast<std::uint8_t>(
@@ -212,7 +212,7 @@ namespace antwika::editor
             && selectedTile.has_value())
         {
             pushUndo();
-            document.map.familyGroups = withVariantWeightSet(
+            document.map.familyGroups = getWithVariantWeightSet(
                 document.map.familyGroups,
                 *selectedTile,
                 static_cast<std::uint8_t>(
@@ -264,7 +264,7 @@ namespace antwika::editor
 
 
             const auto projectToScreen =
-                viewportRenderer.viewport().toCanvas(
+                viewportRenderer.getViewport().toCanvas(
                     antwika::gfx::Point{
                         .x = downPressed.position.x,
                         .y = downPressed.position.y});
@@ -276,7 +276,7 @@ namespace antwika::editor
             const auto withLeft =
                 downPressed.button == input::MouseButton::Left;
             const auto takenColor =
-                withLeft ? colorAtPoint(
+                withLeft ? getColorAtPoint(
                                camera::kCanvasSize, inkPicker.pickerHsv,
                                    pointer.pointerOnCanvas)
                          : std::nullopt;
@@ -290,14 +290,14 @@ namespace antwika::editor
 
                 inkPicker.pickerHsv = *takenColor;
                 recolorInk(colorOf(inkPicker.pickerHsv));
-                inkPicker.hexText = colorToHex(
+                inkPicker.hexText = getColorToHex(
                     document.map.paletteColors.at(*inkPicker.editingInk));
                 inkPicker.pickerDragging = true;
 
                 return true;
             }
 
-            if (onPicker(camera::kCanvasSize, pointer.pointerOnCanvas))
+            if (isOnPicker(camera::kCanvasSize, pointer.pointerOnCanvas))
             {
                 return true;
             }
@@ -330,7 +330,7 @@ namespace antwika::editor
         slidingWidget.reset();
     }
 
-    bool Editor::handlePaletteWidgets(
+    bool Editor::consumePaletteWidgets(
         const ui::Interactions &interactions)
     {
         auto consumedKey = false;
@@ -340,7 +340,7 @@ namespace antwika::editor
              ++which)
         {
             if (interactions.activatedWidget
-                != tile::swatchWidget(which))
+                != tile::getSwatchWidget(which))
             {
                 continue;
             }
@@ -356,13 +356,13 @@ namespace antwika::editor
                 inkPicker.glowBeforeEdit = glowOf(which);
                 inkPicker.pickerHsv = hsvOf(
                     document.map.paletteColors.at(which));
-                inkPicker.hexText = colorToHex(
+                inkPicker.hexText = getColorToHex(
                     document.map.paletteColors.at(which));
                 carryInk();
             }
 
             pointer.clickTracker =
-                ui::trackClick(tick, pointer.pointerOnCanvas);
+                ui::getTrackClick(tick, pointer.pointerOnCanvas);
             inkPicker.activeInk = which;
         }
 
@@ -386,7 +386,7 @@ namespace antwika::editor
             inkPicker.pickerHsv =
                 hsvOf(document.map.paletteColors.at(inkPicker.activeInk));
             inkPicker.hexText =
-                colorToHex(document.map.paletteColors.at(inkPicker.activeInk));
+                getColorToHex(document.map.paletteColors.at(inkPicker.activeInk));
             carryInk();
             consumedKey = true;
         }
@@ -452,7 +452,7 @@ namespace antwika::editor
         inkPicker.carriedCharacterInk.clear();
         inkPicker.carriedFigureInk.clear();
 
-        if (!tile::soleInk(document.map.paletteColors, *inkPicker.editingInk))
+        if (!tile::isSoleInk(document.map.paletteColors, *inkPicker.editingInk))
         {
             return;
         }
@@ -460,11 +460,11 @@ namespace antwika::editor
         const auto color = document.map.paletteColors.at(*inkPicker.editingInk);
 
         for (std::size_t sheet = 0;
-             sheet < atlasSheets.sheets().size();
+             sheet < atlasSheets.getSheets().size();
              ++sheet)
         {
             inkPicker.carriedInk.at(sheet) =
-                tile::paintedWith(atlasSheets.sheet(sheet), color);
+                tile::getPaintedWith(atlasSheets.sheet(sheet), color);
         }
 
         if (*inkPicker.editingInk == character::kTransparentInk)
@@ -473,11 +473,11 @@ namespace antwika::editor
         }
 
         inkPicker.carriedCharacterInk =
-            tile::paintedWith(characterView.sheet(), color);
-        for (const auto &skin : characterView.skins())
+            tile::getPaintedWith(characterView.getSheet(), color);
+        for (const auto &skin : characterView.getSkins())
         {
             inkPicker.carriedFigureInk.push_back(
-                tile::paintedWith(skin, color));
+                tile::getPaintedWith(skin, color));
         }
     }
 
@@ -486,7 +486,7 @@ namespace antwika::editor
         document.map.paletteColors.at(*inkPicker.editingInk) = nextColor;
 
         for (std::size_t sheet = 0;
-             sheet < atlasSheets.sheets().size();
+             sheet < atlasSheets.getSheets().size();
              ++sheet)
         {
             if (!inkPicker.carriedInk.at(sheet).empty())
@@ -502,7 +502,7 @@ namespace antwika::editor
         if (!inkPicker.carriedCharacterInk.empty())
         {
             tile::repaintAt(
-                characterView.sheet(),
+                characterView.getSheet(),
                 inkPicker.carriedCharacterInk,
                 nextColor);
             characterView.touch();
@@ -510,7 +510,7 @@ namespace antwika::editor
 
         for (std::size_t figure = 0;
              figure < inkPicker.carriedFigureInk.size()
-             && figure < characterView.skins().size();
+             && figure < characterView.getSkins().size();
              ++figure)
         {
             if (inkPicker.carriedFigureInk.at(figure).empty())
@@ -518,7 +518,7 @@ namespace antwika::editor
                 continue;
             }
 
-            auto paintedSkin = characterView.skins().at(figure);
+            auto paintedSkin = characterView.getSkins().at(figure);
 
             tile::repaintAt(
                 paintedSkin,
@@ -533,12 +533,12 @@ namespace antwika::editor
         const tilemap::Tile oneTile, const tilemap::Tile otherTile)
     {
         const auto &rules =
-            isDecorLayer() ? document.map.decorRules : worldMeshes.rules();
+            isDecorLayer() ? document.map.decorRules : worldMeshes.getRules();
 
         for (const auto edge : tilemap::kEveryTileEdge)
         {
             if (decor::tilesCompatible(rules, oneTile, edge, otherTile)
-                && decor::tilesCompatible(rules, otherTile, voxel::facing(edge),
+                && decor::tilesCompatible(rules, otherTile, voxel::getFacing(edge),
                     oneTile))
             {
                 return true;

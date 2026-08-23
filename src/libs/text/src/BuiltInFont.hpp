@@ -5,6 +5,6 @@
 namespace antwika::text::detail
 {
 
-    [[nodiscard]] const font::Font &builtInFont();
+    [[nodiscard]] const font::Font &getBuiltInFont();
 
 }

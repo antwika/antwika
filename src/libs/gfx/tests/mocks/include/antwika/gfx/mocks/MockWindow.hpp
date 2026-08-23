@@ -18,11 +18,11 @@ namespace antwika::gfx::mocks
     class MockWindow : public IWindow
     {
     public:
-        MOCK_METHOD(WindowId, id, (), (const, override));
+        MOCK_METHOD(WindowId, getId, (), (const, override));
         MOCK_METHOD(bool, isOpen, (), (const, override));
-        MOCK_METHOD(std::string, title, (), (const, override));
-        MOCK_METHOD(Size, configuredSize, (), (const, override));
-        MOCK_METHOD(Size, size, (), (const, override));
+        MOCK_METHOD(std::string, getTitle, (), (const, override));
+        MOCK_METHOD(Size, getConfiguredSize, (), (const, override));
+        MOCK_METHOD(Size, getSize, (), (const, override));
         MOCK_METHOD(bool, isFullscreen, (), (const, override));
         MOCK_METHOD(IRenderer &, renderer, (), (override));
         MOCK_METHOD(void, setTitle, (std::string_view title), (override));

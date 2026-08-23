@@ -57,12 +57,12 @@ namespace antwika::map
             return redoneState;
         }
 
-        [[nodiscard]] std::size_t undoCount() const
+        [[nodiscard]] std::size_t getUndoCount() const
         {
             return undoStack.size();
         }
 
-        [[nodiscard]] std::size_t redoCount() const
+        [[nodiscard]] std::size_t getRedoCount() const
         {
             return redoStack.size();
         }

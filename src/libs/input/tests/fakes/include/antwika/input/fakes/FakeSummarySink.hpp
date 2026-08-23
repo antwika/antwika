@@ -33,7 +33,7 @@ namespace antwika::input::fakes
                 return;
             }
 
-            const auto decodedEvent = codec.decode(event.event);
+            const auto decodedEvent = codec.getDecode(event.event);
             if (!decodedEvent.has_value())
             {
                 return;
@@ -58,11 +58,11 @@ namespace antwika::input::fakes
                 summary.scrollTotal += scroll->vertical;
             }
 
-            summary.pointerPosition = state.mouse().position();
-            summary.leftHeldAtEnd = state.mouse().isDown(MouseButton::Left);
+            summary.pointerPosition = state.getMouse().getPosition();
+            summary.leftHeldAtEnd = state.getMouse().isDown(MouseButton::Left);
         }
 
-        [[nodiscard]] SessionSummary result() const
+        [[nodiscard]] SessionSummary getResult() const
         {
             return summary;
         }

@@ -61,7 +61,7 @@ namespace antwika::editor
                       antwika::editor::Menu::Settings})
                 {
                     if (interactions.chosenChoice->dropdownWidget
-                        != menuWidget(menu))
+                        != getMenuWidget(menu))
                     {
                         continue;
                     }
@@ -92,7 +92,7 @@ namespace antwika::editor
 
             if (interactions.activatedWidget
                     != antwika::widget::kNoWidget
-                && handleWidgets(interactions))
+                && consumeWidgets(interactions))
             {
                 return;
             }
@@ -122,14 +122,14 @@ namespace antwika::editor
             if (activeView == map::View::World && !play.playing)
             {
                 const auto projectToScreen =
-                    viewportRenderer.viewport().toCanvas(
+                    viewportRenderer.getViewport().toCanvas(
                         antwika::gfx::Point{
                             .x = downPressed.position.x,
                             .y = downPressed.position.y});
 
-                cameraRig.panGripPosition = voxelmap::planeHit(
-                    voxelmap::rayInModelSpace(
-                        voxelmap::rayThrough(
+                cameraRig.panGripPosition = voxelmap::getPlaneHit(
+                    voxelmap::getRayInModelSpace(
+                        voxelmap::getRayThrough(
                             worldCamera(),
                             camera::kCanvasSize,
                             antwika::gfx::PointF{
@@ -139,7 +139,7 @@ namespace antwika::editor
                                     projectToScreen.y)}),
                         worldRotation()),
                     static_cast<float>(
-                        antwika::voxel::cubeTop(editLevel)));
+                        antwika::voxel::getCubeTop(editLevel)));
             }
         }
 
@@ -161,7 +161,7 @@ namespace antwika::editor
             && downPressed.button == input::MouseButton::Left)
         {
             const auto projectToScreen =
-                viewportRenderer.viewport().toCanvas(
+                viewportRenderer.getViewport().toCanvas(
                     antwika::gfx::Point{
                         .x = downPressed.position.x,
                         .y = downPressed.position.y});
@@ -170,13 +170,13 @@ namespace antwika::editor
                 static_cast<float>(projectToScreen.y)};
 
             if (downPressed.button == input::MouseButton::Left
-                && (heldModifiers().shift
+                && (getHeldModifiers().shift
                     || settings.tool == map::Tool::Picker))
             {
-                const auto pickedFace = voxelmap::tilePicked(
+                const auto pickedFace = voxelmap::getTilePicked(
                     visibleCells(),
-                    worldMeshes.faces(),
-                    worldMeshes.drawnAs(),
+                    worldMeshes.getFaces(),
+                    worldMeshes.getDrawnAs(),
                     worldCamera(),
                     worldRotation(),
                     camera::kCanvasSize,
@@ -194,12 +194,12 @@ namespace antwika::editor
                 return;
             }
 
-            const auto cell = voxelmap::cellUnder(
+            const auto cell = voxelmap::getCellUnder(
                 worldCamera(),
                 worldRotation(),
                 camera::kCanvasSize,
                 point,
-                antwika::voxel::cubeTop(editLevel));
+                antwika::voxel::getCubeTop(editLevel));
 
             if (!cell.has_value())
             {
@@ -266,7 +266,7 @@ namespace antwika::editor
 
             pushUndo();
 
-            document.map.voxels = voxel::withRampsRebuilt(
+            document.map.voxels = voxel::getWithRampsRebuilt(
                 settings.tool == map::Tool::Eraser
                       ? voxel::withoutBlockAt(
                           document.map.voxels, *cell)
@@ -288,16 +288,16 @@ namespace antwika::editor
 
     void Editor::rightTaken(const input::Position position)
     {
-        const auto projectToScreen = viewportRenderer.viewport().toCanvas(
+        const auto projectToScreen = viewportRenderer.getViewport().toCanvas(
             antwika::gfx::Point{.x = position.x, .y = position.y});
-        const auto cell = voxelmap::cellUnder(
+        const auto cell = voxelmap::getCellUnder(
             worldCamera(),
             worldRotation(),
             camera::kCanvasSize,
             antwika::gfx::PointF{
                 static_cast<float>(projectToScreen.x),
                 static_cast<float>(projectToScreen.y)},
-            antwika::voxel::cubeTop(editLevel));
+            antwika::voxel::getCubeTop(editLevel));
 
         if (!cell.has_value())
         {
