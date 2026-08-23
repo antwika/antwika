@@ -176,62 +176,22 @@ namespace antwika::map
 
             [[nodiscard]] nlohmann::json tileKindSchema()
             {
-                nlohmann::json shape;
-
-                shape["type"] = "object";
-                shape["additionalProperties"] = false;
-                shape["required"] = {
-                    std::string(kTileKey), std::string(kKindKey)};
-                shape["properties"][std::string(kTileKey)] = tileSchema();
-                shape["properties"][std::string(kKindKey)]["enum"] =
-                    namesOf(kKindNames.names);
-
-                return shape;
+                return shapeOf(kTileKindFields);
             } // GCOVR_EXCL_LINE
 
             [[nodiscard]] nlohmann::json tileFacingSchema()
             {
-                nlohmann::json shape;
-
-                shape["type"] = "object";
-                shape["additionalProperties"] = false;
-                shape["required"] = {
-                    std::string(kTileKey), std::string(kFacingKey)};
-                shape["properties"][std::string(kTileKey)] = tileSchema();
-                shape["properties"][std::string(kFacingKey)]["enum"] =
-                    namesOf(kFacingNames.names);
-
-                return shape;
+                return shapeOf(kTileFacingFields);
             } // GCOVR_EXCL_LINE
 
             [[nodiscard]] nlohmann::json tileLevelSchema()
             {
-                nlohmann::json shape;
-
-                shape["type"] = "object";
-                shape["additionalProperties"] = false;
-                shape["required"] = {
-                    std::string(kTileKey), std::string(kLevelKey)};
-                shape["properties"][std::string(kTileKey)] = tileSchema();
-                shape["properties"][std::string(kLevelKey)]["enum"] =
-                    namesOf(kStairHalfNames.names);
-
-                return shape;
+                return shapeOf(kTileLevelFields);
             } // GCOVR_EXCL_LINE
 
             [[nodiscard]] nlohmann::json tilePartSchema()
             {
-                nlohmann::json shape;
-
-                shape["type"] = "object";
-                shape["additionalProperties"] = false;
-                shape["required"] = {
-                    std::string(kTileKey), std::string(kPartKey)};
-                shape["properties"][std::string(kTileKey)] = tileSchema();
-                shape["properties"][std::string(kPartKey)]["enum"] =
-                    namesOf(kPartNames.names);
-
-                return shape;
+                return shapeOf(kTilePartFields);
             } // GCOVR_EXCL_LINE
 
             [[nodiscard]] nlohmann::json mapSchema()

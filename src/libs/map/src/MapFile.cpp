@@ -304,45 +304,33 @@ namespace antwika::map
         for (const auto &tileKind :
              wholeDocument[std::string(kTileKindsKey)])
         {
-            map.rules.setKind(
-                readTile(tileKind[std::string(kTileKey)]),
-                enumFromName(
-                    kKindNames,
-                    tileKind[std::string(kKindKey)]
-                        .get<std::string>()));
+            const auto row = read<KindRow>(kTileKindFields, tileKind);
+
+            map.rules.setKind(row.first, row.second);
         }
 
         for (const auto &tileFacing :
              wholeDocument[std::string(kTileFacingsKey)])
         {
-            map.rules.setFacing(
-                readTile(tileFacing[std::string(kTileKey)]),
-                enumFromName(
-                    kFacingNames,
-                    tileFacing[std::string(kFacingKey)]
-                        .get<std::string>()));
+            const auto row = read<FacingRow>(kTileFacingFields, tileFacing);
+
+            map.rules.setFacing(row.first, row.second);
         }
 
         for (const auto &tileLevel :
              wholeDocument[std::string(kTileLevelsKey)])
         {
-            map.rules.setLevel(
-                readTile(tileLevel[std::string(kTileKey)]),
-                enumFromName(
-                    kStairHalfNames,
-                    tileLevel[std::string(kLevelKey)]
-                        .get<std::string>()));
+            const auto row = read<LevelRow>(kTileLevelFields, tileLevel);
+
+            map.rules.setLevel(row.first, row.second);
         }
 
         for (const auto &tilePart :
              wholeDocument[std::string(kTilePartsKey)])
         {
-            map.rules.setPart(
-                readTile(tilePart[std::string(kTileKey)]),
-                enumFromName(
-                    kPartNames,
-                    tilePart[std::string(kPartKey)]
-                        .get<std::string>()));
+            const auto row = read<PartRow>(kTilePartFields, tilePart);
+
+            map.rules.setPart(row.first, row.second);
         }
 
         readDecor(map, wholeDocument);
