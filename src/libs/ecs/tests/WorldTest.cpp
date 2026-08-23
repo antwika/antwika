@@ -73,7 +73,7 @@ TEST(WorldTest, Create_ReturnsALiveEntity)
 
     const auto entity = world.create();
 
-    EXPECT_TRUE(world.alive(entity));
+    EXPECT_TRUE(world.isAlive(entity));
 }
 
 TEST(WorldTest, Add_IsNotVisibleUntilCommit)
@@ -300,10 +300,10 @@ TEST(WorldTest, Destroy_LeavesTheEntityAliveUntilCommit)
 
         world.destroy(entity);
 
-        EXPECT_TRUE(world.alive(entity));
+        EXPECT_TRUE(world.isAlive(entity));
     }
 
-    EXPECT_FALSE(world.alive(entity));
+    EXPECT_FALSE(world.isAlive(entity));
     EXPECT_FALSE(world.has<Position>(entity));
 }
 
@@ -383,7 +383,7 @@ TEST(WorldTest, Destroy_RetiresAnEntityOncePerPhase)
         world.destroy(entity);
     });
 
-    EXPECT_FALSE(world.alive(entity));
+    EXPECT_FALSE(world.isAlive(entity));
     EXPECT_FALSE(world.has<Position>(entity));
 }
 
@@ -402,7 +402,7 @@ TEST(WorldTest, Commit_DoesNotReapplyTheFirstCommit)
         const OpenPhase secondPhase(world);
     });
 
-    EXPECT_FALSE(world.alive(entity));
+    EXPECT_FALSE(world.isAlive(entity));
 }
 
 TEST(WorldTest, Remove_ThrowsOnADeadEntity)
@@ -483,7 +483,7 @@ TEST(WorldTest, Destroy_LeavesUnrelatedPoolsAlone)
         world.destroy(withPosition);
     }
 
-    EXPECT_FALSE(world.alive(withPosition));
+    EXPECT_FALSE(world.isAlive(withPosition));
     ASSERT_TRUE(world.has<Velocity>(withVelocity));
     EXPECT_EQ(world.get<Velocity>(withVelocity), (Velocity{3}));
 
@@ -493,7 +493,7 @@ TEST(WorldTest, Destroy_LeavesUnrelatedPoolsAlone)
         world.destroy(withVelocity);
     }
 
-    EXPECT_FALSE(world.alive(withVelocity));
+    EXPECT_FALSE(world.isAlive(withVelocity));
 }
 
 TEST(WorldTest, Destroy_LeavesNoOrphanWhenStagedBeforeAdd)
@@ -510,7 +510,7 @@ TEST(WorldTest, Destroy_LeavesNoOrphanWhenStagedBeforeAdd)
         world.add<Velocity>(entity, Velocity{3});
     }
 
-    EXPECT_FALSE(world.alive(entity));
+    EXPECT_FALSE(world.isAlive(entity));
     EXPECT_FALSE(world.has<Position>(entity));
     EXPECT_FALSE(world.has<Velocity>(entity));
     const auto positionView = world.view<Position>();
@@ -631,7 +631,7 @@ TEST(WorldTest, Destroy_KeepsAWriteToAPoolTheDoomedEntityIsNotIn)
         const OpenPhase secondPhase(world);
     }
 
-    EXPECT_FALSE(world.alive(doomedEntity));
+    EXPECT_FALSE(world.isAlive(doomedEntity));
     ASSERT_TRUE(world.has<Velocity>(standingEntity));
     EXPECT_EQ(world.get<Velocity>(standingEntity), (Velocity{9}));
 }
@@ -666,7 +666,7 @@ TEST(WorldTest, Destroy_ClearsEveryPoolOfABatchInOneCommit)
 
     for (const auto entity : entities)
     {
-        EXPECT_FALSE(world.alive(entity));
+        EXPECT_FALSE(world.isAlive(entity));
         EXPECT_FALSE(world.has<Position>(entity));
         EXPECT_FALSE(world.has<Velocity>(entity));
     }
@@ -823,7 +823,7 @@ TEST(WorldTest, Add_IsDiscardedWhenTheEntityDiesInTheSamePhase)
         world.add<Position>(keptEntity, Position{3, 4});
     }
 
-    EXPECT_FALSE(world.alive(doomedEntity));
+    EXPECT_FALSE(world.isAlive(doomedEntity));
     EXPECT_FALSE(world.has<Position>(doomedEntity));
     ASSERT_TRUE(world.has<Position>(keptEntity));
     EXPECT_EQ(world.get<Position>(keptEntity), (Position{3, 4}));
@@ -916,7 +916,7 @@ TEST(WorldTest, ForgetComponents_LeavesEveryEntityStanding)
     }
     world.forgetComponents();
 
-    EXPECT_TRUE(world.alive(entity));
+    EXPECT_TRUE(world.isAlive(entity));
 }
 
 TEST(WorldTest, ForgetComponents_TakesEveryComponentAway)

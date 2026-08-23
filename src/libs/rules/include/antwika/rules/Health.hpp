@@ -13,10 +13,10 @@ namespace antwika::rules
     [[nodiscard]] std::uint16_t levelOf(
         component::Health health, component::ItemKind kind) noexcept;
 
-    [[nodiscard]] component::Health drained(
+    [[nodiscard]] component::Health drainedHealth(
         component::Health health, time::Tick tick) noexcept;
 
-    [[nodiscard]] component::Vitals consumed(
+    [[nodiscard]] component::Vitals consumedVitals(
         component::Vitals vitals, component::ItemKind kind) noexcept;
 
     [[nodiscard]] component::Vitals autoConsumed(

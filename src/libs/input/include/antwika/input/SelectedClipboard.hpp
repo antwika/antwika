@@ -11,7 +11,7 @@ namespace antwika::input
 
     using antwika::log::ILogger;
 
-    [[nodiscard]] std::unique_ptr<IClipboard> makeSelectedClipboard(
+    [[nodiscard]] std::unique_ptr<IClipboard> createSelectedClipboard(
         ILogger &logger);
 
 }

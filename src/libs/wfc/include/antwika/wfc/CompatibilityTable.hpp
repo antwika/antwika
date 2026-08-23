@@ -16,7 +16,7 @@ namespace antwika::wfc
         [[nodiscard]] bool compatible(
             std::size_t left, std::size_t right) const;
 
-        [[nodiscard]] std::size_t alphabetSize() const;
+        [[nodiscard]] std::size_t getAlphabetSize() const;
 
     private:
         std::size_t size;

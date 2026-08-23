@@ -456,7 +456,7 @@ namespace antwika::editor
         [[nodiscard]] bool handlePaletteWidgets(
             const ui::Interactions &interactions);
 
-        [[nodiscard]] bool handlePickerPress(
+        [[nodiscard]] bool consumePickerPress(
             const input::PointerButtonPressed &downPressed);
 
         void endSliderDrag();

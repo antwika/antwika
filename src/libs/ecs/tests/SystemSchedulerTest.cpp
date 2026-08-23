@@ -186,7 +186,7 @@ TEST(SystemSchedulerTest, Run_LeavesAnEntityDestroyable)
         world.destroy(entity);
     }
 
-    EXPECT_FALSE(world.alive(entity));
+    EXPECT_FALSE(world.isAlive(entity));
 }
 
 TEST(SystemSchedulerTest, Run_HidesASpawnedComponentFromTheSamePhase)

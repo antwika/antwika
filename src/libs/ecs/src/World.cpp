@@ -54,7 +54,7 @@ namespace antwika::ecs
 
     void World::destroy(Entity entity)
     {
-        if (!alive(entity))
+        if (!isAlive(entity))
         {
             throw EcsError("World: entity is not alive");
         }
@@ -62,9 +62,9 @@ namespace antwika::ecs
         pendingDestroyedEntities.push_back(entity);
     }
 
-    bool World::alive(Entity entity) const noexcept
+    bool World::isAlive(Entity entity) const noexcept
     {
-        return entityManager->alive(entity);
+        return entityManager->isAlive(entity);
     }
 
     void World::commit()
@@ -192,7 +192,7 @@ namespace antwika::ecs
 
         for (const auto entity : entities)
         {
-            if (!alive(entity))
+            if (!isAlive(entity))
             {
                 continue;
             }

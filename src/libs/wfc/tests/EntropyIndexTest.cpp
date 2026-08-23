@@ -29,7 +29,7 @@ TEST(EntropyIndexTest, PickNext_BreaksTiesByLowestIndex)
 TEST(EntropyIndexTest, PickNext_ExcludesSingletonAndEmptyCells)
 {
     std::vector<Domain> waveDomains{
-        Domain::singleton(0, 3), Domain(0), Domain(3)};
+        Domain::createSingleton(0, 3), Domain(0), Domain(3)};
     EntropyIndex entropyIndex(waveDomains, {});
 
     ASSERT_TRUE(entropyIndex.pickNext().has_value());
@@ -39,7 +39,7 @@ TEST(EntropyIndexTest, PickNext_ExcludesSingletonAndEmptyCells)
 TEST(EntropyIndexTest, PickNext_ReturnsNothingWhenAllDetermined)
 {
     std::vector<Domain> waveDomains{
-        Domain::singleton(0, 3), Domain::singleton(1, 3)};
+        Domain::createSingleton(0, 3), Domain::createSingleton(1, 3)};
     EntropyIndex entropyIndex(waveDomains, {});
 
     EXPECT_FALSE(entropyIndex.pickNext().has_value());

@@ -56,14 +56,14 @@ TEST(RemainingBudgetTest, RemainingOf_HoldsEveryFrameToItsBudget)
 
     for (const auto work : {3ms, 12ms, 30ms})
     {
-        const auto startedAt = watch.now();
+        const auto startedAt = watch.currentTime();
 
         watch.advance(work);
-        sleeper.sleep(remainingOf(kBudget, watch.now() - startedAt));
+        sleeper.sleep(remainingOf(kBudget, watch.currentTime() - startedAt));
     }
 
     EXPECT_EQ(
-        sleeper.requested(),
+        sleeper.requestedSpans(),
         (std::vector<std::chrono::milliseconds>{13ms, 4ms, 0ms}));
     EXPECT_EQ(sleeper.total(), 17ms);
 }

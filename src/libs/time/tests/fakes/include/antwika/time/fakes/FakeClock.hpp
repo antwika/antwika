@@ -16,7 +16,7 @@ namespace antwika::time::fakes
         }
 
         [[nodiscard]] std::chrono::time_point<std::chrono::system_clock>
-        now() const noexcept override
+        currentTime() const noexcept override
         {
             return current;
         }

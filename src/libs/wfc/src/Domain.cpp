@@ -47,7 +47,7 @@ namespace antwika::wfc
     {
     }
 
-    Domain Domain::singleton(std::size_t value, std::size_t alphabetSize)
+    Domain Domain::createSingleton(std::size_t value, std::size_t alphabetSize)
     {
         Domain domain(alphabetSize);
         domain.restrictTo(value);
@@ -94,32 +94,32 @@ namespace antwika::wfc
         setCount = 1;
     }
 
-    std::size_t Domain::alphabetSize() const
+    std::size_t Domain::getAlphabetSize() const
     {
         return bits.size();
     }
 
-    std::size_t Domain::count() const
+    std::size_t Domain::getCount() const
     {
         return setCount;
     }
 
     bool Domain::isEmpty() const
     {
-        return count() == 0;
+        return getCount() == 0;
     }
 
     bool Domain::isSingleton() const
     {
-        return count() == 1;
+        return getCount() == 1;
     }
 
-    std::size_t Domain::singleValue() const
+    std::size_t Domain::getSingleValue() const
     {
         if (!isSingleton())
         {
             throw WfcError(
-                "Domain: singleValue() needs a singleton domain");
+                "Domain: getSingleValue() needs a singleton domain");
         }
 
         return static_cast<std::size_t>(std::distance(

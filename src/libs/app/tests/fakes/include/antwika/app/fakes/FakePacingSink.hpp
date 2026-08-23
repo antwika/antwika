@@ -30,12 +30,13 @@ namespace antwika::app::fakes
             ticks.push_back(tick);
         }
 
-        [[nodiscard]] const std::vector<PacedFrame> &told() const noexcept
+        [[nodiscard]] const std::vector<PacedFrame> &recordedFrames()
+            const noexcept
         {
             return frames;
         }
 
-        [[nodiscard]] const std::vector<antwika::time::Tick> &about()
+        [[nodiscard]] const std::vector<antwika::time::Tick> &recordedTicks()
             const noexcept
         {
             return ticks;

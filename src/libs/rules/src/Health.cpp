@@ -46,7 +46,7 @@ namespace antwika::rules
                                                  : health.water;
     }
 
-    component::Health drained(
+    component::Health drainedHealth(
         const component::Health health, const time::Tick tick) noexcept
     {
         return component::Health{
@@ -54,7 +54,7 @@ namespace antwika::rules
             .water = worn(health.water, tick, component::kThirstTicks)};
     }
 
-    component::Vitals consumed(
+    component::Vitals consumedVitals(
         component::Vitals vitals, const component::ItemKind kind) noexcept
     {
         if (!inventoryHolds(vitals.inventory, kind))
@@ -82,7 +82,7 @@ namespace antwika::rules
         {
             if (levelOf(vitals.health, kind) < component::kHungryAt)
             {
-                vitals = consumed(vitals, kind);
+                vitals = consumedVitals(vitals, kind);
             }
         }
 

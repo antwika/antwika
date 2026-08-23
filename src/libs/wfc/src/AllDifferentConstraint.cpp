@@ -23,7 +23,7 @@ namespace antwika::wfc
             {
                 continue;
             }
-            const std::size_t value = sourceDomain.singleValue();
+            const std::size_t value = sourceDomain.getSingleValue();
             for (const std::size_t target : cellIndices)
             {
                 if (target == source)

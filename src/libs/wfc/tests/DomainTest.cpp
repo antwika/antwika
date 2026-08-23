@@ -11,7 +11,7 @@ using antwika::wfc::WfcError;
 TEST(DomainTest, Ctor_SetsEveryBit)
 {
     Domain domain(4);
-    EXPECT_EQ(domain.count(), 4U);
+    EXPECT_EQ(domain.getCount(), 4U);
     for (std::size_t v = 0; v < 4; ++v)
     {
         EXPECT_TRUE(domain.contains(v));
@@ -22,19 +22,19 @@ TEST(DomainTest, Ctor_SetsEveryBit)
 
 TEST(DomainTest, Singleton_SetsExactlyOneBit)
 {
-    Domain domain = Domain::singleton(2, 4);
-    EXPECT_EQ(domain.count(), 1U);
+    Domain domain = Domain::createSingleton(2, 4);
+    EXPECT_EQ(domain.getCount(), 1U);
     EXPECT_TRUE(domain.contains(2));
     EXPECT_FALSE(domain.contains(0));
     EXPECT_TRUE(domain.isSingleton());
-    EXPECT_EQ(domain.singleValue(), 2U);
+    EXPECT_EQ(domain.getSingleValue(), 2U);
 }
 
 TEST(DomainTest, SingleValue_ThrowsWhenMoreThanOneRemains)
 {
     Domain domain(4);
     EXPECT_THROW(
-        static_cast<void>(domain.singleValue()), WfcError);
+        static_cast<void>(domain.getSingleValue()), WfcError);
 }
 
 TEST(DomainTest, SingleValue_ThrowsOnAnEmptyDomain)
@@ -43,7 +43,7 @@ TEST(DomainTest, SingleValue_ThrowsOnAnEmptyDomain)
     domain.remove(0);
     domain.remove(1);
     EXPECT_THROW(
-        static_cast<void>(domain.singleValue()), WfcError);
+        static_cast<void>(domain.getSingleValue()), WfcError);
 }
 
 TEST(DomainTest, Add_RestoresExactlyTheRemovedBit)
@@ -51,11 +51,11 @@ TEST(DomainTest, Add_RestoresExactlyTheRemovedBit)
     Domain domain(3);
     domain.remove(1);
     EXPECT_FALSE(domain.contains(1));
-    EXPECT_EQ(domain.count(), 2U);
+    EXPECT_EQ(domain.getCount(), 2U);
 
     domain.add(1);
     EXPECT_TRUE(domain.contains(1));
-    EXPECT_EQ(domain.count(), 3U);
+    EXPECT_EQ(domain.getCount(), 3U);
 }
 
 TEST(DomainTest, RestrictTo_LeavesOnlyThatValue)
@@ -63,7 +63,7 @@ TEST(DomainTest, RestrictTo_LeavesOnlyThatValue)
     Domain domain(5);
     domain.restrictTo(3);
     EXPECT_TRUE(domain.isSingleton());
-    EXPECT_EQ(domain.singleValue(), 3U);
+    EXPECT_EQ(domain.getSingleValue(), 3U);
 }
 
 TEST(DomainTest, Remove_EmptiesTheDomainEventually)
@@ -72,7 +72,7 @@ TEST(DomainTest, Remove_EmptiesTheDomainEventually)
     domain.remove(0);
     domain.remove(1);
     EXPECT_TRUE(domain.isEmpty());
-    EXPECT_EQ(domain.count(), 0U);
+    EXPECT_EQ(domain.getCount(), 0U);
     EXPECT_FALSE(domain.isSingleton());
 }
 
@@ -82,7 +82,7 @@ TEST(DomainTest, Remove_CountsTheSameValueOnce)
     domain.remove(1);
     domain.remove(1);
 
-    EXPECT_EQ(domain.count(), 2U);
+    EXPECT_EQ(domain.getCount(), 2U);
     EXPECT_FALSE(domain.contains(1));
 }
 
@@ -91,7 +91,7 @@ TEST(DomainTest, Add_ChangesNothingForAPresentValue)
     Domain domain(3);
     domain.add(1);
 
-    EXPECT_EQ(domain.count(), 3U);
+    EXPECT_EQ(domain.getCount(), 3U);
     EXPECT_EQ(domain, Domain(3));
 }
 
@@ -101,8 +101,8 @@ TEST(DomainTest, RestrictTo_ReinstatesARemovedValue)
     domain.remove(2);
     domain.restrictTo(2);
 
-    EXPECT_EQ(domain.count(), 1U);
-    EXPECT_EQ(domain.singleValue(), 2U);
+    EXPECT_EQ(domain.getCount(), 1U);
+    EXPECT_EQ(domain.getSingleValue(), 2U);
 }
 
 TEST(DomainTest, Values_IterateAscending)
@@ -132,7 +132,7 @@ TEST(DomainTest, OperatorEquals_ComparesBits)
 TEST(DomainTest, AlphabetSize_IsPreserved)
 {
     Domain domain(7);
-    EXPECT_EQ(domain.alphabetSize(), 7U);
+    EXPECT_EQ(domain.getAlphabetSize(), 7U);
 }
 
 TEST(DomainTest, OperatorIncrement_ReturnsThePriorPosition)
@@ -168,10 +168,10 @@ TEST(DomainTest, Remove_IgnoresAnOutOfRangeValue)
     EXPECT_FALSE(domain.contains(5));
 
     domain.remove(5);
-    EXPECT_EQ(domain.count(), 3U);
+    EXPECT_EQ(domain.getCount(), 3U);
 
     domain.add(5);
-    EXPECT_EQ(domain.count(), 3U);
+    EXPECT_EQ(domain.getCount(), 3U);
 }
 
 TEST(DomainTest, Add_IgnoresTheValueOneStepPastTheAlphabet)
@@ -180,9 +180,9 @@ TEST(DomainTest, Add_IgnoresTheValueOneStepPastTheAlphabet)
 
     domain.add(3);
 
-    EXPECT_EQ(domain.count(), 3U);
+    EXPECT_EQ(domain.getCount(), 3U);
     EXPECT_FALSE(domain.contains(3));
-    EXPECT_EQ(domain.alphabetSize(), 3U);
+    EXPECT_EQ(domain.getAlphabetSize(), 3U);
 }
 
 TEST(DomainTest, RestrictTo_IgnoresAnOutOfRangeValue)

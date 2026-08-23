@@ -11,7 +11,7 @@ namespace antwika::gfx
 
     using antwika::log::ILogger;
 
-    [[nodiscard]] std::unique_ptr<IGfxBackend> makeSelectedBackend(
+    [[nodiscard]] std::unique_ptr<IGfxBackend> createSelectedBackend(
         ILogger &logger);
 
 }

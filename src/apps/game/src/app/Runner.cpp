@@ -233,7 +233,7 @@ namespace antwika::game
         playGame.stepAlongPath(true);
         playGame.run(tick);
 
-        if (!world.alive(playGame.player()))
+        if (!world.isAlive(playGame.player()))
         {
             playGame.setPlayer(
                 gameplay::spawnRoster(

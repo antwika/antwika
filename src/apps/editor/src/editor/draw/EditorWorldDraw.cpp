@@ -22,7 +22,7 @@ namespace antwika::editor
         const ui::Frame &frame,
         const std::chrono::time_point<std::chrono::system_clock> startedAt)
     {
-        const auto worldFrom = clockSource.now();
+        const auto worldFrom = clockSource.currentTime();
         const auto modelMatrix = worldRotation();
         const auto camera = worldCamera();
 
@@ -245,7 +245,7 @@ namespace antwika::editor
         meters.worldRate.record(
             std::chrono::duration_cast<
                 std::chrono::nanoseconds>(
-                clockSource.now() - worldFrom));
+                clockSource.currentTime() - worldFrom));
 
         viewportRenderer.present();
 

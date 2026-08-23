@@ -17,7 +17,7 @@ using antwika::wfc::SolverLimits;
 TEST(SolverPropagationTest, Solve_FinishesOnNakedSinglesAlone)
 {
     std::vector<Domain> waveDomains{
-        Domain::singleton(0, 3), Domain::singleton(1, 3), Domain(3)};
+        Domain::createSingleton(0, 3), Domain::createSingleton(1, 3), Domain(3)};
     AllDifferentConstraint allDifferent({0, 1, 2});
 
     Solver solver(

@@ -7,7 +7,7 @@
 namespace antwika::input
 {
 
-    std::unique_ptr<IClipboard> makeSelectedClipboard(ILogger &logger)
+    std::unique_ptr<IClipboard> createSelectedClipboard(ILogger &logger)
     {
         return std::make_unique<raylib::RaylibClipboard>(logger);
     }

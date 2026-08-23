@@ -51,12 +51,12 @@ namespace antwika::ecs
 
         void destroy(Entity entity);
 
-        [[nodiscard]] bool alive(Entity entity) const noexcept;
+        [[nodiscard]] bool isAlive(Entity entity) const noexcept;
 
         template <Component T>
         void add(Entity entity, T value)
         {
-            if (!alive(entity))
+            if (!isAlive(entity))
             {
                 throw EcsError("World: entity is not alive");
             }
@@ -67,7 +67,7 @@ namespace antwika::ecs
         template <Component T>
         void remove(Entity entity)
         {
-            if (!alive(entity))
+            if (!isAlive(entity))
             {
                 throw EcsError("World: entity is not alive");
             }
@@ -78,7 +78,7 @@ namespace antwika::ecs
         template <Component T>
         [[nodiscard]] bool has(Entity entity) const noexcept
         {
-            if (!alive(entity))
+            if (!isAlive(entity))
             {
                 return false;
             }
@@ -90,7 +90,7 @@ namespace antwika::ecs
         template <Component T>
         [[nodiscard]] const T &get(Entity entity) const
         {
-            if (!alive(entity))
+            if (!isAlive(entity))
             {
                 throw EcsError("World: entity is not alive");
             }
@@ -107,7 +107,7 @@ namespace antwika::ecs
         template <Component T>
         void set(Entity entity, T value)
         {
-            if (!alive(entity))
+            if (!isAlive(entity))
             {
                 throw EcsError("World: entity is not alive");
             }

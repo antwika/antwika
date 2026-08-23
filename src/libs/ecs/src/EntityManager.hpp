@@ -31,7 +31,7 @@ namespace antwika::ecs::detail
 
         void destroy(Entity entity);
 
-        [[nodiscard]] bool alive(Entity entity) const noexcept;
+        [[nodiscard]] bool isAlive(Entity entity) const noexcept;
 
     private:
         ILogger &logger;

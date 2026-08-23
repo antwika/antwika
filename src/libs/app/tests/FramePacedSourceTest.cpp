@@ -110,7 +110,7 @@ namespace antwika::app
 
         EXPECT_EQ(pass.count(), 0U);
         EXPECT_EQ(
-            sleeper.requested(),
+            sleeper.requestedSpans(),
             std::vector<milliseconds>{milliseconds{0}});
     }
 
@@ -131,7 +131,9 @@ namespace antwika::app
         (void)pacedSource.eventsFor(0);
 
         EXPECT_EQ(pass.count(), 0U);
-        EXPECT_EQ(sleeper.requested(), std::vector<milliseconds>{kInterval});
+        EXPECT_EQ(
+            sleeper.requestedSpans(),
+            std::vector<milliseconds>{kInterval});
     }
 
     TEST(FramePacedSourceTest, EventsFor_DrawsEveryFrameButTheTicksOwn)
@@ -175,9 +177,9 @@ namespace antwika::app
         const std::vector<milliseconds> wantedSpans{
             milliseconds{13}, milliseconds{13}, milliseconds{14}};
 
-        EXPECT_EQ(sleeper.requested(), wantedSpans);
+        EXPECT_EQ(sleeper.requestedSpans(), wantedSpans);
         EXPECT_EQ(sleeper.total(), kInterval);
-        EXPECT_EQ(clock.now() - kEpoch, kInterval);
+        EXPECT_EQ(clock.currentTime() - kEpoch, kInterval);
     }
 
     TEST(FramePacedSourceTest, EventsFor_SpacesFramesThatFallBetweenMillis)
@@ -197,7 +199,8 @@ namespace antwika::app
         (void)pacedSource.eventsFor(0);
 
         const std::vector<milliseconds> opening(
-            sleeper.requested().begin(), sleeper.requested().begin() + 4);
+            sleeper.requestedSpans().begin(),
+            sleeper.requestedSpans().begin() + 4);
 
         EXPECT_EQ(
             opening,
@@ -208,7 +211,7 @@ namespace antwika::app
                 milliseconds{1}}));
 
         EXPECT_EQ(pass.count(), 79U);
-        EXPECT_EQ(clock.now() - kEpoch, kInterval);
+        EXPECT_EQ(clock.currentTime() - kEpoch, kInterval);
     }
 
     TEST(FramePacedSourceTest, EventsFor_DrawsItsFramesOnEveryTick)
@@ -270,14 +273,14 @@ namespace antwika::app
         (void)pacedSource.eventsFor(0);
 
         EXPECT_EQ(
-            sleeper.requested(),
+            sleeper.requestedSpans(),
             (std::vector<milliseconds>{
                 milliseconds{10},
                 milliseconds{9},
                 milliseconds{9},
                 milliseconds{9}}));
 
-        EXPECT_EQ(clock.now() - kEpoch, kInterval + milliseconds{1});
+        EXPECT_EQ(clock.currentTime() - kEpoch, kInterval + milliseconds{1});
         EXPECT_EQ(pass.count(), 3U);
     }
 
@@ -306,7 +309,7 @@ namespace antwika::app
             PacingStep::Pumped,
             PacingStep::Drawn};
 
-        EXPECT_EQ(trace.taken(), wantedSteps);
+        EXPECT_EQ(trace.recordedSteps(), wantedSteps);
     }
 
     TEST(FramePacedSourceTest, EventsFor_PumpsForTheTickItIsPacing)
@@ -351,11 +354,12 @@ namespace antwika::app
         (void)source.eventsFor(2);
 
         EXPECT_EQ(
-            pacedSink.told(),
+            pacedSink.recordedFrames(),
             (std::vector<PacedFrame>{
                 PacedFrame::Drawn, PacedFrame::Drawn, PacedFrame::Drawn}));
         EXPECT_EQ(
-            pacedSink.about(), (std::vector<antwika::time::Tick>{2, 2, 2}));
+            pacedSink.recordedTicks(),
+            (std::vector<antwika::time::Tick>{2, 2, 2}));
     }
 
     TEST(FramePacedSourceTest, EventsFor_TellsThePacingSinkOfEveryFrameDropped)
@@ -388,7 +392,7 @@ namespace antwika::app
             PacedFrame::Dropped,
             PacedFrame::Drawn};
 
-        EXPECT_EQ(pacedSink.told(), wantedFrames);
+        EXPECT_EQ(pacedSink.recordedFrames(), wantedFrames);
     }
 
     TEST(FramePacedSourceTest, EventsFor_DoesNotPumpForAFrameItDrops)
@@ -420,7 +424,7 @@ namespace antwika::app
             PacingStep::Pumped,
             PacingStep::Drawn};
 
-        EXPECT_EQ(trace.taken(), wantedSteps);
+        EXPECT_EQ(trace.recordedSteps(), wantedSteps);
     }
 
     TEST(FramePacedSourceTest, EventsFor_DropsAFrameItCannotDrawInTime)

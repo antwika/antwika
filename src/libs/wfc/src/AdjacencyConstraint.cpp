@@ -41,7 +41,7 @@ namespace antwika::wfc
         Domain &leftDomain = waveDomains[left];
         Domain &rightDomain = waveDomains[right];
 
-        const std::size_t leftAlphabet = leftDomain.alphabetSize();
+        const std::size_t leftAlphabet = leftDomain.getAlphabetSize();
         for (std::size_t leftValue = 0; leftValue < leftAlphabet;
              ++leftValue)
         {
@@ -69,7 +69,7 @@ namespace antwika::wfc
             return false;
         }
 
-        const std::size_t rightAlphabet = rightDomain.alphabetSize();
+        const std::size_t rightAlphabet = rightDomain.getAlphabetSize();
         for (std::size_t rightValue = 0; rightValue < rightAlphabet;
              ++rightValue)
         {

@@ -28,7 +28,7 @@ namespace antwika::wfc
         return entries[left * size + right];
     }
 
-    std::size_t CompatibilityTable::alphabetSize() const
+    std::size_t CompatibilityTable::getAlphabetSize() const
     {
         return size;
     }

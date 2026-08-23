@@ -13,7 +13,7 @@ TEST(FakeSleeperTest, Requested_IsEmptyBeforeAnySleep)
 {
     const FakeSleeper sleeper;
 
-    EXPECT_TRUE(sleeper.requested().empty());
+    EXPECT_TRUE(sleeper.requestedSpans().empty());
     EXPECT_EQ(sleeper.total(), 0ms);
 }
 
@@ -25,7 +25,7 @@ TEST(FakeSleeperTest, Sleep_RecordsEveryDurationInOrder)
     sleeper.sleep(20ms);
 
     EXPECT_EQ(
-        sleeper.requested(),
+        sleeper.requestedSpans(),
         (std::vector<std::chrono::milliseconds>{80ms, 20ms}));
 }
 
@@ -48,5 +48,5 @@ TEST(FakeSleeperTest, Sleep_CarriesAClockItWasGivenForward)
     sleeper.sleep(80ms);
     sleeper.sleep(20ms);
 
-    EXPECT_EQ(clock.now(), start + 100ms);
+    EXPECT_EQ(clock.currentTime(), start + 100ms);
 }

@@ -7,7 +7,7 @@
 namespace antwika::gfx
 {
 
-    std::unique_ptr<IGfxBackend> makeSelectedBackend(ILogger &logger)
+    std::unique_ptr<IGfxBackend> createSelectedBackend(ILogger &logger)
     {
         return std::make_unique<raylib::RaylibBackend>(logger);
     }

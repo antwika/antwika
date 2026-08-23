@@ -254,7 +254,7 @@ namespace antwika::editor
         return false;
     }
 
-    bool Editor::handlePickerPress(
+    bool Editor::consumePickerPress(
         const input::PointerButtonPressed &downPressed)
     {
         if (!inkPicker.editingInk.has_value())

@@ -27,7 +27,7 @@ namespace antwika::wfc::detail
     {
         if (valueWeights.empty())
         {
-            return static_cast<double>(domain.count());
+            return static_cast<double>(domain.getCount());
         }
 
         double totalWeight = 0.0;
@@ -52,7 +52,7 @@ namespace antwika::wfc::detail
             cellKey[cell].reset();
         }
 
-        if (domain.count() <= 1)
+        if (domain.getCount() <= 1)
         {
             return;
         }

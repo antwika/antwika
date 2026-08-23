@@ -11,7 +11,7 @@ namespace antwika::sound
 
     using antwika::log::ILogger;
 
-    [[nodiscard]] std::unique_ptr<ISoundBackend> makeSelectedSoundBackend(
+    [[nodiscard]] std::unique_ptr<ISoundBackend> createSelectedSoundBackend(
         ILogger &logger);
 
 }

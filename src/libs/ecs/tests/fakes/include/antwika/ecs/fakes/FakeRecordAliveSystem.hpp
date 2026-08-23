@@ -22,7 +22,7 @@ namespace antwika::ecs::fakes
 
         void update(World &world, antwika::time::Tick) override
         {
-            seenAlive->push_back(world.alive(*watchedEntity));
+            seenAlive->push_back(world.isAlive(*watchedEntity));
         }
 
     private:

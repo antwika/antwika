@@ -30,10 +30,25 @@ MATH_QUANTITY = "vector or matrix not named for the quantity it holds"
 
 PART_OF_SPEECH = "a preposition, a bare adjective or a participle"
 
+QUERY_FORM = "query not named get, create, to, of or for"
+
+COMMAND_GETTER = "command prefixed with get"
+
+FACTORY_VERB = "factory not named create"
+
+WEAK_VERB = "verb naming a category, not an effect"
+
+PREDICATE_FORM = "predicate that is not a question"
+
 KIND_ORDER = (
     NOT_LOWER_CAMEL,
     CONSTANT_SPELLING,
     PART_OF_SPEECH,
+    QUERY_FORM,
+    COMMAND_GETTER,
+    FACTORY_VERB,
+    WEAK_VERB,
+    PREDICATE_FORM,
     MATH_QUANTITY,
     INDEX_NAME,
     ACCUMULATOR,
@@ -101,7 +116,7 @@ NOT_PARTICIPLES = frozenset(
     """ahead behind bed bend bind bled blend board bond bound bred breed
     chord cord creed dead deed embed end exceed field find fled friend greed
     grind ground head hound hundred indeed instead kind lead legend lord mind
-    mound need pound proceed record red rind round sacred second seed send
+    mound need pound proceed read record red rind round sacred second seed send
     shed shield sound speed sped spread succeed sword thousand thread weed
     wind word world wound yield""".split()
 )
@@ -114,6 +129,10 @@ BARE_ADJECTIVES = frozenset(
 
 INDEX_NAMES = frozenset(
     {"at", "row", "column", "rank", "index", "i", "j", "k", "n"}
+)
+
+REQUIRED_NAMES = frozenset(
+    """begin cbegin cend data end hash rbegin rend swap""".split()
 )
 
 BUILTIN_TYPES = frozenset(
@@ -213,6 +232,26 @@ DECLARED_TYPE = re.compile(
 CONSTANT_NAME = re.compile(r"\b([A-Za-z_]\w*)\s*$")
 
 LOWER_CAMEL = re.compile(r"^[a-z][A-Za-z0-9]*$")
+
+GET_PREFIXED = re.compile(r"^get[A-Z0-9]")
+
+QUERY_PREFIXED = re.compile(r"^(?:get|create|to)[A-Z0-9]")
+
+LOOKUP_SUFFIXED = re.compile(r"[a-z0-9](?:Of|For|At|In|From|Along)$")
+
+FACTORY_PREFIXED = re.compile(r"^(?:make|build)[A-Z0-9]")
+
+WEAK_PREFIXED = re.compile(r"^(?:handle|process|manage|do|perform)[A-Z0-9]")
+
+QUESTION_PREFIXED = re.compile(r"^(?:is|has|was|were|can|should)[A-Z0-9]")
+
+WRITTEN_THROUGH = re.compile(r"[*&]")
+
+ATTRIBUTE = re.compile(r"\[\[[^\]]*\]\]")
+
+QUALIFIER_CHAIN = re.compile(r"(?:[A-Za-z_]\w*\s*::\s*)+$")
+
+TRAILING_RETURN = re.compile(r"->\s*(?P<type>[^{;]+)")
 
 CONSTANT_SPELLED = re.compile(r"^k[A-Z][A-Za-z0-9]*$")
 
@@ -826,6 +865,8 @@ class Site:
     where: str
     line: int = 0
     column: int = 0
+    const_qualified: bool = False
+    changes_nothing: bool = False
 
 
 def _reject(statement: str) -> bool:
@@ -861,6 +902,97 @@ def _member_site(
         return None
 
     return _declared_site(path, began, statement, scope, "member")
+
+
+def _returned(lead: str) -> str:
+    core = ATTRIBUTE.sub(" ", lead)
+
+    while True:
+        shorter = re.sub(r"(?:^|\s)" + SPECIFIERS + r"\s*", " ", core)
+
+        if shorter == core:
+            break
+
+        core = shorter
+
+    return re.sub(r"\bvirtual\b|\bfriend\b|\bexplicit\b", " ", core).strip()
+
+
+def _reads_only(arguments: str) -> bool:
+    for _, chunk in _split_arguments(arguments):
+        if not WRITTEN_THROUGH.search(chunk):
+            continue
+
+        through = chunk[:WRITTEN_THROUGH.search(chunk).start()]
+
+        if "const" not in through:
+            return False
+
+    return True
+
+
+def _function_site(
+    path: Path, began: int, statement: str, scope: int, member: bool
+) -> Site | None:
+    if _reject(statement):
+        return None
+
+    if FUNCTION_POINTER.search(statement) is not None:
+        return None
+
+    parens = _declarator_parens(statement)
+
+    if parens is None:
+        return None
+
+    open_at, close_at, name = parens
+
+    if name in NOT_DECLARATORS or MACRO_CALL.match(statement):
+        return None
+
+    if not LOWER_CAMEL.match(name):
+        return None
+
+    head = CONSTANT_NAME.search(statement[:open_at])
+
+    if head is None:
+        return None
+
+    before = statement[:head.start(1)]
+    lead = QUALIFIER_CHAIN.sub("", before)
+    spelled = _returned(lead)
+
+    if lead != before:
+        member = True
+
+    if re.search(r"\bstatic\b", before):
+        member = False
+
+    if not spelled:
+        return None
+
+    tail = statement[close_at + 1:]
+    trailing = TRAILING_RETURN.search(tail)
+
+    if trailing is not None:
+        spelled = trailing.group("type").strip()
+
+    const_qualified = re.search(r"\bconst\b", tail.split("->")[0]) is not None
+
+    return Site(
+        path,
+        began + head.start(1),
+        name,
+        spelled,
+        scope,
+        "function",
+        const_qualified=const_qualified,
+        changes_nothing=(
+            const_qualified
+            if member
+            else _reads_only(statement[open_at + 1:close_at])
+        ),
+    )
 
 
 def _local_site(
@@ -1093,6 +1225,19 @@ def sites_in(path: Path, masked: str) -> list[Site]:
         if closer == "{":
             if kind == "function":
                 found.extend(_parameter_sites(path, began, statement, scope))
+
+                if "function" not in stack:
+                    defined = _function_site(
+                        path,
+                        began,
+                        statement,
+                        scope,
+                        bool(stack) and stack[-1] == "class",
+                    )
+
+                    if defined is not None:
+                        found.append(defined)
+
                 continue
 
             if kind != "block":
@@ -1112,6 +1257,13 @@ def sites_in(path: Path, masked: str) -> list[Site]:
                     _parameter_sites(path, began, statement, scope)
                 )
 
+                declared = _function_site(
+                    path, began, statement, scope, False
+                )
+
+                if declared is not None:
+                    found.append(declared)
+
             continue
 
         if stack[-1] == "class":
@@ -1119,6 +1271,13 @@ def sites_in(path: Path, masked: str) -> list[Site]:
                 found.extend(
                     _parameter_sites(path, began, statement, scope)
                 )
+
+                declared = _function_site(
+                    path, began, statement, scope, True
+                )
+
+                if declared is not None:
+                    found.append(declared)
 
             member = _member_site(path, began, statement, scope)
 
@@ -1164,6 +1323,94 @@ def _kind_of(
         return ROLE_NAME
 
     return NO_TYPE_WORD
+
+
+def _returns(spelled: str) -> str:
+    core = spelled.replace("const", " ").replace("&", " ")
+    core = core.replace("*", " ").strip()
+
+    return re.sub(r"\s+", " ", core)
+
+
+def _asks_a_question(name: str) -> bool:
+    if QUESTION_PREFIXED.match(name):
+        return True
+
+    first = re.match(r"[a-z0-9]+", name)
+
+    return first is not None and first.group(0).endswith("s")
+
+
+def _function_kind(site: Site) -> str | None:
+    if site.name in REQUIRED_NAMES:
+        return None
+
+    if FACTORY_PREFIXED.match(site.name):
+        return FACTORY_VERB
+
+    if WEAK_PREFIXED.match(site.name):
+        return WEAK_VERB
+
+    spelled = _returns(site.spelled)
+
+    if spelled in ("void", "auto", ""):
+        if GET_PREFIXED.match(site.name):
+            return COMMAND_GETTER
+
+        return None
+
+    if not site.changes_nothing:
+        if GET_PREFIXED.match(site.name):
+            return COMMAND_GETTER
+
+        return None
+
+    if spelled == "bool":
+        if not _asks_a_question(site.name):
+            return PREDICATE_FORM
+
+        return None
+
+    if QUERY_PREFIXED.match(site.name) or LOOKUP_SUFFIXED.search(site.name):
+        return None
+
+    return QUERY_FORM
+
+
+def judge_functions(sites: list[Site]) -> list[Violation]:
+    found = []
+
+    for site in sites:
+        if not LOWER_CAMEL.match(site.name):
+            found.append(
+                Violation(
+                    site.path,
+                    site.line,
+                    site.column,
+                    site.name,
+                    NOT_LOWER_CAMEL,
+                    "",
+                    site.where,
+                )
+            )
+            continue
+
+        kind = _function_kind(site)
+
+        if kind is not None:
+            found.append(
+                Violation(
+                    site.path,
+                    site.line,
+                    site.column,
+                    site.name,
+                    kind,
+                    "",
+                    site.where,
+                )
+            )
+
+    return found
 
 
 def judge(
@@ -1305,7 +1552,14 @@ def find_violations(root: Path) -> list[Violation]:
             )
         )
 
-    return judge(sites, declared, namespaces) + judge_part_of_speech(aside)
+    functions = [one for one in sites if one.where == "function"]
+    values = [one for one in sites if one.where != "function"]
+
+    return (
+        judge(values, declared, namespaces)
+        + judge_functions(functions)
+        + judge_part_of_speech(aside)
+    )
 
 
 def main() -> int:

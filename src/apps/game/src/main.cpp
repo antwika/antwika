@@ -49,9 +49,9 @@ int main(int argc, char **argv)
                 return;
             }
 
-            const auto backend = antwika::gfx::makeSelectedBackend(logger);
+            const auto backend = antwika::gfx::createSelectedBackend(logger);
             const auto inputs =
-                antwika::input::makeSelectedInputBackend(logger);
+                antwika::input::createSelectedInputBackend(logger);
 
             Runner(
                 logger,

@@ -35,7 +35,7 @@ TEST(EntropyDeterminismTest, PickNext_OrdersExactlyAcrossEveryCount)
         ASSERT_TRUE(entropyIndex.pickNext().has_value());
         EXPECT_EQ(*entropyIndex.pickNext(), remaining - 1);
         entropyIndex.update(
-            remaining - 1, Domain::singleton(0, 8));
+            remaining - 1, Domain::createSingleton(0, 8));
     }
 
     EXPECT_FALSE(entropyIndex.pickNext().has_value());

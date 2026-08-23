@@ -101,7 +101,7 @@ namespace antwika::decor
         {
             waveDomains.push_back(
                 index == ((side / 2) * side) + (side / 2)
-                       ? wfc::Domain::singleton(pinnedCount,
+                       ? wfc::Domain::createSingleton(pinnedCount,
                            alphabetTiles.size())
                        : wfc::Domain(alphabetTiles.size()));
         }

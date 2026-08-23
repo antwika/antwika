@@ -407,7 +407,7 @@ namespace antwika::editor
     {
         meters.workRate.record(
             std::chrono::duration_cast<std::chrono::nanoseconds>(
-                clockSource.now() - startedAt));
+                clockSource.currentTime() - startedAt));
     }
 
 }

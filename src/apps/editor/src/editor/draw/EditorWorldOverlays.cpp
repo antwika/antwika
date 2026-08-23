@@ -293,7 +293,7 @@ namespace antwika::editor
             }
         }
 
-        const auto seamFrom = clockSource.now();
+        const auto seamFrom = clockSource.currentTime();
 
         if (settings.showRuleLines && !play.playing)
         {
@@ -345,7 +345,7 @@ namespace antwika::editor
         meters.seamRate.record(
             std::chrono::duration_cast<
                 std::chrono::nanoseconds>(
-                clockSource.now() - seamFrom));
+                clockSource.currentTime() - seamFrom));
 
         drawHealthBars(clipMatrix);
         drawSightPoints(clipMatrix);
