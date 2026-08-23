@@ -27,9 +27,6 @@ add_executable(antwika_gfx_tests
     NullRendererTest.cpp
     NullTextureTest.cpp
     NullWindowTest.cpp
-    PngFileTest.cpp
-    PngReaderTest.cpp
-    PngWriterTest.cpp
     PointTest.cpp
     RectTest.cpp
     RenderScopesTest.cpp

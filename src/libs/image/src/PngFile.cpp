@@ -1,4 +1,4 @@
-#include "antwika/gfx/PngFile.hpp"
+#include "antwika/image/PngFile.hpp"
 
 #include <fstream>
 #include <ios>
@@ -6,18 +6,18 @@
 #include <antwika/io/SafeWrite.hpp>
 
 #include "antwika/gfx/GfxError.hpp"
-#include "antwika/gfx/PngReader.hpp"
-#include "antwika/gfx/PngWriter.hpp"
+#include "antwika/image/PngReader.hpp"
+#include "antwika/image/PngWriter.hpp"
 
-namespace antwika::gfx
+namespace antwika::image
 {
 
-    Bitmap readPngFile(const std::string &path, std::string_view name)
+    gfx::Bitmap readPngFile(const std::string &path, std::string_view name)
     {
         std::ifstream file(path, std::ios::binary);
         if (!file.is_open())
         {
-            throw GfxError(
+            throw gfx::GfxError(
                 std::string(name) + ": could not open an image: " + path);
         }
 
@@ -25,7 +25,7 @@ namespace antwika::gfx
     }
 
     void writePngFile(
-        const Bitmap &bitmap,
+        const gfx::Bitmap &bitmap,
         const std::string &path,
         std::string_view name)
     {
@@ -36,7 +36,7 @@ namespace antwika::gfx
 
             if (!file.is_open())
             {
-                throw GfxError(
+                throw gfx::GfxError(
                     std::string(name)
                     + ": could not write an image: " + writingPath);
             }
@@ -44,7 +44,7 @@ namespace antwika::gfx
             PngWriter{}.write(bitmap, file);
         }
 
-        io::putInPlaceKeepingBackup<GfxError>(writingPath, path, name);
+        io::putInPlaceKeepingBackup<gfx::GfxError>(writingPath, path, name);
     }
 
 }

@@ -4,7 +4,7 @@
 #include <string>
 
 #include <antwika/io/AssetPath.hpp>
-#include <antwika/gfx/PngFile.hpp>
+#include <antwika/image/PngFile.hpp>
 #include <antwika/input/Key.hpp>
 
 #include "antwika/editor/ui/ToolButtonRow.hpp"
@@ -190,7 +190,7 @@ namespace
 
     TEST(ToolPanelTest, Icons_HoldACellForEveryButtonDrawn)
     {
-        const auto sheet = antwika::gfx::readPngFile(
+        const auto sheet = antwika::image::readPngFile(
             antwika::io::assetPath(
                 std::string("icons-16.png")),
             "antwika_editor_tests");

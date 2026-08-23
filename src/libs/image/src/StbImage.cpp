@@ -5,7 +5,7 @@
 
 #include <stb_image.h>
 
-namespace antwika::gfx::detail
+namespace antwika::image::detail
 {
 
     DecodedImage decodeImage(

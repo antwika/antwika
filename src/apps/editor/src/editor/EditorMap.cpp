@@ -1,6 +1,6 @@
 #include <utility>
 
-#include <antwika/gfx/PngFile.hpp>
+#include <antwika/image/PngFile.hpp>
 #include <antwika/component/AnimationState.hpp>
 #include <antwika/component/Orientation.hpp>
 #include <antwika/component/Position.hpp>
@@ -295,7 +295,7 @@ namespace antwika::editor
                  sheet < map::kAtlasSheetCount;
                  ++sheet)
             {
-                gfx::writePngFile(
+                image::writePngFile(
                     atlasSheets.sheet(sheet),
                     map::sidecarPath(
                         mapPath,

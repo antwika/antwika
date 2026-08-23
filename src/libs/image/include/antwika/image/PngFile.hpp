@@ -5,14 +5,14 @@
 
 #include "antwika/gfx/Bitmap.hpp"
 
-namespace antwika::gfx
+namespace antwika::image
 {
 
-    [[nodiscard]] Bitmap readPngFile(
+    [[nodiscard]] gfx::Bitmap readPngFile(
         const std::string &path, std::string_view name);
 
     void writePngFile(
-        const Bitmap &bitmap,
+        const gfx::Bitmap &bitmap,
         const std::string &path,
         std::string_view name);
 

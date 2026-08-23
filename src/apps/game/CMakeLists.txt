@@ -13,6 +13,7 @@ antwika_add_app(
         antwika::ecs
         antwika::gameplay
         antwika::gfx
+        antwika::image
         antwika::gfx_backend
         antwika::input
         antwika::input_backend

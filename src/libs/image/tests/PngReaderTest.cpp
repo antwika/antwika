@@ -8,12 +8,12 @@
 
 #include "antwika/gfx/Bitmap.hpp"
 #include "antwika/gfx/GfxError.hpp"
-#include "antwika/gfx/PngReader.hpp"
+#include "antwika/image/PngReader.hpp"
 #include "antwika/gfx/Size.hpp"
 
 using antwika::gfx::Bitmap;
 using antwika::gfx::GfxError;
-using antwika::gfx::PngReader;
+using antwika::image::PngReader;
 using antwika::gfx::Size;
 
 namespace

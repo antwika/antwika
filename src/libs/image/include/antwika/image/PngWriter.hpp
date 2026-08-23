@@ -4,13 +4,13 @@
 
 #include "antwika/gfx/Bitmap.hpp"
 
-namespace antwika::gfx
+namespace antwika::image
 {
 
     class PngWriter final
     {
     public:
-        void write(const Bitmap &bitmap, std::ostream &outputStream) const;
+        void write(const gfx::Bitmap &bitmap, std::ostream &outputStream) const;
     };
 
 }

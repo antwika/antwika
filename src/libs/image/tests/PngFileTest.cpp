@@ -16,11 +16,11 @@
 
 #include "antwika/gfx/Bitmap.hpp"
 #include "antwika/gfx/GfxError.hpp"
-#include "antwika/gfx/PngFile.hpp"
+#include "antwika/image/PngFile.hpp"
 
 using antwika::gfx::GfxError;
-using antwika::gfx::readPngFile;
-using antwika::gfx::writePngFile;
+using antwika::image::readPngFile;
+using antwika::image::writePngFile;
 
 namespace
 {

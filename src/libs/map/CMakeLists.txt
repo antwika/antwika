@@ -23,6 +23,7 @@ antwika_add_library(
         antwika::decor
         antwika::schema
         antwika::gfx
+        antwika::image
         antwika::io
         antwika::light
         antwika::solver

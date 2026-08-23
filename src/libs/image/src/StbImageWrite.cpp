@@ -9,7 +9,7 @@
 
 #include <stb_image_write.h>
 
-namespace antwika::gfx::detail
+namespace antwika::image::detail
 {
 
     namespace

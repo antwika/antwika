@@ -70,6 +70,7 @@ antwika_add_app(
         antwika::enums
         antwika::gameplay
         antwika::gfx
+        antwika::image
         antwika::gfx_backend
         antwika::input
         antwika::input_backend
