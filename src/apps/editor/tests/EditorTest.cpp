@@ -10,6 +10,8 @@
 #include <antwika/testing/ScratchDirectory.hpp>
 #include <antwika/tile/Transitions.hpp>
 #include <antwika/tilemap/Tilemap.hpp>
+#include <antwika/voxel/VoxelCube.hpp>
+#include <antwika/voxelmap/Voxel.hpp>
 
 #include "antwika/editor/Editor.hpp"
 
@@ -90,4 +92,25 @@ TEST_F(EditorTest, Editor_OpensAMapWhoseTilesTransitionIntoOneAnother)
     EXPECT_NO_THROW({
         const Editor editor(logger, backend, inputs, mapPath);
     });
+}
+
+TEST_F(EditorTest, Editor_StandsTheRosterOnTheWorldItJustBuilt)
+{
+    const ScratchDirectory scratch("editor-spawn");
+    const auto mapPath = scratch.pathIn("spawn.json");
+
+    antwika::map::Map drawnMap;
+    drawnMap.tilemap = antwika::tilemap::defaultTilemap();
+    drawnMap.voxels = antwika::voxel::expandCubesToVoxels(
+        antwika::voxelmap::demoCells());
+    drawnMap.spawnCubePosition =
+        antwika::voxel::VoxelPosition{.x = 1, .y = 1, .z = 1};
+
+    antwika::map::saveMap(mapPath, drawnMap);
+
+    const Editor editor(logger, backend, inputs, mapPath);
+    const auto playerPosition = editor.playerStandsAt();
+
+    EXPECT_FLOAT_EQ(playerPosition.x, 1.0F);
+    EXPECT_FLOAT_EQ(playerPosition.z, 1.0F);
 }

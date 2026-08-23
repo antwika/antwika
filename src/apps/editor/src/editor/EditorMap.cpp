@@ -64,6 +64,12 @@ namespace antwika::editor
         overlayStale = true;
     }
 
+    component::Position Editor::playerStandsAt() const
+    {
+        return play.game->world().get<component::Position>(
+            play.game->player());
+    }
+
     map::Placement Editor::startingPlacement()
     {
         return gameplay::startingPlacement(
