@@ -153,11 +153,11 @@ namespace antwika::editor
                    && matchesChord(action, pressedKey.key);
         };
 
-        if (playing)
+        if (play.playing)
         {
-            if (titleScreenUp && !pressedKey.repeat)
+            if (play.titleScreenUp && !pressedKey.repeat)
             {
-                titleScreenUp = false;
+                play.titleScreenUp = false;
 
                 return;
             }
@@ -172,7 +172,7 @@ namespace antwika::editor
                     return;
                 }
 
-                playing = false;
+                play.playing = false;
                 turningPlayer = false;
                 activeView = viewBeforePlay;
 
@@ -489,7 +489,7 @@ namespace antwika::editor
             saveCurrentMap();
         }
 
-        if (!playing && fresh(Action::PlayApart))
+        if (!play.playing && fresh(Action::PlayApart))
         {
             playApart();
 
@@ -501,7 +501,7 @@ namespace antwika::editor
             const auto playHere =
                 matchesChord(Action::PlayHere, pressedKey.key);
 
-            playing = true;
+            play.playing = true;
             viewBeforePlay = activeView;
             activeView = map::View::World;
             dialogs.openMenu.reset();

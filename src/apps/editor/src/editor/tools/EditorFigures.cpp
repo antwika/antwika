@@ -178,13 +178,13 @@ namespace antwika::editor
 
     std::vector<light::ActiveLight> Editor::currentLights()
     {
-        if (!playing)
+        if (!play.playing)
         {
             return light::activeLights(document.map.lamps);
         }
 
         const auto stoodPosition =
-            game->world().get<component::Position>(game->player());
+            play.game->world().get<component::Position>(play.game->player());
         const antwika::gfx::Vec3 walkerPosition{
             stoodPosition.x, stoodPosition.y, stoodPosition.z};
         const auto sightPoint =
@@ -241,12 +241,12 @@ namespace antwika::editor
 
     void Editor::spawnRoster()
     {
-        game->forgetPatrols();
+        play.game->forgetPatrols();
         ensurePlayerInRoster();
-        patrolPositions = patrolStopsOf(document.map);
-        game->setPlayer(
+        play.patrolPositions = patrolStopsOf(document.map);
+        play.game->setPlayer(
             gameplay::spawnRoster(
-                game->world(),
+                play.game->world(),
                 document.map,
                 *playerIndex(document.map),
                 startingPlacement()));
@@ -254,9 +254,9 @@ namespace antwika::editor
 
     void Editor::spawnItems()
     {
-        const ecs::OpenPhase phase(game->world());
+        const ecs::OpenPhase phase(play.game->world());
 
-        gameplay::spawnItems(game->world(), document.map);
+        gameplay::spawnItems(play.game->world(), document.map);
     }
 
     void Editor::playApart()
@@ -320,24 +320,24 @@ namespace antwika::editor
             return;
         }
 
-        auto &world = game->world();
-        const ecs::OpenPhase phase(world);
+        auto &gameWorld = play.game->world();
+        const ecs::OpenPhase phase(gameWorld);
 
-        world.add<component::TalkIntent>(
-            game->player(), component::TalkIntent{});
+        gameWorld.add<component::TalkIntent>(
+            play.game->player(), component::TalkIntent{});
     }
 
     void Editor::sayDialogueLine()
     {
-        auto &world = game->world();
+        auto &gameWorld = play.game->world();
 
-        if (!world.has<component::DialogueLine>(game->player()))
+        if (!gameWorld.has<component::DialogueLine>(play.game->player()))
         {
             return;
         }
 
         const auto dialogueLine =
-            world.get<component::DialogueLine>(game->player());
+            gameWorld.get<component::DialogueLine>(play.game->player());
 
         if (dialogueLine.rosterIndex < document.map.characters.size())
         {
@@ -356,9 +356,9 @@ namespace antwika::editor
             }
         }
 
-        const ecs::OpenPhase phase(world);
+        const ecs::OpenPhase phase(gameWorld);
 
-        world.remove<component::DialogueLine>(game->player());
+        gameWorld.remove<component::DialogueLine>(play.game->player());
     }
 
 }

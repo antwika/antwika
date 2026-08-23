@@ -86,14 +86,15 @@ namespace antwika::editor
         scenePass.draw(
             viewportRenderer,
             worldShader.program(),
-            playing ? kPlayBackgroundColor : kEditorBackgroundColor,
+            play.playing ? kPlayBackgroundColor : kEditorBackgroundColor,
             pile,
             [&]
             {
-                if (playing)
+                if (play.playing)
                 {
                     const auto stoodPosition =
-                        game->world().get<component::Position>(game->player());
+                        play.game->world().get<component::Position>(
+                            play.game->player());
 
                     const auto ground = collision::groundHeightUnderFootprint(
                         worldMeshes.cells(), stoodPosition.x, stoodPosition.z,
@@ -111,14 +112,14 @@ namespace antwika::editor
                     }
 
                     for (const auto entity :
-                         game->world()
+                         play.game->world()
                              .view<
                                  component::Position,
                                  component::AnimationState,
                                  component::RosterIndex>())
                     {
                         const auto index =
-                            game->world()
+                            play.game->world()
                                 .get<component::RosterIndex>(entity)
                                 .index;
 
@@ -131,9 +132,9 @@ namespace antwika::editor
                             camera,
                             modelMatrix,
                             characterView.skinTexture(index),
-                            game->world().get<component::Position>(
+                            play.game->world().get<component::Position>(
                                 entity),
-                            game->world()
+                            play.game->world()
                                 .get<component::AnimationState>(
                                     entity));
                     }
@@ -142,7 +143,7 @@ namespace antwika::editor
 
         drawWorldOverlays(frame, camera, modelMatrix);
 
-        if (playing && tick < caption.untilTick)
+        if (play.playing && tick < caption.untilTick)
         {
             viewportRenderer.drawRect(
                 antwika::gfx::RectF(
@@ -166,7 +167,7 @@ namespace antwika::editor
                 kTextColor);
         }
 
-        if (playing && titleScreenUp)
+        if (play.playing && play.titleScreenUp)
         {
             const auto slash = document.path().find_last_of("/\\");
             const auto fileName =
@@ -194,7 +195,7 @@ namespace antwika::editor
                 kGridLineColor);
         }
 
-        if (playing)
+        if (play.playing)
         {
             const auto rateText =
                 time::formatFrameRate(meters.frameRate.perSecond());
@@ -233,7 +234,7 @@ namespace antwika::editor
 
         viewportRenderer.fillLetterbox(gfx::Color{});
 
-        if (!playing)
+        if (!play.playing)
         {
             antwika::ui::paint(
                 viewportRenderer.nativeRenderer(), frame.drawList);

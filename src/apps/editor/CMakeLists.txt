@@ -10,6 +10,7 @@ antwika_add_app(
         src/editor/EditorSetup.cpp
         src/editor/GameModule.cpp
         src/editor/PlayComponents.cpp
+        src/editor/PlaySession.cpp
         src/editor/draw/EditorAtlasesDraw.cpp
         src/editor/draw/EditorCharacterDraw.cpp
         src/editor/draw/EditorHints.cpp

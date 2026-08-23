@@ -270,7 +270,7 @@ namespace antwika::editor
         auto face = std::optional<std::size_t>{};
 
         const auto clear =
-            !playing && !dialogs.quitConfirmOpen && !keysOpen
+            !play.playing && !dialogs.quitConfirmOpen && !keysOpen
             && !dialogs.fileDialog.has_value()
             && !inkPicker.editingInk.has_value()
             && !frame.interactions.pointerOverUi;

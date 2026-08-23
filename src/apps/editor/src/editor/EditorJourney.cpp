@@ -39,7 +39,7 @@ namespace antwika::editor
             return;
         }
 
-        playing = true;
+        play.playing = true;
         activeView = map::View::World;
         aimPlayCamera();
 
@@ -59,7 +59,7 @@ namespace antwika::editor
     void Editor::savePlayerProgress()
     {
         map::saveProgress(
-            game->progress(
+            play.game->progress(
                 std::filesystem::path(document.path())
                     .filename()
                     .string()),
