@@ -415,6 +415,37 @@ namespace antwika::map::mapfile
         return shape;
     } // GCOVR_EXCL_LINE
 
+    [[nodiscard]] inline nlohmann::json jsonOf(
+        const voxel::VoxelPosition position)
+    {
+        return nlohmann::json::array(
+            {position.x, position.y, position.z});
+    } // GCOVR_EXCL_LINE
+
+    [[nodiscard]] inline voxel::VoxelPosition voxelPositionFrom(
+        const nlohmann::json &place)
+    {
+        return voxel::VoxelPosition{
+            .x = place[0].get<std::int32_t>(),
+            .y = place[1].get<std::int32_t>(),
+            .z = place[2].get<std::int32_t>()};
+    }
+
+    [[nodiscard]] inline nlohmann::json jsonOf(const gfx::Color color)
+    {
+        return nlohmann::json::array(
+            {color.red, color.green, color.blue, color.alpha});
+    } // GCOVR_EXCL_LINE
+
+    [[nodiscard]] inline gfx::Color colorFrom(const nlohmann::json &tint)
+    {
+        return gfx::Color{
+            .red = tint[0].get<std::uint8_t>(),
+            .green = tint[1].get<std::uint8_t>(),
+            .blue = tint[2].get<std::uint8_t>(),
+            .alpha = tint[3].get<std::uint8_t>()};
+    }
+
     [[nodiscard]] const nlohmann::json_schema::json_validator &
     mapValidator();
 

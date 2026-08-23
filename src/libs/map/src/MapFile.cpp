@@ -50,10 +50,7 @@ namespace antwika::map
 
                 const auto &place = json[std::string(kAtKey)];
 
-                return voxel::VoxelPosition{
-                    .x = place[0].get<std::int32_t>(),
-                    .y = place[1].get<std::int32_t>(),
-                    .z = place[2].get<std::int32_t>()};
+                return voxelPositionFrom(place);
             }
 
 
@@ -211,10 +208,7 @@ namespace antwika::map
         for (const auto &writtenVoxel : wholeDocument[std::string(kVoxelsKey)])
         {
             const auto &place = writtenVoxel[std::string(kAtKey)];
-            const voxel::VoxelPosition position{
-                .x = place[0].get<std::int32_t>(),
-                .y = place[1].get<std::int32_t>(),
-                .z = place[2].get<std::int32_t>()};
+            const auto position = voxelPositionFrom(place);
 
             if (map.voxels.contains(position))
             {
@@ -291,12 +285,7 @@ namespace antwika::map
 
         for (const auto &color : wholeDocument[std::string(kPaletteKey)])
         {
-            map.paletteColors.push_back(
-                gfx::Color{
-                    .red = color[0].get<std::uint8_t>(),
-                    .green = color[1].get<std::uint8_t>(),
-                    .blue = color[2].get<std::uint8_t>(),
-                    .alpha = color[3].get<std::uint8_t>()});
+            map.paletteColors.push_back(colorFrom(color));
         }
 
         map.glows.clear();
@@ -328,17 +317,8 @@ namespace antwika::map
 
             map.lamps.push_back(
                 light::Lamp{
-                    .position =
-                        voxel::VoxelPosition{
-                            .x = place[0].get<std::int32_t>(),
-                            .y = place[1].get<std::int32_t>(),
-                            .z = place[2].get<std::int32_t>()},
-                    .tintColor =
-                        gfx::Color{
-                            .red = tint[0].get<std::uint8_t>(),
-                            .green = tint[1].get<std::uint8_t>(),
-                            .blue = tint[2].get<std::uint8_t>(),
-                            .alpha = tint[3].get<std::uint8_t>()}});
+                    .position = voxelPositionFrom(place),
+                    .tintColor = colorFrom(tint)});
         }
 
         for (const auto &tileKind :
@@ -453,10 +433,7 @@ namespace antwika::map
             PressurePlate plate;
             const auto &atJson = plateJson[std::string(kAtKey)];
 
-            plate.position = voxel::VoxelPosition{
-                .x = atJson[0].get<std::int32_t>(),
-                .y = atJson[1].get<std::int32_t>(),
-                .z = atJson[2].get<std::int32_t>()};
+            plate.position = voxelPositionFrom(atJson);
 
             plate.togglePositions =
                 readCells(plateJson[std::string(kSwaysKey)]);
