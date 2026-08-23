@@ -1,9 +1,11 @@
 #pragma once
 
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/ITickEventSource.hpp>
+#include <antwika/gfx/Size.hpp>
 #include <antwika/input/IFramePump.hpp>
 #include <antwika/time/IClock.hpp>
 #include <antwika/time/ISleeper.hpp>
@@ -13,6 +15,13 @@
 
 namespace antwika::app
 {
+
+    inline constexpr std::chrono::milliseconds kTickPeriod{16};
+
+    inline constexpr std::size_t kMaxCatchUpTicks = 5;
+
+    inline constexpr gfx::Size kDefaultWindowSize{
+        .width = 1280, .height = 720};
 
     struct FramePacing final
     {

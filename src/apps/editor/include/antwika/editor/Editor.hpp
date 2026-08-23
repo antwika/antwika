@@ -12,6 +12,7 @@
 #include <string_view>
 #include <vector>
 
+#include <antwika/app/FramePacing.hpp>
 #include <antwika/camera/FlyCamera.hpp>
 #include <antwika/character/Character.hpp>
 #include <antwika/component/AnimationState.hpp>
@@ -94,9 +95,6 @@ namespace antwika::editor
 
     inline constexpr std::string_view kAppName = "antwika_editor";
 
-    inline constexpr std::chrono::milliseconds kTickPeriod{16};
-
-    inline constexpr std::size_t kMaxCatchUpTicks = 5;
 
     inline constexpr float kCameraFollowLerp = 0.12F;
 

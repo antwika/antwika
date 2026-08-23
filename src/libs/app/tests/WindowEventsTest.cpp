@@ -11,6 +11,7 @@
 #include "antwika/app/WindowEvents.hpp"
 
 using antwika::app::closeRequestedOn;
+using antwika::app::windowChanges;
 using antwika::gfx::CloseRequested;
 using antwika::gfx::Resized;
 using antwika::gfx::Size;
@@ -93,4 +94,61 @@ TEST(WindowEventsTest, CloseRequestedOn_DrainsPastOtherEvents)
         .WillOnce(Return(std::nullopt));
 
     EXPECT_TRUE(closeRequestedOn(backend, kOurWindow));
+}
+
+TEST(WindowEventsTest, WindowChanges_ReadsTheLastSizeItWasResizedTo)
+{
+    NiceMock<MockGfxBackend> backend;
+
+    EXPECT_CALL(backend, pollEvent())
+        .WillOnce(Return(resizeOf(kOurWindow)))
+        .WillOnce(Return(std::nullopt));
+
+    const auto changes = windowChanges(backend, kOurWindow);
+
+    ASSERT_TRUE(changes.resizedSize.has_value());
+    EXPECT_EQ(changes.resizedSize->width, 10U);
+    EXPECT_EQ(changes.resizedSize->height, 10U);
+    EXPECT_FALSE(changes.closeRequested);
+}
+
+TEST(WindowEventsTest, WindowChanges_LeavesTheSizeAloneWithNoResize)
+{
+    NiceMock<MockGfxBackend> backend;
+
+    EXPECT_CALL(backend, pollEvent())
+        .WillOnce(Return(closeOf(kOurWindow)))
+        .WillOnce(Return(std::nullopt));
+
+    const auto changes = windowChanges(backend, kOurWindow);
+
+    EXPECT_FALSE(changes.resizedSize.has_value());
+    EXPECT_TRUE(changes.closeRequested);
+}
+
+TEST(WindowEventsTest, WindowChanges_IgnoresAResizeOfAnotherWindow)
+{
+    NiceMock<MockGfxBackend> backend;
+
+    EXPECT_CALL(backend, pollEvent())
+        .WillOnce(Return(resizeOf(kSomeoneElsesWindow)))
+        .WillOnce(Return(std::nullopt));
+
+    EXPECT_FALSE(
+        windowChanges(backend, kOurWindow).resizedSize.has_value());
+}
+
+TEST(WindowEventsTest, WindowChanges_ReadsACloseAndAResizeTogether)
+{
+    NiceMock<MockGfxBackend> backend;
+
+    EXPECT_CALL(backend, pollEvent())
+        .WillOnce(Return(resizeOf(kOurWindow)))
+        .WillOnce(Return(closeOf(kOurWindow)))
+        .WillOnce(Return(std::nullopt));
+
+    const auto changes = windowChanges(backend, kOurWindow);
+
+    EXPECT_TRUE(changes.closeRequested);
+    EXPECT_TRUE(changes.resizedSize.has_value());
 }

@@ -23,15 +23,13 @@
 #include <antwika/tilemap/Tilemap.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/voxelmap/VoxelPick.hpp>
+#include <antwika/app/WindowEvents.hpp>
 
 #include "antwika/editor/Editor.hpp"
 #include "antwika/editor/plan/PlanFileError.hpp"
 
 namespace
 {
-
-    constexpr antwika::gfx::Size kWindowSize{
-        .width = 1280, .height = 720};
 
 }
 
@@ -55,7 +53,7 @@ namespace antwika::editor
               backend.createWindow(
                   gfx::WindowSpec{
                       .title = "Antwika",
-                      .size = kWindowSize,
+                      .size = app::kDefaultWindowSize,
                       .resizable = true})),
           viewportRenderer(
               window->renderer(), window->size(), camera::kCanvasSize),
@@ -190,28 +188,14 @@ namespace antwika::editor
 
     bool Editor::pollWindow()
     {
-        bool closeRequested = false;
+        const auto changes = app::windowChanges(backend, window->id());
 
-        while (const auto event = backend.pollEvent())
+        if (changes.resizedSize.has_value())
         {
-            if (event->window != window->id())
-            {
-                continue;
-            }
-
-            if (std::holds_alternative<antwika::gfx::CloseRequested>(
-                    event->payload))
-            {
-                closeRequested = true;
-            }
-
-            if (const auto *resized =
-                    std::get_if<antwika::gfx::Resized>(
-                        &event->payload))
-            {
-                viewportRenderer.resize(resized->size);
-            }
+            viewportRenderer.resize(*changes.resizedSize);
         }
+
+        const auto closeRequested = changes.closeRequested;
 
         if (closeRequested && dirty)
         {

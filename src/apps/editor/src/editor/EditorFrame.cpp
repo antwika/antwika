@@ -111,14 +111,14 @@ namespace antwika::editor
         }
 
         for (std::size_t tickCount = 0;
-             tickDebt >= kTickPeriod && tickCount < kMaxCatchUpTicks;
+             tickDebt >= app::kTickPeriod && tickCount < app::kMaxCatchUpTicks;
              ++tickCount)
         {
-            tickDebt -= kTickPeriod;
+            tickDebt -= app::kTickPeriod;
             simulate();
         }
 
-        if (tickDebt >= kTickPeriod)
+        if (tickDebt >= app::kTickPeriod)
         {
             tickDebt = std::chrono::nanoseconds{};
         }
