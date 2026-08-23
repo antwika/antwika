@@ -244,25 +244,8 @@ namespace antwika::map
 
         if (!cameraJson.is_null())
         {
-            const auto &atJson = cameraJson[std::string(kAtKey)];
-
-            map.camera = CameraView{
-                .transform =
-                    camera::CameraTransform{
-                        .position =
-                            gfx::Vec3{
-                                fromFixed(atJson[0].get<std::int64_t>()),
-                                fromFixed(atJson[1].get<std::int64_t>()),
-                                fromFixed(atJson[2].get<std::int64_t>())},
-                        .yaw = fromFixed(
-                            cameraJson[std::string(kYawKey)]
-                                .get<std::int64_t>()),
-                        .pitch = fromFixed(
-                            cameraJson[std::string(kPitchKey)]
-                                .get<std::int64_t>())},
-                .zoom = static_cast<std::int32_t>(
-                    cameraJson[std::string(kZoomKey)]
-                        .get<std::int64_t>())};
+            map.camera =
+                read<CameraView>(kCameraFields, cameraJson);
 
             map.camera->transform = camera::snappedPitch(map.camera->transform);
         }

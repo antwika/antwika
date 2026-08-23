@@ -67,6 +67,11 @@ namespace antwika::map::mapfile
         return shapeOf(kDecorFields);
     } // GCOVR_EXCL_LINE
 
+    nlohmann::json markedCubeSchema()
+    {
+        return orNullShape(shapeOf(kMarkedCubeFields));
+    } // GCOVR_EXCL_LINE
+
     void readObject(
         const Fields fields,
         void *record,

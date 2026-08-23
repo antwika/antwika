@@ -423,28 +423,7 @@ namespace antwika::map::mapfile
 
     [[nodiscard]] nlohmann::json plateSchema();
 
-    [[nodiscard]] inline nlohmann::json markedCubeSchema()
-    {
-        nlohmann::json arraySchema;
-        arraySchema["type"] = "array";
-        arraySchema["items"] = wholeSchema(-kMaxCellCoord, kMaxCellCoord);
-        arraySchema["minItems"] = kAxisCount;
-        arraySchema["maxItems"] = kAxisCount;
-
-        nlohmann::json objectSchema;
-        objectSchema["type"] = "object";
-        objectSchema["additionalProperties"] = false;
-        objectSchema["required"] = {std::string(kAtKey)};
-        objectSchema["properties"][std::string(kAtKey)] = arraySchema;
-
-        nlohmann::json nullSchema;
-        nullSchema["type"] = "null";
-
-        nlohmann::json shape;
-        shape["oneOf"] = {objectSchema, nullSchema};
-
-        return shape;
-    } // GCOVR_EXCL_LINE
+    [[nodiscard]] nlohmann::json markedCubeSchema();
 
     [[nodiscard]] inline nlohmann::json jsonOf(
         const voxel::VoxelPosition position)

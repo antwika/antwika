@@ -128,36 +128,7 @@ namespace antwika::map
 
             [[nodiscard]] nlohmann::json cameraSchema()
             {
-                nlohmann::json arraySchema;
-                arraySchema["type"] = "array";
-                arraySchema["items"] = wholeSchema(-kMaxCameraCoord,
-                    kMaxCameraCoord);
-                arraySchema["minItems"] = kAxisCount;
-                arraySchema["maxItems"] = kAxisCount;
-
-                nlohmann::json objectSchema;
-                objectSchema["type"] = "object";
-                objectSchema["additionalProperties"] = false;
-                objectSchema["required"] = {
-                    std::string(kAtKey),
-                    std::string(kYawKey),
-                    std::string(kPitchKey),
-                    std::string(kZoomKey)};
-                objectSchema["properties"][std::string(kAtKey)] = arraySchema;
-                objectSchema["properties"][std::string(kYawKey)] =
-                    wholeSchema(-kMaxCameraCoord, kMaxCameraCoord);
-                objectSchema["properties"][std::string(kPitchKey)] =
-                    wholeSchema(-kMaxCameraCoord, kMaxCameraCoord);
-                objectSchema["properties"][std::string(kZoomKey)] =
-                    wholeSchema(camera::kMinZoom, camera::kMaxZoom);
-
-                nlohmann::json nullSchema;
-                nullSchema["type"] = "null";
-
-                nlohmann::json shape;
-                shape["oneOf"] = {objectSchema, nullSchema};
-
-                return shape;
+                return orNullShape(shapeOf(kCameraFields));
             } // GCOVR_EXCL_LINE
 
             [[nodiscard]] nlohmann::json tileKindSchema()
