@@ -106,6 +106,10 @@ namespace antwika::editor
         lightPasses.open(viewportRenderer, map::loadShader("shadow"));
         scenePass.open(viewportRenderer, map::loadShader("bloom"));
 
+        takeSettings(document.map.settings);
+
+        rebuildWorld();
+
         spawnRoster();
         loadCharacterSkins();
 
@@ -116,10 +120,6 @@ namespace antwika::editor
         cameraRig.view = document.map.camera.value_or(opening);
         cameraRig.viewHeight =
             camera::orthoHalfHeight(camera::kCanvasSize, cameraRig.view.zoom);
-
-        takeSettings(document.map.settings);
-
-        rebuildWorld();
 
         if (playOnly)
         {

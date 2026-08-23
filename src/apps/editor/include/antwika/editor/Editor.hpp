@@ -120,6 +120,8 @@ namespace antwika::editor
 
         void run();
 
+        [[nodiscard]] component::Position playerStandsAt() const;
+
     private:
         log::ILogger &logger;
         bool playOnly = false;
