@@ -9,6 +9,8 @@
 
 #include "antwika/editor/ui/ToolButtonRow.hpp"
 #include "antwika/editor/ui/ToolPanel.hpp"
+#include "antwika/editor/ui/ToolPlacement.hpp"
+#include "antwika/editor/ui/ToolPlacementRow.hpp"
 #include "antwika/editor/ui/ToolToggles.hpp"
 
 namespace
@@ -286,4 +288,40 @@ TEST(ToolPanelTest, ToolButtonActive_ReadsEachToggleFromItsOwnFlag)
         antwika::editor::toolButtonActive(
             ToolButton::FreeLook, Tool::Brush,
             ToolToggles{.lighting = true}));
+}
+
+TEST(ToolPanelTest, PlacementOf_SendsEveryGateToolToTheGatePlacement)
+{
+    using antwika::editor::placementOf;
+    using antwika::editor::ToolPlacement;
+    using antwika::map::Tool;
+
+    for (const auto tool :
+         {Tool::Key,
+          Tool::Door,
+          Tool::Checkpoint,
+          Tool::Food,
+          Tool::Water})
+    {
+        EXPECT_EQ(placementOf(tool), ToolPlacement::Gate);
+    }
+
+    EXPECT_EQ(placementOf(Tool::Start), ToolPlacement::StartOrExit);
+    EXPECT_EQ(placementOf(Tool::Exit), ToolPlacement::StartOrExit);
+    EXPECT_EQ(placementOf(Tool::Lamp), ToolPlacement::Lamp);
+    EXPECT_EQ(placementOf(Tool::Stamp), ToolPlacement::Stamp);
+    EXPECT_EQ(placementOf(Tool::Figure), ToolPlacement::Figure);
+    EXPECT_EQ(
+        placementOf(Tool::PressurePlate), ToolPlacement::Plate);
+}
+
+TEST(ToolPanelTest, PlacementOf_LeavesTheDrawingToolsToTheShapePath)
+{
+    using antwika::editor::placementOf;
+    using antwika::editor::ToolPlacement;
+    using antwika::map::Tool;
+
+    EXPECT_EQ(placementOf(Tool::Brush), ToolPlacement::Shape);
+    EXPECT_EQ(placementOf(Tool::Eraser), ToolPlacement::Shape);
+    EXPECT_EQ(placementOf(Tool::Picker), ToolPlacement::Shape);
 }

@@ -30,6 +30,11 @@ namespace antwika::map
         Eraser,
     };
 
+    [[nodiscard]] constexpr Tool lastEnumerator(Tool) noexcept
+    {
+        return Tool::Eraser;
+    }
+
     enum class Paint : std::uint8_t
     {
         Brush,
