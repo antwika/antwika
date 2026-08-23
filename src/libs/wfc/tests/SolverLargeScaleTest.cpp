@@ -49,7 +49,7 @@ TEST(SolverLargeScaleTest, Solve_CompletesThousandsOfCells)
     const auto constraintRefs = referencesTo(constraints);
 
     Solver solver(waveDomains, constraintRefs);
-    const auto result = solver.getSolve();
+    const auto result = solver.getSolveResult();
 
     ASSERT_EQ(result.outcome, SolveOutcome::Solved);
     ASSERT_EQ(result.assignment.size(), kLength);

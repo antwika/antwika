@@ -471,7 +471,7 @@ TEST(DropdownTest, Dropdown_AnOpenListReportsAnOverlayOverWhatItCovers)
     uiContext.button("below", {.widgetId = kBelowWidget});
 
     const auto frame = uiContext.build();
-    const auto foundRect = frame.rects.getFind(kBelowWidget);
+    const auto foundRect = frame.rects.getWidgetRect(kBelowWidget);
 
     ASSERT_TRUE(foundRect.has_value());
     ASSERT_FALSE(frame.overlayRects.empty());

@@ -65,7 +65,7 @@ namespace antwika::text
         for (const char character : text)
         {
             const font::AtlasGlyph *glyph
-                = atlas.getFind(codepointOf(character));
+                = atlas.getGlyph(codepointOf(character));
 
             if (glyph == nullptr)
             {
@@ -97,7 +97,7 @@ namespace antwika::text
         for (const char character : text)
         {
             const font::AtlasGlyph *glyph
-                = atlas.getFind(codepointOf(character));
+                = atlas.getGlyph(codepointOf(character));
 
             if (glyph == nullptr)
             {

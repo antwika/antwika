@@ -41,7 +41,7 @@ namespace
 
     const auto kLone = voxelsOf({VoxelCell{}});
 
-    [[nodiscard]] antwika::gfx::Mat4 getUnturned()
+    [[nodiscard]] antwika::gfx::Mat4 getUnturnedMatrix()
     {
         return antwika::gfx::getIdentityMatrix();
     }
@@ -166,7 +166,7 @@ TEST(VoxelPickTest, RayInModelSpace_LeavesARayAloneWhereNothingIsTurned)
     const Ray ray{
         .fromPosition = Vec3{1.0F, 2.0F, 3.0F},
         .direction = glm::normalize(Vec3{0.0F, -1.0F, -1.0F})};
-    const auto modelRay = getRayInModelSpace(ray, getUnturned());
+    const auto modelRay = getRayInModelSpace(ray, getUnturnedMatrix());
 
     EXPECT_NEAR(glm::length(modelRay.fromPosition - ray.fromPosition), 0.0F,
         1e-5F);
@@ -183,7 +183,7 @@ TEST(VoxelPickTest, TilePicked_TakesATileWhereThePileIsPointedAt)
             getDemoCells(),
             {},
             camera,
-            getUnturned(),
+            getUnturnedMatrix(),
             kCanvasSize,
             antwika::gfx::PointF{160.0F, 90.0F})
             .has_value());
@@ -199,7 +199,7 @@ TEST(VoxelPickTest, TilePicked_TakesNoTileFromTheBareCorner)
             getDemoCells(),
             {},
             camera,
-            getUnturned(),
+            getUnturnedMatrix(),
             kCanvasSize,
             antwika::gfx::PointF{2.0F, 2.0F})
             .has_value());
@@ -212,11 +212,11 @@ TEST(VoxelPickTest, TilePicked_TakesTheTileTheMeshDrawsThere)
         cameraOf(getDefaultTransform(), kCanvasSize, kViewHalfHeight);
     const auto screenPoint = antwika::gfx::PointF{160.0F, 90.0F};
     const auto pickedFace =
-        getTilePicked(cells, {}, camera, getUnturned(), kCanvasSize, screenPoint);
+        getTilePicked(cells, {}, camera, getUnturnedMatrix(), kCanvasSize, screenPoint);
     const auto face = getRaycastFace(
         cells,
         getRayInModelSpace(getRayThrough(camera, kCanvasSize, screenPoint),
-        getUnturned()));
+        getUnturnedMatrix()));
 
     ASSERT_TRUE(pickedFace.has_value());
     ASSERT_TRUE(face.has_value());
@@ -236,7 +236,7 @@ TEST(VoxelPickTest, TilePicked_TakesTheTileTheFaceIsDrawingNow)
     std::vector<antwika::tilemap::Tile> drawnTiles(faces.size(), oddTile);
 
     const auto pickedFace =
-        getTilePicked(cells, drawnTiles, camera, getUnturned(), kCanvasSize,
+        getTilePicked(cells, drawnTiles, camera, getUnturnedMatrix(), kCanvasSize,
             screenPoint);
 
     ASSERT_TRUE(pickedFace.has_value());
@@ -250,11 +250,11 @@ TEST(VoxelPickTest, TilePicked_FallsBackOnWhatAFaceWouldDraw)
         cameraOf(getDefaultTransform(), kCanvasSize, kViewHalfHeight);
     const auto screenPoint = antwika::gfx::PointF{160.0F, 90.0F};
     const auto pickedFace =
-        getTilePicked(cells, {}, camera, getUnturned(), kCanvasSize, screenPoint);
+        getTilePicked(cells, {}, camera, getUnturnedMatrix(), kCanvasSize, screenPoint);
     const auto face = getRaycastFace(
         cells,
         getRayInModelSpace(getRayThrough(camera, kCanvasSize, screenPoint),
-        getUnturned()));
+        getUnturnedMatrix()));
 
     ASSERT_TRUE(pickedFace.has_value());
     ASSERT_TRUE(face.has_value());
@@ -269,11 +269,11 @@ TEST(VoxelPickTest, FacePicked_NamesTheFaceThePileIsPointedAt)
         cameraOf(getDefaultTransform(), kCanvasSize, kViewHalfHeight);
     const auto screenPoint = antwika::gfx::PointF{160.0F, 90.0F};
     const auto which = antwika::voxelmap::getFacePicked(
-        cells, faces, camera, getUnturned(), kCanvasSize, screenPoint);
+        cells, faces, camera, getUnturnedMatrix(), kCanvasSize, screenPoint);
     const auto pickedFace = getRaycastFace(
         cells,
         getRayInModelSpace(getRayThrough(camera, kCanvasSize, screenPoint),
-        getUnturned()));
+        getUnturnedMatrix()));
 
     ASSERT_TRUE(which.has_value());
     ASSERT_TRUE(pickedFace.has_value());
@@ -293,7 +293,7 @@ TEST(VoxelPickTest, FacePicked_NamesNothingClearOfThePile)
             cells,
             faces,
             camera,
-            getUnturned(),
+            getUnturnedMatrix(),
             kCanvasSize,
             antwika::gfx::PointF{2.0F, 2.0F})
             .has_value());
@@ -309,7 +309,7 @@ TEST(VoxelPickTest, FacePicked_NamesNothingAmongNoFaces)
             getDemoCells(),
             {},
             camera,
-            getUnturned(),
+            getUnturnedMatrix(),
             kCanvasSize,
             antwika::gfx::PointF{160.0F, 90.0F})
             .has_value());
@@ -326,7 +326,7 @@ TEST(VoxelPickTest, TilePicked_TellsOneFaceFromAnotherAmongTheDrawn)
     const auto face = getRaycastFace(
         cells,
         getRayInModelSpace(getRayThrough(camera, kCanvasSize, screenPoint),
-        getUnturned()));
+        getUnturnedMatrix()));
 
     ASSERT_TRUE(face.has_value());
 
@@ -340,7 +340,7 @@ TEST(VoxelPickTest, TilePicked_TellsOneFaceFromAnotherAmongTheDrawn)
     }
 
     const auto pickedFace =
-        getTilePicked(cells, drawnTiles, camera, getUnturned(), kCanvasSize,
+        getTilePicked(cells, drawnTiles, camera, getUnturnedMatrix(), kCanvasSize,
             screenPoint);
 
     ASSERT_TRUE(pickedFace.has_value());
@@ -375,7 +375,7 @@ TEST(VoxelPickTest, ProjectToScreen_PutsBackWhatRayThroughTookOff)
     const auto ray = getRayThrough(camera, kCanvasSize, point);
     const auto alongPoint = ray.fromPosition + (ray.direction * 3.0F);
     const auto backPoint =
-        getProjectToScreen(camera, getUnturned(), kCanvasSize, alongPoint);
+        getProjectToScreen(camera, getUnturnedMatrix(), kCanvasSize, alongPoint);
 
     ASSERT_TRUE(backPoint.has_value());
     EXPECT_NEAR(backPoint->x, point.x, 0.01F);
@@ -390,13 +390,13 @@ TEST(VoxelPickTest, ProjectToScreen_PutsAFaceWhereItsOwnPixelPicksIt)
     const antwika::gfx::PointF point{160.0F, 90.0F};
     const auto face = getRaycastFace(
         cells,
-        getRayInModelSpace(getRayThrough(camera, kCanvasSize, point), getUnturned()));
+        getRayInModelSpace(getRayThrough(camera, kCanvasSize, point), getUnturnedMatrix()));
 
     ASSERT_TRUE(face.has_value());
 
     const auto where = getProjectToScreen(
         camera,
-        getUnturned(),
+        getUnturnedMatrix(),
         kCanvasSize,
         antwika::voxelmap::getFaceMiddle(*face));
 
@@ -405,7 +405,7 @@ TEST(VoxelPickTest, ProjectToScreen_PutsAFaceWhereItsOwnPixelPicksIt)
     const auto secondFace = getRaycastFace(
         cells,
         getRayInModelSpace(
-            getRayThrough(camera, kCanvasSize, *where), getUnturned()));
+            getRayThrough(camera, kCanvasSize, *where), getUnturnedMatrix()));
 
     ASSERT_TRUE(secondFace.has_value());
     EXPECT_EQ(*secondFace, *face);
@@ -422,7 +422,7 @@ TEST(VoxelPickTest, IsFrontFacing_TellsTheNearSideFromTheFar)
          side < antwika::voxelmap::kVoxelFaceCount;
          ++side)
     {
-        (antwika::voxelmap::isFrontFacing(camera, getUnturned(), side)
+        (antwika::voxelmap::isFrontFacing(camera, getUnturnedMatrix(), side)
              ? towardsCount
              : awayCount)
             += 1;
@@ -450,7 +450,7 @@ TEST(VoxelPickTest, IsFrontFacing_TurnsAFaceAwayWhereTheModelTurns)
         }
 
         EXPECT_NE(
-            antwika::voxelmap::isFrontFacing(camera, getUnturned(), side),
+            antwika::voxelmap::isFrontFacing(camera, getUnturnedMatrix(), side),
             antwika::voxelmap::isFrontFacing(camera, rotationMatrix, side));
     }
 }
@@ -512,7 +512,7 @@ TEST(VoxelPickTest, CellUnder_TakesTheCellThePileIsPointedAt)
         cameraOf(getDefaultTransform(), kCanvasSize, kViewHalfHeight);
     const auto pickedCell = antwika::voxelmap::getCellUnder(
         camera,
-        getUnturned(),
+        getUnturnedMatrix(),
         kCanvasSize,
         antwika::gfx::PointF{160.0F, 90.0F},
         0);

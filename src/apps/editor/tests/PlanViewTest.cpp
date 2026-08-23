@@ -305,7 +305,7 @@ TEST(PlanViewTest, Layout_LaysEveryColumnOutAndSaysHowWideTheyCame)
 
     EXPECT_FALSE(frame.drawList.empty());
     EXPECT_TRUE(frame.rects
-                    .getFind(antwika::editor::getPlanColumnWidget(
+                    .getWidgetRect(antwika::editor::getPlanColumnWidget(
                         Column::Todo))
                     .has_value());
 

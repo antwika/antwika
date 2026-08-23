@@ -101,7 +101,7 @@ namespace antwika::font
             *rasteriser, rasteriser->getGlyphIndex(codepoint), scale);
     }
 
-    Glyph Font::getRasterise(
+    Glyph Font::getRasterisedGlyph(
         char32_t codepoint, std::uint32_t pixelHeight) const
     {
         const float scale = scaleFor(*rasteriser, pixelHeight);

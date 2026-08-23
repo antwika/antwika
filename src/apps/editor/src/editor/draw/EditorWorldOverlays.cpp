@@ -45,7 +45,7 @@ namespace antwika::editor
 
             const auto satisfiedSeamSet = solver::getSatisfiedSeams(
                 worldMeshes.getFaces(),
-                worldMeshes.getSolved(),
+                worldMeshes.getSolvedTiles(),
                 document.map.rules,
                 cornerJoining);
 
@@ -135,11 +135,11 @@ namespace antwika::editor
 
             if (!play.playing)
             {
-                if (!lightPasses.getHidden().empty())
+                if (!lightPasses.getHiddenVoxels().empty())
                 {
                     ruled(
                         voxelmap::getOccluderFootprints(
-                            lightPasses.getHidden()),
+                            lightPasses.getHiddenVoxels()),
                         kLevelGridLineColor);
                 }
 

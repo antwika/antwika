@@ -104,9 +104,9 @@ namespace antwika::render
     {
         bitmaps = std::move(sheetBitmaps);
         checkerTextures.at(indexOf(tilemap::Atlas::Wall)) =
-            viewportRenderer.createTexture(getCheckered(tilemap::kWallTileSize));
+            viewportRenderer.createTexture(getCheckerboardBitmap(tilemap::kWallTileSize));
         checkerTextures.at(indexOf(tilemap::Atlas::Floor)) =
-            viewportRenderer.createTexture(getCheckered(tilemap::kFloorTileSize));
+            viewportRenderer.createTexture(getCheckerboardBitmap(tilemap::kFloorTileSize));
         dirty = true;
         refresh(viewportRenderer, drawnMap, tick, false);
     }
@@ -189,7 +189,7 @@ namespace antwika::render
         return paintedTextures.at(indexOf(atlas)).get();
     }
 
-    gfx::ITexture *AtlasSheets::getKeyed(
+    gfx::ITexture *AtlasSheets::getKeyedTexture(
         const tilemap::Atlas atlas) const noexcept
     {
         return keyedOutTextures.at(indexOf(atlas)).get();

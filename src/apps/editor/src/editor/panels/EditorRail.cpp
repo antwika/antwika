@@ -182,7 +182,7 @@ namespace antwika::editor
                     characterView.mark.selectedFrame.value_or(0)
                     / character::kCharacterFrames);
 
-                panelTitle(context, getCapitalized(character::getDirectionName(way)));
+                panelTitle(context, getCapitalizedText(character::getDirectionName(way)));
                 context.image(
                     antwika::ui::Icon{
                         .sheetTexture = characterView.getTexture(),

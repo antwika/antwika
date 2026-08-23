@@ -17,7 +17,7 @@ namespace antwika::ui
     {
         std::vector<WidgetRect> widgetRects{};
 
-        [[nodiscard]] std::optional<Rect> getFind(WidgetId widget) const;
+        [[nodiscard]] std::optional<Rect> getWidgetRect(WidgetId widget) const;
 
         [[nodiscard]] bool operator==(const WidgetRects &other) const =
             default;

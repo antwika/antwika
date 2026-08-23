@@ -111,7 +111,7 @@ namespace antwika::tile
         getParts()
             const;
 
-        [[nodiscard]] std::set<tilemap::Tile> getAllowed(
+        [[nodiscard]] std::set<tilemap::Tile> getAllowedTiles(
             tilemap::Tile tile, tilemap::TileEdge edge) const;
 
         [[nodiscard]] std::vector<TileRule> getAllRules() const;

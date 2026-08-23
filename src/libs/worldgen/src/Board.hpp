@@ -25,7 +25,7 @@ namespace antwika::worldgen::detail
 
         void hold(std::size_t cell, std::span<const std::size_t> wantedCells);
 
-        [[nodiscard]] std::size_t getMark() const;
+        [[nodiscard]] std::size_t getMarkStep() const;
 
         void rewind(std::size_t toStep);
 

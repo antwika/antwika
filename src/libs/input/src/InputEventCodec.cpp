@@ -153,7 +153,7 @@ namespace antwika::input
             return validator;
         }
 
-        [[nodiscard]] nlohmann::json getParsed(
+        [[nodiscard]] nlohmann::json getParsedDocument(
             const Event &event, const Validator &validator)
         {
             return antwika::schema::parseAndValidatePayload<InputError>(
@@ -250,17 +250,17 @@ namespace antwika::input
         };
     }
 
-    Event InputEventCodec::getEncode(const InputEvent &event) const
+    Event InputEventCodec::getEncodedEvent(const InputEvent &event) const
     {
         return std::visit(Encoder{}, event);
     }
 
-    std::optional<InputEvent> InputEventCodec::getDecode(const Event &event) const
+    std::optional<InputEvent> InputEventCodec::getDecodedEvent(const Event &event) const
     {
         if (event.name == events::kKeyDown)
         {
             const auto payload =
-                getParsed(event, validatorFor<getKeyDownSchema>());
+                getParsedDocument(event, validatorFor<getKeyDownSchema>());
 
             return KeyPressed{
                 .key = getKeyFromString(payload.at("key").get<std::string>()),
@@ -271,7 +271,7 @@ namespace antwika::input
         if (event.name == events::kKeyUp)
         {
             const auto payload =
-                getParsed(event, validatorFor<getKeyUpSchema>());
+                getParsedDocument(event, validatorFor<getKeyUpSchema>());
 
             return KeyReleased{
                 .key = getKeyFromString(payload.at("key").get<std::string>()),
@@ -281,7 +281,7 @@ namespace antwika::input
         if (event.name == events::kPointerMove)
         {
             const auto payload =
-                getParsed(event, validatorFor<getPointerMoveSchema>());
+                getParsedDocument(event, validatorFor<getPointerMoveSchema>());
 
             return PointerMoved{.position = getReadPosition(payload)};
         }
@@ -289,19 +289,19 @@ namespace antwika::input
         if (event.name == events::kPointerDown)
         {
             return buttonEdge<PointerButtonPressed>(
-                getParsed(event, validatorFor<getPointerButtonSchema>()));
+                getParsedDocument(event, validatorFor<getPointerButtonSchema>()));
         }
 
         if (event.name == events::kPointerUp)
         {
             return buttonEdge<PointerButtonReleased>(
-                getParsed(event, validatorFor<getPointerButtonSchema>()));
+                getParsedDocument(event, validatorFor<getPointerButtonSchema>()));
         }
 
         if (event.name == events::kPointerScroll)
         {
             const auto payload =
-                getParsed(event, validatorFor<getPointerScrollSchema>());
+                getParsedDocument(event, validatorFor<getPointerScrollSchema>());
 
             return PointerScrolled{ // GCOVR_EXCL_LINE
                 .horizontal = payload.at("horizontal").get<std::int32_t>(),

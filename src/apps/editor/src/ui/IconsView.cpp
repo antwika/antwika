@@ -28,7 +28,7 @@ namespace antwika::editor
         if (!iconCheckerTexture)
         {
             iconCheckerTexture = viewportRenderer.createTexture(
-                render::getCheckered(kIconCellSize, 4));
+                render::getCheckerboardBitmap(kIconCellSize, 4));
         }
     }
 
@@ -47,7 +47,7 @@ namespace antwika::editor
         return iconCheckerTexture.get();
     }
 
-    std::optional<std::size_t> IconsView::getPicked() const noexcept
+    std::optional<std::size_t> IconsView::getPickedIndex() const noexcept
     {
         return iconPicked;
     }

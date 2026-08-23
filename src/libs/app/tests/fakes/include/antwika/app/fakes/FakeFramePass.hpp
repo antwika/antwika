@@ -20,7 +20,7 @@ namespace antwika::app::fakes
             frames.push_back(subTickProgress);
         }
 
-        [[nodiscard]] const std::vector<Progress> &getDrawn() const noexcept
+        [[nodiscard]] const std::vector<Progress> &getDrawnProgress() const noexcept
         {
             return frames;
         }

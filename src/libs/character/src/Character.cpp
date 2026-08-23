@@ -250,7 +250,7 @@ namespace antwika::character
                   ? tick - posedState.startedAtTick
                   : 0;
 
-        return animation::getResolve(clip, elapsedTicks).index;
+        return animation::getFrameAt(clip, elapsedTicks).index;
     }
 
     geometry::GridCell getCharacterPixel(

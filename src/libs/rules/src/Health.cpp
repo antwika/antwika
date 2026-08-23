@@ -14,7 +14,7 @@ namespace antwika::rules
 
     namespace
     {
-        [[nodiscard]] std::uint16_t getWorn(
+        [[nodiscard]] std::uint16_t getWornLevel(
             const std::uint16_t level,
             const time::Tick tick,
             const time::Tick paceTick) noexcept
@@ -27,7 +27,7 @@ namespace antwika::rules
             return static_cast<std::uint16_t>(level - 1U);
         }
 
-        [[nodiscard]] std::uint16_t getFilled(
+        [[nodiscard]] std::uint16_t getFilledLevel(
             const std::uint16_t level) noexcept
         {
             return static_cast<std::uint16_t>(
@@ -50,8 +50,8 @@ namespace antwika::rules
         const component::Health health, const time::Tick tick) noexcept
     {
         return component::Health{
-            .food = getWorn(health.food, tick, component::kHungerTicks),
-            .water = getWorn(health.water, tick, component::kThirstTicks)};
+            .food = getWornLevel(health.food, tick, component::kHungerTicks),
+            .water = getWornLevel(health.water, tick, component::kThirstTicks)};
     }
 
     component::Vitals getConsumedVitals(
@@ -66,11 +66,11 @@ namespace antwika::rules
 
         if (kind == component::ItemKind::Food)
         {
-            vitals.health.food = getFilled(vitals.health.food);
+            vitals.health.food = getFilledLevel(vitals.health.food);
         }
         else
         {
-            vitals.health.water = getFilled(vitals.health.water);
+            vitals.health.water = getFilledLevel(vitals.health.water);
         }
 
         return vitals;

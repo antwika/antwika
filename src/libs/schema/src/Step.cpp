@@ -52,7 +52,7 @@ namespace antwika::schema
         };
     }
 
-    std::shared_ptr<const IMigration> getStep(
+    std::shared_ptr<const IMigration> getMigration(
         const std::uint32_t fromVersion,
         const std::uint32_t toVersion,
         std::string name,

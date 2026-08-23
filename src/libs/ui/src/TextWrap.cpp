@@ -18,7 +18,7 @@ namespace antwika::ui
             return charIndex;
         }
 
-        [[nodiscard]] std::string_view getTrimmed(
+        [[nodiscard]] std::string_view getTrimmedText(
             const std::string_view piece)
         {
             return piece.substr(
@@ -44,14 +44,14 @@ namespace antwika::ui
                 }
                 else
                 {
-                    lines.push_back(getTrimmed(run.substr(charIndex, space)));
+                    lines.push_back(getTrimmedText(run.substr(charIndex, space)));
                     charIndex += space;
                 }
 
                 charIndex = getPastSpaces(run, charIndex);
             }
 
-            lines.push_back(getTrimmed(run.substr(charIndex)));
+            lines.push_back(getTrimmedText(run.substr(charIndex)));
         }
     }
 

@@ -63,7 +63,7 @@ namespace
 
     bool decodes(const InputEventCodec &codec, const Event &event)
     {
-        return codec.getDecode(event).has_value();
+        return codec.getDecodedEvent(event).has_value();
     }
 }
 
@@ -73,9 +73,9 @@ TEST(InputEventCodecTest, Decode_ReturnsWhateverEncodeWasGiven)
 
     for (const auto &event : getEveryKindOfEvent())
     {
-        const auto encodedEvent = codec.getEncode(event);
+        const auto encodedEvent = codec.getEncodedEvent(event);
 
-        EXPECT_EQ(codec.getDecode(encodedEvent), event);
+        EXPECT_EQ(codec.getDecodedEvent(encodedEvent), event);
     }
 }
 
@@ -83,22 +83,22 @@ TEST(InputEventCodecTest, Encode_NamesEachKindOfEvent)
 {
     const InputEventCodec codec;
 
-    EXPECT_EQ(codec.getEncode(KeyPressed{}).name, events::kKeyDown);
-    EXPECT_EQ(codec.getEncode(KeyReleased{}).name, events::kKeyUp);
-    EXPECT_EQ(codec.getEncode(PointerMoved{}).name, events::kPointerMove);
+    EXPECT_EQ(codec.getEncodedEvent(KeyPressed{}).name, events::kKeyDown);
+    EXPECT_EQ(codec.getEncodedEvent(KeyReleased{}).name, events::kKeyUp);
+    EXPECT_EQ(codec.getEncodedEvent(PointerMoved{}).name, events::kPointerMove);
     EXPECT_EQ(
-        codec.getEncode(PointerButtonPressed{}).name, events::kPointerDown);
+        codec.getEncodedEvent(PointerButtonPressed{}).name, events::kPointerDown);
     EXPECT_EQ(
-        codec.getEncode(PointerButtonReleased{}).name, events::kPointerUp);
+        codec.getEncodedEvent(PointerButtonReleased{}).name, events::kPointerUp);
     EXPECT_EQ(
-        codec.getEncode(PointerScrolled{}).name, events::kPointerScroll);
+        codec.getEncodedEvent(PointerScrolled{}).name, events::kPointerScroll);
 }
 
 TEST(InputEventCodecTest, Encode_WritesAKeyByItsSymbolicName)
 {
     const InputEventCodec codec;
 
-    const auto encodedEvent = codec.getEncode(KeyPressed{
+    const auto encodedEvent = codec.getEncodedEvent(KeyPressed{
         .key = Key::Escape,
         .modifiers = {.shift = true},
         .repeat = false});
@@ -113,7 +113,7 @@ TEST(InputEventCodecTest, Encode_WritesAButtonByItsSymbolicName)
 {
     const InputEventCodec codec;
 
-    const auto encodedEvent = codec.getEncode(PointerButtonPressed{
+    const auto encodedEvent = codec.getEncodedEvent(PointerButtonPressed{
         .button = MouseButton::Right,
         .position = {.x = 4, .y = -5},
         .modifiers = {}});

@@ -94,9 +94,9 @@ namespace
         }
 
         return Panes{
-            .leftRect = frame.rects.getFind(kLeftWidget).value_or(Rect{}),
-            .dividerRect = frame.rects.getFind(kDividerWidget).value_or(Rect{}),
-            .rightRect = frame.rects.getFind(kRightWidget).value_or(Rect{})};
+            .leftRect = frame.rects.getWidgetRect(kLeftWidget).value_or(Rect{}),
+            .dividerRect = frame.rects.getWidgetRect(kDividerWidget).value_or(Rect{}),
+            .rightRect = frame.rects.getWidgetRect(kRightWidget).value_or(Rect{})};
     }
 
     [[nodiscard]] SplitSpec getEvenly()

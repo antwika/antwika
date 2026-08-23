@@ -56,7 +56,7 @@ namespace antwika::render
         occlusionTexture = viewportRenderer.createTexture(drawnOver);
     }
 
-    const voxel::Voxels &LightPasses::getHidden()
+    const voxel::Voxels &LightPasses::getHiddenVoxels()
         const noexcept
     {
         return occludingVoxelsHeld;

@@ -157,7 +157,7 @@ namespace antwika::editor
         return look;
     } // GCOVR_EXCL_LINE
 
-    [[nodiscard]] inline std::string getCapitalized(
+    [[nodiscard]] inline std::string getCapitalizedText(
         const std::string_view text)
     {
         std::string capitalText{text};

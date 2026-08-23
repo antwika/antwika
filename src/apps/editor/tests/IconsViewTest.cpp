@@ -83,11 +83,11 @@ TEST(IconsViewTest, Pick_TakesUpAnIconAndPutsItDown)
     icons.open(viewportRenderer, getBlankSheet(kSomeIcons));
     icons.pick(2);
 
-    EXPECT_EQ(icons.getPicked(), std::optional<std::size_t>{2});
+    EXPECT_EQ(icons.getPickedIndex(), std::optional<std::size_t>{2});
 
     icons.pick(std::nullopt);
 
-    EXPECT_FALSE(icons.getPicked().has_value());
+    EXPECT_FALSE(icons.getPickedIndex().has_value());
 }
 
 TEST(IconsViewTest, Paint_ColorsThePixelAndLeavesTheSheetUnsaved)

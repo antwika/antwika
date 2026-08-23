@@ -18,8 +18,8 @@ TEST(SolverDeterminismTest, Solve_MatchesForOneSolverRunTwice)
     AllDifferentConstraint allDifferent({0, 1});
 
     Solver solver(waveDomains, {std::cref(allDifferent)});
-    const auto first = solver.getSolve();
-    const auto second = solver.getSolve();
+    const auto first = solver.getSolveResult();
+    const auto second = solver.getSolveResult();
 
     EXPECT_EQ(first.outcome, SolveOutcome::Solved);
     EXPECT_EQ(first.assignment, (std::vector<std::size_t>{0, 1}));
@@ -37,8 +37,8 @@ TEST(SolverDeterminismTest, Solve_MatchesAcrossTwoSolvers)
     Solver solverA(waveADomains, {std::cref(allDifferentA)});
     Solver solverB(waveBDomains, {std::cref(allDifferentB)});
 
-    const auto resultA = solverA.getSolve();
-    const auto resultB = solverB.getSolve();
+    const auto resultA = solverA.getSolveResult();
+    const auto resultB = solverB.getSolveResult();
 
     EXPECT_EQ(resultA.outcome, SolveOutcome::Solved);
     EXPECT_EQ(resultA.assignment, (std::vector<std::size_t>{0, 1}));

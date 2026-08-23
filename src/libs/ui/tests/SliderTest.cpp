@@ -115,7 +115,7 @@ TEST(SliderTest, Slider_DrawsATrackAndAThumb)
 
     const auto frame = uiContext.build();
 
-    EXPECT_TRUE(frame.rects.getFind(kLevelWidget).has_value());
+    EXPECT_TRUE(frame.rects.getWidgetRect(kLevelWidget).has_value());
     EXPECT_TRUE(thumbOf(frame.drawList).has_value());
 }
 
@@ -135,7 +135,7 @@ TEST(SliderTest, Slider_ReportsTheValueUnderAPressOnTheTrack)
             Context uiContext{kCanvasSize, getPlainTheme()};
             uiContext.slider(getLevelSpec());
 
-            return uiContext.build().rects.getFind(kLevelWidget).value_or(Rect{});
+            return uiContext.build().rects.getWidgetRect(kLevelWidget).value_or(Rect{});
         }();
 
     Context uiContext{
@@ -163,7 +163,7 @@ TEST(SliderTest, Slider_ReportsNothingAtTheStartOfTheTrack)
             Context uiContext{kCanvasSize, getPlainTheme()};
             uiContext.slider(getLevelSpec());
 
-            return uiContext.build().rects.getFind(kLevelWidget).value_or(Rect{});
+            return uiContext.build().rects.getWidgetRect(kLevelWidget).value_or(Rect{});
         }();
 
     Context uiContext{
@@ -186,7 +186,7 @@ TEST(SliderTest, Slider_ReportsAHalfwayPressAsHalfItsRange)
             Context uiContext{kCanvasSize, getPlainTheme()};
             uiContext.slider(getLevelSpec());
 
-            return uiContext.build().rects.getFind(kLevelWidget).value_or(Rect{});
+            return uiContext.build().rects.getWidgetRect(kLevelWidget).value_or(Rect{});
         }();
 
     Context uiContext{
@@ -224,7 +224,7 @@ TEST(SliderTest, Slider_KeepsFollowingAPointerThatLeftTheTrack)
             Context uiContext{kCanvasSize, getPlainTheme()};
             uiContext.slider(spec);
 
-            return uiContext.build().rects.getFind(kLevelWidget).value_or(Rect{});
+            return uiContext.build().rects.getWidgetRect(kLevelWidget).value_or(Rect{});
         }();
 
     Context uiContext{
@@ -250,7 +250,7 @@ TEST(SliderTest, Slider_ReportsNothingWhileNotDraggingAndNotPressed)
             Context uiContext{kCanvasSize, getPlainTheme()};
             uiContext.slider(getLevelSpec());
 
-            return uiContext.build().rects.getFind(kLevelWidget).value_or(Rect{});
+            return uiContext.build().rects.getWidgetRect(kLevelWidget).value_or(Rect{});
         }();
 
     Context uiContext{
@@ -277,7 +277,7 @@ TEST(SliderTest, Slider_ReportsNothingUnderAnOpenDropdown)
             uiContext.dropdown(picker);
             uiContext.slider(getLevelSpec());
 
-            return uiContext.build().rects.getFind(kLevelWidget).value_or(Rect{});
+            return uiContext.build().rects.getWidgetRect(kLevelWidget).value_or(Rect{});
         }();
 
     Context uiContext{
@@ -326,7 +326,7 @@ TEST(SliderTest, Slider_PutsTheThumbAtTheStartForTheLeastValue)
     uiContext.slider(getLevelSpec());
 
     const auto frame = uiContext.build();
-    const auto track = frame.rects.getFind(kLevelWidget);
+    const auto track = frame.rects.getWidgetRect(kLevelWidget);
     const auto thumb = thumbOf(frame.drawList);
 
     ASSERT_TRUE(track.has_value());
@@ -345,7 +345,7 @@ TEST(SliderTest, Slider_PutsTheThumbAtTheEndForTheGreatestValue)
     uiContext.slider(spec);
 
     const auto frame = uiContext.build();
-    const auto track = frame.rects.getFind(kLevelWidget);
+    const auto track = frame.rects.getWidgetRect(kLevelWidget);
     const auto thumb = thumbOf(frame.drawList);
 
     ASSERT_TRUE(track.has_value());

@@ -447,7 +447,7 @@ namespace antwika::worldgen
             wfc::SolverLimits{.maxSteps = request.maxSteps},
             std::move(wishes));
 
-        const auto solution = solver.getSolve();
+        const auto solution = solver.getSolveResult();
 
         if (solution.outcome != wfc::SolveOutcome::Solved)
         {

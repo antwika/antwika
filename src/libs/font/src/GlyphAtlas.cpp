@@ -118,7 +118,7 @@ namespace antwika::font
         };
     }
 
-    const AtlasGlyph *GlyphAtlas::getFind(char32_t codepoint) const
+    const AtlasGlyph *GlyphAtlas::getGlyph(char32_t codepoint) const
     {
         const auto foundGlyph = std::ranges::lower_bound(
             glyphs, codepoint, {}, &AtlasGlyph::codepoint);
@@ -152,7 +152,7 @@ namespace antwika::font
 
         for (const char32_t codepoint : getDistinctAscending(codepoints))
         {
-            Glyph glyph = font.getRasterise(codepoint, pixelHeight);
+            Glyph glyph = font.getRasterisedGlyph(codepoint, pixelHeight);
             Rect sourceRect;
 
             if (!glyph.coverage.samples.empty())

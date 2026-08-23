@@ -55,7 +55,7 @@ namespace antwika::voxel
             return 0;
         }
 
-        [[nodiscard]] glm::vec3 getWithin(
+        [[nodiscard]] glm::vec3 getPointWithin(
             const VoxelPosition climbPosition,
             const float alongDistance,
             const float acrossDistance,
@@ -122,14 +122,14 @@ namespace antwika::voxel
             quads.push_back(
                 quadOf(
                     getSideTowards(VoxelPosition{.y = 1}),
-                    getWithin(climbPosition, nearHeight, -kHalf, nearHeight),
-                    getWithin(climbPosition, farHeight, kHalf, nearHeight)));
+                    getPointWithin(climbPosition, nearHeight, -kHalf, nearHeight),
+                    getPointWithin(climbPosition, farHeight, kHalf, nearHeight)));
 
             quads.push_back(
                 quadOf(
                     getSideTowards(backStep),
-                    getWithin(climbPosition, farHeight, -kHalf, nearHeight),
-                    getWithin(climbPosition, farHeight, kHalf, farHeight)));
+                    getPointWithin(climbPosition, farHeight, -kHalf, nearHeight),
+                    getPointWithin(climbPosition, farHeight, kHalf, farHeight)));
 
             if (step == 0)
             {
@@ -139,16 +139,16 @@ namespace antwika::voxel
             quads.push_back(
                 quadOf(
                     getSideTowards(acrossStep),
-                    getWithin(climbPosition, nearHeight, kHalf, -kHalf),
-                    getWithin(climbPosition, farHeight, kHalf, nearHeight)));
+                    getPointWithin(climbPosition, nearHeight, kHalf, -kHalf),
+                    getPointWithin(climbPosition, farHeight, kHalf, nearHeight)));
 
             quads.push_back(
                 quadOf(
                     getSideTowards(
                         VoxelPosition{
                             .x = -acrossStep.x, .z = -acrossStep.z}),
-                    getWithin(climbPosition, nearHeight, -kHalf, -kHalf),
-                    getWithin(climbPosition, farHeight, -kHalf, nearHeight)));
+                    getPointWithin(climbPosition, nearHeight, -kHalf, -kHalf),
+                    getPointWithin(climbPosition, farHeight, -kHalf, nearHeight)));
         }
 
         for (const auto axis : {climbPosition, VoxelPosition{.y = -1}})

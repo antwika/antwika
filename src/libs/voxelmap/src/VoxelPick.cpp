@@ -30,7 +30,7 @@ namespace antwika::voxelmap
             bool met = false;
         };
 
-        [[nodiscard]] gfx::Vec3 getUnprojected(
+        [[nodiscard]] gfx::Vec3 getUnprojectedPoint(
             const gfx::Mat4 &undoMatrix, const gfx::Vec3 ndcPosition)
         {
             const auto modelPoint =
@@ -121,9 +121,9 @@ namespace antwika::voxelmap
         const auto ndcY =
             1.0F - (2.0F * point.y / static_cast<float>(canvasSize.height));
         const auto nearPoint =
-            getUnprojected(undoMatrix, gfx::Vec3{ndcX, ndcY, -1.0F});
+            getUnprojectedPoint(undoMatrix, gfx::Vec3{ndcX, ndcY, -1.0F});
         const auto farPoint =
-            getUnprojected(undoMatrix, gfx::Vec3{ndcX, ndcY, 1.0F});
+            getUnprojectedPoint(undoMatrix, gfx::Vec3{ndcX, ndcY, 1.0F});
 
         return Ray{
             .fromPosition = nearPoint,

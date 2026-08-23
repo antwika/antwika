@@ -54,7 +54,7 @@ namespace antwika::render
         [[nodiscard]] const std::vector<voxelmap::FaceRef> &getFaces()
             const noexcept;
 
-        [[nodiscard]] const std::vector<tilemap::Tile> &getSolved()
+        [[nodiscard]] const std::vector<tilemap::Tile> &getSolvedTiles()
             const noexcept;
 
         [[nodiscard]] const std::vector<tilemap::Tile> &getDrawnAs()

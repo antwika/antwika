@@ -56,7 +56,7 @@ namespace
         return events;
     }
 
-    [[nodiscard]] std::string getWritten(const std::vector<TickEvent> &events)
+    [[nodiscard]] std::string getWrittenText(const std::vector<TickEvent> &events)
     {
         const ReplayWriter writer;
 
@@ -111,7 +111,7 @@ TEST(ReplayWriterReaderTest, Write_RoundTripsManyEventsInOrder)
 
 TEST(ReplayWriterReaderTest, Write_WritesAHeaderAndOneLinePerEvent)
 {
-    const auto text = getWritten(getASession());
+    const auto text = getWrittenText(getASession());
 
     EXPECT_EQ(std::count(text.begin(), text.end(), '\n'), 21);
     EXPECT_EQ(text.find("antwika-replay"), 10U) << text;
@@ -124,7 +124,7 @@ TEST(ReplayWriterReaderTest, Write_KeepsANewlinePayloadOnOneLine)
             .tick = 0,
             .event = Event{.name = "a.b", .payload = "one\ntwo"}},
     };
-    const auto text = getWritten(events);
+    const auto text = getWrittenText(events);
 
     EXPECT_EQ(std::count(text.begin(), text.end(), '\n'), 2);
     EXPECT_EQ(getRoundTrip(events), events);

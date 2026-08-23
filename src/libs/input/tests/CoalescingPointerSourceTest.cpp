@@ -29,16 +29,16 @@ namespace
     {
         return TickEvent{
             .tick = 0,
-            .event = kCodec.getEncode(
+            .event = kCodec.getEncodedEvent(
                 PointerMoved{.position = {.x = x, .y = y}})};
     }
 
-    [[nodiscard]] TickEvent getClick()
+    [[nodiscard]] TickEvent getClickEvent()
     {
         return TickEvent{
             .tick = 0,
             .event =
-                kCodec.getEncode(
+                kCodec.getEncodedEvent(
                     PointerButtonPressed{.button = MouseButton::Left})};
     }
 
@@ -64,7 +64,7 @@ TEST(CoalescingPointerSourceTest, EventsFor_KeepsOnlyTheLastOfARun)
     ASSERT_EQ(events.size(), 1U);
     EXPECT_EQ(
         events[0],
-        kCodec.getEncode(PointerMoved{.position = {.x = 3, .y = 3}}));
+        kCodec.getEncodedEvent(PointerMoved{.position = {.x = 3, .y = 3}}));
 }
 
 TEST(CoalescingPointerSourceTest, EventsFor_KeepsASingleMovement)
@@ -77,7 +77,7 @@ TEST(CoalescingPointerSourceTest, EventsFor_KeepsASingleMovement)
 
 TEST(CoalescingPointerSourceTest, EventsFor_KeepsTheMovementBeforeAClick)
 {
-    ReplaySource innerSource({getMoveTo(1, 1), getClick(), getMoveTo(9, 9)});
+    ReplaySource innerSource({getMoveTo(1, 1), getClickEvent(), getMoveTo(9, 9)});
     CoalescingPointerSource source(innerSource);
 
     EXPECT_EQ(
@@ -93,7 +93,7 @@ TEST(CoalescingPointerSourceTest, EventsFor_ThinsEachRunSeparately)
     ReplaySource innerSource(
         {getMoveTo(1, 1),
          getMoveTo(2, 2),
-         getClick(),
+         getClickEvent(),
          getMoveTo(3, 3),
          getMoveTo(4, 4)});
     CoalescingPointerSource source(innerSource);
@@ -103,18 +103,18 @@ TEST(CoalescingPointerSourceTest, EventsFor_ThinsEachRunSeparately)
     ASSERT_EQ(events.size(), 3U);
     EXPECT_EQ(
         events[0],
-        kCodec.getEncode(PointerMoved{.position = {.x = 2, .y = 2}}));
+        kCodec.getEncodedEvent(PointerMoved{.position = {.x = 2, .y = 2}}));
     EXPECT_EQ(events[1].name, events::kPointerDown);
     EXPECT_EQ(
         events[2],
-        kCodec.getEncode(PointerMoved{.position = {.x = 4, .y = 4}}));
+        kCodec.getEncodedEvent(PointerMoved{.position = {.x = 4, .y = 4}}));
 }
 
 TEST(CoalescingPointerSourceTest, EventsFor_LeavesEverythingElseAlone)
 {
     ReplaySource innerSource(
         {TickEvent{.tick = 0, .event = Event{.name = "engine.tick"}},
-         getClick()});
+         getClickEvent()});
     CoalescingPointerSource source(innerSource);
 
     EXPECT_EQ(

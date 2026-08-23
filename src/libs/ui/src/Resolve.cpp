@@ -49,7 +49,7 @@ namespace antwika::ui::detail
             return std::ranges::find(widgetIds, widgetId) != widgetIds.end();
         }
 
-        [[nodiscard]] WidgetId getStep(
+        [[nodiscard]] WidgetId getSteppedWidget(
             const std::vector<WidgetId> &widgetIds,
             WidgetId fromWidgetId,
             bool forward)
@@ -198,7 +198,7 @@ namespace antwika::ui::detail
                 if (key == Key::FocusNext || key == Key::FocusPrevious)
                 {
                     focusWidget =
-                        getStep(focusables, focusWidget, key == Key::FocusNext);
+                        getSteppedWidget(focusables, focusWidget, key == Key::FocusNext);
                 }
             }
 

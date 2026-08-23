@@ -10,7 +10,7 @@ using antwika::rng::SplitMix64Rng;
 
 namespace
 {
-    [[nodiscard]] std::vector<std::uint64_t> getDraw(
+    [[nodiscard]] std::vector<std::uint64_t> getDrawnValues(
         std::uint64_t seed, std::size_t count)
     {
         SplitMix64Rng rng(seed);
@@ -30,7 +30,7 @@ TEST(SplitMix64RngTest, Next_MatchesThePublishedSequenceForSeedZero)
         0x6E789E6AA1B965F4ULL,
         0x06C45D188009454FULL,
     };
-    EXPECT_EQ(getDraw(0, expectedValues.size()), expectedValues);
+    EXPECT_EQ(getDrawnValues(0, expectedValues.size()), expectedValues);
 }
 
 TEST(SplitMix64RngTest, Next_MatchesTheReferenceSequenceForAnotherSeed)
@@ -41,17 +41,17 @@ TEST(SplitMix64RngTest, Next_MatchesTheReferenceSequenceForAnotherSeed)
         0x1E9A57BC80E6721DULL,
         0x2D160E7E5C3F42CAULL,
     };
-    EXPECT_EQ(getDraw(12345, expectedValues.size()), expectedValues);
+    EXPECT_EQ(getDrawnValues(12345, expectedValues.size()), expectedValues);
 }
 
 TEST(SplitMix64RngTest, Next_DivergesForDifferentSeeds)
 {
-    EXPECT_NE(getDraw(1, 8), getDraw(2, 8));
+    EXPECT_NE(getDrawnValues(1, 8), getDrawnValues(2, 8));
 }
 
 TEST(SplitMix64RngTest, Next_DoesNotRepeatItselfWithinAShortRun)
 {
-    const auto drawnValues = getDraw(99, 1000);
+    const auto drawnValues = getDrawnValues(99, 1000);
     const std::set<std::uint64_t> distinct(drawnValues.begin(),
         drawnValues.end());
     EXPECT_EQ(distinct.size(), drawnValues.size());

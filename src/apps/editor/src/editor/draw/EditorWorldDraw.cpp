@@ -57,8 +57,8 @@ namespace antwika::editor
                     modelMatrix,
                     camera,
                     antwika::gfx::MeshMaterial{
-                        .texture = atlasSheets.getKeyed(tilemap::Atlas::Floor),
-                        .materialMapTexture = atlasSheets.getKeyed(
+                        .texture = atlasSheets.getKeyedTexture(tilemap::Atlas::Floor),
+                        .materialMapTexture = atlasSheets.getKeyedTexture(
                             tilemap::Atlas::Wall),
                         .shadowMapTexture = lightPasses.getHiding(),
                         .pointLightShadowAtlasTexture =

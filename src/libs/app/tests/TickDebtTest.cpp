@@ -67,7 +67,7 @@ TEST(TickDebtTest, Forgive_DropsWhatIsStillOwed)
     debt.forgive();
 
     EXPECT_FALSE(debt.owesTick());
-    EXPECT_EQ(debt.getOwed(), std::chrono::nanoseconds{});
+    EXPECT_EQ(debt.getOwedTime(), std::chrono::nanoseconds{});
 }
 
 TEST(TickDebtTest, Start_ForgetsWhatAnEarlierRunOwed)
@@ -97,5 +97,5 @@ TEST(TickDebtTest, Advance_AddsUpAcrossFrames)
         (void)debt.advance();
     }
 
-    EXPECT_EQ(debt.getOwed(), (kTickPeriod * 3) / 2);
+    EXPECT_EQ(debt.getOwedTime(), (kTickPeriod * 3) / 2);
 }

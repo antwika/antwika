@@ -29,7 +29,7 @@ namespace antwika::enums
         const std::string_view name,
         const std::string_view messagePrefix)
     {
-        return orThrow<Error>(table.getFrom(name), messagePrefix, name);
+        return orThrow<Error>(table.getEnumFrom(name), messagePrefix, name);
     }
 
 }

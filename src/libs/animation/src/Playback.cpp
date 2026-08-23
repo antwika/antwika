@@ -14,7 +14,7 @@
 namespace antwika::animation
 {
 
-    Frame getResolve(const Clip &clip, time::Tick elapsedTicks)
+    Frame getFrameAt(const Clip &clip, time::Tick elapsedTicks)
     {
         const time::Tick durationTick = clip.getDurationTicks();
 

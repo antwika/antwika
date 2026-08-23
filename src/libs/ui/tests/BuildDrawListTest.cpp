@@ -67,7 +67,7 @@ namespace
         .originPoint = {.x = 0, .y = 0},
         .size = {.width = 10, .height = 10}};
 
-    Node getBordered(Color fillColor, Color ringColor, bool overlay)
+    Node getBorderedNode(Color fillColor, Color ringColor, bool overlay)
     {
         return Node{
             .backgroundColor = fillColor,
@@ -225,8 +225,8 @@ TEST(BuildDrawListTest, BuildDrawList_EmitsEachLayersBorderWithThatLayer)
 
     LayoutTree tree{getContainer(std::nullopt)};
 
-    tree.add(getBordered(kBaseFillColor, kBaseRingColor, false));
-    tree.add(getBordered(kOverFillColor, kOverRingColor, true));
+    tree.add(getBorderedNode(kBaseFillColor, kBaseRingColor, false));
+    tree.add(getBorderedNode(kOverFillColor, kOverRingColor, true));
 
     EXPECT_EQ(
         (std::vector<Color>{

@@ -53,9 +53,9 @@ TEST(GlyphAtlasTest, MakeGlyphAtlas_BlitsGlyphsIntoOwnRectangles)
         = createGlyphAtlas(font, kAlphabet, kHeight);
 
     EXPECT_EQ(atlas.coverage.getEntryAt(1 + 8, 1 + 7),
-        font.getRasterise(U'A', kHeight).coverage.getEntryAt(8, 7));
+        font.getRasterisedGlyph(U'A', kHeight).coverage.getEntryAt(8, 7));
     EXPECT_EQ(atlas.coverage.getEntryAt(18 + 4, 1 + 4),
-        font.getRasterise(U'B', kHeight).coverage.getEntryAt(4, 4));
+        font.getRasterisedGlyph(U'B', kHeight).coverage.getEntryAt(4, 4));
     EXPECT_EQ(atlas.coverage.getEntryAt(0, 0), 0);
 }
 
@@ -65,7 +65,7 @@ TEST(GlyphAtlasTest, MakeGlyphAtlas_BlitsTheTopRowOfAGlyphToo)
     const GlyphAtlas atlas
         = createGlyphAtlas(font, kAlphabet, kHeight);
     const antwika::font::Coverage maskCoverage
-        = font.getRasterise(U'A', kHeight).coverage;
+        = font.getRasterisedGlyph(U'A', kHeight).coverage;
 
     std::vector<std::uint8_t> drawnBytes;
     std::vector<std::uint8_t> packedBytes;
@@ -149,7 +149,7 @@ TEST(GlyphAtlasTest, Find_AnswersForACharacterItHolds)
     const Font font{createFont()};
     const GlyphAtlas atlas
         = createGlyphAtlas(font, kAlphabet, kHeight);
-    const AtlasGlyph *foundGlyph = atlas.getFind(U'A');
+    const AtlasGlyph *foundGlyph = atlas.getGlyph(U'A');
 
     ASSERT_NE(foundGlyph, nullptr);
     EXPECT_EQ(foundGlyph->codepoint, U'A');
@@ -164,7 +164,7 @@ TEST(GlyphAtlasTest, Find_AnswersNothingForACharacterPastTheEnd)
     const GlyphAtlas atlas
         = createGlyphAtlas(font, kAlphabet, kHeight);
 
-    EXPECT_EQ(atlas.getFind(U'Z'), nullptr);
+    EXPECT_EQ(atlas.getGlyph(U'Z'), nullptr);
 }
 
 TEST(GlyphAtlasTest, Find_AnswersNothingForAGapInTheMiddle)
@@ -173,7 +173,7 @@ TEST(GlyphAtlasTest, Find_AnswersNothingForAGapInTheMiddle)
     const GlyphAtlas atlas
         = createGlyphAtlas(font, kAlphabet, kHeight);
 
-    EXPECT_EQ(atlas.getFind(U'0'), nullptr);
+    EXPECT_EQ(atlas.getGlyph(U'0'), nullptr);
 }
 
 TEST(GlyphAtlasTest, AtlasGlyph_ComparesCodepointRectangleAndMetrics)

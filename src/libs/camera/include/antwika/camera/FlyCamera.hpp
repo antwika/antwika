@@ -60,7 +60,7 @@ namespace antwika::camera
 
     [[nodiscard]] gfx::Vec3 getForwardOnGround(const CameraTransform &transform);
 
-    [[nodiscard]] CameraTransform getRotated(
+    [[nodiscard]] CameraTransform getRotatedTransform(
         CameraTransform transform, float byYaw, float byPitch);
 
     [[nodiscard]] CameraTransform getMovedOnGround(
@@ -69,7 +69,7 @@ namespace antwika::camera
 
     inline constexpr float kPanStep = 0.01F;
 
-    [[nodiscard]] CameraTransform getPanned(
+    [[nodiscard]] CameraTransform getPannedTransform(
         CameraTransform transform, float acrossDistance, float upDistance,
         float step);
 

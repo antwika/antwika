@@ -125,7 +125,7 @@ TEST(TextAreaBandTest, TextArea_ABandHoldsRoomOpenBeneathItsLine)
     const auto frame = frameOf(
         TextAreaSpec{.text = linesOf(4), .cursor = 0, .bandRuns = bandRuns});
 
-    const auto foundRect = frame.rects.getFind(kBandWidget);
+    const auto foundRect = frame.rects.getWidgetRect(kBandWidget);
 
     ASSERT_TRUE(foundRect.has_value());
     EXPECT_EQ(
@@ -145,7 +145,7 @@ TEST(TextAreaBandTest, TextArea_ABandOfNoRowsHoldsNothing)
     const auto frame = frameOf(
         TextAreaSpec{.text = linesOf(4), .cursor = 0, .bandRuns = bandRuns});
 
-    EXPECT_FALSE(frame.rects.getFind(kBandWidget).has_value());
+    EXPECT_FALSE(frame.rects.getWidgetRect(kBandWidget).has_value());
     EXPECT_EQ(topOf(frame, "c"), 2 * kLineHeight);
 }
 
@@ -157,7 +157,7 @@ TEST(TextAreaBandTest, TextArea_ABandNamingALineTheTextDoesNotHaveHoldsNothing)
     const auto frame = frameOf(
         TextAreaSpec{.text = linesOf(4), .cursor = 0, .bandRuns = bandRuns});
 
-    EXPECT_FALSE(frame.rects.getFind(kBandWidget).has_value());
+    EXPECT_FALSE(frame.rects.getWidgetRect(kBandWidget).has_value());
 }
 
 TEST(TextAreaBandTest, TextArea_TwoBandsOnOneLineStackInDeclarationOrder)
@@ -169,8 +169,8 @@ TEST(TextAreaBandTest, TextArea_TwoBandsOnOneLineStackInDeclarationOrder)
     const auto frame = frameOf(
         TextAreaSpec{.text = linesOf(4), .cursor = 0, .bandRuns = bandRuns});
 
-    const auto first = frame.rects.getFind(kBandWidget);
-    const auto second = frame.rects.getFind(kOtherWidget);
+    const auto first = frame.rects.getWidgetRect(kBandWidget);
+    const auto second = frame.rects.getWidgetRect(kOtherWidget);
 
     ASSERT_TRUE(first.has_value());
     ASSERT_TRUE(second.has_value());
@@ -202,7 +202,7 @@ TEST(TextAreaBandTest, TextArea_ABandScrolledOffTheTopIsOffWithIt)
             .scroll = 2,
             .bandRuns = bandRuns});
 
-    EXPECT_FALSE(frame.rects.getFind(kBandWidget).has_value());
+    EXPECT_FALSE(frame.rects.getWidgetRect(kBandWidget).has_value());
 }
 
 TEST(TextAreaBandTest, TextArea_AnUnnamedBandStillHoldsItsRoom)

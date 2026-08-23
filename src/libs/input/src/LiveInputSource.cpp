@@ -20,7 +20,7 @@ namespace antwika::input
 
         while (const auto edge = backend.pollEvent())
         {
-            events.push_back(codec.getEncode(*edge));
+            events.push_back(codec.getEncodedEvent(*edge));
         }
 
         return events;

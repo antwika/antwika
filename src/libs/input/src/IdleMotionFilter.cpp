@@ -29,7 +29,7 @@ namespace antwika::input
 
         for (auto &event : events)
         {
-            const auto decodedEvent = codec.getDecode(event);
+            const auto decodedEvent = codec.getDecodedEvent(event);
 
             if (decodedEvent.has_value())
             {

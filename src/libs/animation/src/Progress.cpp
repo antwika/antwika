@@ -40,7 +40,7 @@ namespace antwika::animation
         return denTick;
     }
 
-    std::int64_t getInterpolate(
+    std::int64_t getInterpolatedValue(
         std::int64_t fromValue, std::int64_t toValue,
         Progress progress) noexcept
     {

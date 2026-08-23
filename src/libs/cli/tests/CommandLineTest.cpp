@@ -31,7 +31,7 @@ namespace
         },
     };
 
-    [[nodiscard]] CommandLine getParse(std::vector<std::string> args)
+    [[nodiscard]] CommandLine getCommandLine(std::vector<std::string> args)
     {
         std::vector<char *> argv;
         argv.reserve(args.size());
@@ -48,7 +48,7 @@ namespace
 
 TEST(CommandLineTest, Parse_FindsNothingInABareInvocation)
 {
-    const auto parsedLine = getParse({"antwika_app"});
+    const auto parsedLine = getCommandLine({"antwika_app"});
 
     EXPECT_FALSE(parsedLine.has("--record"));
     EXPECT_FALSE(parsedLine.getValue("--record").has_value());
@@ -56,7 +56,7 @@ TEST(CommandLineTest, Parse_FindsNothingInABareInvocation)
 
 TEST(CommandLineTest, Parse_ReadsAFlagsValue)
 {
-    const auto parsedLine = getParse({"antwika_app", "--record", "out.json"});
+    const auto parsedLine = getCommandLine({"antwika_app", "--record", "out.json"});
 
     EXPECT_TRUE(parsedLine.has("--record"));
     EXPECT_EQ(parsedLine.getValue("--record"), "out.json");
@@ -64,7 +64,7 @@ TEST(CommandLineTest, Parse_ReadsAFlagsValue)
 
 TEST(CommandLineTest, Parse_AcceptsAFlagThatTakesNoValue)
 {
-    const auto parsedLine = getParse({"antwika_app", "--verbose"});
+    const auto parsedLine = getCommandLine({"antwika_app", "--verbose"});
 
     EXPECT_TRUE(parsedLine.has("--verbose"));
     EXPECT_EQ(parsedLine.getValue("--verbose"), "");
@@ -72,7 +72,7 @@ TEST(CommandLineTest, Parse_AcceptsAFlagThatTakesNoValue)
 
 TEST(CommandLineTest, Parse_KeepsTheLastOfARepeatedFlag)
 {
-    const auto parsedLine = getParse(
+    const auto parsedLine = getCommandLine(
         {"antwika_app", "--record", "first.json", "--record", "last.json"});
 
     EXPECT_EQ(parsedLine.getValue("--record"), "last.json");
@@ -81,21 +81,21 @@ TEST(CommandLineTest, Parse_KeepsTheLastOfARepeatedFlag)
 TEST(CommandLineTest, Parse_ThrowsOnAFlagNoProgramKnows)
 {
     EXPECT_THROW(
-        (void)getParse({"antwika_app", "--recrd", "out.json"}),
+        (void)getCommandLine({"antwika_app", "--recrd", "out.json"}),
         CommandLineError);
 }
 
 TEST(CommandLineTest, Parse_ThrowsOnAnArgumentThatIsNotAFlagAtAll)
 {
     EXPECT_THROW(
-        (void)getParse({"antwika_app", "out.json"}), CommandLineError);
+        (void)getCommandLine({"antwika_app", "out.json"}), CommandLineError);
 }
 
 TEST(CommandLineTest, Parse_ThrowsWhenAFlagIsMissingItsValue)
 {
     try
     {
-        (void)getParse({"antwika_app", "--record"});
+        (void)getCommandLine({"antwika_app", "--record"});
         FAIL() << "a flag with no value should have been refused";
     }
     catch (const CommandLineError &error)
@@ -110,13 +110,13 @@ TEST(CommandLineTest, Parse_ThrowsWhenAFlagIsMissingItsValue)
 TEST(CommandLineTest, Parse_DoesNotSwallowWhatFollowsAValuelessFlag)
 {
     EXPECT_THROW(
-        (void)getParse({"antwika_app", "--verbose", "out.json"}),
+        (void)getCommandLine({"antwika_app", "--verbose", "out.json"}),
         CommandLineError);
 }
 
 TEST(CommandLineTest, Parse_AcceptsHelpWithoutItBeingInTheTable)
 {
-    EXPECT_TRUE(getParse({"antwika_app", "--help"}).has(kHelpFlag));
+    EXPECT_TRUE(getCommandLine({"antwika_app", "--help"}).has(kHelpFlag));
 }
 
 TEST(CommandLineTest, HelpText_NamesEveryFlagInTheTableAndHelpItself)

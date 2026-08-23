@@ -119,7 +119,7 @@ namespace antwika::worldgen::detail
         }
     }
 
-    std::size_t Board::getMark() const
+    std::size_t Board::getMarkStep() const
     {
         return trailCollapses.size();
     }

@@ -42,7 +42,7 @@ namespace antwika::app
         owedTime = std::chrono::nanoseconds{};
     }
 
-    std::chrono::nanoseconds TickDebt::getOwed() const noexcept
+    std::chrono::nanoseconds TickDebt::getOwedTime() const noexcept
     {
         return owedTime;
     }

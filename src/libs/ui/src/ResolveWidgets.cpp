@@ -71,7 +71,7 @@ namespace antwika::ui::detail
                 std::ranges::count(text.substr(0, charIndex), '\n'));
         }
 
-        [[nodiscard]] std::uint32_t getAcross(
+        [[nodiscard]] std::uint32_t getAcrossOffset(
             std::uint64_t value,
             std::uint64_t range,
             std::uint64_t span) noexcept
@@ -155,7 +155,7 @@ namespace antwika::ui::detail
 
             const auto trackHeight = track.size.height;
 
-            const auto share = getAcross(
+            const auto share = getAcrossOffset(
                 pageView.page, getRowsBefore(area, area.lines), trackHeight);
 
             const auto thumb =
@@ -168,7 +168,7 @@ namespace antwika::ui::detail
                 .originPoint =
                     {.x = track.originPoint.x,
                      .y = track.originPoint.y
-                          + static_cast<std::int32_t>(getAcross(
+                          + static_cast<std::int32_t>(getAcrossOffset(
                               getRowsBefore(area, area.scroll),
                               getRowsBefore(area, pageView.furthest),
                               slack))},
@@ -183,7 +183,7 @@ namespace antwika::ui::detail
             const auto downOffset = static_cast<std::uint64_t>(
                 point.y - trackRect.originPoint.y);
 
-            return getAcross(
+            return getAcrossOffset(
                 downOffset, std::max(trackRect.size.height, 1U) - 1U, furthest);
         }
 
@@ -256,7 +256,7 @@ namespace antwika::ui::detail
             const auto alongOffset = static_cast<std::uint64_t>(
                 point.x - trackRect.originPoint.x);
 
-            return getAcross(std::min<std::uint64_t>(alongOffset, span), span,
+            return getAcrossOffset(std::min<std::uint64_t>(alongOffset, span), span,
                           range);
         }
 
@@ -275,7 +275,7 @@ namespace antwika::ui::detail
                 .originPoint =
                     {.x = track.originPoint.x
                           + static_cast<std::int32_t>(
-                              getAcross(value, railBar.range, slack)),
+                              getAcrossOffset(value, railBar.range, slack)),
                      .y = track.originPoint.y},
                 .size = {.width = thumb, .height = track.size.height}};
         }

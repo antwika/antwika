@@ -59,7 +59,7 @@ namespace antwika::gfx
         return targetPoint;
     }
 
-    Vec3 Camera3D::getUp() const
+    Vec3 Camera3D::getUpVector() const
     {
         return upVector;
     }

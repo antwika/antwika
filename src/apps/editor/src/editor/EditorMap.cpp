@@ -257,7 +257,7 @@ namespace antwika::editor
             - (camera::getForward(cameraRig.view.transform) * backDistance);
 
         cameraRig.view.transform =
-            camera::getRotated(cameraRig.view.transform, byYaw, byPitch);
+            camera::getRotatedTransform(cameraRig.view.transform, byYaw, byPitch);
         cameraRig.view.transform.position =
             eye + (camera::getForward(cameraRig.view.transform) * backDistance);
     }

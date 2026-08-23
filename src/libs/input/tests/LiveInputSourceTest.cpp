@@ -113,7 +113,7 @@ TEST(LiveInputSourceTest, EventsFor_EncodesThroughTheCodecItWasGiven)
         .WillOnce(Return(std::nullopt));
 
     NiceMock<MockInputEventCodec> codec;
-    EXPECT_CALL(codec, getEncode(edgeEvent)).WillOnce(Return(encodedEvent));
+    EXPECT_CALL(codec, getEncodedEvent(edgeEvent)).WillOnce(Return(encodedEvent));
 
     LiveInputSource source(innerSource, backend, codec);
 

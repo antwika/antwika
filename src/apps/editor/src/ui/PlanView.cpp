@@ -285,7 +285,7 @@ namespace antwika::editor
         const std::optional<gfx::Point> pointerInWindow)
     {
         const auto first =
-            frame.rects.getFind(getPlanColumnWidget(kEveryColumn.front()));
+            frame.rects.getWidgetRect(getPlanColumnWidget(kEveryColumn.front()));
 
         if (first.has_value())
         {
@@ -302,7 +302,7 @@ namespace antwika::editor
 
         for (const auto which : kEveryColumn)
         {
-            const auto room = frame.rects.getFind(getPlanColumnWidget(which));
+            const auto room = frame.rects.getWidgetRect(getPlanColumnWidget(which));
 
             if (!room.has_value()
                 || !covers(*room, *pointerInWindow))
@@ -317,7 +317,7 @@ namespace antwika::editor
                  ++index)
             {
                 const auto card =
-                    frame.rects.getFind(getPlanCardWidget(which, index));
+                    frame.rects.getWidgetRect(getPlanCardWidget(which, index));
 
                 if (card.has_value())
                 {

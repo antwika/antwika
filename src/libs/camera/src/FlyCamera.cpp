@@ -89,7 +89,7 @@ namespace antwika::camera
             std::sin(transform.yaw), 0.0F, -std::cos(transform.yaw)};
     }
 
-    CameraTransform getRotated(
+    CameraTransform getRotatedTransform(
         CameraTransform transform, const float byYaw, const float byPitch)
     {
         transform.yaw += byYaw;
@@ -99,7 +99,7 @@ namespace antwika::camera
         return transform;
     }
 
-    CameraTransform getPanned(
+    CameraTransform getPannedTransform(
         CameraTransform transform,
         const float acrossDistance,
         const float upDistance,

@@ -73,8 +73,8 @@ TEST(EntropyDeterminismTest, Solve_RepeatsAWeightedAssignment)
     const std::vector<double> weights{1.0, 1.0, 1000.0};
 
     Solver solver(getWaveTheWeightsReorder(), {std::cref(allDifferent)}, weights);
-    const auto first = solver.getSolve();
-    const auto second = solver.getSolve();
+    const auto first = solver.getSolveResult();
+    const auto second = solver.getSolveResult();
 
     EXPECT_EQ(first.outcome, SolveOutcome::Solved);
     EXPECT_EQ(first.assignment, (std::vector<std::size_t>{0, 1}));
@@ -87,7 +87,7 @@ TEST(EntropyDeterminismTest, Solve_OpensOnTheOtherCellWhenUnweighted)
     AllDifferentConstraint allDifferent({0, 1});
 
     Solver solver(getWaveTheWeightsReorder(), {std::cref(allDifferent)});
-    const auto result = solver.getSolve();
+    const auto result = solver.getSolveResult();
 
     EXPECT_EQ(result.outcome, SolveOutcome::Solved);
     EXPECT_EQ(result.assignment, (std::vector<std::size_t>{1, 0}));

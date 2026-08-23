@@ -26,7 +26,7 @@ namespace antwika::gfx
 
         [[nodiscard]] Vec3 getTarget() const;
 
-        [[nodiscard]] Vec3 getUp() const;
+        [[nodiscard]] Vec3 getUpVector() const;
 
         [[nodiscard]] const Projection &getProjection() const;
 
