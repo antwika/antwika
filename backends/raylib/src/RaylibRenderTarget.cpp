@@ -72,8 +72,7 @@ namespace antwika::gfx::raylib
 
         if (!complete)
         {
-            rlUnloadFramebuffer(fbo);
-            fbo = 0;
+            unload();
 
             throw GfxError(
                 "gfx.raylib: the frame buffer will not hold "
