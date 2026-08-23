@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include <antwika/ui/WidgetId.hpp>
+#include <antwika/widget/WidgetId.hpp>
 #include <antwika/tile/Transitions.hpp>
 #include <antwika/decor/Decor.hpp>
 #include <antwika/decor/TileAnimation.hpp>
@@ -22,7 +22,7 @@ namespace antwika::editor::widget_catalog
 {
 
     inline constexpr std::array kFixedWidgets{
-        ui::kNoWidget,
+        widget::kNoWidget,
         kToolPanelWidget,
         kDeriveRulesWidget,
         kStatusBarWidget,
@@ -88,11 +88,11 @@ namespace antwika::editor::widget_catalog
         kPlanDeleteWidget};
 
     static_assert(
-        ui::allDistinct(kFixedWidgets),
+        widget::allDistinct(kFixedWidgets),
         "two fixed widgets share a number");
 
     [[nodiscard]] constexpr bool blockClearOfFixed(
-        const ui::WidgetId baseWidget, const std::size_t width) noexcept
+        const widget::WidgetId baseWidget, const std::size_t width) noexcept
     {
         const auto first = static_cast<std::uint64_t>(baseWidget);
 

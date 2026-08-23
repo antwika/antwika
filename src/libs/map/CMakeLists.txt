@@ -28,7 +28,7 @@ antwika_add_library(
         antwika::solver
         antwika::tilemap
         antwika::tile
-        antwika::ui
+        antwika::widget
         antwika::voxel
         antwika::voxelmap
         nlohmann_json::nlohmann_json

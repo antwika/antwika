@@ -7,7 +7,7 @@
 
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/Color.hpp>
-#include <antwika/ui/WidgetId.hpp>
+#include <antwika/widget/WidgetId.hpp>
 #include <antwika/tilemap/Tilemap.hpp>
 
 #include <antwika/tile/TileRules.hpp>
@@ -63,11 +63,11 @@ namespace antwika::tile
         const gfx::Bitmap &flatBitmap,
         std::span<const gfx::Color> paletteColors);
 
-    inline constexpr ui::WidgetId kTransitionAddWidget{351};
+    inline constexpr widget::WidgetId kTransitionAddWidget{351};
 
-    inline constexpr ui::WidgetId kRemoveTransitionWidget{352};
+    inline constexpr widget::WidgetId kRemoveTransitionWidget{352};
 
-    [[nodiscard]] ui::WidgetId transitionRowWidget(
+    [[nodiscard]] widget::WidgetId transitionRowWidget(
         std::size_t rowIndex);
 
 }

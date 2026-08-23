@@ -39,9 +39,9 @@ namespace antwika::tile
         }
     }
 
-    ui::WidgetId swatchWidget(const std::size_t which)
+    widget::WidgetId swatchWidget(const std::size_t which)
     {
-        return ui::WidgetId{
+        return widget::WidgetId{
             kFirstSwatchWidget + static_cast<std::uint64_t>(which)};
     }
 

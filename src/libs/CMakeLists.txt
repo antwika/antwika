@@ -4,6 +4,7 @@ if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
 endif()
 
 add_subdirectory(enums)
+add_subdirectory(widget)
 add_subdirectory(geometry)
 add_subdirectory(voxel)
 add_subdirectory(cli)

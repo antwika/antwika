@@ -9,7 +9,7 @@
 #include <antwika/gfx/PointF.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/RectF.hpp>
-#include <antwika/ui/WidgetId.hpp>
+#include <antwika/widget/WidgetId.hpp>
 #include <antwika/input/Key.hpp>
 #include <antwika/voxelmap/Voxel.hpp>
 
@@ -53,7 +53,7 @@ namespace antwika::editor
 
     [[nodiscard]] gfx::Rect mirrorIcon();
 
-    inline constexpr ui::WidgetId kMirrorWidget{203};
+    inline constexpr widget::WidgetId kMirrorWidget{203};
 
     inline constexpr float kToolButtonSide = 16.0F;
 
@@ -82,73 +82,73 @@ namespace antwika::editor
 
     [[nodiscard]] gfx::Rect iconOf(voxel::StairHalf whichHalf);
 
-    [[nodiscard]] ui::WidgetId toolWidget(ToolButton whichButton);
+    [[nodiscard]] widget::WidgetId toolWidget(ToolButton whichButton);
 
-    [[nodiscard]] ui::WidgetId paintWidget(map::Paint whichPaint);
+    [[nodiscard]] widget::WidgetId paintWidget(map::Paint whichPaint);
 
-    [[nodiscard]] ui::WidgetId kindWidget(voxel::Kind whichKind);
+    [[nodiscard]] widget::WidgetId kindWidget(voxel::Kind whichKind);
 
-    [[nodiscard]] ui::WidgetId facingWidget(voxel::Facing whichFacing);
+    [[nodiscard]] widget::WidgetId facingWidget(voxel::Facing whichFacing);
 
-    [[nodiscard]] ui::WidgetId levelWidget(voxel::StairHalf whichHalf);
+    [[nodiscard]] widget::WidgetId levelWidget(voxel::StairHalf whichHalf);
 
-    inline constexpr ui::WidgetId kPartFrontWidget{180};
+    inline constexpr widget::WidgetId kPartFrontWidget{180};
 
-    inline constexpr ui::WidgetId kPartSideWidget{181};
+    inline constexpr widget::WidgetId kPartSideWidget{181};
 
-    [[nodiscard]] ui::WidgetId partWidget(voxel::StairPart whichPart);
+    [[nodiscard]] widget::WidgetId partWidget(voxel::StairPart whichPart);
 
-    inline constexpr ui::WidgetId kToolPanelWidget{64};
+    inline constexpr widget::WidgetId kToolPanelWidget{64};
 
-    inline constexpr ui::WidgetId kStatusBarWidget{192};
+    inline constexpr widget::WidgetId kStatusBarWidget{192};
 
-    inline constexpr ui::WidgetId kLayersPanelWidget{193};
+    inline constexpr widget::WidgetId kLayersPanelWidget{193};
 
-    inline constexpr ui::WidgetId kPaletteWidget{194};
+    inline constexpr widget::WidgetId kPaletteWidget{194};
 
-    inline constexpr ui::WidgetId kRailWidget{195};
+    inline constexpr widget::WidgetId kRailWidget{195};
 
-    inline constexpr ui::WidgetId kPreviewWidget{196};
+    inline constexpr widget::WidgetId kPreviewWidget{196};
 
-    inline constexpr ui::WidgetId kAddInkWidget{197};
+    inline constexpr widget::WidgetId kAddInkWidget{197};
 
-    inline constexpr ui::WidgetId kInkOkWidget{198};
+    inline constexpr widget::WidgetId kInkOkWidget{198};
 
-    inline constexpr ui::WidgetId kInkCancelWidget{199};
+    inline constexpr widget::WidgetId kInkCancelWidget{199};
 
-    inline constexpr ui::WidgetId kInkDeleteWidget{200};
+    inline constexpr widget::WidgetId kInkDeleteWidget{200};
 
-    inline constexpr ui::WidgetId kQuitConfirmWidget{236};
+    inline constexpr widget::WidgetId kQuitConfirmWidget{236};
 
-    inline constexpr ui::WidgetId kQuitCancelWidget{237};
+    inline constexpr widget::WidgetId kQuitCancelWidget{237};
 
-    inline constexpr ui::WidgetId kQuitAndSaveWidget{238};
+    inline constexpr widget::WidgetId kQuitAndSaveWidget{238};
 
-    inline constexpr ui::WidgetId kGlowWidget{245};
+    inline constexpr widget::WidgetId kGlowWidget{245};
 
-    inline constexpr ui::WidgetId kAmbientWidget{246};
+    inline constexpr widget::WidgetId kAmbientWidget{246};
 
-    inline constexpr ui::WidgetId kExitTargetWidget{247};
+    inline constexpr widget::WidgetId kExitTargetWidget{247};
 
-    inline constexpr ui::WidgetId kExitLockedWidget{402};
+    inline constexpr widget::WidgetId kExitLockedWidget{402};
 
-    inline constexpr ui::WidgetId kSheetPanelWidget{403};
+    inline constexpr widget::WidgetId kSheetPanelWidget{403};
 
-    inline constexpr ui::WidgetId kDrawPanelWidget{404};
+    inline constexpr widget::WidgetId kDrawPanelWidget{404};
 
-    inline constexpr ui::WidgetId kFigureNameWidget{248};
+    inline constexpr widget::WidgetId kFigureNameWidget{248};
 
-    inline constexpr ui::WidgetId kFigureLampWidget{254};
+    inline constexpr widget::WidgetId kFigureLampWidget{254};
 
-    inline constexpr ui::WidgetId kAddFigureWidget{249};
+    inline constexpr widget::WidgetId kAddFigureWidget{249};
 
-    inline constexpr ui::WidgetId kRemoveFigureWidget{250};
+    inline constexpr widget::WidgetId kRemoveFigureWidget{250};
 
-    inline constexpr ui::WidgetId kFigureLineWidget{251};
+    inline constexpr widget::WidgetId kFigureLineWidget{251};
 
-    inline constexpr ui::WidgetId kFigureLineAddWidget{252};
+    inline constexpr widget::WidgetId kFigureLineAddWidget{252};
 
-    [[nodiscard]] ui::WidgetId figureWidget(std::size_t figureIndex);
+    [[nodiscard]] widget::WidgetId figureWidget(std::size_t figureIndex);
 
     inline constexpr float kToolButtonGap = 4.0F;
 

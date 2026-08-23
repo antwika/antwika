@@ -4,7 +4,7 @@
 #include <span>
 #include <vector>
 
-#include <antwika/ui/WidgetId.hpp>
+#include <antwika/widget/WidgetId.hpp>
 #include <antwika/tilemap/Tilemap.hpp>
 #include <antwika/voxelmap/Voxel.hpp>
 #include <antwika/tile/TileRules.hpp>
@@ -49,10 +49,10 @@ namespace antwika::decor
         std::span<const VariantGroup> familyGroups,
         std::uint32_t seed);
 
-    inline constexpr ui::WidgetId kVariantChoiceWidget{348};
+    inline constexpr widget::WidgetId kVariantChoiceWidget{348};
 
-    inline constexpr ui::WidgetId kVariantWeightWidget{349};
+    inline constexpr widget::WidgetId kVariantWeightWidget{349};
 
-    inline constexpr ui::WidgetId kGoToCanonicalWidget{350};
+    inline constexpr widget::WidgetId kGoToCanonicalWidget{350};
 
 }

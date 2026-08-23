@@ -13,9 +13,9 @@
 
 using antwika::gfx::Point;
 using antwika::gfx::Rect;
-using antwika::ui::kNoWidget;
+using antwika::widget::kNoWidget;
 using antwika::ui::Pointer;
-using antwika::ui::WidgetId;
+using antwika::widget::WidgetId;
 using antwika::ui::detail::LayoutTree;
 using antwika::ui::detail::Node;
 using antwika::ui::detail::resolve;

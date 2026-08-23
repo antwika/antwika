@@ -22,10 +22,10 @@ using antwika::ui::ButtonState;
 using antwika::ui::Context;
 using antwika::ui::DrawList;
 using antwika::ui::FillRect;
-using antwika::ui::kNoWidget;
+using antwika::widget::kNoWidget;
 using antwika::ui::Pointer;
 using antwika::ui::Theme;
-using antwika::ui::WidgetId;
+using antwika::widget::WidgetId;
 
 namespace
 {

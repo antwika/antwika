@@ -29,8 +29,8 @@ using antwika::ui::FillRect;
 using antwika::ui::HoverPointer;
 using antwika::ui::HoverTarget;
 using antwika::ui::HoverTargets;
-using antwika::ui::kNoWidget;
-using antwika::ui::WidgetId;
+using antwika::widget::kNoWidget;
+using antwika::widget::WidgetId;
 
 namespace
 {

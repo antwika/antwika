@@ -29,7 +29,7 @@ using antwika::ui::Frame;
 using antwika::ui::TextAreaSpec;
 using antwika::ui::TextHighlight;
 using antwika::ui::Theme;
-using antwika::ui::WidgetId;
+using antwika::widget::WidgetId;
 
 namespace
 {

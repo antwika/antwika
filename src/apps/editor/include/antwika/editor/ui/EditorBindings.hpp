@@ -10,7 +10,7 @@
 #include <antwika/enums/Enumeration.hpp>
 #include <antwika/input/ActionMap.hpp>
 #include <antwika/input/Key.hpp>
-#include <antwika/ui/WidgetId.hpp>
+#include <antwika/widget/WidgetId.hpp>
 
 namespace antwika::editor
 {
@@ -128,10 +128,10 @@ namespace antwika::editor
 
     [[nodiscard]] KeyBindings loadChords(const std::string &path);
 
-    [[nodiscard]] ui::WidgetId keyRowWidget(std::size_t rowIndex);
+    [[nodiscard]] widget::WidgetId keyRowWidget(std::size_t rowIndex);
 
-    inline constexpr ui::WidgetId kKeysDoneWidget{380};
+    inline constexpr widget::WidgetId kKeysDoneWidget{380};
 
-    inline constexpr ui::WidgetId kKeysResetWidget{381};
+    inline constexpr widget::WidgetId kKeysResetWidget{381};
 
 }

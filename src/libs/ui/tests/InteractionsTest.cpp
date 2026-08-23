@@ -10,7 +10,7 @@
 using antwika::ui::Interactions;
 using antwika::ui::OptionChoice;
 using antwika::ui::TextEdit;
-using antwika::ui::WidgetId;
+using antwika::widget::WidgetId;
 
 namespace
 {

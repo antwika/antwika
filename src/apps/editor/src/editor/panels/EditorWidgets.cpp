@@ -265,7 +265,7 @@ namespace antwika::editor
             consumedKey = true;
         }
 
-        if (interactions.activatedWidget != antwika::ui::kNoWidget
+        if (interactions.activatedWidget != antwika::widget::kNoWidget
             && interactions.activatedWidget
                    != widgetForField(focusedField))
         {

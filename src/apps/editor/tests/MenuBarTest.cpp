@@ -94,18 +94,18 @@ namespace
 
     TEST(MenuBarTest, MenuWidget_GivesEveryMenuAWidgetOfItsOwn)
     {
-        std::set<antwika::ui::WidgetId> seenWidgets;
+        std::set<antwika::widget::WidgetId> seenWidgets;
 
         for (const auto menu : kEveryMenu)
         {
-            EXPECT_NE(menuWidget(menu), antwika::ui::kNoWidget);
+            EXPECT_NE(menuWidget(menu), antwika::widget::kNoWidget);
             EXPECT_TRUE(seenWidgets.insert(menuWidget(menu)).second);
         }
     }
 
     TEST(MenuBarTest, ItemWidgets_LeavesRoomForEveryLineOfAList)
     {
-        std::set<antwika::ui::WidgetId> seenWidgets;
+        std::set<antwika::widget::WidgetId> seenWidgets;
 
         for (const auto menu : kEveryMenu)
         {
@@ -114,7 +114,7 @@ namespace
 
             for (std::size_t index = 0; index < itemsOf(menu).size(); ++index)
             {
-                const auto widget = antwika::ui::WidgetId{
+                const auto widget = antwika::widget::WidgetId{
                     first + static_cast<std::uint64_t>(index)};
 
                 EXPECT_TRUE(seenWidgets.insert(widget).second);

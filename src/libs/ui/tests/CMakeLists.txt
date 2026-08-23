@@ -40,7 +40,6 @@ add_executable(antwika_ui_tests
     TextWrapTest.cpp
     ThemeTest.cpp
     UiErrorTest.cpp
-    WidgetIdTest.cpp
     WidgetRectsTest.cpp
 )
 

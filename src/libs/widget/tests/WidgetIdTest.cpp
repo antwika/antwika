@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
 
-#include "antwika/ui/WidgetId.hpp"
+#include "antwika/widget/WidgetId.hpp"
 
-using antwika::ui::allDistinct;
-using antwika::ui::kNoWidget;
-using antwika::ui::WidgetId;
+using antwika::widget::allDistinct;
+using antwika::widget::kNoWidget;
+using antwika::widget::WidgetId;
 
 namespace
 {

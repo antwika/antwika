@@ -91,7 +91,7 @@ namespace antwika::editor
             }
 
             if (interactions.activatedWidget
-                    != antwika::ui::kNoWidget
+                    != antwika::widget::kNoWidget
                 && handleWidgets(interactions))
             {
                 return;

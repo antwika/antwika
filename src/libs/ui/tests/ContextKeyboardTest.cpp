@@ -29,11 +29,11 @@ using antwika::ui::FillRect;
 using antwika::ui::fixedSize;
 using antwika::ui::Key;
 using antwika::ui::Keyboard;
-using antwika::ui::kNoWidget;
+using antwika::widget::kNoWidget;
 using antwika::ui::Pointer;
 using antwika::ui::scaledTheme;
 using antwika::ui::Theme;
-using antwika::ui::WidgetId;
+using antwika::widget::WidgetId;
 
 namespace
 {

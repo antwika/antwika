@@ -60,7 +60,8 @@ namespace
         return view;
     }
 
-    [[nodiscard]] Interactions pressOn(const antwika::ui::WidgetId whichWidget)
+    [[nodiscard]] Interactions pressOn(
+        const antwika::widget::WidgetId whichWidget)
     {
         return Interactions{.activatedWidget = whichWidget};
     }
@@ -115,7 +116,7 @@ TEST(PlanViewTest, HandleWidgets_LeavesAPressOnNothingOfItsOwnAlone)
     std::optional<std::string> notice;
 
     EXPECT_FALSE(view.handleWidgets(
-        pressOn(antwika::ui::WidgetId{9999}),
+        pressOn(antwika::widget::WidgetId{9999}),
         Point{},
         focusedField,
         notice));

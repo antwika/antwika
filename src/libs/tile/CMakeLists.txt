@@ -10,7 +10,7 @@ antwika_add_library(
         antwika::geometry
         antwika::gfx
         antwika::tilemap
-        antwika::ui
+        antwika::widget
         antwika::voxel
         antwika::voxelmap
 )

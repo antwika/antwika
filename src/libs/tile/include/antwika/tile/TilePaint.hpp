@@ -11,7 +11,7 @@
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/PointF.hpp>
 #include <antwika/gfx/RectF.hpp>
-#include <antwika/ui/WidgetId.hpp>
+#include <antwika/widget/WidgetId.hpp>
 #include <antwika/gfx/Size.hpp>
 
 #include <antwika/tilemap/Tilemap.hpp>
@@ -35,7 +35,7 @@ namespace antwika::tile
 
     inline constexpr float kSwatchGap = 3.0F;
 
-    [[nodiscard]] ui::WidgetId swatchWidget(std::size_t which);
+    [[nodiscard]] widget::WidgetId swatchWidget(std::size_t which);
 
     [[nodiscard]] gfx::RectF pixelPlace(
         tilemap::Tile tile, gfx::RectF whereRect, geometry::GridCell pixelCell);

@@ -10,7 +10,7 @@
 #include <vector>
 
 #include <antwika/time/Tick.hpp>
-#include <antwika/ui/WidgetId.hpp>
+#include <antwika/widget/WidgetId.hpp>
 #include <antwika/tilemap/Tilemap.hpp>
 #include <antwika/voxelmap/Voxel.hpp>
 
@@ -148,34 +148,34 @@ namespace antwika::decor
 
     [[nodiscard]] bool hasAnimatedDecor(std::span<const DecorTile> decor);
 
-    inline constexpr ui::WidgetId kInkHexWidget{204};
+    inline constexpr widget::WidgetId kInkHexWidget{204};
 
-    inline constexpr ui::WidgetId kAutoPreviewWidget{205};
+    inline constexpr widget::WidgetId kAutoPreviewWidget{205};
 
-    inline constexpr ui::WidgetId kRerollPreviewWidget{244};
+    inline constexpr widget::WidgetId kRerollPreviewWidget{244};
 
-    inline constexpr ui::WidgetId kPickBaseTilesWidget{207};
+    inline constexpr widget::WidgetId kPickBaseTilesWidget{207};
 
-    inline constexpr ui::WidgetId kFrameAddWidget{224};
+    inline constexpr widget::WidgetId kFrameAddWidget{224};
 
-    inline constexpr ui::WidgetId kTilingPanelWidget{233};
+    inline constexpr widget::WidgetId kTilingPanelWidget{233};
 
-    inline constexpr ui::WidgetId kFrequencyWidget{234};
+    inline constexpr widget::WidgetId kFrequencyWidget{234};
 
-    inline constexpr ui::WidgetId kDecorWeightWidget{235};
+    inline constexpr widget::WidgetId kDecorWeightWidget{235};
 
-    inline constexpr ui::WidgetId kDecorMoveWidget{239};
+    inline constexpr widget::WidgetId kDecorMoveWidget{239};
 
-    [[nodiscard]] ui::WidgetId frameWidget(std::size_t frame);
+    [[nodiscard]] widget::WidgetId frameWidget(std::size_t frame);
 
-    inline constexpr ui::WidgetId kSpanAcrossLessWidget{382};
+    inline constexpr widget::WidgetId kSpanAcrossLessWidget{382};
 
-    inline constexpr ui::WidgetId kSpanAcrossMoreWidget{383};
+    inline constexpr widget::WidgetId kSpanAcrossMoreWidget{383};
 
-    inline constexpr ui::WidgetId kSpanDownLessWidget{384};
+    inline constexpr widget::WidgetId kSpanDownLessWidget{384};
 
-    inline constexpr ui::WidgetId kSpanDownMoreWidget{385};
+    inline constexpr widget::WidgetId kSpanDownMoreWidget{385};
 
-    [[nodiscard]] ui::WidgetId memberWidget(std::size_t member);
+    [[nodiscard]] widget::WidgetId memberWidget(std::size_t member);
 
 }

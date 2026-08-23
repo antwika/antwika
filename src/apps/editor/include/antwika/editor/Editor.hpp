@@ -243,7 +243,7 @@ namespace antwika::editor
         std::optional<tilemap::Tile> transitToTile;
         std::optional<std::size_t> transitionPicked;
 
-        std::optional<ui::WidgetId> slidingWidget;
+        std::optional<widget::WidgetId> slidingWidget;
         FocusedField focusedField = FocusedField::Nothing;
 
         bool previewAuto = true;
@@ -332,7 +332,7 @@ namespace antwika::editor
         [[nodiscard]] std::string statusText();
 
         [[nodiscard]] std::string_view hintFor(
-            ui::WidgetId whichWidget) const;
+            widget::WidgetId whichWidget) const;
 
         void drawToolHint(const ui::Frame &frame);
 
@@ -442,7 +442,7 @@ namespace antwika::editor
         [[nodiscard]] bool tryUnlockExit();
         void resetGates();
         void clearAssignModes();
-        [[nodiscard]] static ui::WidgetId widgetForField(
+        [[nodiscard]] static widget::WidgetId widgetForField(
             FocusedField focusedField);
         void sayCaption(
             const std::string &name,

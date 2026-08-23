@@ -121,7 +121,7 @@ namespace
 
     TEST(ToolPanelTest, Widgets_GiveEveryButtonAWidgetOfItsOwn)
     {
-        std::set<antwika::ui::WidgetId> seenWidgets;
+        std::set<antwika::widget::WidgetId> seenWidgets;
 
         for (const auto which : kEveryToolButton)
         {
@@ -149,7 +149,7 @@ namespace
         }
 
         EXPECT_EQ(seenWidgets.size(), 33U);
-        EXPECT_FALSE(seenWidgets.contains(antwika::ui::kNoWidget));
+        EXPECT_FALSE(seenWidgets.contains(antwika::widget::kNoWidget));
         EXPECT_FALSE(
             seenWidgets.contains(antwika::editor::kToolPanelWidget));
     }

@@ -9,13 +9,13 @@
 #include "antwika/ui/WidgetId.hpp"
 
 using antwika::ui::Interactions;
-using antwika::ui::kNoWidget;
+using antwika::widget::kNoWidget;
 using antwika::ui::OptionChoice;
 using antwika::ui::ScrollChange;
 using antwika::ui::TextAreaSpec;
 using antwika::ui::TextEdit;
 using antwika::ui::TextFieldSpec;
-using antwika::ui::WidgetId;
+using antwika::widget::WidgetId;
 
 namespace
 {

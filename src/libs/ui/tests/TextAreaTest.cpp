@@ -38,7 +38,7 @@ using antwika::ui::Keyboard;
 using antwika::ui::Pointer;
 using antwika::ui::TextAreaSpec;
 using antwika::ui::Theme;
-using antwika::ui::WidgetId;
+using antwika::widget::WidgetId;
 
 namespace
 {

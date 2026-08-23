@@ -9,9 +9,9 @@ using antwika::ui::updateHover;
 
 namespace
 {
-    constexpr antwika::ui::WidgetId kSomeButtonWidget{80};
+    constexpr antwika::widget::WidgetId kSomeButtonWidget{80};
 
-    constexpr antwika::ui::WidgetId kOtherButtonWidget{81};
+    constexpr antwika::widget::WidgetId kOtherButtonWidget{81};
 }
 
 TEST(HoverHintTest, UpdateHover_BeginsARestWhereTheHoverMoves)
@@ -62,7 +62,7 @@ TEST(HoverHintTest, TooltipDue_RaisesTheHintOnceTheSecondIsUp)
 TEST(HoverHintTest, TooltipDue_RaisesNothingOverNoWidgetAtAll)
 {
     const auto track = updateHover(
-        HoverTrack{}, antwika::ui::kNoWidget, 100);
+        HoverTrack{}, antwika::widget::kNoWidget, 100);
 
     EXPECT_FALSE(
         tooltipDue(track, 100 + kTooltipDelayFrames + 100));

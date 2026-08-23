@@ -396,7 +396,7 @@ TEST(TilePaintTest, PaintFill_LeavesTheNeighbouringTileAlone)
 
 TEST(TilePaintTest, SwatchWidget_GivesEveryInkASwatchOfItsOwn)
 {
-    std::set<antwika::ui::WidgetId> seenWidgets;
+    std::set<antwika::widget::WidgetId> seenWidgets;
 
     for (std::size_t which = 0; which < antwika::tile::kMaxInks;
          ++which)
