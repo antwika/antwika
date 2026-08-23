@@ -14,6 +14,7 @@
 
 #include <antwika/io/File.hpp>
 #include <antwika/io/SafeWrite.hpp>
+#include <antwika/io/ScratchFile.hpp>
 #include <antwika/schema/JsonSchemas.hpp>
 #include <antwika/schema/IMigration.hpp>
 #include <antwika/schema/MigrationChain.hpp>
@@ -438,20 +439,21 @@ namespace antwika::map
 
     void saveMap(const std::string &path, const Map &map)
     {
-        const auto writingPath = io::writingPathFor(path);
+        io::ScratchFile writingFile{io::writingPathFor(path)};
 
         {
-            auto outputStream =
-                io::openToWriteAs<MapFileError>(writingPath, "the map");
+            auto outputStream = io::openToWriteAs<MapFileError>(
+                writingFile.path(), "the map");
 
             writeMap(outputStream, map);
 
             io::requireStreamOkAs<MapFileError>(
-                outputStream, "the map", writingPath);
+                outputStream, "the map", writingFile.path());
         }
 
         io::putInPlaceKeepingBackup<MapFileError>(
-            writingPath, path, "the map");
+            writingFile.path(), path, "the map");
+        writingFile.keep();
     }
 
 }

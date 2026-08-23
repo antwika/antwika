@@ -4,6 +4,7 @@
 #include <ios>
 
 #include <antwika/io/SafeWrite.hpp>
+#include <antwika/io/ScratchFile.hpp>
 
 #include "antwika/gfx/GfxError.hpp"
 #include "antwika/image/PngReader.hpp"
@@ -29,22 +30,24 @@ namespace antwika::image
         const std::string &path,
         std::string_view name)
     {
-        const auto writingPath = io::writingPathFor(path);
+        io::ScratchFile writingFile{io::writingPathFor(path)};
 
         {
-            std::ofstream file(writingPath, std::ios::binary);
+            std::ofstream file(writingFile.path(), std::ios::binary);
 
             if (!file.is_open())
             {
                 throw gfx::GfxError(
                     std::string(name)
-                    + ": could not write an image: " + writingPath);
+                    + ": could not write an image: " + writingFile.path());
             }
 
             PngWriter{}.write(bitmap, file);
         }
 
-        io::putInPlaceKeepingBackup<gfx::GfxError>(writingPath, path, name);
+        io::putInPlaceKeepingBackup<gfx::GfxError>(
+            writingFile.path(), path, name);
+        writingFile.keep();
     }
 
 }
