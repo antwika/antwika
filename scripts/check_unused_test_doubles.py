@@ -5,7 +5,7 @@ import re
 import sys
 from pathlib import Path
 
-from repofiles import DEFAULT_ROOT, find_paths
+from repofiles import DEFAULT_ROOT
 
 
 INCLUDE_PATTERN = re.compile(r'#include\s*[<"]([^">]+)[">]')

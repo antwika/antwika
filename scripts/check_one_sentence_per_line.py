@@ -177,16 +177,6 @@ def find_violations(root: Path) -> list[Violation]:
     return violations
 
 
-def find_paths(root: Path, pattern: str) -> list:
-    return sorted(
-        path
-        for path in root.glob(pattern)
-        if not any(
-            part.startswith("build")
-            for part in path.relative_to(root).parts[:-1]
-        )
-    )
-
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
