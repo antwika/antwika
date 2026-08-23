@@ -176,6 +176,23 @@ namespace antwika::editor
                 .z = position.z});
     }
 
+    bool Editor::upperSightOn()
+    {
+        if (!play.playing)
+        {
+            return true;
+        }
+
+        const auto stoodPosition =
+            play.game->world().get<component::Position>(play.game->player());
+
+        return !antwika::voxel::cubeAbove(
+            worldMeshes.cells(),
+            antwika::gfx::Vec3{
+                stoodPosition.x, stoodPosition.y, stoodPosition.z},
+            light::kSightClearance);
+    }
+
     std::vector<light::ActiveLight> Editor::currentLights()
     {
         if (!play.playing)
@@ -193,8 +210,13 @@ namespace antwika::editor
             antwika::voxel::upperLineOfSight(walkerPosition);
 
         std::vector<light::ActiveLight> lights{
-            light::ActiveLight{.position = sightPoint},
-            light::ActiveLight{.position = upperSightPoint}};
+            light::ActiveLight{.position = sightPoint}};
+
+        if (upperSightOn())
+        {
+            lights.push_back(
+                light::ActiveLight{.position = upperSightPoint});
+        }
 
         for (const auto &lamp : light::activeLights(document.map.lamps))
         {

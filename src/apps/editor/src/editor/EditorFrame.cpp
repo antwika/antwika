@@ -238,7 +238,8 @@ namespace antwika::editor
                     .sightSlot = 0,
                     .upperSightPoint =
                         antwika::voxel::upperLineOfSight(walkerPosition),
-                    .upperSightSlot = 1},
+                    .upperSightSlot = 1,
+                    .upperSightOn = upperSightOn()},
                 lights,
                 lightPasses.lamps());
         }

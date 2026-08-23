@@ -19,6 +19,9 @@ namespace antwika::light
     inline constexpr float kShadowRedrawDistance =
         0.25F * voxel::kVoxelSide;
 
+    inline constexpr float kSightClearance =
+        kShadowRedrawDistance + kLampNearPlane;
+
     struct ActiveLight final
     {
         gfx::Vec3 position{};

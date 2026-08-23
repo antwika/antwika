@@ -274,7 +274,8 @@ namespace antwika::game
     void Runner::drawSightPoints(
         const gfx::Mat4 &modelMatrix,
         const gfx::Camera3D &camera,
-        const gfx::Vec3 walkerPosition)
+        const gfx::Vec3 walkerPosition,
+        const bool upperSightOn)
     {
         const auto markAt =
             [this, &modelMatrix, &camera](
@@ -300,8 +301,12 @@ namespace antwika::game
         markAt(gfx::Vec3{0.0F, 0.0F, 0.0F}, kOriginPointColor);
 
         markAt(voxel::lineOfSight(walkerPosition), kSightPointColor);
-        markAt(
-            voxel::upperLineOfSight(walkerPosition), kSightPointColor);
+
+        if (upperSightOn)
+        {
+            markAt(
+                voxel::upperLineOfSight(walkerPosition), kSightPointColor);
+        }
     }
 
     void Runner::draw()
@@ -316,9 +321,17 @@ namespace antwika::game
             voxel::lineOfSight(walkerPosition);
         const auto upperSightPoint =
             voxel::upperLineOfSight(walkerPosition);
+        const auto upperSightOn =
+            !voxel::cubeAbove(
+                meshes.cells(), walkerPosition, light::kSightClearance);
         auto lights = std::vector<light::ActiveLight>{
-            light::ActiveLight{.position = sightPoint},
-            light::ActiveLight{.position = upperSightPoint}};
+            light::ActiveLight{.position = sightPoint}};
+
+        if (upperSightOn)
+        {
+            lights.push_back(
+                light::ActiveLight{.position = upperSightPoint});
+        }
 
         for (const auto &light : light::activeLights(world, map.lamps))
         {
@@ -372,7 +385,8 @@ namespace antwika::game
                 .sightPoint = sightPoint,
                 .sightSlot = 0,
                 .upperSightPoint = upperSightPoint,
-                .upperSightSlot = 1},
+                .upperSightSlot = 1,
+                .upperSightOn = upperSightOn},
             lights,
             lightPasses.lamps());
 
@@ -457,7 +471,8 @@ namespace antwika::game
                 }
             });
 
-        drawSightPoints(modelMatrix, camera, walkerPosition);
+        drawSightPoints(
+            modelMatrix, camera, walkerPosition, upperSightOn);
 
         viewportRenderer.fillLetterbox(gfx::Color{});
         viewportRenderer.present();

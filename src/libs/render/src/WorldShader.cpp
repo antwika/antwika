@@ -140,11 +140,13 @@ namespace antwika::render
         viewportRenderer.setShaderVector(
             *voxelShader,
             "upperSightPoint",
-            sightOrigin(
-                upperSightSlot,
-                shaderInputs.upperSightPoint,
-                lights,
-                bakedLights));
+            shaderInputs.upperSightOn
+                ? sightOrigin(
+                      upperSightSlot,
+                      shaderInputs.upperSightPoint,
+                      lights,
+                      bakedLights)
+                : shaderInputs.upperSightPoint);
         viewportRenderer.setShaderNumber(
             *voxelShader, "sightOn", shaderInputs.sightOn ? 1.0F : 0.0F);
         viewportRenderer.setShaderNumber(
@@ -153,6 +155,10 @@ namespace antwika::render
             *voxelShader,
             "upperSightSlot",
             static_cast<float>(upperSightSlot));
+        viewportRenderer.setShaderNumber(
+            *voxelShader,
+            "upperSightOn",
+            shaderInputs.upperSightOn ? 1.0F : 0.0F);
         viewportRenderer.setShaderNumber(
             *voxelShader,
             "lightAmbient",
