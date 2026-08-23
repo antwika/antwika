@@ -67,14 +67,14 @@ namespace antwika::render
         } // GCOVR_EXCL_LINE
     }
 
-    void Sprites::open(gfx::ViewportRenderer &viewportRenderer)
+    void Sprites::open(gfx::IRenderer &viewportRenderer)
     {
         figureMesh = viewportRenderer.createMesh(character::characterMesh());
         shadowBlobMesh = viewportRenderer.createMesh(shadowSpot());
     }
 
     void Sprites::drawCharacter(
-        gfx::ViewportRenderer &viewportRenderer,
+        gfx::IRenderer &viewportRenderer,
         gfx::IShader &shader,
         const gfx::Camera3D &camera,
         const gfx::Mat4 &modelMatrix,
@@ -111,7 +111,7 @@ namespace antwika::render
     }
 
     void Sprites::drawShadow(
-        gfx::ViewportRenderer &viewportRenderer,
+        gfx::IRenderer &viewportRenderer,
         const gfx::Camera3D &camera,
         const gfx::Mat4 &modelMatrix,
         const gfx::Vec3 position) const

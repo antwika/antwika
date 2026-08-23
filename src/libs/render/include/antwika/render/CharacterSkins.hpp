@@ -6,7 +6,7 @@
 
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/ITexture.hpp>
-#include <antwika/gfx/ViewportRenderer.hpp>
+#include <antwika/gfx/IRenderer.hpp>
 
 namespace antwika::render
 {
@@ -15,14 +15,14 @@ namespace antwika::render
     {
     public:
         void take(
-            gfx::ViewportRenderer &viewportRenderer,
+            gfx::IRenderer &viewportRenderer,
             std::vector<gfx::Bitmap> skinBitmaps);
 
         [[nodiscard]] const std::vector<gfx::Bitmap> &sheets()
             const noexcept;
 
         void lay(
-            gfx::ViewportRenderer &viewportRenderer,
+            gfx::IRenderer &viewportRenderer,
             std::size_t skinIndex,
             gfx::Bitmap skinBitmap);
 

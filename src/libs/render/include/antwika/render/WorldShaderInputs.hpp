@@ -5,7 +5,7 @@
 #include <antwika/gfx/IShader.hpp>
 #include <antwika/gfx/Math3D.hpp>
 #include <antwika/gfx/ShaderSource.hpp>
-#include <antwika/gfx/ViewportRenderer.hpp>
+#include <antwika/gfx/IRenderer.hpp>
 #include <antwika/light/ActiveLight.hpp>
 #include <antwika/voxel/VoxelPosition.hpp>
 

@@ -9,7 +9,7 @@
 #include <antwika/gfx/IShader.hpp>
 #include <antwika/gfx/Math3D.hpp>
 #include <antwika/gfx/ShaderSource.hpp>
-#include <antwika/gfx/ViewportRenderer.hpp>
+#include <antwika/gfx/IRenderer.hpp>
 #include <antwika/light/ActiveLight.hpp>
 #include <antwika/voxel/VoxelCell.hpp>
 
@@ -22,13 +22,13 @@ namespace antwika::render
     {
     public:
         void open(
-            gfx::ViewportRenderer &viewportRenderer,
+            gfx::IRenderer &viewportRenderer,
             const gfx::ShaderSource &voxelSource);
 
         [[nodiscard]] gfx::IShader &program() const noexcept;
 
         void setLook(
-            gfx::ViewportRenderer &viewportRenderer,
+            gfx::IRenderer &viewportRenderer,
             const WorldShaderInputs &shaderInputs,
             const std::vector<light::ActiveLight> &lights,
             std::span<const light::ActiveLight> bakedLights) const;

@@ -12,7 +12,7 @@ namespace antwika::render
 {
 
     void WorldMeshes::rebuild(
-        gfx::ViewportRenderer &viewportRenderer,
+        gfx::IRenderer &viewportRenderer,
         const map::Map &drawnMap,
         voxel::Voxels shownVoxels,
         const solver::CornerSeams joiningSeams,
@@ -71,7 +71,7 @@ namespace antwika::render
     }
 
     void WorldMeshes::rebuildDecor(
-        gfx::ViewportRenderer &viewportRenderer,
+        gfx::IRenderer &viewportRenderer,
         const map::Map &drawnMap,
         const std::uint32_t tick)
     {

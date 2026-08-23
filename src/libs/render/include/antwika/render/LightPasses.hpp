@@ -11,7 +11,7 @@
 #include <antwika/gfx/IShader.hpp>
 #include <antwika/gfx/ShaderSource.hpp>
 #include <antwika/gfx/ITexture.hpp>
-#include <antwika/gfx/ViewportRenderer.hpp>
+#include <antwika/gfx/IRenderer.hpp>
 #include <antwika/light/ActiveLight.hpp>
 #include <antwika/light/PointLight.hpp>
 #include <antwika/voxel/VoxelPosition.hpp>
@@ -24,13 +24,13 @@ namespace antwika::render
     {
     public:
         void open(
-            gfx::ViewportRenderer &viewportRenderer,
+            gfx::IRenderer &viewportRenderer,
             const gfx::ShaderSource &shadowSource);
 
         void forget() noexcept;
 
         void hide(
-            gfx::ViewportRenderer &viewportRenderer,
+            gfx::IRenderer &viewportRenderer,
             voxel::Voxels behindVoxels,
             voxel::VoxelPosition aboutPosition);
 
@@ -38,7 +38,7 @@ namespace antwika::render
             const noexcept;
 
         void bakeLamps(
-            gfx::ViewportRenderer &viewportRenderer,
+            gfx::IRenderer &viewportRenderer,
             std::span<const std::unique_ptr<gfx::IMesh>> pileMeshes,
             const std::vector<light::ActiveLight> &lights);
 

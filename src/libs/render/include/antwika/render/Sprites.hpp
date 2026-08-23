@@ -10,7 +10,7 @@
 #include <antwika/gfx/IShader.hpp>
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/Math3D.hpp>
-#include <antwika/gfx/ViewportRenderer.hpp>
+#include <antwika/gfx/IRenderer.hpp>
 #include <antwika/time/Tick.hpp>
 #include <antwika/collision/Collision.hpp>
 
@@ -20,10 +20,10 @@ namespace antwika::render
     class Sprites final
     {
     public:
-        void open(gfx::ViewportRenderer &viewportRenderer);
+        void open(gfx::IRenderer &viewportRenderer);
 
         void drawCharacter(
-            gfx::ViewportRenderer &viewportRenderer,
+            gfx::IRenderer &viewportRenderer,
             gfx::IShader &shader,
             const gfx::Camera3D &camera,
             const gfx::Mat4 &modelMatrix,
@@ -34,7 +34,7 @@ namespace antwika::render
             const gfx::ITexture *lampShadowTexture) const;
 
         void drawShadow(
-            gfx::ViewportRenderer &viewportRenderer,
+            gfx::IRenderer &viewportRenderer,
             const gfx::Camera3D &camera,
             const gfx::Mat4 &modelMatrix,
             gfx::Vec3 position) const;

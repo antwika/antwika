@@ -97,7 +97,7 @@ namespace antwika::render
     }
 
     void AtlasSheets::open(
-        gfx::ViewportRenderer &viewportRenderer,
+        gfx::IRenderer &viewportRenderer,
         std::array<gfx::Bitmap, 2> sheetBitmaps,
         const map::Map &drawnMap,
         const std::uint32_t tick)
@@ -145,7 +145,7 @@ namespace antwika::render
     }
 
     void AtlasSheets::refresh(
-        gfx::ViewportRenderer &viewportRenderer,
+        gfx::IRenderer &viewportRenderer,
         const map::Map &drawnMap,
         const std::uint32_t tick,
         const bool animating)
