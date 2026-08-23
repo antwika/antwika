@@ -54,36 +54,7 @@ namespace antwika::map::mapfile
 
     constexpr std::string_view kSlotKey = "slot";
 
-    [[nodiscard]] inline nlohmann::json familySchema()
-    {
-        nlohmann::json member;
-        member["type"] = "object";
-        member["additionalProperties"] = false;
-        member["required"] = {
-            std::string(kTileKey), std::string(kWeightKey)};
-        member["properties"][std::string(kTileKey)] = tileSchema();
-        member["properties"][std::string(kWeightKey)] =
-            wholeSchema(0, decor::kFullFrequency);
-
-        nlohmann::json members;
-        members["type"] = "array";
-        members["items"] = member;
-        members["minItems"] = 1;
-
-        nlohmann::json shape;
-        shape["type"] = "object";
-        shape["additionalProperties"] = false;
-        shape["required"] = {
-            std::string(kTileKey),
-            std::string(kWeightKey),
-            std::string(kMembersKey)};
-        shape["properties"][std::string(kTileKey)] = tileSchema();
-        shape["properties"][std::string(kWeightKey)] =
-            wholeSchema(0, decor::kFullFrequency);
-        shape["properties"][std::string(kMembersKey)] = members;
-
-        return shape;
-    } // GCOVR_EXCL_LINE
+    [[nodiscard]] nlohmann::json familySchema();
 
     [[nodiscard]] inline nlohmann::json decorSchema()
     {

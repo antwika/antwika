@@ -148,25 +148,8 @@ namespace antwika::map::mapfile
         for (const auto &familyJson :
              documentJson[std::string(kFamiliesKey)])
         {
-            decor::VariantGroup familyGroup{
-                .canonicalTile = readTile(
-                    familyJson[std::string(kTileKey)]),
-                .weight = familyJson[std::string(kWeightKey)]
-                              .get<std::uint8_t>()};
-
-            for (const auto &member :
-                 familyJson[std::string(kMembersKey)])
-            {
-                familyGroup.variants.push_back(
-                    decor::VariantMember{
-                        .tile = readTile(
-                            member[std::string(kTileKey)]),
-                        .weight =
-                            member[std::string(kWeightKey)]
-                                .get<std::uint8_t>()});
-            }
-
-            map.familyGroups.push_back(familyGroup);
+            map.familyGroups.push_back(
+                read<decor::VariantGroup>(kFamilyFields, familyJson));
         }
     }
 

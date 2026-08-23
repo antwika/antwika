@@ -146,6 +146,63 @@ namespace antwika::map::mapfile
             { memberIn<Member>(record) = readTile(json); }};
     }
 
+    template <auto Member, int Least, int Most>
+    [[nodiscard]] constexpr Field wholeField(const std::string_view key)
+    {
+        return Field{
+            .key = key,
+            .shape = [] { return wholeSchema(Least, Most); },
+            .valueOf = [](const void *record)
+            { return nlohmann::json(memberOf<Member>(record)); },
+            .setFrom = [](void *record, const nlohmann::json &json)
+            {
+                memberIn<Member>(record) =
+                    json.get<Held<Member>>();
+            }};
+    }
+
+    template <auto Member, const auto &Table, std::size_t Least>
+    [[nodiscard]] constexpr Field recordListField(
+        const std::string_view key)
+    {
+        using Kept = typename Held<Member>::value_type;
+
+        return Field{
+            .key = key,
+            .shape = []
+            {
+                nlohmann::json shape;
+
+                shape["type"] = "array";
+                shape["items"] = shapeOf(Table);
+                shape["minItems"] = Least;
+
+                return shape;
+            },
+            .valueOf = [](const void *record)
+            {
+                auto arrayJson = nlohmann::json::array();
+
+                for (const auto &heldRecord : memberOf<Member>(record))
+                {
+                    arrayJson.push_back(written(Table, heldRecord));
+                }
+
+                return arrayJson;
+            },
+            .setFrom = [](void *record, const nlohmann::json &json)
+            {
+                auto &heldRecords = memberIn<Member>(record);
+
+                heldRecords.clear();
+
+                for (const auto &heldJson : json)
+                {
+                    heldRecords.push_back(read<Kept>(Table, heldJson));
+                }
+            }};
+    }
+
     template <auto Member, std::size_t Least, std::size_t Most>
     [[nodiscard]] constexpr Field tileListField(
         const std::string_view key)

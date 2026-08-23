@@ -48,6 +48,18 @@ namespace antwika::map::mapfile
             1,
             decor::kMaxDecorFrames>(kFramesKey)};
 
+    inline constexpr std::array<Field, 2> kVariantMemberFields{
+        tileField<&decor::VariantMember::tile>(kTileKey),
+        wholeField<&decor::VariantMember::weight, 0,
+            decor::kFullFrequency>(kWeightKey)};
+
+    inline constexpr std::array<Field, 3> kFamilyFields{
+        tileField<&decor::VariantGroup::canonicalTile>(kTileKey),
+        wholeField<&decor::VariantGroup::weight, 0,
+            decor::kFullFrequency>(kWeightKey),
+        recordListField<&decor::VariantGroup::variants,
+            kVariantMemberFields, 1>(kMembersKey)};
+
     struct GateRow final
     {
         std::string_view key;
