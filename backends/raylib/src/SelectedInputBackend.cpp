@@ -7,7 +7,7 @@
 namespace antwika::input
 {
 
-    std::unique_ptr<IInputBackend> makeSelectedInputBackend(ILogger &logger)
+    std::unique_ptr<IInputBackend> createSelectedInputBackend(ILogger &logger)
     {
         return std::make_unique<raylib::RaylibInputBackend>(logger);
     }

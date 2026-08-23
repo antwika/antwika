@@ -33,7 +33,7 @@ TEST(SolverCompletenessTest, Solve_ReportsUnsatisfiableAfterExhaustion)
 TEST(SolverCompletenessTest, Solve_ReportsUnsatisfiableBeforeAnyChoice)
 {
     std::vector<Domain> waveDomains{
-        Domain::singleton(0, 2), Domain::singleton(0, 2)};
+        Domain::createSingleton(0, 2), Domain::createSingleton(0, 2)};
     AllDifferentConstraint allDifferent({0, 1});
 
     Solver solver(waveDomains, {std::cref(allDifferent)});

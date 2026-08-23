@@ -61,7 +61,7 @@ TEST(AdjacencyConstraintTest, Prune_FailsWithNoCompatiblePartner)
 {
     AdjacencyConstraint constraint(0, 1, makeTable());
     std::vector<Domain> waveDomains{
-        Domain::singleton(0, 3), Domain::singleton(2, 3)};
+        Domain::createSingleton(0, 3), Domain::createSingleton(2, 3)};
 
     EXPECT_FALSE(constraint.prune(waveDomains));
 }
@@ -92,7 +92,7 @@ TEST(AdjacencyConstraintTest, Prune_ReadsATableSharedWithOtherConstraints)
     AdjacencyConstraint firstConstraint(0, 1, sharedTable);
     AdjacencyConstraint secondConstraint(1, 2, sharedTable);
     std::vector<Domain> waveDomains{
-        Domain::singleton(0, 3), Domain(3), Domain::singleton(0, 3)};
+        Domain::createSingleton(0, 3), Domain(3), Domain::createSingleton(0, 3)};
 
     EXPECT_TRUE(firstConstraint.prune(waveDomains));
     EXPECT_TRUE(secondConstraint.prune(waveDomains));

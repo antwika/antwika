@@ -784,6 +784,216 @@ def it_leaves_a_noun_in_a_stepped_over_place_alone() -> None:
     assert found == [], found
 
 
+
+def it_reports_a_command_prefixed_with_get() -> None:
+    found = kinds(
+        "namespace antwika::foo\n"
+        "{\n"
+        "    class Editor final\n"
+        "    {\n"
+        "        void getReady(foo::Config config);\n"
+        "    };\n"
+        "}\n"
+    )
+
+    assert found == [m.COMMAND_GETTER], found
+
+
+def it_leaves_a_query_prefixed_with_get_alone() -> None:
+    found = names(
+        "namespace antwika::foo\n"
+        "{\n"
+        "    class Recorder final\n"
+        "    {\n"
+        "        [[nodiscard]] std::size_t getSize() const noexcept;\n"
+        "        [[nodiscard]] foo::Point toWindow(foo::Point point) const;\n"
+        "        [[nodiscard]] foo::Level levelOf(foo::Cell cell) const;\n"
+        "        [[nodiscard]] foo::Font createFont(foo::Config config);\n"
+        "    };\n"
+        "}\n"
+    )
+
+    assert found == [], found
+
+
+def it_reports_a_query_that_is_not_a_getter() -> None:
+    found = names(
+        "namespace antwika::foo\n"
+        "{\n"
+        "    class Recorder final\n"
+        "    {\n"
+        "        [[nodiscard]] std::size_t size() const noexcept;\n"
+        "        [[nodiscard]] foo::Bitmap sheet() const;\n"
+        "    };\n"
+        "}\n"
+    )
+
+    assert found == ["size", "sheet"], found
+
+
+def it_reports_a_pure_free_function_that_is_not_a_getter() -> None:
+    found = kinds(
+        "namespace antwika::foo\n"
+        "{\n"
+        "    [[nodiscard]] foo::Health drained(\n"
+        "        foo::Health health, foo::Tick tick) noexcept;\n"
+        "}\n"
+    )
+
+    assert found == [m.QUERY_FORM], found
+
+
+def it_leaves_a_free_function_that_writes_through_a_reference_alone() -> None:
+    found = names(
+        "namespace antwika::foo\n"
+        "{\n"
+        "    [[nodiscard]] std::size_t drain(foo::Health &health);\n"
+        "}\n"
+    )
+
+    assert found == [], found
+
+
+def it_reports_a_factory_not_named_create() -> None:
+    found = names(
+        "namespace antwika::foo\n"
+        "{\n"
+        "    foo::GlyphAtlas makeGlyphAtlas(const foo::Font &font);\n"
+        "    foo::DrawList buildDrawList(const foo::LayoutTree &tree);\n"
+        "    foo::Window createWindow(const foo::Config &config);\n"
+        "}\n"
+    )
+
+    assert found == ["makeGlyphAtlas", "buildDrawList"], found
+
+
+def it_reports_a_verb_that_names_a_category() -> None:
+    found = kinds(
+        "namespace antwika::foo\n"
+        "{\n"
+        "    class Editor final\n"
+        "    {\n"
+        "        [[nodiscard]] bool handleWidgets(\n"
+        "            const foo::Interactions &interactions);\n"
+        "    };\n"
+        "}\n"
+    )
+
+    assert found == [m.WEAK_VERB], found
+
+
+def it_reports_a_predicate_that_is_not_a_question() -> None:
+    found = names(
+        "namespace antwika::foo\n"
+        "{\n"
+        "    class Walker final\n"
+        "    {\n"
+        "        [[nodiscard]] bool alive() const;\n"
+        "        [[nodiscard]] bool isAlive() const;\n"
+        "        [[nodiscard]] bool hasLadder() const;\n"
+        "        [[nodiscard]] bool wasPressed(foo::Key key) const;\n"
+        "    };\n"
+        "}\n"
+    )
+
+    assert found == ["alive"], found
+
+
+def it_reports_a_free_predicate_that_is_not_a_question() -> None:
+    found = names(
+        "namespace antwika::foo\n"
+        "{\n"
+        "    [[nodiscard]] bool depleted(foo::Health health) noexcept;\n"
+        "}\n"
+    )
+
+    assert found == ["depleted"], found
+
+
+def it_leaves_a_third_person_predicate_alone() -> None:
+    found = names(
+        "namespace antwika::foo\n"
+        "{\n"
+        "    class Board final\n"
+        "    {\n"
+        "        [[nodiscard]] bool contains(foo::Tile tile) const;\n"
+        "        [[nodiscard]] bool matches(const foo::Board &board) const;\n"
+        "    };\n"
+        "}\n"
+    )
+
+    assert found == [], found
+
+
+def it_leaves_a_command_that_returns_what_it_consumed_alone() -> None:
+    found = names(
+        "namespace antwika::foo\n"
+        "{\n"
+        "    class Editor final\n"
+        "    {\n"
+        "        [[nodiscard]] bool consumeWidgets(\n"
+        "            const foo::Interactions &interactions);\n"
+        "        void advance(foo::Duration duration);\n"
+        "        [[nodiscard]] foo::Entity add(foo::Component component);\n"
+        "    };\n"
+        "}\n"
+    )
+
+    assert found == [], found
+
+
+def it_leaves_the_iteration_protocol_alone() -> None:
+    found = names(
+        "namespace antwika::foo\n"
+        "{\n"
+        "    class Domain final\n"
+        "    {\n"
+        "        [[nodiscard]] foo::Cursor begin() const;\n"
+        "        [[nodiscard]] foo::Cursor end() const;\n"
+        "    };\n"
+        "}\n"
+    )
+
+    assert found == [], found
+
+
+def it_reports_a_static_factory_that_is_not_a_getter() -> None:
+    found = kinds(
+        "namespace antwika::foo\n"
+        "{\n"
+        "    class Domain final\n"
+        "    {\n"
+        "        [[nodiscard]] static foo::Domain singleton(\n"
+        "            std::size_t value, std::size_t alphabetSize);\n"
+        "    };\n"
+        "}\n"
+    )
+
+    assert found == [m.QUERY_FORM], found
+
+
+def it_leaves_a_call_and_a_constructor_alone() -> None:
+    found = names(
+        "namespace antwika::foo\n"
+        "{\n"
+        "    class Editor final\n"
+        "    {\n"
+        "        Editor();\n"
+        "        ~Editor();\n"
+        "    };\n"
+        "\n"
+        "    void Editor::stir()\n"
+        "    {\n"
+        "        handleWidgets(readyInteractions);\n"
+        "        makeGlyphAtlas(readyFont);\n"
+        "    }\n"
+        "}\n",
+        "Thing.cpp",
+    )
+
+    assert found == [], found
+
+
 def main() -> int:
     tests = [
         it_reports_a_data_member_that_does_not_carry_its_type,
@@ -845,6 +1055,20 @@ def main() -> int:
         it_reports_a_structured_binding,
         it_reports_a_lambda_parameter,
         it_leaves_a_noun_in_a_stepped_over_place_alone,
+        it_reports_a_command_prefixed_with_get,
+        it_leaves_a_query_prefixed_with_get_alone,
+        it_reports_a_query_that_is_not_a_getter,
+        it_reports_a_pure_free_function_that_is_not_a_getter,
+        it_leaves_a_free_function_that_writes_through_a_reference_alone,
+        it_reports_a_factory_not_named_create,
+        it_reports_a_verb_that_names_a_category,
+        it_reports_a_predicate_that_is_not_a_question,
+        it_reports_a_free_predicate_that_is_not_a_question,
+        it_leaves_a_third_person_predicate_alone,
+        it_leaves_a_command_that_returns_what_it_consumed_alone,
+        it_leaves_the_iteration_protocol_alone,
+        it_reports_a_static_factory_that_is_not_a_getter,
+        it_leaves_a_call_and_a_constructor_alone,
     ]
 
     for test in tests:

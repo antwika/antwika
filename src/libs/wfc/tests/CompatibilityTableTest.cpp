@@ -28,7 +28,7 @@ TEST(CompatibilityTableTest, Set_MarksExactlyThatOrderedPair)
 TEST(CompatibilityTableTest, AlphabetSize_IsPreserved)
 {
     CompatibilityTable table(5);
-    EXPECT_EQ(table.alphabetSize(), 5U);
+    EXPECT_EQ(table.getAlphabetSize(), 5U);
 }
 
 TEST(CompatibilityTableTest, Compatible_IsFalseOnAnOutOfRangePair)

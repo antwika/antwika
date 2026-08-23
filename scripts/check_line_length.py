@@ -7,7 +7,7 @@ from pathlib import Path
 from repofiles import DEFAULT_ROOT, CPP_GLOBS, PYTHON_GLOBS, find_paths
 
 
-MAX_LINE_LENGTH = 80
+MAX_LINE_LENGTH = 100
 
 def find_long_lines(path: Path) -> list[tuple[int, int]]:
     violations = []

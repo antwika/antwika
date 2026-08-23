@@ -31,7 +31,7 @@ namespace antwika::wfc
 
         explicit Domain(std::size_t alphabetSize);
 
-        [[nodiscard]] static Domain singleton(
+        [[nodiscard]] static Domain createSingleton(
             std::size_t value, std::size_t alphabetSize);
 
         [[nodiscard]] bool contains(std::size_t value) const;
@@ -42,15 +42,15 @@ namespace antwika::wfc
 
         void restrictTo(std::size_t value);
 
-        [[nodiscard]] std::size_t alphabetSize() const;
+        [[nodiscard]] std::size_t getAlphabetSize() const;
 
-        [[nodiscard]] std::size_t count() const;
+        [[nodiscard]] std::size_t getCount() const;
 
         [[nodiscard]] bool isEmpty() const;
 
         [[nodiscard]] bool isSingleton() const;
 
-        [[nodiscard]] std::size_t singleValue() const;
+        [[nodiscard]] std::size_t getSingleValue() const;
 
         [[nodiscard]] const_iterator begin() const;
 

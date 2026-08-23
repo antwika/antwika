@@ -34,7 +34,7 @@ namespace antwika::ecs::detail
 
     void EntityManager::destroy(Entity entity)
     {
-        if (!alive(entity))
+        if (!isAlive(entity))
         {
             throw EcsError("EntityManager: entity is not alive");
         }
@@ -42,7 +42,7 @@ namespace antwika::ecs::detail
         aliveFlags[rawValue(entity)] = false;
     }
 
-    bool EntityManager::alive(Entity entity) const noexcept
+    bool EntityManager::isAlive(Entity entity) const noexcept
     {
         const auto value = rawValue(entity);
         return value < aliveFlags.size() && aliveFlags[value];

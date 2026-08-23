@@ -74,7 +74,7 @@ namespace antwika::system
                 world.destroy(lying);
             }
 
-            vitals.health = rules::drained(vitals.health, tick);
+            vitals.health = rules::drainedHealth(vitals.health, tick);
 
             if (!world.has<component::Player>(entity))
             {

@@ -34,7 +34,7 @@ TEST(EntityManagerTest, Alive_IsTrueForANewEntity)
 
     const auto entity = manager.create();
 
-    EXPECT_TRUE(manager.alive(entity));
+    EXPECT_TRUE(manager.isAlive(entity));
 }
 
 TEST(EntityManagerTest, Destroy_LeavesTheIndexDeadAndUnreused)
@@ -46,7 +46,7 @@ TEST(EntityManagerTest, Destroy_LeavesTheIndexDeadAndUnreused)
     manager.destroy(first);
     const auto second = manager.create();
 
-    EXPECT_FALSE(manager.alive(first));
+    EXPECT_FALSE(manager.isAlive(first));
     EXPECT_NE(rawValue(first), rawValue(second));
     EXPECT_EQ(rawValue(second), 2U);
 }
@@ -76,7 +76,7 @@ TEST(EntityManagerTest, Alive_IsFalseForTheNullEntity)
     EntityManager manager(logger);
     static_cast<void>(manager.create());
 
-    EXPECT_FALSE(manager.alive(kNullEntity));
+    EXPECT_FALSE(manager.isAlive(kNullEntity));
 }
 
 TEST(EntityManagerTest, Alive_IsFalseForTheValueJustPastTheLastCreated)
@@ -85,7 +85,7 @@ TEST(EntityManagerTest, Alive_IsFalseForTheValueJustPastTheLastCreated)
     EntityManager manager(logger);
     const auto only = manager.create();
 
-    EXPECT_FALSE(manager.alive(Entity{rawValue(only) + 1}));
+    EXPECT_FALSE(manager.isAlive(Entity{rawValue(only) + 1}));
 }
 
 TEST(EntityManagerTest, Create_LogsFatalAndThrowsWhenExhausted)
@@ -109,5 +109,5 @@ TEST(EntityManagerTest, Alive_StillAnswersAfterExhaustion)
 
     EXPECT_THROW(static_cast<void>(manager.create()), EcsError);
 
-    EXPECT_TRUE(manager.alive(only));
+    EXPECT_TRUE(manager.isAlive(only));
 }

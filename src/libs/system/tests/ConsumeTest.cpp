@@ -28,7 +28,7 @@ using antwika::ecs::World;
 using antwika::gameplay::GameLoop;
 using antwika::gameplay::Phase;
 using antwika::log::mocks::MockLogger;
-using antwika::rules::consumed;
+using antwika::rules::consumedVitals;
 using antwika::rules::inventoryWith;
 using antwika::system::ConsumeSystem;
 using testing::NiceMock;
@@ -100,7 +100,7 @@ TEST(ConsumeTest, Update_LiftsTheHealthTheRulesSay)
 
     EXPECT_EQ(
         harness.world.get<Health>(entity).food,
-        consumed(heldVitals, ItemKind::Food).health.food);
+        consumedVitals(heldVitals, ItemKind::Food).health.food);
 }
 
 TEST(ConsumeTest, Update_ReportsThatSomethingWasLeftToTake)

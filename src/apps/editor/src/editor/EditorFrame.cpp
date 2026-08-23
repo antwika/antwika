@@ -38,7 +38,7 @@ namespace antwika::editor
         sayConsumeReport();
         sayDialogueLine();
 
-        if (play.playing && !play.game->world().alive(play.game->player()))
+        if (play.playing && !play.game->world().isAlive(play.game->player()))
         {
             sayCaption("the walker", "it gave out");
             standPlayer();
@@ -161,7 +161,7 @@ namespace antwika::editor
                                             VoxelPosition{})
                                   .z)
                               + 0.5F};
-            const auto hideFrom = clockSource.now();
+            const auto hideFrom = clockSource.currentTime();
             auto behind =
                 play.playing || aimedRotation.has_value()
                     ? antwika::voxel::occludingVoxels(
@@ -196,13 +196,13 @@ namespace antwika::editor
             meters.hideRate.record(
                 std::chrono::duration_cast<
                     std::chrono::nanoseconds>(
-                    clockSource.now() - hideFrom));
+                    clockSource.currentTime() - hideFrom));
 
             const auto corner =
                 voxelmap::occlusionMaskOrigin(aboutPosition);
             const auto lights = currentLights();
 
-            const auto lampFrom = clockSource.now();
+            const auto lampFrom = clockSource.currentTime();
 
             lightPasses.bakeLamps(
                 viewportRenderer,
@@ -212,7 +212,7 @@ namespace antwika::editor
             meters.lampRate.record(
                 std::chrono::duration_cast<
                     std::chrono::nanoseconds>(
-                    clockSource.now() - lampFrom));
+                    clockSource.currentTime() - lampFrom));
 
             worldShader.setLook(
                 viewportRenderer,
@@ -276,7 +276,7 @@ namespace antwika::editor
             && !rebindingAction.has_value() && !slidingWidget.has_value()
             && focusedField == FocusedField::Nothing;
 
-        const auto uiFrom = clockSource.now();
+        const auto uiFrom = clockSource.currentTime();
         const auto uiFrame = uiResting
                            ? ui::Frame{}
                            : layoutUi(false, pointer.pointerHeld);
@@ -284,7 +284,7 @@ namespace antwika::editor
         meters.uiRate.record(
             std::chrono::duration_cast<
                 std::chrono::nanoseconds>(
-                clockSource.now() - uiFrom));
+                clockSource.currentTime() - uiFrom));
 
         pointer.hoveredWidget = uiFrame.interactions.hoveredWidget;
         pointer.hoverTracker = updateHover(

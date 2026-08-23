@@ -143,7 +143,7 @@ namespace antwika::editor
             }
         }
 
-        if (handlePickerPress(downPressed))
+        if (consumePickerPress(downPressed))
         {
             return;
         }

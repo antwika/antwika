@@ -23,7 +23,7 @@ namespace antwika::wfc
             assignment.reserve(waveDomains.size());
             for (const Domain &domain : waveDomains)
             {
-                assignment.push_back(domain.singleValue());
+                assignment.push_back(domain.getSingleValue());
             }
             return assignment;
         } // GCOVR_EXCL_LINE
@@ -51,10 +51,10 @@ namespace antwika::wfc
         if (!this->initialWave.empty())
         {
             const std::size_t alphabetSize =
-                this->initialWave.front().alphabetSize();
+                this->initialWave.front().getAlphabetSize();
             for (const Domain &domain : this->initialWave)
             {
-                if (domain.alphabetSize() != alphabetSize)
+                if (domain.getAlphabetSize() != alphabetSize)
                 {
                     throw WfcError(
                         "Domain alphabet size mismatch in initial wave");
@@ -164,7 +164,7 @@ namespace antwika::wfc
                     const std::size_t cell = cells[i];
                     const Domain &priorDomain = beforeDomains[i];
                     const Domain &nowDomain = waveDomains[cell];
-                    if (nowDomain.count() >= priorDomain.count())
+                    if (nowDomain.getCount() >= priorDomain.getCount())
                     {
                         continue;
                     }

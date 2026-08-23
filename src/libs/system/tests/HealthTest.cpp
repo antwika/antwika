@@ -36,9 +36,9 @@ using antwika::voxel::VoxelCell;
 using antwika::voxel::VoxelPosition;
 using antwika::voxel::voxelsOf;
 using antwika::rules::autoConsumed;
-using antwika::rules::consumed;
+using antwika::rules::consumedVitals;
 using antwika::rules::depleted;
-using antwika::rules::drained;
+using antwika::rules::drainedHealth;
 using antwika::rules::inventoryCount;
 using antwika::rules::inventoryWith;
 using antwika::component::kFullHealth;
@@ -70,10 +70,12 @@ namespace
     {
         const Health fullHealth{};
 
-        EXPECT_EQ(drained(fullHealth, kHungerTicks).food, kFullHealth - 1);
-        EXPECT_EQ(drained(fullHealth, kHungerTicks).water, kFullHealth);
-        EXPECT_EQ(drained(fullHealth, kThirstTicks).water, kFullHealth - 1);
-        EXPECT_EQ(drained(fullHealth, kThirstTicks).food, kFullHealth);
+        EXPECT_EQ(
+            drainedHealth(fullHealth, kHungerTicks).food, kFullHealth - 1);
+        EXPECT_EQ(drainedHealth(fullHealth, kHungerTicks).water, kFullHealth);
+        EXPECT_EQ(
+            drainedHealth(fullHealth, kThirstTicks).water, kFullHealth - 1);
+        EXPECT_EQ(drainedHealth(fullHealth, kThirstTicks).food, kFullHealth);
     }
 
     TEST(HealthTest, Drained_LosesNothingOnATickBetweenBothRates)
@@ -81,14 +83,14 @@ namespace
         const Health fullHealth{};
         const auto bothTicks = kHungerTicks * kThirstTicks + 1;
 
-        EXPECT_EQ(drained(fullHealth, bothTicks).food, kFullHealth);
-        EXPECT_EQ(drained(fullHealth, bothTicks).water, kFullHealth);
+        EXPECT_EQ(drainedHealth(fullHealth, bothTicks).food, kFullHealth);
+        EXPECT_EQ(drainedHealth(fullHealth, bothTicks).water, kFullHealth);
     }
 
     TEST(HealthTest, Drained_LosesNothingFurtherOnceEmpty)
     {
         const Health emptyHealth{.food = 0, .water = 0};
-        const auto drainedVitals = drained(emptyHealth,
+        const auto drainedVitals = drainedHealth(emptyHealth,
             kHungerTicks * kThirstTicks);
 
         EXPECT_EQ(drainedVitals.food, 0);
@@ -100,11 +102,11 @@ namespace
         const Vitals vitals{
             .health = Health{.food = 10, .water = 10},
             .inventory = carrying(ItemKind::Food)};
-        const auto consumedVitals = consumed(vitals, ItemKind::Food);
+        const auto fedVitals = consumedVitals(vitals, ItemKind::Food);
 
-        EXPECT_EQ(consumedVitals.health.food, 10 + kMealWorth);
-        EXPECT_EQ(consumedVitals.health.water, 10);
-        EXPECT_EQ(inventoryCount(consumedVitals.inventory, ItemKind::Food), 0U);
+        EXPECT_EQ(fedVitals.health.food, 10 + kMealWorth);
+        EXPECT_EQ(fedVitals.health.water, 10);
+        EXPECT_EQ(inventoryCount(fedVitals.inventory, ItemKind::Food), 0U);
     }
 
     TEST(HealthTest, Consumed_LeavesACharacterCarryingNoneOfThatKind)
@@ -112,10 +114,10 @@ namespace
         const Vitals vitals{
             .health = Health{.food = 10, .water = 10},
             .inventory = Inventory{}};
-        const auto consumedVitals = consumed(vitals, ItemKind::Water);
+        const auto fedVitals = consumedVitals(vitals, ItemKind::Water);
 
-        EXPECT_EQ(consumedVitals.health.water, 10);
-        EXPECT_EQ(consumedVitals.inventory.slots, vitals.inventory.slots);
+        EXPECT_EQ(fedVitals.health.water, 10);
+        EXPECT_EQ(fedVitals.inventory.slots, vitals.inventory.slots);
     }
 
     TEST(HealthTest, Consumed_RestoresNoFurtherThanFull)
@@ -125,7 +127,7 @@ namespace
             .inventory = carrying(ItemKind::Water)};
 
         EXPECT_EQ(
-            consumed(vitals, ItemKind::Water).health.water,
+            consumedVitals(vitals, ItemKind::Water).health.water,
             kFullHealth);
     }
 
@@ -248,7 +250,7 @@ namespace
 
         harness.step(1);
 
-        EXPECT_FALSE(harness.gameLoop.world().alive(item));
+        EXPECT_FALSE(harness.gameLoop.world().isAlive(item));
         EXPECT_EQ(
             inventoryCount(
                 harness.gameLoop.world().get<Inventory>(walker),
@@ -266,7 +268,7 @@ namespace
 
         harness.step(1);
 
-        EXPECT_FALSE(harness.gameLoop.world().alive(item));
+        EXPECT_FALSE(harness.gameLoop.world().isAlive(item));
         EXPECT_EQ(
             inventoryCount(
                 harness.gameLoop.world().get<Inventory>(walker),
@@ -284,7 +286,7 @@ namespace
 
         harness.step(1);
 
-        EXPECT_TRUE(harness.gameLoop.world().alive(item));
+        EXPECT_TRUE(harness.gameLoop.world().isAlive(item));
         EXPECT_EQ(
             inventoryCount(
                 harness.gameLoop.world().get<Inventory>(walker),
@@ -337,7 +339,7 @@ namespace
 
         harness.step(1);
 
-        EXPECT_TRUE(harness.gameLoop.world().alive(item));
+        EXPECT_TRUE(harness.gameLoop.world().isAlive(item));
     }
 
     TEST(HealthTest, Update_FeedsAnNpcFromWhatItPicksUpTheSameFrame)
@@ -404,7 +406,7 @@ namespace
 
         harness.step(kHungerTicks);
 
-        EXPECT_FALSE(harness.gameLoop.world().alive(walker));
+        EXPECT_FALSE(harness.gameLoop.world().isAlive(walker));
     }
 
     TEST(HealthTest, Update_DestroysACharacterWhoseWaterReachesZero)
@@ -416,7 +418,7 @@ namespace
 
         harness.step(kThirstTicks);
 
-        EXPECT_FALSE(harness.gameLoop.world().alive(walker));
+        EXPECT_FALSE(harness.gameLoop.world().isAlive(walker));
     }
 
     TEST(HealthTest, Update_ChangesNothingWhileFrozen)
@@ -432,7 +434,7 @@ namespace
 
         auto &world = harness.gameLoop.world();
 
-        EXPECT_TRUE(world.alive(item));
+        EXPECT_TRUE(world.isAlive(item));
         EXPECT_EQ(world.get<Health>(walker).food, kFullHealth);
     }
 
@@ -452,7 +454,7 @@ namespace
 
         harness.step(kHungerTicks);
 
-        EXPECT_TRUE(world.alive(entity));
+        EXPECT_TRUE(world.isAlive(entity));
         EXPECT_EQ(world.get<Health>(entity).food, 1);
     }
 

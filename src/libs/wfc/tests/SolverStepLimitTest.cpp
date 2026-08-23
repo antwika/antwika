@@ -49,7 +49,7 @@ TEST(SolverStepLimitTest, Solve_SpendsItsFirstChoiceOnABudgetOfOne)
 TEST(SolverStepLimitTest, Solve_StillSolvesOnAGenerousBudget)
 {
     std::vector<Domain> waveDomains{
-        Domain::singleton(0, 3), Domain::singleton(1, 3), Domain(3)};
+        Domain::createSingleton(0, 3), Domain::createSingleton(1, 3), Domain(3)};
     AllDifferentConstraint allDifferent({0, 1, 2});
 
     SolverLimits limits{.maxSteps = 1000};

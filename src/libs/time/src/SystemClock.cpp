@@ -3,7 +3,7 @@
 namespace antwika::time
 {
     std::chrono::time_point<std::chrono::system_clock>
-    SystemClock::now() const noexcept
+    SystemClock::currentTime() const noexcept
     {
         return std::chrono::system_clock::now();
     }

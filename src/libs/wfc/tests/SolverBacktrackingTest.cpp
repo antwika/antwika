@@ -36,7 +36,7 @@ TEST(SolverBacktrackingTest, Solve_AbandonsAWrongBranch)
             [](std::vector<Domain> &waveDomains)
             {
                 if (waveDomains[0].isSingleton()
-                    && waveDomains[0].singleValue() == 0)
+                    && waveDomains[0].getSingleValue() == 0)
                 {
                     return false;
                 }
@@ -68,12 +68,12 @@ TEST(SolverBacktrackingTest, Solve_PopsToAnOuterChoicePoint)
                 {
                     return true;
                 }
-                const std::size_t v0 = waveDomains[0].singleValue();
+                const std::size_t v0 = waveDomains[0].getSingleValue();
                 if (!waveDomains[1].isSingleton())
                 {
                     return true;
                 }
-                const std::size_t v1 = waveDomains[1].singleValue();
+                const std::size_t v1 = waveDomains[1].getSingleValue();
                 if (v0 == 0)
                 {
                     return false;

@@ -11,7 +11,7 @@ namespace antwika::input
 
     using antwika::log::ILogger;
 
-    [[nodiscard]] std::unique_ptr<IInputBackend> makeSelectedInputBackend(
+    [[nodiscard]] std::unique_ptr<IInputBackend> createSelectedInputBackend(
         ILogger &logger);
 
 }

@@ -7,7 +7,7 @@
 namespace antwika::sound
 {
 
-    std::unique_ptr<ISoundBackend> makeSelectedSoundBackend(ILogger &logger)
+    std::unique_ptr<ISoundBackend> createSelectedSoundBackend(ILogger &logger)
     {
         return std::make_unique<NullSoundBackend>(logger);
     }

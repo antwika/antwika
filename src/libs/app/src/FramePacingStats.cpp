@@ -134,7 +134,7 @@ namespace antwika::app
     {
         closeTick(tick);
 
-        const auto nowTime = clock.now();
+        const auto nowTime = clock.currentTime();
 
         if (!windowStart.has_value())
         {

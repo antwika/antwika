@@ -97,7 +97,7 @@ TEST_F(GameTest, Game_StandsAnEyeTheViewIsTurnedBy)
 {
     const auto &constGame = game;
 
-    EXPECT_TRUE(constGame.world().alive(game.eye()));
+    EXPECT_TRUE(constGame.world().isAlive(game.eye()));
     EXPECT_EQ(game.world().get<Orientation>(game.eye()).yaw, 0.0F);
 }
 
@@ -105,7 +105,7 @@ TEST_F(GameTest, SetPlayer_NamesWhoTheGameIsPlayedAs)
 {
     stand();
 
-    EXPECT_TRUE(game.world().alive(game.player()));
+    EXPECT_TRUE(game.world().isAlive(game.player()));
     EXPECT_NE(game.player(), game.eye());
 }
 
@@ -290,7 +290,7 @@ TEST_F(GameTest, SetWorldFrozen_HoldsWhatTheWorldDoesOfItsOwnAccord)
     game.setSpeaking(std::optional<std::uint32_t>{0});
     game.run(1);
 
-    EXPECT_TRUE(game.world().alive(game.player()));
+    EXPECT_TRUE(game.world().isAlive(game.player()));
 }
 
 TEST_F(GameTest, ForgetPatrols_LeavesTheWorldStandingAsItWas)
@@ -299,7 +299,7 @@ TEST_F(GameTest, ForgetPatrols_LeavesTheWorldStandingAsItWas)
     game.forgetPatrols();
     game.run(1);
 
-    EXPECT_TRUE(game.world().alive(game.player()));
+    EXPECT_TRUE(game.world().isAlive(game.player()));
 }
 
 TEST_F(GameTest, Progress_SaysWhichMapAndWhereThePlayerStands)

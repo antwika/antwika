@@ -4,19 +4,19 @@ namespace antwika::app
 {
 
     TickDebt::TickDebt(const time::IClock &clock) noexcept
-        : clock(&clock), lastFrameAt(clock.now())
+        : clock(&clock), lastFrameAt(clock.currentTime())
     {
     }
 
     void TickDebt::start()
     {
-        lastFrameAt = clock->now();
+        lastFrameAt = clock->currentTime();
         owedTime = std::chrono::nanoseconds{};
     }
 
     std::chrono::nanoseconds TickDebt::advance()
     {
-        const auto startedAt = clock->now();
+        const auto startedAt = clock->currentTime();
         const auto since =
             std::chrono::duration_cast<std::chrono::nanoseconds>(
                 startedAt - lastFrameAt);

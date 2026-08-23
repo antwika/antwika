@@ -35,7 +35,8 @@ namespace antwika::app::fakes
             steps.push_back(PacingStep::Drawn);
         }
 
-        [[nodiscard]] const std::vector<PacingStep> &taken() const noexcept
+        [[nodiscard]] const std::vector<PacingStep> &recordedSteps()
+            const noexcept
         {
             return steps;
         }

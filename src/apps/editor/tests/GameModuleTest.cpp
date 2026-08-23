@@ -45,7 +45,7 @@ TEST_F(GameModuleTest, GameModule_MakesAGameToBeReachedThrough)
     World world(logger);
     GameModule module(logger, world, solidVoxels, patrolPositions);
 
-    EXPECT_TRUE(module->world().alive(module->eye()));
+    EXPECT_TRUE(module->world().isAlive(module->eye()));
 }
 
 TEST_F(GameModuleTest, GameModule_IsReadThroughWhereItIsHeldAsConst)
@@ -88,7 +88,7 @@ TEST_F(GameModuleTest, Reload_LeavesWhatWasPlayedStandingInTheWorld)
 
     ASSERT_TRUE(module.reload());
 
-    EXPECT_TRUE(world.alive(entity));
+    EXPECT_TRUE(world.isAlive(entity));
     ASSERT_TRUE(world.has<Health>(entity));
     EXPECT_EQ(world.get<Health>(entity).food, 7);
     EXPECT_TRUE(world.has<Inventory>(entity));
@@ -103,6 +103,6 @@ TEST_F(GameModuleTest, Reload_TakesUpTheEyeThatAlreadyStands)
     ASSERT_TRUE(module.reload());
 
     EXPECT_EQ(module->eye(), eye);
-    EXPECT_TRUE(world.alive(eye));
+    EXPECT_TRUE(world.isAlive(eye));
 }
 #endif

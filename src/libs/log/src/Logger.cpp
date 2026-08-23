@@ -24,7 +24,7 @@ namespace antwika::log
                 return;
             }
 
-            const auto nowTime = clock.now();
+            const auto nowTime = clock.currentTime();
 
             auto formattedLine = formatter.format(nowTime, level, message);
             appender.append(formattedLine);
