@@ -111,16 +111,16 @@ namespace antwika::editor
         }
 
         for (std::size_t tickCount = 0;
-             tickDebt >= app::kTickPeriod && tickCount < app::kMaxCatchUpTicks;
+             tickDebt.owesTick() && tickCount < app::kMaxCatchUpTicks;
              ++tickCount)
         {
-            tickDebt -= app::kTickPeriod;
+            tickDebt.payTick();
             simulate();
         }
 
-        if (tickDebt >= app::kTickPeriod)
+        if (tickDebt.owesTick())
         {
-            tickDebt = std::chrono::nanoseconds{};
+            tickDebt.forgive();
         }
 
         const auto model = worldRotation();

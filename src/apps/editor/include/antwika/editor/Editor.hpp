@@ -13,6 +13,7 @@
 #include <vector>
 
 #include <antwika/app/FramePacing.hpp>
+#include <antwika/app/TickDebt.hpp>
 #include <antwika/camera/FlyCamera.hpp>
 #include <antwika/character/Character.hpp>
 #include <antwika/component/AnimationState.hpp>
@@ -273,10 +274,8 @@ namespace antwika::editor
 
         FrameMeters meters;
 
-        std::chrono::nanoseconds tickDebt{};
         time::SystemClock clockSource;
-        std::chrono::time_point<std::chrono::system_clock>
-            lastFrameAt;
+        app::TickDebt tickDebt{clockSource};
 
         [[nodiscard]] bool pollWindow();
         void pollInputs();

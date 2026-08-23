@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <antwika/app/FramePacing.hpp>
+#include <antwika/app/TickDebt.hpp>
 #include <antwika/camera/FlyCamera.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/gfx/IGfxBackend.hpp>
@@ -88,9 +89,8 @@ namespace antwika::game
         input::ActionMap actions = defaultActions();
 
         time::Tick tick = 0;
-        std::chrono::nanoseconds tickDebt{};
         time::SystemClock clockSource;
-        std::chrono::time_point<std::chrono::system_clock> lastFrameAt;
+        app::TickDebt tickDebt{clockSource};
         float viewHeight = 1.0F;
         bool running = true;
     };
