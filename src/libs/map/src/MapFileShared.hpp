@@ -357,7 +357,7 @@ namespace antwika::map::mapfile
     [[nodiscard]] inline Enum enumFromName(
         const enums::NameTable<Enum> &names, const std::string &text)
     {
-        const auto namedValue = names.getFrom(text);
+        const auto namedValue = names.getEnumFrom(text);
 
         if (!namedValue.has_value())
         {

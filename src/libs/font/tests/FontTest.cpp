@@ -208,7 +208,7 @@ TEST(FontTest, GlyphMetrics_RefuseAPixelHeightOfZero)
 TEST(FontTest, Rasterise_DrawsTheGlyphIntoACompleteMask)
 {
     const Font font{createFont()};
-    const Glyph glyph = font.getRasterise(U'A', kHeight);
+    const Glyph glyph = font.getRasterisedGlyph(U'A', kHeight);
 
     EXPECT_EQ(
         glyph.metrics,
@@ -222,7 +222,7 @@ TEST(FontTest, Rasterise_DrawsTheGlyphIntoACompleteMask)
 TEST(FontTest, Rasterise_OfASpaceIsEmptyAndStillMovesThePen)
 {
     const Font font{createFont()};
-    const Glyph glyph = font.getRasterise(U' ', kHeight);
+    const Glyph glyph = font.getRasterisedGlyph(U' ', kHeight);
 
     EXPECT_EQ(glyph.metrics.advance, 8);
     EXPECT_EQ(glyph.coverage, (antwika::font::Coverage{}));
@@ -232,13 +232,13 @@ TEST(FontTest, Rasterise_OfAnUnmappedCodepointFallsBackToNotdef)
 {
     const Font font{createFont()};
 
-    EXPECT_NO_THROW((void)font.getRasterise(U'Z', kHeight));
-    EXPECT_EQ(font.getRasterise(U'Z', kHeight).metrics.advance, 10);
+    EXPECT_NO_THROW((void)font.getRasterisedGlyph(U'Z', kHeight));
+    EXPECT_EQ(font.getRasterisedGlyph(U'Z', kHeight).metrics.advance, 10);
 }
 
 TEST(FontTest, Rasterise_RefusesAPixelHeightOfZero)
 {
     const Font font{createFont()};
 
-    EXPECT_THROW((void)font.getRasterise(U'A', 0), FontError);
+    EXPECT_THROW((void)font.getRasterisedGlyph(U'A', 0), FontError);
 }

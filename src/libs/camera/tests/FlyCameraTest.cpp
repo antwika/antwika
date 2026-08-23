@@ -17,13 +17,13 @@ using antwika::camera::cameraOf;
 using antwika::camera::getForwardOnGround;
 using antwika::camera::kMaxPitch;
 using antwika::camera::getForward;
-using antwika::camera::getPanned;
+using antwika::camera::getPannedTransform;
 using antwika::camera::kPanStep;
 using antwika::camera::getCenteredOn;
 using antwika::camera::getDefaultTransform;
 using antwika::gfx::Size;
 using antwika::camera::getResetToIsometric;
-using antwika::camera::getRotated;
+using antwika::camera::getRotatedTransform;
 using antwika::camera::getMovedOnGround;
 using antwika::gfx::Vec3;
 
@@ -78,7 +78,7 @@ TEST(FlyCameraTest, ForwardOnGround_StaysLevelHoweverFarTheCameraTips)
 TEST(FlyCameraTest, Rotated_LeavesTheCameraStandingWhereItWas)
 {
     const CameraTransform transform{.position = Vec3{3.0F, 4.0F, 5.0F}};
-    const auto rotatedTransform = getRotated(transform, 1.2F, -0.4F);
+    const auto rotatedTransform = getRotatedTransform(transform, 1.2F, -0.4F);
 
     EXPECT_EQ(rotatedTransform.position, transform.position);
     EXPECT_NEAR(rotatedTransform.yaw, 1.2F, kTolerance);
@@ -88,11 +88,11 @@ TEST(FlyCameraTest, Rotated_LeavesTheCameraStandingWhereItWas)
 TEST(FlyCameraTest, Rotated_StopsShortOfStraightUpAndStraightDown)
 {
     EXPECT_NEAR(
-        getRotated(CameraTransform{}, 0.0F, 100.0F).pitch,
+        getRotatedTransform(CameraTransform{}, 0.0F, 100.0F).pitch,
         kMaxPitch,
         kTolerance);
     EXPECT_NEAR(
-        getRotated(CameraTransform{}, 0.0F, -100.0F).pitch,
+        getRotatedTransform(CameraTransform{}, 0.0F, -100.0F).pitch,
         -kMaxPitch,
         kTolerance);
 }
@@ -176,7 +176,7 @@ TEST(FlyCameraTest, DefaultTransform_StandsBackAndLooksDownAtTheOrigin)
 TEST(FlyCameraTest, Panned_MovesTheCameraWithoutTurningIt)
 {
     const auto was = getDefaultTransform();
-    const auto pannedTransform = getPanned(was, 3.0F, 2.0F, kPanStep);
+    const auto pannedTransform = getPannedTransform(was, 3.0F, 2.0F, kPanStep);
 
     EXPECT_FLOAT_EQ(pannedTransform.yaw, was.yaw);
     EXPECT_FLOAT_EQ(pannedTransform.pitch, was.pitch);
@@ -186,8 +186,8 @@ TEST(FlyCameraTest, Panned_MovesTheCameraWithoutTurningIt)
 TEST(FlyCameraTest, Panned_ComesBackWhereItBeganGoingBothWays)
 {
     const auto was = getDefaultTransform();
-    const auto pannedTransform = getPanned(was, 4.0F, -2.0F, kPanStep);
-    const auto pannedBack = getPanned(pannedTransform, -4.0F, 2.0F, kPanStep);
+    const auto pannedTransform = getPannedTransform(was, 4.0F, -2.0F, kPanStep);
+    const auto pannedBack = getPannedTransform(pannedTransform, -4.0F, 2.0F, kPanStep);
 
     EXPECT_NEAR(glm::length(pannedBack.position - was.position), 0.0F, 1e-5F);
 }
@@ -195,7 +195,7 @@ TEST(FlyCameraTest, Panned_ComesBackWhereItBeganGoingBothWays)
 TEST(FlyCameraTest, Panned_SlidesAcrossTheViewAndNotAlongIt)
 {
     const auto was = getDefaultTransform();
-    const auto pannedTransform = getPanned(was, 5.0F, 0.0F, kPanStep);
+    const auto pannedTransform = getPannedTransform(was, 5.0F, 0.0F, kPanStep);
     const auto forwardDirection = getForward(was);
 
     EXPECT_NEAR(
@@ -208,12 +208,12 @@ TEST(FlyCameraTest, Panned_StaysWhereItIsAskedForNothing)
 {
     const auto was = getDefaultTransform();
 
-    EXPECT_EQ(getPanned(was, 0.0F, 0.0F, kPanStep), was);
+    EXPECT_EQ(getPannedTransform(was, 0.0F, 0.0F, kPanStep), was);
 }
 
 TEST(FlyCameraTest, Squared_LooksForwardAndPitchedDownAgain)
 {
-    const auto rotatedTransform = getRotated(getDefaultTransform(), 1.2F, 0.4F);
+    const auto rotatedTransform = getRotatedTransform(getDefaultTransform(), 1.2F, 0.4F);
     const auto squaredTransform = getResetToIsometric(rotatedTransform);
 
     EXPECT_FLOAT_EQ(squaredTransform.yaw, 0.0F);
@@ -222,8 +222,8 @@ TEST(FlyCameraTest, Squared_LooksForwardAndPitchedDownAgain)
 
 TEST(FlyCameraTest, Squared_LeavesTheCameraWhereItStands)
 {
-    const auto movedTransform = getPanned(
-        getRotated(getDefaultTransform(), 1.0F, 0.2F), 9.0F, 4.0F, kPanStep);
+    const auto movedTransform = getPannedTransform(
+        getRotatedTransform(getDefaultTransform(), 1.0F, 0.2F), 9.0F, 4.0F, kPanStep);
 
     EXPECT_EQ(getResetToIsometric(movedTransform).position,
         movedTransform.position);

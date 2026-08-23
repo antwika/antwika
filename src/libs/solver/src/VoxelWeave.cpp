@@ -262,7 +262,7 @@ namespace antwika::solver
             std::move(constraints),
             {},
             wfc::SolverLimits{.maxSteps = kMaxSteps});
-        const auto solution = solver.getSolve();
+        const auto solution = solver.getSolveResult();
 
         if (solution.outcome != wfc::SolveOutcome::Solved)
         {

@@ -26,12 +26,12 @@ TEST(NameTableTest, Name_WrapsAnEnumeratorPastTheBound)
 
 TEST(NameTableTest, From_AnswersTheEnumeratorTheNameSitsAt)
 {
-    EXPECT_EQ(kColors.getFrom("green"), Color::Green);
+    EXPECT_EQ(kColors.getEnumFrom("green"), Color::Green);
 }
 
 TEST(NameTableTest, From_AnswersNothingForANameTheTableLacks)
 {
-    EXPECT_FALSE(kColors.getFrom("puce").has_value());
+    EXPECT_FALSE(kColors.getEnumFrom("puce").has_value());
 }
 
 TEST(NameTableTest, IsComplete_HoldsWhenEveryEnumeratorIsNamed)

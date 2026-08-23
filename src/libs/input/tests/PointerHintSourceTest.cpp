@@ -39,10 +39,10 @@ namespace
 
     [[nodiscard]] TickEvent getEntryAt(antwika::time::Tick tick, InputEvent edgeEvent)
     {
-        return TickEvent{.tick = tick, .event = kCodec.getEncode(edgeEvent)};
+        return TickEvent{.tick = tick, .event = kCodec.getEncodedEvent(edgeEvent)};
     }
 
-    [[nodiscard]] InputEvent getMoved(std::int32_t x, std::int32_t y)
+    [[nodiscard]] InputEvent getPointerMoveEvent(std::int32_t x, std::int32_t y)
     {
         return PointerMoved{.position = {.x = x, .y = y}};
     }
@@ -61,23 +61,23 @@ namespace
 TEST(PointerHintSourceTest, EventsFor_ReturnsTheInnerEventsUntouched)
 {
     ReplaySource innerSource(
-        {getEntryAt(0, getMoved(1, 1)),
+        {getEntryAt(0, getPointerMoveEvent(1, 1)),
          TickEvent{.tick = 0, .event = Event{.name = "game.score_increment"}},
-         getEntryAt(0, getMoved(2, 2))});
+         getEntryAt(0, getPointerMoveEvent(2, 2))});
     PointerHintChannel channel;
     PointerHintSource source(innerSource, kCodec, channel);
 
     EXPECT_EQ(
         source.eventsFor(0),
         (std::vector<Event>{
-            kCodec.getEncode(getMoved(1, 1)),
+            kCodec.getEncodedEvent(getPointerMoveEvent(1, 1)),
             Event{.name = "game.score_increment"},
-            kCodec.getEncode(getMoved(2, 2))}));
+            kCodec.getEncodedEvent(getPointerMoveEvent(2, 2))}));
 }
 
 TEST(PointerHintSourceTest, EventsFor_PublishesThePositionAMovementCarried)
 {
-    ReplaySource innerSource({getEntryAt(0, getMoved(4, 5))});
+    ReplaySource innerSource({getEntryAt(0, getPointerMoveEvent(4, 5))});
     PointerHintChannel channel;
     PointerHintSource source(innerSource, kCodec, channel);
 
@@ -117,9 +117,9 @@ TEST(PointerHintSourceTest, EventsFor_PublishesThePositionAReleaseCarried)
 TEST(PointerHintSourceTest, EventsFor_PublishesTheLastPositionOfTheTick)
 {
     ReplaySource innerSource(
-        {getEntryAt(0, getMoved(1, 1)),
-         getEntryAt(0, getMoved(2, 2)),
-         getEntryAt(0, getMoved(3, 3))});
+        {getEntryAt(0, getPointerMoveEvent(1, 1)),
+         getEntryAt(0, getPointerMoveEvent(2, 2)),
+         getEntryAt(0, getPointerMoveEvent(3, 3))});
     PointerHintChannel channel;
     PointerHintSource source(innerSource, kCodec, channel);
 
@@ -144,7 +144,7 @@ TEST(PointerHintSourceTest, EventsFor_PublishesNothingBeforeAPositionArrives)
 TEST(PointerHintSourceTest, EventsFor_LeavesTheHintAloneOnAPositionlessTick)
 {
     ReplaySource innerSource(
-        {getEntryAt(0, getMoved(4, 5)), getEntryAt(1, PointerScrolled{.vertical = 1})});
+        {getEntryAt(0, getPointerMoveEvent(4, 5)), getEntryAt(1, PointerScrolled{.vertical = 1})});
     PointerHintChannel channel;
     PointerHintSource source(innerSource, kCodec, channel);
 

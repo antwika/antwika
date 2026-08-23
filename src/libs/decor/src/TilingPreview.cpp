@@ -145,7 +145,7 @@ namespace antwika::decor
                 std::move(constraints),
                 {},
                 wfc::SolverLimits{.maxSteps = kMaxSolveSteps})
-                .getSolve();
+                .getSolveResult();
 
         if (solution.outcome != wfc::SolveOutcome::Solved)
         {

@@ -35,19 +35,19 @@ namespace
 {
     const InputEventCodec kCodec;
 
-    [[nodiscard]] Event getMove(std::int32_t x, std::int32_t y)
+    [[nodiscard]] Event getEncodedMoveEvent(std::int32_t x, std::int32_t y)
     {
-        return kCodec.getEncode(PointerMoved{.position = {.x = x, .y = y}});
+        return kCodec.getEncodedEvent(PointerMoved{.position = {.x = x, .y = y}});
     }
 
-    [[nodiscard]] Event getPress(MouseButton button)
+    [[nodiscard]] Event getEncodedPressEvent(MouseButton button)
     {
-        return kCodec.getEncode(PointerButtonPressed{.button = button});
+        return kCodec.getEncodedEvent(PointerButtonPressed{.button = button});
     }
 
-    [[nodiscard]] Event getRelease(MouseButton button)
+    [[nodiscard]] Event getEncodedReleaseEvent(MouseButton button)
     {
-        return kCodec.getEncode(PointerButtonReleased{.button = button});
+        return kCodec.getEncodedEvent(PointerButtonReleased{.button = button});
     }
 
     [[nodiscard]] TickEvent getEntryAt(Tick tick, Event event)
@@ -69,7 +69,7 @@ namespace
 
 TEST(IdleMotionFilterTest, EventsFor_HoldsBackMovementWithNoButtonHeld)
 {
-    ReplaySource innerSource({getEntryAt(0, getMove(1, 1))});
+    ReplaySource innerSource({getEntryAt(0, getEncodedMoveEvent(1, 1))});
     IdleMotionFilter sourceFilter(innerSource, kCodec);
 
     EXPECT_TRUE(sourceFilter.eventsFor(0).empty());
@@ -78,9 +78,9 @@ TEST(IdleMotionFilterTest, EventsFor_HoldsBackMovementWithNoButtonHeld)
 TEST(IdleMotionFilterTest, EventsFor_PassesMovementWhileAButtonIsHeld)
 {
     ReplaySource innerSource(
-        {getEntryAt(0, getPress(MouseButton::Middle)),
-         getEntryAt(0, getMove(1, 1)),
-         getEntryAt(0, getMove(2, 2))});
+        {getEntryAt(0, getEncodedPressEvent(MouseButton::Middle)),
+         getEntryAt(0, getEncodedMoveEvent(1, 1)),
+         getEntryAt(0, getEncodedMoveEvent(2, 2))});
     IdleMotionFilter sourceFilter(innerSource, kCodec);
 
     EXPECT_EQ(
@@ -94,38 +94,38 @@ TEST(IdleMotionFilterTest, EventsFor_PassesMovementWhileAButtonIsHeld)
 TEST(IdleMotionFilterTest, EventsFor_ReleasesOnlyTheLatestHeldBackMovement)
 {
     ReplaySource innerSource(
-        {getEntryAt(0, getMove(1, 1)),
-         getEntryAt(0, getMove(2, 2)),
-         getEntryAt(0, getMove(3, 3)),
-         getEntryAt(0, getPress(MouseButton::Left))});
+        {getEntryAt(0, getEncodedMoveEvent(1, 1)),
+         getEntryAt(0, getEncodedMoveEvent(2, 2)),
+         getEntryAt(0, getEncodedMoveEvent(3, 3)),
+         getEntryAt(0, getEncodedPressEvent(MouseButton::Left))});
     IdleMotionFilter sourceFilter(innerSource, kCodec);
 
     const auto result = sourceFilter.eventsFor(0);
 
     ASSERT_EQ(result.size(), 2U);
-    EXPECT_EQ(result[0], getMove(3, 3));
+    EXPECT_EQ(result[0], getEncodedMoveEvent(3, 3));
     EXPECT_EQ(result[1].name, events::kPointerDown);
 }
 
 TEST(IdleMotionFilterTest, EventsFor_ReleasesTheMovementBeforeAScroll)
 {
     ReplaySource innerSource(
-        {getEntryAt(0, getMove(7, 8)),
-         getEntryAt(0, kCodec.getEncode(PointerScrolled{.vertical = 1}))});
+        {getEntryAt(0, getEncodedMoveEvent(7, 8)),
+         getEntryAt(0, kCodec.getEncodedEvent(PointerScrolled{.vertical = 1}))});
     IdleMotionFilter sourceFilter(innerSource, kCodec);
 
     const auto result = sourceFilter.eventsFor(0);
 
     ASSERT_EQ(result.size(), 2U);
-    EXPECT_EQ(result[0], getMove(7, 8));
+    EXPECT_EQ(result[0], getEncodedMoveEvent(7, 8));
     EXPECT_EQ(result[1].name, events::kPointerScroll);
 }
 
 TEST(IdleMotionFilterTest, EventsFor_ReleasesTheMovementBeforeAKey)
 {
     ReplaySource innerSource(
-        {getEntryAt(0, getMove(7, 8)),
-         getEntryAt(0, kCodec.getEncode(KeyPressed{.key = Key::Escape}))});
+        {getEntryAt(0, getEncodedMoveEvent(7, 8)),
+         getEntryAt(0, kCodec.getEncodedEvent(KeyPressed{.key = Key::Escape}))});
     IdleMotionFilter sourceFilter(innerSource, kCodec);
 
     EXPECT_EQ(
@@ -136,7 +136,7 @@ TEST(IdleMotionFilterTest, EventsFor_ReleasesTheMovementBeforeAKey)
 TEST(IdleMotionFilterTest, EventsFor_ReleasesTheMovementBeforeAnyOtherEvent)
 {
     ReplaySource innerSource(
-        {getEntryAt(0, getMove(7, 8)), getEntryAt(0, Event{.name = "engine.stop"})});
+        {getEntryAt(0, getEncodedMoveEvent(7, 8)), getEntryAt(0, Event{.name = "engine.stop"})});
     IdleMotionFilter sourceFilter(innerSource, kCodec);
 
     EXPECT_EQ(
@@ -147,9 +147,9 @@ TEST(IdleMotionFilterTest, EventsFor_ReleasesTheMovementBeforeAnyOtherEvent)
 TEST(IdleMotionFilterTest, EventsFor_ReleasesAHeldBackMovementOnALaterTick)
 {
     ReplaySource innerSource(
-        {getEntryAt(0, getMove(1, 1)),
-         getEntryAt(1, getMove(2, 2)),
-         getEntryAt(2, getPress(MouseButton::Left))});
+        {getEntryAt(0, getEncodedMoveEvent(1, 1)),
+         getEntryAt(1, getEncodedMoveEvent(2, 2)),
+         getEntryAt(2, getEncodedPressEvent(MouseButton::Left))});
     IdleMotionFilter sourceFilter(innerSource, kCodec);
 
     EXPECT_TRUE(sourceFilter.eventsFor(0).empty());
@@ -158,16 +158,16 @@ TEST(IdleMotionFilterTest, EventsFor_ReleasesAHeldBackMovementOnALaterTick)
     const auto result = sourceFilter.eventsFor(2);
 
     ASSERT_EQ(result.size(), 2U);
-    EXPECT_EQ(result[0], getMove(2, 2));
+    EXPECT_EQ(result[0], getEncodedMoveEvent(2, 2));
     EXPECT_EQ(result[1].name, events::kPointerDown);
 }
 
 TEST(IdleMotionFilterTest, EventsFor_ReleasesAHeldBackMovementOnlyOnce)
 {
     ReplaySource innerSource(
-        {getEntryAt(0, getMove(1, 1)),
-         getEntryAt(0, getPress(MouseButton::Left)),
-         getEntryAt(0, getRelease(MouseButton::Left))});
+        {getEntryAt(0, getEncodedMoveEvent(1, 1)),
+         getEntryAt(0, getEncodedPressEvent(MouseButton::Left)),
+         getEntryAt(0, getEncodedReleaseEvent(MouseButton::Left))});
     IdleMotionFilter sourceFilter(innerSource, kCodec);
 
     EXPECT_EQ(
@@ -181,10 +181,10 @@ TEST(IdleMotionFilterTest, EventsFor_ReleasesAHeldBackMovementOnlyOnce)
 TEST(IdleMotionFilterTest, EventsFor_HoldsBackMovementAgainAfterARelease)
 {
     ReplaySource innerSource(
-        {getEntryAt(0, getPress(MouseButton::Left)),
-         getEntryAt(0, getMove(1, 1)),
-         getEntryAt(0, getRelease(MouseButton::Left)),
-         getEntryAt(0, getMove(2, 2))});
+        {getEntryAt(0, getEncodedPressEvent(MouseButton::Left)),
+         getEntryAt(0, getEncodedMoveEvent(1, 1)),
+         getEntryAt(0, getEncodedReleaseEvent(MouseButton::Left)),
+         getEntryAt(0, getEncodedMoveEvent(2, 2))});
     IdleMotionFilter sourceFilter(innerSource, kCodec);
 
     EXPECT_EQ(
@@ -206,12 +206,12 @@ TEST(IdleMotionFilterTest, EventsFor_PassesAnEmptyTickThrough)
 TEST(IdleMotionFilterTest, EventsFor_LeavesAnAlreadyGatedStreamAlone)
 {
     const std::vector<TickEvent> streamEvents{
-        getEntryAt(0, getMove(1, 1)),
-        getEntryAt(0, getPress(MouseButton::Middle)),
-        getEntryAt(0, getMove(2, 2)),
-        getEntryAt(1, getRelease(MouseButton::Middle)),
-        getEntryAt(1, getMove(3, 3)),
-        getEntryAt(2, kCodec.getEncode(PointerScrolled{.vertical = -1}))};
+        getEntryAt(0, getEncodedMoveEvent(1, 1)),
+        getEntryAt(0, getEncodedPressEvent(MouseButton::Middle)),
+        getEntryAt(0, getEncodedMoveEvent(2, 2)),
+        getEntryAt(1, getEncodedReleaseEvent(MouseButton::Middle)),
+        getEntryAt(1, getEncodedMoveEvent(3, 3)),
+        getEntryAt(2, kCodec.getEncodedEvent(PointerScrolled{.vertical = -1}))};
 
     ReplaySource innerSource(streamEvents);
     IdleMotionFilter onceFilter(innerSource, kCodec);

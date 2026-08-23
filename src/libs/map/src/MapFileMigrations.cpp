@@ -134,65 +134,65 @@ namespace antwika::map
         void earlyMapMigrations(
             schema::MigrationList &migrations)
         {
-            migrations.push_back(schema::getStep(
+            migrations.push_back(schema::getMigration(
                 1,
                 2,
                 "antwika::map: a map kept no rules before",
                 mapV1ToV2));
-            migrations.push_back(schema::getStep(
+            migrations.push_back(schema::getMigration(
                 2,
                 3,
                 "antwika::map: a map carried no tileset "
                 "before",
                 mapV2ToV3));
-            migrations.push_back(schema::getStep(
+            migrations.push_back(schema::getMigration(
                 18,
                 19,
                 "antwika::map: a palette may now be added "
                 "to and taken from",
                 mapV18ToV19));
-            migrations.push_back(schema::getStep(
+            migrations.push_back(schema::getMigration(
                 17,
                 18,
                 "antwika::map: a map is now drawn in layers",
                 mapV17ToV18));
-            migrations.push_back(schema::getStep(
+            migrations.push_back(schema::getMigration(
                 16,
                 17,
                 "antwika::map: lamps may now be set down "
                 "about the pile",
                 mapV16ToV17));
-            migrations.push_back(schema::getStep(
+            migrations.push_back(schema::getMigration(
                 15,
                 16,
                 "antwika::map: a ramp may now be told which "
                 "way it climbs",
                 mapV15ToV16));
-            migrations.push_back(schema::getStep(
+            migrations.push_back(schema::getMigration(
                 14,
                 15,
                 "antwika::map: the camera now keeps how many "
                 "pixels a voxel is drawn across, whole",
                 mapV14ToV15));
-            migrations.push_back(schema::getStep(
+            migrations.push_back(schema::getMigration(
                 13,
                 14,
                 "antwika::map: a tile now says which level "
                 "of a flight of steps it was drawn for",
                 mapV13ToV14));
-            migrations.push_back(schema::getStep(
+            migrations.push_back(schema::getMigration(
                 12,
                 13,
                 "antwika::map: a tile now says which way "
                 "the stair it was drawn for climbs",
                 mapV12ToV13));
-            migrations.push_back(schema::getStep(
+            migrations.push_back(schema::getMigration(
                 11,
                 12,
                 "antwika::map: a map now says which tiles "
                 "belong to which kind of voxel",
                 mapV11ToV12));
-            migrations.push_back(schema::getStep(
+            migrations.push_back(schema::getMigration(
                 21,
                 22,
                 "antwika::map: a map now keeps its decor, "

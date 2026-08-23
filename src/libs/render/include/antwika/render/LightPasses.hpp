@@ -34,7 +34,7 @@ namespace antwika::render
             voxel::Voxels behindVoxels,
             voxel::VoxelPosition aboutPosition);
 
-        [[nodiscard]] const voxel::Voxels &getHidden()
+        [[nodiscard]] const voxel::Voxels &getHiddenVoxels()
             const noexcept;
 
         void bakeLamps(

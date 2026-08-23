@@ -7,7 +7,7 @@
 namespace antwika::render
 {
 
-    gfx::Bitmap getCheckered(
+    gfx::Bitmap getCheckerboardBitmap(
         const antwika::gfx::Size size, const std::uint32_t check)
     {
         constexpr antwika::gfx::Color kDimColor{

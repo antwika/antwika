@@ -59,7 +59,7 @@ TEST(OneDimensionalWfcTest, Solve_LeavesOnlyCompatibleNeighbours)
     const auto constraintRefs = referencesTo(constraints);
 
     Solver solver(waveDomains, constraintRefs);
-    const auto result = solver.getSolve();
+    const auto result = solver.getSolveResult();
 
     ASSERT_EQ(result.outcome, SolveOutcome::Solved);
     ASSERT_EQ(result.assignment.size(), kLength);
@@ -93,6 +93,6 @@ TEST(OneDimensionalWfcTest, Solve_RepeatsTheRecordedAssignment)
     Solver solverA(waveDomains, constraintRefs);
     Solver solverB(waveDomains, constraintRefs);
 
-    EXPECT_EQ(solverA.getSolve().assignment, getAlternating(kLength));
-    EXPECT_EQ(solverB.getSolve().assignment, getAlternating(kLength));
+    EXPECT_EQ(solverA.getSolveResult().assignment, getAlternating(kLength));
+    EXPECT_EQ(solverB.getSolveResult().assignment, getAlternating(kLength));
 }

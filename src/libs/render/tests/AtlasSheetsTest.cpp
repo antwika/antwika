@@ -96,8 +96,8 @@ TEST(AtlasSheetsTest, Open_CarriesBothSheetsAndTheirBackingsToPictures)
 
     EXPECT_NE(sheets.getTexture(Atlas::Wall), nullptr);
     EXPECT_NE(sheets.getTexture(Atlas::Floor), nullptr);
-    EXPECT_NE(sheets.getKeyed(Atlas::Wall), nullptr);
-    EXPECT_NE(sheets.getKeyed(Atlas::Floor), nullptr);
+    EXPECT_NE(sheets.getKeyedTexture(Atlas::Wall), nullptr);
+    EXPECT_NE(sheets.getKeyedTexture(Atlas::Floor), nullptr);
     EXPECT_NE(sheets.getChecker(Atlas::Wall), nullptr);
     EXPECT_NE(sheets.getChecker(Atlas::Floor), nullptr);
     EXPECT_FALSE(sheets.isTouched());

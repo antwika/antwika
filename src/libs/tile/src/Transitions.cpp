@@ -64,7 +64,7 @@ namespace antwika::tile
             inheritedRules.allow(materialTile, voxel::getFacing(edge), slotTile);
 
             for (const auto neighbour :
-                 rules.getAllowed(materialTile, edge))
+                 rules.getAllowedTiles(materialTile, edge))
             {
                 inheritedRules.allow(slotTile, edge, neighbour);
                 inheritedRules.allow(neighbour, voxel::getFacing(edge), slotTile);

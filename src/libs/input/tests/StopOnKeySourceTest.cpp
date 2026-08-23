@@ -29,7 +29,7 @@ namespace
         const InputEventCodec codec;
         return TickEvent{
             .tick = 0,
-            .event = codec.getEncode(
+            .event = codec.getEncodedEvent(
                 KeyPressed{.key = key, .repeat = repeat})};
     }
 
@@ -89,7 +89,7 @@ TEST(StopOnKeySourceTest, EventsFor_IgnoresAReleaseOfTheChosenKey)
     ReplaySource innerSource(
         {TickEvent{
             .tick = 0,
-            .event = codec.getEncode(KeyReleased{.key = Key::Escape})}});
+            .event = codec.getEncodedEvent(KeyReleased{.key = Key::Escape})}});
     StopOnKeySource source(innerSource, codec, Key::Escape);
 
     const auto events = source.eventsFor(0);

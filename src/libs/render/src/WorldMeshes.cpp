@@ -134,7 +134,7 @@ namespace antwika::render
         return visibleFaces;
     }
 
-    const std::vector<tilemap::Tile> &WorldMeshes::getSolved()
+    const std::vector<tilemap::Tile> &WorldMeshes::getSolvedTiles()
         const noexcept
     {
         return solvedTiles;

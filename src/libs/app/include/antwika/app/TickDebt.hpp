@@ -25,7 +25,7 @@ namespace antwika::app
 
         void forgive() noexcept;
 
-        [[nodiscard]] std::chrono::nanoseconds getOwed() const noexcept;
+        [[nodiscard]] std::chrono::nanoseconds getOwedTime() const noexcept;
 
         [[nodiscard]] std::chrono::time_point<std::chrono::system_clock>
         startedAt() const noexcept;

@@ -137,7 +137,7 @@ namespace antwika::tile
         {
             for (const auto edge : tilemap::kEveryTileEdge)
             {
-                const auto allowedTiles = rules.getAllowed(tile, edge);
+                const auto allowedTiles = rules.getAllowedTiles(tile, edge);
 
                 for (const auto other : tiles)
                 {

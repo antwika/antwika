@@ -94,7 +94,7 @@ TEST(StairsTest, LayWays_LaysNothingWhereNoneWasAsked)
 
     EXPECT_TRUE(laidWays.climbed);
     EXPECT_TRUE(laidWays.landings.empty());
-    EXPECT_EQ(board.getMark(), 0U);
+    EXPECT_EQ(board.getMarkStep(), 0U);
 }
 
 TEST(StairsTest, LayWays_ClimbsFromTheStreetToTheHighestTerrace)
@@ -231,11 +231,11 @@ TEST(StairsTest, LayWays_PutsBackEveryCubeOfAWayItGivesUpOn)
         }
     }
 
-    const std::size_t mark = board.getMark();
+    const std::size_t mark = board.getMarkStep();
     SplitMix64Rng rng(9);
 
     ASSERT_FALSE(layWays(getCity(), kSmallShape, board, 1, rng).climbed);
-    EXPECT_EQ(board.getMark(), mark);
+    EXPECT_EQ(board.getMarkStep(), mark);
 }
 
 TEST(StairsTest, WalkSteps_GrowsWithEverySideOfTheChunk)
@@ -264,7 +264,7 @@ TEST(StairsTest, Board_PutsBackWhatItTook)
     const auto beforeWave = wave;
     Board board(wave);
 
-    const std::size_t mark = board.getMark();
+    const std::size_t mark = board.getMarkStep();
     board.hold(
         cellOf(kSmallShape, VoxelPosition{.x = 2, .y = 5, .z = 2}),
         getCity().getWearing(Role::Bear));
@@ -286,10 +286,10 @@ TEST(StairsTest, Settle_LeavesAWaveThatIsAlreadySettledAlone)
 
     ASSERT_TRUE(settle(getCity(), kSmallShape, board, every));
 
-    const std::size_t mark = board.getMark();
+    const std::size_t mark = board.getMarkStep();
 
     EXPECT_TRUE(settle(getCity(), kSmallShape, board, every));
-    EXPECT_EQ(board.getMark(), mark);
+    EXPECT_EQ(board.getMarkStep(), mark);
 }
 
 TEST(StairsTest, HighestTerrace_StopsAtTheFootWhereNoDistrictWantsGround)

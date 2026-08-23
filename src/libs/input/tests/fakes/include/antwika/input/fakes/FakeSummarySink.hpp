@@ -33,7 +33,7 @@ namespace antwika::input::fakes
                 return;
             }
 
-            const auto decodedEvent = codec.getDecode(event.event);
+            const auto decodedEvent = codec.getDecodedEvent(event.event);
             if (!decodedEvent.has_value())
             {
                 return;

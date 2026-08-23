@@ -153,7 +153,7 @@ TEST(ContextHoverTest, Build_PlacesEveryTargetWhereTheLayoutPutIt)
 
     for (const auto &target : frame.hoverTargets)
     {
-        EXPECT_EQ(frame.rects.getFind(target.widgetId), target.rect);
+        EXPECT_EQ(frame.rects.getWidgetRect(target.widgetId), target.rect);
     }
 }
 
@@ -272,7 +272,7 @@ TEST(ContextHoverTest, ApplyHover_DrawsTheSamePictureWithNoHoverPointer)
 TEST(ContextHoverTest, ApplyHover_LeavesEveryInteractionExactlyAsItWas)
 {
     const auto probe = getEverything(Pointer{});
-    const auto option = probe.rects.getFind(kLeftWidget);
+    const auto option = probe.rects.getWidgetRect(kLeftWidget);
 
     ASSERT_TRUE(option.has_value());
 

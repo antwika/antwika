@@ -28,7 +28,7 @@ namespace antwika::editor
         if (!sheetCheckerTexture)
         {
             sheetCheckerTexture = viewportRenderer.createTexture(
-                render::getCheckered(character::kCharacterCellSize, 4));
+                render::getCheckerboardBitmap(character::kCharacterCellSize, 4));
         }
     }
 

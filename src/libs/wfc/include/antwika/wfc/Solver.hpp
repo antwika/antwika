@@ -24,7 +24,7 @@ namespace antwika::wfc
             SolverLimits limits = {},
             std::vector<std::optional<std::size_t>> preferences = {});
 
-        [[nodiscard]] SolveResult getSolve() const;
+        [[nodiscard]] SolveResult getSolveResult() const;
 
     private:
         std::vector<Domain> initialWave;

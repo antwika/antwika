@@ -36,7 +36,7 @@ namespace antwika::font
         [[nodiscard]] GlyphMetrics getGlyphMetrics(
             char32_t codepoint, std::uint32_t pixelHeight) const;
 
-        [[nodiscard]] Glyph getRasterise(
+        [[nodiscard]] Glyph getRasterisedGlyph(
             char32_t codepoint, std::uint32_t pixelHeight) const;
 
     private:

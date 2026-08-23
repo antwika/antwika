@@ -126,7 +126,7 @@ namespace
         std::size_t count = 0;
         for (const auto &event : events)
         {
-            if (codec.getDecode(event.event).has_value())
+            if (codec.getDecodedEvent(event.event).has_value())
             {
                 ++count;
             }
@@ -237,7 +237,7 @@ TEST(InputDeterminismTest, Recording_KeepsInputAndDropsTicks)
     {
         EXPECT_NE(event.event.name, antwika::engine::events::kTick);
 
-        if (codec.getDecode(event.event).has_value())
+        if (codec.getDecodedEvent(event.event).has_value())
         {
             ++inputEvents;
         }

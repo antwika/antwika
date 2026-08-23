@@ -14,7 +14,7 @@ namespace antwika::input
 
     namespace
     {
-        [[nodiscard]] std::optional<InputEvent> getMapped(
+        [[nodiscard]] std::optional<InputEvent> getMappedEvent(
             const InputEvent &event, const IPointerMapping &mapping)
         {
             if (const auto *moved = std::get_if<PointerMoved>(&event))
@@ -62,21 +62,21 @@ namespace antwika::input
 
         for (auto &event : events)
         {
-            const auto decodedEvent = codec.getDecode(event);
+            const auto decodedEvent = codec.getDecodedEvent(event);
 
             if (!decodedEvent.has_value())
             {
                 continue;
             }
 
-            auto rewritten = getMapped(*decodedEvent, mapping);
+            auto rewritten = getMappedEvent(*decodedEvent, mapping);
 
             if (!rewritten.has_value())
             {
                 continue;
             }
 
-            event = codec.getEncode(*rewritten);
+            event = codec.getEncodedEvent(*rewritten);
         }
 
         return events;

@@ -130,7 +130,7 @@ TEST(TextAreaScrollTest, TextArea_APaneAsksForNoRoomOnItsDocumentsBehalf)
     uiContext.textArea(
         TextAreaSpec{.widgetId = kCodeWidget, .text = linesOf(40)});
 
-    const auto foundRect = uiContext.build().rects.getFind(kCodeWidget);
+    const auto foundRect = uiContext.build().rects.getWidgetRect(kCodeWidget);
 
     ASSERT_TRUE(foundRect.has_value());
     EXPECT_EQ(foundRect->size.height, kCanvasSize.height);

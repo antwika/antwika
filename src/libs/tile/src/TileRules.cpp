@@ -319,7 +319,7 @@ namespace antwika::tile
         return rules;
     } // GCOVR_EXCL_LINE
 
-    std::set<tilemap::Tile> TileRules::getAllowed(
+    std::set<tilemap::Tile> TileRules::getAllowedTiles(
         const tilemap::Tile tile, const tilemap::TileEdge edge) const
     {
         const auto foundEntry = allowedByEdge.find(Edge{tile, edge});

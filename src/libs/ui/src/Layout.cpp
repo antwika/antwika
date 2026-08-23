@@ -44,7 +44,7 @@ namespace antwika::ui::detail
             return value > amount ? value - amount : 0;
         }
 
-        std::uint32_t getDoubled(std::uint32_t value) noexcept
+        std::uint32_t getDoubledLength(std::uint32_t value) noexcept
         {
             return getClampToU32(std::uint64_t{value} * 2);
         }
@@ -140,7 +140,7 @@ namespace antwika::ui::detail
                     continue;
                 }
 
-                const auto padding = getDoubled(node.padding);
+                const auto padding = getDoubledLength(node.padding);
 
                 if (node.clips)
                 {
@@ -297,7 +297,7 @@ namespace antwika::ui::detail
             const auto wantedExtent = static_cast<std::uint32_t>(
                 std::uint64_t{content} * info.ratio / kSplitRatioScale);
 
-            if (getDoubled(info.minimum) >= content)
+            if (getDoubledLength(info.minimum) >= content)
             {
                 return content / 2;
             }
@@ -358,7 +358,7 @@ namespace antwika::ui::detail
 
             const auto &parent = tree.getNode(index);
             const auto axis = parent.axis;
-            const auto inset = getDoubled(parent.padding);
+            const auto inset = getDoubledLength(parent.padding);
             const auto pad = static_cast<std::int32_t>(parent.padding);
 
             const ContentBox box{

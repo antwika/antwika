@@ -166,61 +166,61 @@ namespace antwika::map
         void lateMapMigrations(
             schema::MigrationList &migrations)
         {
-            migrations.push_back(schema::getStep(
+            migrations.push_back(schema::getMigration(
                 10,
                 11,
                 "antwika::map: a voxel now says what it is "
                 "made of",
                 mapV10ToV11));
-            migrations.push_back(schema::getStep(
+            migrations.push_back(schema::getMigration(
                 9,
                 10,
                 "antwika::map: a map now says how the "
                 "editor was left standing",
                 mapV9ToV10));
-            migrations.push_back(schema::getStep(
+            migrations.push_back(schema::getMigration(
                 8,
                 9,
                 "antwika::map: a map now says how much the "
                 "camera showed",
                 mapV8ToV9));
-            migrations.push_back(schema::getStep(
+            migrations.push_back(schema::getMigration(
                 7,
                 8,
                 "antwika::map: a map now says where the "
                 "camera stood",
                 mapV7ToV8));
-            migrations.push_back(schema::getStep(
+            migrations.push_back(schema::getMigration(
                 6,
                 7,
                 "antwika::map: a tile may now ask what "
                 "stands beyond its corners",
                 mapV6ToV7));
-            migrations.push_back(schema::getStep(
+            migrations.push_back(schema::getMigration(
                 5,
                 6,
                 "antwika::map: an edge now says whether it "
                 "may lie at the rim",
                 mapV5ToV6));
-            migrations.push_back(schema::getStep(
+            migrations.push_back(schema::getMigration(
                 4,
                 5,
                 "antwika::map: an edge may now be shut "
                 "against everything",
                 mapV4ToV5));
-            migrations.push_back(schema::getStep(
+            migrations.push_back(schema::getMigration(
                 3,
                 4,
                 "antwika::map: a map carries a palette, the "
                 "pixels living in the atlas files",
                 mapV3ToV4));
-            migrations.push_back(schema::getStep(
+            migrations.push_back(schema::getMigration(
                 19,
                 20,
                 "antwika::map: a map now says where the "
                 "character starts",
                 mapV19ToV20));
-            migrations.push_back(schema::getStep(
+            migrations.push_back(schema::getMigration(
                 20,
                 21,
                 "antwika::map: a character now starts facing "

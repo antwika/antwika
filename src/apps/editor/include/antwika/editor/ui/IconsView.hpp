@@ -25,7 +25,7 @@ namespace antwika::editor
 
         [[nodiscard]] gfx::ITexture *getChecker() const noexcept;
 
-        [[nodiscard]] std::optional<std::size_t> getPicked()
+        [[nodiscard]] std::optional<std::size_t> getPickedIndex()
             const noexcept;
 
         [[nodiscard]] bool isUnsaved() const noexcept;

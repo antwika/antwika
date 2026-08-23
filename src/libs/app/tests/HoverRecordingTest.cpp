@@ -129,7 +129,7 @@ namespace
         std::vector<std::vector<Color>> pictureColors;
     };
 
-    [[nodiscard]] Run getDrive(bool withHover)
+    [[nodiscard]] Run getRun(bool withHover)
     {
         const InputEventCodec codec;
         ReplaySource innerSource({});
@@ -193,8 +193,8 @@ namespace
 
 TEST(HoverRecordingTest, Recording_IsIdenticalWithAndWithoutHover)
 {
-    const auto plain = getDrive(false);
-    const auto hovering = getDrive(true);
+    const auto plain = getRun(false);
+    const auto hovering = getRun(true);
 
     ASSERT_EQ(2U, plain.recordedEvents.size());
     EXPECT_EQ(plain.recordedEvents, hovering.recordedEvents);
@@ -202,7 +202,7 @@ TEST(HoverRecordingTest, Recording_IsIdenticalWithAndWithoutHover)
 
 TEST(HoverRecordingTest, Recording_HoldsNoneOfTheMotionTheHoverFollowed)
 {
-    const auto hovering = getDrive(true);
+    const auto hovering = getRun(true);
 
     ASSERT_EQ(2U, hovering.recordedEvents.size());
 
@@ -214,8 +214,8 @@ TEST(HoverRecordingTest, Recording_HoldsNoneOfTheMotionTheHoverFollowed)
 
 TEST(HoverRecordingTest, Picture_FollowsThePointerTheRecordingNeverSaw)
 {
-    const auto plain = getDrive(false);
-    const auto hovering = getDrive(true);
+    const auto plain = getRun(false);
+    const auto hovering = getRun(true);
 
     EXPECT_EQ(1U, getDistinctPictures(plain));
 

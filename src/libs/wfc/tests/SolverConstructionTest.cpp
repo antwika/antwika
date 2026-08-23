@@ -20,7 +20,7 @@ TEST(SolverConstructionTest, Solve_SolvesAnEmptyWaveImmediately)
 {
     std::vector<Domain> waveDomains;
     Solver solver(waveDomains, {});
-    const auto result = solver.getSolve();
+    const auto result = solver.getSolveResult();
 
     EXPECT_EQ(result.outcome, SolveOutcome::Solved);
     EXPECT_TRUE(result.assignment.empty());

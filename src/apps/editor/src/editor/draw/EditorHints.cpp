@@ -217,7 +217,7 @@ namespace antwika::editor
         }
 
         const auto hint = hintFor(pointer.hoveredWidget);
-        const auto room = frame.rects.getFind(pointer.hoveredWidget);
+        const auto room = frame.rects.getWidgetRect(pointer.hoveredWidget);
 
         if (hint.empty() || !room.has_value())
         {

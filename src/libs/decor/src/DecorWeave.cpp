@@ -455,7 +455,7 @@ namespace antwika::decor
                 {},
                 wfc::SolverLimits{.maxSteps = kMaxSolveSteps},
                 std::move(preferences))
-                .getSolve();
+                .getSolveResult();
 
         auto updatedStamps = stampedTiles;
 

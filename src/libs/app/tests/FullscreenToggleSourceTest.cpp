@@ -66,7 +66,7 @@ namespace
 TEST(FullscreenToggleSourceTest, EventsFor_FillsTheScreenOnTheKey)
 {
     ReplaySource innerSource(
-        {getEntryAt(0, kCodec.getEncode(KeyPressed{.key = Key::F10}))});
+        {getEntryAt(0, kCodec.getEncodedEvent(KeyPressed{.key = Key::F10}))});
     NiceMock<MockWindow> window;
     const FullscreenState state(window);
 
@@ -78,14 +78,14 @@ TEST(FullscreenToggleSourceTest, EventsFor_FillsTheScreenOnTheKey)
 
     EXPECT_EQ(
         events,
-        (std::vector<Event>{kCodec.getEncode(KeyPressed{.key = Key::F10})}));
+        (std::vector<Event>{kCodec.getEncodedEvent(KeyPressed{.key = Key::F10})}));
 }
 
 TEST(FullscreenToggleSourceTest, EventsFor_PutsTheWindowBackOnTheNextPress)
 {
     ReplaySource innerSource(
-        {getEntryAt(0, kCodec.getEncode(KeyPressed{.key = Key::F10})),
-         getEntryAt(1, kCodec.getEncode(KeyPressed{.key = Key::F10}))});
+        {getEntryAt(0, kCodec.getEncodedEvent(KeyPressed{.key = Key::F10})),
+         getEntryAt(1, kCodec.getEncodedEvent(KeyPressed{.key = Key::F10}))});
 
     NiceMock<MockWindow> window;
     const FullscreenState state(window);
@@ -103,7 +103,7 @@ TEST(FullscreenToggleSourceTest, EventsFor_IgnoresARepeat)
 {
     ReplaySource innerSource(
         {getEntryAt(0,
-            kCodec.getEncode(
+            kCodec.getEncodedEvent(
                 KeyPressed{.key = Key::F10, .repeat = true}))});
 
     NiceMock<MockWindow> window;
@@ -118,8 +118,8 @@ TEST(FullscreenToggleSourceTest, EventsFor_IgnoresARepeat)
 TEST(FullscreenToggleSourceTest, EventsFor_IgnoresAnotherKey)
 {
     ReplaySource innerSource(
-        {getEntryAt(0, kCodec.getEncode(KeyPressed{.key = Key::F11})),
-         getEntryAt(0, kCodec.getEncode(KeyReleased{.key = Key::F10}))});
+        {getEntryAt(0, kCodec.getEncodedEvent(KeyPressed{.key = Key::F11})),
+         getEntryAt(0, kCodec.getEncodedEvent(KeyReleased{.key = Key::F10}))});
 
     NiceMock<MockWindow> window;
 
@@ -135,7 +135,7 @@ TEST(FullscreenToggleSourceTest, EventsFor_IgnoresAnEventThatIsNotInput)
     ReplaySource innerSource(
         {getEntryAt(0, Event{.name = "game.score_increment", .payload = "{}"}),
          getEntryAt(0,
-            kCodec.getEncode(
+            kCodec.getEncodedEvent(
                 PointerButtonPressed{.button = MouseButton::Left}))});
 
     NiceMock<MockWindow> window;

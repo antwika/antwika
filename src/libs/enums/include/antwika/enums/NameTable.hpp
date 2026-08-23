@@ -34,7 +34,7 @@ namespace antwika::enums
             return lookup(names, value);
         }
 
-        [[nodiscard]] constexpr std::optional<Enum> getFrom(
+        [[nodiscard]] constexpr std::optional<Enum> getEnumFrom(
             const std::string_view name) const noexcept
         {
             for (std::size_t index = 0; index < kCount<Enum>; ++index)

@@ -121,7 +121,7 @@ TEST(LightPassesTest, Hide_DrawsTheMaskOnceForTheSameCubesAndPlace)
     passes.open(viewportRenderer, ShaderSource{});
     passes.hide(viewportRenderer, behindCells, VoxelPosition{});
 
-    EXPECT_EQ(passes.getHidden(), behindCells);
+    EXPECT_EQ(passes.getHiddenVoxels(), behindCells);
     EXPECT_NE(passes.getHiding(), nullptr);
 
     EXPECT_CALL(innerRenderer, createTexture).Times(0);
@@ -148,7 +148,7 @@ TEST(LightPassesTest, Hide_DrawsTheMaskAfreshWhereTheCubesChanged)
         .z = 4}}}),
         VoxelPosition{});
 
-    EXPECT_EQ(passes.getHidden().size(), 1U);
+    EXPECT_EQ(passes.getHiddenVoxels().size(), 1U);
 }
 
 TEST(LightPassesTest, BakeLamps_DrawsEveryFaceOfALampThatHasMoved)

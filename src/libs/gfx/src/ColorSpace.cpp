@@ -13,7 +13,7 @@ namespace antwika::gfx
     {
         constexpr float kFullByte = 255.0F;
 
-        [[nodiscard]] float getWrapped(const float turns)
+        [[nodiscard]] float getWrappedValue(const float turns)
         {
             return turns - std::floor(turns);
         }
@@ -94,7 +94,7 @@ namespace antwika::gfx
 
     Color colorOf(const Hsv colorHsv)
     {
-        const auto hue = getWrapped(colorHsv.hue);
+        const auto hue = getWrappedValue(colorHsv.hue);
         const auto saturation =
             std::clamp(colorHsv.saturation, 0.0F, 1.0F);
         const auto value = std::clamp(colorHsv.value, 0.0F, 1.0F);
@@ -142,7 +142,7 @@ namespace antwika::gfx
                   : 4.0F + ((red - green) / span);
 
         return Hsv{
-            .hue = getWrapped(hueTurn / 6.0F),
+            .hue = getWrappedValue(hueTurn / 6.0F),
             .saturation = span / most,
             .value = most};
     }

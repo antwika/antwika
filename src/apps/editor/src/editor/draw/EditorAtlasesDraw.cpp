@@ -169,7 +169,7 @@ namespace antwika::editor
                 for (const auto edge : tilemap::kEveryTileEdge)
                 {
                     for (const auto neighbor :
-                         activeRules().getAllowed(*selectedTile, edge))
+                         activeRules().getAllowedTiles(*selectedTile, edge))
                     {
                         const auto toPoint = getTileCenter(
                             document.map.tilemap, where, neighbor);

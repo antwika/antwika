@@ -101,7 +101,7 @@ namespace antwika::wfc
         }
     }
 
-    SolveResult Solver::getSolve() const
+    SolveResult Solver::getSolveResult() const
     {
         std::vector<Domain> waveDomains = initialWave;
         detail::Trail trail;

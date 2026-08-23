@@ -24,7 +24,7 @@ TEST(SolverCompletenessTest, Solve_ReportsUnsatisfiableAfterExhaustion)
             std::cref(abConstraint),
             std::cref(bcConstraint),
             std::cref(acConstraint)});
-    const auto result = solver.getSolve();
+    const auto result = solver.getSolveResult();
 
     EXPECT_EQ(result.outcome, SolveOutcome::Unsatisfiable);
     EXPECT_TRUE(result.assignment.empty());
@@ -37,7 +37,7 @@ TEST(SolverCompletenessTest, Solve_ReportsUnsatisfiableBeforeAnyChoice)
     AllDifferentConstraint allDifferent({0, 1});
 
     Solver solver(waveDomains, {std::cref(allDifferent)});
-    const auto result = solver.getSolve();
+    const auto result = solver.getSolveResult();
 
     EXPECT_EQ(result.outcome, SolveOutcome::Unsatisfiable);
     EXPECT_TRUE(result.assignment.empty());

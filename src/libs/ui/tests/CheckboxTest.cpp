@@ -144,7 +144,7 @@ namespace
         uiContext.checkbox("lighting", CheckboxSpec{.widgetId = kBoxWidget});
 
         const auto where =
-            uiContext.build().rects.getFind(kBoxWidget).value_or(
+            uiContext.build().rects.getWidgetRect(kBoxWidget).value_or(
                 antwika::gfx::Rect{});
 
         Context againContext{

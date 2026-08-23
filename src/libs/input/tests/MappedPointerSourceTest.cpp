@@ -53,7 +53,7 @@ namespace
 
         for (const auto &event : events)
         {
-            if (const auto edge = kCodec.getDecode(event))
+            if (const auto edge = kCodec.getDecodedEvent(event))
             {
                 decodedEvents.push_back(*edge);
             }
@@ -66,14 +66,14 @@ namespace
 TEST(MappedPointerSourceTest, EventsFor_MapsEveryPositionalEdge)
 {
     ReplaySource innerSource(
-        {getEntryAt(0, kCodec.getEncode(PointerMoved{.position = {.x = 40, .y = 20}})),
+        {getEntryAt(0, kCodec.getEncodedEvent(PointerMoved{.position = {.x = 40, .y = 20}})),
          getEntryAt(0,
-            kCodec.getEncode(
+            kCodec.getEncodedEvent(
                 PointerButtonPressed{
                     .button = MouseButton::Right,
                     .position = {.x = 10, .y = 6}})),
          getEntryAt(0,
-            kCodec.getEncode(
+            kCodec.getEncodedEvent(
                 PointerButtonReleased{
                     .button = MouseButton::Right,
                     .position = {.x = 12, .y = 8}}))});
@@ -95,8 +95,8 @@ TEST(MappedPointerSourceTest, EventsFor_MapsEveryPositionalEdge)
 
 TEST(MappedPointerSourceTest, EventsFor_LeavesAPositionlessEdgeAlone)
 {
-    const auto key = kCodec.getEncode(KeyPressed{.key = Key::F10});
-    const auto scroll = kCodec.getEncode(PointerScrolled{.vertical = 1});
+    const auto key = kCodec.getEncodedEvent(KeyPressed{.key = Key::F10});
+    const auto scroll = kCodec.getEncodedEvent(PointerScrolled{.vertical = 1});
 
     ReplaySource innerSource({getEntryAt(0, key), getEntryAt(0, scroll)});
 
@@ -121,9 +121,9 @@ TEST(MappedPointerSourceTest, EventsFor_LeavesAnUnrelatedEventAlone)
 TEST(MappedPointerSourceTest, EventsFor_KeepsTheStreamsShapeExactly)
 {
     ReplaySource innerSource(
-        {getEntryAt(0, kCodec.getEncode(PointerMoved{.position = {.x = 2, .y = 2}})),
-         getEntryAt(1, kCodec.getEncode(KeyPressed{.key = Key::A})),
-         getEntryAt(1, kCodec.getEncode(PointerMoved{.position = {.x = 4, .y = 4}}))});
+        {getEntryAt(0, kCodec.getEncodedEvent(PointerMoved{.position = {.x = 2, .y = 2}})),
+         getEntryAt(1, kCodec.getEncodedEvent(KeyPressed{.key = Key::A})),
+         getEntryAt(1, kCodec.getEncodedEvent(PointerMoved{.position = {.x = 4, .y = 4}}))});
 
     const FakeHalvingPointerMapping mapping;
     MappedPointerSource source(innerSource, kCodec, mapping);

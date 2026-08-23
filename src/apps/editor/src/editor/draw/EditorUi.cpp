@@ -589,7 +589,7 @@ namespace antwika::editor
             [&frame, port](const antwika::widget::WidgetId id)
             -> std::optional<gfx::RectF>
         {
-            const auto rect = frame.rects.getFind(id);
+            const auto rect = frame.rects.getWidgetRect(id);
 
             if (!rect.has_value())
             {

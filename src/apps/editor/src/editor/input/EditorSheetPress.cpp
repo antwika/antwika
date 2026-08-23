@@ -45,8 +45,8 @@ namespace antwika::editor
                 return;
             }
 
-            if (!iconsView.getPicked().has_value()
-                || *iconsView.getPicked() >= count)
+            if (!iconsView.getPickedIndex().has_value()
+                || *iconsView.getPickedIndex() >= count)
             {
                 return;
             }

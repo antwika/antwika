@@ -155,7 +155,7 @@ namespace antwika::app
         const std::vector<Progress> wantedProgresses{
             Progress(1, 4), Progress(2, 4), Progress(3, 4)};
 
-        EXPECT_EQ(pass.getDrawn(), wantedProgresses);
+        EXPECT_EQ(pass.getDrawnProgress(), wantedProgresses);
     }
 
     TEST(FramePacedSourceTest, EventsFor_WaitsAWholeIntervalHoweverItIsCut)
@@ -445,7 +445,7 @@ namespace antwika::app
         (void)pacedSource.eventsFor(0);
 
         EXPECT_EQ(
-            pass.getDrawn(),
+            pass.getDrawnProgress(),
             (std::vector<Progress>{
                 Progress(1, 10),
                 Progress(3, 10),

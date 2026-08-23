@@ -26,7 +26,7 @@ namespace antwika::animation
         time::Tick denTick;
     };
 
-    [[nodiscard]] std::int64_t getInterpolate(
+    [[nodiscard]] std::int64_t getInterpolatedValue(
         std::int64_t fromValue, std::int64_t toValue,
         Progress progress) noexcept;
 

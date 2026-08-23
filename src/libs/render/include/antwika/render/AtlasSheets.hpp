@@ -45,7 +45,7 @@ namespace antwika::render
         [[nodiscard]] gfx::ITexture *getTexture(
             tilemap::Atlas atlas) const noexcept;
 
-        [[nodiscard]] gfx::ITexture *getKeyed(
+        [[nodiscard]] gfx::ITexture *getKeyedTexture(
             tilemap::Atlas atlas) const noexcept;
 
         [[nodiscard]] gfx::ITexture *getChecker(

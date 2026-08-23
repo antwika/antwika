@@ -23,7 +23,7 @@ namespace
             .size = {.width = 10, .height = 10}};
     }
 
-    [[nodiscard]] HoverPointer getOver(std::int32_t x, std::int32_t y)
+    [[nodiscard]] HoverPointer getHoverPointer(std::int32_t x, std::int32_t y)
     {
         return HoverPointer{.positionPoint = Point{.x = x, .y = y}};
     }
@@ -36,28 +36,28 @@ TEST(OccluderRectsTest, IsOccluded_SaysNoWhenNothingReportsAPosition)
 
 TEST(OccluderRectsTest, IsOccluded_SaysNoWithNoOverlays)
 {
-    EXPECT_FALSE(isOccluded(OccluderRects{}, getOver(5, 5)));
+    EXPECT_FALSE(isOccluded(OccluderRects{}, getHoverPointer(5, 5)));
 }
 
 TEST(OccluderRectsTest, IsOccluded_SaysYesInsideAnOverlay)
 {
-    EXPECT_TRUE(isOccluded(OccluderRects{boxAt(0)}, getOver(5, 5)));
+    EXPECT_TRUE(isOccluded(OccluderRects{boxAt(0)}, getHoverPointer(5, 5)));
 }
 
 TEST(OccluderRectsTest, IsOccluded_SaysNoOutsideEveryOverlay)
 {
-    EXPECT_FALSE(isOccluded(OccluderRects{boxAt(0), boxAt(20)}, getOver(15, 5)));
+    EXPECT_FALSE(isOccluded(OccluderRects{boxAt(0), boxAt(20)}, getHoverPointer(15, 5)));
 }
 
 TEST(OccluderRectsTest, IsOccluded_ReachesPastTheFirstOverlay)
 {
-    EXPECT_TRUE(isOccluded(OccluderRects{boxAt(0), boxAt(20)}, getOver(25, 5)));
+    EXPECT_TRUE(isOccluded(OccluderRects{boxAt(0), boxAt(20)}, getHoverPointer(25, 5)));
 }
 
 TEST(OccluderRectsTest, IsOccluded_TreatsAnOverlaysAreaAsHalfOpen)
 {
-    EXPECT_TRUE(isOccluded(OccluderRects{boxAt(0)}, getOver(9, 9)));
-    EXPECT_FALSE(isOccluded(OccluderRects{boxAt(0)}, getOver(10, 9)));
+    EXPECT_TRUE(isOccluded(OccluderRects{boxAt(0)}, getHoverPointer(9, 9)));
+    EXPECT_FALSE(isOccluded(OccluderRects{boxAt(0)}, getHoverPointer(10, 9)));
 }
 
 TEST(OccluderRectsTest, IsOccluded_SaysNoForARectangleWithNoOverlays)

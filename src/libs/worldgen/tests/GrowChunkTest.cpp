@@ -47,7 +47,7 @@ namespace
         return compiledRuleset;
     }
 
-    [[nodiscard]] const VoxelMaterial *getFound(
+    [[nodiscard]] const VoxelMaterial *getFoundMaterial(
         const ChunkResult &result, const VoxelPosition cubePosition)
     {
         const auto foundVoxel = result.cubeVoxels.find(cubePosition);
@@ -122,7 +122,7 @@ TEST(GrowChunkTest, Grow_StandsEveryCubeAHintAsked)
 
     for (const auto &[hintPosition, hintMaterial] : hintVoxels)
     {
-        const auto *foundCell = getFound(result, hintPosition);
+        const auto *foundCell = getFoundMaterial(result, hintPosition);
 
         ASSERT_NE(foundCell, nullptr);
         EXPECT_EQ(foundCell->kind, hintMaterial.kind);
@@ -142,7 +142,7 @@ TEST(GrowChunkTest, Grow_StandsAStairTheWayTheArtistPaintedIt)
 
     ASSERT_EQ(result.outcome, ChunkOutcome::Grown);
 
-    const auto *foundCell = getFound(result, hintVoxels.begin()->first);
+    const auto *foundCell = getFoundMaterial(result, hintVoxels.begin()->first);
 
     ASSERT_NE(foundCell, nullptr);
     EXPECT_EQ(foundCell->kind, Kind::Ramp);

@@ -9,7 +9,7 @@
 namespace antwika::animation
 {
 
-    [[nodiscard]] Frame getResolve(const Clip &clip, time::Tick elapsedTicks);
+    [[nodiscard]] Frame getFrameAt(const Clip &clip, time::Tick elapsedTicks);
 
     [[nodiscard]] Progress getStepProgress(
         time::Tick elapsedTicks, time::Tick ticksPerStep);

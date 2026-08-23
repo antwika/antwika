@@ -164,7 +164,7 @@ namespace antwika::editor
         }
 
         if (strokeActive && activeView == map::View::Icons
-            && iconsView.getPicked().has_value())
+            && iconsView.getPickedIndex().has_value())
         {
             const auto pixel = antwika::editor::iconPixelAt(
                 antwika::editor::getEditedIconRect(camera::kCanvasSize),
@@ -220,7 +220,7 @@ namespace antwika::editor
                     .x = pointer.lastPointerPosition.x,
                     .y = pointer.lastPointerPosition.y});
 
-            cameraRig.view.transform = camera::getPanned(
+            cameraRig.view.transform = camera::getPannedTransform(
                 cameraRig.view.transform,
                 static_cast<float>(was.x) - pointer.pointerOnCanvas.x,
                 pointer.pointerOnCanvas.y - static_cast<float>(was.y),
@@ -286,7 +286,7 @@ namespace antwika::editor
 
         if (cameraRig.freeLook)
         {
-            cameraRig.view.transform = camera::getRotated(
+            cameraRig.view.transform = camera::getRotatedTransform(
                 cameraRig.view.transform,
                 static_cast<float>(
                     movedEvent.position.x - pointer.lastPointerPosition.x)

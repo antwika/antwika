@@ -123,7 +123,7 @@ TEST(Camera3DTest, Accessors_ReportWhatTheCameraWasBuiltWith)
 
     EXPECT_TRUE(getApproxEqual(camera.getPosition(), Vec3(0.0F, 0.0F, 5.0F)));
     EXPECT_TRUE(getApproxEqual(camera.getTarget(), Vec3(0.0F, 0.0F, 0.0F)));
-    EXPECT_TRUE(getApproxEqual(camera.getUp(), Vec3(0.0F, 1.0F, 0.0F)));
+    EXPECT_TRUE(getApproxEqual(camera.getUpVector(), Vec3(0.0F, 1.0F, 0.0F)));
     EXPECT_EQ(Perspective{}, std::get<Perspective>(camera.getProjection()));
 }
 

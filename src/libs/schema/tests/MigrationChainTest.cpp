@@ -22,7 +22,7 @@ using antwika::schema::SchemaVersionError;
 
 namespace
 {
-    std::shared_ptr<const IMigration> getStep(
+    std::shared_ptr<const IMigration> getMigration(
         std::uint32_t fromVersion, std::uint32_t toVersion, std::string label)
     {
         return std::make_shared<const FakeTrailMigration>(
@@ -32,8 +32,8 @@ namespace
     MigrationChain getChainToThree()
     {
         MigrationList migrations;
-        migrations.push_back(getStep(1, 2, "one-to-two"));
-        migrations.push_back(getStep(2, 3, "two-to-three"));
+        migrations.push_back(getMigration(1, 2, "one-to-two"));
+        migrations.push_back(getMigration(2, 3, "two-to-three"));
         return MigrationChain(std::move(migrations), 3);
     }
 }
@@ -90,7 +90,7 @@ TEST(MigrationChainTest, Migrate_LeavesACurrentDocumentAlone)
 TEST(MigrationChainTest, Migrate_ReportsAGapWithBothVersions)
 {
     MigrationList migrations;
-    migrations.push_back(getStep(1, 2, "one-to-two"));
+    migrations.push_back(getMigration(1, 2, "one-to-two"));
     const MigrationChain chain(std::move(migrations), 3);
 
     nlohmann::json document;
@@ -170,7 +170,7 @@ TEST(MigrationChainTest, Migrate_LeavesANonObjectAlone)
 TEST(MigrationChainTest, Migrate_RefusesAMultiStepMigration)
 {
     MigrationList migrations;
-    migrations.push_back(getStep(1, 3, "one-to-three"));
+    migrations.push_back(getMigration(1, 3, "one-to-three"));
 
     try
     {
@@ -188,8 +188,8 @@ TEST(MigrationChainTest, Migrate_RefusesAMultiStepMigration)
 TEST(MigrationChainTest, Migrate_RefusesTwoStepsFromOneVersion)
 {
     MigrationList migrations;
-    migrations.push_back(getStep(1, 2, "one-to-two"));
-    migrations.push_back(getStep(1, 2, "one-to-two-again"));
+    migrations.push_back(getMigration(1, 2, "one-to-two"));
+    migrations.push_back(getMigration(1, 2, "one-to-two-again"));
 
     try
     {
@@ -209,7 +209,7 @@ TEST(MigrationChainTest, Migrate_RefusesTwoStepsFromOneVersion)
 TEST(MigrationChainTest, Migrate_AcceptsACallersOwnVersionKey)
 {
     MigrationList migrations;
-    migrations.push_back(getStep(1, 2, "one-to-two"));
+    migrations.push_back(getMigration(1, 2, "one-to-two"));
     const MigrationChain chain(
         std::move(migrations), 2, "schemaVersion");
 

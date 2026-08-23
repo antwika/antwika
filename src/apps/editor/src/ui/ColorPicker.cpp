@@ -13,7 +13,7 @@ namespace antwika::editor
 
     namespace
     {
-        [[nodiscard]] float getWrapped(const float turns)
+        [[nodiscard]] float getWrappedValue(const float turns)
         {
             return turns - std::floor(turns);
         }
@@ -121,7 +121,7 @@ namespace antwika::editor
         const auto strip = getHuePlace(canvasSize);
 
         return strip.originPoint.y
-               + (getWrapped(colorHsv.hue) * strip.size.height);
+               + (getWrappedValue(colorHsv.hue) * strip.size.height);
     }
 
     gfx::RectF getBandPlace(

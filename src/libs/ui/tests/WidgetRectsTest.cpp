@@ -76,7 +76,7 @@ namespace
             .widgetId = widget};
     }
 
-    std::optional<Rect> getFilled(const Frame &frame, Color color)
+    std::optional<Rect> getFilledRect(const Frame &frame, Color color)
     {
         for (const auto &command : frame.drawList)
         {
@@ -96,7 +96,7 @@ TEST(WidgetRectsTest, Find_AnswersNothingWhenNothingWasNamed)
 {
     const WidgetRects rects;
 
-    EXPECT_FALSE(rects.getFind(kFirstWidget).has_value());
+    EXPECT_FALSE(rects.getWidgetRect(kFirstWidget).has_value());
 }
 
 TEST(WidgetRectsTest, Find_AnswersTheRectangleItWasGiven)
@@ -106,7 +106,7 @@ TEST(WidgetRectsTest, Find_AnswersTheRectangleItWasGiven)
     const WidgetRects rects{.widgetRects = {WidgetRect{
                                 .widgetId = kFirstWidget, .rect = boxRect}}};
 
-    EXPECT_EQ(boxRect, rects.getFind(kFirstWidget));
+    EXPECT_EQ(boxRect, rects.getWidgetRect(kFirstWidget));
 }
 
 TEST(WidgetRectsTest, Find_AnswersNothingForAnIdNoNodeCarried)
@@ -114,7 +114,7 @@ TEST(WidgetRectsTest, Find_AnswersNothingForAnIdNoNodeCarried)
     const WidgetRects rects{
         .widgetRects = {WidgetRect{.widgetId = kFirstWidget, .rect = {}}}};
 
-    EXPECT_FALSE(rects.getFind(kAbsentWidget).has_value());
+    EXPECT_FALSE(rects.getWidgetRect(kAbsentWidget).has_value());
 }
 
 TEST(WidgetRectsTest, OperatorEquals_ComparesTheEntriesAndTheirOrder)
@@ -183,8 +183,8 @@ TEST(WidgetRectsTest, Layout_ReportsTheRectangleTheNodeWasArrangedInto)
 
     layout(tree, Size{.width = 40, .height = 10}, &rects);
 
-    EXPECT_EQ(tree.getNode(first).arrangedRect, rects.getFind(kFirstWidget));
-    EXPECT_EQ(tree.getNode(second).arrangedRect, rects.getFind(kSecondWidget));
+    EXPECT_EQ(tree.getNode(first).arrangedRect, rects.getWidgetRect(kFirstWidget));
+    EXPECT_EQ(tree.getNode(second).arrangedRect, rects.getWidgetRect(kSecondWidget));
 }
 
 TEST(WidgetRectsTest, Layout_ReportsTheShrunkRectangleAndNotTheAskedFor)
@@ -203,17 +203,17 @@ TEST(WidgetRectsTest, Layout_ReportsTheShrunkRectangleAndNotTheAskedFor)
         (Rect{
             .originPoint = {.x = 0, .y = 0},
             .size = {.width = 17, .height = 10}}),
-        rects.getFind(kFirstWidget));
+        rects.getWidgetRect(kFirstWidget));
     EXPECT_EQ(
         (Rect{
             .originPoint = {.x = 17, .y = 0},
             .size = {.width = 17, .height = 10}}),
-        rects.getFind(kSecondWidget));
+        rects.getWidgetRect(kSecondWidget));
     EXPECT_EQ(
         (Rect{
             .originPoint = {.x = 34, .y = 0},
             .size = {.width = 16, .height = 10}}),
-        rects.getFind(kThirdWidget));
+        rects.getWidgetRect(kThirdWidget));
 }
 
 TEST(WidgetRectsTest, Layout_KeepsTheLastDeclarationOfARepeatedId)
@@ -230,7 +230,7 @@ TEST(WidgetRectsTest, Layout_KeepsTheLastDeclarationOfARepeatedId)
     layout(tree, Size{.width = 40, .height = 10}, &rects);
 
     EXPECT_EQ(1U, rects.widgetRects.size());
-    EXPECT_EQ(tree.getNode(second).arrangedRect, rects.getFind(kFirstWidget));
+    EXPECT_EQ(tree.getNode(second).arrangedRect, rects.getWidgetRect(kFirstWidget));
     EXPECT_EQ(10, tree.getNode(second).arrangedRect.originPoint.x);
 }
 
@@ -262,12 +262,12 @@ TEST(WidgetRectsTest, Frame_ReportsTheRectangleAContainerWasFilledWith)
 
     const auto frame = uiContext.build();
 
-    EXPECT_EQ(getFilled(frame, kAccentColor), frame.rects.getFind(kFirstWidget));
+    EXPECT_EQ(getFilledRect(frame, kAccentColor), frame.rects.getWidgetRect(kFirstWidget));
     EXPECT_EQ(
         (Rect{
             .originPoint = {.x = 0, .y = 0},
             .size = {.width = 40, .height = 8}}),
-        frame.rects.getFind(kFirstWidget));
+        frame.rects.getWidgetRect(kFirstWidget));
 }
 
 TEST(WidgetRectsTest, Frame_ReportsAButtonsRectangleToo)
@@ -284,7 +284,7 @@ TEST(WidgetRectsTest, Frame_ReportsAButtonsRectangleToo)
         (Rect{
             .originPoint = {.x = 0, .y = 0},
             .size = {.width = 20, .height = 8}}),
-        frame.rects.getFind(kSecondWidget));
+        frame.rects.getWidgetRect(kSecondWidget));
 }
 
 TEST(WidgetRectsTest, Frame_KeepsANestedRectangleInsideItsParents)
@@ -308,8 +308,8 @@ TEST(WidgetRectsTest, Frame_KeepsANestedRectangleInsideItsParents)
     }
 
     const auto frame = uiContext.build();
-    const auto parent = frame.rects.getFind(kFirstWidget);
-    const auto child = frame.rects.getFind(kSecondWidget);
+    const auto parent = frame.rects.getWidgetRect(kFirstWidget);
+    const auto child = frame.rects.getWidgetRect(kSecondWidget);
 
     ASSERT_TRUE(parent.has_value());
     ASSERT_TRUE(child.has_value());

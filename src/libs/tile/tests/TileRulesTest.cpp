@@ -166,7 +166,7 @@ namespace antwika::tile
             rules.toggle(kGrassTile, kOutwardEdge, kWaterTile);
 
             EXPECT_THAT(
-                rules.getAllowed(kGrassTile, kOutwardEdge),
+                rules.getAllowedTiles(kGrassTile, kOutwardEdge),
                 testing::UnorderedElementsAre(kWallTile, kWaterTile));
             EXPECT_EQ(rules.getSize(), 4U);
         }
@@ -176,7 +176,7 @@ namespace antwika::tile
             const tile::TileRules rules;
 
             EXPECT_THAT(
-                rules.getAllowed(kGrassTile, kInwardEdge),
+                rules.getAllowedTiles(kGrassTile, kInwardEdge),
                 testing::IsEmpty());
         }
 
@@ -307,7 +307,7 @@ namespace antwika::tile
             rules.toggle(kGrassTile, kOutwardEdge, kWallTile);
 
             EXPECT_THAT(
-                rules.getAllowed(kGrassTile, kOutwardEdge),
+                rules.getAllowedTiles(kGrassTile, kOutwardEdge),
                 testing::UnorderedElementsAre(kWaterTile));
         }
 
@@ -321,7 +321,7 @@ namespace antwika::tile
             EXPECT_FALSE(rules.hasNoRule(kGrassTile, kOutwardEdge));
             EXPECT_FALSE(rules.allows(kGrassTile, kOutwardEdge, kWallTile));
             EXPECT_THAT(
-                rules.getAllowed(kGrassTile, kOutwardEdge), testing::IsEmpty());
+                rules.getAllowedTiles(kGrassTile, kOutwardEdge), testing::IsEmpty());
         }
 
         TEST(TileRulesTest, ForbidAll_HasARuleForEitherAtlas)

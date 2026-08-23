@@ -79,7 +79,7 @@ namespace
                 entity, RosterIndex{.index = 0});
         }
 
-        [[nodiscard]] Velocity getSent() const
+        [[nodiscard]] Velocity getSentVelocity() const
         {
             return gameLoop.getWorld().get<Velocity>(entity);
         }
@@ -102,8 +102,8 @@ TEST(PatrolTest, Update_LeavesACharacterWithNoStopsStandingStill)
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
 
-    EXPECT_NEAR(harness.getSent().velocityX, 0.0F, kTolerance);
-    EXPECT_NEAR(harness.getSent().velocityZ, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSentVelocity().velocityX, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSentVelocity().velocityZ, 0.0F, kTolerance);
 }
 
 TEST(PatrolTest, Update_SendsACharacterTowardItsFirstStop)
@@ -115,8 +115,8 @@ TEST(PatrolTest, Update_SendsACharacterTowardItsFirstStop)
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
 
-    EXPECT_NEAR(harness.getSent().velocityX, 1.0F, kTolerance);
-    EXPECT_NEAR(harness.getSent().velocityZ, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSentVelocity().velocityX, 1.0F, kTolerance);
+    EXPECT_NEAR(harness.getSentVelocity().velocityZ, 0.0F, kTolerance);
 }
 
 TEST(PatrolTest, Update_StrollsAtHalfAWalkersPace)
@@ -129,7 +129,7 @@ TEST(PatrolTest, Update_StrollsAtHalfAWalkersPace)
     harness.gameLoop.run(0);
 
     EXPECT_NEAR(
-        harness.getSent().speedMultiplier,
+        harness.getSentVelocity().speedMultiplier,
         kStrollSpeedFactor,
         kTolerance);
 }
@@ -144,7 +144,7 @@ TEST(PatrolTest, Update_TurnsForTheNextStopOnceItArrives)
     harness.gameLoop.run(0);
     harness.gameLoop.run(1);
 
-    EXPECT_LT(harness.getSent().velocityX, 0.0F);
+    EXPECT_LT(harness.getSentVelocity().velocityX, 0.0F);
 }
 
 TEST(PatrolTest, Update_WrapsBackToTheFirstStopAfterTheLast)
@@ -198,8 +198,8 @@ TEST(PatrolTest, Update_LeavesACharacterStoodWhereItStandsOnNothing)
     harness.begin(Position{.x = 40.0F, .y = 0.5F, .z = 40.0F});
     harness.gameLoop.run(0);
 
-    EXPECT_NEAR(harness.getSent().velocityX, 0.0F, kTolerance);
-    EXPECT_NEAR(harness.getSent().velocityZ, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSentVelocity().velocityX, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSentVelocity().velocityZ, 0.0F, kTolerance);
 }
 
 TEST(PatrolTest, Update_LeavesACharacterStoodWhereItsStopStandsOnNothing)
@@ -211,8 +211,8 @@ TEST(PatrolTest, Update_LeavesACharacterStoodWhereItsStopStandsOnNothing)
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
 
-    EXPECT_NEAR(harness.getSent().velocityX, 0.0F, kTolerance);
-    EXPECT_NEAR(harness.getSent().velocityZ, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSentVelocity().velocityX, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSentVelocity().velocityZ, 0.0F, kTolerance);
 }
 
 TEST(PatrolTest, Update_LeavesACharacterStoodWhereNoWalkReachesItsStop)
@@ -226,8 +226,8 @@ TEST(PatrolTest, Update_LeavesACharacterStoodWhereNoWalkReachesItsStop)
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
 
-    EXPECT_NEAR(harness.getSent().velocityX, 0.0F, kTolerance);
-    EXPECT_NEAR(harness.getSent().velocityZ, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSentVelocity().velocityX, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSentVelocity().velocityZ, 0.0F, kTolerance);
 }
 
 TEST(PatrolTest, Update_HoldsACharacterStillWhileItSpeaks)
@@ -240,7 +240,7 @@ TEST(PatrolTest, Update_HoldsACharacterStillWhileItSpeaks)
     harness.system.setSpeaking(0U);
     harness.gameLoop.run(0);
 
-    EXPECT_NEAR(harness.getSent().velocityX, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSentVelocity().velocityX, 0.0F, kTolerance);
 }
 
 TEST(PatrolTest, Update_LetsACharacterStrollAgainOnceItIsDone)
@@ -255,7 +255,7 @@ TEST(PatrolTest, Update_LetsACharacterStrollAgainOnceItIsDone)
     harness.system.setSpeaking(std::nullopt);
     harness.gameLoop.run(1);
 
-    EXPECT_NEAR(harness.getSent().velocityX, 1.0F, kTolerance);
+    EXPECT_NEAR(harness.getSentVelocity().velocityX, 1.0F, kTolerance);
 }
 
 TEST(PatrolTest, Update_HoldsEveryCharacterStillWhileFrozen)
@@ -268,7 +268,7 @@ TEST(PatrolTest, Update_HoldsEveryCharacterStillWhileFrozen)
     harness.system.setFrozen(true);
     harness.gameLoop.run(0);
 
-    EXPECT_NEAR(harness.getSent().velocityX, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSentVelocity().velocityX, 0.0F, kTolerance);
 }
 
 TEST(PatrolTest, Update_LeavesACharacterWithNoRosterEntryStandingStill)
@@ -280,7 +280,7 @@ TEST(PatrolTest, Update_LeavesACharacterWithNoRosterEntryStandingStill)
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
     harness.gameLoop.run(0);
 
-    EXPECT_NEAR(harness.getSent().velocityX, 0.0F, kTolerance);
+    EXPECT_NEAR(harness.getSentVelocity().velocityX, 0.0F, kTolerance);
 }
 
 TEST(PatrolTest, Forget_LetsGoOfTheRoutesItPlanned)
@@ -294,7 +294,7 @@ TEST(PatrolTest, Forget_LetsGoOfTheRoutesItPlanned)
     harness.system.forget();
     harness.gameLoop.run(1);
 
-    EXPECT_NEAR(harness.getSent().velocityX, 1.0F, kTolerance);
+    EXPECT_NEAR(harness.getSentVelocity().velocityX, 1.0F, kTolerance);
 }
 
 TEST(PatrolTest, Update_StrollsEveryCharacterOfTheRoster)

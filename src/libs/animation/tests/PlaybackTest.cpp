@@ -33,7 +33,7 @@ namespace antwika::animation
         const Clip clip = getTwoFrameClip(LoopMode::Loop);
 
         EXPECT_EQ(
-            getResolve(clip, 0),
+            getFrameAt(clip, 0),
             (Frame{.index = 10,
                    .progress = Progress(0, 2),
                    .finished = false}));
@@ -43,8 +43,8 @@ namespace antwika::animation
     {
         const Clip clip = getTwoFrameClip(LoopMode::Loop);
 
-        EXPECT_EQ(getResolve(clip, 1).index, 10U);
-        EXPECT_EQ(getResolve(clip, 1).progress, Progress(1, 2));
+        EXPECT_EQ(getFrameAt(clip, 1).index, 10U);
+        EXPECT_EQ(getFrameAt(clip, 1).progress, Progress(1, 2));
     }
 
     TEST(PlaybackTest, Resolve_MovesOnAtTheFrameBoundary)
@@ -52,12 +52,12 @@ namespace antwika::animation
         const Clip clip = getTwoFrameClip(LoopMode::Loop);
 
         EXPECT_EQ(
-            getResolve(clip, 2),
+            getFrameAt(clip, 2),
             (Frame{.index = 11,
                    .progress = Progress(0, 3),
                    .finished = false}));
-        EXPECT_EQ(getResolve(clip, 3).progress, Progress(1, 3));
-        EXPECT_EQ(getResolve(clip, 4).progress, Progress(2, 3));
+        EXPECT_EQ(getFrameAt(clip, 3).progress, Progress(1, 3));
+        EXPECT_EQ(getFrameAt(clip, 4).progress, Progress(2, 3));
     }
 
     TEST(PlaybackTest, Resolve_WrapsALoopingClipRoundToTheStart)
@@ -65,17 +65,17 @@ namespace antwika::animation
         const Clip clip = getTwoFrameClip(LoopMode::Loop);
 
         EXPECT_EQ(
-            getResolve(clip, 5),
+            getFrameAt(clip, 5),
             (Frame{.index = 10,
                    .progress = Progress(0, 2),
                    .finished = false}));
         EXPECT_EQ(
-            getResolve(clip, 6),
+            getFrameAt(clip, 6),
             (Frame{.index = 10,
                    .progress = Progress(1, 2),
                    .finished = false}));
         EXPECT_EQ(
-            getResolve(clip, 9),
+            getFrameAt(clip, 9),
             (Frame{.index = 11,
                    .progress = Progress(2, 3),
                    .finished = false}));
@@ -86,7 +86,7 @@ namespace antwika::animation
         const Clip clip = getTwoFrameClip(LoopMode::Loop);
 
         EXPECT_EQ(
-            getResolve(clip, 500),
+            getFrameAt(clip, 500),
             (Frame{.index = 10,
                    .progress = Progress(0, 2),
                    .finished = false}));
@@ -97,12 +97,12 @@ namespace antwika::animation
         const Clip clip = getTwoFrameClip(LoopMode::Once);
 
         EXPECT_EQ(
-            getResolve(clip, 0),
+            getFrameAt(clip, 0),
             (Frame{.index = 10,
                    .progress = Progress(0, 2),
                    .finished = false}));
         EXPECT_EQ(
-            getResolve(clip, 4),
+            getFrameAt(clip, 4),
             (Frame{.index = 11,
                    .progress = Progress(2, 3),
                    .finished = false}));
@@ -118,9 +118,9 @@ namespace antwika::animation
             .finished = true,
         };
 
-        EXPECT_EQ(getResolve(clip, 5), expectedFrame);
-        EXPECT_EQ(getResolve(clip, 6), expectedFrame);
-        EXPECT_EQ(getResolve(clip, 1'000'000), expectedFrame);
+        EXPECT_EQ(getFrameAt(clip, 5), expectedFrame);
+        EXPECT_EQ(getFrameAt(clip, 6), expectedFrame);
+        EXPECT_EQ(getFrameAt(clip, 1'000'000), expectedFrame);
     }
 
     TEST(PlaybackTest, Resolve_HandlesASingleFrameClip)
@@ -128,9 +128,9 @@ namespace antwika::animation
         const Clip clip(std::vector<KeyFrame>{{.index = 3,
                                                .durationTicks = 1}});
 
-        EXPECT_EQ(getResolve(clip, 0).index, 3U);
-        EXPECT_EQ(getResolve(clip, 7).index, 3U);
-        EXPECT_EQ(getResolve(clip, 7).progress, Progress(0, 1));
+        EXPECT_EQ(getFrameAt(clip, 0).index, 3U);
+        EXPECT_EQ(getFrameAt(clip, 7).index, 3U);
+        EXPECT_EQ(getFrameAt(clip, 7).progress, Progress(0, 1));
     }
 
     TEST(PlaybackTest, StepProgress_CountsThroughTheStep)
@@ -159,8 +159,8 @@ namespace antwika::animation
 
     TEST(PlaybackTest, StepProgress_PlacesAWalkerBetweenTwoCells)
     {
-        EXPECT_EQ(getInterpolate(0, 64, getStepProgress(2, 4)), 32);
-        EXPECT_EQ(getInterpolate(0, 64, getStepProgress(3, 4)), 48);
+        EXPECT_EQ(getInterpolatedValue(0, 64, getStepProgress(2, 4)), 32);
+        EXPECT_EQ(getInterpolatedValue(0, 64, getStepProgress(3, 4)), 48);
     }
 
 }

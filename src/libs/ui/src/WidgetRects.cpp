@@ -8,7 +8,7 @@
 namespace antwika::ui
 {
 
-    std::optional<Rect> WidgetRects::getFind(WidgetId widget) const
+    std::optional<Rect> WidgetRects::getWidgetRect(WidgetId widget) const
     {
         const auto foundRect = std::ranges::find(
             widgetRects,

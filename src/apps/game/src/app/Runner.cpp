@@ -396,10 +396,10 @@ namespace antwika::game
         {
             return gfx::MeshMaterial{
                 .texture =
-                    keyed ? sheets.getKeyed(tilemap::Atlas::Floor)
+                    keyed ? sheets.getKeyedTexture(tilemap::Atlas::Floor)
                           : sheets.getTexture(tilemap::Atlas::Floor),
                 .materialMapTexture =
-                    keyed ? sheets.getKeyed(tilemap::Atlas::Wall)
+                    keyed ? sheets.getKeyedTexture(tilemap::Atlas::Wall)
                           : sheets.getTexture(tilemap::Atlas::Wall),
                 .shadowMapTexture = lightPasses.getHiding(),
                 .pointLightShadowAtlasTexture = lightPasses.getLampShadows(),

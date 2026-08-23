@@ -53,7 +53,7 @@ namespace antwika::app
             return 7;
         }
 
-        [[nodiscard]] std::string getCounted(
+        [[nodiscard]] std::string getCountedLabel(
             const char *name, std::uint32_t amount)
         {
             return std::string(name) + " " + std::to_string(amount);
@@ -75,14 +75,14 @@ namespace antwika::app
         std::vector<std::string> lines;
 
         lines.push_back(
-            "pacing " + getCounted("drawn", report.drawnFrames) + " of "
+            "pacing " + getCountedLabel("drawn", report.drawnFrames) + " of "
             + std::to_string(scheduledFrames) + " over "
-            + getCounted("ticks", report.ticks));
+            + getCountedLabel("ticks", report.ticks));
 
         lines.push_back(
-            "pacing " + getCounted("longest drop run", report.longestDropRun)
-            + ", " + getCounted("leanest tick", report.minFramesPerTick)
-            + ", " + getCounted("fattest tick", report.maxFramesPerTick));
+            "pacing " + getCountedLabel("longest drop run", report.longestDropRun)
+            + ", " + getCountedLabel("leanest tick", report.minFramesPerTick)
+            + ", " + getCountedLabel("fattest tick", report.maxFramesPerTick));
 
         lines.push_back(std::move(spread));
 
