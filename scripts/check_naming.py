@@ -251,6 +251,8 @@ ATTRIBUTE = re.compile(r"\[\[[^\]]*\]\]")
 
 QUALIFIER_CHAIN = re.compile(r"(?:[A-Za-z_]\w*\s*::\s*)+$")
 
+ACCESS_SPECIFIER = re.compile(r"^\s*(?:public|private|protected)\s*:\s*")
+
 TRAILING_RETURN = re.compile(r"->\s*(?P<type>[^{;]+)")
 
 CONSTANT_SPELLED = re.compile(r"^k[A-Z][A-Za-z0-9]*$")
@@ -934,6 +936,13 @@ def _reads_only(arguments: str) -> bool:
 def _function_site(
     path: Path, began: int, statement: str, scope: int, member: bool
 ) -> Site | None:
+    opening = ACCESS_SPECIFIER.match(statement)
+
+    if opening is not None:
+        began += opening.end()
+        statement = statement[opening.end():]
+        member = True
+
     if _reject(statement):
         return None
 
@@ -959,6 +968,10 @@ def _function_site(
         return None
 
     before = statement[:head.start(1)]
+
+    if _first_assignment(before) < len(before):
+        return None
+
     lead = QUALIFIER_CHAIN.sub("", before)
     spelled = _returned(lead)
 
@@ -988,9 +1001,8 @@ def _function_site(
         "function",
         const_qualified=const_qualified,
         changes_nothing=(
-            const_qualified
-            if member
-            else _reads_only(statement[open_at + 1:close_at])
+            (const_qualified or not member)
+            and _reads_only(statement[open_at + 1:close_at])
         ),
     )
 
