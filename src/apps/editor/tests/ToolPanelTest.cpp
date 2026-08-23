@@ -7,7 +7,9 @@
 #include <antwika/gfx/PngFile.hpp>
 #include <antwika/input/Key.hpp>
 
+#include "antwika/editor/ui/ToolButtonRow.hpp"
 #include "antwika/editor/ui/ToolPanel.hpp"
+#include "antwika/editor/ui/ToolToggles.hpp"
 
 namespace
 {
@@ -203,4 +205,85 @@ namespace
             static_cast<std::size_t>(kIconSide));
     }
 
+}
+
+TEST(ToolPanelTest, ToolButtonActive_LightsTheButtonForTheChosenTool)
+{
+    using antwika::editor::ToolToggles;
+    using antwika::map::Tool;
+
+    for (const auto row : antwika::editor::kToolButtonRows)
+    {
+        if (!row.tool.has_value())
+        {
+            continue;
+        }
+
+        EXPECT_TRUE(
+            antwika::editor::toolButtonActive(
+                row.button, *row.tool, ToolToggles{}));
+    }
+}
+
+TEST(ToolPanelTest, ToolButtonActive_LeavesTheOtherToolButtonsDark)
+{
+    using antwika::editor::ToolToggles;
+    using antwika::map::Tool;
+
+    for (const auto row : antwika::editor::kToolButtonRows)
+    {
+        if (!row.tool.has_value() || *row.tool == Tool::Brush)
+        {
+            continue;
+        }
+
+        EXPECT_FALSE(
+            antwika::editor::toolButtonActive(
+                row.button, Tool::Brush, ToolToggles{}));
+    }
+}
+
+TEST(ToolPanelTest, ToolButtonActive_KeepsRuleLinesOffTheToolButtons)
+{
+    using antwika::editor::ToolButton;
+    using antwika::editor::ToolToggles;
+    using antwika::map::Tool;
+
+    const ToolToggles ruleLinesToggles{.showRuleLines = true};
+
+    EXPECT_TRUE(
+        antwika::editor::toolButtonActive(
+            ToolButton::RuleLines, Tool::Brush, ruleLinesToggles));
+
+    for (const auto button :
+         {ToolButton::Key,
+          ToolButton::Door,
+          ToolButton::Checkpoint,
+          ToolButton::Food,
+          ToolButton::Water})
+    {
+        EXPECT_FALSE(
+            antwika::editor::toolButtonActive(
+                button, Tool::Brush, ruleLinesToggles));
+    }
+}
+
+TEST(ToolPanelTest, ToolButtonActive_ReadsEachToggleFromItsOwnFlag)
+{
+    using antwika::editor::ToolButton;
+    using antwika::editor::ToolToggles;
+    using antwika::map::Tool;
+
+    EXPECT_TRUE(
+        antwika::editor::toolButtonActive(
+            ToolButton::FreeLook, Tool::Brush,
+            ToolToggles{.freeLook = true}));
+    EXPECT_TRUE(
+        antwika::editor::toolButtonActive(
+            ToolButton::Lighting, Tool::Brush,
+            ToolToggles{.lighting = true}));
+    EXPECT_FALSE(
+        antwika::editor::toolButtonActive(
+            ToolButton::FreeLook, Tool::Brush,
+            ToolToggles{.lighting = true}));
 }
