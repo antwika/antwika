@@ -16,25 +16,7 @@ namespace antwika::map::mapfile
 
         for (const auto &family : map.familyGroups)
         {
-            auto variants = nlohmann::json::array();
-
-            for (const auto &member : family.variants)
-            {
-                nlohmann::json one;
-
-                one[std::string(kTileKey)] =
-                    writtenTile(member.tile);
-                one[std::string(kWeightKey)] = member.weight;
-                variants.push_back(one);
-            }
-
-            nlohmann::json familyJson;
-
-            familyJson[std::string(kTileKey)] =
-                writtenTile(family.canonicalTile);
-            familyJson[std::string(kWeightKey)] = family.weight;
-            familyJson[std::string(kMembersKey)] = variants;
-            families.push_back(familyJson);
+            families.push_back(written(kFamilyFields, family));
         }
 
         document[std::string(kFamiliesKey)] = families;
