@@ -84,14 +84,27 @@ namespace antwika::map::mapfile
 
     constexpr std::string_view kFilledKey = "filled";
 
-    constexpr enums::NameTable<voxel::Corner> kCornerNames{
+    [[nodiscard]] inline nlohmann::json namesOf(
+        const std::span<const std::string_view> names)
+    {
+        auto arrayJson = nlohmann::json::array();
+
+        for (const auto name : names)
+        {
+            arrayJson.push_back(std::string(name));
+        }
+
+        return arrayJson;
+    } // GCOVR_EXCL_LINE
+
+    inline constexpr enums::NameTable<voxel::Corner> kCornerNames{
         {"topLeft", "topRight", "bottomLeft", "bottomRight"}};
 
     static_assert(kCornerNames.isComplete());
 
     constexpr std::string_view kKindKey = "kind";
 
-    constexpr enums::NameTable<voxel::Kind> kKindNames{
+    inline constexpr enums::NameTable<voxel::Kind> kKindNames{
         {"normal", "water", "ramp", "ladder"}};
 
     static_assert(kKindNames.isComplete());
@@ -102,7 +115,7 @@ namespace antwika::map::mapfile
 
     constexpr std::string_view kFacingKey = "facing";
 
-    constexpr enums::NameTable<voxel::Facing> kFacingNames{
+    inline constexpr enums::NameTable<voxel::Facing> kFacingNames{
         {"any", "east", "west", "north", "south"}};
 
     static_assert(kFacingNames.isComplete());
@@ -113,7 +126,7 @@ namespace antwika::map::mapfile
 
     constexpr std::string_view kLevelKey = "level";
 
-    constexpr enums::NameTable<voxel::StairHalf> kStairHalfNames{
+    inline constexpr enums::NameTable<voxel::StairHalf> kStairHalfNames{
         {"any", "lower", "upper"}};
 
     static_assert(kStairHalfNames.isComplete());
@@ -122,7 +135,7 @@ namespace antwika::map::mapfile
 
     constexpr std::string_view kPartKey = "part";
 
-    constexpr enums::NameTable<voxel::StairPart> kPartNames{
+    inline constexpr enums::NameTable<voxel::StairPart> kPartNames{
         {"any", "front", "side"}};
 
     static_assert(kPartNames.isComplete());
@@ -152,7 +165,7 @@ namespace antwika::map::mapfile
 
     constexpr std::string_view kViewKey = "view";
 
-    constexpr enums::NameTable<Tool> kToolNames{
+    inline constexpr enums::NameTable<Tool> kToolNames{
         {"brush",
          "picker",
          "lamp",
@@ -185,12 +198,12 @@ namespace antwika::map::mapfile
 
     constexpr std::string_view kSwaysKey = "sways";
 
-    constexpr enums::NameTable<Paint> kDrawingNames{
+    inline constexpr enums::NameTable<Paint> kDrawingNames{
         {"brush", "line", "fill", "mark", "rect", "circle"}};
 
     static_assert(kDrawingNames.isComplete());
 
-    constexpr enums::NameTable<View> kViewNames{
+    inline constexpr enums::NameTable<View> kViewNames{
         {"world", "atlases", "character", "icons", "plan"}};
 
     static_assert(kViewNames.isComplete());
@@ -237,12 +250,12 @@ namespace antwika::map::mapfile
 
     constexpr std::string_view kFlatName = "flat";
 
-    constexpr enums::NameTable<voxel::Side> kSideNames{
+    inline constexpr enums::NameTable<voxel::Side> kSideNames{
         {"top", "bottom", "left", "right"}};
 
     static_assert(kSideNames.isComplete());
 
-    constexpr enums::NameTable<voxel::EdgeKind> kEdgeNames{
+    inline constexpr enums::NameTable<voxel::EdgeKind> kEdgeNames{
         {"outward", "inward"}};
 
     static_assert(kEdgeNames.isComplete());
