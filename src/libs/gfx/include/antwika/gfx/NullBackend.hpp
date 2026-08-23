@@ -8,6 +8,7 @@
 
 #include <antwika/log/ILogger.hpp>
 
+#include "antwika/gfx/GfxCapabilities.hpp"
 #include "antwika/gfx/IGfxBackend.hpp"
 #include "antwika/gfx/IWindow.hpp"
 #include "antwika/gfx/WindowSpec.hpp"
@@ -33,6 +34,9 @@ namespace antwika::gfx
         [[nodiscard]] std::string_view name() const override;
 
         [[nodiscard]] std::size_t maxWindows() const override;
+
+        [[nodiscard]] GfxCapabilities capabilities()
+            const override;
 
         [[nodiscard]] std::unique_ptr<IWindow> createWindow(
             const WindowSpec &spec) override;

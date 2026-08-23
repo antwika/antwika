@@ -34,9 +34,7 @@ namespace antwika::gfx
 
         virtual void setTitle(std::string_view title) = 0;
 
-        virtual void setSize(Size)
-        {
-        }
+        virtual void setSize(Size size) = 0;
 
         virtual void setFullscreen(bool fullscreen) = 0;
 

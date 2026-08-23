@@ -36,6 +36,9 @@ namespace antwika::gfx::raylib
 
         [[nodiscard]] std::size_t maxWindows() const override;
 
+        [[nodiscard]] GfxCapabilities capabilities()
+            const override;
+
         [[nodiscard]] std::unique_ptr<IWindow> createWindow(
             const WindowSpec &spec) override;
 

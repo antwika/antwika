@@ -54,6 +54,10 @@ namespace antwika::gfx::fakes
         {
         }
 
+        void setSize(Size) override
+        {
+        }
+
         void setFullscreen(bool ) override
         {
         }

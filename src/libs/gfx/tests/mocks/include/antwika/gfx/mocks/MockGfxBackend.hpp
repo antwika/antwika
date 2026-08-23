@@ -7,6 +7,7 @@
 #include <optional>
 #include <string_view>
 
+#include <antwika/gfx/GfxCapabilities.hpp>
 #include <antwika/gfx/IGfxBackend.hpp>
 #include <antwika/gfx/IWindow.hpp>
 #include <antwika/gfx/WindowSpec.hpp>
@@ -22,6 +23,8 @@ namespace antwika::gfx::mocks
     public:
         MOCK_METHOD(std::string_view, name, (), (const, override));
         MOCK_METHOD(std::size_t, maxWindows, (), (const, override));
+        MOCK_METHOD(
+            GfxCapabilities, capabilities, (), (const, override));
 
         MOCK_METHOD(
             std::unique_ptr<IWindow>,

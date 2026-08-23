@@ -26,6 +26,7 @@ namespace antwika::gfx::mocks
         MOCK_METHOD(bool, isFullscreen, (), (const, override));
         MOCK_METHOD(IRenderer &, renderer, (), (override));
         MOCK_METHOD(void, setTitle, (std::string_view title), (override));
+        MOCK_METHOD(void, setSize, (Size size), (override));
         MOCK_METHOD(void, setFullscreen, (bool fullscreen), (override));
         MOCK_METHOD(void, close, (), (override));
     };
