@@ -21,8 +21,8 @@ namespace antwika::editor
     tile::TileRules &Editor::activeRules()
     {
         return chosenLayer == map::kBaseLayer
-                            ? map.rules
-                            : map.decorRules;
+                            ? document.map.rules
+                            : document.map.decorRules;
     }
 
     bool Editor::isDecorLayer()
@@ -172,7 +172,7 @@ namespace antwika::editor
             for (const auto &rule : shapedRules.toAddRules)
             {
                 if (groupContaining(
-                        map.familyGroups, rule.tile)
+                        document.map.familyGroups, rule.tile)
                     != nullptr)
                 {
                     continue;
@@ -181,7 +181,7 @@ namespace antwika::editor
                 for (const auto tile : rule.allowedTiles)
                 {
                     if (groupContaining(
-                            map.familyGroups, tile)
+                            document.map.familyGroups, tile)
                         != nullptr)
                     {
                         continue;
@@ -211,7 +211,7 @@ namespace antwika::editor
     gfx::RectF Editor::gridRect()
     {
         return panZoomed(
-            tilemapPlace(sheetClipRect(), map.tilemap),
+            tilemapPlace(sheetClipRect(), document.map.tilemap),
             gridPanPoint,
             gridZoom);
     }
@@ -224,7 +224,8 @@ namespace antwika::editor
     std::optional<geometry::GridCell> Editor::cellUnderPointer()
     {
         return cellShownAt(
-            map.tilemap, gridRect(), sheetClipRect(), pointer.pointerOnCanvas);
+            document.map.tilemap, gridRect(), sheetClipRect(),
+            pointer.pointerOnCanvas);
     }
 
     void Editor::drawColorPicker()

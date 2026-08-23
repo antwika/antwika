@@ -9,7 +9,7 @@ namespace antwika::editor
 
     bool Editor::shouldAdvanceTileAnimation() const
     {
-        return anyTileAnimated(map.flipAnimations)
+        return anyTileAnimated(document.map.flipAnimations)
                && tick % decor::kDecorPaceTick == 0
                && !strokeActive;
     }
@@ -24,8 +24,9 @@ namespace antwika::editor
             && selectedTile.has_value())
         {
             pushUndo();
-            map.flipAnimations =
-                withAnimationToggled(map.flipAnimations, *selectedTile);
+            document.map.flipAnimations =
+                withAnimationToggled(document.map.flipAnimations,
+                    *selectedTile);
             assignMode.flipFramePicked = 0;
             assignMode.flipFrameAssigning = false;
             atlasSheets.touch();
@@ -53,11 +54,12 @@ namespace antwika::editor
             && selectedTile.has_value())
         {
             pushUndo();
-            map.flipAnimations =
-                withAnimationFrameAdded(map.flipAnimations, *selectedTile);
+            document.map.flipAnimations =
+                withAnimationFrameAdded(document.map.flipAnimations,
+                    *selectedTile);
 
             const auto *animation =
-                animationOf(map.flipAnimations, *selectedTile);
+                animationOf(document.map.flipAnimations, *selectedTile);
 
             if (animation != nullptr && !animation->frameTiles.empty())
             {
@@ -83,7 +85,7 @@ namespace antwika::editor
         }
 
         const auto *animation =
-            animationOf(map.flipAnimations, *selectedTile);
+            animationOf(document.map.flipAnimations, *selectedTile);
         const auto animationPanel = context.column(
             antwika::ui::ContainerSpec{
                 .widthSizing = antwika::ui::kGrowSizing,

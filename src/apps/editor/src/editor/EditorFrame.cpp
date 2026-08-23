@@ -33,7 +33,7 @@ namespace antwika::editor
                 ? std::optional<std::uint32_t>(
                       static_cast<std::uint32_t>(*caption.speaker))
                 : std::nullopt);
-        game->setRosterCount(map.characters.size());
+        game->setRosterCount(document.map.characters.size());
         game->run(tick);
         sayConsumeReport();
         sayDialogueLine();
@@ -221,7 +221,7 @@ namespace antwika::editor
                     .lighting = lighting,
                     .sightOn = lampSight && playing && lowerLight,
                     .ambient =
-                        static_cast<float>(map.ambient) / 100.0F,
+                        static_cast<float>(document.map.ambient) / 100.0F,
                     .walkerPosition = walkerPosition,
                     .fadeAbove =
                         playing
@@ -244,7 +244,7 @@ namespace antwika::editor
         }
 
         atlasSheets.refresh(
-            viewportRenderer, map, tick, shouldAdvanceTileAnimation());
+            viewportRenderer, document.map, tick, shouldAdvanceTileAnimation());
 
         characterView.refresh(viewportRenderer);
 
@@ -327,8 +327,8 @@ namespace antwika::editor
             && uiFrame.interactions.slidChange->sliderWidget
                    == decor::kFrequencyWidget)
         {
-            map.decor = withFrequencySet(
-                map.decor,
+            document.map.decor = withFrequencySet(
+                document.map.decor,
                 *selectedTile,
                 static_cast<std::uint8_t>(
                     uiFrame.interactions.slidChange->value));
@@ -340,8 +340,8 @@ namespace antwika::editor
             && uiFrame.interactions.slidChange->sliderWidget
                    == decor::kDecorWeightWidget)
         {
-            map.decor = withWeightSet(
-                map.decor,
+            document.map.decor = withWeightSet(
+                document.map.decor,
                 *selectedTile,
                 static_cast<std::uint8_t>(
                     uiFrame.interactions.slidChange->value));
@@ -349,12 +349,12 @@ namespace antwika::editor
 
         if (slidingWidget == antwika::editor::kGlowWidget
             && inkPicker.editingInk.has_value()
-            && *inkPicker.editingInk < map.glows.size()
+            && *inkPicker.editingInk < document.map.glows.size()
             && uiFrame.interactions.slidChange.has_value()
             && uiFrame.interactions.slidChange->sliderWidget
                    == antwika::editor::kGlowWidget)
         {
-            map.glows.at(*inkPicker.editingInk) =
+            document.map.glows.at(*inkPicker.editingInk) =
                 static_cast<std::uint8_t>(
                     uiFrame.interactions.slidChange->value);
         }
@@ -364,7 +364,7 @@ namespace antwika::editor
             && uiFrame.interactions.slidChange->sliderWidget
                    == antwika::editor::kAmbientWidget)
         {
-            map.ambient = static_cast<std::uint8_t>(
+            document.map.ambient = static_cast<std::uint8_t>(
                 uiFrame.interactions.slidChange->value);
         }
 
@@ -375,8 +375,8 @@ namespace antwika::editor
             && uiFrame.interactions.slidChange->sliderWidget
                    == decor::kVariantWeightWidget)
         {
-            map.familyGroups = withVariantWeightSet(
-                map.familyGroups,
+            document.map.familyGroups = withVariantWeightSet(
+                document.map.familyGroups,
                 *selectedTile,
                 static_cast<std::uint8_t>(
                     uiFrame.interactions.slidChange->value));
@@ -387,16 +387,16 @@ namespace antwika::editor
             && uiFrame.interactions.edit->fieldWidget
                    == antwika::editor::kExitTargetWidget)
         {
-            map.exitTarget = uiFrame.interactions.edit->text;
+            document.map.exitTarget = uiFrame.interactions.edit->text;
         }
 
         if (focusedField == FocusedField::FigureName && figurePicked.has_value()
-            && *figurePicked < map.characters.size()
+            && *figurePicked < document.map.characters.size()
             && uiFrame.interactions.edit.has_value()
             && uiFrame.interactions.edit->fieldWidget
                    == antwika::editor::kFigureNameWidget)
         {
-            map.characters.at(*figurePicked).name =
+            document.map.characters.at(*figurePicked).name =
                 uiFrame.interactions.edit->text;
         }
 

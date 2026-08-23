@@ -62,7 +62,7 @@ namespace antwika::editor
 
             strokeErases = downPressed.button == input::MouseButton::Right;
             iconsView.paint(viewportRenderer, *pixel, strokeErases);
-            dirty = true;
+            document.markDirty();
             brushAtCell = pixel;
             strokeActive = true;
 
@@ -171,7 +171,7 @@ namespace antwika::editor
             pushUndo();
 
             const auto color = character::characterPaletteColor(
-                map.paletteColors,
+                document.map.paletteColors,
                 strokeErases ? character::kTransparentInk
                              : inkPicker.activeInk);
 
@@ -317,7 +317,7 @@ namespace antwika::editor
                 sheet,
                 editedTileValue,
                 *pixel,
-                map.paletteColors.at(inkPicker.activeInk));
+                document.map.paletteColors.at(inkPicker.activeInk));
         }
         else
         {
@@ -325,7 +325,7 @@ namespace antwika::editor
                 sheet,
                 editedTileValue,
                 *pixel,
-                map.paletteColors.at(inkPicker.activeInk));
+                document.map.paletteColors.at(inkPicker.activeInk));
             brushAtCell = pixel;
             strokeActive = true;
         }

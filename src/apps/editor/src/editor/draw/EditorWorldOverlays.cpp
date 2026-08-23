@@ -39,14 +39,14 @@ namespace antwika::editor
         if (!playing && overlayStale)
         {
             gridLines = voxelmap::levelGridLines(
-                map.voxels, antwika::voxel::cubeTop(editLevel));
+                document.map.voxels, antwika::voxel::cubeTop(editLevel));
             topLines = voxelmap::buildableTopOutlines(
-                map.voxels, antwika::voxel::cubeTop(editLevel));
+                document.map.voxels, antwika::voxel::cubeTop(editLevel));
 
             const auto satisfiedSeamSet = solver::satisfiedSeams(
                 worldMeshes.faces(),
                 worldMeshes.solved(),
-                map.rules,
+                document.map.rules,
                 cornerJoining);
 
             seamsAboveLevel = solver::crossLevelSeams(
@@ -88,7 +88,7 @@ namespace antwika::editor
 
             if (playing)
             {
-                for (const auto keyCell : map.keyPositions)
+                for (const auto keyCell : document.map.keyPositions)
                 {
                     if (!game->gates().collectedKeyPositions.contains(
                             antwika::voxel::cubeCornerOf(keyCell)))
@@ -97,7 +97,7 @@ namespace antwika::editor
                     }
                 }
 
-                for (const auto doorCell : map.doorPositions)
+                for (const auto doorCell : document.map.doorPositions)
                 {
                     ruled(
                         voxelmap::cubeWireframe(doorCell),
@@ -200,60 +200,63 @@ namespace antwika::editor
                     }
                 }
 
-                for (const auto lamp : map.lamps)
+                for (const auto lamp : document.map.lamps)
                 {
                     ruled(light::lampGizmoSpans(lamp), lamp.tintColor);
                 }
 
-                if (map.spawnCubePosition.has_value())
+                if (document.map.spawnCubePosition.has_value())
                 {
                     ruled(
-                        voxelmap::cubeWireframe(*map.spawnCubePosition),
+                        voxelmap::cubeWireframe(
+                            *document.map.spawnCubePosition),
                         kCornerFilledMarkerColor);
                 }
 
-                if (map.exitCubePosition.has_value())
+                if (document.map.exitCubePosition.has_value())
                 {
-                    ruled(voxelmap::cubeWireframe(*map.exitCubePosition),
+                    ruled(voxelmap::cubeWireframe(
+                            *document.map.exitCubePosition),
                         kForbiddenMarkerColor);
                 }
 
-                for (const auto keyCell : map.keyPositions)
+                for (const auto keyCell : document.map.keyPositions)
                 {
                     ruled(voxelmap::cubeWireframe(keyCell), kRuleLineColor);
                 }
 
                 for (
-                    const auto doorCell : map.doorPositions)
+                    const auto doorCell : document.map.doorPositions)
                 {
                     ruled(
                         voxelmap::cubeWireframe(doorCell),
                         kCornerSeamLineColor);
                 }
 
-                for (const auto checkpointCell : map.checkpointPositions)
+                for (const auto checkpointCell :
+                     document.map.checkpointPositions)
                 {
                     ruled(
                         voxelmap::cubeWireframe(checkpointCell),
                         kRuleLineCrossLevelColor);
                 }
 
-                for (const auto foodCell : map.foodPositions)
+                for (const auto foodCell : document.map.foodPositions)
                 {
                     ruled(voxelmap::cubeWireframe(foodCell), kFoodBarColor);
                 }
 
-                for (const auto waterCell : map.waterPositions)
+                for (const auto waterCell : document.map.waterPositions)
                 {
                     ruled(voxelmap::cubeWireframe(waterCell), kWaterBarColor);
                 }
 
                 if (tool == map::Tool::Figure
                     && figurePicked.has_value()
-                    && *figurePicked < map.characters.size())
+                    && *figurePicked < document.map.characters.size())
                 {
                     for (const auto stop :
-                         map.characters.at(
+                         document.map.characters.at(
                              *figurePicked).patrolPathPositions)
                     {
                         ruled(
@@ -265,18 +268,18 @@ namespace antwika::editor
                 if (tool == map::Tool::PressurePlate)
                 {
                     for (std::size_t index = 0;
-                         index < map.plates.size();
+                         index < document.map.plates.size();
                          ++index)
                     {
                         ruled(
-                            voxelmap::cubeWireframe(map.plates.at(
+                            voxelmap::cubeWireframe(document.map.plates.at(
                                 index).position),
                             kCursorColor);
 
                         if (platePicked == index)
                         {
                             for (const auto sway :
-                                 map.plates.at(index).togglePositions)
+                                 document.map.plates.at(index).togglePositions)
                             {
                                 ruled(
                                     voxelmap::cubeWireframe(sway),

@@ -280,7 +280,7 @@ namespace antwika::editor
             const auto cell = cellUnderPointer();
 
             if (cell.has_value()
-                && map.tilemap.at(cell->column, cell->row)
+                && document.map.tilemap.at(cell->column, cell->row)
                        .has_value())
             {
                 tileCell = cell;
@@ -322,7 +322,7 @@ namespace antwika::editor
 
         if (pointer.canvasRest.tileCell.has_value())
         {
-            const auto tile = map.tilemap.at(
+            const auto tile = document.map.tilemap.at(
                 pointer.canvasRest.tileCell->column,
                 pointer.canvasRest.tileCell->row);
 
@@ -477,7 +477,7 @@ namespace antwika::editor
             }
         }
 
-        for (std::size_t ink = 0; ink < map.paletteColors.size();
+        for (std::size_t ink = 0; ink < document.map.paletteColors.size();
              ++ink)
         {
             if (whichWidget == tile::swatchWidget(ink))
@@ -486,7 +486,7 @@ namespace antwika::editor
             }
         }
 
-        for (std::size_t layer = 0; layer < map.layers.size();
+        for (std::size_t layer = 0; layer < document.map.layers.size();
              ++layer)
         {
             if (whichWidget == map::layerWidget(layer))

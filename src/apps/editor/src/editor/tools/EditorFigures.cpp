@@ -48,14 +48,15 @@ namespace antwika::editor
     std::string Editor::characterSheetPath(
         const std::size_t figureIndex) const
     {
-        if (figureIndex < map.characters.size()
-            && map.characters.at(figureIndex).player)
+        if (figureIndex < document.map.characters.size()
+            && document.map.characters.at(figureIndex).player)
         {
-            return map::sharedTexturePath(mapPath, character::kCharacterSheet);
+            return map::sharedTexturePath(document.path(),
+                character::kCharacterSheet);
         }
 
         return map::sidecarPath(
-            mapPath,
+            document.path(),
             "figure-" + std::to_string(figureIndex) + "-20x28.png");
     }
 
@@ -65,7 +66,8 @@ namespace antwika::editor
 
         std::vector<gfx::Bitmap> skinBitmaps;
 
-        for (std::size_t index = 0; index < map.characters.size(); ++index)
+        for (std::size_t index = 0; index < document.map.characters.size(
+                ); ++index)
         {
             gfx::Bitmap skinBitmap;
 
@@ -76,12 +78,12 @@ namespace antwika::editor
             }
             catch (...)
             {
-                skinBitmap = map::loadCharacterSheet(mapPath, kAppName);
+                skinBitmap = map::loadCharacterSheet(document.path(), kAppName);
             }
 
             if (skinBitmap.size != character::characterSheetSize())
             {
-                skinBitmap = map::loadCharacterSheet(mapPath, kAppName);
+                skinBitmap = map::loadCharacterSheet(document.path(), kAppName);
             }
 
             skinBitmaps.push_back(std::move(skinBitmap));
@@ -112,12 +114,12 @@ namespace antwika::editor
         const voxel::VoxelPosition position, const input::MouseButton button)
     {
         if (!figurePicked.has_value()
-            || *figurePicked >= map.characters.size())
+            || *figurePicked >= document.map.characters.size())
         {
             return;
         }
 
-        auto &figure = map.characters.at(*figurePicked);
+        auto &figure = document.map.characters.at(*figurePicked);
 
         if (button == input::MouseButton::Right)
         {
@@ -130,9 +132,9 @@ namespace antwika::editor
                 return;
             }
 
-            map.characters.erase(
+            document.map.characters.erase(
                 std::next(
-                    map.characters.begin(),
+                    document.map.characters.begin(),
                     static_cast<std::ptrdiff_t>(
                         *figurePicked)));
             figurePicked.reset();
@@ -178,7 +180,7 @@ namespace antwika::editor
     {
         if (!playing)
         {
-            return light::activeLights(map.lamps);
+            return light::activeLights(document.map.lamps);
         }
 
         const auto stoodPosition =
@@ -194,7 +196,7 @@ namespace antwika::editor
             light::ActiveLight{.position = sightPoint},
             light::ActiveLight{.position = upperSightPoint}};
 
-        for (const auto &lamp : light::activeLights(map.lamps))
+        for (const auto &lamp : light::activeLights(document.map.lamps))
         {
             if (lights.size() >= light::kMaxLamps)
             {
@@ -224,12 +226,12 @@ namespace antwika::editor
 
     void Editor::ensurePlayerInRoster()
     {
-        if (playerIndex(map).has_value())
+        if (playerIndex(document.map).has_value())
         {
             return;
         }
 
-        map.characters.push_back(
+        document.map.characters.push_back(
             map::Character{
                 .name = "Player",
                 .idlePlacement = startingPlacement(),
@@ -241,12 +243,12 @@ namespace antwika::editor
     {
         game->forgetPatrols();
         ensurePlayerInRoster();
-        patrolPositions = patrolStopsOf(map);
+        patrolPositions = patrolStopsOf(document.map);
         game->setPlayer(
             gameplay::spawnRoster(
                 game->world(),
-                map,
-                *playerIndex(map),
+                document.map,
+                *playerIndex(document.map),
                 startingPlacement()));
     }
 
@@ -254,14 +256,14 @@ namespace antwika::editor
     {
         const ecs::OpenPhase phase(game->world());
 
-        gameplay::spawnItems(game->world(), map);
+        gameplay::spawnItems(game->world(), document.map);
     }
 
     void Editor::playApart()
     {
         saveCurrentMap();
 
-        if (mapPath.empty())
+        if (document.path().empty())
         {
             return;
         }
@@ -273,7 +275,7 @@ namespace antwika::editor
              / "antwika_game" / "antwika_game")
                 .string();
 
-        if (!app::spawnDetached(assetFolder, {"--map", mapPath}))
+        if (!app::spawnDetached(assetFolder, {"--map", document.path()}))
         {
             showStatus("no game to play it with", true, 180);
 
@@ -337,9 +339,10 @@ namespace antwika::editor
         const auto dialogueLine =
             world.get<component::DialogueLine>(game->player());
 
-        if (dialogueLine.rosterIndex < map.characters.size())
+        if (dialogueLine.rosterIndex < document.map.characters.size())
         {
-            const auto &figure = map.characters.at(dialogueLine.rosterIndex);
+            const auto &figure = document.map.characters.at(
+                dialogueLine.rosterIndex);
 
             if (!figure.dialogue.empty())
             {

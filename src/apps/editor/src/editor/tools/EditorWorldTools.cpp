@@ -111,15 +111,15 @@ namespace antwika::editor
             for (const auto cube :
                  shapedCubes(*shapeFromPosition, *position))
             {
-                map.voxels = voxel::withRampsRebuilt(
+                document.map.voxels = voxel::withRampsRebuilt(
                     dragPaintButton == input::MouseButton::Left
                                      ? voxel::withBlockAt(
-                              map.voxels,
+                              document.map.voxels,
                               cube,
                               brushKind,
                               rampFacing)
                         : voxel::withoutBlockAt(
-                              map.voxels, cube),
+                              document.map.voxels, cube),
                     cube);
             }
 
@@ -135,8 +135,8 @@ namespace antwika::editor
         pushUndo();
 
         auto &landing = tool == map::Tool::Start
-                      ? map.spawnCubePosition
-                      : map.exitCubePosition;
+                      ? document.map.spawnCubePosition
+                      : document.map.exitCubePosition;
 
         landing =
             button == input::MouseButton::Left
@@ -145,17 +145,17 @@ namespace antwika::editor
 
         if (button == input::MouseButton::Left
             && !rules::cubeOccupied(
-                map.voxels, antwika::voxel::cubeCornerOf(position)))
+                document.map.voxels, antwika::voxel::cubeCornerOf(position)))
         {
-            map.voxels = voxel::withRampsRebuilt(
-                voxel::withBlockAt(map.voxels, position), position);
+            document.map.voxels = voxel::withRampsRebuilt(
+                voxel::withBlockAt(document.map.voxels, position), position);
             rebuildWorld();
         }
     }
 
     bool Editor::beginLampCarry(const voxel::VoxelPosition position)
     {
-        for (const auto &lamp : map.lamps)
+        for (const auto &lamp : document.map.lamps)
         {
             if (lamp.position == position)
             {
@@ -185,8 +185,8 @@ namespace antwika::editor
 
         if (position.has_value() && *position != draggedLamp->position)
         {
-            map.lamps = light::withLampAt(
-                light::withoutLampAt(map.lamps, draggedLamp->position),
+            document.map.lamps = light::withLampAt(
+                light::withoutLampAt(document.map.lamps, draggedLamp->position),
                 *position,
                 draggedLamp->tintColor);
             draggedLamp->position = *position;

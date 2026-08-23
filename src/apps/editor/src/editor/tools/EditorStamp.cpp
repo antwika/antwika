@@ -32,9 +32,9 @@ namespace antwika::editor
                     .y = offset.y,
                     .z = stampCorner.z + offset.z};
 
-                map.voxels = voxel::withRampsRebuilt(
+                document.map.voxels = voxel::withRampsRebuilt(
                     voxel::withBlockAt(
-                        map.voxels,
+                        document.map.voxels,
                         cornerPosition,
                         material.kind,
                         material.facing),
@@ -80,7 +80,7 @@ namespace antwika::editor
 
         voxel::Voxels cubeVoxels;
 
-        for (const auto &[position, material] : map.voxels)
+        for (const auto &[position, material] : document.map.voxels)
         {
             const auto corner =
                 antwika::voxel::cubeCornerOf(position);

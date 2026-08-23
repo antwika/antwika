@@ -225,7 +225,7 @@ namespace antwika::editor
         }
 
         for (std::size_t index = 0;
-             index < map.layers.size();
+             index < document.map.layers.size();
              ++index)
         {
             if (interactions.activatedWidget
@@ -284,7 +284,7 @@ namespace antwika::editor
             == antwika::editor::kExitLockedWidget)
         {
             pushUndo();
-            map.exitLocked = !map.exitLocked;
+            document.map.exitLocked = !document.map.exitLocked;
             consumedKey = true;
         }
 
@@ -329,8 +329,8 @@ namespace antwika::editor
             && isDecorLayer() && selectedTile.has_value())
         {
             pushUndo();
-            map.decor = decor::withDecorLayerSet(
-                map.decor, *selectedTile, chosenLayer);
+            document.map.decor = decor::withDecorLayerSet(
+                document.map.decor, *selectedTile, chosenLayer);
             rebuildWorld();
             consumedKey = true;
         }
@@ -373,19 +373,19 @@ namespace antwika::editor
             {
                 pushUndo();
                 ensureDecor();
-                map.decor = decor::withFrameAdded(
-                    map.decor, *selectedTile);
+                document.map.decor = decor::withFrameAdded(
+                    document.map.decor, *selectedTile);
 
                 const auto *decor =
                     decor::decorOf(
-                        map.decor, *selectedTile);
+                        document.map.decor, *selectedTile);
                 const auto lastIndex =
                     decor->frameTiles.size() - 1;
 
                 copyTilePixels(
                     decor->frameTiles.at(lastIndex - 1), *spare);
-                map.decor = decor::withFrameSet(
-                    map.decor, *selectedTile, lastIndex, *spare);
+                document.map.decor = decor::withFrameSet(
+                    document.map.decor, *selectedTile, lastIndex, *spare);
                 clearAssignModes();
                 assignMode.framePicked = lastIndex;
                 atlasSheets.touch();
@@ -483,10 +483,10 @@ namespace antwika::editor
                 kAddLayerWidget)
         {
             pushUndo();
-            map.layers = map::withLayerAdded(
-                map.layers);
+            document.map.layers = map::withLayerAdded(
+                document.map.layers);
             chosenLayer =
-                map.layers.size() - 1;
+                document.map.layers.size() - 1;
             consumedKey = true;
         }
 
@@ -495,11 +495,11 @@ namespace antwika::editor
                 kRemoveLayerWidget)
         {
             pushUndo();
-            map.layers = map::withLayerRemoved(
-                map.layers, chosenLayer);
+            document.map.layers = map::withLayerRemoved(
+                document.map.layers, chosenLayer);
             chosenLayer = std::min(
                 chosenLayer,
-                map.layers.size() - 1);
+                document.map.layers.size() - 1);
             consumedKey = true;
         }
 

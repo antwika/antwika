@@ -14,11 +14,11 @@ namespace antwika::editor
     void Editor::ensureDecor()
     {
         if (isDecorLayer() && selectedTile.has_value()
-            && decor::decorOf(map.decor, *selectedTile)
+            && decor::decorOf(document.map.decor, *selectedTile)
                    == nullptr)
         {
-            map.decor = decor::withDecorToggled(
-                map.decor, *selectedTile, chosenLayer);
+            document.map.decor = decor::withDecorToggled(
+                document.map.decor, *selectedTile, chosenLayer);
         }
     }
 
@@ -31,7 +31,7 @@ namespace antwika::editor
         }
 
         const auto *decor =
-            decor::decorOf(map.decor, *selectedTile);
+            decor::decorOf(document.map.decor, *selectedTile);
 
         return decor != nullptr
                        && assignMode.framePicked
@@ -45,7 +45,7 @@ namespace antwika::editor
     {
         std::set<tilemap::Tile> takenTiles;
 
-        for (const auto &decor : map.decor)
+        for (const auto &decor : document.map.decor)
         {
             for (const auto frame : decor.frameTiles)
             {
@@ -53,7 +53,7 @@ namespace antwika::editor
             }
         }
 
-        for (const auto &flip : map.flipAnimations)
+        for (const auto &flip : document.map.flipAnimations)
         {
             for (const auto frame : flip.frameTiles)
             {
@@ -61,7 +61,7 @@ namespace antwika::editor
             }
         }
 
-        for (const auto &transition : map.transitions)
+        for (const auto &transition : document.map.transitions)
         {
             takenTiles.insert(transition.maskTile);
             takenTiles.insert(transition.outputTile);
@@ -73,7 +73,8 @@ namespace antwika::editor
         {
             const tilemap::Tile tile{.atlas = atlas, .index = index};
 
-            if (!tilemap::cellHoldingTile(map.tilemap, tile).has_value()
+            if (!tilemap::cellHoldingTile(document.map.tilemap,
+                    tile).has_value()
                 && !takenTiles.contains(tile))
             {
                 return tile;
@@ -140,7 +141,7 @@ namespace antwika::editor
         }
 
         const auto *decor =
-            decor::decorOf(map.decor, *selectedTile);
+            decor::decorOf(document.map.decor, *selectedTile);
         const auto decorShown =
             decor != nullptr
                    ? *decor

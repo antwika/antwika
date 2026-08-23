@@ -29,12 +29,12 @@ namespace antwika::editor
     {
         if (!hideAboveLevel || playing)
         {
-            return map.voxels;
+            return document.map.voxels;
         }
 
         voxel::Voxels keptVoxels;
 
-        for (const auto &[position, material] : map.voxels)
+        for (const auto &[position, material] : document.map.voxels)
         {
             if (position.y
                 <= antwika::voxel::cubeTop(editLevel) - voxel::kCubeSide)
@@ -48,14 +48,14 @@ namespace antwika::editor
 
     void Editor::rebuildDecorMesh()
     {
-        worldMeshes.rebuildDecor(viewportRenderer, map, tick);
+        worldMeshes.rebuildDecor(viewportRenderer, document.map, tick);
     }
 
     void Editor::rebuildWorld()
     {
         worldMeshes.rebuild(
             viewportRenderer,
-            map,
+            document.map,
             visibleCells(),
             cornerJoining,
             atlasSheets.sheets(),
@@ -67,7 +67,7 @@ namespace antwika::editor
     map::Placement Editor::startingPlacement()
     {
         return gameplay::startingPlacement(
-            map,
+            document.map,
             worldMeshes.cells(),
             playing ? game->gates().checkpointPlacement
                     : std::optional<map::Placement>{});
@@ -95,7 +95,7 @@ namespace antwika::editor
                     std::lround(stoodPosition.z)));
             const auto put = restPosition.has_value()
                            ? restPosition
-                           : collision::spawnPosition(map.voxels);
+                           : collision::spawnPosition(document.map.voxels);
 
             if (put.has_value())
             {
@@ -254,7 +254,7 @@ namespace antwika::editor
 
     void Editor::saveCurrentMap()
     {
-        if (mapPath.empty())
+        if (document.path().empty())
         {
             dialogs.quitConfirmOpen = false;
             openFileDialog(true);
@@ -264,19 +264,20 @@ namespace antwika::editor
 
         try
         {
-            map.camera = cameraView;
-            const auto hero = playerIndex(map);
+            document.map.camera = cameraView;
+            const auto hero = playerIndex(document.map);
 
             if (hero.has_value())
             {
-                map.characters.at(*hero).idlePlacement = map::Placement{
+                document.map.characters.at(
+                    *hero).idlePlacement = map::Placement{
                     .position = collision::positionOf(
                         game->world().get<component::Position>(game->player())),
                     .way = game->world()
                                .get<component::AnimationState>(game->player())
                                .direction};
             }
-            map.settings = map::Settings{
+            document.map.settings = map::Settings{
                 .lighting = lighting,
                 .showRuleLines = showRuleLines,
                 .tool = tool,
@@ -298,7 +299,7 @@ namespace antwika::editor
                 image::writePngFile(
                     atlasSheets.sheet(sheet),
                     map::sidecarPath(
-                        mapPath,
+                        document.path(),
                         map::kAtlasSheets.at(sheet).name),
                     kAppName);
             }
@@ -308,26 +309,26 @@ namespace antwika::editor
             {
                 map::writeSharedTexture(
                     iconsView.sheet(),
-                    mapPath,
+                    document.path(),
                     antwika::editor::kIconSheet,
                     kAppName);
                 iconsView.keep();
             }
 
-            auto keptMap = map;
+            auto keptMap = document.map;
 
-            keptMap.decor = compactedDecor(map.decor);
-            map::saveMap(mapPath, keptMap);
+            keptMap.decor = compactedDecor(document.map.decor);
+            map::saveMap(document.path(), keptMap);
             if (const auto notice = plan.save(); notice.has_value())
             {
                 showStatus(*notice, true, 600);
                 logger.log(log::Level::Warning, *notice);
             }
-            dirty = false;
+            document.markSaved();
             showStatus("saved", false, 120);
             logger.log(
                 log::Level::Info,
-                "Saved " + mapPath + " and both atlases");
+                "Saved " + document.path() + " and both atlases");
         }
         catch (const map::MapFileError &error)
         {
@@ -340,56 +341,56 @@ namespace antwika::editor
     {
         try
         {
-            map = map::loadMap(mapPath);
-            history.clear();
+            document.map = map::loadMap(document.path());
+            document.forgetHistory();
 
-            const auto camera = map.camera.value_or(
+            const auto camera = document.map.camera.value_or(
                 map::CameraView{
                     .transform = camera::centeredOn(
                         cameraView.transform,
-                        voxelmap::voxelsCenter(map.voxels)),
+                        voxelmap::voxelsCenter(document.map.voxels)),
                     .zoom = cameraView.zoom});
 
             cameraView = camera;
             viewHeight =
                 camera::orthoHalfHeight(camera::kCanvasSize, cameraView.zoom);
-            lighting = map.settings.lighting;
-            showRuleLines = map.settings.showRuleLines;
-            tool = map.settings.tool;
-            paintMode = map.settings.paint;
-            activeView = map.settings.view;
-            brushKind = map.settings.kind;
-            grid = map.settings.grid;
-            showPlacementGhost = map.settings.showPlacementGhost;
-            lampSight = map.settings.lampSight;
-            cameraFollows = map.settings.cameraFollows;
-            hideAboveLevel = map.settings.hideAboveLevel;
-            cornerJoining = map.settings.cornersJoined
+            lighting = document.map.settings.lighting;
+            showRuleLines = document.map.settings.showRuleLines;
+            tool = document.map.settings.tool;
+            paintMode = document.map.settings.paint;
+            activeView = document.map.settings.view;
+            brushKind = document.map.settings.kind;
+            grid = document.map.settings.grid;
+            showPlacementGhost = document.map.settings.showPlacementGhost;
+            lampSight = document.map.settings.lampSight;
+            cameraFollows = document.map.settings.cameraFollows;
+            hideAboveLevel = document.map.settings.hideAboveLevel;
+            cornerJoining = document.map.settings.cornersJoined
                           ? solver::CornerSeams::Included
                           : solver::CornerSeams::Ignored;
             atlasSheets.take(
-                map::loadAtlasPairOrBlank(mapPath, kAppName));
+                map::loadAtlasPairOrBlank(document.path(), kAppName));
             iconsView.open(
-                viewportRenderer, loadIconSheet(mapPath, kAppName));
+                viewportRenderer, loadIconSheet(document.path(), kAppName));
             characterView.editFirst();
             figurePicked.reset();
             editLevel =
                 antwika::voxel::cubeIndexOfLevel(
-                    voxelmap::topLevel(map.voxels));
+                    voxelmap::topLevel(document.map.voxels));
             rebuildWorld();
             resetGates();
             standPlayer();
             loadCharacterSkins();
-            dirty = false;
+            document.markSaved();
             logger.log(
                 log::Level::Info,
-                "Loaded " + mapPath + ": "
+                "Loaded " + document.path() + ": "
                     + solver::weaveErrorMessage(
-                        voxelmap::visibleFacesOf(map.voxels),
-                        map.rules,
+                        voxelmap::visibleFacesOf(document.map.voxels),
+                        document.map.rules,
                         solver::solveTiles(
-                            voxelmap::visibleFacesOf(map.voxels),
-                            map.rules,
+                            voxelmap::visibleFacesOf(document.map.voxels),
+                            document.map.rules,
                             cornerJoining),
                         cornerJoining));
         }
@@ -410,8 +411,8 @@ namespace antwika::editor
 
         map::Map emptyMap;
 
-        map = std::move(emptyMap);
-        mapPath.clear();
+        document.map = std::move(emptyMap);
+        document.openAt({});
         atlasSheets.take(
             {tilemap::blankAtlas(tilemap::kWallTileSize),
              tilemap::blankAtlas(tilemap::kFloorTileSize)});
@@ -419,13 +420,14 @@ namespace antwika::editor
         characterView.editFirst();
         figurePicked.reset();
         editLevel =
-            antwika::voxel::cubeIndexOfLevel(voxelmap::topLevel(map.voxels));
+            antwika::voxel::cubeIndexOfLevel(voxelmap::topLevel(
+                    document.map.voxels));
         rebuildWorld();
         resetGates();
         spawnRoster();
         standPlayer();
         loadCharacterSkins();
-        dirty = true;
+        document.markDirty();
     }
 
     void Editor::listFolder(const std::string &folder)
@@ -472,14 +474,15 @@ namespace antwika::editor
     void Editor::openFileDialog(const bool forSave)
     {
         const auto path = std::filesystem::absolute(
-            mapPath.empty() ? startMapPath : mapPath);
+            document.path().empty() ? document.startPath() : document.path());
         const auto folder = path.parent_path().string();
 
         dialogs.fileDialog = FileDialog{
             .isSaveMode = forSave,
             .folder = folder,
             .fileName =
-                mapPath.empty() ? std::string{} : path.filename().string()};
+                document.path().empty() ? std::string{} : path.filename(
+                    ).string()};
         listFolder(folder);
     }
 
@@ -505,7 +508,7 @@ namespace antwika::editor
                 .string();
 
         dialogs.fileDialog.reset();
-        mapPath = path;
+        document.openAt(path);
 
         if (forSave)
         {
@@ -525,21 +528,21 @@ namespace antwika::editor
     map::Snapshot Editor::snapshot()
     {
         return map::Snapshot{
-            .map = map,
+            .map = document.map,
             .pixelBitmaps = atlasSheets.sheets(),
             .characterBitmaps = characterView.skinsAsDrawn()};
     } // GCOVR_EXCL_LINE
 
     void Editor::pushUndo()
     {
-        history.push(snapshot());
-        dirty = true;
+        document.push(snapshot());
+        document.markDirty();
     }
 
     void Editor::undo()
     {
         settleHistory(
-            history.undo(snapshot()),
+            document.undo(snapshot()),
             "undone",
             "nothing to undo");
     }
@@ -547,7 +550,7 @@ namespace antwika::editor
     void Editor::redo()
     {
         settleHistory(
-            history.redo(snapshot()),
+            document.redo(snapshot()),
             "redone",
             "nothing to redo");
     }
@@ -571,7 +574,7 @@ namespace antwika::editor
     void Editor::applyStep(map::Snapshot stepSnapshot)
     {
         growTroublePositions.clear();
-        map = std::move(stepSnapshot.map);
+        document.map = std::move(stepSnapshot.map);
         atlasSheets.take(std::move(stepSnapshot.pixelBitmaps));
         characterView.takeSkins(
             viewportRenderer, std::move(stepSnapshot.characterBitmaps));

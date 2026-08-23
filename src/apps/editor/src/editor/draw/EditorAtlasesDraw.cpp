@@ -55,19 +55,19 @@ namespace antwika::editor
                 viewportRenderer.clipScope(sheetClip);
 
 
-            for (std::uint32_t row = 0; row < map.tilemap.rows;
+            for (std::uint32_t row = 0; row < document.map.tilemap.rows;
                  ++row)
             {
                 for (std::uint32_t column = 0;
-                     column < map.tilemap.columns;
+                     column < document.map.tilemap.columns;
                      ++column)
                 {
-                    const auto tile = map.tilemap.at(column, row);
+                    const auto tile = document.map.tilemap.at(column, row);
 
                     if (!tile.has_value())
                     {
                         const auto place = tilePlace(
-                            map.tilemap, column, row, where);
+                            document.map.tilemap, column, row, where);
                         const auto middle =
                             antwika::gfx::PointF{
                                 place.originPoint.x
@@ -101,7 +101,7 @@ namespace antwika::editor
                     const auto size = tilemap::tileSizeOf(
                         tile->atlas);
                     const auto place = tilePlace(
-                        map.tilemap, column, row, where);
+                        document.map.tilemap, column, row, where);
 
                     viewportRenderer.drawTexture(
                         *atlasSheets.checker(tile->atlas),
@@ -114,7 +114,7 @@ namespace antwika::editor
                         kWhiteColor);
                     const auto *strolling =
                         decor::decorOf(
-                            map.decor, *tile);
+                            document.map.decor, *tile);
 
                     viewportRenderer.drawTexture(
                         *atlasSheets.texture(tile->atlas),
@@ -129,7 +129,7 @@ namespace antwika::editor
             }
 
             for (std::uint32_t column = 0;
-                 column <= map.tilemap.columns;
+                 column <= document.map.tilemap.columns;
                  ++column)
             {
                 const auto originX =
@@ -137,7 +137,7 @@ namespace antwika::editor
                     + (where.size.width
                        * static_cast<float>(column)
                        / static_cast<float>(
-                           map.tilemap.columns));
+                           document.map.tilemap.columns));
 
                 viewportRenderer.drawLine(
                     {originX, where.originPoint.y},
@@ -146,14 +146,14 @@ namespace antwika::editor
             }
 
             for (std::uint32_t row = 0;
-                 row <= map.tilemap.rows;
+                 row <= document.map.tilemap.rows;
                  ++row)
             {
                 const auto originY =
                     where.originPoint.y
                     + (where.size.height
                        * static_cast<float>(row)
-                       / static_cast<float>(map.tilemap.rows));
+                       / static_cast<float>(document.map.tilemap.rows));
 
                 viewportRenderer.drawLine(
                     {where.originPoint.x, originY},
@@ -164,7 +164,7 @@ namespace antwika::editor
             if (selectedTile.has_value())
             {
                 const auto fromPoint =
-                    tileCenter(map.tilemap, where, *selectedTile);
+                    tileCenter(document.map.tilemap, where, *selectedTile);
 
                 for (const auto edge : tilemap::kEveryTileEdge)
                 {
@@ -172,7 +172,7 @@ namespace antwika::editor
                          activeRules().allowed(*selectedTile, edge))
                     {
                         const auto toPoint = tileCenter(
-                            map.tilemap, where, neighbor);
+                            document.map.tilemap, where, neighbor);
 
                         if (fromPoint.has_value()
                             && toPoint.has_value())
@@ -194,7 +194,7 @@ namespace antwika::editor
                         const tilemap::Tile tile, const gfx::Color tone)
                 {
                     const auto stands =
-                        tilemap::cellHoldingTile(map.tilemap, tile);
+                        tilemap::cellHoldingTile(document.map.tilemap, tile);
 
                     if (!stands.has_value())
                     {
@@ -203,7 +203,7 @@ namespace antwika::editor
 
                     for (const auto bar : outlineRects(
                              tilePlace(
-                                 map.tilemap,
+                                 document.map.tilemap,
                                  stands->column,
                                  stands->row,
                                  where),
@@ -218,15 +218,15 @@ namespace antwika::editor
                 if (!assignMode.basePicking)
                 {
                     for (std::uint32_t row = 0;
-                         row < map.tilemap.rows;
+                         row < document.map.tilemap.rows;
                          ++row)
                     {
                         for (std::uint32_t column = 0;
-                             column < map.tilemap.columns;
+                             column < document.map.tilemap.columns;
                              ++column)
                         {
                             const auto neighbourTile =
-                                map.tilemap.at(column, row);
+                                document.map.tilemap.at(column, row);
 
                             if (!neighbourTile.has_value()
                                 || *neighbourTile == *selectedTile
@@ -244,7 +244,7 @@ namespace antwika::editor
                 {
                     const auto *decor =
                         decor::decorOf(
-                            map.decor, *selectedTile);
+                            document.map.decor, *selectedTile);
 
                     for (const auto base :
                          decor != nullptr
@@ -257,9 +257,9 @@ namespace antwika::editor
 
                 if (transitionPicked.has_value()
                     && *transitionPicked
-                           < map.transitions.size())
+                           < document.map.transitions.size())
                 {
-                    const auto &transition = map.transitions.at(
+                    const auto &transition = document.map.transitions.at(
                         *transitionPicked);
 
                     for (const auto &[tile, tone] :
@@ -277,12 +277,12 @@ namespace antwika::editor
                 }
 
                 const auto *family =
-                    groupLedBy(map.familyGroups, *selectedTile);
+                    groupLedBy(document.map.familyGroups, *selectedTile);
 
                 if (family == nullptr)
                 {
                     family = groupContaining(
-                        map.familyGroups, *selectedTile);
+                        document.map.familyGroups, *selectedTile);
                 }
 
                 if (family != nullptr && !isDecorLayer())
@@ -446,14 +446,14 @@ namespace antwika::editor
         }
 
         if (dragFromCell.has_value()
-            && map.tilemap
+            && document.map.tilemap
                    .at(dragFromCell->column, dragFromCell->row)
                    .has_value())
         {
-            const auto tile = map.tilemap.at(
+            const auto tile = document.map.tilemap.at(
                 dragFromCell->column, dragFromCell->row);
             const auto cell = tilePlace(
-                map.tilemap,
+                document.map.tilemap,
                 dragFromCell->column,
                 dragFromCell->row,
                 where);

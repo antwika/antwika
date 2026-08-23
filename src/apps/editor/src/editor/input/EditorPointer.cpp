@@ -80,7 +80,7 @@ namespace antwika::editor
                 inkPicker.pickerHsv = *takenColor;
                 recolorInk(colorOf(inkPicker.pickerHsv));
                 inkPicker.hexText = colorToHex(
-                    map.paletteColors.at(*inkPicker.editingInk));
+                    document.map.paletteColors.at(*inkPicker.editingInk));
             }
         }
 
@@ -101,7 +101,7 @@ namespace antwika::editor
                     *pixel,
                     strokeErases
                         ? antwika::gfx::Color{.alpha = 0}
-                        : map.paletteColors.at(inkPicker.activeInk));
+                        : document.map.paletteColors.at(inkPicker.activeInk));
                 brushAtCell = pixel;
                 atlasSheets.touch();
             }
@@ -155,7 +155,7 @@ namespace antwika::editor
                     brushAtCell.value_or(*pixel),
                     *pixel,
                     character::characterPaletteColor(
-                        map.paletteColors,
+                        document.map.paletteColors,
                         strokeErases ? character::kTransparentInk
                                      : inkPicker.activeInk));
                 brushAtCell = pixel;
@@ -243,12 +243,12 @@ namespace antwika::editor
 
             if (cell.has_value() && cell != lastPaintedPosition)
             {
-                map.voxels = voxel::withRampsRebuilt(
+                document.map.voxels = voxel::withRampsRebuilt(
                     tool == map::Tool::Eraser
                           ? voxel::withoutBlockAt(
-                              map.voxels, *cell)
+                              document.map.voxels, *cell)
                         : voxel::withBlockAt(
-                              map.voxels,
+                              document.map.voxels,
                               *cell,
                               brushKind,
                               rampFacing),
@@ -398,7 +398,7 @@ namespace antwika::editor
                 auto &sheet =
                     atlasSheets.sheet(editedTileValue.atlas);
                 const auto ink =
-                    map.paletteColors.at(inkPicker.activeInk);
+                    document.map.paletteColors.at(inkPicker.activeInk);
 
                 pushUndo();
 
@@ -474,7 +474,7 @@ namespace antwika::editor
                 static_cast<float>(projectToScreen.x),
                 static_cast<float>(projectToScreen.y)};
             const auto gesture = gestureFrom(
-                map.tilemap,
+                document.map.tilemap,
                 frameRect(),
                 gridRect(),
                 sheetClipRect(),
@@ -497,13 +497,13 @@ namespace antwika::editor
                 }
 
                 tilemap::swapTiles(
-                    map.tilemap,
+                    document.map.tilemap,
                     gesture.fromCell,
                     gesture.toCell);
                 break;
             case PointerAction::Look:
             {
-                auto tile = map.tilemap.at(
+                auto tile = document.map.tilemap.at(
                     gesture.toCell.column, gesture.toCell.row);
 
                 if (tile.has_value()
@@ -515,13 +515,13 @@ namespace antwika::editor
                 if (!tile.has_value())
                 {
                     tile = tilemap::suggestedTileFor(
-                        map.tilemap, gesture.toCell);
+                        document.map.tilemap, gesture.toCell);
 
                     if (tile.has_value())
                     {
                         pushUndo();
                         tilemap::putTile(
-                            map.tilemap,
+                            document.map.tilemap,
                             gesture.toCell,
                             *tile);
                         wipeTile(*tile);
@@ -537,7 +537,7 @@ namespace antwika::editor
             }
             case PointerAction::Rule:
             {
-                const auto tile = map.tilemap.at(
+                const auto tile = document.map.tilemap.at(
                     gesture.toCell.column, gesture.toCell.row);
 
                 if (tile.has_value()

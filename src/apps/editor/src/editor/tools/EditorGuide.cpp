@@ -34,7 +34,7 @@ namespace antwika::editor
                 camera::kCanvasSize,
                 point),
             worldRotation());
-        const auto hit = voxelmap::raycastFace(map.voxels, ray);
+        const auto hit = voxelmap::raycastFace(document.map.voxels, ray);
 
         if (!hit.has_value())
         {
