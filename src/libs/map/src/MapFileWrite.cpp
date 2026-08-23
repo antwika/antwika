@@ -176,15 +176,13 @@ namespace antwika::map
             for (const auto &[corner, cornerFilled] :
                  map.rules.cornersOf(rule.tile))
             {
-                nlohmann::json cornerJson;
-
-                cornerJson[std::string(kTileKey)] =
-                    writtenTile(rule.tile);
-                cornerJson[std::string(kCornerKey)] =
-                    std::string(nameOf(corner));
-                cornerJson[std::string(kFilledKey)] = cornerFilled;
-
-                corners.push_back(cornerJson);
+                corners.push_back(
+                    written(
+                        kCornerFields,
+                        CornerRow{
+                            .tile = rule.tile,
+                            .corner = corner,
+                            .filled = cornerFilled}));
             }
         }
 

@@ -6,6 +6,8 @@
 #include "MapFileField.hpp"
 #include "MapFileMakers.hpp"
 #include "MapFileShared.hpp"
+#include "CornerRow.hpp"
+#include "GateRow.hpp"
 #include "MapFileShared2.hpp"
 
 namespace antwika::map::mapfile
@@ -117,12 +119,10 @@ namespace antwika::map::mapfile
         tileField<&PartRow::first>(kTileKey),
         namedField<&PartRow::second, kPartNames>(kPartKey)};
 
-    struct GateRow final
-    {
-        std::string_view key;
-
-        std::vector<voxel::VoxelPosition> Map::*cells;
-    };
+    inline constexpr std::array<Field, 3> kCornerFields{
+        tileField<&CornerRow::tile>(kTileKey),
+        namedField<&CornerRow::corner, kCornerNames>(kCornerKey),
+        flagField<&CornerRow::filled>(kFilledKey)};
 
     inline constexpr std::array<GateRow, 5> kGateRows{
         GateRow{kKeysKey, &Map::keyPositions},

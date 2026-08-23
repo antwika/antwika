@@ -235,13 +235,9 @@ namespace antwika::map
         map.rules = readRules(wholeDocument[std::string(kRulesKey)]);
         for (const auto &corner : wholeDocument[std::string(kCornersKey)])
         {
-            map.rules.setCorner(
-                readTile(corner[std::string(kTileKey)]),
-                enumFromName(
-                    kCornerNames,
-                    corner[std::string(kCornerKey)]
-                        .get<std::string>()),
-                corner[std::string(kFilledKey)].get<bool>());
+            const auto row = read<CornerRow>(kCornerFields, corner);
+
+            map.rules.setCorner(row.tile, row.corner, row.filled);
         }
 
         const auto &cameraJson = wholeDocument[std::string(kCameraKey)];

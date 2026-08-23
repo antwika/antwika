@@ -123,21 +123,7 @@ namespace antwika::map
 
             [[nodiscard]] nlohmann::json cornerSchema()
             {
-                nlohmann::json shape;
-
-                shape["type"] = "object";
-                shape["additionalProperties"] = false;
-                shape["required"] = {
-                    std::string(kTileKey),
-                    std::string(kCornerKey),
-                    std::string(kFilledKey)};
-                shape["properties"][std::string(kTileKey)] = tileSchema();
-                shape["properties"][std::string(kCornerKey)]["enum"] =
-                    namesOf(kCornerNames.names);
-                shape["properties"][std::string(kFilledKey)]["type"] =
-                    "boolean";
-
-                return shape;
+                return shapeOf(kCornerFields);
             } // GCOVR_EXCL_LINE
 
             [[nodiscard]] nlohmann::json cameraSchema()
