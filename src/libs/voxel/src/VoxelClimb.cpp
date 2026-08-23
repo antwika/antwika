@@ -8,6 +8,7 @@
 #include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/voxel/VoxelDetail.hpp>
 #include <antwika/voxel/VoxelStairs.hpp>
+#include <antwika/voxel/KindTraits.hpp>
 
 namespace antwika::voxel
 {
@@ -117,7 +118,7 @@ namespace antwika::voxel
                         .y = top,
                         .z = corner.z + offZ};
 
-                    if (kindAt(filledVoxels, probePosition) == Kind::Ramp)
+                    if (isRamped(kindAt(filledVoxels, probePosition)))
                     {
                         acrossX.insert(offX);
                         acrossZ.insert(offZ);
@@ -189,7 +190,7 @@ namespace antwika::voxel
             const auto abovePosition =
                 offsetBy(position, VoxelPosition{.y = 1});
 
-            if (kindAt(filledVoxels, abovePosition) == Kind::Ramp)
+            if (isRamped(kindAt(filledVoxels, abovePosition)))
             {
                 return climbWithin(filledVoxels, abovePosition);
             }
@@ -199,8 +200,10 @@ namespace antwika::voxel
                 const auto open = offsetBy(position, opposite(step));
 
                 if (!filledVoxels.contains(open)
-                    && kindAt(filledVoxels, offsetBy(open, kBelowPosition))
-                           == Kind::Ramp)
+                    && isRamped(
+                        kindAt(
+                            filledVoxels,
+                            offsetBy(open, kBelowPosition))))
                 {
                     return step;
                 }
@@ -212,21 +215,23 @@ namespace antwika::voxel
         [[nodiscard]] StairHalf levelWithin(
             const Voxels &filledVoxels, const VoxelPosition position)
         {
-            if (kindAt(filledVoxels, position) != Kind::Ramp)
+            if (!isRamped(kindAt(filledVoxels, position)))
             {
                 return StairHalf::Any;
             }
 
-            return kindAt(filledVoxels, offsetBy(position, kBelowPosition))
-                           == Kind::Ramp
-                            ? StairHalf::Upper
-                            : StairHalf::Lower;
+            return isRamped(
+                       kindAt(
+                           filledVoxels,
+                           offsetBy(position, kBelowPosition)))
+                       ? StairHalf::Upper
+                       : StairHalf::Lower;
         }
 
         bool isRampStep(
             const Voxels &filledVoxels, const VoxelPosition position)
         {
-            return kindAt(filledVoxels, position) == Kind::Ramp
+            return isRamped(kindAt(filledVoxels, position))
                    && !filledVoxels.contains(
                        offsetBy(position, VoxelPosition{.y = 1}));
         }
@@ -236,7 +241,7 @@ namespace antwika::voxel
         {
             const auto voxelKind = kindAt(filledVoxels, position);
 
-            if (voxelKind != Kind::Ramp)
+            if (!isRamped(voxelKind))
             {
                 return voxelKind;
             }

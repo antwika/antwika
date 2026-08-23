@@ -7,6 +7,7 @@
 
 #include <antwika/component/Position.hpp>
 #include <antwika/component/Velocity.hpp>
+#include <antwika/voxel/KindTraits.hpp>
 
 namespace antwika::collision
 {
@@ -113,7 +114,7 @@ namespace antwika::collision
             for (const auto &[position, material] : filledVoxels)
             {
                 if (position.x != x || position.z != z
-                    || material.kind != voxel::Kind::Ladder)
+                    || !voxel::isClimbable(material.kind))
                 {
                     continue;
                 }
@@ -159,8 +160,7 @@ namespace antwika::collision
         const auto foundVoxel = filledVoxels.find(position);
 
         return foundVoxel != filledVoxels.end()
-               && foundVoxel->second.kind != voxel::Kind::Water
-               && foundVoxel->second.kind != voxel::Kind::Ladder;
+               && voxel::isSolid(foundVoxel->second.kind);
     }
 
     bool hasHeadroom(
@@ -200,7 +200,7 @@ namespace antwika::collision
             const auto foundVoxel = filledVoxels.find(groundPosition);
 
             if (foundVoxel == filledVoxels.end()
-                || foundVoxel->second.kind == voxel::Kind::Ladder)
+                || voxel::isClimbable(foundVoxel->second.kind))
             {
                 continue;
             }
@@ -231,7 +231,7 @@ namespace antwika::collision
 
         const auto top = topOf(groundCell->position.y);
 
-        return groundCell->material.kind == voxel::Kind::Water
+        return voxel::isSwimmable(groundCell->material.kind)
                                  ? top - (voxel::kVoxelSide / 2.0F)
                                  : top;
     }
@@ -244,12 +244,12 @@ namespace antwika::collision
     {
         const auto top = topOf(groundCell.position.y);
 
-        if (groundCell.material.kind == voxel::Kind::Water)
+        if (voxel::isSwimmable(groundCell.material.kind))
         {
             return top - (voxel::kVoxelSide / 2.0F);
         }
 
-        if (groundCell.material.kind != voxel::Kind::Ramp)
+        if (!voxel::isRamped(groundCell.material.kind))
         {
             return top;
         }
@@ -325,7 +325,7 @@ namespace antwika::collision
             const auto worse = best.has_value() && position.y <= *best;
 
             if (position.x != x || position.z != z || worse
-                || material.kind == voxel::Kind::Water
+                || voxel::isSwimmable(material.kind)
                 || !hasHeadroom(filledVoxels, position))
             {
                 continue;
@@ -354,7 +354,7 @@ namespace antwika::collision
 
         for (const auto &[position, material] : filledVoxels)
         {
-            if (material.kind == voxel::Kind::Water
+            if (voxel::isSwimmable(material.kind)
                 || !hasHeadroom(filledVoxels, position))
             {
                 continue;
@@ -461,10 +461,10 @@ namespace antwika::collision
             position.y);
         const auto climbing =
             stoodPosition.has_value()
-            && stoodPosition->material.kind == voxel::Kind::Ramp;
+            && voxel::isRamped(stoodPosition->material.kind);
         const auto wading =
             stoodPosition.has_value()
-            && stoodPosition->material.kind == voxel::Kind::Water;
+            && voxel::isSwimmable(stoodPosition->material.kind);
         const auto pace = kWalkSpeed * velocity.speedMultiplier
                           * (climbing ? kRampSpeedFactor : 1.0F)
                           * (wading ? kWaterSpeedFactor : 1.0F)

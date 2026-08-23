@@ -4,6 +4,7 @@
 #include <antwika/gfx/Math3D.hpp>
 
 #include <antwika/voxelmap/Voxel.hpp>
+#include <antwika/voxel/KindTraits.hpp>
 
 #include "VoxelDetail.hpp"
 
@@ -30,7 +31,7 @@ namespace antwika::voxelmap
 
         for (const auto &[position, material] : voxels)
         {
-            const auto climb = material.kind == voxel::Kind::Ramp
+            const auto climb = voxel::isRamped(material.kind)
                              ? voxel::inferredRampDirection(voxels, position)
                              : voxel::VoxelPosition{};
             const auto level = voxel::stairHalfOf(voxels, position);
@@ -54,13 +55,13 @@ namespace antwika::voxelmap
                 }
 
                 if (kVoxelFaces[side].normal.y > 0.0F
-                    && kindAt(voxels, neighbourPosition)
-                           == voxel::Kind::Ramp)
+                    && voxel::isRamped(
+                        kindAt(voxels, neighbourPosition)))
                 {
                     continue;
                 }
 
-                if (kindAt(voxels, neighbourPosition) == voxel::Kind::Ramp
+                if (voxel::isRamped(kindAt(voxels, neighbourPosition))
                     && facedByAClimb(
                         voxel::inferredRampDirection(
                             voxels, neighbourPosition),
