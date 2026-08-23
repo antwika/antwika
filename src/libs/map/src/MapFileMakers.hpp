@@ -290,6 +290,57 @@ namespace antwika::map::mapfile
             }};
     }
 
+    [[nodiscard]] inline nlohmann::json maybeTileListShape()
+    {
+        nlohmann::json nullShape;
+
+        nullShape["type"] = "null";
+
+        nlohmann::json shape;
+
+        shape["type"] = "array";
+        shape["items"]["oneOf"] = {tileSchema(), nullShape};
+
+        return shape;
+    } // GCOVR_EXCL_LINE
+
+    template <auto Member>
+    [[nodiscard]] constexpr Field maybeTileListField(
+        const std::string_view key)
+    {
+        return Field{
+            .key = key,
+            .shape = &maybeTileListShape,
+            .valueOf = [](const void *record)
+            {
+                auto arrayJson = nlohmann::json::array();
+
+                for (const auto tile : memberOf<Member>(record))
+                {
+                    arrayJson.push_back(
+                        tile.has_value() ? writtenTile(*tile)
+                                         : nlohmann::json());
+                }
+
+                return arrayJson;
+            },
+            .setFrom = [](void *record, const nlohmann::json &json)
+            {
+                auto &tiles = memberIn<Member>(record);
+
+                tiles.clear();
+
+                for (const auto &tileJson : json)
+                {
+                    tiles.push_back(
+                        tileJson.is_null()
+                            ? std::optional<tilemap::Tile>{}
+                            : std::optional<tilemap::Tile>{
+                                  readTile(tileJson)});
+                }
+            }};
+    }
+
     template <auto Outer, auto Inner>
     [[nodiscard]] constexpr Field nestedPlaceField(
         const std::string_view key)

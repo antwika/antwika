@@ -95,6 +95,12 @@ namespace antwika::map::mapfile
         tileListField<&decor::DecorTile::spanTiles, 1,
             decor::kMaxDecorSpan * decor::kMaxDecorSpan>(kMembersKey)};
 
+    inline constexpr std::array<Field, 3> kTilemapFields{
+        wholeField<&tilemap::Tilemap::columns, 0, kMaxPlaces>(
+            kColumnsKey),
+        wholeField<&tilemap::Tilemap::rows, 0, kMaxPlaces>(kRowsKey),
+        maybeTileListField<&tilemap::Tilemap::tiles>(kTilesKey)};
+
     struct MarkedCube final
     {
         voxel::VoxelPosition position{};
