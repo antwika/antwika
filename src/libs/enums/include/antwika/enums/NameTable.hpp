@@ -15,6 +15,19 @@ namespace antwika::enums
     {
         std::array<std::string_view, kCount<Enum>> names;
 
+        [[nodiscard]] constexpr bool isComplete() const noexcept
+        {
+            for (const auto name : names)
+            {
+                if (name.empty())
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         [[nodiscard]] constexpr std::string_view name(
             const Enum value) const noexcept
         {

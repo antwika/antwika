@@ -50,13 +50,13 @@ namespace antwika::map::mapfile
         shape["properties"][std::string(kTiesKey)]["type"] =
             "boolean";
         shape["properties"][std::string(kToolKey)]["enum"] =
-            namesOf(kToolNames);
+            namesOf(kToolNames.names);
         shape["properties"][std::string(kDrawingKey)]["enum"] =
-            namesOf(kDrawingNames);
+            namesOf(kDrawingNames.names);
         shape["properties"][std::string(kViewKey)]["enum"] =
-            namesOf(kViewNames);
+            namesOf(kViewNames.names);
         shape["properties"][std::string(kKindKey)]["enum"] =
-            namesOf(kKindNames);
+            namesOf(kKindNames.names);
 
         for (const auto key :
              {kGridKey,

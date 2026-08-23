@@ -65,11 +65,11 @@ namespace antwika::map
                     const auto tile =
                         readTile(rule[std::string(kTileKey)]);
                     const tilemap::TileEdge edge{
-                        .side = enumFromName<voxel::Side>(
+                        .side = enumFromName(
                             kSideNames,
                             rule[std::string(kSideKey)]
                                 .get<std::string>()),
-                        .edge = enumFromName<voxel::EdgeKind>(
+                        .edge = enumFromName(
                             kEdgeNames,
                             rule[std::string(kEdgeKey)]
                                 .get<std::string>())};
@@ -218,12 +218,12 @@ namespace antwika::map
             }
 
             map.voxels[position] = voxel::VoxelMaterial{
-                .kind = enumFromName<voxel::Kind>(
+                .kind = enumFromName(
                     kKindNames,
                     writtenVoxel[std::string(kKindKey)].get<std::string>()),
                 .facing =
                     writtenVoxel.contains(std::string(kClimbKey))
-                        ? enumFromName<voxel::Facing>(
+                        ? enumFromName(
                               kFacingNames,
                               writtenVoxel[std::string(kClimbKey)]
                                   .get<std::string>())
@@ -236,7 +236,7 @@ namespace antwika::map
         {
             map.rules.setCorner(
                 readTile(corner[std::string(kTileKey)]),
-                enumFromName<voxel::Corner>(
+                enumFromName(
                     kCornerNames,
                     corner[std::string(kCornerKey)]
                         .get<std::string>()),
@@ -268,17 +268,6 @@ namespace antwika::map
                         .get<std::int64_t>())};
 
             map.camera->transform = camera::snappedPitch(map.camera->transform);
-        }
-
-        for (const auto &corner : wholeDocument[std::string(kCornersKey)])
-        {
-            map.rules.setCorner(
-                readTile(corner[std::string(kTileKey)]),
-                enumFromName<voxel::Corner>(
-                    kCornerNames,
-                    corner[std::string(kCornerKey)]
-                        .get<std::string>()),
-                corner[std::string(kFilledKey)].get<bool>());
         }
 
         map.paletteColors.clear();
@@ -326,7 +315,7 @@ namespace antwika::map
         {
             map.rules.setKind(
                 readTile(tileKind[std::string(kTileKey)]),
-                enumFromName<voxel::Kind>(
+                enumFromName(
                     kKindNames,
                     tileKind[std::string(kKindKey)]
                         .get<std::string>()));
@@ -337,7 +326,7 @@ namespace antwika::map
         {
             map.rules.setFacing(
                 readTile(tileFacing[std::string(kTileKey)]),
-                enumFromName<voxel::Facing>(
+                enumFromName(
                     kFacingNames,
                     tileFacing[std::string(kFacingKey)]
                         .get<std::string>()));
@@ -348,8 +337,8 @@ namespace antwika::map
         {
             map.rules.setLevel(
                 readTile(tileLevel[std::string(kTileKey)]),
-                enumFromName<voxel::StairHalf>(
-                    kLevelNames,
+                enumFromName(
+                    kStairHalfNames,
                     tileLevel[std::string(kLevelKey)]
                         .get<std::string>()));
         }
@@ -359,7 +348,7 @@ namespace antwika::map
         {
             map.rules.setPart(
                 readTile(tilePart[std::string(kTileKey)]),
-                enumFromName<voxel::StairPart>(
+                enumFromName(
                     kPartNames,
                     tilePart[std::string(kPartKey)]
                         .get<std::string>()));
@@ -448,17 +437,17 @@ namespace antwika::map
                 settings[std::string(kLightingKey)].get<bool>(),
             .showRuleLines =
                 settings[std::string(kTiesKey)].get<bool>(),
-            .tool = enumFromName<Tool>(
+            .tool = enumFromName(
                 kToolNames,
                 settings[std::string(kToolKey)].get<std::string>()),
-            .paint = enumFromName<Paint>(
+            .paint = enumFromName(
                 kDrawingNames,
                 settings[std::string(kDrawingKey)]
                     .get<std::string>()),
-            .view = enumFromName<View>(
+            .view = enumFromName(
                 kViewNames,
                 settings[std::string(kViewKey)].get<std::string>()),
-            .kind = enumFromName<voxel::Kind>(
+            .kind = enumFromName(
                 kKindNames,
                 settings[std::string(kKindKey)]
                     .get<std::string>()),

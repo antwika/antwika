@@ -33,7 +33,7 @@ namespace antwika::map
         void mapV10ToV11(nlohmann::json &document)
         {
             const auto solid =
-                std::string(kKindNames.front());
+                std::string(kKindNames.name(voxel::Kind::Normal));
 
             if (document.contains(std::string(kVoxelsKey))
                 && document[std::string(kVoxelsKey)].is_array())

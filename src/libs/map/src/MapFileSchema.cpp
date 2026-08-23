@@ -63,9 +63,9 @@ namespace antwika::map
                     std::string(kAtKey), std::string(kKindKey)};
                 shape["properties"][std::string(kAtKey)] = arraySchema;
                 shape["properties"][std::string(kKindKey)]["enum"] =
-                    namesOf(kKindNames);
+                    namesOf(kKindNames.names);
                 shape["properties"][std::string(kClimbKey)]["enum"] =
-                    namesOf(kFacingNames);
+                    namesOf(kFacingNames.names);
 
                 return shape;
             } // GCOVR_EXCL_LINE
@@ -113,9 +113,9 @@ namespace antwika::map
                     std::string(kAirKey)};
                 shape["properties"][std::string(kTileKey)] = tileSchema();
                 shape["properties"][std::string(kSideKey)]["enum"] =
-                    namesOf(kSideNames);
+                    namesOf(kSideNames.names);
                 shape["properties"][std::string(kEdgeKey)]["enum"] =
-                    namesOf(kEdgeNames);
+                    namesOf(kEdgeNames.names);
                 shape["properties"][std::string(kMayKey)] = may;
                 shape["properties"][std::string(kAirKey)]["type"] =
                     "boolean";
@@ -182,7 +182,7 @@ namespace antwika::map
                     std::string(kFilledKey)};
                 shape["properties"][std::string(kTileKey)] = tileSchema();
                 shape["properties"][std::string(kCornerKey)]["enum"] =
-                    namesOf(kCornerNames);
+                    namesOf(kCornerNames.names);
                 shape["properties"][std::string(kFilledKey)]["type"] =
                     "boolean";
 
@@ -233,7 +233,7 @@ namespace antwika::map
                     std::string(kTileKey), std::string(kKindKey)};
                 shape["properties"][std::string(kTileKey)] = tileSchema();
                 shape["properties"][std::string(kKindKey)]["enum"] =
-                    namesOf(kKindNames);
+                    namesOf(kKindNames.names);
 
                 return shape;
             } // GCOVR_EXCL_LINE
@@ -248,7 +248,7 @@ namespace antwika::map
                     std::string(kTileKey), std::string(kFacingKey)};
                 shape["properties"][std::string(kTileKey)] = tileSchema();
                 shape["properties"][std::string(kFacingKey)]["enum"] =
-                    namesOf(kFacingNames);
+                    namesOf(kFacingNames.names);
 
                 return shape;
             } // GCOVR_EXCL_LINE
@@ -263,7 +263,7 @@ namespace antwika::map
                     std::string(kTileKey), std::string(kLevelKey)};
                 shape["properties"][std::string(kTileKey)] = tileSchema();
                 shape["properties"][std::string(kLevelKey)]["enum"] =
-                    namesOf(kLevelNames);
+                    namesOf(kStairHalfNames.names);
 
                 return shape;
             } // GCOVR_EXCL_LINE
@@ -278,7 +278,7 @@ namespace antwika::map
                     std::string(kTileKey), std::string(kPartKey)};
                 shape["properties"][std::string(kTileKey)] = tileSchema();
                 shape["properties"][std::string(kPartKey)]["enum"] =
-                    namesOf(kPartNames);
+                    namesOf(kPartNames.names);
 
                 return shape;
             } // GCOVR_EXCL_LINE
