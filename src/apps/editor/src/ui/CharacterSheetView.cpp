@@ -154,10 +154,6 @@ namespace antwika::editor
 
                 const auto place =
                     characterPlace(camera::kCanvasSize, way, frame);
-                const auto right =
-                    place.originPoint.x + place.size.width;
-                const auto foot =
-                    place.originPoint.y + place.size.height;
 
                 viewportRenderer.drawTexture(
                     *sheetCheckerTexture,
@@ -178,31 +174,10 @@ namespace antwika::editor
                     place,
                     chosenFrame ? kWhiteColor : kDisabledTintColor);
 
-                for (const auto &[fromPoint, toPoint] :
-                     {std::pair{
-                          place.originPoint,
-                          antwika::gfx::PointF{
-                              right, place.originPoint.y}},
-                      std::pair{
-                          antwika::gfx::PointF{
-                              place.originPoint.x, foot},
-                          antwika::gfx::PointF{
-                              right, foot}},
-                      std::pair{
-                          place.originPoint,
-                          antwika::gfx::PointF{
-                              place.originPoint.x, foot}},
-                      std::pair{
-                          antwika::gfx::PointF{
-                              right, place.originPoint.y},
-                          antwika::gfx::PointF{
-                              right, foot}}})
-                {
-                    viewportRenderer.drawLine(
-                        fromPoint,
-                        toPoint,
-                        chosenFrame ? kSelectionAccentColor : kGridLineColor);
-                }
+                drawOutline(
+                    viewportRenderer,
+                    place,
+                    chosenFrame ? kSelectionAccentColor : kGridLineColor);
             }
         }
 
@@ -281,34 +256,9 @@ namespace antwika::editor
             {
                 const auto place = character::
                     selectionRect(drawnAt, *mark.selection);
-                const auto right =
-                    place.originPoint.x + place.size.width;
-                const auto foot =
-                    place.originPoint.y + place.size.height;
 
-                for (const auto &[fromPoint, toPoint] :
-                     {std::pair{
-                          place.originPoint,
-                          antwika::gfx::PointF{
-                              right, place.originPoint.y}},
-                      std::pair{
-                          antwika::gfx::PointF{
-                              place.originPoint.x, foot},
-                          antwika::gfx::PointF{
-                              right, foot}},
-                      std::pair{
-                          place.originPoint,
-                          antwika::gfx::PointF{
-                              place.originPoint.x, foot}},
-                      std::pair{
-                          antwika::gfx::PointF{
-                              right, place.originPoint.y},
-                          antwika::gfx::PointF{
-                              right, foot}}})
-                {
-                    viewportRenderer.drawLine(fromPoint, toPoint,
-                    kSelectionAccentColor);
-                }
+                drawOutline(
+                    viewportRenderer, place, kSelectionAccentColor);
             }
 
             viewportRenderer.drawText(

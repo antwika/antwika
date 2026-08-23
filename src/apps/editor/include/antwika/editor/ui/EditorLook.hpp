@@ -4,8 +4,12 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include <antwika/gfx/Color.hpp>
+#include <antwika/gfx/IRenderer.hpp>
+#include <antwika/gfx/PointF.hpp>
+#include <antwika/gfx/RectF.hpp>
 #include <antwika/ui/Context.hpp>
 #include <antwika/ui/Theme.hpp>
 
@@ -178,6 +182,26 @@ namespace antwika::editor
                 .padding = kPanelPadding});
 
         context.label(name, kTextColor);
+    }
+
+    inline void drawOutline(
+        gfx::IRenderer &renderer,
+        const gfx::RectF whereRect,
+        const gfx::Color lineColor)
+    {
+        const auto left = whereRect.originPoint.x;
+        const auto top = whereRect.originPoint.y;
+        const auto right = left + whereRect.size.width;
+        const auto foot = top + whereRect.size.height;
+
+        for (const auto &[fromPoint, toPoint] :
+             {std::pair{gfx::PointF{left, top}, gfx::PointF{right, top}},
+              std::pair{gfx::PointF{left, foot}, gfx::PointF{right, foot}},
+              std::pair{gfx::PointF{left, top}, gfx::PointF{left, foot}},
+              std::pair{gfx::PointF{right, top}, gfx::PointF{right, foot}}})
+        {
+            renderer.drawLine(fromPoint, toPoint, lineColor);
+        }
     }
 
     inline constexpr float kPaneMargin = 6.0F;
