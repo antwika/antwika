@@ -362,41 +362,8 @@ namespace antwika::map
         for (const auto &figureJson :
              wholeDocument[std::string(kCharactersKey)])
         {
-            Character figureCharacter;
-            const auto &home = figureJson[std::string(kHomeKey)];
-            const auto &atJson = home[std::string(kAtKey)];
-
-            figureCharacter.name =
-                figureJson[std::string(kNameKey)]
-                    .get<std::string>();
-            figureCharacter.idlePlacement = Placement{
-                .position =
-                    gfx::Vec3{
-                        fromFixed(atJson[0].get<std::int64_t>()),
-                        fromFixed(atJson[1].get<std::int64_t>()),
-                        fromFixed(atJson[2].get<std::int64_t>())},
-                .way = home[std::string(kWayKey)]
-                           .get<std::uint8_t>()};
-
-            figureCharacter.patrolPathPositions =
-                readCells(figureJson[std::string(kStopsKey)]);
-
-            for (const auto &line :
-                 figureJson[std::string(kLinesKey)])
-            {
-                figureCharacter.dialogue.push_back(
-                    line.get<std::string>());
-            }
-
-            for (const auto &componentName :
-                 figureJson[std::string(kComponentsKey)])
-            {
-                figureCharacter.components.push_back(
-                    componentName.get<std::string>());
-            }
-            figureCharacter.player =
-                figureJson[std::string(kCharacterPlayerKey)]
-                    .get<bool>();
+            const auto figureCharacter =
+                read<Character>(kCharacterFields, figureJson);
 
             if (figureCharacter.player && playerIndex(map).has_value())
             {

@@ -335,35 +335,7 @@ namespace antwika::map
 
         for (const auto &figure : map.characters)
         {
-            nlohmann::json figureJson;
-
-            figureJson[std::string(kNameKey)] = figure.name;
-            figureJson[std::string(kHomeKey)]
-                      [std::string(kAtKey)] =
-                nlohmann::json::array(
-                    {toFixed(figure.idlePlacement.position.x),
-                     toFixed(figure.idlePlacement.position.y),
-                     toFixed(figure.idlePlacement.position.z)});
-            figureJson[std::string(kHomeKey)]
-                      [std::string(kWayKey)] =
-                figure.idlePlacement.way;
-
-            auto stops = nlohmann::json::array();
-
-            for (const auto stop : figure.patrolPathPositions)
-            {
-                stops.push_back(
-                    nlohmann::json::array(
-                        {stop.x, stop.y, stop.z}));
-            }
-
-            figureJson[std::string(kStopsKey)] = stops;
-            figureJson[std::string(kLinesKey)] = figure.dialogue;
-            figureJson[std::string(kComponentsKey)] =
-                figure.components;
-            figureJson[std::string(kCharacterPlayerKey)] =
-                figure.player;
-            figures.push_back(figureJson);
+            figures.push_back(written(kCharacterFields, figure));
         }
 
         document[std::string(kCharactersKey)] = figures;

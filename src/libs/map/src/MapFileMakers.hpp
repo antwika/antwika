@@ -146,6 +146,92 @@ namespace antwika::map::mapfile
             { memberIn<Member>(record) = readTile(json); }};
     }
 
+    [[nodiscard]] inline nlohmann::json textListShape()
+    {
+        nlohmann::json shape;
+
+        shape["type"] = "array";
+        shape["items"]["type"] = "string";
+
+        return shape;
+    } // GCOVR_EXCL_LINE
+
+    template <auto Member>
+    [[nodiscard]] constexpr Field textListField(
+        const std::string_view key)
+    {
+        return Field{
+            .key = key,
+            .shape = &textListShape,
+            .valueOf = [](const void *record)
+            { return nlohmann::json(memberOf<Member>(record)); },
+            .setFrom = [](void *record, const nlohmann::json &json)
+            {
+                auto &lines = memberIn<Member>(record);
+
+                lines.clear();
+
+                for (const auto &lineJson : json)
+                {
+                    lines.push_back(lineJson.get<std::string>());
+                }
+            }};
+    }
+
+    [[nodiscard]] inline nlohmann::json fixedPlaceShape()
+    {
+        nlohmann::json shape;
+
+        shape["type"] = "array";
+        shape["items"] =
+            wholeSchema(-kMaxCameraCoord, kMaxCameraCoord);
+        shape["minItems"] = kAxisCount;
+        shape["maxItems"] = kAxisCount;
+
+        return shape;
+    } // GCOVR_EXCL_LINE
+
+    template <auto Member>
+    [[nodiscard]] constexpr Field fixedPlaceField(
+        const std::string_view key)
+    {
+        return Field{
+            .key = key,
+            .shape = &fixedPlaceShape,
+            .valueOf = [](const void *record)
+            {
+                const auto place = memberOf<Member>(record);
+
+                return nlohmann::json::array(
+                    {toFixed(place.x),
+                     toFixed(place.y),
+                     toFixed(place.z)});
+            },
+            .setFrom = [](void *record, const nlohmann::json &json)
+            {
+                memberIn<Member>(record) = gfx::Vec3{
+                    fromFixed(json[0].get<std::int64_t>()),
+                    fromFixed(json[1].get<std::int64_t>()),
+                    fromFixed(json[2].get<std::int64_t>())};
+            }};
+    }
+
+    template <auto Member, const auto &Table>
+    [[nodiscard]] constexpr Field recordField(
+        const std::string_view key)
+    {
+        return Field{
+            .key = key,
+            .shape = [] { return shapeOf(Table); },
+            .valueOf = [](const void *record)
+            { return written(Table, memberOf<Member>(record)); },
+            .setFrom = [](void *record, const nlohmann::json &json)
+            {
+                memberIn<Member>(record) =
+                    read<Held<Member>>(Table, json);
+            }};
+    }
+
     template <auto Member, int Least, int Most>
     [[nodiscard]] constexpr Field wholeField(const std::string_view key)
     {
