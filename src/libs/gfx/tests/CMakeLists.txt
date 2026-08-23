@@ -32,6 +32,7 @@ add_executable(antwika_gfx_tests
     PngWriterTest.cpp
     PointTest.cpp
     RectTest.cpp
+    RenderScopesTest.cpp
     ShaderReaderTest.cpp
     ShaderSourceTest.cpp
     SizeTest.cpp
@@ -53,6 +54,7 @@ target_link_libraries(antwika_gfx_tests
     PRIVATE
         antwika::gfx
         antwika::gfx::tests::conformance
+        antwika::gfx::tests::fakes
         antwika::gfx::tests::mocks
         antwika::io
         antwika::log::tests::mocks

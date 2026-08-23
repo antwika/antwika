@@ -86,8 +86,10 @@ namespace antwika::render
 
             for (const auto face : gfx::kEveryCubeFace)
             {
-                viewportRenderer.beginTargetRegion(
-                    *lampShadowAtlasTarget, light::shadowFaceRect(index, face));
+                const auto scope = viewportRenderer.targetScope(
+                    *lampShadowAtlasTarget,
+                    light::shadowFaceRect(index, face));
+
                 viewportRenderer.clear(gfx::Color{});
 
                 for (const auto &piece : pileMeshes)
@@ -99,8 +101,6 @@ namespace antwika::render
                         gfx::MeshMaterial{
                             .shader = shadowShader.get()});
                 }
-
-                viewportRenderer.endTarget();
             }
         }
 

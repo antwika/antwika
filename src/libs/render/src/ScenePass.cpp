@@ -88,17 +88,23 @@ namespace antwika::render
         }
 
         viewportRenderer.setShaderNumber(voxelShader, "glowOnly", 1.0F);
-        viewportRenderer.beginTarget(*glowTarget);
-        viewportRenderer.clear(gfx::Color{});
-        pile();
-        viewportRenderer.endTarget();
+
+        {
+            const auto scope = viewportRenderer.targetScope(*glowTarget);
+
+            viewportRenderer.clear(gfx::Color{});
+            pile();
+        }
+
         viewportRenderer.setShaderNumber(voxelShader, "glowOnly", 0.0F);
 
-        viewportRenderer.beginTarget(*sceneTarget);
-        viewportRenderer.clear(backgroundColor);
-        pile();
-        afterPass();
-        viewportRenderer.endTarget();
+        {
+            const auto scope = viewportRenderer.targetScope(*sceneTarget);
+
+            viewportRenderer.clear(backgroundColor);
+            pile();
+            afterPass();
+        }
 
         const gfx::Camera3D screenCamera{
             gfx::Vec3{0.0F, 0.0F, 0.0F},
