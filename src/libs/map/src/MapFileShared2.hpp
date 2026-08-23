@@ -56,59 +56,7 @@ namespace antwika::map::mapfile
 
     [[nodiscard]] nlohmann::json familySchema();
 
-    [[nodiscard]] inline nlohmann::json decorSchema()
-    {
-        nlohmann::json frames;
-        frames["type"] = "array";
-        frames["items"] = tileSchema();
-        frames["minItems"] = 1;
-        frames["maxItems"] = decor::kMaxDecorFrames;
-
-        nlohmann::json bases;
-        bases["type"] = "array";
-        bases["items"] = tileSchema();
-        bases["uniqueItems"] = true;
-
-        nlohmann::json span;
-        span["type"] = "array";
-        span["items"] = wholeSchema(1, decor::kMaxDecorSpan);
-        span["minItems"] = 2;
-        span["maxItems"] = 2;
-
-        nlohmann::json members;
-        members["type"] = "array";
-        members["items"] = tileSchema();
-        members["minItems"] = 1;
-        members["maxItems"] =
-            static_cast<int>(decor::kMaxDecorSpan)
-            * static_cast<int>(decor::kMaxDecorSpan);
-
-        nlohmann::json shape;
-        shape["type"] = "object";
-        shape["additionalProperties"] = false;
-        shape["required"] = {
-            std::string(kTileKey),
-            std::string(kFramesKey),
-            std::string(kBasesKey),
-            std::string(kFrequencyKey),
-            std::string(kWeightKey),
-            std::string(kDecorLayerKey),
-            std::string(kSpanKey),
-            std::string(kMembersKey)};
-        shape["properties"][std::string(kTileKey)] = tileSchema();
-        shape["properties"][std::string(kFramesKey)] = frames;
-        shape["properties"][std::string(kBasesKey)] = bases;
-        shape["properties"][std::string(kFrequencyKey)] =
-            wholeSchema(0, decor::kFullFrequency);
-        shape["properties"][std::string(kWeightKey)] =
-            wholeSchema(0, decor::kFullFrequency);
-        shape["properties"][std::string(kDecorLayerKey)] =
-            wholeSchema(1, static_cast<int>(kMaxLayers) - 1);
-        shape["properties"][std::string(kSpanKey)] = span;
-        shape["properties"][std::string(kMembersKey)] = members;
-
-        return shape;
-    } // GCOVR_EXCL_LINE
+    [[nodiscard]] nlohmann::json decorSchema();
 
     [[nodiscard]] nlohmann::json flipSchema();
 

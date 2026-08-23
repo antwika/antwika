@@ -216,6 +216,80 @@ namespace antwika::map::mapfile
             }};
     }
 
+    [[nodiscard]] inline nlohmann::json uniqueTileListShape()
+    {
+        nlohmann::json shape;
+
+        shape["type"] = "array";
+        shape["items"] = tileSchema();
+        shape["uniqueItems"] = true;
+
+        return shape;
+    } // GCOVR_EXCL_LINE
+
+    template <auto Member>
+    [[nodiscard]] constexpr Field uniqueTileListField(
+        const std::string_view key)
+    {
+        return Field{
+            .key = key,
+            .shape = &uniqueTileListShape,
+            .valueOf = [](const void *record)
+            {
+                auto arrayJson = nlohmann::json::array();
+
+                for (const auto tile : memberOf<Member>(record))
+                {
+                    arrayJson.push_back(writtenTile(tile));
+                }
+
+                return arrayJson;
+            },
+            .setFrom = [](void *record, const nlohmann::json &json)
+            {
+                auto &tiles = memberIn<Member>(record);
+
+                tiles.clear();
+
+                for (const auto &tileJson : json)
+                {
+                    tiles.push_back(readTile(tileJson));
+                }
+            }};
+    }
+
+    template <auto First, auto Second, int Least, int Most>
+    [[nodiscard]] constexpr Field pairField(
+        const std::string_view key)
+    {
+        return Field{
+            .key = key,
+            .shape = []
+            {
+                nlohmann::json shape;
+
+                shape["type"] = "array";
+                shape["items"] = wholeSchema(Least, Most);
+                shape["minItems"] = 2;
+                shape["maxItems"] = 2;
+
+                return shape;
+            },
+            .valueOf = [](const void *record)
+            {
+                return nlohmann::json::array(
+                    {memberOf<First>(record),
+                     memberOf<Second>(record)});
+            },
+            .setFrom = [](void *record, const nlohmann::json &json)
+            {
+                memberIn<First>(record) =
+                    json[0].get<Held<First>>();
+                memberIn<Second>(record) =
+                    json[1].get<Held<Second>>();
+            }};
+    }
+
     template <auto Member, const auto &Table>
     [[nodiscard]] constexpr Field recordField(
         const std::string_view key)
