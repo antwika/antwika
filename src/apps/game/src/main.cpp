@@ -5,6 +5,8 @@
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/RunCatchingErrors.hpp>
 #include <antwika/cli/CommandLine.hpp>
+#include <antwika/gfx/SelectedBackend.hpp>
+#include <antwika/input/SelectedInputBackend.hpp>
 
 #include "antwika/game/app/Runner.hpp"
 
@@ -47,8 +49,14 @@ int main(int argc, char **argv)
                 return;
             }
 
+            const auto backend = antwika::gfx::makeSelectedBackend(logger);
+            const auto inputs =
+                antwika::input::makeSelectedInputBackend(logger);
+
             Runner(
                 logger,
+                *backend,
+                *inputs,
                 std::string(
                     command.value("--map").value_or(
                         std::string(kDefaultMap))))

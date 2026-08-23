@@ -105,6 +105,8 @@ namespace antwika::editor
     public:
         Editor(
             log::ILogger &logger,
+            gfx::IGfxBackend &backend,
+            input::IInputBackend &inputs,
             std::string mapPathGiven,
             bool playOnlyGiven = false,
             std::string planPathGiven =
@@ -118,8 +120,8 @@ namespace antwika::editor
         std::string startMapPath;
         bool playOnly = false;
         bool titleScreenUp = false;
-        std::unique_ptr<gfx::IGfxBackend> backend;
-        std::unique_ptr<input::IInputBackend> inputs;
+        gfx::IGfxBackend &backend;
+        input::IInputBackend &inputs;
         std::unique_ptr<gfx::IWindow> window;
         gfx::ViewportRenderer viewportRenderer;
         render::WorldShader worldShader;

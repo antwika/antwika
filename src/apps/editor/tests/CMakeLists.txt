@@ -6,6 +6,7 @@ antwika_add_app_tests(
         CharacterTest.cpp
         ColorPickerTest.cpp
         EditorBindingsTest.cpp
+        EditorTest.cpp
         GameModuleTest.cpp
         IconSheetTest.cpp
         IconsViewTest.cpp
