@@ -184,7 +184,16 @@ namespace antwika::editor
         if (path.has_value())
         {
             library = opened(*path, why, &setUp, &takeDown);
-            openedPath = *path;
+
+            if (library != nullptr)
+            {
+                openedPath = *path;
+            }
+            else
+            {
+                std::error_code errorCode;
+                std::filesystem::remove(*path, errorCode);
+            }
         }
 
         if (library == nullptr)
@@ -233,7 +242,10 @@ namespace antwika::editor
         }
 
         takeDown(madeGame);
+        madeGame = nullptr;
+
         dlclose(library);
+        library = nullptr;
 
         std::error_code errorCode;
         std::filesystem::remove(openedPath, errorCode);
