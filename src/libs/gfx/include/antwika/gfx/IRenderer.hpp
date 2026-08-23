@@ -25,6 +25,7 @@
 #include "antwika/gfx/RenderTargetSpec.hpp"
 #include "antwika/gfx/ShaderSource.hpp"
 #include "antwika/gfx/TargetScope.hpp"
+#include "antwika/gfx/TransformScope.hpp"
 
 namespace antwika::gfx
 {
@@ -109,6 +110,14 @@ namespace antwika::gfx
         }
 
         virtual void pushTransform(const Mat4 &transform) = 0;
+
+        [[nodiscard]] TransformScope transformScope(
+            const Mat4 &transform)
+        {
+            pushTransform(transform);
+
+            return TransformScope{*this};
+        }
 
         virtual void popTransform() = 0;
 

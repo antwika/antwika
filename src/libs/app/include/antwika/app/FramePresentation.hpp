@@ -8,7 +8,7 @@
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/Color.hpp>
-#include <antwika/gfx/IRenderer.hpp>
+#include <antwika/gfx/ISurfaceRenderer.hpp>
 #include <antwika/gfx/IWindow.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/ViewportRenderer.hpp>
@@ -20,7 +20,7 @@ namespace antwika::app
 
     using antwika::event::TickEvent;
     using antwika::gfx::Color;
-    using antwika::gfx::IRenderer;
+    using antwika::gfx::ISurfaceRenderer;
     using antwika::gfx::IWindow;
     using antwika::gfx::Size;
 
@@ -39,14 +39,15 @@ namespace antwika::app
     }
 
     template <HasDrawList OverlayT>
-    void paintOverlay(IRenderer &renderer, const OverlayT &overlay)
+    void paintOverlay(
+        ISurfaceRenderer &renderer, const OverlayT &overlay)
     {
         antwika::ui::paint(renderer, overlay.commands());
     }
 
     template <HasDrawList OverlayT>
     void paintOverlay(
-        IRenderer &renderer,
+        ISurfaceRenderer &renderer,
         const std::optional<std::reference_wrapper<const OverlayT>>
             &overlay)
     {

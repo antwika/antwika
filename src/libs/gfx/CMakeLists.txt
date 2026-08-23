@@ -19,6 +19,7 @@ add_library(antwika_gfx
     src/ShaderSource.cpp
     src/TargetScope.cpp
     src/Transform.cpp
+    src/TransformScope.cpp
     src/Viewport.cpp
     src/ViewportRenderer.cpp
 )
