@@ -206,8 +206,9 @@ namespace antwika::editor
                 return;
             }
 
-            if (tool == map::Tool::Lamp)
+            switch (placementOf(tool))
             {
+            case ToolPlacement::Lamp:
                 if (downPressed.button == input::MouseButton::Left
                     && beginLampCarry(*cell))
                 {
@@ -227,44 +228,34 @@ namespace antwika::editor
                 lightPasses.forget();
 
                 return;
-            }
 
-            if (tool == map::Tool::Stamp)
-            {
+            case ToolPlacement::Stamp:
                 pressStamp(*cell, downPressed.button);
 
                 return;
-            }
 
-            if (tool == map::Tool::Figure)
-            {
+            case ToolPlacement::Figure:
                 pressFigure(*cell, downPressed.button);
 
                 return;
-            }
 
-            if (tool == map::Tool::PressurePlate)
-            {
+            case ToolPlacement::Plate:
                 pressPlate(*cell, downPressed.button);
 
                 return;
-            }
 
-            if (tool == map::Tool::Key || tool == map::Tool::Door
-                || tool == map::Tool::Checkpoint || tool == map::Tool::Food
-                || tool == map::Tool::Water)
-            {
+            case ToolPlacement::Gate:
                 pressGate(*cell, downPressed.button);
 
                 return;
-            }
 
-            if (tool == map::Tool::Start
-                || tool == map::Tool::Exit)
-            {
+            case ToolPlacement::StartOrExit:
                 placeStartOrExit(*cell, downPressed.button);
 
                 return;
+
+            case ToolPlacement::Shape:
+                break;
             }
 
             if (beginShape(*cell, downPressed.button))
@@ -312,48 +303,42 @@ namespace antwika::editor
             return;
         }
 
-        if (tool == map::Tool::Lamp)
+        switch (placementOf(tool))
         {
+        case ToolPlacement::Lamp:
             pushUndo();
             map.lamps = light::withoutLampAt(map.lamps, *cell);
             lightPasses.forget();
 
             return;
-        }
 
-        if (tool == map::Tool::Stamp)
-        {
+        case ToolPlacement::Stamp:
             pressStamp(*cell, input::MouseButton::Right);
 
             return;
-        }
 
-        if (tool == map::Tool::Figure)
-        {
+        case ToolPlacement::Figure:
             pressFigure(*cell, input::MouseButton::Right);
 
             return;
-        }
 
-        if (tool == map::Tool::PressurePlate)
-        {
+        case ToolPlacement::Plate:
             pressPlate(*cell, input::MouseButton::Right);
 
             return;
-        }
 
-        if (tool == map::Tool::Key || tool == map::Tool::Door
-            || tool == map::Tool::Checkpoint || tool == map::Tool::Food
-            || tool == map::Tool::Water)
-        {
+        case ToolPlacement::Gate:
             pressGate(*cell, input::MouseButton::Right);
 
             return;
-        }
 
-        if (tool == map::Tool::Start || tool == map::Tool::Exit)
-        {
+        case ToolPlacement::StartOrExit:
             placeStartOrExit(*cell, input::MouseButton::Right);
+
+            return;
+
+        case ToolPlacement::Shape:
+            break;
         }
     }
 

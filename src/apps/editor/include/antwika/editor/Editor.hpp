@@ -86,6 +86,8 @@
 #include "antwika/editor/ui/PlanView.hpp"
 #include "antwika/editor/ui/ToolButtonRow.hpp"
 #include "antwika/editor/ui/ToolPanel.hpp"
+#include "antwika/editor/ui/ToolPlacement.hpp"
+#include "antwika/editor/ui/ToolPlacementRow.hpp"
 #include "antwika/editor/ui/ToolToggles.hpp"
 #include "antwika/rules/Gates.hpp"
 #include "antwika/system/HealthSystem.hpp"
