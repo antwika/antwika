@@ -11,6 +11,7 @@
 #include <antwika/gfx/Glyphs.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/ui/support/DrawListQueries.hpp>
 
 #include "antwika/ui/Context.hpp"
 #include "antwika/ui/DrawCommand.hpp"
@@ -25,6 +26,8 @@
 using antwika::gfx::Color;
 using antwika::gfx::Point;
 using antwika::gfx::Size;
+using antwika::ui::support::fillsColored;
+using antwika::ui::support::textsOf;
 using antwika::ui::Context;
 using antwika::ui::DrawList;
 using antwika::ui::DrawText;
@@ -61,40 +64,6 @@ namespace
             .padding = 0,
             .gap = 0,
             .buttonPadding = 0};
-    }
-
-    [[nodiscard]] std::vector<std::string> textsOf(
-        const DrawList &drawList)
-    {
-        std::vector<std::string> texts;
-
-        for (const auto &command : drawList)
-        {
-            if (const auto *text = std::get_if<DrawText>(&command))
-            {
-                texts.push_back(text->text);
-            }
-        }
-
-        return texts;
-    }
-
-    [[nodiscard]] std::vector<FillRect> caretsOf(
-        const DrawList &drawList)
-    {
-        std::vector<FillRect> caretRects;
-
-        for (const auto &command : drawList)
-        {
-            const auto *fill = std::get_if<FillRect>(&command);
-
-            if (fill != nullptr && fill->color == kCaretColor)
-            {
-                caretRects.push_back(*fill);
-            }
-        }
-
-        return caretRects;
     }
 
     [[nodiscard]] DrawList pictureOf(std::string_view text)
@@ -206,7 +175,7 @@ TEST(TextAreaTest, TextArea_TheCaretSitsOnTheLineTheCursorIsIn)
         TextAreaSpec{.text = "one\ntwo", .cursor = 5, .focused = true});
 
     const auto commands = uiContext.build().drawList;
-    const auto carets = caretsOf(commands);
+    const auto carets = fillsColored(commands, kCaretColor);
 
     ASSERT_EQ(1U, carets.size());
 
@@ -227,7 +196,7 @@ TEST(TextAreaTest, TextArea_ACursorAtALineBreakBelongsToTheLineItEnds)
 
     const auto commands = uiContext.build().drawList;
 
-    ASSERT_EQ(1U, caretsOf(commands).size());
+    ASSERT_EQ(1U, fillsColored(commands, kCaretColor).size());
 
     const auto texts = textsOf(commands);
 
@@ -248,7 +217,7 @@ TEST(TextAreaTest, TextArea_AnUnfocusedAreaDrawsNoCaretAndReportsNoEdit)
 
     const auto frame = uiContext.build();
 
-    EXPECT_TRUE(caretsOf(frame.drawList).empty());
+    EXPECT_TRUE(fillsColored(frame.drawList, kCaretColor).empty());
     EXPECT_FALSE(frame.interactions.edit.has_value());
     EXPECT_EQ(kFieldColor, std::get<FillRect>(frame.drawList.at(0)).color);
 }
@@ -520,7 +489,7 @@ TEST(TextAreaTest, TextArea_TabReachesAnAreaAndTheNextFrameTypesIntoIt)
 
     ASSERT_TRUE(frame.interactions.edit.has_value());
     EXPECT_EQ("abc", frame.interactions.edit->text);
-    EXPECT_EQ(1U, caretsOf(frame.drawList).size());
+    EXPECT_EQ(1U, fillsColored(frame.drawList, kCaretColor).size());
 }
 
 TEST(TextAreaTest, TextArea_AFixedSizeAreaTakesExactlyThatMuch)
@@ -547,7 +516,7 @@ TEST(TextAreaTest, TextArea_ACaretIsAtLeastOnePixelWideAtAZeroScale)
 
     uiContext.textArea(TextAreaSpec{.text = "ab", .focused = true});
 
-    const auto carets = caretsOf(uiContext.build().drawList);
+    const auto carets = fillsColored(uiContext.build().drawList, kCaretColor);
 
     ASSERT_EQ(1U, carets.size());
     EXPECT_EQ(1U, carets.at(0).rect.size.width);
@@ -625,7 +594,7 @@ TEST(TextAreaTest, TextArea_TheCaretIsDrawnItsThemeWidthAllTheSame)
     uiContext.textArea(
         TextAreaSpec{.text = "ab", .cursor = 1, .focused = true});
 
-    const auto carets = caretsOf(uiContext.build().drawList);
+    const auto carets = fillsColored(uiContext.build().drawList, kCaretColor);
 
     ASSERT_EQ(1U, carets.size());
     EXPECT_EQ(carets.at(0).rect.size.width, 3U);
@@ -640,7 +609,7 @@ TEST(TextAreaTest, TextArea_ACaretAtTheClippedEdgeIsCutToNothing)
         .text = "a long line of characters",
         .focused = true});
 
-    const auto carets = caretsOf(uiContext.build().drawList);
+    const auto carets = fillsColored(uiContext.build().drawList, kCaretColor);
 
     ASSERT_EQ(1U, carets.size());
     EXPECT_EQ(carets.at(0).rect.size.width, 0U);
