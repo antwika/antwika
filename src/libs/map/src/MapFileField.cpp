@@ -47,6 +47,11 @@ namespace antwika::map::mapfile
         return shapeOf(kTransitionFields);
     } // GCOVR_EXCL_LINE
 
+    nlohmann::json flipSchema()
+    {
+        return shapeOf(kFlipFields);
+    } // GCOVR_EXCL_LINE
+
     void readObject(
         const Fields fields,
         void *record,

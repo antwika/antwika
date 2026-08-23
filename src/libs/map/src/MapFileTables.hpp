@@ -38,6 +38,16 @@ namespace antwika::map::mapfile
         tileField<&tile::TransitionTile::maskTile>(kMaskKey),
         tileField<&tile::TransitionTile::outputTile>(kSlotKey)};
 
+    inline constexpr std::array<Field, 1> kLayerFields{
+        textField<&Layer::name>(kNameKey)};
+
+    inline constexpr std::array<Field, 2> kFlipFields{
+        tileField<&decor::TileAnimation::tile>(kTileKey),
+        tileListField<
+            &decor::TileAnimation::frameTiles,
+            1,
+            decor::kMaxDecorFrames>(kFramesKey)};
+
     struct GateRow final
     {
         std::string_view key;

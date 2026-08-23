@@ -72,14 +72,8 @@ namespace antwika::map::mapfile
     {
         for (const auto &flip : documentJson[std::string(kFlipsKey)])
         {
-            decor::TileAnimation oneAnimation{
-                .tile = readTile(flip[std::string(kTileKey)])};
-
-            for (const auto &frame :
-                 flip[std::string(kFramesKey)])
-            {
-                oneAnimation.frameTiles.push_back(readTile(frame));
-            }
+            const auto oneAnimation =
+                read<decor::TileAnimation>(kFlipFields, flip);
 
             for (const auto frame : oneAnimation.frameTiles)
             {

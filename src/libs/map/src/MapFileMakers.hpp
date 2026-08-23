@@ -113,6 +113,27 @@ namespace antwika::map::mapfile
             { memberIn<Member>(record) = colorFrom(json); }};
     }
 
+    [[nodiscard]] inline nlohmann::json textShape()
+    {
+        nlohmann::json shape;
+
+        shape["type"] = "string";
+
+        return shape;
+    } // GCOVR_EXCL_LINE
+
+    template <auto Member>
+    [[nodiscard]] constexpr Field textField(const std::string_view key)
+    {
+        return Field{
+            .key = key,
+            .shape = &textShape,
+            .valueOf = [](const void *record)
+            { return nlohmann::json(memberOf<Member>(record)); },
+            .setFrom = [](void *record, const nlohmann::json &json)
+            { memberIn<Member>(record) = json.get<std::string>(); }};
+    }
+
     template <auto Member>
     [[nodiscard]] constexpr Field tileField(const std::string_view key)
     {
@@ -123,6 +144,47 @@ namespace antwika::map::mapfile
             { return writtenTile(memberOf<Member>(record)); },
             .setFrom = [](void *record, const nlohmann::json &json)
             { memberIn<Member>(record) = readTile(json); }};
+    }
+
+    template <auto Member, std::size_t Least, std::size_t Most>
+    [[nodiscard]] constexpr Field tileListField(
+        const std::string_view key)
+    {
+        return Field{
+            .key = key,
+            .shape = []
+            {
+                nlohmann::json shape;
+
+                shape["type"] = "array";
+                shape["items"] = tileSchema();
+                shape["minItems"] = Least;
+                shape["maxItems"] = Most;
+
+                return shape;
+            },
+            .valueOf = [](const void *record)
+            {
+                auto arrayJson = nlohmann::json::array();
+
+                for (const auto tile : memberOf<Member>(record))
+                {
+                    arrayJson.push_back(writtenTile(tile));
+                }
+
+                return arrayJson;
+            },
+            .setFrom = [](void *record, const nlohmann::json &json)
+            {
+                auto &tiles = memberIn<Member>(record);
+
+                tiles.clear();
+
+                for (const auto &tileJson : json)
+                {
+                    tiles.push_back(readTile(tileJson));
+                }
+            }};
     }
 
     template <auto Member, const auto &Names>

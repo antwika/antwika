@@ -139,24 +139,7 @@ namespace antwika::map::mapfile
         return shape;
     } // GCOVR_EXCL_LINE
 
-    [[nodiscard]] inline nlohmann::json flipSchema()
-    {
-        nlohmann::json frames;
-        frames["type"] = "array";
-        frames["items"] = tileSchema();
-        frames["minItems"] = 1;
-        frames["maxItems"] = decor::kMaxDecorFrames;
-
-        nlohmann::json shape;
-        shape["type"] = "object";
-        shape["additionalProperties"] = false;
-        shape["required"] = {
-            std::string(kTileKey), std::string(kFramesKey)};
-        shape["properties"][std::string(kTileKey)] = tileSchema();
-        shape["properties"][std::string(kFramesKey)] = frames;
-
-        return shape;
-    } // GCOVR_EXCL_LINE
+    [[nodiscard]] nlohmann::json flipSchema();
 
     [[nodiscard]] nlohmann::json transitionSchema();
 

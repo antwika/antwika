@@ -293,11 +293,7 @@ namespace antwika::map
 
         for (const auto &layer : wholeDocument[std::string(kLayersKey)])
         {
-            map.layers.push_back(
-                Layer{
-                    .name =
-                        layer[std::string(kNameKey)]
-                            .get<std::string>()});
+            map.layers.push_back(read<Layer>(kLayerFields, layer));
         }
 
         for (const auto &lamp : wholeDocument[std::string(kLampsKey)])
