@@ -114,78 +114,7 @@ namespace antwika::map::mapfile
 
     [[nodiscard]] nlohmann::json transitionSchema();
 
-    [[nodiscard]] inline nlohmann::json figureSchema()
-    {
-        nlohmann::json home;
-        home["type"] = "object";
-        home["additionalProperties"] = false;
-        home["required"] = {
-            std::string(kAtKey), std::string(kWayKey)};
-        home["properties"][std::string(kAtKey)]["type"] = "array";
-        home["properties"][std::string(kAtKey)]["items"] =
-            wholeSchema(-kMaxCameraCoord, kMaxCameraCoord);
-        home["properties"][std::string(kAtKey)]["minItems"] =
-            kAxisCount;
-        home["properties"][std::string(kAtKey)]["maxItems"] =
-            kAxisCount;
-        home["properties"][std::string(kWayKey)] =
-            wholeSchema(0, 3);
-
-        nlohmann::json stops;
-        stops["type"] = "array";
-        stops["items"] = cellSchema();
-
-        nlohmann::json lines;
-        lines["type"] = "array";
-        lines["items"]["type"] = "string";
-
-        nlohmann::json shape;
-        shape["type"] = "object";
-        shape["additionalProperties"] = false;
-        shape["required"] = {
-            std::string(kNameKey),
-            std::string(kHomeKey),
-            std::string(kStopsKey),
-            std::string(kLinesKey)};
-        shape["properties"][std::string(kNameKey)]["type"] =
-            "string";
-        shape["properties"][std::string(kHomeKey)] = home;
-        shape["properties"][std::string(kStopsKey)] = stops;
-        shape["properties"][std::string(kLinesKey)] = lines;
-
-        return shape;
-    } // GCOVR_EXCL_LINE
-
-    [[nodiscard]] inline nlohmann::json figureSchemaLatest()
-    {
-        auto shape = figureSchema();
-
-        nlohmann::json components;
-        components["type"] = "array";
-        components["items"]["type"] = "string";
-
-        shape["required"].push_back(std::string(kComponentsKey));
-        shape["properties"][std::string(kComponentsKey)] = components;
-
-        return shape;
-    } // GCOVR_EXCL_LINE
-
-    [[nodiscard]] inline nlohmann::json characterSchemaLatest()
-    {
-        auto shape = figureSchemaLatest();
-
-        shape["required"].push_back(
-            std::string(kCharacterPlayerKey));
-        shape["properties"][std::string(kCharacterPlayerKey)]
-             ["type"] = "boolean";
-        shape["properties"][std::string(kHomeKey)]["properties"]
-             [std::string(kWayKey)] =
-                 wholeSchema(
-                     0,
-                     static_cast<std::int64_t>(character::kCharacterWays) - 1);
-
-        return shape;
-    } // GCOVR_EXCL_LINE
+    [[nodiscard]] nlohmann::json characterSchemaLatest();
 
     [[nodiscard]] inline std::vector<voxel::VoxelPosition> readCells(
         const nlohmann::json &json)

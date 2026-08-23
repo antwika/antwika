@@ -60,6 +60,20 @@ namespace antwika::map::mapfile
         recordListField<&decor::VariantGroup::variants,
             kVariantMemberFields, 1>(kMembersKey)};
 
+    inline constexpr std::array<Field, 2> kPlacementFields{
+        fixedPlaceField<&Placement::position>(kAtKey),
+        wholeField<&Placement::way, 0,
+            static_cast<int>(character::kCharacterWays) - 1>(kWayKey)};
+
+    inline constexpr std::array<Field, 6> kCharacterFields{
+        textField<&Character::name>(kNameKey),
+        recordField<&Character::idlePlacement, kPlacementFields>(
+            kHomeKey),
+        cellListField<&Character::patrolPathPositions>(kStopsKey),
+        textListField<&Character::dialogue>(kLinesKey),
+        textListField<&Character::components>(kComponentsKey),
+        flagField<&Character::player>(kCharacterPlayerKey)};
+
     struct GateRow final
     {
         std::string_view key;
