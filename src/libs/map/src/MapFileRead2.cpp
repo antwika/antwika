@@ -112,15 +112,8 @@ namespace antwika::map::mapfile
         for (const auto &transition :
              documentJson[std::string(kTransitionsKey)])
         {
-            const tile::TransitionTile oneTile{
-                .fromTile = readTile(
-                    transition[std::string(kFromKey)]),
-                .toTile = readTile(
-                    transition[std::string(kToKey)]),
-                .maskTile = readTile(
-                    transition[std::string(kMaskKey)]),
-                .outputTile =
-                    readTile(transition[std::string(kSlotKey)])};
+            const auto oneTile = read<tile::TransitionTile>(
+                kTransitionFields, transition);
 
             if (oneTile.fromTile.atlas != oneTile.outputTile.atlas
                 || oneTile.toTile.atlas != oneTile.outputTile.atlas

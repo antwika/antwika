@@ -32,6 +32,12 @@ namespace antwika::map::mapfile
         cellField<&light::Lamp::position>(kAtKey),
         tintField<&light::Lamp::tintColor>(kTintKey)};
 
+    inline constexpr std::array<Field, 4> kTransitionFields{
+        tileField<&tile::TransitionTile::fromTile>(kFromKey),
+        tileField<&tile::TransitionTile::toTile>(kToKey),
+        tileField<&tile::TransitionTile::maskTile>(kMaskKey),
+        tileField<&tile::TransitionTile::outputTile>(kSlotKey)};
+
     struct GateRow final
     {
         std::string_view key;
