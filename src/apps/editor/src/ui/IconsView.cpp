@@ -91,10 +91,6 @@ namespace antwika::editor
             const auto iconChosen = iconPicked == index;
             const auto place = antwika::editor::iconCellRect(
                 camera::kCanvasSize, count, index);
-            const auto right =
-                place.originPoint.x + place.size.width;
-            const auto foot =
-                place.originPoint.y + place.size.height;
 
             viewportRenderer.drawTexture(
                 *iconCheckerTexture,
@@ -112,30 +108,10 @@ namespace antwika::editor
                 place,
                 iconChosen ? kWhiteColor : kDisabledTintColor);
 
-            for (const auto &[fromPoint, toPoint] :
-                 {std::pair{
-                      place.originPoint,
-                      antwika::gfx::PointF{
-                          right, place.originPoint.y}},
-                  std::pair{
-                      antwika::gfx::PointF{
-                          place.originPoint.x, foot},
-                      antwika::gfx::PointF{
-                          right, foot}},
-                  std::pair{
-                      place.originPoint,
-                      antwika::gfx::PointF{
-                          place.originPoint.x, foot}},
-                  std::pair{
-                      antwika::gfx::PointF{
-                          right, place.originPoint.y},
-                      antwika::gfx::PointF{
-                          right, foot}}})
-            {
-                viewportRenderer.drawLine(
-                    fromPoint, toPoint,
-                    iconChosen ? kSelectionAccentColor : kGridLineColor);
-            }
+            drawOutline(
+                viewportRenderer,
+                place,
+                iconChosen ? kSelectionAccentColor : kGridLineColor);
         }
 
         if (iconPicked.has_value() && *iconPicked < count)
