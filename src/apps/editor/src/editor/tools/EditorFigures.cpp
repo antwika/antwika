@@ -210,12 +210,14 @@ namespace antwika::editor
             antwika::voxel::upperLineOfSight(walkerPosition);
 
         std::vector<light::ActiveLight> lights{
-            light::ActiveLight{.position = sightPoint}};
+            light::ActiveLight{
+                .position = sightPoint, .brightness = 0.0F}};
 
         if (upperSightOn())
         {
             lights.push_back(
-                light::ActiveLight{.position = upperSightPoint});
+                light::ActiveLight{
+                    .position = upperSightPoint, .brightness = 0.0F});
         }
 
         for (const auto &lamp : light::activeLights(document.map.lamps))

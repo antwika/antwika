@@ -22,12 +22,19 @@ namespace antwika::light
     inline constexpr float kSightClearance =
         kShadowRedrawDistance + kLampNearPlane;
 
+    inline constexpr float kWalkerLight = 0.5F;
+
+    inline constexpr float kWalkerLightRange =
+        0.5F * component::kLampRange;
+
     struct ActiveLight final
     {
         gfx::Vec3 position{};
         gfx::Color tintColor = component::kLampTintColor;
 
         float reach = component::kLampRange;
+
+        float brightness = 1.0F;
 
         bool castsShadows = true;
 
