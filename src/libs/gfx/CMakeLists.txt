@@ -22,6 +22,7 @@ add_library(antwika_gfx
     src/Blit.cpp
     src/BuiltInFont.cpp
     src/Camera3D.cpp
+    src/ClipScope.cpp
     src/ColorSpace.cpp
     src/CubeFace.cpp
     src/GlyphAtlas.cpp
@@ -42,6 +43,7 @@ add_library(antwika_gfx
     src/ShaderSource.cpp
     src/StbImage.cpp
     src/StbImageWrite.cpp
+    src/TargetScope.cpp
     src/TextLayout.cpp
     src/Transform.cpp
     src/Viewport.cpp

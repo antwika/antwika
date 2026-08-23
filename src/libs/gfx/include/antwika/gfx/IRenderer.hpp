@@ -9,6 +9,7 @@
 
 #include "antwika/gfx/Bitmap.hpp"
 #include "antwika/gfx/Camera3D.hpp"
+#include "antwika/gfx/ClipScope.hpp"
 #include "antwika/gfx/Color.hpp"
 #include "antwika/gfx/Rect.hpp"
 #include "antwika/gfx/IMesh.hpp"
@@ -22,6 +23,7 @@
 #include "antwika/gfx/RectF.hpp"
 #include "antwika/gfx/RenderTargetSpec.hpp"
 #include "antwika/gfx/ShaderSource.hpp"
+#include "antwika/gfx/TargetScope.hpp"
 
 namespace antwika::gfx
 {
@@ -113,6 +115,28 @@ namespace antwika::gfx
                 modelMatrix,
                 camera,
                 MeshMaterial{.tintColor = tintColor});
+        }
+
+        [[nodiscard]] TargetScope targetScope(IRenderTarget &target)
+        {
+            beginTarget(target);
+
+            return TargetScope{*this};
+        }
+
+        [[nodiscard]] TargetScope targetScope(
+            IRenderTarget &target, const Rect regionRect)
+        {
+            beginTargetRegion(target, regionRect);
+
+            return TargetScope{*this};
+        }
+
+        [[nodiscard]] ClipScope clipScope(const RectF areaRect)
+        {
+            beginClip(areaRect);
+
+            return ClipScope{*this};
         }
 
         virtual void pushTransform(const Mat4 &transform) = 0;
