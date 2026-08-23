@@ -22,7 +22,7 @@ using antwika::ecs::Entity;
 using antwika::ecs::ISystem;
 using antwika::ecs::OpenPhase;
 using antwika::ecs::PhaseId;
-using antwika::ecs::rawValue;
+using antwika::ecs::getRawValue;
 using antwika::ecs::SystemScheduler;
 using antwika::ecs::World;
 using antwika::ecs::fakes::FakeCountPositionSystem;
@@ -53,8 +53,8 @@ TEST(SystemSchedulerTest, CreatePhase_ReturnsSequentialIds)
 {
     SystemScheduler scheduler;
 
-    EXPECT_EQ(rawValue(scheduler.createPhase("a")), 0U);
-    EXPECT_EQ(rawValue(scheduler.createPhase("b")), 1U);
+    EXPECT_EQ(getRawValue(scheduler.createPhase("a")), 0U);
+    EXPECT_EQ(getRawValue(scheduler.createPhase("b")), 1U);
 }
 
 TEST(SystemSchedulerTest, AddSystem_ThrowsOnAnUnknownPhase)
@@ -205,7 +205,7 @@ TEST(SystemSchedulerTest, Run_HidesASpawnedComponentFromTheSamePhase)
     scheduler.run(world, 0);
 
     EXPECT_EQ(seenCounts, (std::vector<std::size_t>{0}));
-    EXPECT_EQ(world.view<Position>().size(), 1U);
+    EXPECT_EQ(world.view<Position>().getSize(), 1U);
 }
 
 TEST(SystemSchedulerTest, Run_ShowsASpawnedComponentToTheNextPhase)

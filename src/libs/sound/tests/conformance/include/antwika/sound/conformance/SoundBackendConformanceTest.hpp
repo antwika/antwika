@@ -30,7 +30,7 @@ namespace antwika::sound::conformance
     class SoundBackendConformanceTest : public ::testing::Test
     {
     protected:
-        [[nodiscard]] DeviceSpec usable() const
+        [[nodiscard]] DeviceSpec getUsable() const
         {
             return DeviceSpec{
                 .format = WaveFormat{.rate = 48000, .channels = 2},
@@ -46,43 +46,43 @@ namespace antwika::sound::conformance
 
     TYPED_TEST_P(SoundBackendConformanceTest, Name_IsNotEmpty)
     {
-        EXPECT_FALSE(this->backend->name().empty());
+        EXPECT_FALSE(this->backend->getName().empty());
     }
 
     TYPED_TEST_P(SoundBackendConformanceTest, Name_DoesNotChange)
     {
-        EXPECT_EQ(this->backend->name(), this->backend->name());
+        EXPECT_EQ(this->backend->getName(), this->backend->getName());
     }
 
     TYPED_TEST_P(SoundBackendConformanceTest, Capabilities_DoNotChange)
     {
         EXPECT_EQ(
-            this->backend->capabilities(), this->backend->capabilities());
+            this->backend->getCapabilities(), this->backend->getCapabilities());
     }
 
     TYPED_TEST_P(SoundBackendConformanceTest, OpenDevice_ReturnsADevice)
     {
-        EXPECT_NE(this->backend->openDevice(this->usable()), nullptr);
+        EXPECT_NE(this->backend->openDevice(this->getUsable()), nullptr);
     }
 
     TYPED_TEST_P(SoundBackendConformanceTest, OpenDevice_ReportsAUsableFormat)
     {
-        const auto device = this->backend->openDevice(this->usable());
+        const auto device = this->backend->openDevice(this->getUsable());
 
-        EXPECT_TRUE(device->format().isValid());
+        EXPECT_TRUE(device->getFormat().isValid());
     }
 
     TYPED_TEST_P(
         SoundBackendConformanceTest, OpenDevice_ReportsANonZeroBufferSize)
     {
-        const auto device = this->backend->openDevice(this->usable());
+        const auto device = this->backend->openDevice(this->getUsable());
 
-        EXPECT_GT(device->bufferFrames(), 0U);
+        EXPECT_GT(device->getBufferFrames(), 0U);
     }
 
     TYPED_TEST_P(SoundBackendConformanceTest, OpenDevice_RefusesAZeroRate)
     {
-        auto spec = this->usable();
+        auto spec = this->getUsable();
         spec.format.rate = 0;
 
         EXPECT_THROW(
@@ -91,7 +91,7 @@ namespace antwika::sound::conformance
 
     TYPED_TEST_P(SoundBackendConformanceTest, OpenDevice_RefusesZeroChannels)
     {
-        auto spec = this->usable();
+        auto spec = this->getUsable();
         spec.format.channels = 0;
 
         EXPECT_THROW(
@@ -100,7 +100,7 @@ namespace antwika::sound::conformance
 
     TYPED_TEST_P(SoundBackendConformanceTest, Start_RefusesASecondStart)
     {
-        const auto device = this->backend->openDevice(this->usable());
+        const auto device = this->backend->openDevice(this->getUsable());
         fakes::FakeRecordingCallback callback;
 
         device->start(callback);
@@ -113,14 +113,14 @@ namespace antwika::sound::conformance
 
     TYPED_TEST_P(SoundBackendConformanceTest, Stop_IsSafeWhenNotStarted)
     {
-        const auto device = this->backend->openDevice(this->usable());
+        const auto device = this->backend->openDevice(this->getUsable());
 
         EXPECT_NO_THROW(device->stop());
     }
 
     TYPED_TEST_P(SoundBackendConformanceTest, Stop_IsSafeTwice)
     {
-        const auto device = this->backend->openDevice(this->usable());
+        const auto device = this->backend->openDevice(this->getUsable());
         fakes::FakeRecordingCallback callback;
 
         device->start(callback);
@@ -131,25 +131,25 @@ namespace antwika::sound::conformance
 
     TYPED_TEST_P(SoundBackendConformanceTest, FramesPlayed_StartsAtZero)
     {
-        const auto device = this->backend->openDevice(this->usable());
+        const auto device = this->backend->openDevice(this->getUsable());
 
-        EXPECT_EQ(device->framesPlayed(), 0U);
+        EXPECT_EQ(device->getFramesPlayed(), 0U);
     }
 
     TYPED_TEST_P(SoundBackendConformanceTest, FramesPlayed_NeverGoesBackwards)
     {
-        const auto device = this->backend->openDevice(this->usable());
+        const auto device = this->backend->openDevice(this->getUsable());
         fakes::FakeRecordingCallback callback;
 
         device->start(callback);
 
-        auto lastFrames = device->framesPlayed();
+        auto lastFrames = device->getFramesPlayed();
 
         for (int roundIndex = 0; roundIndex < 4; ++roundIndex)
         {
             (void)device->advance(128);
 
-            const auto playedFrames = device->framesPlayed();
+            const auto playedFrames = device->getFramesPlayed();
             EXPECT_GE(playedFrames, lastFrames);
             lastFrames = playedFrames;
         }
@@ -161,12 +161,12 @@ namespace antwika::sound::conformance
     SoundBackendConformanceTest,
     Advance_RendersExactlyWhatWasAsked)
     {
-        if (this->backend->capabilities().selfDriven)
+        if (this->backend->getCapabilities().selfDriven)
         {
             GTEST_SKIP() << "backend renders on a thread of its own";
         }
 
-        const auto device = this->backend->openDevice(this->usable());
+        const auto device = this->backend->openDevice(this->getUsable());
         fakes::FakeRecordingCallback callback;
 
         device->start(callback);
@@ -178,18 +178,18 @@ namespace antwika::sound::conformance
 
     TYPED_TEST_P(SoundBackendConformanceTest, FramesPlayed_NeverRunsAhead)
     {
-        if (this->backend->capabilities().selfDriven)
+        if (this->backend->getCapabilities().selfDriven)
         {
             GTEST_SKIP() << "backend renders on a thread of its own";
         }
 
-        const auto device = this->backend->openDevice(this->usable());
+        const auto device = this->backend->openDevice(this->getUsable());
         fakes::FakeRecordingCallback callback;
 
         device->start(callback);
 
         EXPECT_EQ(device->advance(1000), 1000U);
-        EXPECT_LE(device->framesPlayed(), 1000U);
+        EXPECT_LE(device->getFramesPlayed(), 1000U);
 
         device->stop();
     }
@@ -198,19 +198,19 @@ namespace antwika::sound::conformance
     SoundBackendConformanceTest,
     Advance_RendersNothingBeforeAStart)
     {
-        const auto device = this->backend->openDevice(this->usable());
+        const auto device = this->backend->openDevice(this->getUsable());
 
         EXPECT_EQ(device->advance(128), 0U);
     }
 
     TYPED_TEST_P(SoundBackendConformanceTest, Render_IsNeverReentered)
     {
-        if (this->backend->capabilities().selfDriven)
+        if (this->backend->getCapabilities().selfDriven)
         {
             GTEST_SKIP() << "backend renders on a thread of its own";
         }
 
-        const auto device = this->backend->openDevice(this->usable());
+        const auto device = this->backend->openDevice(this->getUsable());
         fakes::FakeRecordingCallback callback;
 
         device->start(callback);
@@ -223,12 +223,12 @@ namespace antwika::sound::conformance
     TYPED_TEST_P(
         SoundBackendConformanceTest, Render_ReceivesAscendingContiguousFrames)
     {
-        if (this->backend->capabilities().selfDriven)
+        if (this->backend->getCapabilities().selfDriven)
         {
             GTEST_SKIP() << "backend renders on a thread of its own";
         }
 
-        const auto device = this->backend->openDevice(this->usable());
+        const auto device = this->backend->openDevice(this->getUsable());
         fakes::FakeRecordingCallback callback;
 
         device->start(callback);
@@ -249,12 +249,12 @@ namespace antwika::sound::conformance
 
     TYPED_TEST_P(SoundBackendConformanceTest, Render_ReceivesACompleteBuffer)
     {
-        if (this->backend->capabilities().selfDriven)
+        if (this->backend->getCapabilities().selfDriven)
         {
             GTEST_SKIP() << "backend renders on a thread of its own";
         }
 
-        const auto device = this->backend->openDevice(this->usable());
+        const auto device = this->backend->openDevice(this->getUsable());
         fakes::FakeRecordingCallback callback;
 
         device->start(callback);
@@ -266,19 +266,19 @@ namespace antwika::sound::conformance
         for (const auto &call : callback.calls)
         {
             EXPECT_TRUE(call.complete);
-            EXPECT_EQ(call.channels, device->format().channels);
+            EXPECT_EQ(call.channels, device->getFormat().channels);
             EXPECT_GT(call.frames, 0U);
         }
     }
 
     TYPED_TEST_P(SoundBackendConformanceTest, Render_IsNotCalledAfterStop)
     {
-        if (this->backend->capabilities().selfDriven)
+        if (this->backend->getCapabilities().selfDriven)
         {
             GTEST_SKIP() << "backend renders on a thread of its own";
         }
 
-        const auto device = this->backend->openDevice(this->usable());
+        const auto device = this->backend->openDevice(this->getUsable());
         fakes::FakeRecordingCallback callback;
 
         device->start(callback);
@@ -298,7 +298,7 @@ namespace antwika::sound::conformance
         fakes::FakeRecordingCallback callback;
 
         {
-            const auto device = this->backend->openDevice(this->usable());
+            const auto device = this->backend->openDevice(this->getUsable());
             device->start(callback);
             (void)device->advance(128);
         }

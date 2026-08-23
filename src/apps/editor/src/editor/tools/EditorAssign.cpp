@@ -6,7 +6,7 @@
 namespace antwika::editor
 {
 
-    bool Editor::handleAssignClick(const tilemap::Tile tile)
+    bool Editor::consumeAssignClick(const tilemap::Tile tile)
     {
         if (!selectedTile.has_value())
         {
@@ -29,7 +29,7 @@ namespace antwika::editor
         {
             pushUndo();
             ensureDecor();
-            document.map.decor = decor::withBaseToggled(
+            document.map.decor = decor::getWithBaseToggled(
                 document.map.decor, *selectedTile, tile);
             rebuildWorld();
 
@@ -40,7 +40,7 @@ namespace antwika::editor
         {
             pushUndo();
             ensureDecor();
-            document.map.decor = withMemberSet(
+            document.map.decor = getWithMemberSet(
                 document.map.decor, *selectedTile, assignMode.memberPicked,
                 tile);
             assignMode.memberAssigning = false;
@@ -54,7 +54,7 @@ namespace antwika::editor
                 *selectedTile) != nullptr)
         {
             pushUndo();
-            document.map.flipAnimations = withAnimationFrameSet(
+            document.map.flipAnimations = getWithAnimationFrameSet(
                 document.map.flipAnimations,
                 *selectedTile,
                 assignMode.flipFramePicked,

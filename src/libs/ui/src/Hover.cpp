@@ -34,7 +34,7 @@ namespace antwika::ui
             }
         }
 
-        [[nodiscard]] bool lit(
+        [[nodiscard]] bool isLit(
             const HoverTarget &target, const HoverTarget *underTarget) noexcept
         {
             if (underTarget == nullptr)
@@ -79,7 +79,7 @@ namespace antwika::ui
             recolour(
                 drawList,
                 target,
-                lit(
+                isLit(
                     target,
                     underTarget) ? target.hoveredColor : target.idleColor);
         }

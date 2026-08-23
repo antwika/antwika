@@ -10,7 +10,7 @@ using antwika::rng::SplitMix64Rng;
 
 namespace
 {
-    [[nodiscard]] std::vector<std::uint64_t> draw(
+    [[nodiscard]] std::vector<std::uint64_t> getDraw(
         std::uint64_t seed, std::size_t count)
     {
         SplitMix64Rng rng(seed);
@@ -30,7 +30,7 @@ TEST(SplitMix64RngTest, Next_MatchesThePublishedSequenceForSeedZero)
         0x6E789E6AA1B965F4ULL,
         0x06C45D188009454FULL,
     };
-    EXPECT_EQ(draw(0, expectedValues.size()), expectedValues);
+    EXPECT_EQ(getDraw(0, expectedValues.size()), expectedValues);
 }
 
 TEST(SplitMix64RngTest, Next_MatchesTheReferenceSequenceForAnotherSeed)
@@ -41,17 +41,17 @@ TEST(SplitMix64RngTest, Next_MatchesTheReferenceSequenceForAnotherSeed)
         0x1E9A57BC80E6721DULL,
         0x2D160E7E5C3F42CAULL,
     };
-    EXPECT_EQ(draw(12345, expectedValues.size()), expectedValues);
+    EXPECT_EQ(getDraw(12345, expectedValues.size()), expectedValues);
 }
 
 TEST(SplitMix64RngTest, Next_DivergesForDifferentSeeds)
 {
-    EXPECT_NE(draw(1, 8), draw(2, 8));
+    EXPECT_NE(getDraw(1, 8), getDraw(2, 8));
 }
 
 TEST(SplitMix64RngTest, Next_DoesNotRepeatItselfWithinAShortRun)
 {
-    const auto drawnValues = draw(99, 1000);
+    const auto drawnValues = getDraw(99, 1000);
     const std::set<std::uint64_t> distinct(drawnValues.begin(),
         drawnValues.end());
     EXPECT_EQ(distinct.size(), drawnValues.size());
@@ -63,9 +63,9 @@ TEST(SplitMix64RngTest, CurrentState_ResumesTheStreamExactly)
     (void)originalRng.next();
     (void)originalRng.next();
 
-    ASSERT_EQ(originalRng.currentState(), 0x3C6EF372FE94F831ULL);
+    ASSERT_EQ(originalRng.getCurrentState(), 0x3C6EF372FE94F831ULL);
 
-    antwika::rng::SplitMix64Rng resumedRng(originalRng.currentState());
+    antwika::rng::SplitMix64Rng resumedRng(originalRng.getCurrentState());
 
     EXPECT_EQ(resumedRng.next(), 0xE6984080BAB12A02ULL);
     EXPECT_EQ(originalRng.next(), 0xE6984080BAB12A02ULL);
@@ -77,13 +77,13 @@ TEST(SplitMix64RngTest, RestoreState_ResumesInPlace)
 {
     antwika::rng::SplitMix64Rng originalRng(7);
     (void)originalRng.next();
-    const auto state = originalRng.currentState();
+    const auto state = originalRng.getCurrentState();
 
     ASSERT_EQ(state, 0x9E3779B97F4A7C1CULL);
     ASSERT_EQ(originalRng.next(), 0x044C3CD7F43C661CULL);
 
     originalRng.restoreState(state);
 
-    EXPECT_EQ(originalRng.currentState(), state);
+    EXPECT_EQ(originalRng.getCurrentState(), state);
     EXPECT_EQ(originalRng.next(), 0x044C3CD7F43C661CULL);
 }

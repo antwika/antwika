@@ -41,7 +41,7 @@ namespace
 
     constexpr float kTolerance = 1e-4F;
 
-    [[nodiscard]] std::vector<std::string> everyDefault()
+    [[nodiscard]] std::vector<std::string> getEveryDefault()
     {
         return {
             "component::Position",
@@ -66,7 +66,7 @@ namespace
         World world{logger};
         claimNamedComponents(world);
 
-        auto components = everyDefault();
+        auto components = getEveryDefault();
         components.emplace_back("component::CarriedLight");
 
         const auto laidMap =
@@ -85,7 +85,7 @@ namespace
         claimNamedComponents(world);
 
         const auto laidMap =
-            mapOf({Character{.components = everyDefault()}});
+            mapOf({Character{.components = getEveryDefault()}});
         const auto player = spawnRoster(world, laidMap, 0, Placement{});
 
         EXPECT_FALSE(world.has<CarriedLight>(player));
@@ -99,7 +99,7 @@ namespace
         claimNamedComponents(world);
 
         const auto laidMap =
-            mapOf({Character{.components = everyDefault()}});
+            mapOf({Character{.components = getEveryDefault()}});
         const auto player = spawnRoster(
             world,
             laidMap,
@@ -117,8 +117,8 @@ namespace
         claimNamedComponents(world);
 
         const auto laidMap = mapOf(
-            {Character{.components = everyDefault()},
-             Character{.components = everyDefault()}});
+            {Character{.components = getEveryDefault()},
+             Character{.components = getEveryDefault()}});
 
         static_cast<void>(spawnRoster(world, laidMap, 1, Placement{}));
 
@@ -155,7 +155,7 @@ namespace
         claimNamedComponents(world);
 
         const auto laidMap =
-            mapOf({Character{.components = everyDefault()}});
+            mapOf({Character{.components = getEveryDefault()}});
 
         static_cast<void>(spawnRoster(world, laidMap, 0, Placement{}));
         static_cast<void>(spawnRoster(world, laidMap, 0, Placement{}));

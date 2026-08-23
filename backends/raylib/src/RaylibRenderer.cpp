@@ -238,7 +238,7 @@ namespace antwika::gfx::raylib
         {
             if (texture->isOwned())
             {
-                UnloadTexture(texture->raw());
+                UnloadTexture(texture->getRawHandle());
             }
 
             texture->untrackRenderer();
@@ -248,7 +248,7 @@ namespace antwika::gfx::raylib
 
         for (RaylibMesh *mesh : liveMeshes)
         {
-            UnloadMesh(mesh->raw());
+            UnloadMesh(mesh->getRawHandle());
             mesh->untrackRenderer();
         }
 
@@ -256,7 +256,7 @@ namespace antwika::gfx::raylib
 
         for (RaylibShader *shader : liveShaders)
         {
-            UnloadShader(shader->raw());
+            UnloadShader(shader->getRawHandle());
             shader->untrackRenderer();
         }
 

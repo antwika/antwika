@@ -15,18 +15,18 @@ namespace
 {
 
     using antwika::tilemap::Atlas;
-    using antwika::tilemap::defaultTilemap;
-    using antwika::tile::compositedAtlas;
+    using antwika::tilemap::getDefaultTilemap;
+    using antwika::tile::getCompositedAtlas;
     using antwika::voxel::EdgeKind;
-    using antwika::tile::firstUnusedTile;
-    using antwika::tile::maskEdgeBits;
+    using antwika::tile::getFirstUnusedTile;
+    using antwika::tile::getMaskEdgeBits;
     using antwika::voxel::Side;
     using antwika::tilemap::Tile;
     using antwika::tilemap::TileEdge;
     using antwika::tile::TileRules;
-    using antwika::tilemap::tileSource;
+    using antwika::tilemap::getTileSource;
     using antwika::tile::TransitionTile;
-    using antwika::tile::rulesWithTransitions;
+    using antwika::tile::getRulesWithTransitions;
 
     constexpr antwika::gfx::Color kFirstColor{
         .red = 10, .green = 20, .blue = 30, .alpha = 255};
@@ -41,7 +41,7 @@ namespace
 
     [[nodiscard]] antwika::gfx::Bitmap sheetOf(const Atlas atlas)
     {
-        const auto size = antwika::tilemap::atlasSize(
+        const auto size = antwika::tilemap::getAtlasSize(
             antwika::tilemap::tileSizeOf(atlas));
 
         antwika::gfx::Bitmap bitmap{
@@ -62,7 +62,7 @@ namespace
         const std::size_t y,
         const antwika::gfx::Color color)
     {
-        const auto place = tileSource(tile);
+        const auto place = getTileSource(tile);
         const auto byteIndex =
             (((static_cast<std::size_t>(place.originPoint.y) + y)
               * sheetBitmap.size.width)
@@ -80,7 +80,7 @@ namespace
         const Tile tile,
         const antwika::gfx::Color color)
     {
-        const auto place = tileSource(tile);
+        const auto place = getTileSource(tile);
 
         for (std::size_t y = 0;
              y < static_cast<std::size_t>(place.size.height);
@@ -96,10 +96,10 @@ namespace
         }
     }
 
-    [[nodiscard]] antwika::gfx::Bitmap halvedSheet()
+    [[nodiscard]] antwika::gfx::Bitmap getHalvedSheet()
     {
         auto sheet = sheetOf(Atlas::Floor);
-        const auto place = tileSource(kMaskTile);
+        const auto place = getTileSource(kMaskTile);
 
         for (std::size_t y = 0;
              y < static_cast<std::size_t>(place.size.height);
@@ -138,7 +138,7 @@ namespace
     {
         const auto sheet = sheetOf(Atlas::Floor);
         const auto border =
-            maskEdgeBits(sheet, kMaskTile, Side::Top, kFirstColor);
+            getMaskEdgeBits(sheet, kMaskTile, Side::Top, kFirstColor);
 
         for (const auto bit : border)
         {
@@ -153,7 +153,7 @@ namespace
         inkTile(sheet, kMaskTile, kFirstColor);
 
         const auto border =
-            maskEdgeBits(sheet, kMaskTile, Side::Left, kFirstColor);
+            getMaskEdgeBits(sheet, kMaskTile, Side::Left, kFirstColor);
 
         for (const auto bit : border)
         {
@@ -163,22 +163,22 @@ namespace
 
     TEST(TransitionsTest, MaskEdgeBits_ReadsAHalvedMaskApart)
     {
-        const auto sheet = halvedSheet();
+        const auto sheet = getHalvedSheet();
 
         for (const auto bit :
-             maskEdgeBits(sheet, kMaskTile, Side::Left, kFirstColor))
+             getMaskEdgeBits(sheet, kMaskTile, Side::Left, kFirstColor))
         {
             EXPECT_FALSE(bit);
         }
 
         for (const auto bit :
-             maskEdgeBits(sheet, kMaskTile, Side::Right, kFirstColor))
+             getMaskEdgeBits(sheet, kMaskTile, Side::Right, kFirstColor))
         {
             EXPECT_TRUE(bit);
         }
 
         const auto top =
-            maskEdgeBits(sheet, kMaskTile, Side::Top, kFirstColor);
+            getMaskEdgeBits(sheet, kMaskTile, Side::Top, kFirstColor);
 
         EXPECT_FALSE(top.front());
         EXPECT_TRUE(top.back());
@@ -186,7 +186,7 @@ namespace
 
     TEST(TransitionsTest, CompositedAtlas_WeavesBothMaterialsIn)
     {
-        auto sheet = halvedSheet();
+        auto sheet = getHalvedSheet();
         constexpr antwika::gfx::Color kGreenColor{
             .red = 0, .green = 200, .blue = 0, .alpha = 255};
         constexpr antwika::gfx::Color kBrownColor{
@@ -195,12 +195,12 @@ namespace
         inkTile(sheet, kGrassTile, kGreenColor);
         inkTile(sheet, kDirtTile, kBrownColor);
 
-        const auto woven = compositedAtlas(
+        const auto woven = getCompositedAtlas(
             sheet,
             Atlas::Floor,
             std::vector<TransitionTile>{kHeldTile},
             std::vector<antwika::gfx::Color>{kFirstColor});
-        const auto place = tileSource(kSlotTile);
+        const auto place = getTileSource(kSlotTile);
         const auto left =
             (((static_cast<std::size_t>(place.originPoint.y))
               * woven.size.width)
@@ -215,7 +215,7 @@ namespace
         EXPECT_EQ(woven.pixels.at(left + 1), kGreenColor.green);
         EXPECT_EQ(woven.pixels.at(right), kBrownColor.red);
         EXPECT_EQ(
-            compositedAtlas(
+            getCompositedAtlas(
                 woven,
                 Atlas::Floor,
                 std::vector<TransitionTile>{kHeldTile},
@@ -225,8 +225,8 @@ namespace
 
     TEST(TransitionsTest, CompositedAtlas_LeavesTheRestAlone)
     {
-        auto sheet = halvedSheet();
-        auto woven = compositedAtlas(
+        auto sheet = getHalvedSheet();
+        auto woven = getCompositedAtlas(
             sheet,
             Atlas::Floor,
             std::vector<TransitionTile>{kHeldTile},
@@ -240,17 +240,17 @@ namespace
 
     TEST(TransitionsTest, FirstUnusedTile_FindsTheLowestUnheldTile)
     {
-        auto tiles = defaultTilemap();
+        auto tiles = getDefaultTilemap();
 
         EXPECT_FALSE(
-            firstUnusedTile(tiles, Atlas::Floor).has_value());
+            getFirstUnusedTile(tiles, Atlas::Floor).has_value());
 
         antwika::tilemap::clearTile(
             tiles,
             antwika::geometry::GridCell{
                 .column = 23, .row = 0});
 
-        const auto tile = firstUnusedTile(tiles, Atlas::Floor);
+        const auto tile = getFirstUnusedTile(tiles, Atlas::Floor);
 
         ASSERT_TRUE(tile.has_value());
         EXPECT_EQ(tile->index, 7);
@@ -258,7 +258,7 @@ namespace
 
     TEST(TransitionsTest, RulesWithTransitions_PureEdgesInherit)
     {
-        const auto sheet = halvedSheet();
+        const auto sheet = getHalvedSheet();
         TileRules rules;
         const TileEdge leftEdge{
             .side = Side::Left, .edge = EdgeKind::Boundary};
@@ -266,7 +266,7 @@ namespace
         rules.allow(kGrassTile, leftEdge, kGrassTile);
         rules.setAllowsBoundary(kGrassTile, leftEdge, true);
 
-        const auto updatedRules = rulesWithTransitions(
+        const auto updatedRules = getRulesWithTransitions(
             rules,
             std::vector<TransitionTile>{kHeldTile},
             sheetOf(Atlas::Wall),
@@ -280,15 +280,15 @@ namespace
         EXPECT_TRUE(
             updatedRules.allows(
                 kGrassTile,
-                antwika::voxel::facing(leftEdge),
+                antwika::voxel::getFacing(leftEdge),
                 kSlotTile));
-        EXPECT_EQ(rules.size(), 1U);
+        EXPECT_EQ(rules.getSize(), 1U);
     }
 
     TEST(TransitionsTest, RulesWithTransitions_MixedEdgesNeverMeetAir)
     {
-        const auto sheet = halvedSheet();
-        const auto updatedRules = rulesWithTransitions(
+        const auto sheet = getHalvedSheet();
+        const auto updatedRules = getRulesWithTransitions(
             TileRules{},
             std::vector<TransitionTile>{kHeldTile},
             sheetOf(Atlas::Wall),
@@ -304,8 +304,8 @@ namespace
 
     TEST(TransitionsTest, RulesWithTransitions_MixedEdgesPairAcross)
     {
-        const auto sheet = halvedSheet();
-        const auto updatedRules = rulesWithTransitions(
+        const auto sheet = getHalvedSheet();
+        const auto updatedRules = getRulesWithTransitions(
             TileRules{},
             std::vector<TransitionTile>{kHeldTile},
             sheetOf(Atlas::Wall),

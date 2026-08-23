@@ -31,7 +31,7 @@ namespace
 
     constexpr WidgetId kBoxWidget{7};
 
-    [[nodiscard]] Theme plainTheme()
+    [[nodiscard]] Theme getPlainTheme()
     {
         return Theme{};
     }
@@ -46,9 +46,9 @@ namespace
 
             if (fill != nullptr
                 && fill->rect.size.width
-                       == plainTheme().checkboxSize
+                       == getPlainTheme().checkboxSize
                 && fill->rect.size.height
-                       == plainTheme().checkboxSize)
+                       == getPlainTheme().checkboxSize)
             {
                 ++foundCount;
             }
@@ -66,8 +66,8 @@ namespace
             const auto *fill = std::get_if<FillRect>(&command);
 
             if (fill != nullptr
-                && fill->color == plainTheme().textColor
-                && fill->rect.size.width < plainTheme().checkboxSize)
+                && fill->color == getPlainTheme().textColor
+                && fill->rect.size.width < getPlainTheme().checkboxSize)
             {
                 ++foundCount;
             }
@@ -78,7 +78,7 @@ namespace
 
     TEST(CheckboxTest, Checkbox_DrawsABoxOfTheSizeTheThemeAsks)
     {
-        Context uiContext{kCanvasSize, plainTheme()};
+        Context uiContext{kCanvasSize, getPlainTheme()};
 
         uiContext.checkbox(false);
 
@@ -87,13 +87,13 @@ namespace
 
     TEST(CheckboxTest, Checkbox_FillsTheBoxOnlyWhenItIsOn)
     {
-        Context offContext{kCanvasSize, plainTheme()};
+        Context offContext{kCanvasSize, getPlainTheme()};
 
         offContext.checkbox(false);
 
         EXPECT_EQ(0, inkedOf(offContext.build().drawList));
 
-        Context context{kCanvasSize, plainTheme()};
+        Context context{kCanvasSize, getPlainTheme()};
 
         context.checkbox(true);
 
@@ -102,8 +102,8 @@ namespace
 
     TEST(CheckboxTest, Checkbox_KeepsTheSameSizeWhetherOnOrOff)
     {
-        Context offContext{kCanvasSize, plainTheme()};
-        Context context{kCanvasSize, plainTheme()};
+        Context offContext{kCanvasSize, getPlainTheme()};
+        Context context{kCanvasSize, getPlainTheme()};
 
         offContext.checkbox(false);
         context.checkbox(true);
@@ -115,7 +115,7 @@ namespace
 
     TEST(CheckboxTest, Checkbox_NamedItCarriesBothABoxAndTheName)
     {
-        Context uiContext{kCanvasSize, plainTheme()};
+        Context uiContext{kCanvasSize, getPlainTheme()};
 
         uiContext.checkbox("lighting", CheckboxSpec{.widgetId = kBoxWidget});
 
@@ -139,17 +139,17 @@ namespace
 
     TEST(CheckboxTest, Checkbox_NamedItAnswersAPressAsOneWidget)
     {
-        Context uiContext{kCanvasSize, plainTheme()};
+        Context uiContext{kCanvasSize, getPlainTheme()};
 
         uiContext.checkbox("lighting", CheckboxSpec{.widgetId = kBoxWidget});
 
         const auto where =
-            uiContext.build().rects.find(kBoxWidget).value_or(
+            uiContext.build().rects.getFind(kBoxWidget).value_or(
                 antwika::gfx::Rect{});
 
         Context againContext{
             kCanvasSize,
-            plainTheme(),
+            getPlainTheme(),
             Pointer{
                 .positionPoint =
                     Point{
@@ -171,7 +171,7 @@ namespace
 
     TEST(CheckboxTest, Checkbox_NamedItLeavesItsOwnBoxAlone)
     {
-        Context uiContext{kCanvasSize, plainTheme()};
+        Context uiContext{kCanvasSize, getPlainTheme()};
 
         uiContext.checkbox("lighting", CheckboxSpec{.widgetId = kBoxWidget});
 

@@ -39,7 +39,7 @@ namespace antwika::character
 
     }
 
-    gfx::Size characterSheetSize()
+    gfx::Size getCharacterSheetSize()
     {
         return gfx::Size{
             .width =
@@ -50,9 +50,9 @@ namespace antwika::character
                 * static_cast<std::uint32_t>(kCharacterWays)};
     }
 
-    gfx::Bitmap blankCharacter()
+    gfx::Bitmap getBlankCharacter()
     {
-        const auto size = characterSheetSize();
+        const auto size = getCharacterSheetSize();
         const auto blank = tile::kPaletteColors.front();
 
         gfx::Bitmap bitmap{
@@ -74,12 +74,12 @@ namespace antwika::character
         return bitmap;
     } // GCOVR_EXCL_LINE
 
-    std::string_view directionName(const std::size_t direction)
+    std::string_view getDirectionName(const std::size_t direction)
     {
         return kWayNames.at(direction % kCharacterWays);
     }
 
-    gfx::Rect characterCell(
+    gfx::Rect getCharacterCell(
         const std::size_t direction, const std::size_t frame)
     {
         return gfx::Rect{
@@ -91,7 +91,7 @@ namespace antwika::character
             .size = kCharacterCellSize};
     }
 
-    gfx::Color characterPaletteColor(
+    gfx::Color getCharacterPaletteColor(
         const std::span<const gfx::Color> paletteColors,
         const std::size_t which)
     {
@@ -113,7 +113,7 @@ namespace antwika::character
             stoodPosition.z};
     } // GCOVR_EXCL_LINE
 
-    gfx::MeshData characterMesh()
+    gfx::MeshData getCharacterMesh()
     {
         const auto arm = kCharacterWide * 0.5F;
         gfx::MeshData mesh;
@@ -144,7 +144,7 @@ namespace antwika::character
         return mesh;
     } // GCOVR_EXCL_LINE
 
-    gfx::Mat4 spriteBillboardMatrix(
+    gfx::Mat4 getSpriteBillboardMatrix(
         const gfx::Vec3 position, const gfx::Mat4 &viewMatrix)
     {
         const auto rotationMatrix = gfx::Mat4(glm::mat3(viewMatrix));
@@ -159,15 +159,15 @@ namespace antwika::character
             position.y + kSpriteDepthBias + sinkHeight + kSpriteLift,
             position.z};
 
-        return glm::translate(gfx::identityMatrix(), overPosition)
+        return glm::translate(gfx::getIdentityMatrix(), overPosition)
                * glm::transpose(rotationMatrix);
     }
 
-    gfx::Vec3 frameUvOffset(
+    gfx::Vec3 getFrameUvOffset(
         const std::size_t direction, const std::size_t frame)
     {
-        const auto sheet = characterSheetSize();
-        const auto cell = characterCell(direction, frame);
+        const auto sheet = getCharacterSheetSize();
+        const auto cell = getCharacterCell(direction, frame);
 
         return gfx::Vec3{
             static_cast<float>(cell.originPoint.x)
@@ -177,9 +177,9 @@ namespace antwika::character
             0.0F};
     }
 
-    gfx::Vec3 frameUvSize()
+    gfx::Vec3 getFrameUvSize()
     {
-        const auto sheet = characterSheetSize();
+        const auto sheet = getCharacterSheetSize();
 
         return gfx::Vec3{
             static_cast<float>(kCharacterCellSize.width)
@@ -189,10 +189,10 @@ namespace antwika::character
             0.0F};
     }
 
-    gfx::RectF characterSource(
+    gfx::RectF getCharacterSource(
         const std::size_t direction, const std::size_t frame)
     {
-        const auto cell = characterCell(direction, frame);
+        const auto cell = getCharacterCell(direction, frame);
 
         return gfx::RectF(
             gfx::PointF{
@@ -203,7 +203,7 @@ namespace antwika::character
                 static_cast<float>(cell.size.height)});
     }
 
-    std::optional<std::size_t> facingFromVelocity(
+    std::optional<std::size_t> getFacingFromVelocity(
         const component::Velocity velocity)
     {
         if (velocity.velocityX == 0.0F && velocity.velocityZ == 0.0F)
@@ -222,43 +222,43 @@ namespace antwika::character
                                         % ways);
     }
 
-    animation::Clip walkingClip(const std::size_t direction)
+    animation::Clip getWalkingClip(const std::size_t direction)
     {
-        return animation::uniformClip(
+        return animation::getUniformClip(
             (direction % kCharacterWays) * kCharacterFrames,
             kCharacterFrames,
             kCharacterPaceTick);
     } // GCOVR_EXCL_LINE
 
-    animation::Clip standingClip(const std::size_t direction)
+    animation::Clip getStandingClip(const std::size_t direction)
     {
-        return animation::uniformClip(
+        return animation::getUniformClip(
             (direction % kCharacterWays) * kCharacterFrames,
             1,
             kCharacterPaceTick);
     } // GCOVR_EXCL_LINE
 
-    std::size_t currentFrame(
+    std::size_t getCurrentFrame(
         const component::AnimationState posedState,
         const time::Tick tick)
     {
         const auto clip =
-            posedState.walking ? walkingClip(posedState.direction)
-                          : standingClip(posedState.direction);
+            posedState.walking ? getWalkingClip(posedState.direction)
+                          : getStandingClip(posedState.direction);
         const auto elapsedTicks =
             tick >= posedState.startedAtTick
                   ? tick - posedState.startedAtTick
                   : 0;
 
-        return animation::resolve(clip, elapsedTicks).index;
+        return animation::getResolve(clip, elapsedTicks).index;
     }
 
-    geometry::GridCell characterPixel(
+    geometry::GridCell getCharacterPixel(
         const std::size_t direction,
         const std::size_t frame,
         const geometry::GridCell pixelCell)
     {
-        const auto cell = characterCell(direction, frame);
+        const auto cell = getCharacterCell(direction, frame);
 
         return geometry::GridCell{
             .column = static_cast<std::uint32_t>(cell.originPoint.x)
@@ -274,7 +274,7 @@ namespace antwika::character
         const geometry::GridCell pixelCell,
         const gfx::Color color)
     {
-        const auto sheetCell = characterPixel(direction, frame, pixelCell);
+        const auto sheetCell = getCharacterPixel(direction, frame, pixelCell);
 
         gfx::setColorAt(
             sheetBitmap,
@@ -291,7 +291,7 @@ namespace antwika::character
         const geometry::GridCell toCell,
         const gfx::Color color)
     {
-        for (const auto pixel : tile::linePixels(fromCell, toCell))
+        for (const auto pixel : tile::getLinePixels(fromCell, toCell))
         {
             paintCharacter(sheetBitmap, direction, frame, pixel, color);
         }
@@ -305,7 +305,7 @@ namespace antwika::character
         const gfx::Color color)
     {
         const auto was =
-            characterPixelColor(sheetBitmap, direction, frame, pixelCell);
+            getCharacterPixelColor(sheetBitmap, direction, frame, pixelCell);
 
         std::set<std::pair<std::uint32_t, std::uint32_t>> seenCells;
         std::deque<geometry::GridCell> goingCells{pixelCell};
@@ -332,7 +332,7 @@ namespace antwika::character
                 const auto nextCell = *steppedCell;
 
                 if (seenCells.contains({nextCell.column, nextCell.row})
-                    || characterPixelColor(
+                    || getCharacterPixelColor(
                            sheetBitmap, direction, frame, nextCell)
                            != was)
                 {
@@ -374,7 +374,7 @@ namespace antwika::character
             .row = static_cast<std::uint32_t>(downFraction)};
     }
 
-    gfx::RectF characterPixelPlace(
+    gfx::RectF getCharacterPixelPlace(
         const gfx::RectF whereRect, const geometry::GridCell pixelCell)
     {
         const auto width =
@@ -397,13 +397,13 @@ namespace antwika::character
             gfx::SizeF{width - clear, height - clear});
     }
 
-    gfx::Color characterPixelColor(
+    gfx::Color getCharacterPixelColor(
         const gfx::Bitmap &sheetBitmap,
         const std::size_t direction,
         const std::size_t frame,
         const geometry::GridCell pixelCell)
     {
-        const auto sheetCell = characterPixel(direction, frame, pixelCell);
+        const auto sheetCell = getCharacterPixel(direction, frame, pixelCell);
 
         return gfx::colorAt(
                    sheetBitmap,

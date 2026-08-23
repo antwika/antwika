@@ -23,7 +23,7 @@ namespace antwika::decor
         return nullptr;
     }
 
-    std::vector<TileAnimation> withAnimationToggled(
+    std::vector<TileAnimation> getWithAnimationToggled(
         const std::vector<TileAnimation> &flipAnimations,
         const tilemap::Tile tile)
     {
@@ -47,7 +47,7 @@ namespace antwika::decor
         return updatedAnimations;
     } // GCOVR_EXCL_LINE
 
-    std::vector<TileAnimation> withAnimationFrameAdded(
+    std::vector<TileAnimation> getWithAnimationFrameAdded(
         const std::vector<TileAnimation> &flipAnimations,
         const tilemap::Tile tile)
     {
@@ -65,7 +65,7 @@ namespace antwika::decor
         return updatedAnimations;
     } // GCOVR_EXCL_LINE
 
-    std::vector<TileAnimation> withAnimationFrameSet(
+    std::vector<TileAnimation> getWithAnimationFrameSet(
         const std::vector<TileAnimation> &flipAnimations,
         const tilemap::Tile tile,
         const std::size_t frame,
@@ -91,7 +91,7 @@ namespace antwika::decor
         return updatedAnimations;
     } // GCOVR_EXCL_LINE
 
-    bool anyTileAnimated(const std::span<const TileAnimation> flipAnimations)
+    bool isAnyTileAnimated(const std::span<const TileAnimation> flipAnimations)
     {
         for (const auto &flip : flipAnimations)
         {
@@ -117,7 +117,7 @@ namespace antwika::decor
              % flipAnimation.frameTiles.size()];
     }
 
-    gfx::Bitmap atlasWithAnimationFrames(
+    gfx::Bitmap getAtlasWithAnimationFrames(
         gfx::Bitmap sheetBitmap,
         const tilemap::Atlas atlas,
         const std::span<const TileAnimation> flipAnimations,
@@ -133,8 +133,8 @@ namespace antwika::decor
                 continue;
             }
 
-            const auto flipRect = tilemap::tileSource(flip.tile);
-            const auto sourceRect = tilemap::tileSource(frame);
+            const auto flipRect = tilemap::getTileSource(flip.tile);
+            const auto sourceRect = tilemap::getTileSource(frame);
             const auto width = static_cast<std::size_t>(
                 flipRect.size.width);
             const auto rowCount = static_cast<std::size_t>(
@@ -170,7 +170,7 @@ namespace antwika::decor
         return sheetBitmap;
     } // GCOVR_EXCL_LINE
 
-    widget::WidgetId flipFrameWidget(const std::size_t frame)
+    widget::WidgetId getFlipFrameWidget(const std::size_t frame)
     {
         return widget::WidgetId{
             371 + static_cast<std::uint64_t>(frame)};

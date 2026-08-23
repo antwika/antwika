@@ -25,7 +25,7 @@ namespace antwika::solver
                 .y = (corner.y / voxel::kCubeSide) - originPointPosition.y,
                 .z = (corner.z / voxel::kCubeSide) - originPointPosition.z};
 
-            if (!worldgen::within(shape, cubePosition))
+            if (!worldgen::isWithin(shape, cubePosition))
             {
                 continue;
             }
@@ -48,7 +48,7 @@ namespace antwika::solver
         return hintVoxels;
     } // GCOVR_EXCL_LINE
 
-    voxel::Voxels withChunkSpliced(
+    voxel::Voxels getWithChunkSpliced(
         voxel::Voxels pileVoxels,
         const worldgen::VoxelBox box,
         const voxel::Voxels &grownVoxels)
@@ -66,7 +66,7 @@ namespace antwika::solver
         return pileVoxels;
     } // GCOVR_EXCL_LINE
 
-    std::string growTrouble(const worldgen::ChunkResult &result)
+    std::string getGrowTrouble(const worldgen::ChunkResult &result)
     {
         switch (result.outcome)
         {

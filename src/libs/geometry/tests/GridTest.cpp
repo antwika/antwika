@@ -8,11 +8,11 @@
 #include <antwika/geometry/Size.hpp>
 
 using antwika::geometry::cellAt;
-using antwika::geometry::cellRect;
+using antwika::geometry::getCellRect;
 using antwika::geometry::Grid;
 using antwika::geometry::GridCell;
-using antwika::geometry::gridFit;
-using antwika::geometry::gridFitBelow;
+using antwika::geometry::getGridFit;
+using antwika::geometry::getGridFitBelow;
 using antwika::geometry::Point;
 using antwika::geometry::Rect;
 using antwika::geometry::Size;
@@ -29,7 +29,7 @@ namespace
 
 TEST(GridTest, GridFit_FitsTheLargestWholePixelCellAndCentresIt)
 {
-    const auto grid = gridFit(areaOf(100, 100), 8, 8);
+    const auto grid = getGridFit(areaOf(100, 100), 8, 8);
 
     ASSERT_TRUE(grid.has_value());
 
@@ -41,8 +41,8 @@ TEST(GridTest, GridFit_FitsTheLargestWholePixelCellAndCentresIt)
 
 TEST(GridTest, GridFit_TakesTheSmallerOfTheTwoFits)
 {
-    const auto wideGrid = gridFit(areaOf(100, 40), 4, 4);
-    const auto tallGrid = gridFit(areaOf(40, 100), 4, 4);
+    const auto wideGrid = getGridFit(areaOf(100, 40), 4, 4);
+    const auto tallGrid = getGridFit(areaOf(40, 100), 4, 4);
 
     ASSERT_TRUE(wideGrid.has_value());
     ASSERT_TRUE(tallGrid.has_value());
@@ -55,7 +55,7 @@ TEST(GridTest, GridFit_TakesTheSmallerOfTheTwoFits)
 
 TEST(GridTest, GridFit_CentresInsideTheAreaItWasGiven)
 {
-    const auto grid = gridFit(
+    const auto grid = getGridFit(
         Rect{
             .originPoint = Point{.x = 30, .y = -7},
             .size = Size{.width = 100, .height = 100}},
@@ -68,14 +68,14 @@ TEST(GridTest, GridFit_CentresInsideTheAreaItWasGiven)
 
 TEST(GridTest, GridFit_FitsNothingWithNoColumnsOrRows)
 {
-    EXPECT_FALSE(gridFit(areaOf(100, 100), 0, 8).has_value());
-    EXPECT_FALSE(gridFit(areaOf(100, 100), 8, 0).has_value());
+    EXPECT_FALSE(getGridFit(areaOf(100, 100), 0, 8).has_value());
+    EXPECT_FALSE(getGridFit(areaOf(100, 100), 8, 0).has_value());
 }
 
 TEST(GridTest, GridFit_FitsNothingInATooSmallArea)
 {
-    EXPECT_FALSE(gridFit(areaOf(7, 100), 8, 8).has_value());
-    EXPECT_FALSE(gridFit(areaOf(100, 7), 8, 8).has_value());
+    EXPECT_FALSE(getGridFit(areaOf(7, 100), 8, 8).has_value());
+    EXPECT_FALSE(getGridFit(areaOf(100, 7), 8, 8).has_value());
 }
 
 TEST(GridTest, CellAt_ReadsAPointInsideTheGridAsACell)
@@ -169,7 +169,7 @@ TEST(GridTest, CellRect_PlacesACellBackWhereItCameFrom)
         .rows = 3};
 
     EXPECT_EQ(
-        cellRect(grid, GridCell{.column = 2, .row = 1}),
+        getCellRect(grid, GridCell{.column = 2, .row = 1}),
         (Rect{
             .originPoint = Point{.x = 20, .y = 25},
             .size = Size{.width = 5, .height = 5}}));
@@ -178,7 +178,7 @@ TEST(GridTest, CellRect_PlacesACellBackWhereItCameFrom)
 TEST(GridTest, GridFitBelow_LeavesTheReservedBandAlone)
 {
     const auto grid =
-        gridFitBelow(Size{.width = 100, .height = 120}, 20, 8, 8);
+        getGridFitBelow(Size{.width = 100, .height = 120}, 20, 8, 8);
 
     ASSERT_TRUE(grid.has_value());
 
@@ -189,14 +189,14 @@ TEST(GridTest, GridFitBelow_LeavesTheReservedBandAlone)
 TEST(GridTest, GridFitBelow_FitsNothingWhenTheBandTakesTheCanvas)
 {
     EXPECT_FALSE(
-        gridFitBelow(Size{.width = 100, .height = 20}, 20, 8, 8)
+        getGridFitBelow(Size{.width = 100, .height = 20}, 20, 8, 8)
             .has_value());
 }
 
 TEST(GridTest, GridFitBelow_FitsNothingWhenWhatIsLeftIsTooShort)
 {
     EXPECT_FALSE(
-        gridFitBelow(Size{.width = 100, .height = 24}, 20, 8, 8)
+        getGridFitBelow(Size{.width = 100, .height = 24}, 20, 8, 8)
             .has_value());
 }
 

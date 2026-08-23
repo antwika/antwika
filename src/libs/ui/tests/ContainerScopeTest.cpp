@@ -17,7 +17,7 @@ using antwika::gfx::Size;
 using antwika::ui::Context;
 using antwika::ui::DrawList;
 using antwika::ui::FillRect;
-using antwika::ui::fixedSize;
+using antwika::ui::getFixedSize;
 using antwika::ui::Theme;
 using antwika::ui::UiError;
 
@@ -25,7 +25,7 @@ namespace
 {
     constexpr Color kPanelColor{.red = 10, .green = 20, .blue = 30};
 
-    Theme plainTheme(std::uint32_t padding = 0)
+    Theme getPlainTheme(std::uint32_t padding = 0)
     {
         return Theme{
             .panelColor = kPanelColor,
@@ -40,14 +40,14 @@ namespace
 
 TEST(ContainerScopeTest, ContainerScope_ReopensTheParentWhenItEnds)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     {
-        const auto first = uiContext.panel({.heightSizing = fixedSize(20)});
+        const auto first = uiContext.panel({.heightSizing = getFixedSize(20)});
     }
 
     {
-        const auto second = uiContext.panel({.heightSizing = fixedSize(20)});
+        const auto second = uiContext.panel({.heightSizing = getFixedSize(20)});
     }
 
     EXPECT_EQ(
@@ -67,13 +67,13 @@ TEST(ContainerScopeTest, ContainerScope_ReopensTheParentWhenItEnds)
 
 TEST(ContainerScopeTest, ContainerScope_PutsWhatFollowsInsideTheOpenContainer)
 {
-    Context uiContext{kCanvasSize, plainTheme(5)};
+    Context uiContext{kCanvasSize, getPlainTheme(5)};
 
     {
-        const auto outer = uiContext.panel({.heightSizing = fixedSize(40)});
+        const auto outer = uiContext.panel({.heightSizing = getFixedSize(40)});
 
         {
-            const auto inner = uiContext.panel({.heightSizing = fixedSize(10)});
+            const auto inner = uiContext.panel({.heightSizing = getFixedSize(10)});
         }
     }
 
@@ -94,20 +94,20 @@ TEST(ContainerScopeTest, ContainerScope_PutsWhatFollowsInsideTheOpenContainer)
 
 TEST(ContainerScopeTest, Build_RefusesAFrameWithAContainerStillOpen)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
-    const auto open = uiContext.panel({.heightSizing = fixedSize(20)});
+    const auto open = uiContext.panel({.heightSizing = getFixedSize(20)});
 
     EXPECT_THROW((void)uiContext.build(), UiError);
 }
 
 TEST(ContainerScopeTest, Build_RefusesAFrameWithOnlyTheInnerContainerOpen)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     {
-        const auto outer = uiContext.panel({.heightSizing = fixedSize(20)});
-        const auto inner = uiContext.panel({.heightSizing = fixedSize(10)});
+        const auto outer = uiContext.panel({.heightSizing = getFixedSize(20)});
+        const auto inner = uiContext.panel({.heightSizing = getFixedSize(10)});
 
         EXPECT_THROW((void)uiContext.build(), UiError);
     }

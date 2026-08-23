@@ -19,7 +19,7 @@ namespace antwika::worldgen
         }
     }
 
-    std::size_t cubeCount(const ChunkShape shape)
+    std::size_t getCubeCount(const ChunkShape shape)
     {
         requireASide(shape);
 
@@ -28,7 +28,7 @@ namespace antwika::worldgen
                * static_cast<std::size_t>(shape.height);
     }
 
-    bool within(const ChunkShape shape, const voxel::VoxelPosition cubePosition)
+    bool isWithin(const ChunkShape shape, const voxel::VoxelPosition cubePosition)
     {
         return cubePosition.x >=
             0 && cubePosition.x < shape.width && cubePosition.y >= 0
@@ -41,7 +41,7 @@ namespace antwika::worldgen
     {
         requireASide(shape);
 
-        if (!within(shape, cubePosition))
+        if (!isWithin(shape, cubePosition))
         {
             throw WorldgenError("cellOf: the cube lies outside the chunk");
         }
@@ -57,7 +57,7 @@ namespace antwika::worldgen
 
     voxel::VoxelPosition cubeAt(const ChunkShape shape, const std::size_t cell)
     {
-        if (cell >= cubeCount(shape))
+        if (cell >= getCubeCount(shape))
         {
             throw WorldgenError("cubeAt: the chunk holds no such cell");
         }
@@ -71,7 +71,7 @@ namespace antwika::worldgen
             .z = static_cast<std::int32_t>((cell / width) % depth)};
     }
 
-    VoxelBox chunkBox(const ChunkShape shape,
+    VoxelBox getChunkBox(const ChunkShape shape,
         const voxel::VoxelPosition originPosition)
     {
         requireASide(shape);

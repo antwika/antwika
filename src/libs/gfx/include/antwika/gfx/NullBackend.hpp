@@ -31,11 +31,11 @@ namespace antwika::gfx
         NullBackend &operator=(const NullBackend &) = delete;
         NullBackend &operator=(NullBackend &&) = delete;
 
-        [[nodiscard]] std::string_view name() const override;
+        [[nodiscard]] std::string_view getName() const override;
 
-        [[nodiscard]] std::size_t maxWindows() const override;
+        [[nodiscard]] std::size_t getMaxWindows() const override;
 
-        [[nodiscard]] GfxCapabilities capabilities()
+        [[nodiscard]] GfxCapabilities getCapabilities()
             const override;
 
         [[nodiscard]] std::unique_ptr<IWindow> createWindow(

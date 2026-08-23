@@ -52,26 +52,26 @@ namespace antwika::input::conformance
 
     TYPED_TEST_P(InputBackendConformanceTest, Name_IsNotEmpty)
     {
-        EXPECT_FALSE(this->backend->name().empty());
+        EXPECT_FALSE(this->backend->getName().empty());
     }
 
     TYPED_TEST_P(InputBackendConformanceTest, Name_DoesNotChange)
     {
-        EXPECT_EQ(this->backend->name(), this->backend->name());
+        EXPECT_EQ(this->backend->getName(), this->backend->getName());
     }
 
     TYPED_TEST_P(InputBackendConformanceTest,
                  Capabilities_ClaimAtLeastOneDevice)
     {
-        const auto capabilities = this->backend->capabilities();
+        const auto capabilities = this->backend->getCapabilities();
 
         EXPECT_TRUE(capabilities.keyboard || capabilities.pointer);
     }
 
     TYPED_TEST_P(InputBackendConformanceTest, Capabilities_DoNotChange)
     {
-        EXPECT_EQ(this->backend->capabilities(),
-                  this->backend->capabilities());
+        EXPECT_EQ(this->backend->getCapabilities(),
+                  this->backend->getCapabilities());
     }
 
     TYPED_TEST_P(InputBackendConformanceTest, PollEvent_DrainsToAnEmptyQueue)
@@ -101,7 +101,7 @@ namespace antwika::input::conformance
     TYPED_TEST_P(
         InputBackendConformanceTest, PollEvent_ReportsOnlyDevicesItClaims)
     {
-        const auto capabilities = this->backend->capabilities();
+        const auto capabilities = this->backend->getCapabilities();
 
         for (const auto &event : this->drain())
         {

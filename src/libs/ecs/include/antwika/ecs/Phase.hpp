@@ -9,7 +9,7 @@ namespace antwika::ecs
     {
     };
 
-    [[nodiscard]] constexpr std::uint32_t rawValue(PhaseId phase) noexcept
+    [[nodiscard]] constexpr std::uint32_t getRawValue(PhaseId phase) noexcept
     {
         return static_cast<std::uint32_t>(phase);
     }

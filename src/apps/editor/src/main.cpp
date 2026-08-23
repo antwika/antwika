@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 
             if (command.has(antwika::cli::kHelpFlag))
             {
-                std::cout << antwika::cli::helpText(
+                std::cout << antwika::cli::getHelpText(
                     kAppName, kFlags);
                 return;
             }
@@ -74,11 +74,11 @@ int main(int argc, char **argv)
                 *backend,
                 *inputs,
                 std::string(
-                    command.value("--map").value_or(
+                    command.getValue("--map").value_or(
                         std::string(kDefaultMap))),
                 command.has("--play"),
                 std::string(
-                    command.value("--plan").value_or(
+                    command.getValue("--plan").value_or(
                         std::string(kDefaultPlan))))
                 .run();
         });

@@ -18,7 +18,7 @@ namespace antwika::testing
     {
     public:
         explicit ScratchFile(std::string_view prefix)
-            : where(scratchPath(prefix))
+            : where(getScratchPath(prefix))
         {
         }
 
@@ -34,12 +34,12 @@ namespace antwika::testing
         ScratchFile &operator=(const ScratchFile &) = delete;
         ScratchFile &operator=(ScratchFile &&) = delete;
 
-        [[nodiscard]] const std::filesystem::path &path() const noexcept
+        [[nodiscard]] const std::filesystem::path &getPath() const noexcept
         {
             return where;
         }
 
-        [[nodiscard]] std::string string() const
+        [[nodiscard]] std::string getString() const
         {
             return where.string();
         }

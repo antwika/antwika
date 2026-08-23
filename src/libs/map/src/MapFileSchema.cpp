@@ -33,12 +33,12 @@ namespace antwika::map
 
     namespace
     {
-            [[nodiscard]] nlohmann::json voxelSchema()
+            [[nodiscard]] nlohmann::json getVoxelSchema()
             {
                 nlohmann::json arraySchema;
 
                 arraySchema["type"] = "array";
-                arraySchema["items"] = wholeSchema(-kMaxCellCoord,
+                arraySchema["items"] = getWholeSchema(-kMaxCellCoord,
                     kMaxCellCoord);
                 arraySchema["minItems"] = kAxisCount;
                 arraySchema["maxItems"] = kAxisCount;
@@ -58,16 +58,16 @@ namespace antwika::map
                 return shape;
             } // GCOVR_EXCL_LINE
 
-            [[nodiscard]] nlohmann::json tilemapSchema()
+            [[nodiscard]] nlohmann::json getTilemapSchema()
             {
                 return shapeOf(kTilemapFields);
             } // GCOVR_EXCL_LINE
 
-            [[nodiscard]] nlohmann::json ruleSchema()
+            [[nodiscard]] nlohmann::json getRuleSchema()
             {
                 nlohmann::json may;
                 may["type"] = "array";
-                may["items"] = tileSchema();
+                may["items"] = getTileSchema();
                 may["uniqueItems"] = true;
 
                 nlohmann::json shape;
@@ -79,7 +79,7 @@ namespace antwika::map
                     std::string(kEdgeKey),
                     std::string(kMayKey),
                     std::string(kAirKey)};
-                shape["properties"][std::string(kTileKey)] = tileSchema();
+                shape["properties"][std::string(kTileKey)] = getTileSchema();
                 shape["properties"][std::string(kSideKey)]["enum"] =
                     namesOf(kSideNames.names);
                 shape["properties"][std::string(kEdgeKey)]["enum"] =
@@ -91,47 +91,47 @@ namespace antwika::map
                 return shape;
             } // GCOVR_EXCL_LINE
 
-            [[nodiscard]] nlohmann::json lampSchema()
+            [[nodiscard]] nlohmann::json getLampSchema()
             {
                 return shapeOf(kLampFields);
             } // GCOVR_EXCL_LINE
 
-            [[nodiscard]] nlohmann::json layerSchema()
+            [[nodiscard]] nlohmann::json getLayerSchema()
             {
                 return shapeOf(kLayerFields);
             } // GCOVR_EXCL_LINE
 
-            [[nodiscard]] nlohmann::json cornerSchema()
+            [[nodiscard]] nlohmann::json getCornerSchema()
             {
                 return shapeOf(kCornerFields);
             } // GCOVR_EXCL_LINE
 
-            [[nodiscard]] nlohmann::json cameraSchema()
+            [[nodiscard]] nlohmann::json getCameraSchema()
             {
-                return orNullShape(shapeOf(kCameraFields));
+                return getOrNullShape(shapeOf(kCameraFields));
             } // GCOVR_EXCL_LINE
 
-            [[nodiscard]] nlohmann::json tileKindSchema()
+            [[nodiscard]] nlohmann::json getTileKindSchema()
             {
                 return shapeOf(kTileKindFields);
             } // GCOVR_EXCL_LINE
 
-            [[nodiscard]] nlohmann::json tileFacingSchema()
+            [[nodiscard]] nlohmann::json getTileFacingSchema()
             {
                 return shapeOf(kTileFacingFields);
             } // GCOVR_EXCL_LINE
 
-            [[nodiscard]] nlohmann::json tileLevelSchema()
+            [[nodiscard]] nlohmann::json getTileLevelSchema()
             {
                 return shapeOf(kTileLevelFields);
             } // GCOVR_EXCL_LINE
 
-            [[nodiscard]] nlohmann::json tilePartSchema()
+            [[nodiscard]] nlohmann::json getTilePartSchema()
             {
                 return shapeOf(kTilePartFields);
             } // GCOVR_EXCL_LINE
 
-            [[nodiscard]] nlohmann::json mapSchema()
+            [[nodiscard]] nlohmann::json getMapSchema()
             {
                 nlohmann::json schema;
 
@@ -176,47 +176,47 @@ namespace antwika::map
                 schema["properties"][std::string(kVoxelsKey)]["type"] =
                     "array";
                 schema["properties"][std::string(kVoxelsKey)]["items"] =
-                    voxelSchema();
+                    getVoxelSchema();
                 schema["properties"][std::string(kTilemapKey)] =
-                    tilemapSchema();
+                    getTilemapSchema();
                 schema["properties"][std::string(kRulesKey)]["type"] =
                     "array";
                 schema["properties"][std::string(kRulesKey)]["items"] =
-                    ruleSchema();
+                    getRuleSchema();
                 schema["properties"][std::string(kCameraKey)] =
-                    cameraSchema();
+                    getCameraSchema();
                 schema["properties"][std::string(kSettingsKey)] =
-                    settingsSchema();
+                    getSettingsSchema();
                 schema["properties"][std::string(kTileKindsKey)]["type"] =
                     "array";
                 schema["properties"][std::string(kTileKindsKey)]
-                      ["items"] = tileKindSchema();
+                      ["items"] = getTileKindSchema();
                 schema["properties"][std::string(kTileFacingsKey)]
                       ["type"] = "array";
                 schema["properties"][std::string(kTileFacingsKey)]
-                      ["items"] = tileFacingSchema();
+                      ["items"] = getTileFacingSchema();
                 schema["properties"][std::string(kTileLevelsKey)]["type"] =
                     "array";
                 schema["properties"][std::string(kTileLevelsKey)]
-                      ["items"] = tileLevelSchema();
+                      ["items"] = getTileLevelSchema();
                 schema["properties"][std::string(kTilePartsKey)]["type"] =
                     "array";
                 schema["properties"][std::string(kTilePartsKey)]
-                      ["items"] = tilePartSchema();
+                      ["items"] = getTilePartSchema();
                 schema["properties"][std::string(kCornersKey)]["type"] =
                     "array";
                 schema["properties"][std::string(kCornersKey)]["items"] =
-                    cornerSchema();
+                    getCornerSchema();
                 schema["properties"][std::string(kLampsKey)]["type"] =
                     "array";
                 schema["properties"][std::string(kLampsKey)]["items"] =
-                    lampSchema();
+                    getLampSchema();
                 schema["properties"][std::string(kLampsKey)]["maxItems"] =
                     light::kMaxLamps;
                 schema["properties"][std::string(kLayersKey)]["type"] =
                     "array";
                 schema["properties"][std::string(kLayersKey)]["items"] =
-                    layerSchema();
+                    getLayerSchema();
                 schema["properties"][std::string(kLayersKey)]["minItems"] =
                     1;
                 schema["properties"][std::string(kLayersKey)]["maxItems"] =
@@ -224,46 +224,46 @@ namespace antwika::map
                 schema["properties"][std::string(kDecorKey)]["type"] =
                     "array";
                 schema["properties"][std::string(kDecorKey)]["items"] =
-                    decorSchema();
+                    getDecorSchema();
                 schema["properties"][std::string(kDecorRulesKey)]
                       ["type"] = "array";
                 schema["properties"][std::string(kDecorRulesKey)]
-                      ["items"] = ruleSchema();
+                      ["items"] = getRuleSchema();
                 schema["properties"][std::string(kFamiliesKey)]
                       ["type"] = "array";
                 schema["properties"][std::string(kFamiliesKey)]
-                      ["items"] = familySchema();
+                      ["items"] = getFamilySchema();
                 schema["properties"][std::string(kFlipsKey)]
                       ["type"] = "array";
                 schema["properties"][std::string(kFlipsKey)]
-                      ["items"] = flipSchema();
+                      ["items"] = getFlipSchema();
                 schema["properties"]
                       [std::string(kTransitionsKey)]["type"] =
                           "array";
                 schema["properties"]
                       [std::string(kTransitionsKey)]["items"] =
-                          transitionSchema();
+                          getTransitionSchema();
                 schema["properties"]
                       [std::string(kTransitionsKey)]
                       ["maxItems"] = tile::kMaxTransitions;
                 schema["properties"][std::string(kStartKey)] =
-                    markedCubeSchema();
+                    getMarkedCubeSchema();
                 schema["properties"][std::string(kExitKey)] =
-                    markedCubeSchema();
+                    getMarkedCubeSchema();
                 schema["properties"][std::string(kExitTargetKey)]
                       ["type"] = "string";
                 schema["properties"][std::string(kCharactersKey)]
                       ["type"] = "array";
                 schema["properties"][std::string(kCharactersKey)]
-                      ["items"] = characterSchemaLatest();
+                      ["items"] = getCharacterSchemaLatest();
                 schema["properties"][std::string(kPlatesKey)]
                       ["type"] = "array";
                 schema["properties"][std::string(kPlatesKey)]
-                      ["items"] = plateSchema();
+                      ["items"] = getPlateSchema();
                 schema["properties"][std::string(kPaletteKey)]["type"] =
                     "array";
                 schema["properties"][std::string(kPaletteKey)]["items"] =
-                    colourSchema();
+                    getColourSchema();
                 schema["properties"][std::string(kPaletteKey)]["minItems"] =
                     1;
                 schema["properties"][std::string(kPaletteKey)]["maxItems"] =
@@ -271,11 +271,11 @@ namespace antwika::map
                 schema["properties"][std::string(kGlowsKey)]["type"] =
                     "array";
                 schema["properties"][std::string(kGlowsKey)]["items"] =
-                    wholeSchema(0, 100);
+                    getWholeSchema(0, 100);
                 schema["properties"][std::string(kGlowsKey)]["maxItems"] =
                     tile::kMaxInks;
                 schema["properties"][std::string(kAmbientKey)] =
-                    wholeSchema(0, 100);
+                    getWholeSchema(0, 100);
                 gatesSchemaWiring(schema);
 
                 return schema;
@@ -285,9 +285,9 @@ namespace antwika::map
     namespace mapfile
     {
         const nlohmann::json_schema::json_validator &
-        mapValidator()
+        getMapValidator()
         {
-            return schema::validatorFor<mapSchema>();
+            return schema::validatorFor<getMapSchema>();
         }
     }
 

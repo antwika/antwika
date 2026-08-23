@@ -42,23 +42,23 @@ namespace antwika::map
 
     inline constexpr std::int32_t kCameraScale = 1000;
 
-    [[nodiscard]] std::optional<std::size_t> playerIndex(
+    [[nodiscard]] std::optional<std::size_t> getPlayerIndex(
         const Map &map);
 
     [[nodiscard]] std::vector<std::vector<voxel::VoxelPosition>> patrolStopsOf(
         const Map &map);
 
-    [[nodiscard]] std::string sidecarPath(
+    [[nodiscard]] std::string getSidecarPath(
         const std::string &mapPath, std::string_view name);
 
-    [[nodiscard]] std::string sharedTexturePath(
+    [[nodiscard]] std::string getSharedTexturePath(
         const std::string &mapPath, std::string_view name);
 
     void writeMap(std::ostream &outputStream, const Map &map);
 
     [[nodiscard]] Map readMap(std::istream &inputStream);
 
-    [[nodiscard]] std::string serializeMap(const Map &map);
+    [[nodiscard]] std::string getSerializeMap(const Map &map);
 
     using antwika::io::kBackupSuffix;
 
@@ -66,6 +66,6 @@ namespace antwika::map
 
     void saveMap(const std::string &path, const Map &map);
 
-    [[nodiscard]] Map loadMap(const std::string &path);
+    [[nodiscard]] Map getLoadMap(const std::string &path);
 
 }

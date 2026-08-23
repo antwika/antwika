@@ -35,14 +35,14 @@ namespace antwika::gameplay
         IGame &operator=(const IGame &) = delete;
         IGame &operator=(IGame &&) = delete;
 
-        [[nodiscard]] virtual ecs::World &world() noexcept = 0;
+        [[nodiscard]] virtual ecs::World &getWorld() noexcept = 0;
 
-        [[nodiscard]] virtual const ecs::World &world()
+        [[nodiscard]] virtual const ecs::World &getWorld()
             const noexcept = 0;
 
-        [[nodiscard]] virtual ecs::Entity eye() const noexcept = 0;
+        [[nodiscard]] virtual ecs::Entity getEye() const noexcept = 0;
 
-        [[nodiscard]] virtual ecs::Entity player() const noexcept = 0;
+        [[nodiscard]] virtual ecs::Entity getPlayer() const noexcept = 0;
 
         virtual void setPlayer(ecs::Entity entity) noexcept = 0;
 
@@ -71,15 +71,15 @@ namespace antwika::gameplay
 
         [[nodiscard]] virtual gfx::Vec3 playerAt() const = 0;
 
-        [[nodiscard]] virtual GateState &gates() noexcept = 0;
+        [[nodiscard]] virtual GateState &getGates() noexcept = 0;
 
-        [[nodiscard]] virtual const GateState &gates()
+        [[nodiscard]] virtual const GateState &getGates()
             const noexcept = 0;
 
-        [[nodiscard]] virtual camera::CameraTransform &cameraTransform()
+        [[nodiscard]] virtual camera::CameraTransform &getCameraTransform()
             noexcept = 0;
 
-        [[nodiscard]] virtual const camera::CameraTransform &cameraTransform()
+        [[nodiscard]] virtual const camera::CameraTransform &getCameraTransform()
             const noexcept = 0;
 
         [[nodiscard]] virtual std::int32_t &zoom() noexcept = 0;
@@ -96,17 +96,17 @@ namespace antwika::gameplay
             std::vector<gfx::Vec3> stopPositions,
             voxel::VoxelPosition goalPosition) = 0;
 
-        [[nodiscard]] virtual const std::vector<gfx::Vec3> &path()
+        [[nodiscard]] virtual const std::vector<gfx::Vec3> &getPath()
             const noexcept = 0;
 
         [[nodiscard]] virtual const std::optional<voxel::VoxelPosition> &
-        pathGoal() const noexcept = 0;
+        getPathGoal() const noexcept = 0;
 
         virtual void stepAlongPath(bool playing) = 0;
 
         virtual void clearPath() noexcept = 0;
 
-        [[nodiscard]] virtual map::Progress progress(
+        [[nodiscard]] virtual map::Progress getProgress(
             std::string mapName) const = 0;
     };
 

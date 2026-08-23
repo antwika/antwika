@@ -16,30 +16,30 @@
 namespace antwika::map
 {
 
-    gfx::Bitmap readSharedOrBundled(
+    gfx::Bitmap getReadSharedOrBundled(
         const std::string &mapPath,
         const std::string_view name,
         const std::string_view app)
     {
-        const auto sharedPath = sharedTexturePath(mapPath, name);
+        const auto sharedPath = getSharedTexturePath(mapPath, name);
 
         if (std::filesystem::exists(sharedPath))
         {
-            return image::readPngFile(sharedPath, app);
+            return image::getReadPngFile(sharedPath, app);
         }
 
-        return image::readPngFile(
-            io::assetPath(std::string(name)), app);
+        return image::getReadPngFile(
+            io::getAssetPath(std::string(name)), app);
     }
 
-    std::vector<tilemap::Tile> fallbackTiles(
+    std::vector<tilemap::Tile> getFallbackTiles(
         const std::vector<voxelmap::FaceRef> &faces,
         const tile::TileRules &rules)
     {
         std::map<std::pair<tilemap::Atlas, voxel::Kind>, tilemap::Tile>
             firstTiles;
 
-        for (const auto &rule : rules.allRules())
+        for (const auto &rule : rules.getAllRules())
         {
             const auto want =
                 std::pair{rule.tile.atlas, rules.kindOf(rule.tile)};
@@ -51,7 +51,7 @@ namespace antwika::map
             }
         }
 
-        const auto defaultTileList = voxelmap::defaultTiles(faces);
+        const auto defaultTileList = voxelmap::getDefaultTiles(faces);
 
         std::vector<tilemap::Tile> tiles;
 
@@ -60,7 +60,7 @@ namespace antwika::map
         for (std::size_t index = 0; index < faces.size(); ++index)
         {
             const auto want = std::pair{
-                gfx::Vec3(voxelmap::faceNormal(faces[index].side)).y != 0.0F
+                gfx::Vec3(voxelmap::getFaceNormal(faces[index].side)).y != 0.0F
                     ? tilemap::Atlas::Floor
                     : tilemap::Atlas::Wall,
                 faces[index].cell.material.kind};
@@ -80,7 +80,7 @@ namespace antwika::map
         std::map<voxelmap::FaceRef, tilemap::Tile> &tileCache)
     {
         const auto faces = voxelmap::visibleFacesOf(map.voxels);
-        const auto solvedTiles = solver::solveTiles(faces, map.rules, corners);
+        const auto solvedTiles = solver::getSolveTiles(faces, map.rules, corners);
 
         if (solvedTiles.tiles.has_value())
         {
@@ -94,7 +94,7 @@ namespace antwika::map
             return *solvedTiles.tiles;
         }
 
-        const auto fallbackTileList = fallbackTiles(faces, map.rules);
+        const auto fallbackTileList = getFallbackTiles(faces, map.rules);
 
         std::vector<tilemap::Tile> tiles;
 
@@ -112,13 +112,13 @@ namespace antwika::map
         return tiles;
     } // GCOVR_EXCL_LINE
 
-    gfx::Bitmap loadAtlas(
+    gfx::Bitmap getLoadAtlas(
         const std::string &mapPath,
         const std::string_view name,
         const gfx::Size tileSize,
         const std::string_view app)
     {
-        const auto sidecarFilePath = sidecarPath(mapPath, name);
+        const auto sidecarFilePath = getSidecarPath(mapPath, name);
 
         if (!std::filesystem::exists(sidecarFilePath))
         {
@@ -126,8 +126,8 @@ namespace antwika::map
                 "the map has no atlas at " + sidecarFilePath);
         }
 
-        auto atlas = image::readPngFile(sidecarFilePath, app);
-        const auto wantedSize = tilemap::atlasSize(tileSize);
+        auto atlas = image::getReadPngFile(sidecarFilePath, app);
+        const auto wantedSize = tilemap::getAtlasSize(tileSize);
 
         if (atlas.size != wantedSize)
         {
@@ -139,50 +139,50 @@ namespace antwika::map
         return atlas;
     } // GCOVR_EXCL_LINE
 
-    std::array<gfx::Bitmap, kAtlasSheetCount> loadAtlasPair(
+    std::array<gfx::Bitmap, kAtlasSheetCount> getLoadAtlasPair(
         const std::string &mapPath, const std::string_view app)
     {
         return {
-            loadAtlas(
+            getLoadAtlas(
                 mapPath,
                 kAtlasSheets[0].name,
                 kAtlasSheets[0].tileSize,
                 app),
-            loadAtlas(
+            getLoadAtlas(
                 mapPath,
                 kAtlasSheets[1].name,
                 kAtlasSheets[1].tileSize,
                 app)};
     }
 
-    std::array<gfx::Bitmap, kAtlasSheetCount> loadAtlasPairOrBlank(
+    std::array<gfx::Bitmap, kAtlasSheetCount> getLoadAtlasPairOrBlank(
         const std::string &mapPath, const std::string_view app)
     {
         return {
-            loadAtlasOrBlank(
+            getLoadAtlasOrBlank(
                 mapPath,
                 kAtlasSheets[0].name,
                 kAtlasSheets[0].tileSize,
                 app),
-            loadAtlasOrBlank(
+            getLoadAtlasOrBlank(
                 mapPath,
                 kAtlasSheets[1].name,
                 kAtlasSheets[1].tileSize,
                 app)};
     }
 
-    gfx::Bitmap loadAtlasOrBlank(
+    gfx::Bitmap getLoadAtlasOrBlank(
         const std::string &mapPath,
         const std::string_view name,
         const gfx::Size tileSize,
         const std::string_view app)
     {
-        if (!std::filesystem::exists(sidecarPath(mapPath, name)))
+        if (!std::filesystem::exists(getSidecarPath(mapPath, name)))
         {
-            return tilemap::blankAtlas(tileSize);
+            return tilemap::getBlankAtlas(tileSize);
         }
 
-        return loadAtlas(mapPath, name, tileSize, app);
+        return getLoadAtlas(mapPath, name, tileSize, app);
     } // GCOVR_EXCL_LINE
 
     void writeSharedTexture(
@@ -191,7 +191,7 @@ namespace antwika::map
         const std::string_view name,
         const std::string_view app)
     {
-        const auto sharedPath = sharedTexturePath(mapPath, name);
+        const auto sharedPath = getSharedTexturePath(mapPath, name);
         std::error_code errorCode;
 
         std::filesystem::create_directories(
@@ -199,13 +199,13 @@ namespace antwika::map
         image::writePngFile(sheetBitmap, sharedPath, app);
     }
 
-    gfx::Bitmap loadCharacterSheet(
+    gfx::Bitmap getLoadCharacterSheet(
         const std::string &mapPath, const std::string_view app)
     {
         auto sheet =
-            readSharedOrBundled(mapPath, character::kCharacterSheet, app);
+            getReadSharedOrBundled(mapPath, character::kCharacterSheet, app);
 
-        if (sheet.size != character::characterSheetSize())
+        if (sheet.size != character::getCharacterSheetSize())
         {
             throw gfx::GfxError(
                 "the character sheet is not the shape a character "
@@ -215,12 +215,12 @@ namespace antwika::map
         return sheet;
     } // GCOVR_EXCL_LINE
 
-    gfx::ShaderSource loadShader(const std::string_view stem)
+    gfx::ShaderSource getLoadShader(const std::string_view stem)
     {
         std::ifstream vertex(
-            io::assetPath(std::string(stem) + ".vert"));
+            io::getAssetPath(std::string(stem) + ".vert"));
         std::ifstream fragment(
-            io::assetPath(std::string(stem) + ".frag"));
+            io::getAssetPath(std::string(stem) + ".frag"));
 
         return gfx::ShaderReader().read(vertex, fragment);
     } // GCOVR_EXCL_LINE

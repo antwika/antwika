@@ -20,9 +20,9 @@ namespace antwika::gameplay
         std::uint32_t index = 0;
     };
 
-    [[nodiscard]] std::span<const std::string_view> componentNames();
+    [[nodiscard]] std::span<const std::string_view> getComponentNames();
 
-    [[nodiscard]] bool componentNamed(std::string_view name);
+    [[nodiscard]] bool isComponentNamed(std::string_view name);
 
     void addComponentsNamed(
         ecs::World &world,

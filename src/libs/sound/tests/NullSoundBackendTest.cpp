@@ -21,7 +21,7 @@ TEST(NullSoundBackendTest, Name_IsNull)
     NiceMock<MockLogger> logger;
     NullSoundBackend backend(logger);
 
-    EXPECT_EQ(backend.name(), "null");
+    EXPECT_EQ(backend.getName(), "null");
 }
 
 TEST(NullSoundBackendTest, Capabilities_ClaimNeitherPlaybackNorAThread)
@@ -30,7 +30,7 @@ TEST(NullSoundBackendTest, Capabilities_ClaimNeitherPlaybackNorAThread)
     NullSoundBackend backend(logger);
 
     EXPECT_EQ(
-        backend.capabilities(),
+        backend.getCapabilities(),
         (SoundCapabilities{.playback = false, .selfDriven = false}));
 }
 
@@ -43,7 +43,7 @@ TEST(NullSoundBackendTest, OpenDevice_HandsBackADeviceAtTheFormatAsked)
         DeviceSpec{.format = WaveFormat{.rate = 44100, .channels = 1}});
 
     ASSERT_NE(device, nullptr);
-    EXPECT_EQ(device->format(), (WaveFormat{.rate = 44100, .channels = 1}));
+    EXPECT_EQ(device->getFormat(), (WaveFormat{.rate = 44100, .channels = 1}));
 }
 
 TEST(NullSoundBackendTest, OpenDevice_RefusesAFormatThatIsNotOne)

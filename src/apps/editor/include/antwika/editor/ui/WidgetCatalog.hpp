@@ -91,7 +91,7 @@ namespace antwika::editor::widget_catalog
         widget::allDistinct(kFixedWidgets),
         "two fixed widgets share a number");
 
-    [[nodiscard]] constexpr bool blockClearOfFixed(
+    [[nodiscard]] constexpr bool isBlockClearOfFixed(
         const widget::WidgetId baseWidget, const std::size_t width) noexcept
     {
         const auto first = static_cast<std::uint64_t>(baseWidget);
@@ -110,7 +110,7 @@ namespace antwika::editor::widget_catalog
     }
 
     static_assert(
-        blockClearOfFixed(map::kFirstLayerWidget, map::kMaxLayers),
+        isBlockClearOfFixed(map::kFirstLayerWidget, map::kMaxLayers),
         "a fixed widget stands among the layer rows");
 
     static_assert(
@@ -119,22 +119,22 @@ namespace antwika::editor::widget_catalog
         "the layer rows run into the decor frame block");
 
     static_assert(
-        blockClearOfFixed(kFirstMapRowWidget, kMaxPicked),
+        isBlockClearOfFixed(kFirstMapRowWidget, kMaxPicked),
         "a fixed widget stands among the map picker rows");
 
     static_assert(
-        blockClearOfFixed(
-            planColumnWidget(Column::Todo), kEveryColumn.size()),
+        isBlockClearOfFixed(
+            getPlanColumnWidget(Column::Todo), kEveryColumn.size()),
         "a fixed widget stands among the plan columns");
 
     static_assert(
-        blockClearOfFixed(
-            planAddWidget(Column::Todo), kEveryColumn.size()),
+        isBlockClearOfFixed(
+            getPlanAddWidget(Column::Todo), kEveryColumn.size()),
         "a fixed widget stands among the plan add buttons");
 
     static_assert(
-        blockClearOfFixed(
-            planCardWidget(Column::Todo, 0),
+        isBlockClearOfFixed(
+            getPlanCardWidget(Column::Todo, 0),
             kEveryColumn.size() * kMaxCardsPerColumn),
         "a fixed widget stands among the plan cards");
 

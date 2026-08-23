@@ -34,15 +34,15 @@ namespace antwika::solver
         Included,
     };
 
-    [[nodiscard]] std::size_t tileToIndex(tilemap::Tile tile);
+    [[nodiscard]] std::size_t getTileToIndex(tilemap::Tile tile);
 
-    [[nodiscard]] tilemap::Tile tileFromIndex(std::size_t value);
+    [[nodiscard]] tilemap::Tile getTileFromIndex(std::size_t value);
 
-    [[nodiscard]] std::vector<FaceSeam> faceAdjacency(
+    [[nodiscard]] std::vector<FaceSeam> getFaceAdjacency(
         const std::vector<voxelmap::FaceRef> &faces,
         CornerSeams corners = CornerSeams::Included);
 
-    [[nodiscard]] std::vector<FaceSeam> satisfiedSeams(
+    [[nodiscard]] std::vector<FaceSeam> getSatisfiedSeams(
         const std::vector<voxelmap::FaceRef> &faces,
         std::span<const tilemap::Tile> drawnTiles,
         const tile::TileRules &rules,
@@ -51,32 +51,32 @@ namespace antwika::solver
     [[nodiscard]] bool isCornerSeam(
         const std::vector<voxelmap::FaceRef> &faces, const FaceSeam &seam);
 
-    [[nodiscard]] std::vector<FaceSeam> sameLevelSeams(
+    [[nodiscard]] std::vector<FaceSeam> getSameLevelSeams(
         const std::vector<voxelmap::FaceRef> &faces,
         const std::vector<FaceSeam> &seams,
         std::int32_t level);
 
-    [[nodiscard]] std::vector<FaceSeam> crossLevelSeams(
+    [[nodiscard]] std::vector<FaceSeam> getCrossLevelSeams(
         const std::vector<voxelmap::FaceRef> &faces,
         const std::vector<FaceSeam> &seams,
         std::int32_t level);
 
-    [[nodiscard]] std::optional<std::vector<tilemap::Tile>> solvedTiles(
+    [[nodiscard]] std::optional<std::vector<tilemap::Tile>> getSolvedTiles(
         const std::vector<voxelmap::FaceRef> &faces,
         const tile::TileRules &rules,
         CornerSeams corners = CornerSeams::Included);
 
-    [[nodiscard]] TileSolve solveTiles(
+    [[nodiscard]] TileSolve getSolveTiles(
         const std::vector<voxelmap::FaceRef> &faces,
         const tile::TileRules &rules,
         CornerSeams corners = CornerSeams::Included);
 
-    [[nodiscard]] std::vector<WeaveGap> missingRules(
+    [[nodiscard]] std::vector<WeaveGap> getMissingRules(
         const std::vector<voxelmap::FaceRef> &faces,
         const tile::TileRules &rules,
         CornerSeams corners = CornerSeams::Included);
 
-    [[nodiscard]] std::string weaveErrorMessage(
+    [[nodiscard]] std::string getWeaveErrorMessage(
         const std::vector<voxelmap::FaceRef> &faces,
         const tile::TileRules &rules,
         const TileSolve &solve,

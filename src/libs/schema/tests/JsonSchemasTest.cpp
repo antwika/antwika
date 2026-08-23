@@ -6,29 +6,29 @@
 
 #include "antwika/schema/JsonSchemas.hpp"
 
-using antwika::schema::boundedCountSchema;
-using antwika::schema::coordinateSchema;
-using antwika::schema::countSchema;
-using antwika::schema::documentSchema;
-using antwika::schema::objectSchema;
-using antwika::schema::requiredSchema;
+using antwika::schema::getBoundedCountSchema;
+using antwika::schema::getCoordinateSchema;
+using antwika::schema::getCountSchema;
+using antwika::schema::getDocumentSchema;
+using antwika::schema::getObjectSchema;
+using antwika::schema::getRequiredSchema;
 using antwika::schema::validatorFor;
-using antwika::schema::wordSchema;
+using antwika::schema::getWordSchema;
 
 namespace
 {
-    nlohmann::json pairSchema()
+    nlohmann::json getPairSchema()
     {
-        nlohmann::json schema = documentSchema("a pair", {"x", "y"});
-        schema["properties"]["x"] = countSchema();
-        schema["properties"]["y"] = countSchema();
+        nlohmann::json schema = getDocumentSchema("a pair", {"x", "y"});
+        schema["properties"]["x"] = getCountSchema();
+        schema["properties"]["y"] = getCountSchema();
         return schema;
     }
 }
 
 TEST(JsonSchemasTest, CountSchema_IsAWholeNumberThatIsNeverNegative)
 {
-    const auto shape = countSchema();
+    const auto shape = getCountSchema();
 
     EXPECT_EQ(shape.at("type"), "integer");
     EXPECT_EQ(shape.at("minimum"), 0);
@@ -36,12 +36,12 @@ TEST(JsonSchemasTest, CountSchema_IsAWholeNumberThatIsNeverNegative)
 
 TEST(JsonSchemasTest, CountSchema_NamesNoLargestValue)
 {
-    EXPECT_FALSE(countSchema().contains("maximum"));
+    EXPECT_FALSE(getCountSchema().contains("maximum"));
 }
 
 TEST(JsonSchemasTest, BoundedCountSchema_KeepsTheCountAndAddsTheBound)
 {
-    const auto shape = boundedCountSchema(7);
+    const auto shape = getBoundedCountSchema(7);
 
     EXPECT_EQ(shape.at("type"), "integer");
     EXPECT_EQ(shape.at("minimum"), 0);
@@ -52,12 +52,12 @@ TEST(JsonSchemasTest, BoundedCountSchema_CarriesAWholeInt64)
 {
     const auto largest = std::numeric_limits<std::int64_t>::max();
 
-    EXPECT_EQ(boundedCountSchema(largest).at("maximum"), largest);
+    EXPECT_EQ(getBoundedCountSchema(largest).at("maximum"), largest);
 }
 
 TEST(JsonSchemasTest, CoordinateSchema_IsBoundedByWhatAnInt32Holds)
 {
-    const auto shape = coordinateSchema();
+    const auto shape = getCoordinateSchema();
 
     EXPECT_EQ(shape.at("type"), "integer");
     EXPECT_EQ(shape.at("minimum"),
@@ -68,7 +68,7 @@ TEST(JsonSchemasTest, CoordinateSchema_IsBoundedByWhatAnInt32Holds)
 
 TEST(JsonSchemasTest, WordSchema_ConstrainsNothingButTheType)
 {
-    const auto shape = wordSchema();
+    const auto shape = getWordSchema();
 
     EXPECT_EQ(shape.at("type"), "string");
     EXPECT_EQ(shape.size(), 1U);
@@ -76,7 +76,7 @@ TEST(JsonSchemasTest, WordSchema_ConstrainsNothingButTheType)
 
 TEST(JsonSchemasTest, RequiredSchema_ListsTheMembersInTheOrderGiven)
 {
-    const auto shape = requiredSchema({"magic", "cells"});
+    const auto shape = getRequiredSchema({"magic", "cells"});
 
     ASSERT_TRUE(shape.is_array());
     ASSERT_EQ(shape.size(), 2U);
@@ -86,21 +86,21 @@ TEST(JsonSchemasTest, RequiredSchema_ListsTheMembersInTheOrderGiven)
 
 TEST(JsonSchemasTest, RequiredSchema_ListsNothingForNoMembers)
 {
-    EXPECT_EQ(requiredSchema({}), nlohmann::json::array());
+    EXPECT_EQ(getRequiredSchema({}), nlohmann::json::array());
 }
 
 TEST(JsonSchemasTest, ObjectSchema_IsAClosedObjectOverTheMembersNamed)
 {
-    const auto shape = objectSchema({"x", "y"});
+    const auto shape = getObjectSchema({"x", "y"});
 
     EXPECT_EQ(shape.at("type"), "object");
     EXPECT_FALSE(shape.at("additionalProperties").get<bool>());
-    EXPECT_EQ(shape.at("required"), requiredSchema({"x", "y"}));
+    EXPECT_EQ(shape.at("required"), getRequiredSchema({"x", "y"}));
 }
 
 TEST(JsonSchemasTest, ObjectSchema_NamesNoDialectAndNoTitle)
 {
-    const auto shape = objectSchema({"x"});
+    const auto shape = getObjectSchema({"x"});
 
     EXPECT_FALSE(shape.contains("$schema"));
     EXPECT_FALSE(shape.contains("title"));
@@ -108,11 +108,11 @@ TEST(JsonSchemasTest, ObjectSchema_NamesNoDialectAndNoTitle)
 
 TEST(JsonSchemasTest, DocumentSchema_KeepsTheObjectAndSaysWhatItIs)
 {
-    const auto shape = documentSchema("antwika something", {"x"});
+    const auto shape = getDocumentSchema("antwika something", {"x"});
 
     EXPECT_EQ(shape.at("type"), "object");
     EXPECT_FALSE(shape.at("additionalProperties").get<bool>());
-    EXPECT_EQ(shape.at("required"), requiredSchema({"x"}));
+    EXPECT_EQ(shape.at("required"), getRequiredSchema({"x"}));
     EXPECT_EQ(shape.at("$schema"),
               "http://json-schema.org/draft-07/schema#");
     EXPECT_EQ(shape.at("title"), "antwika something");
@@ -122,17 +122,17 @@ TEST(JsonSchemasTest, ValidatorFor_AcceptsADocumentThatFitsTheSchema)
 {
     const nlohmann::json document{{"x", 1}, {"y", 2}};
 
-    EXPECT_NO_THROW(validatorFor<pairSchema>().validate(document));
+    EXPECT_NO_THROW(validatorFor<getPairSchema>().validate(document));
 }
 
 TEST(JsonSchemasTest, ValidatorFor_RefusesADocumentThatDoesNot)
 {
     const nlohmann::json document{{"x", 1}};
 
-    EXPECT_ANY_THROW(validatorFor<pairSchema>().validate(document));
+    EXPECT_ANY_THROW(validatorFor<getPairSchema>().validate(document));
 }
 
 TEST(JsonSchemasTest, ValidatorFor_AnswersWithTheOneValidator)
 {
-    EXPECT_EQ(&validatorFor<pairSchema>(), &validatorFor<pairSchema>());
+    EXPECT_EQ(&validatorFor<getPairSchema>(), &validatorFor<getPairSchema>());
 }

@@ -36,12 +36,12 @@ namespace antwika::solver::weavedetail
     using DomainKey = std::pair<tilemap::Atlas, voxel::Kind>;
 
     [[nodiscard]] std::map<DomainKey, std::set<tilemap::Tile>>
-    ruledTilesByDomain(
+    getRuledTilesByDomain(
         const tile::TileRules &rules);
 
     [[nodiscard]] std::size_t faceAlong(const gfx::Vec3 direction);
 
-    [[nodiscard]] bool atCubeFace(
+    [[nodiscard]] bool isAtCubeFace(
         voxel::VoxelPosition position, gfx::Vec3 direction);
 
     struct FaceEdge final
@@ -51,7 +51,7 @@ namespace antwika::solver::weavedetail
         bool atRim = false;
     };
 
-        [[nodiscard]] voxel::VoxelPosition offsetBy(
+        [[nodiscard]] voxel::VoxelPosition getOffsetBy(
             voxel::VoxelPosition fromPosition, gfx::Vec3 offset);
 
         [[nodiscard]] gfx::Vec3 acrossOf(const std::size_t side);
@@ -72,14 +72,14 @@ namespace antwika::solver::weavedetail
             const tilemap::Tile thereTile,
             const tilemap::TileEdge thereEdge);
 
-        [[nodiscard]] voxel::Side sideTowards(
+        [[nodiscard]] voxel::Side getSideTowards(
             const std::size_t face, const gfx::Vec3 direction);
 
-        [[nodiscard]] bool sameSurface(
+        [[nodiscard]] bool isSameSurface(
             const voxelmap::FaceRef &oneFace,
             const voxelmap::FaceRef &otherFace);
 
-        [[nodiscard]] bool sameSurface(
+        [[nodiscard]] bool isSameSurface(
             const std::map<voxelmap::FaceRef, std::size_t> &faceIndexes,
             const std::vector<voxelmap::FaceRef> &faces,
             const voxelmap::FaceRef placeFace,
@@ -90,12 +90,12 @@ namespace antwika::solver::weavedetail
             const std::vector<voxelmap::FaceRef> &faces,
             const voxelmap::FaceRef face);
 
-        [[nodiscard]] std::map<voxel::Corner, bool> cornersBeyond(
+        [[nodiscard]] std::map<voxel::Corner, bool> getCornersBeyond(
             const std::map<voxelmap::FaceRef, std::size_t> &faceIndexes,
             const std::vector<voxelmap::FaceRef> &faces,
             const voxelmap::FaceRef face);
 
-        [[nodiscard]] std::map<voxelmap::FaceRef, std::size_t> facesByPlace(
+        [[nodiscard]] std::map<voxelmap::FaceRef, std::size_t> getFacesByPlace(
             const std::vector<voxelmap::FaceRef> &faces);
 
 }

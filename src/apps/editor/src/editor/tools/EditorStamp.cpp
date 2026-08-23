@@ -32,7 +32,7 @@ namespace antwika::editor
                     .y = offset.y,
                     .z = stampCorner.z + offset.z};
 
-                document.map.voxels = voxel::withRampsRebuilt(
+                document.map.voxels = voxel::getWithRampsRebuilt(
                     voxel::withBlockAt(
                         document.map.voxels,
                         cornerPosition,
@@ -57,12 +57,12 @@ namespace antwika::editor
             return;
         }
 
-        const auto position = voxelmap::cellUnder(
+        const auto position = voxelmap::getCellUnder(
             worldCamera(),
             worldRotation(),
             camera::kCanvasSize,
             pointer.pointerOnCanvas,
-            antwika::voxel::cubeTop(editLevel));
+            antwika::voxel::getCubeTop(editLevel));
 
         if (!position.has_value())
         {
@@ -107,7 +107,7 @@ namespace antwika::editor
         stampFromPosition.reset();
     }
 
-    std::vector<voxel::VoxelPosition> Editor::stampGhost(
+    std::vector<voxel::VoxelPosition> Editor::getStampGhost(
         const voxel::VoxelPosition position) const
     {
         std::vector<voxel::VoxelPosition> positions;

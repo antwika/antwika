@@ -27,8 +27,8 @@ namespace antwika::app
         {
             logger.log(
                 Level::Info,
-                spec.name + " on backend: " + std::string(backend.name())
-                    + ", input: " + std::string(inputBackend.name()));
+                spec.name + " on backend: " + std::string(backend.getName())
+                    + ", input: " + std::string(inputBackend.getName()));
 
             WindowSpec window;
             window.title = spec.windowTitle;
@@ -38,7 +38,7 @@ namespace antwika::app
             return backend.createWindow(window);
         }
 
-        InputPipelineOptions attachedTo(
+        InputPipelineOptions getAttachedTo(
             const WindowedSessionSpec &spec,
             const WindowPointerMapping &mapping)
         {
@@ -61,30 +61,30 @@ namespace antwika::app
         IInputBackend &inputBackend,
         const WindowedSessionSpec &spec)
         : openedWindow(announcedWindow(logger, backend, inputBackend, spec)),
-          scriptedSource(loadReplayEvents(spec.replayPath, spec.demoReplay)),
+          scriptedSource(getLoadReplayEvents(spec.replayPath, spec.demoReplay)),
           mapping(*openedWindow, spec.canvasSize),
           pipeline(
               scriptedSource,
               inputBackend,
               encodingCodec,
-              attachedTo(spec, mapping)),
-          windowSource(pipeline, backend, openedWindow->id()),
+              getAttachedTo(spec, mapping)),
+          windowSource(pipeline, backend, openedWindow->getId()),
           canvasSize(spec.canvasSize),
-          headless(backend.name() == kHeadlessBackendName)
+          headless(backend.getName() == kHeadlessBackendName)
     {
     }
 
-    IWindow &WindowedSession::window() const noexcept
+    IWindow &WindowedSession::getWindow() const noexcept
     {
         return *openedWindow;
     }
 
-    Size WindowedSession::canvas() const noexcept
+    Size WindowedSession::getCanvas() const noexcept
     {
         return canvasSize;
     }
 
-    const InputEventCodec &WindowedSession::codec() const noexcept
+    const InputEventCodec &WindowedSession::getCodec() const noexcept
     {
         return encodingCodec;
     }

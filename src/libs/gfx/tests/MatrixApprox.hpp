@@ -11,7 +11,7 @@ namespace antwika::gfx::tests
 
     constexpr float kEpsilon = 1e-5F;
 
-    [[nodiscard]] inline ::testing::AssertionResult approxEqual(
+    [[nodiscard]] inline ::testing::AssertionResult getApproxEqual(
         const Vec4 &leftVector, const Vec4 &rightVector)
     {
         for (int index = 0; index < 4; ++index)
@@ -27,19 +27,19 @@ namespace antwika::gfx::tests
         return ::testing::AssertionSuccess();
     }
 
-    [[nodiscard]] inline ::testing::AssertionResult approxEqual(
+    [[nodiscard]] inline ::testing::AssertionResult getApproxEqual(
         const Vec3 &leftVector, const Vec3 &rightVector)
     {
-        return approxEqual(Vec4(leftVector, 0.0F), Vec4(rightVector, 0.0F));
+        return getApproxEqual(Vec4(leftVector, 0.0F), Vec4(rightVector, 0.0F));
     }
 
-    [[nodiscard]] inline ::testing::AssertionResult approxEqual(
+    [[nodiscard]] inline ::testing::AssertionResult getApproxEqual(
         const Mat4 &leftVector, const Mat4 &rightVector)
     {
         for (int column = 0; column < 4; ++column)
         {
             const auto result =
-                approxEqual(leftVector[column], rightVector[column]);
+                getApproxEqual(leftVector[column], rightVector[column]);
 
             if (!result)
             {

@@ -32,7 +32,7 @@ namespace antwika::tile
 
             EXPECT_FALSE(
                 rules.allows(kGrassTile, kOutwardEdge, kWallTile));
-            EXPECT_EQ(rules.size(), 0U);
+            EXPECT_EQ(rules.getSize(), 0U);
         }
 
         TEST(TileRulesTest, Toggle_AllowsANeighbourItIsToldOf)
@@ -54,7 +54,7 @@ namespace antwika::tile
 
             EXPECT_FALSE(
                 rules.allows(kGrassTile, kOutwardEdge, kWallTile));
-            EXPECT_EQ(rules.size(), 0U);
+            EXPECT_EQ(rules.getSize(), 0U);
         }
 
         TEST(TileRulesTest, SetAllows_SaysWhatItIsAskedAtBothEnds)
@@ -67,7 +67,7 @@ namespace antwika::tile
             EXPECT_TRUE(
                 rules.allows(
                     kWallTile,
-                    voxel::facing(kOutwardEdge),
+                    voxel::getFacing(kOutwardEdge),
                     kGrassTile));
         }
 
@@ -79,7 +79,7 @@ namespace antwika::tile
             rules.setAllows(kGrassTile, kOutwardEdge, kWallTile, true);
 
             EXPECT_TRUE(rules.allows(kGrassTile, kOutwardEdge, kWallTile));
-            EXPECT_EQ(rules.size(), 2U);
+            EXPECT_EQ(rules.getSize(), 2U);
         }
 
         TEST(TileRulesTest, SetAllows_TakesBothEndsBackWhenForbidding)
@@ -93,9 +93,9 @@ namespace antwika::tile
             EXPECT_FALSE(
                 rules.allows(
                     kWallTile,
-                    voxel::facing(kOutwardEdge),
+                    voxel::getFacing(kOutwardEdge),
                     kGrassTile));
-            EXPECT_EQ(rules.size(), 0U);
+            EXPECT_EQ(rules.getSize(), 0U);
         }
 
         TEST(TileRulesTest, Toggle_KeepsTheEdgesOfATileApart)
@@ -125,7 +125,7 @@ namespace antwika::tile
                 rules.toggle(kGrassTile, edge, kWallTile);
             }
 
-            EXPECT_EQ(rules.size(), tilemap::kEveryTileEdge.size() * 2);
+            EXPECT_EQ(rules.getSize(), tilemap::kEveryTileEdge.size() * 2);
 
             for (const auto edge : tilemap::kEveryTileEdge)
             {
@@ -166,9 +166,9 @@ namespace antwika::tile
             rules.toggle(kGrassTile, kOutwardEdge, kWaterTile);
 
             EXPECT_THAT(
-                rules.allowed(kGrassTile, kOutwardEdge),
+                rules.getAllowed(kGrassTile, kOutwardEdge),
                 testing::UnorderedElementsAre(kWallTile, kWaterTile));
-            EXPECT_EQ(rules.size(), 4U);
+            EXPECT_EQ(rules.getSize(), 4U);
         }
 
         TEST(TileRulesTest, Allowed_HoldsNothingForAnEdgeNeverSpokenOf)
@@ -176,7 +176,7 @@ namespace antwika::tile
             const tile::TileRules rules;
 
             EXPECT_THAT(
-                rules.allowed(kGrassTile, kInwardEdge),
+                rules.getAllowed(kGrassTile, kInwardEdge),
                 testing::IsEmpty());
         }
 
@@ -192,7 +192,7 @@ namespace antwika::tile
             EXPECT_TRUE(
                 rules.allows(
                     kWallTile,
-                    voxel::facing(kOutwardEdge),
+                    voxel::getFacing(kOutwardEdge),
                     kGrassTile));
         }
 
@@ -206,8 +206,8 @@ namespace antwika::tile
             EXPECT_FALSE(rules.allows(kGrassTile, kOutwardEdge, kWallTile));
             EXPECT_FALSE(
                 rules.allows(
-                    kWallTile, voxel::facing(kOutwardEdge), kGrassTile));
-            EXPECT_EQ(rules.size(), 0U);
+                    kWallTile, voxel::getFacing(kOutwardEdge), kGrassTile));
+            EXPECT_EQ(rules.getSize(), 0U);
         }
 
         TEST(TileRulesTest, Toggle_SquaresUpAnEndLaidOnItsOwn)
@@ -220,20 +220,20 @@ namespace antwika::tile
             EXPECT_FALSE(rules.allows(kGrassTile, kOutwardEdge, kWallTile));
             EXPECT_FALSE(
                 rules.allows(
-                    kWallTile, voxel::facing(kOutwardEdge), kGrassTile));
+                    kWallTile, voxel::getFacing(kOutwardEdge), kGrassTile));
         }
 
         TEST(TileRulesTest, Toggle_SquaresUpTheFarEndLaidOnItsOwn)
         {
             tile::TileRules rules;
 
-            rules.allow(kWallTile, voxel::facing(kOutwardEdge), kGrassTile);
+            rules.allow(kWallTile, voxel::getFacing(kOutwardEdge), kGrassTile);
             rules.toggle(kGrassTile, kOutwardEdge, kWallTile);
 
             EXPECT_TRUE(rules.allows(kGrassTile, kOutwardEdge, kWallTile));
             EXPECT_TRUE(
                 rules.allows(
-                    kWallTile, voxel::facing(kOutwardEdge), kGrassTile));
+                    kWallTile, voxel::getFacing(kOutwardEdge), kGrassTile));
         }
 
         TEST(TileRulesTest, Allow_SaysNothingOfTheNeighbour)
@@ -245,7 +245,7 @@ namespace antwika::tile
             EXPECT_TRUE(rules.allows(kGrassTile, kOutwardEdge, kWallTile));
             EXPECT_FALSE(
                 rules.allows(
-                    kWallTile, voxel::facing(kOutwardEdge), kGrassTile));
+                    kWallTile, voxel::getFacing(kOutwardEdge), kGrassTile));
         }
 
         TEST(TileRulesTest, Toggle_LeavesTheBoundaryEdgesAloneEntirely)
@@ -265,12 +265,12 @@ namespace antwika::tile
                     kWallTile);
             }
 
-            for (const auto &rule : rules.allRules())
+            for (const auto &rule : rules.getAllRules())
             {
                 EXPECT_EQ(rule.edge.edge, voxel::EdgeKind::Interior);
             }
 
-            EXPECT_EQ(rules.size(), 8U);
+            EXPECT_EQ(rules.getSize(), 8U);
         }
 
         TEST(TileRulesTest, Toggle_KeepsTheKindOfEdgeItIsGiven)
@@ -281,7 +281,7 @@ namespace antwika::tile
 
                 rules.toggle(kGrassTile, edge, kWallTile);
 
-                for (const auto &rule : rules.allRules())
+                for (const auto &rule : rules.getAllRules())
                 {
                     EXPECT_EQ(rule.edge.edge, edge.edge);
                 }
@@ -307,7 +307,7 @@ namespace antwika::tile
             rules.toggle(kGrassTile, kOutwardEdge, kWallTile);
 
             EXPECT_THAT(
-                rules.allowed(kGrassTile, kOutwardEdge),
+                rules.getAllowed(kGrassTile, kOutwardEdge),
                 testing::UnorderedElementsAre(kWaterTile));
         }
 
@@ -321,7 +321,7 @@ namespace antwika::tile
             EXPECT_FALSE(rules.hasNoRule(kGrassTile, kOutwardEdge));
             EXPECT_FALSE(rules.allows(kGrassTile, kOutwardEdge, kWallTile));
             EXPECT_THAT(
-                rules.allowed(kGrassTile, kOutwardEdge), testing::IsEmpty());
+                rules.getAllowed(kGrassTile, kOutwardEdge), testing::IsEmpty());
         }
 
         TEST(TileRulesTest, ForbidAll_HasARuleForEitherAtlas)
@@ -364,7 +364,7 @@ namespace antwika::tile
 
             EXPECT_TRUE(
                 rules.allows(
-                    kWallTile, voxel::facing(kOutwardEdge), kGrassTile));
+                    kWallTile, voxel::getFacing(kOutwardEdge), kGrassTile));
         }
 
         TEST(TileRulesTest, ClearRule_LeavesAnEdgeSilentAgain)
@@ -448,7 +448,7 @@ namespace antwika::tile
             const tile::TileRules rules;
 
             EXPECT_FALSE(
-                rules.corner(kGrassTile, voxel::Corner::TopLeft).has_value());
+                rules.getCorner(kGrassTile, voxel::Corner::TopLeft).has_value());
             EXPECT_TRUE(rules.cornersOf(kGrassTile).empty());
         }
 
@@ -459,9 +459,9 @@ namespace antwika::tile
             rules.setCorner(kGrassTile, voxel::Corner::TopLeft, true);
             rules.setCorner(kGrassTile, voxel::Corner::BottomRight, false);
 
-            EXPECT_EQ(rules.corner(kGrassTile, voxel::Corner::TopLeft), true);
+            EXPECT_EQ(rules.getCorner(kGrassTile, voxel::Corner::TopLeft), true);
             EXPECT_EQ(
-                rules.corner(kGrassTile, voxel::Corner::BottomRight), false);
+                rules.getCorner(kGrassTile, voxel::Corner::BottomRight), false);
             EXPECT_EQ(rules.cornersOf(kGrassTile).size(), 2U);
         }
 
@@ -473,7 +473,7 @@ namespace antwika::tile
             rules.setCorner(kGrassTile, voxel::Corner::TopLeft, std::nullopt);
 
             EXPECT_FALSE(
-                rules.corner(kGrassTile, voxel::Corner::TopLeft).has_value());
+                rules.getCorner(kGrassTile, voxel::Corner::TopLeft).has_value());
             EXPECT_TRUE(rules.cornersOf(kGrassTile).empty());
         }
 
@@ -484,7 +484,7 @@ namespace antwika::tile
             rules.setCorner(kGrassTile, voxel::Corner::TopLeft, true);
 
             EXPECT_FALSE(
-                rules.corner(kWallTile, voxel::Corner::TopLeft).has_value());
+                rules.getCorner(kWallTile, voxel::Corner::TopLeft).has_value());
         }
 
         TEST(TileRulesTest, SetCorner_LeavesTheEdgesOfATileAlone)
@@ -525,7 +525,7 @@ namespace antwika::tile
         rules.setKind(tile, voxel::Kind::Normal);
 
         EXPECT_EQ(rules.kindOf(tile), voxel::Kind::Normal);
-        EXPECT_TRUE(rules.kinds().empty());
+        EXPECT_TRUE(rules.getKinds().empty());
     }
 
     TEST(TileRulesTest, Kinds_ReadsOutInAnOrderTheTilesSettle)
@@ -541,7 +541,7 @@ namespace antwika::tile
         rules.setKind(laterTile, voxel::Kind::Water);
         rules.setKind(soonerTile, voxel::Kind::Ramp);
 
-        const auto entries = rules.kinds();
+        const auto entries = rules.getKinds();
 
         ASSERT_EQ(entries.size(), 2U);
         EXPECT_EQ(entries.front().first, soonerTile);
@@ -575,7 +575,7 @@ namespace antwika::tile
         rules.setLevel(tile, voxel::StairHalf::Any);
 
         EXPECT_EQ(rules.levelOf(tile), voxel::StairHalf::Any);
-        EXPECT_TRUE(rules.levels().empty());
+        EXPECT_TRUE(rules.getLevels().empty());
     }
 
     TEST(TileRulesTest, PartOf_DrawsATileForEitherPartUntilItIsSaid)
@@ -609,7 +609,7 @@ namespace antwika::tile
 
         EXPECT_EQ(
             rules.partOf(tile), antwika::voxel::StairPart::Any);
-        EXPECT_TRUE(rules.parts().empty());
+        EXPECT_TRUE(rules.getParts().empty());
     }
 
     TEST(TileRulesTest, FacingOf_DrawsATileForAnyFlightUntilItIsSaid)
@@ -639,7 +639,7 @@ namespace antwika::tile
         rules.setFacing(tile, voxel::Facing::Any);
 
         EXPECT_EQ(rules.facingOf(tile), voxel::Facing::Any);
-        EXPECT_TRUE(rules.facings().empty());
+        EXPECT_TRUE(rules.getFacings().empty());
     }
 
     TEST(TileRulesTest, BoundaryOnly_HoldsAnEdgeMeetingOnlyTheBoundary)
@@ -651,7 +651,7 @@ namespace antwika::tile
 
         rules.setAllowsBoundary(tile, edge, true);
 
-        EXPECT_TRUE(rules.boundaryOnly(tile, edge));
+        EXPECT_TRUE(rules.isBoundaryOnly(tile, edge));
     }
 
     TEST(TileRulesTest, BoundaryOnly_LetsGoOfAnEdgeATileMayMeet)
@@ -667,7 +667,7 @@ namespace antwika::tile
         rules.setAllowsBoundary(tile, edge, true);
         rules.allow(tile, edge, otherTile);
 
-        EXPECT_FALSE(rules.boundaryOnly(tile, edge));
+        EXPECT_FALSE(rules.isBoundaryOnly(tile, edge));
     }
 
     TEST(TileRulesTest, BoundaryOnly_SaysNothingOfASilentEdge)
@@ -676,7 +676,7 @@ namespace antwika::tile
         const tilemap::Tile tile{.atlas = tilemap::Atlas::Wall, .index = 0};
 
         EXPECT_FALSE(
-            rules.boundaryOnly(
+            rules.isBoundaryOnly(
                 tile,
                 tilemap::TileEdge{
                     .side = voxel::Side::Top,
@@ -693,7 +693,7 @@ namespace antwika::tile
         rules.forbidAll(tile, edge);
 
         EXPECT_TRUE(rules.isForbidden(tile, edge));
-        EXPECT_FALSE(rules.boundaryOnly(tile, edge));
+        EXPECT_FALSE(rules.isBoundaryOnly(tile, edge));
     }
 
 }

@@ -28,9 +28,9 @@ TEST(MouseTest, Position_ReportsTheOriginBeforeAnyEvent)
 {
     const Mouse mouse;
 
-    EXPECT_EQ(mouse.position(), Position{});
-    EXPECT_EQ(mouse.delta(), Offset{});
-    EXPECT_EQ(mouse.scroll(), Offset{});
+    EXPECT_EQ(mouse.getPosition(), Position{});
+    EXPECT_EQ(mouse.getDelta(), Offset{});
+    EXPECT_EQ(mouse.getScroll(), Offset{});
     EXPECT_FALSE(mouse.isDown(MouseButton::Left));
 }
 
@@ -40,8 +40,8 @@ TEST(MouseTest, Apply_ReportsNoDeltaForTheFirstPositionItLearns)
 
     mouse.apply(PointerMoved{.position = {.x = 400, .y = 300}});
 
-    EXPECT_EQ(mouse.position(), (Position{.x = 400, .y = 300}));
-    EXPECT_EQ(mouse.delta(), Offset{});
+    EXPECT_EQ(mouse.getPosition(), (Position{.x = 400, .y = 300}));
+    EXPECT_EQ(mouse.getDelta(), Offset{});
 }
 
 TEST(MouseTest, Apply_ReportsTheDeltaBetweenTwoPositions)
@@ -51,8 +51,8 @@ TEST(MouseTest, Apply_ReportsTheDeltaBetweenTwoPositions)
 
     mouse.apply(PointerMoved{.position = {.x = 410, .y = 290}});
 
-    EXPECT_EQ(mouse.position(), (Position{.x = 410, .y = 290}));
-    EXPECT_EQ(mouse.delta(), (Offset{.x = 10, .y = -10}));
+    EXPECT_EQ(mouse.getPosition(), (Position{.x = 410, .y = 290}));
+    EXPECT_EQ(mouse.getDelta(), (Offset{.x = 10, .y = -10}));
 }
 
 TEST(MouseTest, Apply_SumsEveryMovementWithinOneTick)
@@ -63,7 +63,7 @@ TEST(MouseTest, Apply_SumsEveryMovementWithinOneTick)
     mouse.apply(PointerMoved{.position = {.x = 3, .y = 1}});
     mouse.apply(PointerMoved{.position = {.x = 8, .y = 4}});
 
-    EXPECT_EQ(mouse.delta(), (Offset{.x = 8, .y = 4}));
+    EXPECT_EQ(mouse.getDelta(), (Offset{.x = 8, .y = 4}));
 }
 
 TEST(MouseTest, Apply_MarksAPressedButtonHeldAndPressed)
@@ -97,7 +97,7 @@ TEST(MouseTest, AnyDown_ReportsNothingHeldBeforeAnyPress)
 
     mouse.apply(PointerMoved{.position = {.x = 1, .y = 2}});
 
-    EXPECT_FALSE(mouse.anyDown());
+    EXPECT_FALSE(mouse.isAnyDown());
 }
 
 TEST(MouseTest, AnyDown_ReportsAHeldButtonWithoutBeingToldWhichOne)
@@ -106,11 +106,11 @@ TEST(MouseTest, AnyDown_ReportsAHeldButtonWithoutBeingToldWhichOne)
 
     mouse.apply(PointerButtonPressed{.button = MouseButton::Middle});
 
-    EXPECT_TRUE(mouse.anyDown());
+    EXPECT_TRUE(mouse.isAnyDown());
 
     mouse.apply(PointerButtonReleased{.button = MouseButton::Middle});
 
-    EXPECT_FALSE(mouse.anyDown());
+    EXPECT_FALSE(mouse.isAnyDown());
 }
 
 TEST(MouseTest, AnyDown_StaysTrueWhileOneOfTwoButtonsIsStillHeld)
@@ -121,7 +121,7 @@ TEST(MouseTest, AnyDown_StaysTrueWhileOneOfTwoButtonsIsStillHeld)
 
     mouse.apply(PointerButtonReleased{.button = MouseButton::Left});
 
-    EXPECT_TRUE(mouse.anyDown());
+    EXPECT_TRUE(mouse.isAnyDown());
 }
 
 TEST(MouseTest, Apply_TakesThePositionAPressReports)
@@ -132,8 +132,8 @@ TEST(MouseTest, Apply_TakesThePositionAPressReports)
         PointerButtonPressed{
             .button = MouseButton::Left, .position = {.x = 12, .y = 34}});
 
-    EXPECT_EQ(mouse.position(), (Position{.x = 12, .y = 34}));
-    EXPECT_EQ(mouse.delta(), Offset{});
+    EXPECT_EQ(mouse.getPosition(), (Position{.x = 12, .y = 34}));
+    EXPECT_EQ(mouse.getDelta(), Offset{});
 }
 
 TEST(MouseTest, Apply_TakesThePositionAReleaseReports)
@@ -145,8 +145,8 @@ TEST(MouseTest, Apply_TakesThePositionAReleaseReports)
         PointerButtonReleased{
             .button = MouseButton::Left, .position = {.x = 14, .y = 10}});
 
-    EXPECT_EQ(mouse.position(), (Position{.x = 14, .y = 10}));
-    EXPECT_EQ(mouse.delta(), (Offset{.x = 4, .y = 0}));
+    EXPECT_EQ(mouse.getPosition(), (Position{.x = 14, .y = 10}));
+    EXPECT_EQ(mouse.getDelta(), (Offset{.x = 4, .y = 0}));
 }
 
 TEST(MouseTest, Apply_SumsScrollNotchesOnBothAxes)
@@ -156,7 +156,7 @@ TEST(MouseTest, Apply_SumsScrollNotchesOnBothAxes)
     mouse.apply(PointerScrolled{.horizontal = 1, .vertical = 2});
     mouse.apply(PointerScrolled{.horizontal = -3, .vertical = 1});
 
-    EXPECT_EQ(mouse.scroll(), (Offset{.x = -2, .y = 3}));
+    EXPECT_EQ(mouse.getScroll(), (Offset{.x = -2, .y = 3}));
 }
 
 TEST(MouseTest, BeginTick_ClearsTheEdgesTheDeltaAndTheScroll)
@@ -169,8 +169,8 @@ TEST(MouseTest, BeginTick_ClearsTheEdgesTheDeltaAndTheScroll)
 
     mouse.beginTick();
 
-    EXPECT_EQ(mouse.delta(), Offset{});
-    EXPECT_EQ(mouse.scroll(), Offset{});
+    EXPECT_EQ(mouse.getDelta(), Offset{});
+    EXPECT_EQ(mouse.getScroll(), Offset{});
     EXPECT_FALSE(mouse.wasPressed(MouseButton::Left));
 }
 
@@ -184,7 +184,7 @@ TEST(MouseTest, BeginTick_KeepsTheButtonHeldAndThePosition)
     mouse.beginTick();
 
     EXPECT_TRUE(mouse.isDown(MouseButton::Left));
-    EXPECT_EQ(mouse.position(), (Position{.x = 7, .y = 8}));
+    EXPECT_EQ(mouse.getPosition(), (Position{.x = 7, .y = 8}));
 }
 
 TEST(MouseTest, BeginTick_KeepsTheDeltaMeasuredFromTheLastPosition)
@@ -195,7 +195,7 @@ TEST(MouseTest, BeginTick_KeepsTheDeltaMeasuredFromTheLastPosition)
 
     mouse.apply(PointerMoved{.position = {.x = 105, .y = 100}});
 
-    EXPECT_EQ(mouse.delta(), (Offset{.x = 5, .y = 0}));
+    EXPECT_EQ(mouse.getDelta(), (Offset{.x = 5, .y = 0}));
 }
 
 TEST(MouseTest, BeginTick_ClearsAReleaseEdge)
@@ -218,7 +218,7 @@ TEST(MouseTest, Apply_IgnoresAButtonOutsideTheEnumeration)
     EXPECT_FALSE(mouse.isDown(kUnnamedButton));
     EXPECT_FALSE(mouse.wasPressed(kUnnamedButton));
     EXPECT_FALSE(mouse.wasReleased(kUnnamedButton));
-    EXPECT_EQ(KeyModifiers{}, mouse.pressModifiers(kUnnamedButton));
+    EXPECT_EQ(KeyModifiers{}, mouse.getPressModifiers(kUnnamedButton));
 }
 
 TEST(MouseTest, Apply_IgnoresTheFirstButtonPastTheEnumeration)
@@ -232,8 +232,8 @@ TEST(MouseTest, Apply_IgnoresTheFirstButtonPastTheEnumeration)
 
     EXPECT_FALSE(mouse.isDown(kJustPastTheLastButton));
     EXPECT_FALSE(mouse.wasPressed(kJustPastTheLastButton));
-    EXPECT_FALSE(mouse.anyDown());
-    EXPECT_EQ(KeyModifiers{}, mouse.pressModifiers(kJustPastTheLastButton));
+    EXPECT_FALSE(mouse.isAnyDown());
+    EXPECT_EQ(KeyModifiers{}, mouse.getPressModifiers(kJustPastTheLastButton));
 }
 
 TEST(MouseTest, Apply_IgnoresTheFirstButtonPastTheEnumerationOnRelease)
@@ -253,8 +253,8 @@ TEST(MouseTest, PressModifiers_KeepsWhatOneButtonsPressEdgeCarried)
         PointerButtonPressed{
             .button = MouseButton::Left, .modifiers = {.shift = true}});
 
-    EXPECT_TRUE(mouse.pressModifiers(MouseButton::Left).shift);
-    EXPECT_EQ(KeyModifiers{}, mouse.pressModifiers(MouseButton::Right));
+    EXPECT_TRUE(mouse.getPressModifiers(MouseButton::Left).shift);
+    EXPECT_EQ(KeyModifiers{}, mouse.getPressModifiers(MouseButton::Right));
 }
 
 TEST(MouseTest, BeginTick_ForgetsThePressEdgesModifiers)
@@ -266,7 +266,7 @@ TEST(MouseTest, BeginTick_ForgetsThePressEdgesModifiers)
 
     mouse.beginTick();
 
-    EXPECT_EQ(KeyModifiers{}, mouse.pressModifiers(MouseButton::Left));
+    EXPECT_EQ(KeyModifiers{}, mouse.getPressModifiers(MouseButton::Left));
 }
 
 TEST(MouseTest, Apply_StillTakesThePositionOfAnUnnamedButtonPress)
@@ -277,7 +277,7 @@ TEST(MouseTest, Apply_StillTakesThePositionOfAnUnnamedButtonPress)
         PointerButtonPressed{
             .button = kUnnamedButton, .position = {.x = 3, .y = 4}});
 
-    EXPECT_EQ(mouse.position(), (Position{.x = 3, .y = 4}));
+    EXPECT_EQ(mouse.getPosition(), (Position{.x = 3, .y = 4}));
 }
 
 TEST(MouseTest, Apply_StillTakesThePositionOfAnUnnamedButtonRelease)
@@ -288,5 +288,5 @@ TEST(MouseTest, Apply_StillTakesThePositionOfAnUnnamedButtonRelease)
         PointerButtonReleased{
             .button = kUnnamedButton, .position = {.x = 5, .y = 6}});
 
-    EXPECT_EQ(mouse.position(), (Position{.x = 5, .y = 6}));
+    EXPECT_EQ(mouse.getPosition(), (Position{.x = 5, .y = 6}));
 }

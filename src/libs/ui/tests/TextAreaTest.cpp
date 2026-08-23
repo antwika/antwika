@@ -26,13 +26,13 @@
 using antwika::gfx::Color;
 using antwika::gfx::Point;
 using antwika::gfx::Size;
-using antwika::ui::support::fillsColored;
+using antwika::ui::support::getFillsColored;
 using antwika::ui::support::textsOf;
 using antwika::ui::Context;
 using antwika::ui::DrawList;
 using antwika::ui::DrawText;
 using antwika::ui::FillRect;
-using antwika::ui::fixedSize;
+using antwika::ui::getFixedSize;
 using antwika::ui::Key;
 using antwika::ui::Keyboard;
 using antwika::ui::Pointer;
@@ -52,7 +52,7 @@ namespace
 
     constexpr Size kCanvasSize{.width = 200, .height = 100};
 
-    Theme plainTheme()
+    Theme getPlainTheme()
     {
         return Theme{
             .textColor = kInkColor,
@@ -68,7 +68,7 @@ namespace
 
     [[nodiscard]] DrawList pictureOf(std::string_view text)
     {
-        Context uiContext{kCanvasSize, plainTheme()};
+        Context uiContext{kCanvasSize, getPlainTheme()};
 
         uiContext.textArea(TextAreaSpec{.text = text});
 
@@ -91,12 +91,12 @@ namespace
         return drawnTexts;
     }
 
-    [[nodiscard]] antwika::ui::Frame typeInto(
+    [[nodiscard]] antwika::ui::Frame getTypeInto(
         std::string_view text,
         std::size_t cursor,
         const Keyboard &keyboard)
     {
-        Context uiContext{kCanvasSize, plainTheme(), Pointer{}, keyboard};
+        Context uiContext{kCanvasSize, getPlainTheme(), Pointer{}, keyboard};
 
         uiContext.textArea(TextAreaSpec{
             .widgetId = kCodeWidget,
@@ -112,7 +112,7 @@ TEST(TextAreaTest, TextArea_CutsAWideLineAtThePaneInsteadOfShrinkingIt)
 {
     const std::string line(60, 'x');
 
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.textArea(TextAreaSpec{
         .widgetId = kCodeWidget,
@@ -130,7 +130,7 @@ TEST(TextAreaTest, TextArea_CutsAWideLineAtThePaneInsteadOfShrinkingIt)
 
 TEST(TextAreaTest, TextArea_DrawsOneLinePerLineBreak)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.textArea(TextAreaSpec{.text = "one\ntwo\nthree"});
 
@@ -169,13 +169,13 @@ TEST(TextAreaTest, TextArea_ABlankLineStillTakesUpALine)
 
 TEST(TextAreaTest, TextArea_TheCaretSitsOnTheLineTheCursorIsIn)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.textArea(
         TextAreaSpec{.text = "one\ntwo", .cursor = 5, .focused = true});
 
     const auto commands = uiContext.build().drawList;
-    const auto carets = fillsColored(commands, kCaretColor);
+    const auto carets = getFillsColored(commands, kCaretColor);
 
     ASSERT_EQ(1U, carets.size());
 
@@ -189,14 +189,14 @@ TEST(TextAreaTest, TextArea_TheCaretSitsOnTheLineTheCursorIsIn)
 
 TEST(TextAreaTest, TextArea_ACursorAtALineBreakBelongsToTheLineItEnds)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.textArea(
         TextAreaSpec{.text = "one\ntwo", .cursor = 3, .focused = true});
 
     const auto commands = uiContext.build().drawList;
 
-    ASSERT_EQ(1U, fillsColored(commands, kCaretColor).size());
+    ASSERT_EQ(1U, getFillsColored(commands, kCaretColor).size());
 
     const auto texts = textsOf(commands);
 
@@ -209,7 +209,7 @@ TEST(TextAreaTest, TextArea_AnUnfocusedAreaDrawsNoCaretAndReportsNoEdit)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::Character}, .typedText = "c"}};
 
@@ -217,14 +217,14 @@ TEST(TextAreaTest, TextArea_AnUnfocusedAreaDrawsNoCaretAndReportsNoEdit)
 
     const auto frame = uiContext.build();
 
-    EXPECT_TRUE(fillsColored(frame.drawList, kCaretColor).empty());
+    EXPECT_TRUE(getFillsColored(frame.drawList, kCaretColor).empty());
     EXPECT_FALSE(frame.interactions.edit.has_value());
     EXPECT_EQ(kFieldColor, std::get<FillRect>(frame.drawList.at(0)).color);
 }
 
 TEST(TextAreaTest, TextArea_AFocusedAreaTakesTheFocusedFill)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.textArea(TextAreaSpec{.text = "one", .focused = true});
 
@@ -235,7 +235,7 @@ TEST(TextAreaTest, TextArea_AFocusedAreaTakesTheFocusedFill)
 
 TEST(TextAreaTest, TextArea_APlaceholderShowsOnlyWhileThereIsNothingToShow)
 {
-    Context emptyContext{kCanvasSize, plainTheme()};
+    Context emptyContext{kCanvasSize, getPlainTheme()};
 
     emptyContext.textArea(TextAreaSpec{.placeholder = "write here"});
 
@@ -244,7 +244,7 @@ TEST(TextAreaTest, TextArea_APlaceholderShowsOnlyWhileThereIsNothingToShow)
     ASSERT_EQ(1U, shownTexts.size());
     EXPECT_EQ("write here", shownTexts.at(0));
 
-    Context context{kCanvasSize, plainTheme()};
+    Context context{kCanvasSize, getPlainTheme()};
 
     context.textArea(
         TextAreaSpec{.text = "one", .placeholder = "write here"});
@@ -257,7 +257,7 @@ TEST(TextAreaTest, TextArea_APlaceholderShowsOnlyWhileThereIsNothingToShow)
 
 TEST(TextAreaTest, TextArea_TypingGoesInWhereTheCaretIs)
 {
-    const auto frame = typeInto(
+    const auto frame = getTypeInto(
         "ab\ncd",
         4,
         Keyboard{.keys = {Key::Character}, .typedText = "X"});
@@ -273,7 +273,7 @@ TEST(TextAreaTest, TextArea_TypingGoesInWhereTheCaretIs)
 TEST(TextAreaTest, TextArea_EnterWritesALineBreakRatherThanSubmitting)
 {
     const auto frame =
-        typeInto("ab", 2, Keyboard{.keys = {Key::Activate}});
+        getTypeInto("ab", 2, Keyboard{.keys = {Key::Activate}});
 
     const auto edit = frame.interactions.edit;
 
@@ -286,7 +286,7 @@ TEST(TextAreaTest, TextArea_EnterWritesALineBreakRatherThanSubmitting)
 TEST(TextAreaTest, TextArea_BackspaceTakesALineBreakLikeAnyOtherCharacter)
 {
     const auto frame =
-        typeInto("ab\ncd", 3, Keyboard{.keys = {Key::Backspace}});
+        getTypeInto("ab\ncd", 3, Keyboard{.keys = {Key::Backspace}});
 
     const auto edit = frame.interactions.edit;
 
@@ -298,7 +298,7 @@ TEST(TextAreaTest, TextArea_BackspaceTakesALineBreakLikeAnyOtherCharacter)
 TEST(TextAreaTest, TextArea_MoveUpKeepsTheColumn)
 {
     const auto frame =
-        typeInto("abc\ndef", 6, Keyboard{.keys = {Key::MoveUp}});
+        getTypeInto("abc\ndef", 6, Keyboard{.keys = {Key::MoveUp}});
 
     const auto edit = frame.interactions.edit;
 
@@ -309,7 +309,7 @@ TEST(TextAreaTest, TextArea_MoveUpKeepsTheColumn)
 TEST(TextAreaTest, TextArea_MoveUpStopsAtTheEndOfAShorterLine)
 {
     const auto frame =
-        typeInto("a\nlonger", 7, Keyboard{.keys = {Key::MoveUp}});
+        getTypeInto("a\nlonger", 7, Keyboard{.keys = {Key::MoveUp}});
 
     const auto edit = frame.interactions.edit;
 
@@ -320,7 +320,7 @@ TEST(TextAreaTest, TextArea_MoveUpStopsAtTheEndOfAShorterLine)
 TEST(TextAreaTest, TextArea_MoveUpFromTheFirstLineDoesNothing)
 {
     const auto frame =
-        typeInto("abc\ndef", 1, Keyboard{.keys = {Key::MoveUp}});
+        getTypeInto("abc\ndef", 1, Keyboard{.keys = {Key::MoveUp}});
 
     EXPECT_FALSE(frame.interactions.edit.has_value());
 }
@@ -328,7 +328,7 @@ TEST(TextAreaTest, TextArea_MoveUpFromTheFirstLineDoesNothing)
 TEST(TextAreaTest, TextArea_MoveDownKeepsTheColumn)
 {
     const auto frame =
-        typeInto("abc\ndef", 2, Keyboard{.keys = {Key::MoveDown}});
+        getTypeInto("abc\ndef", 2, Keyboard{.keys = {Key::MoveDown}});
 
     const auto edit = frame.interactions.edit;
 
@@ -339,7 +339,7 @@ TEST(TextAreaTest, TextArea_MoveDownKeepsTheColumn)
 TEST(TextAreaTest, TextArea_MoveDownStopsAtTheEndOfAShorterLine)
 {
     const auto frame =
-        typeInto("longer\na", 5, Keyboard{.keys = {Key::MoveDown}});
+        getTypeInto("longer\na", 5, Keyboard{.keys = {Key::MoveDown}});
 
     const auto edit = frame.interactions.edit;
 
@@ -350,14 +350,14 @@ TEST(TextAreaTest, TextArea_MoveDownStopsAtTheEndOfAShorterLine)
 TEST(TextAreaTest, TextArea_MoveDownFromTheLastLineDoesNothing)
 {
     const auto frame =
-        typeInto("abc\ndef", 5, Keyboard{.keys = {Key::MoveDown}});
+        getTypeInto("abc\ndef", 5, Keyboard{.keys = {Key::MoveDown}});
 
     EXPECT_FALSE(frame.interactions.edit.has_value());
 }
 
 TEST(TextAreaTest, TextArea_HomeLandsOnTheCaretsOwnLinesStart)
 {
-    const auto frame = typeInto(
+    const auto frame = getTypeInto(
         "abc\ndef", 6, Keyboard{.keys = {Key::MoveLineStart}});
 
     const auto edit = frame.interactions.edit;
@@ -368,7 +368,7 @@ TEST(TextAreaTest, TextArea_HomeLandsOnTheCaretsOwnLinesStart)
 
 TEST(TextAreaTest, TextArea_EndLandsOnTheCaretsOwnLinesBreak)
 {
-    const auto frame = typeInto(
+    const auto frame = getTypeInto(
         "abc\ndef\nghi", 5, Keyboard{.keys = {Key::MoveLineEnd}});
 
     const auto edit = frame.interactions.edit;
@@ -379,7 +379,7 @@ TEST(TextAreaTest, TextArea_EndLandsOnTheCaretsOwnLinesBreak)
 
 TEST(TextAreaTest, TextArea_HomeAtALinesStartDoesNothing)
 {
-    const auto frame = typeInto(
+    const auto frame = getTypeInto(
         "abc\ndef", 4, Keyboard{.keys = {Key::MoveLineStart}});
 
     EXPECT_FALSE(frame.interactions.edit.has_value());
@@ -387,7 +387,7 @@ TEST(TextAreaTest, TextArea_HomeAtALinesStartDoesNothing)
 
 TEST(TextAreaTest, TextArea_HomeAtTheVeryStartOfTheTextDoesNothing)
 {
-    const auto frame = typeInto(
+    const auto frame = getTypeInto(
         "abc\ndef", 0, Keyboard{.keys = {Key::MoveLineStart}});
 
     EXPECT_FALSE(frame.interactions.edit.has_value());
@@ -395,7 +395,7 @@ TEST(TextAreaTest, TextArea_HomeAtTheVeryStartOfTheTextDoesNothing)
 
 TEST(TextAreaTest, TextArea_EndOnTheLastLineLandsOnTheTextsEnd)
 {
-    const auto frame = typeInto(
+    const auto frame = getTypeInto(
         "abc\ndef", 5, Keyboard{.keys = {Key::MoveLineEnd}});
 
     const auto edit = frame.interactions.edit;
@@ -407,13 +407,13 @@ TEST(TextAreaTest, TextArea_EndOnTheLastLineLandsOnTheTextsEnd)
 TEST(TextAreaTest, TextArea_TheHorizontalKeysWalkOverALineBreak)
 {
     const auto movedLeft =
-        typeInto("ab\ncd", 3, Keyboard{.keys = {Key::MoveLeft}});
+        getTypeInto("ab\ncd", 3, Keyboard{.keys = {Key::MoveLeft}});
 
     ASSERT_TRUE(movedLeft.interactions.edit.has_value());
     EXPECT_EQ(2U, movedLeft.interactions.edit->cursor);
 
     const auto movedRight =
-        typeInto("ab\ncd", 2, Keyboard{.keys = {Key::MoveRight}});
+        getTypeInto("ab\ncd", 2, Keyboard{.keys = {Key::MoveRight}});
 
     ASSERT_TRUE(movedRight.interactions.edit.has_value());
     EXPECT_EQ(3U, movedRight.interactions.edit->cursor);
@@ -422,7 +422,7 @@ TEST(TextAreaTest, TextArea_TheHorizontalKeysWalkOverALineBreak)
 TEST(TextAreaTest, TextArea_EscapeIsReportedAsACancelledEdit)
 {
     const auto frame =
-        typeInto("ab", 2, Keyboard{.keys = {Key::Cancel}});
+        getTypeInto("ab", 2, Keyboard{.keys = {Key::Cancel}});
 
     const auto edit = frame.interactions.edit;
 
@@ -432,14 +432,14 @@ TEST(TextAreaTest, TextArea_EscapeIsReportedAsACancelledEdit)
 
 TEST(TextAreaTest, TextArea_AQuietFrameReportsNoEdit)
 {
-    const auto frame = typeInto("ab", 2, Keyboard{});
+    const auto frame = getTypeInto("ab", 2, Keyboard{});
 
     EXPECT_FALSE(frame.interactions.edit.has_value());
 }
 
 TEST(TextAreaTest, TextArea_ACursorPastTheEndIsTheEnd)
 {
-    const auto frame = typeInto(
+    const auto frame = getTypeInto(
         "ab\ncd",
         99,
         Keyboard{.keys = {Key::Character}, .typedText = "X"});
@@ -455,7 +455,7 @@ TEST(TextAreaTest, TextArea_APressOnTheBoxNamesTheArea)
     const Pointer pointer{
         .positionPoint = Point{.x = 4, .y = 2}, .pressed = true};
 
-    Context uiContext{kCanvasSize, plainTheme(), pointer};
+    Context uiContext{kCanvasSize, getPlainTheme(), pointer};
 
     uiContext.textArea(TextAreaSpec{.widgetId = kCodeWidget, .text = "one"});
 
@@ -466,7 +466,7 @@ TEST(TextAreaTest, TextArea_TabReachesAnAreaAndTheNextFrameTypesIntoIt)
 {
     Context firstContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::FocusNext}}};
 
@@ -478,7 +478,7 @@ TEST(TextAreaTest, TextArea_TabReachesAnAreaAndTheNextFrameTypesIntoIt)
 
     Context secondContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::Character}, .typedText = "c"},
         firstFrame.interactions.focusedWidget};
@@ -489,16 +489,16 @@ TEST(TextAreaTest, TextArea_TabReachesAnAreaAndTheNextFrameTypesIntoIt)
 
     ASSERT_TRUE(frame.interactions.edit.has_value());
     EXPECT_EQ("abc", frame.interactions.edit->text);
-    EXPECT_EQ(1U, fillsColored(frame.drawList, kCaretColor).size());
+    EXPECT_EQ(1U, getFillsColored(frame.drawList, kCaretColor).size());
 }
 
 TEST(TextAreaTest, TextArea_AFixedSizeAreaTakesExactlyThatMuch)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.textArea(TextAreaSpec{
-        .widthSizing = fixedSize(
-            80), .heightSizing = fixedSize(40), .text = "ab"});
+        .widthSizing = getFixedSize(
+            80), .heightSizing = getFixedSize(40), .text = "ab"});
 
     const auto commands = uiContext.build().drawList;
     const auto box = std::get<FillRect>(commands.at(0)).rect;
@@ -509,14 +509,14 @@ TEST(TextAreaTest, TextArea_AFixedSizeAreaTakesExactlyThatMuch)
 
 TEST(TextAreaTest, TextArea_ACaretIsAtLeastOnePixelWideAtAZeroScale)
 {
-    auto theme = plainTheme();
+    auto theme = getPlainTheme();
     theme.textScale = 0;
 
     Context uiContext{kCanvasSize, theme};
 
     uiContext.textArea(TextAreaSpec{.text = "ab", .focused = true});
 
-    const auto carets = fillsColored(uiContext.build().drawList, kCaretColor);
+    const auto carets = getFillsColored(uiContext.build().drawList, kCaretColor);
 
     ASSERT_EQ(1U, carets.size());
     EXPECT_EQ(1U, carets.at(0).rect.size.width);
@@ -524,7 +524,7 @@ TEST(TextAreaTest, TextArea_ACaretIsAtLeastOnePixelWideAtAZeroScale)
 
 TEST(TextAreaTest, TextArea_AnEmptyAreaWithNoPlaceholderDrawsNoTextAtAll)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.textArea(TextAreaSpec{});
 
@@ -534,18 +534,18 @@ TEST(TextAreaTest, TextArea_AnEmptyAreaWithNoPlaceholderDrawsNoTextAtAll)
 TEST(TextAreaTest, TextArea_MoveUpWithTheCaretAtTheVeryStartDoesNothing)
 {
     const auto frame =
-        typeInto("abc\ndef", 0, Keyboard{.keys = {Key::MoveUp}});
+        getTypeInto("abc\ndef", 0, Keyboard{.keys = {Key::MoveUp}});
 
     EXPECT_FALSE(frame.interactions.edit.has_value());
 }
 
 TEST(TextAreaTest, TextArea_TheCaretShiftsNoCharacterOfItsLine)
 {
-    Context stillContext{kCanvasSize, plainTheme()};
+    Context stillContext{kCanvasSize, getPlainTheme()};
 
     stillContext.textArea(TextAreaSpec{.text = "one\ntwo", .cursor = 0});
 
-    Context carryingContext{kCanvasSize, plainTheme()};
+    Context carryingContext{kCanvasSize, getPlainTheme()};
 
     carryingContext.textArea(
         TextAreaSpec{.text = "one\ntwo", .cursor = 1, .focused = true});
@@ -580,13 +580,13 @@ TEST(TextAreaTest, TextArea_TheCaretShiftsNoCharacterOfItsLine)
         quietTexts.at(0).originPoint.x
             + static_cast<std::int32_t>(
                 antwika::gfx::kGlyphAdvance
-                * plainTheme().textScale));
+                * getPlainTheme().textScale));
     EXPECT_EQ(focusedTexts.at(2).originPoint, quietTexts.at(1).originPoint);
 }
 
 TEST(TextAreaTest, TextArea_TheCaretIsDrawnItsThemeWidthAllTheSame)
 {
-    auto theme = plainTheme();
+    auto theme = getPlainTheme();
     theme.textScale = 3;
 
     Context uiContext{kCanvasSize, theme};
@@ -594,7 +594,7 @@ TEST(TextAreaTest, TextArea_TheCaretIsDrawnItsThemeWidthAllTheSame)
     uiContext.textArea(
         TextAreaSpec{.text = "ab", .cursor = 1, .focused = true});
 
-    const auto carets = fillsColored(uiContext.build().drawList, kCaretColor);
+    const auto carets = getFillsColored(uiContext.build().drawList, kCaretColor);
 
     ASSERT_EQ(1U, carets.size());
     EXPECT_EQ(carets.at(0).rect.size.width, 3U);
@@ -603,13 +603,13 @@ TEST(TextAreaTest, TextArea_TheCaretIsDrawnItsThemeWidthAllTheSame)
 TEST(TextAreaTest, TextArea_ACaretAtTheClippedEdgeIsCutToNothing)
 {
     Context uiContext{
-        Size{.width = 20, .height = 100}, plainTheme()};
+        Size{.width = 20, .height = 100}, getPlainTheme()};
 
     uiContext.textArea(TextAreaSpec{
         .text = "a long line of characters",
         .focused = true});
 
-    const auto carets = fillsColored(uiContext.build().drawList, kCaretColor);
+    const auto carets = getFillsColored(uiContext.build().drawList, kCaretColor);
 
     ASSERT_EQ(1U, carets.size());
     EXPECT_EQ(carets.at(0).rect.size.width, 0U);

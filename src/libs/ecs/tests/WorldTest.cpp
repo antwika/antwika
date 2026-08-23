@@ -514,9 +514,9 @@ TEST(WorldTest, Destroy_LeavesNoOrphanWhenStagedBeforeAdd)
     EXPECT_FALSE(world.has<Position>(entity));
     EXPECT_FALSE(world.has<Velocity>(entity));
     const auto positionView = world.view<Position>();
-    EXPECT_EQ(positionView.size(), 0U);
+    EXPECT_EQ(positionView.getSize(), 0U);
     const auto velocityView = world.view<Velocity>();
-    EXPECT_EQ(velocityView.size(), 0U);
+    EXPECT_EQ(velocityView.getSize(), 0U);
 }
 
 TEST(WorldTest, View_IsEmptyForAnUnusedComponentType)
@@ -526,7 +526,7 @@ TEST(WorldTest, View_IsEmptyForAnUnusedComponentType)
 
     const auto view = world.view<Position>();
 
-    EXPECT_EQ(view.size(), 0U);
+    EXPECT_EQ(view.getSize(), 0U);
 }
 
 TEST(WorldTest, View_ReturnsTheEntityForOneComponent)
@@ -671,8 +671,8 @@ TEST(WorldTest, Destroy_ClearsEveryPoolOfABatchInOneCommit)
         EXPECT_FALSE(world.has<Velocity>(entity));
     }
 
-    EXPECT_EQ(world.view<Position>().size(), 0U);
-    EXPECT_EQ(world.view<Velocity>().size(), 0U);
+    EXPECT_EQ(world.view<Position>().getSize(), 0U);
+    EXPECT_EQ(world.view<Velocity>().getSize(), 0U);
 }
 
 namespace
@@ -716,7 +716,7 @@ TEST(WorldTest, Has_IsFalseForATypeAnotherWorldRegisteredFirst)
     }
 
     EXPECT_FALSE(secondWorld.has<Unregistered>(secondEntity));
-    EXPECT_EQ(secondWorld.view<Unregistered>().size(), 0U);
+    EXPECT_EQ(secondWorld.view<Unregistered>().getSize(), 0U);
 }
 
 TEST(WorldTest, Add_FillsAPoolAnotherWorldOpenedFirst)

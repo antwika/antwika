@@ -7,7 +7,7 @@
 namespace antwika::light
 {
 
-    std::vector<ActiveLight> activeLights(
+    std::vector<ActiveLight> getActiveLights(
         const ecs::World &world,
         const std::vector<ActiveLight> &folkLights,
         const std::vector<Lamp> &lamps)
@@ -79,7 +79,7 @@ namespace antwika::light
 
             lights.push_back(
                 ActiveLight{
-                    .position = lampPosition(lamp),
+                    .position = getLampPosition(lamp),
                     .tintColor = lamp.tintColor,
                     .reach = component::kLampRange});
         }
@@ -87,13 +87,13 @@ namespace antwika::light
         return lights;
     }
 
-    std::vector<ActiveLight> activeLights(
+    std::vector<ActiveLight> getActiveLights(
         const ecs::World &world, const std::vector<Lamp> &lamps)
     {
-        return activeLights(world, {}, lamps);
+        return getActiveLights(world, {}, lamps);
     }
 
-    std::vector<ActiveLight> activeLights(
+    std::vector<ActiveLight> getActiveLights(
         const std::vector<ActiveLight> &folkLights,
         const std::vector<Lamp> &lamps)
     {
@@ -118,7 +118,7 @@ namespace antwika::light
 
             lights.push_back(
                 ActiveLight{
-                    .position = lampPosition(lamp),
+                    .position = getLampPosition(lamp),
                     .tintColor = lamp.tintColor,
                     .reach = component::kLampRange});
         }
@@ -126,13 +126,13 @@ namespace antwika::light
         return lights;
     } // GCOVR_EXCL_LINE
 
-    std::vector<ActiveLight> activeLights(
+    std::vector<ActiveLight> getActiveLights(
         const std::vector<Lamp> &lamps)
     {
-        return activeLights(std::vector<ActiveLight>{}, lamps);
+        return getActiveLights(std::vector<ActiveLight>{}, lamps);
     }
 
-    std::optional<std::size_t> carriedLightSlot(
+    std::optional<std::size_t> getCarriedLightSlot(
         const ecs::World &world, const ecs::Entity entity)
     {
         std::size_t lightIndex = 0;
@@ -156,7 +156,7 @@ namespace antwika::light
         return std::nullopt;
     }
 
-    std::vector<std::size_t> dirtyShadowSlots(
+    std::vector<std::size_t> getDirtyShadowSlots(
         const std::vector<ActiveLight> &bakedLight,
         const std::vector<ActiveLight> &currentLight)
     {

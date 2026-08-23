@@ -11,10 +11,10 @@
 namespace
 {
 
-    using antwika::rules::cubeOccupied;
-    using antwika::rules::adjacentDoor;
-    using antwika::rules::doorwayCells;
-    using antwika::rules::gateCubeContaining;
+    using antwika::rules::isCubeOccupied;
+    using antwika::rules::getAdjacentDoor;
+    using antwika::rules::getDoorwayCells;
+    using antwika::rules::getGateCubeContaining;
     using antwika::voxel::kCubeSide;
     using antwika::voxel::VoxelCell;
 using antwika::voxel::voxelsOf;
@@ -30,7 +30,7 @@ using antwika::voxel::VoxelPosition;
             for (std::int32_t y = 0; y <= 1; ++y)
             {
                 EXPECT_TRUE(
-                    gateCubeContaining(
+                    getGateCubeContaining(
                         positions,
                         VoxelPosition{.x = x, .y = y, .z = 2})
                         .has_value());
@@ -38,15 +38,15 @@ using antwika::voxel::VoxelPosition;
         }
 
         EXPECT_EQ(
-            gateCubeContaining(
+            getGateCubeContaining(
                 positions, VoxelPosition{.x = 2, .y = 0, .z = 2}),
             antwika::voxel::cubeCornerOf(positions.front()));
         EXPECT_FALSE(
-            gateCubeContaining(
+            getGateCubeContaining(
                 positions, VoxelPosition{.x = 4, .y = 0, .z = 2})
                 .has_value());
         EXPECT_FALSE(
-            gateCubeContaining(
+            getGateCubeContaining(
                 positions, VoxelPosition{.x = 2, .y = 2, .z = 2})
                 .has_value());
     }
@@ -57,25 +57,25 @@ using antwika::voxel::VoxelPosition;
             VoxelPosition{.x = 4, .y = 0, .z = 2}};
         const VoxelPosition middlePosition{.x = 2, .y = 0, .z = 2};
 
-        EXPECT_TRUE(adjacentDoor(doorPositions, middlePosition).has_value());
+        EXPECT_TRUE(getAdjacentDoor(doorPositions, middlePosition).has_value());
         EXPECT_TRUE(
-            adjacentDoor(
+            getAdjacentDoor(
                 doorPositions, VoxelPosition{.x = 6, .y = 1, .z = 3})
                 .has_value());
         EXPECT_TRUE(
-            adjacentDoor(
+            getAdjacentDoor(
                 doorPositions, VoxelPosition{.x = 4, .y = 0, .z = 0})
                 .has_value());
         EXPECT_TRUE(
-            adjacentDoor(
+            getAdjacentDoor(
                 doorPositions, VoxelPosition{.x = 5, .y = 0, .z = 4})
                 .has_value());
         EXPECT_FALSE(
-            adjacentDoor(
+            getAdjacentDoor(
                 doorPositions, VoxelPosition{.x = 0, .y = 0, .z = 0})
                 .has_value());
         EXPECT_FALSE(
-            adjacentDoor(
+            getAdjacentDoor(
                 doorPositions, VoxelPosition{.x = 6, .y = 0, .z = 4})
                 .has_value());
     }
@@ -89,11 +89,11 @@ using antwika::voxel::VoxelPosition;
             VoxelPosition{.x = 8, .y = 0, .z = 2}};
         const auto corner =
             antwika::voxel::cubeCornerOf(doorPositions.front());
-        const auto column = doorwayCells(doorPositions, corner);
+        const auto column = getDoorwayCells(doorPositions, corner);
 
         ASSERT_EQ(column.size(), 3U);
         EXPECT_EQ(
-            doorwayCells(doorPositions, VoxelPosition{.x = 0, .z = 0})
+            getDoorwayCells(doorPositions, VoxelPosition{.x = 0, .z = 0})
                 .size(),
             0U);
     }
@@ -104,11 +104,11 @@ using antwika::voxel::VoxelPosition;
             .z = 3}}});
 
         EXPECT_TRUE(
-            cubeOccupied(voxels, VoxelPosition{.x = 2, .z = 2}));
+            isCubeOccupied(voxels, VoxelPosition{.x = 2, .z = 2}));
         EXPECT_FALSE(
-            cubeOccupied(voxels, VoxelPosition{.x = 4, .z = 2}));
+            isCubeOccupied(voxels, VoxelPosition{.x = 4, .z = 2}));
         EXPECT_FALSE(
-            cubeOccupied(
+            isCubeOccupied(
                 voxels, VoxelPosition{.x = 2, .y = 2, .z = 2}));
     }
 

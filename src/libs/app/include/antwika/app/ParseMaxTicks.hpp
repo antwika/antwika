@@ -10,7 +10,7 @@ namespace antwika::app
 
     inline constexpr std::string_view kMaxTicksFlag = "--max-ticks";
 
-    [[nodiscard]] std::optional<antwika::time::Tick> parseMaxTicks(
+    [[nodiscard]] std::optional<antwika::time::Tick> getParseMaxTicks(
         std::optional<std::string_view> value,
         std::optional<antwika::time::Tick> fallbackTick);
 

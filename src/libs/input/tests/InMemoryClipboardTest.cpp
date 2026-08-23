@@ -8,7 +8,7 @@ TEST(InMemoryClipboardTest, Text_IsEmptyOnAFreshClipboard)
 {
     const InMemoryClipboard clipboard;
 
-    EXPECT_EQ(clipboard.text(), "");
+    EXPECT_EQ(clipboard.getText(), "");
 }
 
 TEST(InMemoryClipboardTest, SetText_HoldsWhatWasLastSet)
@@ -18,7 +18,7 @@ TEST(InMemoryClipboardTest, SetText_HoldsWhatWasLastSet)
     clipboard.setText("first");
     clipboard.setText("second");
 
-    EXPECT_EQ(clipboard.text(), "second");
+    EXPECT_EQ(clipboard.getText(), "second");
 }
 
 TEST(InMemoryClipboardTest, SetText_EmptiesItWhenGivenNothing)
@@ -28,5 +28,5 @@ TEST(InMemoryClipboardTest, SetText_EmptiesItWhenGivenNothing)
     clipboard.setText("held");
     clipboard.setText("");
 
-    EXPECT_EQ(clipboard.text(), "");
+    EXPECT_EQ(clipboard.getText(), "");
 }

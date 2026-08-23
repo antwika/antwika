@@ -16,9 +16,9 @@ namespace antwika::input
     public:
         virtual ~IInputEventCodec() = default;
 
-        [[nodiscard]] virtual Event encode(const InputEvent &event) const = 0;
+        [[nodiscard]] virtual Event getEncode(const InputEvent &event) const = 0;
 
-        [[nodiscard]] virtual std::optional<InputEvent> decode(
+        [[nodiscard]] virtual std::optional<InputEvent> getDecode(
             const Event &event) const = 0;
     };
 

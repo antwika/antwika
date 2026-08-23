@@ -20,7 +20,7 @@ namespace antwika::font::detail
         constexpr std::uint32_t kCollectionTag = 0x74746366;
         constexpr std::uint32_t kOpenTypeTag = 0x4F54544F;
 
-        [[nodiscard]] std::uint16_t readU16(
+        [[nodiscard]] std::uint16_t getReadU16(
             std::span<const std::uint8_t> bytes, std::size_t offset)
         {
             return static_cast<std::uint16_t>(
@@ -28,14 +28,14 @@ namespace antwika::font::detail
                 | bytes[offset + 1]);
         }
 
-        [[nodiscard]] std::uint32_t readU32(
+        [[nodiscard]] std::uint32_t getReadU32(
             std::span<const std::uint8_t> bytes, std::size_t offset)
         {
-            return (static_cast<std::uint32_t>(readU16(bytes, offset)) << 16)
-                | readU16(bytes, offset + 2);
+            return (static_cast<std::uint32_t>(getReadU16(bytes, offset)) << 16)
+                | getReadU16(bytes, offset + 2);
         }
 
-        [[nodiscard]] std::string tagText(
+        [[nodiscard]] std::string getTagText(
             std::span<const std::uint8_t> bytes, std::size_t offset)
         {
             std::string text;
@@ -55,7 +55,7 @@ namespace antwika::font::detail
 
         void requireFlavour(std::span<const std::uint8_t> bytes)
         {
-            const std::uint32_t flavour = readU32(bytes, 0);
+            const std::uint32_t flavour = getReadU32(bytes, 0);
 
             if (flavour == kCollectionTag)
             {
@@ -76,14 +76,14 @@ namespace antwika::font::detail
                 && flavour != kAppleTrueTypeTag)
             {
                 throw FontError(
-                    "font: these bytes open with '" + tagText(bytes, 0)
+                    "font: these bytes open with '" + getTagText(bytes, 0)
                     + "' rather than a TrueType flavour");
             }
         }
 
         void requireTablesInside(std::span<const std::uint8_t> bytes)
         {
-            const std::uint16_t tables = readU16(bytes, 4);
+            const std::uint16_t tables = getReadU16(bytes, 4);
 
             if (tables == 0)
             {
@@ -105,14 +105,14 @@ namespace antwika::font::detail
             {
                 const std::size_t record = kOffsetTableSize
                     + index * kTableRecordSize;
-                const std::size_t offset = readU32(bytes, record + 8);
-                const std::size_t length = readU32(bytes, record + 12);
+                const std::size_t offset = getReadU32(bytes, record + 8);
+                const std::size_t length = getReadU32(bytes, record + 12);
 
                 if (offset > bytes.size()
                     || length > bytes.size() - offset)
                 {
                     throw FontError(
-                        "font: the '" + tagText(bytes, record)
+                        "font: the '" + getTagText(bytes, record)
                         + "' table runs past the end of the font");
                 }
             }

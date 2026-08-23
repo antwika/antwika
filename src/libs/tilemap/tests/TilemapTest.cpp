@@ -14,12 +14,12 @@
 #include <antwika/tilemap/Tilemap.hpp>
 
 using antwika::tilemap::Atlas;
-using antwika::tilemap::atlasSize;
-using antwika::tilemap::blankAtlas;
-using antwika::tilemap::cellHoldingTile;
+using antwika::tilemap::getAtlasSize;
+using antwika::tilemap::getBlankAtlas;
+using antwika::tilemap::getCellHoldingTile;
 using antwika::tilemap::clearTile;
-using antwika::tilemap::defaultTilemap;
-using antwika::tilemap::gridCellSize;
+using antwika::tilemap::getDefaultTilemap;
+using antwika::tilemap::getGridCellSize;
 using antwika::tilemap::kAtlasColumns;
 using antwika::tilemap::kAtlasRows;
 using antwika::tilemap::kFloorTileSize;
@@ -30,16 +30,16 @@ using antwika::tilemap::swapTiles;
 using antwika::tilemap::Tile;
 using antwika::tilemap::Tilemap;
 using antwika::tilemap::tileSizeOf;
-using antwika::tilemap::tileSource;
+using antwika::tilemap::getTileSource;
 
 namespace
 {
-    [[nodiscard]] float right(const antwika::gfx::RectF &placeRect)
+    [[nodiscard]] float getRight(const antwika::gfx::RectF &placeRect)
     {
         return placeRect.originPoint.x + placeRect.size.width;
     }
 
-    [[nodiscard]] float bottom(const antwika::gfx::RectF &placeRect)
+    [[nodiscard]] float getBottom(const antwika::gfx::RectF &placeRect)
     {
         return placeRect.originPoint.y + placeRect.size.height;
     }
@@ -47,7 +47,7 @@ namespace
 
 TEST(TilemapTest, DefaultTilemap_HoldsEveryTileOfBothAtlases)
 {
-    const auto map = defaultTilemap();
+    const auto map = getDefaultTilemap();
 
     EXPECT_EQ(map.columns, 2U * kAtlasColumns);
     EXPECT_EQ(map.rows, static_cast<std::uint32_t>(kAtlasRows));
@@ -68,7 +68,7 @@ TEST(TilemapTest, DefaultTilemap_HoldsEveryTileOfBothAtlases)
 
 TEST(TilemapTest, DefaultTilemap_PutsTheWallAtlasOnTheLeft)
 {
-    const auto map = defaultTilemap();
+    const auto map = getDefaultTilemap();
     const auto columnCount = static_cast<std::uint32_t>(kAtlasColumns);
 
     for (std::uint32_t row = 0; row < map.rows; ++row)
@@ -76,7 +76,7 @@ TEST(TilemapTest, DefaultTilemap_PutsTheWallAtlasOnTheLeft)
         for (std::uint32_t column = 0; column < map.columns;
              ++column)
         {
-            const auto tile = map.at(column, row);
+            const auto tile = map.getEntryAt(column, row);
 
             ASSERT_TRUE(tile.has_value());
             EXPECT_EQ(
@@ -89,21 +89,21 @@ TEST(TilemapTest, DefaultTilemap_PutsTheWallAtlasOnTheLeft)
 
 TEST(TilemapTest, DefaultTilemap_LaysEachAtlasOutAsItsOwnAtlasIs)
 {
-    const auto map = defaultTilemap();
+    const auto map = getDefaultTilemap();
     const auto columnCount = static_cast<std::uint32_t>(kAtlasColumns);
 
-    EXPECT_EQ(map.at(0, 0), (Tile{.atlas = Atlas::Wall, .index = 0}));
+    EXPECT_EQ(map.getEntryAt(0, 0), (Tile{.atlas = Atlas::Wall, .index = 0}));
     EXPECT_EQ(
-        map.at(columnCount, 0), (Tile{.atlas = Atlas::Floor, .index = 0}));
+        map.getEntryAt(columnCount, 0), (Tile{.atlas = Atlas::Floor, .index = 0}));
     EXPECT_EQ(
-        map.at(1, 0), (Tile{.atlas = Atlas::Wall, .index = 1}));
+        map.getEntryAt(1, 0), (Tile{.atlas = Atlas::Wall, .index = 1}));
     EXPECT_EQ(
-        map.at(0, 1),
+        map.getEntryAt(0, 1),
         (Tile{
             .atlas = Atlas::Wall,
             .index = static_cast<std::uint16_t>(kAtlasColumns)}));
     EXPECT_EQ(
-        map.at(map.columns - 1, map.rows - 1),
+        map.getEntryAt(map.columns - 1, map.rows - 1),
         (Tile{
             .atlas = Atlas::Floor,
             .index = static_cast<std::uint16_t>(
@@ -118,18 +118,18 @@ TEST(TilemapTest, TileSizeOf_TellsTheTwoAtlasesApart)
 
 TEST(TilemapTest, TileSource_TakesEveryTileFromInsideItsAtlas)
 {
-    for (const auto slot : defaultTilemap().tiles)
+    for (const auto slot : getDefaultTilemap().tiles)
     {
         ASSERT_TRUE(slot.has_value());
 
         const auto tile = *slot;
-        const auto wholeSize = atlasSize(tileSizeOf(tile.atlas));
-        const auto source = tileSource(tile);
+        const auto wholeSize = getAtlasSize(tileSizeOf(tile.atlas));
+        const auto source = getTileSource(tile);
 
         EXPECT_GE(source.originPoint.x, 0.0F);
         EXPECT_GE(source.originPoint.y, 0.0F);
-        EXPECT_LE(right(source), static_cast<float>(wholeSize.width));
-        EXPECT_LE(bottom(source), static_cast<float>(wholeSize.height));
+        EXPECT_LE(getRight(source), static_cast<float>(wholeSize.width));
+        EXPECT_LE(getBottom(source), static_cast<float>(wholeSize.height));
         EXPECT_FLOAT_EQ(
             source.size.width,
             static_cast<float>(tileSizeOf(tile.atlas).width));
@@ -138,7 +138,7 @@ TEST(TilemapTest, TileSource_TakesEveryTileFromInsideItsAtlas)
 
 TEST(TilemapTest, TilemapCell_HoldsTheLargerOfTheTwoTiles)
 {
-    const auto cell = gridCellSize();
+    const auto cell = getGridCellSize();
 
     EXPECT_GE(cell.width, kWallTileSize.width);
     EXPECT_GE(cell.width, kFloorTileSize.width);
@@ -148,25 +148,25 @@ TEST(TilemapTest, TilemapCell_HoldsTheLargerOfTheTwoTiles)
 
 TEST(TilemapTest, SwapTiles_PutsEachTileWhereTheOtherWas)
 {
-    auto map = defaultTilemap();
+    auto map = getDefaultTilemap();
 
     const antwika::geometry::GridCell fromCell{.column = 0, .row = 0};
     const antwika::geometry::GridCell toCell{.column = 20, .row = 7};
 
-    const auto was = map.at(fromCell.column, fromCell.row);
-    const auto toTile = map.at(toCell.column, toCell.row);
+    const auto was = map.getEntryAt(fromCell.column, fromCell.row);
+    const auto toTile = map.getEntryAt(toCell.column, toCell.row);
 
     ASSERT_NE(was, toTile);
 
     swapTiles(map, fromCell, toCell);
 
-    EXPECT_EQ(map.at(fromCell.column, fromCell.row), toTile);
-    EXPECT_EQ(map.at(toCell.column, toCell.row), was);
+    EXPECT_EQ(map.getEntryAt(fromCell.column, fromCell.row), toTile);
+    EXPECT_EQ(map.getEntryAt(toCell.column, toCell.row), was);
 }
 
 TEST(TilemapTest, SwapTiles_LeavesEveryOtherPlaceAlone)
 {
-    const auto beforeTilemap = defaultTilemap();
+    const auto beforeTilemap = getDefaultTilemap();
     auto afterTilemap = beforeTilemap;
 
     const antwika::geometry::GridCell fromCell{.column = 3, .row = 2};
@@ -188,7 +188,7 @@ TEST(TilemapTest, SwapTiles_LeavesEveryOtherPlaceAlone)
             }
 
             EXPECT_EQ(
-                afterTilemap.at(column, row), beforeTilemap.at(column, row))
+                afterTilemap.getEntryAt(column, row), beforeTilemap.getEntryAt(column, row))
                 << column << row;
         }
     }
@@ -196,7 +196,7 @@ TEST(TilemapTest, SwapTiles_LeavesEveryOtherPlaceAlone)
 
 TEST(TilemapTest, SwapTiles_ComesBackWhenDoneTwice)
 {
-    const auto beforeTilemap = defaultTilemap();
+    const auto beforeTilemap = getDefaultTilemap();
     auto afterTilemap = beforeTilemap;
 
     const antwika::geometry::GridCell fromCell{.column = 1, .row = 1};
@@ -210,7 +210,7 @@ TEST(TilemapTest, SwapTiles_ComesBackWhenDoneTwice)
 
 TEST(TilemapTest, SwapTiles_LeavesAPlaceSwappedWithItselfAlone)
 {
-    const auto beforeTilemap = defaultTilemap();
+    const auto beforeTilemap = getDefaultTilemap();
     auto afterTilemap = beforeTilemap;
 
     const antwika::geometry::GridCell placeCell{.column = 4, .row = 4};
@@ -222,31 +222,31 @@ TEST(TilemapTest, SwapTiles_LeavesAPlaceSwappedWithItselfAlone)
 
 TEST(TilemapTest, SwapTiles_MovesATileBetweenTheTwoAtlases)
 {
-    auto map = defaultTilemap();
+    auto map = getDefaultTilemap();
 
     const antwika::geometry::GridCell uprightCell{.column = 0, .row = 0};
     const antwika::geometry::GridCell flatCell{
         .column = static_cast<std::uint32_t>(kAtlasColumns),
         .row = 0};
 
-    ASSERT_EQ(map.at(uprightCell.column, uprightCell.row)->atlas,
+    ASSERT_EQ(map.getEntryAt(uprightCell.column, uprightCell.row)->atlas,
               Atlas::Wall);
-    ASSERT_EQ(map.at(flatCell.column, flatCell.row)->atlas, Atlas::Floor);
+    ASSERT_EQ(map.getEntryAt(flatCell.column, flatCell.row)->atlas, Atlas::Floor);
 
     swapTiles(map, uprightCell, flatCell);
 
     EXPECT_EQ(
-        map.at(uprightCell.column, uprightCell.row)->atlas, Atlas::Floor);
-    EXPECT_EQ(map.at(flatCell.column, flatCell.row)->atlas, Atlas::Wall);
+        map.getEntryAt(uprightCell.column, uprightCell.row)->atlas, Atlas::Floor);
+    EXPECT_EQ(map.getEntryAt(flatCell.column, flatCell.row)->atlas, Atlas::Wall);
 }
 
 TEST(TilemapTest, CellHoldingTile_FindsWhereAGridHoldsATile)
 {
-    const auto map = defaultTilemap();
-    const auto tile = map.at(9, 6);
+    const auto map = getDefaultTilemap();
+    const auto tile = map.getEntryAt(9, 6);
     ASSERT_TRUE(tile.has_value());
 
-    const auto sits = cellHoldingTile(map, *tile);
+    const auto sits = getCellHoldingTile(map, *tile);
 
     ASSERT_TRUE(sits.has_value());
     EXPECT_EQ(sits->column, 9U);
@@ -255,14 +255,14 @@ TEST(TilemapTest, CellHoldingTile_FindsWhereAGridHoldsATile)
 
 TEST(TilemapTest, CellHoldingTile_FindsATileWhereverASwapHasPutIt)
 {
-    auto map = defaultTilemap();
-    const auto tile = map.at(9, 6);
+    auto map = getDefaultTilemap();
+    const auto tile = map.getEntryAt(9, 6);
 
     swapTiles(map, {.column = 9, .row = 6}, {.column = 1, .row = 0});
 
     ASSERT_TRUE(tile.has_value());
 
-    const auto sits = cellHoldingTile(map, *tile);
+    const auto sits = getCellHoldingTile(map, *tile);
 
     ASSERT_TRUE(sits.has_value());
     EXPECT_EQ(sits->column, 1U);
@@ -271,44 +271,44 @@ TEST(TilemapTest, CellHoldingTile_FindsATileWhereverASwapHasPutIt)
 
 TEST(TilemapTest, CellHoldingTile_FindsNothingForATileNoPlaceHolds)
 {
-    const auto map = defaultTilemap();
+    const auto map = getDefaultTilemap();
 
     EXPECT_FALSE(
-        cellHoldingTile(map, Tile{.atlas = Atlas::Floor, .index = 9999})
+        getCellHoldingTile(map, Tile{.atlas = Atlas::Floor, .index = 9999})
             .has_value());
 }
 
 TEST(TilemapTest, ClearTile_TakesTheTileFromOnePlaceOnly)
 {
-    auto map = defaultTilemap();
-    const auto tile = map.at(5, 3);
+    auto map = getDefaultTilemap();
+    const auto tile = map.getEntryAt(5, 3);
 
     clearTile(map, {.column = 5, .row = 3});
 
-    EXPECT_FALSE(map.at(5, 3).has_value());
-    EXPECT_TRUE(map.at(4, 3).has_value());
-    EXPECT_TRUE(map.at(6, 3).has_value());
+    EXPECT_FALSE(map.getEntryAt(5, 3).has_value());
+    EXPECT_TRUE(map.getEntryAt(4, 3).has_value());
+    EXPECT_TRUE(map.getEntryAt(6, 3).has_value());
     EXPECT_TRUE(map.isComplete());
     ASSERT_TRUE(tile.has_value());
-    EXPECT_FALSE(cellHoldingTile(map, *tile).has_value());
+    EXPECT_FALSE(getCellHoldingTile(map, *tile).has_value());
 }
 
 TEST(TilemapTest, ClearTile_LeavesThePlaceThereToBeSwappedInto)
 {
-    auto map = defaultTilemap();
-    const auto secondTile = map.at(1, 0);
+    auto map = getDefaultTilemap();
+    const auto secondTile = map.getEntryAt(1, 0);
 
     clearTile(map, {.column = 0, .row = 0});
     swapTiles(map, {.column = 0, .row = 0}, {.column = 1, .row = 0});
 
-    EXPECT_EQ(map.at(0, 0), secondTile);
-    EXPECT_FALSE(map.at(1, 0).has_value());
+    EXPECT_EQ(map.getEntryAt(0, 0), secondTile);
+    EXPECT_FALSE(map.getEntryAt(1, 0).has_value());
 }
 
 TEST(TilemapTest, SuggestedTileFor_GivesAPlaceBackWhatBelongsToIt)
 {
-    auto map = defaultTilemap();
-    const auto was = map.at(5, 3);
+    auto map = getDefaultTilemap();
+    const auto was = map.getEntryAt(5, 3);
 
     clearTile(map, {.column = 5, .row = 3});
 
@@ -317,8 +317,8 @@ TEST(TilemapTest, SuggestedTileFor_GivesAPlaceBackWhatBelongsToIt)
 
 TEST(TilemapTest, SuggestedTileFor_GivesSomethingTheGridLacksInstead)
 {
-    auto map = defaultTilemap();
-    const auto was = map.at(5, 3);
+    auto map = getDefaultTilemap();
+    const auto was = map.getEntryAt(5, 3);
 
     clearTile(map, {.column = 5, .row = 3});
     clearTile(map, {.column = 6, .row = 3});
@@ -329,16 +329,16 @@ TEST(TilemapTest, SuggestedTileFor_GivesSomethingTheGridLacksInstead)
 
     ASSERT_TRUE(suggestion.has_value());
     EXPECT_NE(suggestion, was);
-    EXPECT_FALSE(cellHoldingTile(map, *suggestion).has_value());
+    EXPECT_FALSE(getCellHoldingTile(map, *suggestion).has_value());
 }
 
 TEST(TilemapTest, SuggestedTileFor_KeepsToTheAtlasThePlaceBelongsTo)
 {
-    auto map = defaultTilemap();
+    auto map = getDefaultTilemap();
 
     for (const auto column : {0U, 20U})
     {
-        const auto was = map.at(column, 2);
+        const auto was = map.getEntryAt(column, 2);
 
         clearTile(map, {.column = column, .row = 2});
 
@@ -353,7 +353,7 @@ TEST(TilemapTest, SuggestedTileFor_KeepsToTheAtlasThePlaceBelongsTo)
 
 TEST(TilemapTest, SuggestedTileFor_GivesNothingWhereTheGridHoldsThemAll)
 {
-    const auto map = defaultTilemap();
+    const auto map = getDefaultTilemap();
 
     EXPECT_FALSE(
         suggestedTileFor(map, {.column = 5, .row = 3}).has_value());
@@ -361,8 +361,8 @@ TEST(TilemapTest, SuggestedTileFor_GivesNothingWhereTheGridHoldsThemAll)
 
 TEST(TilemapTest, PutTile_FillsThePlaceAndNoOther)
 {
-    auto map = defaultTilemap();
-    const auto secondTile = map.at(6, 3);
+    auto map = getDefaultTilemap();
+    const auto secondTile = map.getEntryAt(6, 3);
 
     clearTile(map, {.column = 5, .row = 3});
     putTile(
@@ -370,15 +370,15 @@ TEST(TilemapTest, PutTile_FillsThePlaceAndNoOther)
         {.column = 5, .row = 3},
         Tile{.atlas = Atlas::Floor, .index = 99});
 
-    EXPECT_EQ(map.at(5, 3)->index, 99U);
-    EXPECT_EQ(map.at(6, 3), secondTile);
+    EXPECT_EQ(map.getEntryAt(5, 3)->index, 99U);
+    EXPECT_EQ(map.getEntryAt(6, 3), secondTile);
 }
 
 TEST(TilemapTest, PutTile_AndClearComeBackToWhereItWas)
 {
-    const auto was = defaultTilemap();
+    const auto was = getDefaultTilemap();
     auto map = was;
-    const auto tile = map.at(4, 1);
+    const auto tile = map.getEntryAt(4, 1);
 
     clearTile(map, {.column = 4, .row = 1});
     putTile(map, {.column = 4, .row = 1}, *tile);
@@ -388,16 +388,16 @@ TEST(TilemapTest, PutTile_AndClearComeBackToWhereItWas)
 
 TEST(TilemapTest, BlankAtlas_IsTheSizeTheTilesGridUpTo)
 {
-    EXPECT_EQ(blankAtlas(kWallTileSize).size, atlasSize(kWallTileSize));
-    EXPECT_EQ(blankAtlas(kFloorTileSize).size, atlasSize(kFloorTileSize));
+    EXPECT_EQ(getBlankAtlas(kWallTileSize).size, getAtlasSize(kWallTileSize));
+    EXPECT_EQ(getBlankAtlas(kFloorTileSize).size, getAtlasSize(kFloorTileSize));
 }
 
 TEST(TilemapTest, BlankAtlas_HoldsNothingButTransparentPixels)
 {
     for (const auto tileSize : {kWallTileSize, kFloorTileSize})
     {
-        const auto atlasBitmap = blankAtlas(tileSize);
-        const auto wholeSize = atlasSize(tileSize);
+        const auto atlasBitmap = getBlankAtlas(tileSize);
+        const auto wholeSize = getAtlasSize(tileSize);
 
         EXPECT_EQ(
             atlasBitmap.pixels.size(),
@@ -414,18 +414,18 @@ TEST(TilemapTest, BlankAtlas_HoldsNothingButTransparentPixels)
 
 TEST(TilemapTest, At_GivesNothingBackBeyondTheLastColumn)
 {
-    const auto tilemap = defaultTilemap();
+    const auto tilemap = getDefaultTilemap();
 
-    EXPECT_FALSE(tilemap.at(tilemap.columns, 0).has_value());
-    EXPECT_FALSE(tilemap.at(tilemap.columns + 100, 0).has_value());
+    EXPECT_FALSE(tilemap.getEntryAt(tilemap.columns, 0).has_value());
+    EXPECT_FALSE(tilemap.getEntryAt(tilemap.columns + 100, 0).has_value());
 }
 
 TEST(TilemapTest, At_GivesNothingBackBeyondTheLastRow)
 {
-    const auto tilemap = defaultTilemap();
+    const auto tilemap = getDefaultTilemap();
 
-    EXPECT_FALSE(tilemap.at(0, tilemap.rows).has_value());
-    EXPECT_FALSE(tilemap.at(0, tilemap.rows + 100).has_value());
+    EXPECT_FALSE(tilemap.getEntryAt(0, tilemap.rows).has_value());
+    EXPECT_FALSE(tilemap.getEntryAt(0, tilemap.rows + 100).has_value());
 }
 
 TEST(TilemapTest, SuggestedTileFor_GivesNothingBackOutsideTheLayout)

@@ -13,8 +13,8 @@ TEST(EntropyIndexTest, PickNext_TakesTheLowestCandidateCount)
     std::vector<Domain> waveDomains{Domain(4), Domain(2), Domain(3)};
     EntropyIndex entropyIndex(waveDomains, {});
 
-    ASSERT_TRUE(entropyIndex.pickNext().has_value());
-    EXPECT_EQ(*entropyIndex.pickNext(), 1U);
+    ASSERT_TRUE(entropyIndex.getPickNext().has_value());
+    EXPECT_EQ(*entropyIndex.getPickNext(), 1U);
 }
 
 TEST(EntropyIndexTest, PickNext_BreaksTiesByLowestIndex)
@@ -22,8 +22,8 @@ TEST(EntropyIndexTest, PickNext_BreaksTiesByLowestIndex)
     std::vector<Domain> waveDomains{Domain(3), Domain(3), Domain(3)};
     EntropyIndex entropyIndex(waveDomains, {});
 
-    ASSERT_TRUE(entropyIndex.pickNext().has_value());
-    EXPECT_EQ(*entropyIndex.pickNext(), 0U);
+    ASSERT_TRUE(entropyIndex.getPickNext().has_value());
+    EXPECT_EQ(*entropyIndex.getPickNext(), 0U);
 }
 
 TEST(EntropyIndexTest, PickNext_ExcludesSingletonAndEmptyCells)
@@ -32,8 +32,8 @@ TEST(EntropyIndexTest, PickNext_ExcludesSingletonAndEmptyCells)
         Domain::createSingleton(0, 3), Domain(0), Domain(3)};
     EntropyIndex entropyIndex(waveDomains, {});
 
-    ASSERT_TRUE(entropyIndex.pickNext().has_value());
-    EXPECT_EQ(*entropyIndex.pickNext(), 2U);
+    ASSERT_TRUE(entropyIndex.getPickNext().has_value());
+    EXPECT_EQ(*entropyIndex.getPickNext(), 2U);
 }
 
 TEST(EntropyIndexTest, PickNext_ReturnsNothingWhenAllDetermined)
@@ -42,7 +42,7 @@ TEST(EntropyIndexTest, PickNext_ReturnsNothingWhenAllDetermined)
         Domain::createSingleton(0, 3), Domain::createSingleton(1, 3)};
     EntropyIndex entropyIndex(waveDomains, {});
 
-    EXPECT_FALSE(entropyIndex.pickNext().has_value());
+    EXPECT_FALSE(entropyIndex.getPickNext().has_value());
 }
 
 TEST(EntropyIndexTest, Update_StaysConsistentAcrossRewind)
@@ -52,16 +52,16 @@ TEST(EntropyIndexTest, Update_StaysConsistentAcrossRewind)
 
     waveDomains[1].remove(0);
     entropyIndex.update(1, waveDomains[1]);
-    ASSERT_TRUE(entropyIndex.pickNext().has_value());
-    EXPECT_EQ(*entropyIndex.pickNext(), 1U);
+    ASSERT_TRUE(entropyIndex.getPickNext().has_value());
+    EXPECT_EQ(*entropyIndex.getPickNext(), 1U);
 
     waveDomains[1].add(0);
     entropyIndex.update(1, waveDomains[1]);
-    ASSERT_TRUE(entropyIndex.pickNext().has_value());
-    EXPECT_EQ(*entropyIndex.pickNext(), 0U);
+    ASSERT_TRUE(entropyIndex.getPickNext().has_value());
+    EXPECT_EQ(*entropyIndex.getPickNext(), 0U);
 
     waveDomains[0].restrictTo(0);
     entropyIndex.update(0, waveDomains[0]);
-    ASSERT_TRUE(entropyIndex.pickNext().has_value());
-    EXPECT_EQ(*entropyIndex.pickNext(), 1U);
+    ASSERT_TRUE(entropyIndex.getPickNext().has_value());
+    EXPECT_EQ(*entropyIndex.getPickNext(), 1U);
 }

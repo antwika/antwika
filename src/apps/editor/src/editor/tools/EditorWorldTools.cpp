@@ -10,7 +10,7 @@
 namespace antwika::editor
 {
 
-    std::vector<voxel::VoxelPosition> Editor::shapedCubes(
+    std::vector<voxel::VoxelPosition> Editor::getShapedCubes(
         const voxel::VoxelPosition fromPosition,
         const voxel::VoxelPosition toPosition) const
     {
@@ -97,21 +97,21 @@ namespace antwika::editor
             return;
         }
 
-        const auto position = voxelmap::cellUnder(
+        const auto position = voxelmap::getCellUnder(
             worldCamera(),
             worldRotation(),
             camera::kCanvasSize,
             pointer.pointerOnCanvas,
-            antwika::voxel::cubeTop(editLevel));
+            antwika::voxel::getCubeTop(editLevel));
 
         if (position.has_value())
         {
             pushUndo();
 
             for (const auto cube :
-                 shapedCubes(*shapeFromPosition, *position))
+                 getShapedCubes(*shapeFromPosition, *position))
             {
-                document.map.voxels = voxel::withRampsRebuilt(
+                document.map.voxels = voxel::getWithRampsRebuilt(
                     dragPaintButton == input::MouseButton::Left
                                      ? voxel::withBlockAt(
                               document.map.voxels,
@@ -144,10 +144,10 @@ namespace antwika::editor
                     : std::nullopt;
 
         if (button == input::MouseButton::Left
-            && !rules::cubeOccupied(
+            && !rules::isCubeOccupied(
                 document.map.voxels, antwika::voxel::cubeCornerOf(position)))
         {
-            document.map.voxels = voxel::withRampsRebuilt(
+            document.map.voxels = voxel::getWithRampsRebuilt(
                 voxel::withBlockAt(document.map.voxels, position), position);
             rebuildWorld();
         }
@@ -176,12 +176,12 @@ namespace antwika::editor
             return;
         }
 
-        const auto position = voxelmap::cellUnder(
+        const auto position = voxelmap::getCellUnder(
             worldCamera(),
             worldRotation(),
             camera::kCanvasSize,
             pointer.pointerOnCanvas,
-            antwika::voxel::cubeTop(editLevel));
+            antwika::voxel::getCubeTop(editLevel));
 
         if (position.has_value() && *position != draggedLamp->position)
         {

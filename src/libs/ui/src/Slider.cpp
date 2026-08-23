@@ -29,14 +29,14 @@ namespace antwika::ui
         const auto track = tree->open(Node{ // GCOVR_EXCL_LINE
             .axis = Axis::Row,
             .widthSizing = spec.widthSizing,
-            .heightSizing = fixedSize(themeValue.sliderHeight),
+            .heightSizing = getFixedSize(themeValue.sliderHeight),
             .gap = 0,
             .backgroundColor = themeValue.scrollTrackColor,
             .widgetId = spec.widgetId,
             .focusStyle = ring});
 
         const auto thumb = tree->add(Node{ // GCOVR_EXCL_LINE
-            .widthSizing = fixedSize(0),
+            .widthSizing = getFixedSize(0),
             .heightSizing = kGrowSizing,
             .backgroundColor = themeValue.scrollThumbColor});
 

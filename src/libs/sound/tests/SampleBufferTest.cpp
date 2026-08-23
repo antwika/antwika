@@ -35,7 +35,7 @@ TEST(SampleBufferTest, ChannelCount_IsHowManySpansItHolds)
 {
     Planes planes(2, 4);
 
-    EXPECT_EQ(planes.buffer(4).channelCount(), 2U);
+    EXPECT_EQ(planes.buffer(4).getChannelCount(), 2U);
 }
 
 TEST(SampleBufferTest, IsValid_TakesSpansLongEnoughForTheFrames)

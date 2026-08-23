@@ -30,7 +30,7 @@ namespace antwika::voxelmap
             bool met = false;
         };
 
-        [[nodiscard]] gfx::Vec3 unprojected(
+        [[nodiscard]] gfx::Vec3 getUnprojected(
             const gfx::Mat4 &undoMatrix, const gfx::Vec3 ndcPosition)
         {
             const auto modelPoint =
@@ -44,7 +44,7 @@ namespace antwika::voxelmap
             return gfx::Vec3{modelPoint} / modelPoint.w;
         }
 
-        [[nodiscard]] RayHit metBy(
+        [[nodiscard]] RayHit getMetBy(
             const Ray &ray, const gfx::Vec3 lowestPosition,
             const gfx::Vec3 highestPosition)
         {
@@ -96,11 +96,11 @@ namespace antwika::voxelmap
                 .awayDistance = nearest, .axis = axis, .met = true};
         }
 
-        [[nodiscard]] std::size_t sideFacing(const gfx::Vec3 direction)
+        [[nodiscard]] std::size_t getSideFacing(const gfx::Vec3 direction)
         {
             for (std::size_t side = 0; side < kVoxelFaceCount; ++side)
             {
-                if (glm::dot(faceNormal(side), direction) > kSameWay)
+                if (glm::dot(getFaceNormal(side), direction) > kSameWay)
                 {
                     return side;
                 }
@@ -110,20 +110,20 @@ namespace antwika::voxelmap
         }
     }
 
-    Ray rayThrough(
+    Ray getRayThrough(
         const gfx::Camera3D &camera,
         const gfx::Size canvasSize,
         const gfx::PointF point)
     {
-        const auto undoMatrix = glm::inverse(camera.viewProjection());
+        const auto undoMatrix = glm::inverse(camera.getViewProjection());
         const auto ndcX =
             (2.0F * point.x / static_cast<float>(canvasSize.width)) - 1.0F;
         const auto ndcY =
             1.0F - (2.0F * point.y / static_cast<float>(canvasSize.height));
         const auto nearPoint =
-            unprojected(undoMatrix, gfx::Vec3{ndcX, ndcY, -1.0F});
+            getUnprojected(undoMatrix, gfx::Vec3{ndcX, ndcY, -1.0F});
         const auto farPoint =
-            unprojected(undoMatrix, gfx::Vec3{ndcX, ndcY, 1.0F});
+            getUnprojected(undoMatrix, gfx::Vec3{ndcX, ndcY, 1.0F});
 
         return Ray{
             .fromPosition = nearPoint,
@@ -137,7 +137,7 @@ namespace antwika::voxelmap
             const std::int32_t y,
             const std::int32_t z)
         {
-            return cellMiddle(voxel::VoxelPosition{.x = x, .y = y, .z = z})
+            return getCellMiddle(voxel::VoxelPosition{.x = x, .y = y, .z = z})
                    - gfx::Vec3{kHalf, kHalf, kHalf};
         }
 
@@ -180,7 +180,7 @@ namespace antwika::voxelmap
         }
     }
 
-    std::vector<LineSegment> levelGridLines(
+    std::vector<LineSegment> getLevelGridLines(
         const voxel::Voxels &voxels, const std::int32_t level)
     {
         const auto reach = kGridMarginCubes * voxel::kCubeSide;
@@ -224,7 +224,7 @@ namespace antwika::voxelmap
         return ruledSegments;
     } // GCOVR_EXCL_LINE
 
-    std::array<LineSegment, 12> cubeWireframe(
+    std::array<LineSegment, 12> getCubeWireframe(
         const voxel::VoxelPosition position)
     {
         const auto cornerCell = voxel::cubeCornerOf(position);
@@ -266,7 +266,7 @@ namespace antwika::voxelmap
         return edgeSegments;
     } // GCOVR_EXCL_LINE
 
-    std::vector<LineSegment> buildableTopOutlines(
+    std::vector<LineSegment> getBuildableTopOutlines(
         const voxel::Voxels &voxels, const std::int32_t level)
     {
         const auto foot =
@@ -315,9 +315,9 @@ namespace antwika::voxelmap
         return rimSegments;
     } // GCOVR_EXCL_LINE
 
-    gfx::Vec3 faceMiddle(const FaceRef face)
+    gfx::Vec3 getFaceMiddle(const FaceRef face)
     {
-        return cellMiddle(face.cell.position) + (faceNormal(
+        return getCellMiddle(face.cell.position) + (getFaceNormal(
             face.side) * kHalf);
     }
 
@@ -327,24 +327,24 @@ namespace antwika::voxelmap
         const std::size_t side)
     {
         const auto turnedNormal = gfx::Vec3{
-            modelMatrix * gfx::Vec4{faceNormal(side), 0.0F}};
+            modelMatrix * gfx::Vec4{getFaceNormal(side), 0.0F}};
         const auto looking =
-            glm::normalize(camera.target() - camera.position());
+            glm::normalize(camera.getTarget() - camera.getPosition());
 
         return glm::dot(turnedNormal, looking) < 0.0F;
     }
 
-    std::optional<gfx::PointF> projectToScreen(
+    std::optional<gfx::PointF> getProjectToScreen(
         const gfx::Camera3D &camera,
         const gfx::Mat4 &modelMatrix,
         const gfx::Size canvasSize,
         const gfx::Vec3 position)
     {
-        return projectToScreen(
-            camera.viewProjection() * modelMatrix, canvasSize, position);
+        return getProjectToScreen(
+            camera.getViewProjection() * modelMatrix, canvasSize, position);
     }
 
-    std::optional<gfx::PointF> projectToScreen(
+    std::optional<gfx::PointF> getProjectToScreen(
         const gfx::Mat4 &clipMatrix,
         const gfx::Size canvasSize,
         const gfx::Vec3 position)
@@ -365,7 +365,7 @@ namespace antwika::voxelmap
                 * static_cast<float>(canvasSize.height)};
     }
 
-    std::optional<gfx::Vec3> planeHit(
+    std::optional<gfx::Vec3> getPlaneHit(
         const Ray &ray, const float height)
     {
         if (std::abs(ray.direction.y) < 0.0001F)
@@ -384,7 +384,7 @@ namespace antwika::voxelmap
         return ray.fromPosition + (ray.direction * awayFraction);
     }
 
-    Ray rayInModelSpace(const Ray &ray, const gfx::Mat4 &modelMatrix)
+    Ray getRayInModelSpace(const Ray &ray, const gfx::Mat4 &modelMatrix)
     {
         const auto undoMatrix = glm::inverse(modelMatrix);
         const auto fromPoint =
@@ -396,7 +396,7 @@ namespace antwika::voxelmap
             .direction = glm::normalize(onward)};
     }
 
-    std::optional<FaceRef> raycastFace(
+    std::optional<FaceRef> getRaycastFace(
         const voxel::Voxels &voxels, const Ray &ray)
     {
         std::optional<FaceRef> pickedRef;
@@ -404,8 +404,8 @@ namespace antwika::voxelmap
 
         for (const auto &[position, material] : voxels)
         {
-            const auto middlePoint = cellMiddle(position);
-            const auto hit = metBy(
+            const auto middlePoint = getCellMiddle(position);
+            const auto hit = getMetBy(
                 ray,
                 middlePoint - gfx::Vec3{kHalf, kHalf, kHalf},
                 middlePoint + gfx::Vec3{kHalf, kHalf, kHalf});
@@ -427,13 +427,13 @@ namespace antwika::voxelmap
                 .cell = voxel::VoxelCell{
                         .position = position,
                         .material = material},
-                .side = sideFacing(direction)};
+                .side = getSideFacing(direction)};
         }
 
         return pickedRef;
     }
 
-    std::optional<voxel::VoxelPosition> cellAtLevel(
+    std::optional<voxel::VoxelPosition> getCellAtLevel(
         const Ray &ray, const std::int32_t level)
     {
         if (std::abs(ray.direction.y)
@@ -465,29 +465,29 @@ namespace antwika::voxelmap
                 std::floor(point.z / voxel::kVoxelSide))};
     }
 
-    std::optional<voxel::VoxelPosition> cellUnder(
+    std::optional<voxel::VoxelPosition> getCellUnder(
         const gfx::Camera3D &camera,
         const gfx::Mat4 &modelMatrix,
         const gfx::Size canvasSize,
         const gfx::PointF point,
         const std::int32_t level)
     {
-        return cellAtLevel(
-            rayInModelSpace(rayThrough(camera, canvasSize, point), modelMatrix),
+        return getCellAtLevel(
+            getRayInModelSpace(getRayThrough(camera, canvasSize, point), modelMatrix),
             level);
     }
 
-    tilemap::Tile faceTile(const FaceRef pickRef)
+    tilemap::Tile getFaceTile(const FaceRef pickRef)
     {
-        const auto lies = faceNormal(pickRef.side).y != 0.0F;
+        const auto lies = getFaceNormal(pickRef.side).y != 0.0F;
 
         return tilemap::Tile{
             .atlas = lies ? tilemap::Atlas::Floor : tilemap::Atlas::Wall,
             .index = static_cast<std::uint16_t>(
-                defaultTileIndex(pickRef.cell.position, pickRef.side))};
+                getDefaultTileIndex(pickRef.cell.position, pickRef.side))};
     }
 
-    std::optional<tilemap::Tile> tilePicked(
+    std::optional<tilemap::Tile> getTilePicked(
         const voxel::Voxels &voxels,
         const std::span<const tilemap::Tile> drawnTiles,
         const gfx::Camera3D &camera,
@@ -499,11 +499,11 @@ namespace antwika::voxelmap
                          ? std::vector<FaceRef>{}
                          : visibleFacesOf(voxels);
 
-        return tilePicked(
+        return getTilePicked(
             voxels, faces, drawnTiles, camera, modelMatrix, canvasSize, point);
     } // GCOVR_EXCL_LINE
 
-    std::optional<tilemap::Tile> tilePicked(
+    std::optional<tilemap::Tile> getTilePicked(
         const voxel::Voxels &voxels,
         const std::span<const FaceRef> faces,
         const std::span<const tilemap::Tile> drawnTiles,
@@ -512,10 +512,10 @@ namespace antwika::voxelmap
         const gfx::Size canvasSize,
         const gfx::PointF point)
     {
-        const auto pickedRef = raycastFace(
+        const auto pickedRef = getRaycastFace(
             voxels,
-            rayInModelSpace(
-                rayThrough(camera, canvasSize, point),
+            getRayInModelSpace(
+                getRayThrough(camera, canvasSize, point),
                 modelMatrix));
 
         if (!pickedRef.has_value())
@@ -525,7 +525,7 @@ namespace antwika::voxelmap
 
         if (drawnTiles.empty())
         {
-            return faceTile(*pickedRef);
+            return getFaceTile(*pickedRef);
         }
 
         for (std::size_t which = 0; which < faces.size(); ++which)
@@ -536,10 +536,10 @@ namespace antwika::voxelmap
             }
         }
 
-        return faceTile(*pickedRef);
+        return getFaceTile(*pickedRef);
     }
 
-    std::optional<std::size_t> facePicked(
+    std::optional<std::size_t> getFacePicked(
         const voxel::Voxels &voxels,
         const std::span<const FaceRef> faces,
         const gfx::Camera3D &camera,
@@ -547,10 +547,10 @@ namespace antwika::voxelmap
         const gfx::Size canvasSize,
         const gfx::PointF point)
     {
-        const auto pickedRef = raycastFace(
+        const auto pickedRef = getRaycastFace(
             voxels,
-            rayInModelSpace(
-                rayThrough(camera, canvasSize, point),
+            getRayInModelSpace(
+                getRayThrough(camera, canvasSize, point),
                 modelMatrix));
 
         if (!pickedRef.has_value())

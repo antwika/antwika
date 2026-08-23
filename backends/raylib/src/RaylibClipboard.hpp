@@ -16,7 +16,7 @@ namespace antwika::input::raylib
     public:
         explicit RaylibClipboard(ILogger &logger);
 
-        [[nodiscard]] std::string text() const override;
+        [[nodiscard]] std::string getText() const override;
 
         void setText(std::string_view text) override;
     };

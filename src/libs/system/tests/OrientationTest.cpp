@@ -17,8 +17,8 @@ using antwika::component::Orientation;
 using antwika::intent::DirectionKeys;
 using antwika::rules::kTurnRate;
 using antwika::gameplay::GameLoop;
-using antwika::rules::rotatedBy;
-using antwika::rules::turnedBy;
+using antwika::rules::getRotatedBy;
+using antwika::rules::getTurnedBy;
 using antwika::rules::kMaxPitch;
 using antwika::log::mocks::MockLogger;
 using ::testing::NiceMock;
@@ -32,7 +32,7 @@ namespace
         const DirectionKeys keys)
     {
         return antwika::component::TurnIntent{
-            .axisX = keys.axisX(), .axisZ = keys.axisZ()};
+            .axisX = keys.getAxisX(), .axisZ = keys.getAxisZ()};
     }
 
 }
@@ -40,7 +40,7 @@ namespace
 TEST(OrientationTest, RotatedBy_CarriesAnOrientationTheWayThatIsHeld)
 {
     const auto orientation =
-        rotatedBy(
+        getRotatedBy(
             Orientation{},
             intentOf(DirectionKeys{.north = true, .east = true}));
 
@@ -50,7 +50,7 @@ TEST(OrientationTest, RotatedBy_CarriesAnOrientationTheWayThatIsHeld)
 
 TEST(OrientationTest, RotatedBy_LeavesAnOrientationHeldBothWaysWhereItWas)
 {
-    const auto orientation = rotatedBy(
+    const auto orientation = getRotatedBy(
         Orientation{.yaw = 0.5F, .pitch = 0.25F},
         intentOf(
             DirectionKeys{
@@ -73,19 +73,19 @@ TEST(OrientationTest, Update_TurnsEveryOrientationOfTheWorld)
 
     gameLoop.addSystem(Phase::Orienting, orientationSystem);
 
-    const auto entity = gameLoop.world().create();
+    const auto entity = gameLoop.getWorld().create();
 
     {
-        const OpenPhase phase(gameLoop.world());
+        const OpenPhase phase(gameLoop.getWorld());
 
-        gameLoop.world().add<Orientation>(entity, Orientation{});
+        gameLoop.getWorld().add<Orientation>(entity, Orientation{});
     }
 
     lookKeys.east = true;
     gameLoop.run(0);
 
     EXPECT_NEAR(
-        gameLoop.world().get<Orientation>(entity).yaw,
+        gameLoop.getWorld().get<Orientation>(entity).yaw,
         kTurnRate,
         kTolerance);
 }
@@ -93,7 +93,7 @@ TEST(OrientationTest, Update_TurnsEveryOrientationOfTheWorld)
 TEST(OrientationTest, TurnedBy_CarriesAnOrientationRoundAndTipsIt)
 {
     const auto orientation =
-        turnedBy(Orientation{.yaw = 0.5F, .pitch = 0.25F}, 0.1F, -0.2F);
+        getTurnedBy(Orientation{.yaw = 0.5F, .pitch = 0.25F}, 0.1F, -0.2F);
 
     EXPECT_NEAR(orientation.yaw, 0.6F, kTolerance);
     EXPECT_NEAR(orientation.pitch, 0.05F, kTolerance);
@@ -102,11 +102,11 @@ TEST(OrientationTest, TurnedBy_CarriesAnOrientationRoundAndTipsIt)
 TEST(OrientationTest, TurnedBy_TipsNoFurtherThanTheWorldStaysUpright)
 {
     EXPECT_NEAR(
-        turnedBy(Orientation{}, 0.0F, 90.0F).pitch,
+        getTurnedBy(Orientation{}, 0.0F, 90.0F).pitch,
         kMaxPitch,
         kTolerance);
     EXPECT_NEAR(
-        turnedBy(Orientation{}, 0.0F, -90.0F).pitch,
+        getTurnedBy(Orientation{}, 0.0F, -90.0F).pitch,
         -kMaxPitch,
         kTolerance);
 }
@@ -114,5 +114,5 @@ TEST(OrientationTest, TurnedBy_TipsNoFurtherThanTheWorldStaysUpright)
 TEST(OrientationTest, TurnedBy_CarriesAnOrientationAsFarRoundAsItIsAsked)
 {
     EXPECT_NEAR(
-        turnedBy(Orientation{}, 90.0F, 0.0F).yaw, 90.0F, kTolerance);
+        getTurnedBy(Orientation{}, 90.0F, 0.0F).yaw, 90.0F, kTolerance);
 }

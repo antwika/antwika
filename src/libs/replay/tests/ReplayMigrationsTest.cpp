@@ -7,12 +7,12 @@
 
 using antwika::schema::MigrationChain;
 using antwika::replay::kReplayDocumentVersion;
-using antwika::replay::standardReplayMigrations;
+using antwika::replay::getStandardReplayMigrations;
 
 TEST(ReplayMigrationsTest, StandardReplayMigrations_TargetCurrent)
 {
-    const MigrationChain chain = standardReplayMigrations();
-    EXPECT_EQ(chain.currentVersion(), kReplayDocumentVersion);
+    const MigrationChain chain = getStandardReplayMigrations();
+    EXPECT_EQ(chain.getCurrentVersion(), kReplayDocumentVersion);
 
     nlohmann::json document;
     document["version"] = kReplayDocumentVersion;

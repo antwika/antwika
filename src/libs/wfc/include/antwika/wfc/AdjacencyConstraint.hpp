@@ -24,7 +24,7 @@ namespace antwika::wfc
             std::size_t right,
             std::shared_ptr<const CompatibilityTable> table);
 
-        [[nodiscard]] std::span<const std::size_t> cells() const override;
+        [[nodiscard]] std::span<const std::size_t> getCells() const override;
         bool prune(std::vector<Domain> &waveDomains) const override;
 
     private:

@@ -25,9 +25,9 @@ namespace antwika::editor
     public:
         void open(std::string path);
 
-        [[nodiscard]] const Board &board() const noexcept;
+        [[nodiscard]] const Board &getBoard() const noexcept;
 
-        [[nodiscard]] bool unsaved() const noexcept;
+        [[nodiscard]] bool isUnsaved() const noexcept;
 
         [[nodiscard]] std::optional<std::string> save();
 
@@ -41,7 +41,7 @@ namespace antwika::editor
             gfx::ViewportRenderer &viewportRenderer,
             std::optional<gfx::Point> pointer);
 
-        [[nodiscard]] bool handleWidgets(
+        [[nodiscard]] bool consumeWidgets(
             const ui::Interactions &interactions,
             std::optional<gfx::Point> pointer,
             FocusedField &focusedField,
@@ -50,7 +50,7 @@ namespace antwika::editor
         void carryEdits(
             const ui::Frame &frame, FocusedField &focusedField);
 
-        [[nodiscard]] bool picked() const noexcept;
+        [[nodiscard]] bool isPicked() const noexcept;
 
         void carry(PlanDrag heldDrag);
 
@@ -60,10 +60,10 @@ namespace antwika::editor
 
         void endDrag() noexcept;
 
-        [[nodiscard]] bool dragging() const noexcept;
+        [[nodiscard]] bool isDragging() const noexcept;
 
     private:
-        [[nodiscard]] std::optional<std::uint32_t> cardWidth() const;
+        [[nodiscard]] std::optional<std::uint32_t> getCardWidth() const;
 
         Board planBoard;
         std::string planPath;

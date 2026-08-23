@@ -24,12 +24,12 @@ namespace
 {
     constexpr auto kStop = antwika::engine::events::kStop;
 
-    [[nodiscard]] TickEvent keyDown(Key key, bool repeat = false)
+    [[nodiscard]] TickEvent getKeyDown(Key key, bool repeat = false)
     {
         const InputEventCodec codec;
         return TickEvent{
             .tick = 0,
-            .event = codec.encode(
+            .event = codec.getEncode(
                 KeyPressed{.key = key, .repeat = repeat})};
     }
 
@@ -49,7 +49,7 @@ namespace
 
 TEST(StopOnKeySourceTest, EventsFor_AppendsAStopWhenTheChosenKeyGoesDown)
 {
-    ReplaySource innerSource({keyDown(Key::Escape)});
+    ReplaySource innerSource({getKeyDown(Key::Escape)});
     const InputEventCodec codec;
     StopOnKeySource source(innerSource, codec, Key::Escape);
 
@@ -61,7 +61,7 @@ TEST(StopOnKeySourceTest, EventsFor_AppendsAStopWhenTheChosenKeyGoesDown)
 
 TEST(StopOnKeySourceTest, EventsFor_LeavesADifferentKeyAlone)
 {
-    ReplaySource innerSource({keyDown(Key::W)});
+    ReplaySource innerSource({getKeyDown(Key::W)});
     const InputEventCodec codec;
     StopOnKeySource source(innerSource, codec, Key::Escape);
 
@@ -73,7 +73,7 @@ TEST(StopOnKeySourceTest, EventsFor_LeavesADifferentKeyAlone)
 
 TEST(StopOnKeySourceTest, EventsFor_IgnoresARepeatOfTheChosenKey)
 {
-    ReplaySource innerSource({keyDown(Key::Escape, true)});
+    ReplaySource innerSource({getKeyDown(Key::Escape, true)});
     const InputEventCodec codec;
     StopOnKeySource source(innerSource, codec, Key::Escape);
 
@@ -89,7 +89,7 @@ TEST(StopOnKeySourceTest, EventsFor_IgnoresAReleaseOfTheChosenKey)
     ReplaySource innerSource(
         {TickEvent{
             .tick = 0,
-            .event = codec.encode(KeyReleased{.key = Key::Escape})}});
+            .event = codec.getEncode(KeyReleased{.key = Key::Escape})}});
     StopOnKeySource source(innerSource, codec, Key::Escape);
 
     const auto events = source.eventsFor(0);
@@ -113,7 +113,7 @@ TEST(StopOnKeySourceTest, EventsFor_IgnoresEventsThatAreNotInputAtAll)
 
 TEST(StopOnKeySourceTest, EventsFor_AppendsOneStopForTwoPressesInATick)
 {
-    ReplaySource innerSource({keyDown(Key::Escape), keyDown(Key::Escape)});
+    ReplaySource innerSource({getKeyDown(Key::Escape), getKeyDown(Key::Escape)});
     const InputEventCodec codec;
     StopOnKeySource source(innerSource, codec, Key::Escape);
 

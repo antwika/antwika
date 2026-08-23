@@ -16,16 +16,16 @@ namespace antwika::decor::decordetail
 
     namespace
     {
-        [[nodiscard]] voxel::VoxelPosition spanDown(const std::size_t side)
+        [[nodiscard]] voxel::VoxelPosition getSpanDown(const std::size_t side)
         {
             return side == 4 ? voxel::VoxelPosition{.z = 1}
                          : voxel::VoxelPosition{.y = -1};
         }
 
-        [[nodiscard]] voxel::VoxelPosition spanRight(const std::size_t side)
+        [[nodiscard]] voxel::VoxelPosition getSpanRight(const std::size_t side)
         {
             return side == 4 ? voxel::VoxelPosition{.x = 1}
-                         : wallTangent(side);
+                         : getWallTangent(side);
         }
 
         [[nodiscard]] bool takes(
@@ -40,7 +40,7 @@ namespace antwika::decor::decordetail
         }
     }
 
-    std::map<std::size_t, tilemap::Tile> placeSpannedDecor(
+    std::map<std::size_t, tilemap::Tile> getPlaceSpannedDecor(
         const std::vector<voxelmap::FaceRef> &faces,
         const std::span<const tilemap::Tile> drawnTiles,
         const std::span<const DecorTile> decor,
@@ -52,7 +52,7 @@ namespace antwika::decor::decordetail
 
         for (std::size_t faceIndex = 0; faceIndex < faces.size(); ++faceIndex)
         {
-            if (gfx::Vec3(voxelmap::faceNormal(faces[faceIndex].side)).y
+            if (gfx::Vec3(voxelmap::getFaceNormal(faces[faceIndex].side)).y
                 < 0.0F)
             {
                 continue;
@@ -65,11 +65,11 @@ namespace antwika::decor::decordetail
         }
 
         for (const auto which :
-             shuffledValues(decor.size(), seed))
+             getShuffledValues(decor.size(), seed))
         {
             const auto &record = decor[which];
 
-            if (!decorSpanned(record))
+            if (!isDecorSpanned(record))
             {
                 continue;
             }
@@ -98,8 +98,8 @@ namespace antwika::decor::decordetail
                     continue;
                 }
 
-                const auto right = spanRight(side);
-                const auto downSpan = spanDown(side);
+                const auto right = getSpanRight(side);
+                const auto downSpan = getSpanDown(side);
                 std::vector<std::size_t> coveredIndexes;
                 auto allCovered = true;
 

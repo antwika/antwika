@@ -7,12 +7,12 @@
 namespace antwika::light
 {
 
-    gfx::Vec3 lampPosition(const Lamp lamp)
+    gfx::Vec3 getLampPosition(const Lamp lamp)
     {
-        return voxelmap::cellMiddle(lamp.position);
+        return voxelmap::getCellMiddle(lamp.position);
     }
 
-    gfx::Size shadowAtlasSize()
+    gfx::Size getShadowAtlasSize()
     {
         return gfx::Size{
             .width = kShadowFaceResolution
@@ -21,7 +21,7 @@ namespace antwika::light
                       * static_cast<std::uint32_t>(kMaxLamps)};
     }
 
-    gfx::Rect shadowFaceRect(
+    gfx::Rect getShadowFaceRect(
         const std::size_t slot, const gfx::CubeFace face)
     {
         const auto side =
@@ -36,7 +36,7 @@ namespace antwika::light
                  .height = kShadowFaceResolution}};
     }
 
-    gfx::Camera3D shadowCamera(
+    gfx::Camera3D getShadowCamera(
         const gfx::Vec3 position, const gfx::CubeFace face)
     {
         return gfx::Camera3D{
@@ -50,9 +50,9 @@ namespace antwika::light
                 .farPlane = kLampFarPlane}};
     } // GCOVR_EXCL_LINE
 
-    std::array<voxelmap::LineSegment, 3> lampGizmoSpans(const Lamp lamp)
+    std::array<voxelmap::LineSegment, 3> getLampGizmoSpans(const Lamp lamp)
     {
-        const auto middle = lampPosition(lamp);
+        const auto middle = getLampPosition(lamp);
         const auto arm = kLampGizmoSize;
 
         return {

@@ -59,7 +59,7 @@ namespace antwika::editor
             return true;
         }
 
-        const auto slot = tile::firstUnusedTile(document.map.tilemap,
+        const auto slot = tile::getFirstUnusedTile(document.map.tilemap,
             tile.atlas);
 
         if (!slot.has_value())
@@ -94,7 +94,7 @@ namespace antwika::editor
                     .column = column, .row = row};
 
                 if (document.map.tilemap
-                        .at(place.column, place.row)
+                        .getEntryAt(place.column, place.row)
                         .has_value())
                 {
                     continue;
@@ -156,7 +156,7 @@ namespace antwika::editor
              ++index)
         {
             if (interactions.activatedWidget
-                != tile::transitionRowWidget(index))
+                != tile::getTransitionRowWidget(index))
             {
                 continue;
             }
@@ -206,7 +206,7 @@ namespace antwika::editor
                     + std::to_string(
                         transition.outputTile.index),
                 antwika::ui::ButtonSpec{
-                    .widgetId = tile::transitionRowWidget(
+                    .widgetId = tile::getTransitionRowWidget(
                         index),
                     .widthSizing = antwika::ui::kGrowSizing,
                     .fillColor = transitionPicked == index

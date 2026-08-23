@@ -18,7 +18,7 @@ namespace antwika::io
 
     namespace detail
     {
-        [[nodiscard]] inline std::ios_base::openmode readMode(
+        [[nodiscard]] inline std::ios_base::openmode getReadMode(
             ContentKind content) noexcept
         {
             return content == ContentKind::Bytes
@@ -26,7 +26,7 @@ namespace antwika::io
                 : std::ios_base::in;
         }
 
-        [[nodiscard]] inline std::ios_base::openmode writeMode(
+        [[nodiscard]] inline std::ios_base::openmode getWriteMode(
             ContentKind content) noexcept
         {
             return content == ContentKind::Bytes
@@ -35,10 +35,10 @@ namespace antwika::io
         }
     }
 
-    [[nodiscard]] inline std::optional<std::ifstream> openToReadIfPresent(
+    [[nodiscard]] inline std::optional<std::ifstream> getOpenToReadIfPresent(
         const std::string &path, ContentKind content = ContentKind::Text)
     {
-        std::ifstream file(path, detail::readMode(content));
+        std::ifstream file(path, detail::getReadMode(content));
 
         if (!file.is_open())
         {
@@ -54,7 +54,7 @@ namespace antwika::io
         const std::string &description,
         ContentKind content = ContentKind::Text)
     {
-        std::ifstream file(path, detail::readMode(content));
+        std::ifstream file(path, detail::getReadMode(content));
 
         if (!file.is_open())
         {
@@ -72,7 +72,7 @@ namespace antwika::io
         const std::string &description,
         ContentKind content = ContentKind::Text)
     {
-        std::ofstream file(path, detail::writeMode(content));
+        std::ofstream file(path, detail::getWriteMode(content));
 
         if (!file.is_open())
         {

@@ -15,9 +15,9 @@ namespace antwika::editor
     public:
         antwika::map::Map map;
 
-        [[nodiscard]] const std::string &path() const noexcept;
+        [[nodiscard]] const std::string &getPath() const noexcept;
 
-        [[nodiscard]] const std::string &startPath() const noexcept;
+        [[nodiscard]] const std::string &getStartPath() const noexcept;
 
         void openAt(std::string openedPath);
 

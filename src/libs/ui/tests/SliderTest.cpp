@@ -53,7 +53,7 @@ namespace
 
     constexpr std::uint32_t kThumbWidth = 8;
 
-    [[nodiscard]] Theme plainTheme()
+    [[nodiscard]] Theme getPlainTheme()
     {
         return Theme{
             .scrollTrackColor = kTrackColor,
@@ -67,12 +67,12 @@ namespace
             .sliderThumbWidth = kThumbWidth};
     }
 
-    [[nodiscard]] SliderSpec levelSpec()
+    [[nodiscard]] SliderSpec getLevelSpec()
     {
         return SliderSpec{.widgetId = kLevelWidget, .value = 0, .range = 255};
     }
 
-    [[nodiscard]] DropdownSpec openPickerSpec()
+    [[nodiscard]] DropdownSpec getOpenPickerSpec()
     {
         return DropdownSpec{
             .widgetId = kPickerWidget,
@@ -109,21 +109,21 @@ namespace
 
 TEST(SliderTest, Slider_DrawsATrackAndAThumb)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
-    uiContext.slider(levelSpec());
+    uiContext.slider(getLevelSpec());
 
     const auto frame = uiContext.build();
 
-    EXPECT_TRUE(frame.rects.find(kLevelWidget).has_value());
+    EXPECT_TRUE(frame.rects.getFind(kLevelWidget).has_value());
     EXPECT_TRUE(thumbOf(frame.drawList).has_value());
 }
 
 TEST(SliderTest, Slider_ReportsNothingWithThePointerAway)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
-    uiContext.slider(levelSpec());
+    uiContext.slider(getLevelSpec());
 
     EXPECT_FALSE(uiContext.build().interactions.slidChange.has_value());
 }
@@ -132,21 +132,21 @@ TEST(SliderTest, Slider_ReportsTheValueUnderAPressOnTheTrack)
 {
     const auto track =
         [] {
-            Context uiContext{kCanvasSize, plainTheme()};
-            uiContext.slider(levelSpec());
+            Context uiContext{kCanvasSize, getPlainTheme()};
+            uiContext.slider(getLevelSpec());
 
-            return uiContext.build().rects.find(kLevelWidget).value_or(Rect{});
+            return uiContext.build().rects.getFind(kLevelWidget).value_or(Rect{});
         }();
 
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         pressAt(
             track.originPoint.x
                 + static_cast<std::int32_t>(track.size.width) - 1,
             track.originPoint.y + 1)};
 
-    uiContext.slider(levelSpec());
+    uiContext.slider(getLevelSpec());
 
     const auto slid = uiContext.build().interactions.slidChange;
 
@@ -160,18 +160,18 @@ TEST(SliderTest, Slider_ReportsNothingAtTheStartOfTheTrack)
 {
     const auto track =
         [] {
-            Context uiContext{kCanvasSize, plainTheme()};
-            uiContext.slider(levelSpec());
+            Context uiContext{kCanvasSize, getPlainTheme()};
+            uiContext.slider(getLevelSpec());
 
-            return uiContext.build().rects.find(kLevelWidget).value_or(Rect{});
+            return uiContext.build().rects.getFind(kLevelWidget).value_or(Rect{});
         }();
 
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         pressAt(track.originPoint.x, track.originPoint.y + 1)};
 
-    uiContext.slider(levelSpec());
+    uiContext.slider(getLevelSpec());
 
     const auto slid = uiContext.build().interactions.slidChange;
 
@@ -183,21 +183,21 @@ TEST(SliderTest, Slider_ReportsAHalfwayPressAsHalfItsRange)
 {
     const auto track =
         [] {
-            Context uiContext{kCanvasSize, plainTheme()};
-            uiContext.slider(levelSpec());
+            Context uiContext{kCanvasSize, getPlainTheme()};
+            uiContext.slider(getLevelSpec());
 
-            return uiContext.build().rects.find(kLevelWidget).value_or(Rect{});
+            return uiContext.build().rects.getFind(kLevelWidget).value_or(Rect{});
         }();
 
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         pressAt(
             track.originPoint.x
                 + static_cast<std::int32_t>(track.size.width / 2),
             track.originPoint.y + 1)};
 
-    uiContext.slider(levelSpec());
+    uiContext.slider(getLevelSpec());
 
     const auto slid = uiContext.build().interactions.slidChange;
 
@@ -207,29 +207,29 @@ TEST(SliderTest, Slider_ReportsAHalfwayPressAsHalfItsRange)
 
 TEST(SliderTest, Slider_ReportsNothingFromAPressBesideTheTrack)
 {
-    Context uiContext{kCanvasSize, plainTheme(), pressAt(10, 90)};
+    Context uiContext{kCanvasSize, getPlainTheme(), pressAt(10, 90)};
 
-    uiContext.slider(levelSpec());
+    uiContext.slider(getLevelSpec());
 
     EXPECT_FALSE(uiContext.build().interactions.slidChange.has_value());
 }
 
 TEST(SliderTest, Slider_KeepsFollowingAPointerThatLeftTheTrack)
 {
-    auto spec = levelSpec();
+    auto spec = getLevelSpec();
     spec.dragging = true;
 
     const auto track =
         [&spec] {
-            Context uiContext{kCanvasSize, plainTheme()};
+            Context uiContext{kCanvasSize, getPlainTheme()};
             uiContext.slider(spec);
 
-            return uiContext.build().rects.find(kLevelWidget).value_or(Rect{});
+            return uiContext.build().rects.getFind(kLevelWidget).value_or(Rect{});
         }();
 
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{
             .positionPoint = Point{
                 .x = track.originPoint.x
@@ -247,56 +247,56 @@ TEST(SliderTest, Slider_ReportsNothingWhileNotDraggingAndNotPressed)
 {
     const auto track =
         [] {
-            Context uiContext{kCanvasSize, plainTheme()};
-            uiContext.slider(levelSpec());
+            Context uiContext{kCanvasSize, getPlainTheme()};
+            uiContext.slider(getLevelSpec());
 
-            return uiContext.build().rects.find(kLevelWidget).value_or(Rect{});
+            return uiContext.build().rects.getFind(kLevelWidget).value_or(Rect{});
         }();
 
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{
             .positionPoint = Point{
                 .x = track.originPoint.x + 4, .y = track.originPoint.y + 1},
             .down = true,
             .pressed = false}};
 
-    uiContext.slider(levelSpec());
+    uiContext.slider(getLevelSpec());
 
     EXPECT_FALSE(uiContext.build().interactions.slidChange.has_value());
 }
 
 TEST(SliderTest, Slider_ReportsNothingUnderAnOpenDropdown)
 {
-    const auto picker = openPickerSpec();
+    const auto picker = getOpenPickerSpec();
 
     const auto track =
         [&picker] {
-            Context uiContext{kCanvasSize, plainTheme()};
+            Context uiContext{kCanvasSize, getPlainTheme()};
             uiContext.dropdown(picker);
-            uiContext.slider(levelSpec());
+            uiContext.slider(getLevelSpec());
 
-            return uiContext.build().rects.find(kLevelWidget).value_or(Rect{});
+            return uiContext.build().rects.getFind(kLevelWidget).value_or(Rect{});
         }();
 
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         pressAt(track.originPoint.x + 4, track.originPoint.y + 1)};
 
     uiContext.dropdown(picker);
-    uiContext.slider(levelSpec());
+    uiContext.slider(getLevelSpec());
 
     EXPECT_FALSE(uiContext.build().interactions.slidChange.has_value());
 }
 
 TEST(SliderTest, Slider_ReportsNothingForAnUnnamedSlider)
 {
-    auto spec = levelSpec();
+    auto spec = getLevelSpec();
     spec.widgetId = kNoWidget;
 
-    Context uiContext{kCanvasSize, plainTheme(), pressAt(4, 1)};
+    Context uiContext{kCanvasSize, getPlainTheme(), pressAt(4, 1)};
 
     uiContext.slider(spec);
 
@@ -305,11 +305,11 @@ TEST(SliderTest, Slider_ReportsNothingForAnUnnamedSlider)
 
 TEST(SliderTest, Slider_ReportsItsOwnValueOverARangeOfNothing)
 {
-    auto spec = levelSpec();
+    auto spec = getLevelSpec();
     spec.range = 0;
     spec.value = 9;
 
-    Context uiContext{kCanvasSize, plainTheme(), pressAt(40, 1)};
+    Context uiContext{kCanvasSize, getPlainTheme(), pressAt(40, 1)};
 
     uiContext.slider(spec);
 
@@ -321,12 +321,12 @@ TEST(SliderTest, Slider_ReportsItsOwnValueOverARangeOfNothing)
 
 TEST(SliderTest, Slider_PutsTheThumbAtTheStartForTheLeastValue)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
-    uiContext.slider(levelSpec());
+    uiContext.slider(getLevelSpec());
 
     const auto frame = uiContext.build();
-    const auto track = frame.rects.find(kLevelWidget);
+    const auto track = frame.rects.getFind(kLevelWidget);
     const auto thumb = thumbOf(frame.drawList);
 
     ASSERT_TRUE(track.has_value());
@@ -337,15 +337,15 @@ TEST(SliderTest, Slider_PutsTheThumbAtTheStartForTheLeastValue)
 
 TEST(SliderTest, Slider_PutsTheThumbAtTheEndForTheGreatestValue)
 {
-    auto spec = levelSpec();
+    auto spec = getLevelSpec();
     spec.value = spec.range;
 
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.slider(spec);
 
     const auto frame = uiContext.build();
-    const auto track = frame.rects.find(kLevelWidget);
+    const auto track = frame.rects.getFind(kLevelWidget);
     const auto thumb = thumbOf(frame.drawList);
 
     ASSERT_TRUE(track.has_value());
@@ -358,11 +358,11 @@ TEST(SliderTest, Slider_PutsTheThumbAtTheEndForTheGreatestValue)
 
 TEST(SliderTest, Slider_ClipsAThumbWiderThanTheTrackItSitsOn)
 {
-    auto theme = plainTheme();
+    auto theme = getPlainTheme();
     theme.sliderThumbWidth = 500;
 
-    auto spec = levelSpec();
-    spec.widthSizing = antwika::ui::fixedSize(20);
+    auto spec = getLevelSpec();
+    spec.widthSizing = antwika::ui::getFixedSize(20);
 
     Context uiContext{kCanvasSize, theme};
 
@@ -378,11 +378,11 @@ TEST(SliderTest, Slider_TakesTheTabFocusLikeAnyOtherWidget)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::FocusNext}}};
 
-    uiContext.slider(levelSpec());
+    uiContext.slider(getLevelSpec());
 
     EXPECT_EQ(kLevelWidget, uiContext.build().interactions.focusedWidget);
 }
@@ -404,23 +404,23 @@ TEST(SliderTest, SliderChange_ComparesEveryFieldItCarries)
 
 TEST(SliderTest, SliderSpec_ComparesEveryFieldItCarries)
 {
-    const auto sliderSpec = levelSpec();
+    const auto sliderSpec = getLevelSpec();
 
-    EXPECT_EQ(sliderSpec, levelSpec());
+    EXPECT_EQ(sliderSpec, getLevelSpec());
 
     using Change = void (*)(SliderSpec &);
 
     const std::array<Change, 5> changes{
         [](SliderSpec &spec) { spec.widgetId = kNoWidget; },
         [](SliderSpec &spec)
-        { spec.widthSizing = antwika::ui::fixedSize(4); },
+        { spec.widthSizing = antwika::ui::getFixedSize(4); },
         [](SliderSpec &spec) { spec.value = 1; },
         [](SliderSpec &spec) { spec.range = 9; },
         [](SliderSpec &spec) { spec.dragging = true; }};
 
     for (const auto &change : changes)
     {
-        auto changedSpec = levelSpec();
+        auto changedSpec = getLevelSpec();
         change(changedSpec);
 
         EXPECT_NE(sliderSpec, changedSpec);

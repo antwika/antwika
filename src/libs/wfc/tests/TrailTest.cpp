@@ -16,7 +16,7 @@ TEST(TrailTest, Rewind_RestoresASingleRemoval)
     EntropyIndex entropyIndex(waveDomains, {});
     Trail trail;
 
-    const std::size_t checkpoint = trail.checkpoint();
+    const std::size_t checkpoint = trail.getCheckpoint();
     waveDomains[0].remove(1);
     trail.record(0, 1);
     entropyIndex.update(0, waveDomains[0]);
@@ -34,7 +34,7 @@ TEST(TrailTest, Rewind_RestoresManyRemovalsFromACell)
     EntropyIndex entropyIndex(waveDomains, {});
     Trail trail;
 
-    const std::size_t checkpoint = trail.checkpoint();
+    const std::size_t checkpoint = trail.getCheckpoint();
     waveDomains[0].restrictTo(2);
     trail.record(0, 0);
     trail.record(0, 1);
@@ -56,7 +56,7 @@ TEST(TrailTest, Rewind_UndoesOnlyEntriesAfterACheckpoint)
     waveDomains[0].remove(0);
     trail.record(0, 0);
 
-    const std::size_t checkpoint = trail.checkpoint();
+    const std::size_t checkpoint = trail.getCheckpoint();
     waveDomains[1].remove(0);
     trail.record(1, 0);
     entropyIndex.update(1, waveDomains[1]);

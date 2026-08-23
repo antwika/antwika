@@ -10,19 +10,19 @@
 namespace antwika::rules
 {
 
-    [[nodiscard]] std::optional<voxel::VoxelPosition> gateCubeContaining(
+    [[nodiscard]] std::optional<voxel::VoxelPosition> getGateCubeContaining(
         std::span<const voxel::VoxelPosition> gatePositions,
         voxel::VoxelPosition position);
 
-    [[nodiscard]] std::optional<voxel::VoxelPosition> adjacentDoor(
+    [[nodiscard]] std::optional<voxel::VoxelPosition> getAdjacentDoor(
         std::span<const voxel::VoxelPosition> doorPositions,
         voxel::VoxelPosition standsInPosition);
 
-    [[nodiscard]] std::vector<voxel::VoxelPosition> doorwayCells(
+    [[nodiscard]] std::vector<voxel::VoxelPosition> getDoorwayCells(
         std::span<const voxel::VoxelPosition> doorPositions,
         voxel::VoxelPosition cornerPosition);
 
-    [[nodiscard]] bool cubeOccupied(
+    [[nodiscard]] bool isCubeOccupied(
         const voxel::Voxels &voxels, voxel::VoxelPosition cornerPosition);
 
 }

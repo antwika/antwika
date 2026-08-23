@@ -30,7 +30,7 @@ namespace antwika::map
         Eraser,
     };
 
-    [[nodiscard]] constexpr Tool lastEnumerator(Tool) noexcept
+    [[nodiscard]] constexpr Tool getLastEnumerator(Tool) noexcept
     {
         return Tool::Eraser;
     }
@@ -45,7 +45,7 @@ namespace antwika::map
         Circle,
     };
 
-    [[nodiscard]] constexpr Paint lastEnumerator(Paint) noexcept
+    [[nodiscard]] constexpr Paint getLastEnumerator(Paint) noexcept
     {
         return Paint::Circle;
     }
@@ -59,7 +59,7 @@ namespace antwika::map
         Plan,
     };
 
-    [[nodiscard]] constexpr View lastEnumerator(View) noexcept
+    [[nodiscard]] constexpr View getLastEnumerator(View) noexcept
     {
         return View::Plan;
     }

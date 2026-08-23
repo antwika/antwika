@@ -23,7 +23,7 @@ namespace antwika::schema
             std::uint32_t currentVersion,
             std::string versionKey = std::string(kSchemaVersionKey));
 
-        [[nodiscard]] std::uint32_t currentVersion() const noexcept;
+        [[nodiscard]] std::uint32_t getCurrentVersion() const noexcept;
 
         void migrate(nlohmann::json &document) const;
 

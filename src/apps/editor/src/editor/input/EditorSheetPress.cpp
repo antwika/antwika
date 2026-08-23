@@ -22,7 +22,7 @@ namespace antwika::editor
             && activeView == map::View::Icons)
         {
             const auto projectToScreen =
-                viewportRenderer.viewport().toCanvas(
+                viewportRenderer.getViewport().toCanvas(
                     antwika::gfx::Point{
                         .x = downPressed.position.x,
                         .y = downPressed.position.y});
@@ -31,7 +31,7 @@ namespace antwika::editor
                 static_cast<float>(projectToScreen.x),
                 static_cast<float>(projectToScreen.y)};
 
-            const auto count = iconsView.count();
+            const auto count = iconsView.getCount();
             const auto chosenCell = antwika::editor::iconCellAt(
                 camera::kCanvasSize, count, pointer.pointerOnCanvas);
 
@@ -45,14 +45,14 @@ namespace antwika::editor
                 return;
             }
 
-            if (!iconsView.picked().has_value()
-                || *iconsView.picked() >= count)
+            if (!iconsView.getPicked().has_value()
+                || *iconsView.getPicked() >= count)
             {
                 return;
             }
 
             const auto pixel = antwika::editor::iconPixelAt(
-                antwika::editor::editedIconRect(camera::kCanvasSize),
+                antwika::editor::getEditedIconRect(camera::kCanvasSize),
                 pointer.pointerOnCanvas);
 
             if (!pixel.has_value())
@@ -74,7 +74,7 @@ namespace antwika::editor
             && activeView == map::View::Character)
         {
             const auto projectToScreen =
-                viewportRenderer.viewport().toCanvas(
+                viewportRenderer.getViewport().toCanvas(
                     antwika::gfx::Point{
                         .x = downPressed.position.x,
                         .y = downPressed.position.y});
@@ -110,7 +110,7 @@ namespace antwika::editor
             }
 
             const auto pixel = character::characterPixelAt(
-                characterCanvasRect(camera::kCanvasSize),
+                getCharacterCanvasRect(camera::kCanvasSize),
                 pointer.pointerOnCanvas);
 
             if (!pixel.has_value())
@@ -128,11 +128,11 @@ namespace antwika::editor
             }
 
             if (downPressed.button == input::MouseButton::Left
-                && (heldModifiers().shift
+                && (getHeldModifiers().shift
                     || settings.paint == map::Paint::Select))
             {
                 if (characterView.mark.selection.has_value()
-                    && character::selectionContains(
+                    && character::isSelectionContains(
                         *characterView.mark.selection, *pixel))
                 {
                     characterView.mark.draggingPatch = true;
@@ -144,7 +144,7 @@ namespace antwika::editor
                     {
                         characterView.mark.floatingPatchBuffer =
                             character::cutFrom(
-                                characterView.sheet(),
+                                characterView.getSheet(),
                                 *characterView.mark.selectedFrame
                                     / character::kCharacterFrames,
                                 *characterView.mark.selectedFrame
@@ -170,7 +170,7 @@ namespace antwika::editor
                 downPressed.button == input::MouseButton::Right;
             pushUndo();
 
-            const auto color = character::characterPaletteColor(
+            const auto color = character::getCharacterPaletteColor(
                 document.map.paletteColors,
                 strokeErases ? character::kTransparentInk
                              : inkPicker.activeInk);
@@ -178,7 +178,7 @@ namespace antwika::editor
             if (settings.paint == map::Paint::Fill && !strokeErases)
             {
                 character::paintCharacterFill(
-                    characterView.sheet(),
+                    characterView.getSheet(),
                     *characterView.mark.selectedFrame
                         / character::kCharacterFrames,
                     *characterView.mark.selectedFrame
@@ -189,7 +189,7 @@ namespace antwika::editor
             else
             {
                 character::paintCharacter(
-                    characterView.sheet(),
+                    characterView.getSheet(),
                     *characterView.mark.selectedFrame
                         / character::kCharacterFrames,
                     *characterView.mark.selectedFrame
@@ -209,7 +209,7 @@ namespace antwika::editor
             && activeView == map::View::Atlases
             && !inkPicker.editingInk.has_value())
         {
-            const auto canvasPoint = viewportRenderer.viewport().toCanvas(
+            const auto canvasPoint = viewportRenderer.getViewport().toCanvas(
                 antwika::gfx::Point{
                     .x = downPressed.position.x,
                     .y = downPressed.position.y});
@@ -223,7 +223,7 @@ namespace antwika::editor
                 const auto editedTileValue = editedTile();
                 const auto pixel = tile::pixelAt(
                     editedTileValue,
-                    inspectedTileRect(frameRect(), editedTileValue),
+                    getInspectedTileRect(frameRect(), editedTileValue),
                     pointer.pointerOnCanvas);
 
                 if (pixel.has_value())
@@ -259,7 +259,7 @@ namespace antwika::editor
             return;
         }
 
-        const auto projectToScreen = viewportRenderer.viewport().toCanvas(
+        const auto projectToScreen = viewportRenderer.getViewport().toCanvas(
             antwika::gfx::Point{
                 .x = downPressed.position.x, .y = downPressed.position.y});
 
@@ -286,7 +286,7 @@ namespace antwika::editor
         const auto editedTileValue = editedTile();
         const auto pixel = tile::pixelAt(
             editedTileValue,
-            inspectedTileRect(frameRect(), editedTileValue),
+            getInspectedTileRect(frameRect(), editedTileValue),
             pointer.pointerOnCanvas);
 
         if (!pixel.has_value())

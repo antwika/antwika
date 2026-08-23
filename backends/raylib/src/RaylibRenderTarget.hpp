@@ -31,13 +31,13 @@ namespace antwika::gfx::raylib
 
         ~RaylibRenderTarget() override;
 
-        [[nodiscard]] Size size() const override;
+        [[nodiscard]] Size getSize() const override;
 
-        [[nodiscard]] const ITexture *color() const override;
+        [[nodiscard]] const ITexture *getColor() const override;
 
-        [[nodiscard]] const ITexture *depth() const override;
+        [[nodiscard]] const ITexture *getDepth() const override;
 
-        [[nodiscard]] unsigned int frameBuffer() const noexcept;
+        [[nodiscard]] unsigned int getFrameBuffer() const noexcept;
 
         [[nodiscard]] bool isOwnedBy(
             const RaylibRenderer &candidateRenderer) const noexcept;

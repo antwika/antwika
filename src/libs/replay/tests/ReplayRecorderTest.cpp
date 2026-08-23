@@ -45,7 +45,7 @@ namespace
         {
         }
 
-        [[nodiscard]] std::string text() const
+        [[nodiscard]] std::string getText() const
         {
             return keptText;
         }
@@ -66,7 +66,7 @@ namespace
         std::string keptText;
     };
 
-    [[nodiscard]] TickEvent anEvent(
+    [[nodiscard]] TickEvent getAnEvent(
         const antwika::time::Tick tick, const std::string_view name)
     {
         return TickEvent{
@@ -102,7 +102,7 @@ TEST(ReplayRecorderTest, Handle_ThrowsWhenARecordWillNotWrite)
     ReplayRecorder recorder(outputStream, "somewhere-full");
 
     EXPECT_THROW(
-        recorder.handle(anEvent(0, "game.score_increment")),
+        recorder.handle(getAnEvent(0, "game.score_increment")),
         ReplayFormatError);
 }
 
@@ -120,8 +120,8 @@ TEST(ReplayRecorderTest, Handle_AppendsOneLinePerEvent)
     std::ostringstream outputStream;
     ReplayRecorder recorder(outputStream, "a-stringstream");
 
-    recorder.handle(anEvent(0, "game.score_increment"));
-    recorder.handle(anEvent(1, "game.score_increment"));
+    recorder.handle(getAnEvent(0, "game.score_increment"));
+    recorder.handle(getAnEvent(1, "game.score_increment"));
 
     const auto text = outputStream.str();
     EXPECT_EQ(std::count(text.begin(), text.end(), '\n'), 3);
@@ -132,8 +132,8 @@ TEST(ReplayRecorderTest, Handle_KeepsEveryEventBeforeAKill)
     std::ostringstream outputStream;
     {
         ReplayRecorder recorder(outputStream, "a-stringstream");
-        recorder.handle(anEvent(0, "game.score_increment"));
-        recorder.handle(anEvent(2, "game.score_increment"));
+        recorder.handle(getAnEvent(0, "game.score_increment"));
+        recorder.handle(getAnEvent(2, "game.score_increment"));
 
         std::istringstream mid(outputStream.str());
         EXPECT_EQ(ReplayReader().read(mid).size(), 2U);
@@ -145,14 +145,14 @@ TEST(ReplayRecorderTest, Handle_FiltersOutTheRegeneratedTick)
     std::ostringstream outputStream;
     ReplayRecorder recorder(outputStream, "a-stringstream");
 
-    recorder.handle(anEvent(0, "engine.tick"));
-    recorder.handle(anEvent(0, "game.score_increment"));
-    recorder.handle(anEvent(1, "engine.tick"));
+    recorder.handle(getAnEvent(0, "engine.tick"));
+    recorder.handle(getAnEvent(0, "game.score_increment"));
+    recorder.handle(getAnEvent(1, "engine.tick"));
 
     std::istringstream inputStream(outputStream.str());
     EXPECT_EQ(
         ReplayReader().read(inputStream),
-        std::vector<TickEvent>{anEvent(0, "game.score_increment")});
+        std::vector<TickEvent>{getAnEvent(0, "game.score_increment")});
 }
 
 TEST(ReplayRecorderTest, Ctor_StatesTheRecordedCanvas)
@@ -171,13 +171,13 @@ TEST(ReplayRecorderTest, Handle_LosesOnlyATornLastRecord)
     std::ostream outputStream(&buffer);
     ReplayRecorder recorder(outputStream, "torn");
 
-    recorder.handle(anEvent(0, "game.score_increment"));
+    recorder.handle(getAnEvent(0, "game.score_increment"));
     EXPECT_THROW(
-        recorder.handle(anEvent(1, "game.score_increment")),
+        recorder.handle(getAnEvent(1, "game.score_increment")),
         ReplayFormatError);
 
-    std::istringstream inputStream(buffer.text());
+    std::istringstream inputStream(buffer.getText());
     EXPECT_EQ(
         ReplayReader().read(inputStream),
-        std::vector<TickEvent>{anEvent(0, "game.score_increment")});
+        std::vector<TickEvent>{getAnEvent(0, "game.score_increment")});
 }

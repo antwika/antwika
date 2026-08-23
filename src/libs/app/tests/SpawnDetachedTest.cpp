@@ -10,11 +10,11 @@
 
 #include "antwika/app/SpawnDetached.hpp"
 
-using antwika::app::spawnDetached;
+using antwika::app::isSpawnDetached;
 
 namespace
 {
-    [[nodiscard]] bool appeared(const std::filesystem::path &path)
+    [[nodiscard]] bool isAppeared(const std::filesystem::path &path)
     {
         for (auto tries = 0; tries < 200; ++tries)
         {
@@ -32,7 +32,7 @@ namespace
 
 #ifdef _WIN32
 
-    [[nodiscard]] std::string shellProgram()
+    [[nodiscard]] std::string getShellProgram()
     {
         const auto *const fromEnvironment = std::getenv("ComSpec");
 
@@ -43,7 +43,7 @@ namespace
 
 #endif
 
-    [[nodiscard]] std::filesystem::path markPath(
+    [[nodiscard]] std::filesystem::path getMarkPath(
         const std::string &name)
     {
         return std::filesystem::temp_directory_path()
@@ -53,7 +53,7 @@ namespace
 
 TEST(SpawnDetachedTest, SpawnDetached_StartsTheProgramItIsGiven)
 {
-    const auto mark = markPath("started");
+    const auto mark = getMarkPath("started");
 
     std::filesystem::remove(mark);
 
@@ -61,17 +61,17 @@ TEST(SpawnDetachedTest, SpawnDetached_StartsTheProgramItIsGiven)
     ASSERT_TRUE(spawnDetached(
         shellProgram(), {"/c", "copy", "/y", "NUL", mark.string()}));
 #else
-    ASSERT_TRUE(spawnDetached(
+    ASSERT_TRUE(isSpawnDetached(
         "/bin/sh", {"-c", "printf hi > " + mark.string()}));
 #endif
-    EXPECT_TRUE(appeared(mark));
+    EXPECT_TRUE(isAppeared(mark));
 
     std::filesystem::remove(mark);
 }
 
 TEST(SpawnDetachedTest, SpawnDetached_RefusesAProgramThatIsNotThere)
 {
-    EXPECT_FALSE(spawnDetached(
+    EXPECT_FALSE(isSpawnDetached(
         (std::filesystem::temp_directory_path() / "antwika-no-such")
             .string(),
         {}));
@@ -79,7 +79,7 @@ TEST(SpawnDetachedTest, SpawnDetached_RefusesAProgramThatIsNotThere)
 
 TEST(SpawnDetachedTest, SpawnDetached_RefusesAPathThatIsNotAProgram)
 {
-    const auto plain = markPath("plain");
+    const auto plain = getMarkPath("plain");
 
     {
         std::ofstream outputStream(plain);
@@ -87,7 +87,7 @@ TEST(SpawnDetachedTest, SpawnDetached_RefusesAPathThatIsNotAProgram)
         outputStream << "not a program";
     }
 
-    EXPECT_FALSE(spawnDetached(plain.string(), {}));
+    EXPECT_FALSE(isSpawnDetached(plain.string(), {}));
 
     std::filesystem::remove(plain);
 }

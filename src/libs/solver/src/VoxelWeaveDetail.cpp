@@ -28,7 +28,7 @@ namespace antwika::solver
     namespace weavedetail
     {
 
-        [[nodiscard]] voxel::VoxelPosition offsetBy(
+        [[nodiscard]] voxel::VoxelPosition getOffsetBy(
             const voxel::VoxelPosition fromPosition, const gfx::Vec3 offset)
         {
             return voxel::VoxelPosition{
@@ -42,28 +42,28 @@ namespace antwika::solver
 
         [[nodiscard]] gfx::Vec3 acrossOf(const std::size_t side)
         {
-            return voxelmap::faceCorner(side, kTopRightCorner)
-                   - voxelmap::faceCorner(side, kTopLeftCorner);
+            return voxelmap::getFaceCorner(side, kTopRightCorner)
+                   - voxelmap::getFaceCorner(side, kTopLeftCorner);
         }
 
         [[nodiscard]] gfx::Vec3 downOf(const std::size_t side)
         {
-            return voxelmap::faceCorner(side, kBottomLeftCorner)
-                   - voxelmap::faceCorner(side, kTopLeftCorner);
+            return voxelmap::getFaceCorner(side, kBottomLeftCorner)
+                   - voxelmap::getFaceCorner(side, kTopLeftCorner);
         }
 
         [[nodiscard]] tilemap::Atlas atlasOf(const std::size_t side)
         {
-            return voxelmap::faceNormal(side).y != 0.0F ? tilemap::Atlas::Floor
+            return voxelmap::getFaceNormal(side).y != 0.0F ? tilemap::Atlas::Floor
                                                  : tilemap::Atlas::Wall;
         }
 
         [[nodiscard]] std::map<DomainKey, std::set<tilemap::Tile>>
-        ruledTilesByDomain(const tile::TileRules &rules)
+        getRuledTilesByDomain(const tile::TileRules &rules)
         {
             std::map<DomainKey, std::set<tilemap::Tile>> spokenTiles;
 
-            for (const auto &rule : rules.allRules())
+            for (const auto &rule : rules.getAllRules())
             {
                 spokenTiles[DomainKey{
                            rule.tile.atlas,
@@ -71,7 +71,7 @@ namespace antwika::solver
                     .insert(rule.tile);
             }
 
-            for (const auto &[tile, part] : rules.parts())
+            for (const auto &[tile, part] : rules.getParts())
             {
                 spokenTiles[DomainKey{
                            tile.atlas, rules.kindOf(tile)}]
@@ -125,7 +125,7 @@ namespace antwika::solver
         {
             const auto taggedTiles = filteredByTag(
                 spokenTiles,
-                voxel::facingOfStep(face.climbPosition),
+                voxel::getFacingOfStep(face.climbPosition),
                 [&rules](const tilemap::Tile tile)
                 { return rules.facingOf(tile); });
 
@@ -155,7 +155,7 @@ namespace antwika::solver
                        || rules.allows(thereTile, thereEdge, hereTile));
         }
 
-        [[nodiscard]] voxel::Side sideTowards(
+        [[nodiscard]] voxel::Side getSideTowards(
             const std::size_t face, const gfx::Vec3 direction)
         {
             const auto acrossDot = glm::dot(direction, acrossOf(face));
@@ -180,7 +180,7 @@ namespace antwika::solver
             for (std::size_t side = 0; side < voxelmap::kVoxelFaceCount;
                  ++side)
             {
-                if (glm::dot(voxelmap::faceNormal(side), direction) > 0.5F)
+                if (glm::dot(voxelmap::getFaceNormal(side), direction) > 0.5F)
                 {
                     return side;
                 }
@@ -189,7 +189,7 @@ namespace antwika::solver
             return 0;
         }
 
-        [[nodiscard]] bool atCubeFace(
+        [[nodiscard]] bool isAtCubeFace(
             const voxel::VoxelPosition position, const gfx::Vec3 direction)
         {
             const auto corner = voxel::cubeCornerOf(position);
@@ -213,7 +213,7 @@ namespace antwika::solver
             return false;
         }
 
-        [[nodiscard]] bool sameSurface(
+        [[nodiscard]] bool isSameSurface(
             const voxelmap::FaceRef &oneFace,
             const voxelmap::FaceRef &otherFace)
         {
@@ -221,7 +221,7 @@ namespace antwika::solver
                    && oneFace.climbPosition == otherFace.climbPosition;
         }
 
-        [[nodiscard]] bool sameSurface(
+        [[nodiscard]] bool isSameSurface(
             const std::map<voxelmap::FaceRef, std::size_t> &faceIndexes,
             const std::vector<voxelmap::FaceRef> &faces,
             const voxelmap::FaceRef placeFace,
@@ -230,7 +230,7 @@ namespace antwika::solver
             const auto foundFace = faceIndexes.find(placeFace);
 
             return foundFace != faceIndexes.end()
-                   && sameSurface(face, faces[foundFace->second]);
+                   && isSameSurface(face, faces[foundFace->second]);
         }
 
         [[nodiscard]] std::vector<FaceEdge> edgesOf(
@@ -248,7 +248,7 @@ namespace antwika::solver
             {
                 const voxelmap::FaceRef besideRef{
                     .cell = voxel::VoxelCell{
-                        .position = offsetBy(face.cell.position, way)},
+                        .position = getOffsetBy(face.cell.position, way)},
                     .side = face.side};
 
                 edges.push_back(
@@ -256,7 +256,7 @@ namespace antwika::solver
                         .edge =
                             tilemap::TileEdge{
                                 .side =
-                                    sideTowards(face.side, way),
+                                    getSideTowards(face.side, way),
                                 .edge =
                                     voxel::cubeCornerOf(face.cell.position)
                                             == voxel::cubeCornerOf(
@@ -264,13 +264,13 @@ namespace antwika::solver
                                         ? voxel::EdgeKind::Interior
                                         : voxel::EdgeKind::Boundary},
                         .atRim =
-                            !sameSurface(faceIndexes, faces, besideRef, face)});
+                            !isSameSurface(faceIndexes, faces, besideRef, face)});
             }
 
             return edges;
         } // GCOVR_EXCL_LINE
 
-        [[nodiscard]] std::pair<gfx::Vec3, gfx::Vec3> cornerWays(
+        [[nodiscard]] std::pair<gfx::Vec3, gfx::Vec3> getCornerWays(
             const std::size_t side, const voxel::Corner corner)
         {
             const auto acrossDirection = acrossOf(side);
@@ -284,10 +284,10 @@ namespace antwika::solver
                 topCorner ? -downDirection : downDirection};
         }
 
-        [[nodiscard]] gfx::Vec3 cornerWay(
+        [[nodiscard]] gfx::Vec3 getCornerWay(
             const std::size_t side, const voxel::Corner corner)
         {
-            const auto [acrossWay, downWay] = cornerWays(side, corner);
+            const auto [acrossWay, downWay] = getCornerWays(side, corner);
 
             return acrossWay + downWay;
         }
@@ -298,18 +298,18 @@ namespace antwika::solver
             const voxelmap::FaceRef face,
             const voxel::Corner corner)
         {
-            const auto [acrossWay, downWay] = cornerWays(face.side, corner);
+            const auto [acrossWay, downWay] = getCornerWays(face.side, corner);
 
             for (const auto way : {acrossWay, downWay})
             {
                 const auto foundFace = faceIndexes.find(
                     voxelmap::FaceRef{
                         .cell = voxel::VoxelCell{
-                        .position = offsetBy(face.cell.position, way)},
+                        .position = getOffsetBy(face.cell.position, way)},
                         .side = face.side});
 
                 if (foundFace != faceIndexes.end()
-                    && sameSurface(faces[foundFace->second], face))
+                    && isSameSurface(faces[foundFace->second], face))
                 {
                     return true;
                 }
@@ -318,7 +318,7 @@ namespace antwika::solver
             return false;
         }
 
-        [[nodiscard]] std::map<voxel::Corner, bool> cornersBeyond(
+        [[nodiscard]] std::map<voxel::Corner, bool> getCornersBeyond(
             const std::map<voxelmap::FaceRef, std::size_t> &faceIndexes,
             const std::vector<voxelmap::FaceRef> &faces,
             const voxelmap::FaceRef face)
@@ -329,14 +329,14 @@ namespace antwika::solver
             {
                 beyondCorners.emplace(
                     corner,
-                    sameSurface(
+                    isSameSurface(
                         faceIndexes,
                         faces,
                         voxelmap::FaceRef{
                             .cell = voxel::VoxelCell{
-                                .position = offsetBy(
+                                .position = getOffsetBy(
                                     face.cell.position,
-                                    cornerWay(face.side, corner))},
+                                    getCornerWay(face.side, corner))},
                             .side = face.side},
                         face)
                         && wrapsAroundCorner(faceIndexes, faces, face, corner));
@@ -345,7 +345,7 @@ namespace antwika::solver
             return beyondCorners;
         } // GCOVR_EXCL_LINE
 
-        [[nodiscard]] std::map<voxelmap::FaceRef, std::size_t> facesByPlace(
+        [[nodiscard]] std::map<voxelmap::FaceRef, std::size_t> getFacesByPlace(
             const std::vector<voxelmap::FaceRef> &faces)
         {
             std::map<voxelmap::FaceRef, std::size_t> faceIndexes;

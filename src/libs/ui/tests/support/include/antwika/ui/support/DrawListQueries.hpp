@@ -28,7 +28,7 @@ namespace antwika::ui::support
         return texts;
     }
 
-    [[nodiscard]] inline std::vector<FillRect> fillsColored(
+    [[nodiscard]] inline std::vector<FillRect> getFillsColored(
         const DrawList &drawList, const gfx::Color fillColor)
     {
         std::vector<FillRect> fillRects;

@@ -15,7 +15,7 @@ using antwika::wfc::WfcError;
 
 namespace
 {
-    CompatibilityTable makeTable()
+    CompatibilityTable createTable()
     {
         CompatibilityTable table(3);
         table.set(0, 2, false);
@@ -23,7 +23,7 @@ namespace
         return table;
     }
 
-    CompatibilityTable makeTablePruningAValueFromEachSide()
+    CompatibilityTable createTablePruningAValueFromEachSide()
     {
         CompatibilityTable table(3);
         table.set(2, 0, false);
@@ -37,15 +37,15 @@ namespace
 
 TEST(AdjacencyConstraintTest, Cells_ReturnsLeftAndRight)
 {
-    AdjacencyConstraint constraint(3, 7, makeTable());
+    AdjacencyConstraint constraint(3, 7, createTable());
     std::vector<std::size_t> cells(
-        constraint.cells().begin(), constraint.cells().end());
+        constraint.getCells().begin(), constraint.getCells().end());
     EXPECT_EQ(cells, (std::vector<std::size_t>{3, 7}));
 }
 
 TEST(AdjacencyConstraintTest, Prune_RemovesIncompatibleValuesBothSides)
 {
-    AdjacencyConstraint constraint(0, 1, makeTablePruningAValueFromEachSide());
+    AdjacencyConstraint constraint(0, 1, createTablePruningAValueFromEachSide());
     std::vector<Domain> waveDomains{Domain(3), Domain(3)};
 
     EXPECT_TRUE(constraint.prune(waveDomains));
@@ -59,7 +59,7 @@ TEST(AdjacencyConstraintTest, Prune_RemovesIncompatibleValuesBothSides)
 
 TEST(AdjacencyConstraintTest, Prune_FailsWithNoCompatiblePartner)
 {
-    AdjacencyConstraint constraint(0, 1, makeTable());
+    AdjacencyConstraint constraint(0, 1, createTable());
     std::vector<Domain> waveDomains{
         Domain::createSingleton(0, 3), Domain::createSingleton(2, 3)};
 
@@ -88,7 +88,7 @@ TEST(
 TEST(AdjacencyConstraintTest, Prune_ReadsATableSharedWithOtherConstraints)
 {
     const auto sharedTable =
-        std::make_shared<const CompatibilityTable>(makeTable());
+        std::make_shared<const CompatibilityTable>(createTable());
     AdjacencyConstraint firstConstraint(0, 1, sharedTable);
     AdjacencyConstraint secondConstraint(1, 2, sharedTable);
     std::vector<Domain> waveDomains{

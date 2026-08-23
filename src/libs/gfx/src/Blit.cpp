@@ -10,7 +10,7 @@
 namespace antwika::gfx
 {
 
-    bool blitIsInBounds(
+    bool isBlitIsInBounds(
         const Size textureSize,
         const RectF sourceRect,
         const RectF destinationRect) noexcept

@@ -47,7 +47,7 @@ namespace antwika::app
         std::ostream &errors = std::cerr,
         std::ostream &help = std::cout);
 
-    [[nodiscard]] std::vector<TickEvent> loadReplayEvents(
+    [[nodiscard]] std::vector<TickEvent> getLoadReplayEvents(
         const std::optional<std::string> &replayPath,
         std::string_view fallback = {});
 

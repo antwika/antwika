@@ -56,7 +56,7 @@ namespace antwika::editor
                                   + std::to_string(index)
                             : document.map.characters.at(index).name,
                         antwika::ui::ButtonSpec{
-                            .widgetId = figureWidget(index),
+                            .widgetId = getFigureWidget(index),
                             .widthSizing = antwika::ui::kGrowSizing,
                             .fillColor = figurePicked == index
                                        ? kSelectionAccentColor
@@ -189,9 +189,9 @@ namespace antwika::editor
                                   + std::to_string(index)
                             : document.map.characters.at(index).name,
                         antwika::ui::ButtonSpec{
-                            .widgetId = figureWidget(index),
+                            .widgetId = getFigureWidget(index),
                             .widthSizing = antwika::ui::kGrowSizing,
-                            .fillColor = characterView.editing() == index
+                            .fillColor = characterView.getEditing() == index
                                        ? kSelectionAccentColor
                                        : kGridLineColor});
                 }
@@ -206,7 +206,7 @@ namespace antwika::editor
         for (std::size_t index = 0; index < document.map.characters.size();
              ++index)
         {
-            if (interactions.activatedWidget != figureWidget(index))
+            if (interactions.activatedWidget != getFigureWidget(index))
             {
                 continue;
             }

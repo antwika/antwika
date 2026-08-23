@@ -23,7 +23,7 @@ namespace antwika::wfc::detail
         }
     }
 
-    double EntropyIndex::sortKey(const Domain &domain) const
+    double EntropyIndex::getSortKey(const Domain &domain) const
     {
         if (valueWeights.empty())
         {
@@ -57,12 +57,12 @@ namespace antwika::wfc::detail
             return;
         }
 
-        const std::pair<double, std::size_t> key{sortKey(domain), cell};
+        const std::pair<double, std::size_t> key{getSortKey(domain), cell};
         keysByEntropy.insert(key);
         cellKey[cell] = key;
     }
 
-    std::optional<std::size_t> EntropyIndex::pickNext() const
+    std::optional<std::size_t> EntropyIndex::getPickNext() const
     {
         if (keysByEntropy.empty())
         {

@@ -18,7 +18,7 @@ using antwika::editor::Column;
 using antwika::editor::PlanFileError;
 using antwika::editor::addCard;
 using antwika::editor::cardsOf;
-using antwika::editor::loadBoard;
+using antwika::editor::getLoadBoard;
 using antwika::editor::readBoard;
 using antwika::editor::saveBoard;
 using antwika::editor::writeBoard;
@@ -27,7 +27,7 @@ using antwika::testing::ScratchFile;
 namespace
 {
 
-    [[nodiscard]] Board writtenBoard()
+    [[nodiscard]] Board getWrittenBoard()
     {
         Board board;
 
@@ -51,7 +51,7 @@ namespace
         return board;
     }
 
-    [[nodiscard]] Board roundTripped(const Board &board)
+    [[nodiscard]] Board getRoundTripped(const Board &board)
     {
         std::stringstream stream;
 
@@ -64,14 +64,14 @@ namespace
 
 TEST(PlanFileTest, ReadBoard_TakesBackWhateverWriteBoardPutDown)
 {
-    const auto board = writtenBoard();
+    const auto board = getWrittenBoard();
 
-    EXPECT_EQ(roundTripped(board), board);
+    EXPECT_EQ(getRoundTripped(board), board);
 }
 
 TEST(PlanFileTest, ReadBoard_TakesBackABoardHoldingNoCardsAtAll)
 {
-    EXPECT_EQ(roundTripped(Board{}), Board{});
+    EXPECT_EQ(getRoundTripped(Board{}), Board{});
 }
 
 TEST(PlanFileTest, ReadBoard_KeepsTheLinesAndMarksOfADescription)
@@ -85,7 +85,7 @@ TEST(PlanFileTest, ReadBoard_KeepsTheLinesAndMarksOfADescription)
             Card{.title = "A card: with marks?",
                  .body = "one\ntwo\n\tthree \"quoted\""}));
 
-    EXPECT_EQ(roundTripped(board), board);
+    EXPECT_EQ(getRoundTripped(board), board);
 }
 
 TEST(PlanFileTest, ReadBoard_RefusesAStreamThatIsNotJsonAtAll)
@@ -143,11 +143,11 @@ TEST(PlanFileTest, ReadBoard_RefusesAReadingThisBuildDoesNotKnow)
 TEST(PlanFileTest, LoadBoard_TakesBackWhateverSaveBoardPutDown)
 {
     const ScratchFile keptFile("plan.");
-    const auto board = writtenBoard();
+    const auto board = getWrittenBoard();
 
-    saveBoard(keptFile.string(), board);
+    saveBoard(keptFile.getString(), board);
 
-    EXPECT_EQ(loadBoard(keptFile.string()), std::optional{board});
+    EXPECT_EQ(getLoadBoard(keptFile.getString()), std::optional{board});
 }
 
 TEST(PlanFileTest, SaveBoard_KeepsWhatStoodInThePlaceItWritesTo)
@@ -155,20 +155,20 @@ TEST(PlanFileTest, SaveBoard_KeepsWhatStoodInThePlaceItWritesTo)
     const ScratchFile keptFile("plan.");
 
     keptFile.write("nothing worth keeping");
-    saveBoard(keptFile.string(), writtenBoard());
+    saveBoard(keptFile.getString(), getWrittenBoard());
 
     EXPECT_TRUE(
-        std::filesystem::exists(keptFile.string() + ".bak1"));
+        std::filesystem::exists(keptFile.getString() + ".bak1"));
 
     std::error_code errorCode;
-    std::filesystem::remove(keptFile.string() + ".bak1", errorCode);
+    std::filesystem::remove(keptFile.getString() + ".bak1", errorCode);
 }
 
 TEST(PlanFileTest, LoadBoard_FindsNoBoardWhereNoFileStands)
 {
     const ScratchFile absentFile("plan.");
 
-    EXPECT_FALSE(loadBoard(absentFile.string()).has_value());
+    EXPECT_FALSE(getLoadBoard(absentFile.getString()).has_value());
 }
 
 TEST(PlanFileTest, LoadBoard_RefusesAFileThatIsNotABoard)
@@ -180,7 +180,7 @@ TEST(PlanFileTest, LoadBoard_RefusesAFileThatIsNotABoard)
     EXPECT_THROW(
         {
             [[maybe_unused]] const auto board =
-                loadBoard(keptFile.string());
+                getLoadBoard(keptFile.getString());
         },
         PlanFileError);
 }

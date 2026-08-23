@@ -32,10 +32,10 @@ namespace antwika::input
         {
             if (const auto *key = std::get_if<Key>(&binding))
             {
-                return state.keyboard().isDown(*key);
+                return state.getKeyboard().isDown(*key);
             }
 
-            return state.mouse().isDown(std::get<MouseButton>(binding));
+            return state.getMouse().isDown(std::get<MouseButton>(binding));
         }
 
         [[nodiscard]] bool wasPressed(
@@ -43,21 +43,21 @@ namespace antwika::input
         {
             if (const auto *key = std::get_if<Key>(&binding))
             {
-                return state.keyboard().wasPressed(*key);
+                return state.getKeyboard().wasPressed(*key);
             }
 
-            return state.mouse().wasPressed(std::get<MouseButton>(binding));
+            return state.getMouse().wasPressed(std::get<MouseButton>(binding));
         }
 
-        [[nodiscard]] KeyModifiers pressModifiers(
+        [[nodiscard]] KeyModifiers getPressModifiers(
             Binding binding, const InputState &state) noexcept
         {
             if (const auto *key = std::get_if<Key>(&binding))
             {
-                return state.keyboard().pressModifiers(*key);
+                return state.getKeyboard().getPressModifiers(*key);
             }
 
-            return state.mouse().pressModifiers(
+            return state.getMouse().getPressModifiers(
                 std::get<MouseButton>(binding));
         }
     }
@@ -144,7 +144,7 @@ namespace antwika::input
                 return isDown(input.binding, state)
                        && satisfies(
                            input.requiredModifiers,
-                           state.keyboard().modifiers(),
+                           state.getKeyboard().getModifiers(),
                            input.extras);
             });
     }
@@ -165,7 +165,7 @@ namespace antwika::input
                 return wasPressed(input.binding, state)
                        && satisfies(
                            input.requiredModifiers,
-                           pressModifiers(input.binding, state),
+                           getPressModifiers(input.binding, state),
                            input.extras);
             });
     }

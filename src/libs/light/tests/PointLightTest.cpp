@@ -93,16 +93,16 @@ using antwika::voxel::VoxelPosition;
 
 TEST(PointLightTest, LampGizmoSpans_CrossesTheMiddleOfItsOwnPlace)
 {
-    using antwika::voxelmap::cellMiddle;
+    using antwika::voxelmap::getCellMiddle;
     using antwika::light::Lamp;
-    using antwika::light::lampGizmoSpans;
+    using antwika::light::getLampGizmoSpans;
     using antwika::voxel::VoxelPosition;
 using antwika::voxel::VoxelPosition;
 
     constexpr Lamp lamp{.position = VoxelPosition{.x = 2, .y = -1, .z = 5}};
 
-    const auto middle = cellMiddle(lamp.position);
-    const auto spans = lampGizmoSpans(lamp);
+    const auto middle = getCellMiddle(lamp.position);
+    const auto spans = getLampGizmoSpans(lamp);
 
     EXPECT_FALSE(spans.empty());
 
@@ -123,9 +123,9 @@ TEST(
 {
     using antwika::light::kShadowFaceResolution;
     using antwika::light::kMaxLamps;
-    using antwika::light::shadowAtlasSize;
+    using antwika::light::getShadowAtlasSize;
 
-    const auto sheet = shadowAtlasSize();
+    const auto sheet = getShadowAtlasSize();
 
     EXPECT_EQ(
         sheet.width,
@@ -140,17 +140,17 @@ TEST(
 TEST(PointLightTest, ShadowFaceRect_GivesEveryPictureAPlaceOfItsOwn)
 {
     using antwika::light::kMaxLamps;
-    using antwika::light::shadowFaceRect;
-    using antwika::light::shadowAtlasSize;
+    using antwika::light::getShadowFaceRect;
+    using antwika::light::getShadowAtlasSize;
 
-    const auto sheet = shadowAtlasSize();
+    const auto sheet = getShadowAtlasSize();
     std::set<std::pair<std::int32_t, std::int32_t>> corners;
 
     for (std::size_t lamp = 0; lamp < kMaxLamps; ++lamp)
     {
         for (const auto face : antwika::gfx::kEveryCubeFace)
         {
-            const auto patch = shadowFaceRect(lamp, face);
+            const auto patch = getShadowFaceRect(lamp, face);
 
             EXPECT_TRUE(
                 corners
@@ -177,7 +177,7 @@ TEST(
 {
     using antwika::light::kShadowFaceResolution;
     using antwika::light::kMaxLamps;
-    using antwika::light::shadowFaceRect;
+    using antwika::light::getShadowFaceRect;
 
     const auto side =
         static_cast<std::int32_t>(kShadowFaceResolution);
@@ -186,7 +186,7 @@ TEST(
     {
         for (const auto face : antwika::gfx::kEveryCubeFace)
         {
-            const auto patch = shadowFaceRect(lamp, face);
+            const auto patch = getShadowFaceRect(lamp, face);
 
             EXPECT_EQ(
                 patch.originPoint.x,
@@ -200,27 +200,27 @@ TEST(
 
 TEST(PointLightTest, ShadowCamera_StandsAtTheLampAndLooksItsWay)
 {
-    using antwika::light::shadowCamera;
+    using antwika::light::getShadowCamera;
 
     constexpr antwika::gfx::Vec3 position{2.0F, 3.0F, 4.0F};
 
     for (const auto face : antwika::gfx::kEveryCubeFace)
     {
-        const auto camera = shadowCamera(position, face);
+        const auto camera = getShadowCamera(position, face);
         const auto way = antwika::gfx::directionOf(face);
 
         EXPECT_NEAR(
-            camera.position().x, position.x, kTolerance);
+            camera.getPosition().x, position.x, kTolerance);
         EXPECT_NEAR(
-            camera.position().y, position.y, kTolerance);
+            camera.getPosition().y, position.y, kTolerance);
         EXPECT_NEAR(
-            camera.position().z, position.z, kTolerance);
+            camera.getPosition().z, position.z, kTolerance);
         EXPECT_NEAR(
-            camera.target().x, position.x + way.x, kTolerance);
+            camera.getTarget().x, position.x + way.x, kTolerance);
         EXPECT_NEAR(
-            camera.target().y, position.y + way.y, kTolerance);
+            camera.getTarget().y, position.y + way.y, kTolerance);
         EXPECT_NEAR(
-            camera.target().z, position.z + way.z, kTolerance);
+            camera.getTarget().z, position.z + way.z, kTolerance);
     }
 }
 
@@ -246,7 +246,7 @@ TEST(PointLightTest, LampNearPlane_ClearsTheWallAWalkerPressesInto)
     using antwika::component::Position;
     using antwika::voxel::VoxelPosition;
 using antwika::voxel::VoxelPosition;
-    using antwika::collision::movedWithCollision;
+    using antwika::collision::getMovedWithCollision;
     using antwika::component::Velocity;
 
     constexpr std::int32_t kWall = 2;
@@ -274,7 +274,7 @@ using antwika::voxel::VoxelPosition;
 
         for (std::size_t step = 0; step < 200; ++step)
         {
-            stoodPosition = movedWithCollision(
+            stoodPosition = getMovedWithCollision(
                 filledVoxels, stoodPosition, Velocity{.velocityZ = 1.0F});
         }
 

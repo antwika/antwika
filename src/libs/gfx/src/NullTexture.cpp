@@ -8,7 +8,7 @@ namespace antwika::gfx::detail
     {
     }
 
-    Size NullTexture::size() const
+    Size NullTexture::getSize() const
     {
         return textureSize;
     }

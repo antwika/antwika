@@ -22,7 +22,7 @@ namespace
 TEST(WindowPointerMappingTest, ToSurface_ChangesNothingUnderTheNullCase)
 {
     NiceMock<MockWindow> window;
-    ON_CALL(window, size()).WillByDefault(Return(kCanvasSize));
+    ON_CALL(window, getSize()).WillByDefault(Return(kCanvasSize));
 
     const WindowPointerMapping mapping(window, kCanvasSize);
 
@@ -34,7 +34,7 @@ TEST(WindowPointerMappingTest, ToSurface_ChangesNothingUnderTheNullCase)
 TEST(WindowPointerMappingTest, ToSurface_UndoesTheScaleTheViewportApplies)
 {
     NiceMock<MockWindow> window;
-    ON_CALL(window, size())
+    ON_CALL(window, getSize())
         .WillByDefault(Return(Size{.width = 2048, .height = 1280}));
 
     const WindowPointerMapping mapping(window, kCanvasSize);
@@ -47,7 +47,7 @@ TEST(WindowPointerMappingTest, ToSurface_UndoesTheScaleTheViewportApplies)
 TEST(WindowPointerMappingTest, ToSurface_SubtractsTheOffsetOfTheBars)
 {
     NiceMock<MockWindow> window;
-    ON_CALL(window, size())
+    ON_CALL(window, getSize())
         .WillByDefault(Return(Size{.width = 1920, .height = 640}));
 
     const WindowPointerMapping mapping(window, kCanvasSize);
@@ -63,7 +63,7 @@ TEST(WindowPointerMappingTest, ToSurface_SubtractsTheOffsetOfTheBars)
 TEST(WindowPointerMappingTest, ToSurface_FollowsAWindowThatChangedSize)
 {
     NiceMock<MockWindow> window;
-    ON_CALL(window, size()).WillByDefault(Return(kCanvasSize));
+    ON_CALL(window, getSize()).WillByDefault(Return(kCanvasSize));
 
     const WindowPointerMapping mapping(window, kCanvasSize);
 
@@ -71,7 +71,7 @@ TEST(WindowPointerMappingTest, ToSurface_FollowsAWindowThatChangedSize)
         mapping.toCanvas(Position{.x = 512, .y = 320}),
         (Position{.x = 512, .y = 320}));
 
-    ON_CALL(window, size())
+    ON_CALL(window, getSize())
         .WillByDefault(Return(Size{.width = 2048, .height = 1280}));
 
     EXPECT_EQ(

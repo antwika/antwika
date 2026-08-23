@@ -7,7 +7,7 @@
 namespace antwika::input
 {
 
-    [[nodiscard]] std::string charTypedBy(
+    [[nodiscard]] std::string getCharTypedBy(
         Key key, bool shiftHeld);
 
 }

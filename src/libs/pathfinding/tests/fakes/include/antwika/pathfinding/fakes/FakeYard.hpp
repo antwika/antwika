@@ -18,7 +18,7 @@ namespace antwika::pathfinding::fakes
         {
         }
 
-        [[nodiscard]] std::vector<GridPos> neighbors(
+        [[nodiscard]] std::vector<GridPos> getNeighbors(
             const GridPos fromPos) const override
         {
             std::vector<GridPos> gridPositions;

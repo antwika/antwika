@@ -22,7 +22,7 @@ namespace antwika::schema
             {
             }
 
-            [[nodiscard]] std::uint32_t fromVersion() const noexcept
+            [[nodiscard]] std::uint32_t getFromVersion() const noexcept
                 override
             {
                 return reads;
@@ -34,7 +34,7 @@ namespace antwika::schema
                 return writes;
             }
 
-            [[nodiscard]] std::string_view name() const noexcept override
+            [[nodiscard]] std::string_view getName() const noexcept override
             {
                 return stepName;
             }
@@ -52,7 +52,7 @@ namespace antwika::schema
         };
     }
 
-    std::shared_ptr<const IMigration> step(
+    std::shared_ptr<const IMigration> getStep(
         const std::uint32_t fromVersion,
         const std::uint32_t toVersion,
         std::string name,

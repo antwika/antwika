@@ -48,21 +48,21 @@ namespace
 
     constexpr StateColors kStyleColors{};
 
-    Node focusable(WidgetId widget)
+    Node getFocusable(WidgetId widget)
     {
         return Node{
             .widgetId = widget, .focusStyle = kRing, .arrangedRect = kBoxRect};
     }
 
-    LayoutTree threeButtons()
+    LayoutTree getThreeButtons()
     {
         LayoutTree tree{Node{}};
 
-        tree.add(focusable(kFirstWidget));
+        tree.add(getFocusable(kFirstWidget));
         tree.add(Node{});
-        tree.add(focusable(kSecondWidget));
-        tree.add(focusable(kNoWidget));
-        tree.add(focusable(kThirdWidget));
+        tree.add(getFocusable(kSecondWidget));
+        tree.add(getFocusable(kNoWidget));
+        tree.add(getFocusable(kThirdWidget));
 
         return tree;
     }
@@ -77,14 +77,14 @@ namespace
 
 TEST(ResolveFocusTest, Resolve_FocusesNothingWithoutAKeyboard)
 {
-    auto tree = threeButtons();
+    auto tree = getThreeButtons();
 
     EXPECT_EQ(kNoWidget, resolve(tree, Pointer{}).focusedWidget);
 }
 
 TEST(ResolveFocusTest, Resolve_KeepsTheFocusItWasGiven)
 {
-    auto tree = threeButtons();
+    auto tree = getThreeButtons();
 
     const auto interactions =
         resolve(tree, Pointer{}, Keyboard{}, kSecondWidget);
@@ -95,21 +95,21 @@ TEST(ResolveFocusTest, Resolve_KeepsTheFocusItWasGiven)
 
 TEST(ResolveFocusTest, Resolve_TabFocusesTheFirstWidgetFromNothing)
 {
-    auto tree = threeButtons();
+    auto tree = getThreeButtons();
 
     EXPECT_EQ(kFirstWidget, focusAfter(tree, Key::FocusNext));
 }
 
 TEST(ResolveFocusTest, Resolve_ShiftTabFocusesTheLastWidgetFromNothing)
 {
-    auto tree = threeButtons();
+    auto tree = getThreeButtons();
 
     EXPECT_EQ(kThirdWidget, focusAfter(tree, Key::FocusPrevious));
 }
 
 TEST(ResolveFocusTest, Resolve_TabAdvancesInDeclarationOrder)
 {
-    auto tree = threeButtons();
+    auto tree = getThreeButtons();
 
     EXPECT_EQ(kSecondWidget, focusAfter(tree, Key::FocusNext, kFirstWidget));
     EXPECT_EQ(kThirdWidget, focusAfter(tree, Key::FocusNext, kSecondWidget));
@@ -117,14 +117,14 @@ TEST(ResolveFocusTest, Resolve_TabAdvancesInDeclarationOrder)
 
 TEST(ResolveFocusTest, Resolve_TabWrapsPastTheLastWidget)
 {
-    auto tree = threeButtons();
+    auto tree = getThreeButtons();
 
     EXPECT_EQ(kFirstWidget, focusAfter(tree, Key::FocusNext, kThirdWidget));
 }
 
 TEST(ResolveFocusTest, Resolve_ShiftTabGoesBack)
 {
-    auto tree = threeButtons();
+    auto tree = getThreeButtons();
 
     EXPECT_EQ(
         kSecondWidget,
@@ -133,14 +133,14 @@ TEST(ResolveFocusTest, Resolve_ShiftTabGoesBack)
 
 TEST(ResolveFocusTest, Resolve_ShiftTabWrapsPastTheFirstWidget)
 {
-    auto tree = threeButtons();
+    auto tree = getThreeButtons();
 
     EXPECT_EQ(kThirdWidget, focusAfter(tree, Key::FocusPrevious, kFirstWidget));
 }
 
 TEST(ResolveFocusTest, Resolve_TabFocusesARootThatIsItselfFocusable)
 {
-    LayoutTree tree{focusable(kFirstWidget)};
+    LayoutTree tree{getFocusable(kFirstWidget)};
 
     EXPECT_EQ(kFirstWidget, focusAfter(tree, Key::FocusNext));
 }
@@ -156,16 +156,16 @@ TEST(ResolveFocusTest, Resolve_TabFocusesNothingWithNothingToFocus)
 TEST(ResolveFocusTest, Resolve_TabStopsOnceAtARepeatedId)
 {
     LayoutTree tree{Node{}};
-    tree.add(focusable(kFirstWidget));
-    tree.add(focusable(kFirstWidget));
-    tree.add(focusable(kSecondWidget));
+    tree.add(getFocusable(kFirstWidget));
+    tree.add(getFocusable(kFirstWidget));
+    tree.add(getFocusable(kSecondWidget));
 
     EXPECT_EQ(kSecondWidget, focusAfter(tree, Key::FocusNext, kFirstWidget));
 }
 
 TEST(ResolveFocusTest, Resolve_DropsAFocusOnAWidgetThatIsGone)
 {
-    auto tree = threeButtons();
+    auto tree = getThreeButtons();
 
     EXPECT_EQ(kNoWidget, resolve(tree, Pointer{}, Keyboard{}, kGoneWidget)
                              .focusedWidget);
@@ -174,7 +174,7 @@ TEST(ResolveFocusTest, Resolve_DropsAFocusOnAWidgetThatIsGone)
 
 TEST(ResolveFocusTest, Resolve_ActivatesTheFocusedWidget)
 {
-    auto tree = threeButtons();
+    auto tree = getThreeButtons();
 
     const auto interactions = resolve(
         tree,
@@ -188,7 +188,7 @@ TEST(ResolveFocusTest, Resolve_ActivatesTheFocusedWidget)
 
 TEST(ResolveFocusTest, Resolve_ActivatesNothingWithNothingFocused)
 {
-    auto tree = threeButtons();
+    auto tree = getThreeButtons();
 
     const auto interactions =
         resolve(tree, Pointer{}, Keyboard{.keys = {Key::Activate}});
@@ -198,7 +198,7 @@ TEST(ResolveFocusTest, Resolve_ActivatesNothingWithNothingFocused)
 
 TEST(ResolveFocusTest, Resolve_AppliesTheKeysInArrivalOrder)
 {
-    auto tree = threeButtons();
+    auto tree = getThreeButtons();
 
     const auto interactions = resolve(
         tree,
@@ -212,7 +212,7 @@ TEST(ResolveFocusTest, Resolve_AppliesTheKeysInArrivalOrder)
 
 TEST(ResolveFocusTest, Resolve_MovesFocusToWhatThePointerActivated)
 {
-    auto tree = threeButtons();
+    auto tree = getThreeButtons();
 
     const auto interactions = resolve(
         tree,
@@ -226,7 +226,7 @@ TEST(ResolveFocusTest, Resolve_MovesFocusToWhatThePointerActivated)
 
 TEST(ResolveFocusTest, Resolve_LeavesAPointerOnlyCallerWithoutFocus)
 {
-    auto tree = threeButtons();
+    auto tree = getThreeButtons();
 
     const auto interactions = resolve(
         tree, Pointer{.positionPoint = kInsidePoint, .pressed = true});
@@ -237,7 +237,7 @@ TEST(ResolveFocusTest, Resolve_LeavesAPointerOnlyCallerWithoutFocus)
 
 TEST(ResolveFocusTest, Resolve_MovesFocusOnAPressOnceAKeyHasArrived)
 {
-    auto tree = threeButtons();
+    auto tree = getThreeButtons();
 
     const auto interactions = resolve(
         tree,
@@ -249,7 +249,7 @@ TEST(ResolveFocusTest, Resolve_MovesFocusOnAPressOnceAKeyHasArrived)
 
 TEST(ResolveFocusTest, Resolve_LeavesFocusAloneWhenNothingIsPressed)
 {
-    auto tree = threeButtons();
+    auto tree = getThreeButtons();
 
     const auto interactions = resolve(
         tree,
@@ -264,43 +264,43 @@ TEST(ResolveFocusTest, Resolve_LeavesFocusAloneWhenNothingIsPressed)
 TEST(ResolveFocusTest, Resolve_RingsTheFocusedWidgetAndNothingElse)
 {
     LayoutTree tree{Node{}};
-    const auto first = tree.add(focusable(kFirstWidget));
-    const auto second = tree.add(focusable(kSecondWidget));
+    const auto first = tree.add(getFocusable(kFirstWidget));
+    const auto second = tree.add(getFocusable(kSecondWidget));
 
     resolve(tree, Pointer{}, Keyboard{}, kSecondWidget);
 
-    EXPECT_FALSE(tree.node(first).focusRing.has_value());
-    ASSERT_TRUE(tree.node(second).focusRing.has_value());
-    EXPECT_EQ(kRingColor, tree.node(second).focusRing->color);
+    EXPECT_FALSE(tree.getNode(first).focusRing.has_value());
+    ASSERT_TRUE(tree.getNode(second).focusRing.has_value());
+    EXPECT_EQ(kRingColor, tree.getNode(second).focusRing->color);
 }
 
 TEST(ResolveFocusTest, Resolve_RingsNothingWithNothingFocused)
 {
     LayoutTree tree{Node{}};
-    const auto first = tree.add(focusable(kFirstWidget));
+    const auto first = tree.add(getFocusable(kFirstWidget));
 
     resolve(tree, Pointer{});
 
-    EXPECT_FALSE(tree.node(first).focusRing.has_value());
+    EXPECT_FALSE(tree.getNode(first).focusRing.has_value());
 }
 
 TEST(ResolveFocusTest, Resolve_RingsEveryNodeSharingTheFocusedId)
 {
     LayoutTree tree{Node{}};
-    const auto first = tree.add(focusable(kFirstWidget));
-    const auto second = tree.add(focusable(kFirstWidget));
+    const auto first = tree.add(getFocusable(kFirstWidget));
+    const auto second = tree.add(getFocusable(kFirstWidget));
 
     resolve(tree, Pointer{}, Keyboard{}, kFirstWidget);
 
-    EXPECT_TRUE(tree.node(first).focusRing.has_value());
-    EXPECT_TRUE(tree.node(second).focusRing.has_value());
+    EXPECT_TRUE(tree.getNode(first).focusRing.has_value());
+    EXPECT_TRUE(tree.getNode(second).focusRing.has_value());
 }
 
 TEST(ResolveFocusTest, Resolve_DressesAFocusedWidgetTheHoverWayToo)
 {
     LayoutTree tree{Node{}};
 
-    Node node = focusable(kFirstWidget);
+    Node node = getFocusable(kFirstWidget);
     node.styleColors = kStyleColors;
 
     const auto index = tree.add(std::move(node));
@@ -308,16 +308,16 @@ TEST(ResolveFocusTest, Resolve_DressesAFocusedWidgetTheHoverWayToo)
     resolve(
         tree, Pointer{.positionPoint = kInsidePoint}, Keyboard{}, kFirstWidget);
 
-    EXPECT_TRUE(tree.node(index).backgroundColor.has_value());
-    EXPECT_TRUE(tree.node(index).focusRing.has_value());
+    EXPECT_TRUE(tree.getNode(index).backgroundColor.has_value());
+    EXPECT_TRUE(tree.getNode(index).focusRing.has_value());
 }
 
 TEST(ResolveFocusTest, Resolve_ChoosesTheOptionEnterLandsOn)
 {
     LayoutTree tree{Node{}};
-    tree.add(focusable(kFirstWidget));
+    tree.add(getFocusable(kFirstWidget));
 
-    Node optionNode = focusable(kSecondWidget);
+    Node optionNode = getFocusable(kSecondWidget);
     optionNode.optionOwnerWidget = kFirstWidget;
     optionNode.optionIndex = 3;
 
@@ -336,7 +336,7 @@ TEST(ResolveFocusTest, Resolve_ChoosesTheOptionEnterLandsOn)
 TEST(ResolveFocusTest, Resolve_ChoosesNothingWhenEnterIsOnAPlainWidget)
 {
     LayoutTree tree{Node{}};
-    tree.add(focusable(kFirstWidget));
+    tree.add(getFocusable(kFirstWidget));
 
     const auto interactions = resolve(
         tree, Pointer{}, Keyboard{.keys = {Key::Activate}}, kFirstWidget);

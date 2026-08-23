@@ -9,7 +9,7 @@ namespace antwika::input
     }
 
     std::optional<PointerHint>
-    PointerHintChannel::latest() const noexcept
+    PointerHintChannel::getLatest() const noexcept
     {
         return latestHint;
     }

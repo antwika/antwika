@@ -15,12 +15,12 @@ namespace antwika::sound
     {
     }
 
-    std::string_view NullSoundBackend::name() const
+    std::string_view NullSoundBackend::getName() const
     {
         return "null";
     }
 
-    SoundCapabilities NullSoundBackend::capabilities() const
+    SoundCapabilities NullSoundBackend::getCapabilities() const
     {
         return SoundCapabilities{.playback = false, .selfDriven = false};
     }

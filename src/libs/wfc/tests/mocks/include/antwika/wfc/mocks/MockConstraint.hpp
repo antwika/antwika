@@ -15,7 +15,7 @@ namespace antwika::wfc::mocks
     {
     public:
         MOCK_METHOD(
-            std::span<const std::size_t>, cells, (), (const, override));
+            std::span<const std::size_t>, getCells, (), (const, override));
         MOCK_METHOD(
             bool,
             prune,

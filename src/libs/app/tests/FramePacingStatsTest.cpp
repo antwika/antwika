@@ -13,7 +13,7 @@
 
 using antwika::app::FramePacingReport;
 using antwika::app::FramePacingStats;
-using antwika::app::formatPacingReport;
+using antwika::app::getFormatPacingReport;
 using antwika::log::Level;
 using antwika::log::mocks::MockLogger;
 using antwika::time::fakes::FakeClock;
@@ -181,7 +181,7 @@ TEST(FramePacingStatsTest, FormatPacingReport_SayWhatWasDrawnOfWhatWasScheduled)
     report.droppedFrames = 17;
     report.ticks = 1;
 
-    const auto lines = formatPacingReport(report);
+    const auto lines = getFormatPacingReport(report);
 
     ASSERT_EQ(lines.size(), 3U);
     EXPECT_EQ(lines[0], "pacing drawn 23 of 40 over ticks 1");
@@ -193,7 +193,7 @@ TEST(FramePacingStatsTest, FormatPacingReport_NameEveryBucketAndItsCount)
     report.intervals[0] = 5;
     report.intervals[7] = 2;
 
-    const auto lines = formatPacingReport(report);
+    const auto lines = getFormatPacingReport(report);
 
     ASSERT_EQ(lines.size(), 3U);
     EXPECT_EQ(
@@ -209,7 +209,7 @@ TEST(FramePacingStatsTest, FormatPacingReport_ReportTheRunsAndTheTickExtremes)
     report.minFramesPerTick = 12;
     report.maxFramesPerTick = 31;
 
-    const auto lines = formatPacingReport(report);
+    const auto lines = getFormatPacingReport(report);
 
     ASSERT_EQ(lines.size(), 3U);
     EXPECT_EQ(

@@ -16,7 +16,7 @@ namespace antwika::worldgen::detail
     public:
         explicit Board(std::vector<wfc::Domain> &waveDomains);
 
-        [[nodiscard]] const std::vector<wfc::Domain> &wave() const;
+        [[nodiscard]] const std::vector<wfc::Domain> &getWave() const;
 
         [[nodiscard]] bool holds(
             std::size_t cell, std::size_t value) const;
@@ -25,7 +25,7 @@ namespace antwika::worldgen::detail
 
         void hold(std::size_t cell, std::span<const std::size_t> wantedCells);
 
-        [[nodiscard]] std::size_t mark() const;
+        [[nodiscard]] std::size_t getMark() const;
 
         void rewind(std::size_t toStep);
 

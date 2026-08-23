@@ -9,9 +9,9 @@
 namespace antwika::gfx
 {
 
-    [[nodiscard]] std::string colorToHex(Color color);
+    [[nodiscard]] std::string getColorToHex(Color color);
 
-    [[nodiscard]] std::optional<Color> colorFromHex(
+    [[nodiscard]] std::optional<Color> getColorFromHex(
         std::string_view hex);
 
     struct Hsv final

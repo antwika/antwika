@@ -41,14 +41,14 @@ namespace antwika::sound
             }
         };
 
-        [[nodiscard]] DeviceSpec playbackSpec()
+        [[nodiscard]] DeviceSpec getPlaybackSpec()
         {
             return DeviceSpec{
                 .format = WaveFormat{.rate = 48000, .channels = 2},
                 .preferredBufferFrames = kBufferCount};
         }
 
-        [[nodiscard]] bool platformFinishesBuffers()
+        [[nodiscard]] bool isPlatformFinishesBuffers()
         {
             SetAudioStreamBufferSizeDefault(static_cast<int>(kBufferCount));
 
@@ -92,19 +92,19 @@ namespace antwika::sound
         NiceMock<MockLogger> logger;
         RaylibSoundBackend backend(logger);
 
-        if (!backend.capabilities().playback)
+        if (!backend.getCapabilities().playback)
         {
             GTEST_SKIP() << "no playback device on this machine";
         }
 
-        if (!platformFinishesBuffers())
+        if (!isPlatformFinishesBuffers())
         {
             GTEST_SKIP()
                 << "this machine's audio device finishes no buffers, so "
                    "it cannot show playback stalling";
         }
 
-        const auto device = backend.openDevice(playbackSpec());
+        const auto device = backend.openDevice(getPlaybackSpec());
         FakeSilentCallback callback;
 
         device->start(callback);
@@ -113,7 +113,7 @@ namespace antwika::sound
 
         for (std::size_t tick = 0; tick < 40; ++tick)
         {
-            const auto playedFrames = device->framesPlayed();
+            const auto playedFrames = device->getFramesPlayed();
             const auto ahead =
                 queuedCount > playedFrames ? queuedCount - playedFrames : 0;
 
@@ -125,7 +125,7 @@ namespace antwika::sound
             std::this_thread::sleep_for(kTick);
         }
 
-        EXPECT_GT(device->framesPlayed(), kBufferCount * 2);
+        EXPECT_GT(device->getFramesPlayed(), kBufferCount * 2);
 
         device->stop();
     }

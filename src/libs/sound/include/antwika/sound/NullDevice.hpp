@@ -24,9 +24,9 @@ namespace antwika::sound
         void stop() override;
         [[nodiscard]] FrameCount advance(FrameCount frames) override;
 
-        [[nodiscard]] WaveFormat format() const override;
-        [[nodiscard]] FrameCount bufferFrames() const override;
-        [[nodiscard]] FrameIndex framesPlayed() const override;
+        [[nodiscard]] WaveFormat getFormat() const override;
+        [[nodiscard]] FrameCount getBufferFrames() const override;
+        [[nodiscard]] FrameIndex getFramesPlayed() const override;
 
     private:
         WaveFormat wave;

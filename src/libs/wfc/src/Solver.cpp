@@ -16,7 +16,7 @@ namespace antwika::wfc
 
     namespace
     {
-        std::vector<std::size_t> extractAssignment(
+        std::vector<std::size_t> getExtractAssignment(
             const std::vector<Domain> &waveDomains)
         {
             std::vector<std::size_t> assignment;
@@ -88,7 +88,7 @@ namespace antwika::wfc
         cellToConstraints.assign(this->initialWave.size(), {});
         for (std::size_t i = 0; i < this->constraints.size(); ++i)
         {
-            for (const std::size_t cell : this->constraints[i].get().cells())
+            for (const std::size_t cell : this->constraints[i].get().getCells())
             {
                 if (cell >= this->initialWave.size())
                 {
@@ -101,7 +101,7 @@ namespace antwika::wfc
         }
     }
 
-    SolveResult Solver::solve() const
+    SolveResult Solver::getSolve() const
     {
         std::vector<Domain> waveDomains = initialWave;
         detail::Trail trail;
@@ -149,7 +149,7 @@ namespace antwika::wfc
                 const IConstraint &constraint =
                     constraints[constraintIndex].get();
                 const std::span<const std::size_t> cells =
-                    constraint.cells();
+                    constraint.getCells();
 
                 beforeDomains.clear();
                 std::ranges::transform(
@@ -234,15 +234,15 @@ namespace antwika::wfc
             }
 
             stackPoints.push_back(ChoicePoint{ // GCOVR_EXCL_LINE
-                cell, std::move(candidates), 0, trail.checkpoint()});
+                cell, std::move(candidates), 0, trail.getCheckpoint()});
         };
 
         {
             const std::optional<std::size_t> firstCell =
-                entropyIndex.pickNext();
+                entropyIndex.getPickNext();
             if (!firstCell.has_value())
             {
-                return {SolveOutcome::Solved, extractAssignment(waveDomains)};
+                return {SolveOutcome::Solved, getExtractAssignment(waveDomains)};
             }
             pushChoicePoint(*firstCell);
         }
@@ -281,10 +281,10 @@ namespace antwika::wfc
             }
 
             const std::optional<std::size_t> nextCell =
-                entropyIndex.pickNext();
+                entropyIndex.getPickNext();
             if (!nextCell.has_value())
             {
-                return {SolveOutcome::Solved, extractAssignment(waveDomains)};
+                return {SolveOutcome::Solved, getExtractAssignment(waveDomains)};
             }
             pushChoicePoint(*nextCell);
         }

@@ -28,20 +28,20 @@ namespace
     constexpr Rect kBoxRect{
         .originPoint = {.x = 10, .y = 20}, .size = {.width = 10, .height = 10}};
 
-    Node widget(WidgetId widgetId, Rect rect)
+    Node getWidget(WidgetId widgetId, Rect rect)
     {
         return Node{.widgetId = widgetId, .arrangedRect = rect};
     }
 
-    Pointer at(Point positionPoint)
+    Pointer getEntryAt(Point positionPoint)
     {
         return Pointer{.positionPoint = positionPoint};
     }
 
-    LayoutTree oneWidget(Rect rect)
+    LayoutTree getOneWidget(Rect rect)
     {
         LayoutTree tree{Node{}};
-        tree.add(widget(kFirstWidget, rect));
+        tree.add(getWidget(kFirstWidget, rect));
 
         return tree;
     }
@@ -49,16 +49,16 @@ namespace
 
 TEST(ResolveHitTest, Resolve_HoversTheWidgetUnderThePointer)
 {
-    auto tree = oneWidget(kBoxRect);
+    auto tree = getOneWidget(kBoxRect);
 
-    const auto interactions = resolve(tree, at(Point{.x = 15, .y = 25}));
+    const auto interactions = resolve(tree, getEntryAt(Point{.x = 15, .y = 25}));
 
     EXPECT_EQ(kFirstWidget, interactions.hoveredWidget);
 }
 
 TEST(ResolveHitTest, Resolve_HoversNothingWithoutAPointerPosition)
 {
-    auto tree = oneWidget(kBoxRect);
+    auto tree = getOneWidget(kBoxRect);
 
     const auto interactions = resolve(tree, Pointer{});
 
@@ -67,57 +67,57 @@ TEST(ResolveHitTest, Resolve_HoversNothingWithoutAPointerPosition)
 
 TEST(ResolveHitTest, Resolve_CountsTheLeadingEdgeAsInside)
 {
-    auto tree = oneWidget(kBoxRect);
+    auto tree = getOneWidget(kBoxRect);
 
-    const auto interactions = resolve(tree, at(Point{.x = 10, .y = 20}));
+    const auto interactions = resolve(tree, getEntryAt(Point{.x = 10, .y = 20}));
 
     EXPECT_EQ(kFirstWidget, interactions.hoveredWidget);
 }
 
 TEST(ResolveHitTest, Resolve_CountsTheTrailingEdgeAsOutside)
 {
-    auto tree = oneWidget(kBoxRect);
+    auto tree = getOneWidget(kBoxRect);
 
-    const auto interactions = resolve(tree, at(Point{.x = 20, .y = 25}));
+    const auto interactions = resolve(tree, getEntryAt(Point{.x = 20, .y = 25}));
 
     EXPECT_EQ(kNoWidget, interactions.hoveredWidget);
 }
 
 TEST(ResolveHitTest, Resolve_MissesAPointerLeftOfTheWidget)
 {
-    auto tree = oneWidget(kBoxRect);
+    auto tree = getOneWidget(kBoxRect);
 
-    const auto interactions = resolve(tree, at(Point{.x = 9, .y = 25}));
+    const auto interactions = resolve(tree, getEntryAt(Point{.x = 9, .y = 25}));
 
     EXPECT_EQ(kNoWidget, interactions.hoveredWidget);
 }
 
 TEST(ResolveHitTest, Resolve_MissesAPointerAboveTheWidget)
 {
-    auto tree = oneWidget(kBoxRect);
+    auto tree = getOneWidget(kBoxRect);
 
-    const auto interactions = resolve(tree, at(Point{.x = 15, .y = 19}));
+    const auto interactions = resolve(tree, getEntryAt(Point{.x = 15, .y = 19}));
 
     EXPECT_EQ(kNoWidget, interactions.hoveredWidget);
 }
 
 TEST(ResolveHitTest, Resolve_MissesAPointerBelowTheWidget)
 {
-    auto tree = oneWidget(kBoxRect);
+    auto tree = getOneWidget(kBoxRect);
 
-    const auto interactions = resolve(tree, at(Point{.x = 15, .y = 30}));
+    const auto interactions = resolve(tree, getEntryAt(Point{.x = 15, .y = 30}));
 
     EXPECT_EQ(kNoWidget, interactions.hoveredWidget);
 }
 
 TEST(ResolveHitTest, Resolve_MissesACollapsedWidget)
 {
-    auto tree = oneWidget(
+    auto tree = getOneWidget(
         Rect{
             .originPoint = {.x = 10, .y = 20},
             .size = {.width = 0, .height = 0}});
 
-    const auto interactions = resolve(tree, at(Point{.x = 10, .y = 20}));
+    const auto interactions = resolve(tree, getEntryAt(Point{.x = 10, .y = 20}));
 
     EXPECT_EQ(kNoWidget, interactions.hoveredWidget);
 }
@@ -125,10 +125,10 @@ TEST(ResolveHitTest, Resolve_MissesACollapsedWidget)
 TEST(ResolveHitTest, Resolve_PrefersTheWidgetDeclaredLast)
 {
     LayoutTree tree{Node{}};
-    tree.add(widget(kFirstWidget, kBoxRect));
-    tree.add(widget(kSecondWidget, kBoxRect));
+    tree.add(getWidget(kFirstWidget, kBoxRect));
+    tree.add(getWidget(kSecondWidget, kBoxRect));
 
-    const auto interactions = resolve(tree, at(Point{.x = 15, .y = 25}));
+    const auto interactions = resolve(tree, getEntryAt(Point{.x = 15, .y = 25}));
 
     EXPECT_EQ(kSecondWidget, interactions.hoveredWidget);
 }
@@ -136,12 +136,12 @@ TEST(ResolveHitTest, Resolve_PrefersTheWidgetDeclaredLast)
 TEST(ResolveHitTest, Resolve_IgnoresUnnamedChildrenOfANamedWidget)
 {
     LayoutTree tree{Node{}};
-    const auto button = tree.open(widget(kFirstWidget, kBoxRect));
+    const auto button = tree.open(getWidget(kFirstWidget, kBoxRect));
     tree.add(Node{.arrangedRect = kBoxRect});
     tree.close();
 
-    const auto interactions = resolve(tree, at(Point{.x = 15, .y = 25}));
+    const auto interactions = resolve(tree, getEntryAt(Point{.x = 15, .y = 25}));
 
     EXPECT_EQ(kFirstWidget, interactions.hoveredWidget);
-    EXPECT_EQ(kFirstWidget, tree.node(button).widgetId);
+    EXPECT_EQ(kFirstWidget, tree.getNode(button).widgetId);
 }

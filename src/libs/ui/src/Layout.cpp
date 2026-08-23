@@ -38,15 +38,15 @@ namespace antwika::ui::detail
             std::uint32_t gap;
         };
 
-        std::uint32_t saturatingSub(
+        std::uint32_t getSaturatingSub(
             std::uint32_t value, std::uint32_t amount) noexcept
         {
             return value > amount ? value - amount : 0;
         }
 
-        std::uint32_t doubled(std::uint32_t value) noexcept
+        std::uint32_t getDoubled(std::uint32_t value) noexcept
         {
-            return clampToU32(std::uint64_t{value} * 2);
+            return getClampToU32(std::uint64_t{value} * 2);
         }
 
         std::uint32_t mainOf(Size size, Axis axis) noexcept
@@ -84,28 +84,28 @@ namespace antwika::ui::detail
                          : Point{.x = cross, .y = main};
         }
 
-        Sizing mainSizing(const Node &node, Axis axis) noexcept
+        Sizing getMainSizing(const Node &node, Axis axis) noexcept
         {
             return axis == Axis::Row ? node.widthSizing : node.heightSizing;
         }
 
-        Sizing crossSizing(const Node &node, Axis axis) noexcept
+        Sizing getCrossSizing(const Node &node, Axis axis) noexcept
         {
             return axis == Axis::Row ? node.heightSizing : node.widthSizing;
         }
 
-        std::uint32_t mainDemand(const Node &node, Axis axis) noexcept
+        std::uint32_t getMainDemand(const Node &node, Axis axis) noexcept
         {
-            const auto sizing = mainSizing(node, axis);
+            const auto sizing = getMainSizing(node, axis);
 
             return sizing.mode == SizeMode::Fixed
                                 ? sizing.pixels
                                 : mainOf(node.measuredSize, axis);
         }
 
-        std::uint32_t crossDemand(const Node &node, Axis axis) noexcept
+        std::uint32_t getCrossDemand(const Node &node, Axis axis) noexcept
         {
-            const auto sizing = crossSizing(node, axis);
+            const auto sizing = getCrossSizing(node, axis);
 
             return sizing.mode == SizeMode::Fixed
                                 ? sizing.pixels
@@ -114,14 +114,14 @@ namespace antwika::ui::detail
 
         void measure(LayoutTree &tree)
         {
-            for (auto index = tree.size(); index-- > 0;)
+            for (auto index = tree.getSize(); index-- > 0;)
             {
-                auto &node = tree.node(index);
+                auto &node = tree.getNode(index);
 
                 if (node.kind == NodeKind::Text)
                 {
                     node.measuredSize =
-                        antwika::text::textSize(node.text, node.textScale);
+                        antwika::text::getTextSize(node.text, node.textScale);
 
                     continue;
                 }
@@ -140,7 +140,7 @@ namespace antwika::ui::detail
                     continue;
                 }
 
-                const auto padding = doubled(node.padding);
+                const auto padding = getDoubled(node.padding);
 
                 if (node.clips)
                 {
@@ -155,30 +155,30 @@ namespace antwika::ui::detail
                 std::uint32_t count = 0;
 
                 for (auto child = node.firstChild; child != kNoNode;
-                     child = tree.node(child).nextSibling)
+                     child = tree.getNode(child).nextSibling)
                 {
-                    const auto &value = tree.node(child);
+                    const auto &value = tree.getNode(child);
 
                     if (value.overlayAnchor != kNoNode)
                     {
                         continue;
                     }
 
-                    alongExtent += mainDemand(value, node.axis);
+                    alongExtent += getMainDemand(value, node.axis);
                     acrossExtent =
-                        std::max(acrossExtent, crossDemand(value, node.axis));
+                        std::max(acrossExtent, getCrossDemand(value, node.axis));
                     ++count;
                 }
 
                 const auto gaps =
-                    count > 0 ? clampToU32(
+                    count > 0 ? getClampToU32(
                                     std::uint64_t{node.gap} * (count - 1))
                               : 0U;
 
                 node.measuredSize = sizeFrom(
                     node.axis,
-                    clampToU32(alongExtent + gaps + padding),
-                    clampToU32(std::uint64_t{acrossExtent} + padding));
+                    getClampToU32(alongExtent + gaps + padding),
+                    getClampToU32(std::uint64_t{acrossExtent} + padding));
             }
         }
 
@@ -195,9 +195,9 @@ namespace antwika::ui::detail
 
             for (std::size_t index = 0; index < children.size(); ++index)
             {
-                const auto &value = tree.node(children[index]);
+                const auto &value = tree.getNode(children[index]);
 
-                if (mainSizing(value, axis).mode != SizeMode::Grow)
+                if (getMainSizing(value, axis).mode != SizeMode::Grow)
                 {
                     continue;
                 }
@@ -210,7 +210,7 @@ namespace antwika::ui::detail
                     --extra;
                 }
 
-                extents[index] = clampToU32(
+                extents[index] = getClampToU32(
                     std::uint64_t{extents[index]} + share + bonus);
             }
         }
@@ -250,8 +250,8 @@ namespace antwika::ui::detail
 
             for (std::size_t index = 0; index < children.size(); ++index)
             {
-                auto &value = tree.node(children[index]);
-                const auto sizing = crossSizing(value, box.axis);
+                auto &value = tree.getNode(children[index]);
+                const auto sizing = getCrossSizing(value, box.axis);
 
                 auto extent =
                     sizing.mode == SizeMode::Fixed ? sizing.pixels
@@ -285,7 +285,7 @@ namespace antwika::ui::detail
                             + static_cast<std::int32_t>(offset)),
                     .size = sizeFrom(box.axis, alongExtent, extent)};
 
-                cursor = clampToU32(
+                cursor = getClampToU32(
                     std::uint64_t{cursor} + extents[index] + box.gap);
             }
         }
@@ -297,7 +297,7 @@ namespace antwika::ui::detail
             const auto wantedExtent = static_cast<std::uint32_t>(
                 std::uint64_t{content} * info.ratio / kSplitRatioScale);
 
-            if (doubled(info.minimum) >= content)
+            if (getDoubled(info.minimum) >= content)
             {
                 return content / 2;
             }
@@ -327,7 +327,7 @@ namespace antwika::ui::detail
 
             const auto room = mainOf(box.size, box.axis);
             const auto bar = std::min(
-                mainDemand(tree.node(info.divider), box.axis), room);
+                getMainDemand(tree.getNode(info.divider), box.axis), room);
             const auto content = room - bar;
             const auto first = firstPaneOf(info, content);
 
@@ -341,11 +341,11 @@ namespace antwika::ui::detail
         {
             std::vector<std::size_t> children;
 
-            for (auto child = tree.node(index).firstChild;
+            for (auto child = tree.getNode(index).firstChild;
                  child != kNoNode;
-                 child = tree.node(child).nextSibling)
+                 child = tree.getNode(child).nextSibling)
             {
-                if (tree.node(child).overlayAnchor == kNoNode)
+                if (tree.getNode(child).overlayAnchor == kNoNode)
                 {
                     children.push_back(child);
                 }
@@ -356,9 +356,9 @@ namespace antwika::ui::detail
                 return;
             }
 
-            const auto &parent = tree.node(index);
+            const auto &parent = tree.getNode(index);
             const auto axis = parent.axis;
-            const auto inset = doubled(parent.padding);
+            const auto inset = getDoubled(parent.padding);
             const auto pad = static_cast<std::int32_t>(parent.padding);
 
             const ContentBox box{
@@ -367,8 +367,8 @@ namespace antwika::ui::detail
                      .y = parent.arrangedRect.originPoint.y + pad},
                 .size =
                     {.width =
-                         saturatingSub(parent.arrangedRect.size.width, inset),
-                     .height = saturatingSub(
+                         getSaturatingSub(parent.arrangedRect.size.width, inset),
+                     .height = getSaturatingSub(
                          parent.arrangedRect.size.height, inset)},
                 .axis = axis,
                 .crossAlignment = parent.crossAlignment,
@@ -377,8 +377,8 @@ namespace antwika::ui::detail
             const auto count =
                 static_cast<std::uint32_t>(children.size());
             const auto gaps =
-                clampToU32(std::uint64_t{box.gap} * (count - 1));
-            const auto room = saturatingSub(mainOf(box.size, axis), gaps);
+                getClampToU32(std::uint64_t{box.gap} * (count - 1));
+            const auto room = getSaturatingSub(mainOf(box.size, axis), gaps);
 
             std::vector<std::uint32_t> extents;
             extents.reserve(children.size());
@@ -388,13 +388,13 @@ namespace antwika::ui::detail
 
             for (const auto child : children)
             {
-                const auto &value = tree.node(child);
-                const auto base = mainDemand(value, axis);
+                const auto &value = tree.getNode(child);
+                const auto base = getMainDemand(value, axis);
 
                 extents.push_back(base);
                 demand += base;
 
-                if (mainSizing(value, axis).mode == SizeMode::Grow)
+                if (getMainSizing(value, axis).mode == SizeMode::Grow)
                 {
                     ++growers;
                 }
@@ -428,11 +428,11 @@ namespace antwika::ui::detail
         void placeOverlay(LayoutTree &tree, std::size_t index)
         {
             const auto &anchor =
-                tree.node(tree.node(index).overlayAnchor);
+                tree.getNode(tree.getNode(index).overlayAnchor);
             const auto belowY = anchor.arrangedRect.originPoint.y
                                + static_cast<std::int32_t>(
                                    anchor.arrangedRect.size.height);
-            auto &node = tree.node(index);
+            auto &node = tree.getNode(index);
 
             node.arrangedRect = Rect{
                 .originPoint =
@@ -471,31 +471,31 @@ namespace antwika::ui::detail
     {
         measure(tree);
 
-        tree.node(0).arrangedRect =
+        tree.getNode(0).arrangedRect =
             Rect{.originPoint = {.x = 0, .y = 0}, .size = canvasSize};
 
-        for (std::size_t index = 0; index < tree.size(); ++index)
+        for (std::size_t index = 0; index < tree.getSize(); ++index)
         {
-            if (tree.node(index).overlayAnchor != kNoNode)
+            if (tree.getNode(index).overlayAnchor != kNoNode)
             {
                 placeOverlay(tree, index);
             }
 
             arrangeChildren(tree, index);
 
-            record(rects, tree.node(index));
+            record(rects, tree.getNode(index));
         }
 
-        for (std::size_t index = 0; index < tree.size(); ++index)
+        for (std::size_t index = 0; index < tree.getSize(); ++index)
         {
-            auto &node = tree.node(index);
+            auto &node = tree.getNode(index);
 
             if (node.extraWidth == 0)
             {
                 continue;
             }
 
-            const auto parent = tree.node(node.parent).arrangedRect;
+            const auto parent = tree.getNode(node.parent).arrangedRect;
 
             const auto right =
                 static_cast<std::int64_t>(parent.originPoint.x)

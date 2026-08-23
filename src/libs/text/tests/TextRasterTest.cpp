@@ -21,13 +21,13 @@ using antwika::gfx::Color;
 using antwika::text::forEachGlyphPixel;
 using antwika::text::GlyphCells;
 using antwika::text::GlyphCellsCache;
-using antwika::text::glyphPixelColor;
+using antwika::text::getGlyphPixelColor;
 using antwika::gfx::kGlyphAdvance;
 using antwika::gfx::kGlyphLineHeight;
 using antwika::gfx::Point;
 using antwika::gfx::Rect;
 using antwika::gfx::Size;
-using antwika::text::textSize;
+using antwika::text::getTextSize;
 
 namespace
 {
@@ -63,16 +63,16 @@ namespace
         return visitedPixels;
     }
 
-    [[nodiscard]] std::size_t inkedPixels(
+    [[nodiscard]] std::size_t getInkedPixels(
         char character, std::uint32_t scale)
     {
         const GlyphCells cells{scale};
         std::size_t count = 0;
 
-        for (std::uint32_t row = 0; row < cells.cellSize().height; ++row)
+        for (std::uint32_t row = 0; row < cells.getCellSize().height; ++row)
         {
             for (std::uint32_t column = 0;
-                 column < cells.cellSize().width;
+                 column < cells.getCellSize().width;
                  ++column)
             {
                 count += cells.coverageAt(character, column, row) != 0
@@ -87,23 +87,23 @@ namespace
 
 TEST(TextRasterTest, GlyphPixelColor_ScalesTheAlphaByTheCoverage)
 {
-    EXPECT_EQ(kInkColor, glyphPixelColor(kInkColor, 255));
+    EXPECT_EQ(kInkColor, getGlyphPixelColor(kInkColor, 255));
     EXPECT_EQ(
         (Color{
             .red = kInkColor.red,
             .green = kInkColor.green,
             .blue = kInkColor.blue,
             .alpha = 128}),
-        glyphPixelColor(kInkColor, 128));
-    EXPECT_EQ(0, glyphPixelColor(kInkColor, 0).alpha);
+        getGlyphPixelColor(kInkColor, 128));
+    EXPECT_EQ(0, getGlyphPixelColor(kInkColor, 0).alpha);
 }
 
 TEST(TextRasterTest, GlyphPixelColor_MultipliesRatherThanReplaces)
 {
     constexpr Color faintColor{.red = 255, .alpha = 128};
 
-    EXPECT_EQ(128, glyphPixelColor(faintColor, 255).alpha);
-    EXPECT_EQ(64, glyphPixelColor(faintColor, 129).alpha);
+    EXPECT_EQ(128, getGlyphPixelColor(faintColor, 255).alpha);
+    EXPECT_EQ(64, getGlyphPixelColor(faintColor, 129).alpha);
 }
 
 TEST(TextRasterTest, ForEachGlyphPixel_VisitsNothingAtZeroScale)
@@ -124,10 +124,10 @@ TEST(TextRasterTest, ForEachGlyphPixel_VisitsNothingForABlankCell)
 
 TEST(TextRasterTest, ForEachGlyphPixel_VisitsEveryInkedPixelOnce)
 {
-    ASSERT_GT(inkedPixels('A', 1), 0U);
-    EXPECT_EQ(inkedPixels('A', 1), pixelsOf(kOriginPoint, "A", 1).size());
+    ASSERT_GT(getInkedPixels('A', 1), 0U);
+    EXPECT_EQ(getInkedPixels('A', 1), pixelsOf(kOriginPoint, "A", 1).size());
     EXPECT_EQ(
-        inkedPixels('A', 2) + inkedPixels('B', 2),
+        getInkedPixels('A', 2) + getInkedPixels('B', 2),
         pixelsOf(kOriginPoint, "AB", 2).size());
 
     const auto crowdedPixels = pixelsOf(kOriginPoint, "Wq8", 3);
@@ -156,7 +156,7 @@ TEST(TextRasterTest, ForEachGlyphPixel_InksNothingOutsideTheMeasuredBox)
 
     for (std::uint32_t scale = 1; scale <= 4; ++scale)
     {
-        const Size boxSize = textSize(line, scale);
+        const Size boxSize = getTextSize(line, scale);
 
         for (const auto &sample : pixelsOf(kOriginPoint, line, scale))
         {
@@ -228,10 +228,10 @@ TEST(TextRasterTest, ForEachGlyphPixel_HandsOverTheCellsOwnCoverage)
 
     for (std::size_t cell = 0; cell < text.size(); ++cell)
     {
-        for (std::uint32_t row = 0; row < cells.cellSize().height; ++row)
+        for (std::uint32_t row = 0; row < cells.getCellSize().height; ++row)
         {
             for (std::uint32_t column = 0;
-                 column < cells.cellSize().width;
+                 column < cells.getCellSize().width;
                  ++column)
             {
                 const auto coverage =
@@ -252,7 +252,7 @@ TEST(TextRasterTest, ForEachGlyphPixel_HandsOverTheCellsOwnCoverage)
                              .y = kOriginPoint.y
                                  + static_cast<std::int32_t>(row)},
                         .size = {.width = 1, .height = 1}},
-                    glyphPixelColor(kInkColor, coverage)});
+                    getGlyphPixelColor(kInkColor, coverage)});
             }
         }
     }

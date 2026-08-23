@@ -27,12 +27,12 @@ namespace antwika::gfx::raylib
 
         ~RaylibTexture() override;
 
-        [[nodiscard]] Size size() const override;
+        [[nodiscard]] Size getSize() const override;
 
         [[nodiscard]] bool isOwnedBy(
             const RaylibRenderer &candidateRenderer) const noexcept;
 
-        [[nodiscard]] const ::Texture2D &raw() const noexcept;
+        [[nodiscard]] const ::Texture2D &getRawHandle() const noexcept;
 
         [[nodiscard]] bool isLoaded() const noexcept;
 

@@ -35,7 +35,7 @@ namespace antwika::system
                  component::Inventory>())
         {
             const auto standing =
-                collision::stoodCells(world.get<component::Position>(entity));
+                collision::getStoodCells(world.get<component::Position>(entity));
 
             component::Vitals vitals{
                 .health = world.get<component::Health>(entity),
@@ -60,7 +60,7 @@ namespace antwika::system
                     continue;
                 }
 
-                const auto packedInventory = rules::inventoryWith(
+                const auto packedInventory = rules::getInventoryWith(
                     vitals.inventory,
                     static_cast<component::ItemKind>(item.kind));
 
@@ -74,14 +74,14 @@ namespace antwika::system
                 world.destroy(lying);
             }
 
-            vitals.health = rules::drainedHealth(vitals.health, tick);
+            vitals.health = rules::getDrainedHealth(vitals.health, tick);
 
             if (!world.has<component::Player>(entity))
             {
-                vitals = rules::autoConsumed(vitals);
+                vitals = rules::getAutoConsumed(vitals);
             }
 
-            if (rules::depleted(vitals.health))
+            if (rules::isDepleted(vitals.health))
             {
                 world.destroy(entity);
 

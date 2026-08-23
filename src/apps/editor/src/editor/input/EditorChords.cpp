@@ -41,27 +41,27 @@ namespace antwika::editor
         actions = actionMapFrom(bindings);
     }
 
-    input::KeyModifiers Editor::heldModifiers() const noexcept
+    input::KeyModifiers Editor::getHeldModifiers() const noexcept
     {
-        return inputState.keyboard().modifiers();
+        return inputState.getKeyboard().getModifiers();
     }
 
     bool Editor::matchesChord(
         const Action action, const input::Key key) const
     {
-        return actions.matches(actionKey(action), key, heldModifiers());
+        return actions.matches(getActionKey(action), key, getHeldModifiers());
     }
 
     bool Editor::matchesChordWithShift(
         const Action action, const input::Key key) const
     {
         return actions.matches(
-            shiftedAction(action), key, heldModifiers());
+            getShiftedAction(action), key, getHeldModifiers());
     }
 
     void Editor::applyRunKey(const input::Key key, const bool down)
     {
-        if (actions.matches(heldAction(Action::Run), key, heldModifiers()))
+        if (actions.matches(getHeldAction(Action::Run), key, getHeldModifiers()))
         {
             play.game->setRunning(down);
         }
@@ -71,7 +71,7 @@ namespace antwika::editor
     {
         const auto matches = [this, key](const Action act)
         {
-            return actions.matches(heldAction(act), key, heldModifiers());
+            return actions.matches(getHeldAction(act), key, getHeldModifiers());
         };
 
         if (matches(Action::WalkNorth))
@@ -115,7 +115,7 @@ namespace antwika::editor
         }
     }
 
-    bool Editor::handleBindingsKey(const input::KeyPressed &pressedKey)
+    bool Editor::consumeBindingsKey(const input::KeyPressed &pressedKey)
     {
         if (!keysOpen)
         {
@@ -140,12 +140,12 @@ namespace antwika::editor
 
             keyBindings[*rebindingAction] = Chord{
                 .key = pressedKey.key,
-                .ctrl = heldModifiers().control,
-                .shift = heldModifiers().shift,
-                .alt = heldModifiers().alt};
+                .ctrl = getHeldModifiers().control,
+                .shift = getHeldModifiers().shift,
+                .alt = getHeldModifiers().alt};
             setBindings(std::move(keyBindings));
             rebindingAction.reset();
-            saveChords(bindings, chordsPath());
+            saveChords(bindings, getChordsPath());
             showStatus("bound", false, 120);
 
             return true;
@@ -159,9 +159,9 @@ namespace antwika::editor
         return true;
     }
 
-    std::string Editor::chordsPath() const
+    std::string Editor::getChordsPath() const
     {
-        return io::assetPath(std::string("keys.json"));
+        return io::getAssetPath(std::string("keys.json"));
     }
 
 }

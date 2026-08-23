@@ -19,7 +19,7 @@ namespace antwika::input
     inline constexpr std::size_t kMouseButtonCount =
         static_cast<std::size_t>(MouseButton::X2) + 1;
 
-    [[nodiscard]] constexpr std::size_t mouseButtonIndex(
+    [[nodiscard]] constexpr std::size_t getMouseButtonIndex(
         MouseButton button) noexcept
     {
         return static_cast<std::size_t>(button);
@@ -27,6 +27,6 @@ namespace antwika::input
 
     [[nodiscard]] std::string_view toString(MouseButton button);
 
-    [[nodiscard]] MouseButton mouseButtonFromString(std::string_view name);
+    [[nodiscard]] MouseButton getMouseButtonFromString(std::string_view name);
 
 }

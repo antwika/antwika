@@ -18,7 +18,7 @@ using antwika::wfc::Solver;
 
 namespace
 {
-    CompatibilityTable makeNeighboursDifferTable()
+    CompatibilityTable createNeighboursDifferTable()
     {
         CompatibilityTable table(3);
         for (std::size_t value = 0; value < 3; ++value)
@@ -28,7 +28,7 @@ namespace
         return table;
     }
 
-    [[nodiscard]] std::vector<std::size_t> alternating(std::size_t length)
+    [[nodiscard]] std::vector<std::size_t> getAlternating(std::size_t length)
     {
         std::vector<std::size_t> values;
         values.reserve(length);
@@ -53,23 +53,23 @@ TEST(OneDimensionalWfcTest, Solve_LeavesOnlyCompatibleNeighbours)
     constraints.reserve(kLength - 1);
     for (std::size_t i = 0; i + 1 < kLength; ++i)
     {
-        constraints.emplace_back(i, i + 1, makeNeighboursDifferTable());
+        constraints.emplace_back(i, i + 1, createNeighboursDifferTable());
     }
 
     const auto constraintRefs = referencesTo(constraints);
 
     Solver solver(waveDomains, constraintRefs);
-    const auto result = solver.solve();
+    const auto result = solver.getSolve();
 
     ASSERT_EQ(result.outcome, SolveOutcome::Solved);
     ASSERT_EQ(result.assignment.size(), kLength);
     for (std::size_t i = 0; i + 1 < kLength; ++i)
     {
-        EXPECT_TRUE(makeNeighboursDifferTable().compatible(
+        EXPECT_TRUE(createNeighboursDifferTable().isCompatible(
             result.assignment[i], result.assignment[i + 1]));
     }
 
-    EXPECT_EQ(result.assignment, alternating(kLength));
+    EXPECT_EQ(result.assignment, getAlternating(kLength));
 }
 
 TEST(OneDimensionalWfcTest, Solve_RepeatsTheRecordedAssignment)
@@ -85,7 +85,7 @@ TEST(OneDimensionalWfcTest, Solve_RepeatsTheRecordedAssignment)
     constraints.reserve(kLength - 1);
     for (std::size_t i = 0; i + 1 < kLength; ++i)
     {
-        constraints.emplace_back(i, i + 1, makeNeighboursDifferTable());
+        constraints.emplace_back(i, i + 1, createNeighboursDifferTable());
     }
 
     const auto constraintRefs = referencesTo(constraints);
@@ -93,6 +93,6 @@ TEST(OneDimensionalWfcTest, Solve_RepeatsTheRecordedAssignment)
     Solver solverA(waveDomains, constraintRefs);
     Solver solverB(waveDomains, constraintRefs);
 
-    EXPECT_EQ(solverA.solve().assignment, alternating(kLength));
-    EXPECT_EQ(solverB.solve().assignment, alternating(kLength));
+    EXPECT_EQ(solverA.getSolve().assignment, getAlternating(kLength));
+    EXPECT_EQ(solverB.getSolve().assignment, getAlternating(kLength));
 }

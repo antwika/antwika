@@ -98,14 +98,14 @@ namespace antwika::ecs
     std::size_t World::slotFor(
         const ComponentKey key, const std::string_view name)
     {
-        if (const auto foundSlot = findSlot(key); foundSlot != kNoSlot)
+        if (const auto foundSlot = getFindSlot(key); foundSlot != kNoSlot)
         {
             return foundSlot;
         }
 
         detail::claimComponentKey(key, name);
 
-        if (filledSlots.size() >= slotCapacity())
+        if (filledSlots.size() >= getSlotCapacity())
         {
             growSlots();
         }

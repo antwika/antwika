@@ -12,27 +12,27 @@ namespace antwika::editor
     {
         constexpr float kCellGap = 2.0F;
 
-        [[nodiscard]] float cellSide()
+        [[nodiscard]] float getCellSide()
         {
             return static_cast<float>(kIconCellSize.width)
                    * kIconGridScale;
         }
 
-        [[nodiscard]] float sheetTop(
+        [[nodiscard]] float getSheetTop(
             const gfx::Size canvasSize, const std::size_t count)
         {
             const auto rows =
                 (count + kIconColumns - 1) / kIconColumns;
             const auto height =
                 static_cast<float>(rows)
-                * (cellSide() + kCellGap);
+                * (getCellSide() + kCellGap);
 
             return (static_cast<float>(canvasSize.height) - height)
                    / 2.0F;
         }
     }
 
-    std::size_t iconCount(const gfx::Size sheetSize)
+    std::size_t getIconCount(const gfx::Size sheetSize)
     {
         if (kIconCellSize.width == 0)
         {
@@ -42,7 +42,7 @@ namespace antwika::editor
         return sheetSize.width / kIconCellSize.width;
     }
 
-    gfx::Rect iconSource(const std::size_t iconIndex)
+    gfx::Rect getIconSource(const std::size_t iconIndex)
     {
         return gfx::Rect{
             .originPoint =
@@ -52,7 +52,7 @@ namespace antwika::editor
             .size = kIconCellSize};
     }
 
-    gfx::RectF iconCellRect(
+    gfx::RectF getIconCellRect(
         const gfx::Size canvasSize,
         const std::size_t count,
         const std::size_t iconIndex)
@@ -64,11 +64,11 @@ namespace antwika::editor
             gfx::PointF{
                 kIconSheetLeft
                     + (static_cast<float>(column)
-                       * (cellSide() + kCellGap)),
-                sheetTop(canvasSize, count)
+                       * (getCellSide() + kCellGap)),
+                getSheetTop(canvasSize, count)
                     + (static_cast<float>(row)
-                       * (cellSide() + kCellGap))},
-            gfx::SizeF{cellSide(), cellSide()});
+                       * (getCellSide() + kCellGap))},
+            gfx::SizeF{getCellSide(), getCellSide()});
     }
 
     std::optional<std::size_t> iconCellAt(
@@ -79,7 +79,7 @@ namespace antwika::editor
         for (std::size_t index = 0; index < count; ++index)
         {
             const auto where =
-                iconCellRect(canvasSize, count, index);
+                getIconCellRect(canvasSize, count, index);
 
             if (point.x >= where.originPoint.x
                 && point.y >= where.originPoint.y
@@ -94,24 +94,24 @@ namespace antwika::editor
         return std::nullopt;
     }
 
-    gfx::RectF editedIconRect(const gfx::Size canvasSize)
+    gfx::RectF getEditedIconRect(const gfx::Size canvasSize)
     {
         const auto side =
             static_cast<float>(kIconCellSize.width)
             * kEditedIconScale;
         const auto sheetWide =
             static_cast<float>(kIconColumns)
-            * (cellSide() + kCellGap);
+            * (getCellSide() + kCellGap);
 
         return gfx::RectF(
             gfx::PointF{
-                kIconSheetLeft + sheetWide + cellSide(),
+                kIconSheetLeft + sheetWide + getCellSide(),
                 (static_cast<float>(canvasSize.height) - side)
                     / 2.0F},
             gfx::SizeF{side, side});
     }
 
-    gfx::RectF iconPixelRect(
+    gfx::RectF getIconPixelRect(
         const gfx::RectF roomRect, const geometry::GridCell pixelCell)
     {
         const auto width =
@@ -159,7 +159,7 @@ namespace antwika::editor
             static_cast<std::uint32_t>(downFraction)};
     }
 
-    gfx::Color iconPixelColor(
+    gfx::Color getIconPixelColor(
         const gfx::Bitmap &sheetBitmap,
         const std::size_t iconIndex,
         const geometry::GridCell pixelCell)
@@ -186,11 +186,11 @@ namespace antwika::editor
             inkColor);
     }
 
-    gfx::Bitmap loadIconSheet(
+    gfx::Bitmap getLoadIconSheet(
         const std::string &mapPath, const std::string_view app)
     {
         auto sheet =
-            map::readSharedOrBundled(mapPath, kIconSheet, app);
+            map::getReadSharedOrBundled(mapPath, kIconSheet, app);
 
         if (sheet.size.height != kIconCellSize.height
             || sheet.size.width % kIconCellSize.width != 0

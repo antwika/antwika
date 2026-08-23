@@ -13,7 +13,7 @@ using antwika::sound::WaveformLibrary;
 
 namespace
 {
-    [[nodiscard]] Waveform mono(std::vector<float> samples)
+    [[nodiscard]] Waveform getMono(std::vector<float> samples)
     {
         return Waveform{
             .format = WaveFormat{.rate = 48000, .channels = 1},
@@ -25,29 +25,29 @@ TEST(WaveformLibraryTest, Ctor_StartsHoldingNothing)
 {
     const WaveformLibrary library;
 
-    EXPECT_EQ(library.size(), 0U);
+    EXPECT_EQ(library.getSize(), 0U);
 }
 
 TEST(WaveformLibraryTest, Add_HandsBackAnIdThatResolves)
 {
     WaveformLibrary library;
 
-    const auto id = library.add(mono({0.5F, 0.25F}));
+    const auto id = library.add(getMono({0.5F, 0.25F}));
 
-    EXPECT_EQ(library.size(), 1U);
-    EXPECT_EQ(library.get(id).samples, (std::vector<float>{0.5F, 0.25F}));
+    EXPECT_EQ(library.getSize(), 1U);
+    EXPECT_EQ(library.getWaveform(id).samples, (std::vector<float>{0.5F, 0.25F}));
 }
 
 TEST(WaveformLibraryTest, Add_GivesEachWaveformItsOwnId)
 {
     WaveformLibrary library;
 
-    const auto first = library.add(mono({0.5F}));
-    const auto second = library.add(mono({0.25F}));
+    const auto first = library.add(getMono({0.5F}));
+    const auto second = library.add(getMono({0.25F}));
 
     EXPECT_NE(first, second);
-    EXPECT_EQ(library.get(first).samples.front(), 0.5F);
-    EXPECT_EQ(library.get(second).samples.front(), 0.25F);
+    EXPECT_EQ(library.getWaveform(first).samples.front(), 0.5F);
+    EXPECT_EQ(library.getWaveform(second).samples.front(), 0.25F);
 }
 
 TEST(WaveformLibraryTest, Add_RefusesAWaveformThatIsNotWholeFrames)
@@ -65,8 +65,8 @@ TEST(WaveformLibraryTest, Add_RefusesAWaveformWithNoFramesInIt)
 {
     WaveformLibrary library;
 
-    EXPECT_THROW((void)library.add(mono({})), SoundError);
-    EXPECT_EQ(library.size(), 0U);
+    EXPECT_THROW((void)library.add(getMono({})), SoundError);
+    EXPECT_EQ(library.getSize(), 0U);
 }
 
 TEST(WaveformLibraryTest, Get_RefusesAnIdNothingWasAddedUnder)
@@ -74,5 +74,5 @@ TEST(WaveformLibraryTest, Get_RefusesAnIdNothingWasAddedUnder)
     const WaveformLibrary library;
 
     EXPECT_THROW(
-        (void)library.get(static_cast<WaveformId>(0)), SoundError);
+        (void)library.getWaveform(static_cast<WaveformId>(0)), SoundError);
 }

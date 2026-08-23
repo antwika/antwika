@@ -37,7 +37,7 @@ namespace antwika::input
             payload["super"] = modifiers.super;
         }
 
-        [[nodiscard]] KeyModifiers readModifiers(const nlohmann::json &payload)
+        [[nodiscard]] KeyModifiers getReadModifiers(const nlohmann::json &payload)
         {
             return KeyModifiers{
                 .shift = payload.at("shift").get<bool>(),
@@ -52,14 +52,14 @@ namespace antwika::input
             payload["y"] = position.y;
         }
 
-        [[nodiscard]] Position readPosition(const nlohmann::json &payload)
+        [[nodiscard]] Position getReadPosition(const nlohmann::json &payload)
         {
             return Position{
                 .x = payload.at("x").get<std::int32_t>(),
                 .y = payload.at("y").get<std::int32_t>()};
         }
 
-        [[nodiscard]] nlohmann::json objectSchema(const char *title)
+        [[nodiscard]] nlohmann::json getObjectSchema(const char *title)
         {
             nlohmann::json schema;
             schema["$schema"] = "http://json-schema.org/draft-07/schema#";
@@ -103,42 +103,42 @@ namespace antwika::input
             requireInteger(schema, "y");
         }
 
-        [[nodiscard]] nlohmann::json keyDownSchema()
+        [[nodiscard]] nlohmann::json getKeyDownSchema()
         {
-            auto schema = objectSchema("input.key_down payload");
+            auto schema = getObjectSchema("input.key_down payload");
             requireString(schema, "key");
             requireModifiers(schema);
             requireBoolean(schema, "repeat");
             return schema;
         } // GCOVR_EXCL_LINE
 
-        [[nodiscard]] nlohmann::json keyUpSchema()
+        [[nodiscard]] nlohmann::json getKeyUpSchema()
         {
-            auto schema = objectSchema("input.key_up payload");
+            auto schema = getObjectSchema("input.key_up payload");
             requireString(schema, "key");
             requireModifiers(schema);
             return schema;
         } // GCOVR_EXCL_LINE
 
-        [[nodiscard]] nlohmann::json pointerMoveSchema()
+        [[nodiscard]] nlohmann::json getPointerMoveSchema()
         {
-            auto schema = objectSchema("input.pointer_move payload");
+            auto schema = getObjectSchema("input.pointer_move payload");
             requirePosition(schema);
             return schema;
         } // GCOVR_EXCL_LINE
 
-        [[nodiscard]] nlohmann::json pointerButtonSchema()
+        [[nodiscard]] nlohmann::json getPointerButtonSchema()
         {
-            auto schema = objectSchema("input pointer button payload");
+            auto schema = getObjectSchema("input pointer button payload");
             requireString(schema, "button");
             requirePosition(schema);
             requireModifiers(schema);
             return schema;
         } // GCOVR_EXCL_LINE
 
-        [[nodiscard]] nlohmann::json pointerScrollSchema()
+        [[nodiscard]] nlohmann::json getPointerScrollSchema()
         {
-            auto schema = objectSchema("input.pointer_scroll payload");
+            auto schema = getObjectSchema("input.pointer_scroll payload");
             requireInteger(schema, "horizontal");
             requireInteger(schema, "vertical");
             return schema;
@@ -153,7 +153,7 @@ namespace antwika::input
             return validator;
         }
 
-        [[nodiscard]] nlohmann::json parsed(
+        [[nodiscard]] nlohmann::json getParsed(
             const Event &event, const Validator &validator)
         {
             return antwika::schema::parseAndValidatePayload<InputError>(
@@ -166,10 +166,10 @@ namespace antwika::input
         [[nodiscard]] Edge buttonEdge(const nlohmann::json &payload)
         {
             return Edge{
-                .button = mouseButtonFromString(
+                .button = getMouseButtonFromString(
                     payload.at("button").get<std::string>()),
-                .position = readPosition(payload),
-                .modifiers = readModifiers(payload)};
+                .position = getReadPosition(payload),
+                .modifiers = getReadModifiers(payload)};
         }
 
         struct Encoder final
@@ -210,7 +210,7 @@ namespace antwika::input
             {
                 return Event{ // GCOVR_EXCL_LINE
                     .name = events::kPointerDown,
-                    .payload = buttonPayload(
+                    .payload = getButtonPayload(
                         event.button, event.position, event.modifiers)};
             }
 
@@ -219,7 +219,7 @@ namespace antwika::input
             {
                 return Event{ // GCOVR_EXCL_LINE
                     .name = events::kPointerUp,
-                    .payload = buttonPayload(
+                    .payload = getButtonPayload(
                         event.button, event.position, event.modifiers)};
             }
 
@@ -235,7 +235,7 @@ namespace antwika::input
             }
 
         private:
-            [[nodiscard]] static std::string buttonPayload(
+            [[nodiscard]] static std::string getButtonPayload(
                 MouseButton button,
                 Position position,
                 const KeyModifiers &modifiers)
@@ -250,58 +250,58 @@ namespace antwika::input
         };
     }
 
-    Event InputEventCodec::encode(const InputEvent &event) const
+    Event InputEventCodec::getEncode(const InputEvent &event) const
     {
         return std::visit(Encoder{}, event);
     }
 
-    std::optional<InputEvent> InputEventCodec::decode(const Event &event) const
+    std::optional<InputEvent> InputEventCodec::getDecode(const Event &event) const
     {
         if (event.name == events::kKeyDown)
         {
             const auto payload =
-                parsed(event, validatorFor<keyDownSchema>());
+                getParsed(event, validatorFor<getKeyDownSchema>());
 
             return KeyPressed{
-                .key = keyFromString(payload.at("key").get<std::string>()),
-                .modifiers = readModifiers(payload),
+                .key = getKeyFromString(payload.at("key").get<std::string>()),
+                .modifiers = getReadModifiers(payload),
                 .repeat = payload.at("repeat").get<bool>()};
         }
 
         if (event.name == events::kKeyUp)
         {
             const auto payload =
-                parsed(event, validatorFor<keyUpSchema>());
+                getParsed(event, validatorFor<getKeyUpSchema>());
 
             return KeyReleased{
-                .key = keyFromString(payload.at("key").get<std::string>()),
-                .modifiers = readModifiers(payload)};
+                .key = getKeyFromString(payload.at("key").get<std::string>()),
+                .modifiers = getReadModifiers(payload)};
         }
 
         if (event.name == events::kPointerMove)
         {
             const auto payload =
-                parsed(event, validatorFor<pointerMoveSchema>());
+                getParsed(event, validatorFor<getPointerMoveSchema>());
 
-            return PointerMoved{.position = readPosition(payload)};
+            return PointerMoved{.position = getReadPosition(payload)};
         }
 
         if (event.name == events::kPointerDown)
         {
             return buttonEdge<PointerButtonPressed>(
-                parsed(event, validatorFor<pointerButtonSchema>()));
+                getParsed(event, validatorFor<getPointerButtonSchema>()));
         }
 
         if (event.name == events::kPointerUp)
         {
             return buttonEdge<PointerButtonReleased>(
-                parsed(event, validatorFor<pointerButtonSchema>()));
+                getParsed(event, validatorFor<getPointerButtonSchema>()));
         }
 
         if (event.name == events::kPointerScroll)
         {
             const auto payload =
-                parsed(event, validatorFor<pointerScrollSchema>());
+                getParsed(event, validatorFor<getPointerScrollSchema>());
 
             return PointerScrolled{ // GCOVR_EXCL_LINE
                 .horizontal = payload.at("horizontal").get<std::int32_t>(),

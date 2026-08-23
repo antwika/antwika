@@ -17,7 +17,7 @@ namespace antwika::editor
         constexpr std::uint64_t kFirstTabWidget = 405;
     }
 
-    map::View viewAfterKey(
+    map::View getViewAfterKey(
         const map::View view, const input::Key key, const bool back)
     {
         if (key == input::Key::Digit1)
@@ -56,7 +56,7 @@ namespace antwika::editor
         return view;
     }
 
-    std::string_view tabName(const map::View view)
+    std::string_view getTabName(const map::View view)
     {
         switch (view)
         {
@@ -75,14 +75,14 @@ namespace antwika::editor
         return "";
     }
 
-    widget::WidgetId tabWidget(const map::View view)
+    widget::WidgetId getTabWidget(const map::View view)
     {
         return widget::WidgetId{
             kFirstTabWidget
             + static_cast<std::uint64_t>(view)};
     }
 
-    std::uint32_t railWidth(
+    std::uint32_t getRailWidth(
         const gfx::Size windowSize, const gfx::Size canvasSize)
     {
         if (canvasSize.width == 0)
@@ -95,7 +95,7 @@ namespace antwika::editor
             / static_cast<float>(canvasSize.width));
     }
 
-    std::uint32_t inspectColumnWidth(
+    std::uint32_t getInspectColumnWidth(
         const gfx::Size windowSize, const gfx::Size canvasSize)
     {
         if (canvasSize.width == 0)
@@ -108,7 +108,7 @@ namespace antwika::editor
             / static_cast<float>(canvasSize.width));
     }
 
-    gfx::RectF inspectColumnBounds(const gfx::Size canvasSize)
+    gfx::RectF getInspectColumnBounds(const gfx::Size canvasSize)
     {
         return gfx::RectF(
             gfx::PointF{
@@ -120,7 +120,7 @@ namespace antwika::editor
                 static_cast<float>(canvasSize.height)});
     }
 
-    gfx::RectF panZoomed(
+    gfx::RectF getPanZoomed(
         const gfx::RectF whereRect,
         const gfx::PointF panPoint,
         const float zoom)
@@ -155,7 +155,7 @@ namespace antwika::editor
             return side == voxel::Side::Top || side == voxel::Side::Left;
         }
 
-        [[nodiscard]] float bothMarkerReach()
+        [[nodiscard]] float getBothMarkerReach()
         {
             return kMarkerGap + kMarkerThick + kMarkerGap;
         }
@@ -164,18 +164,18 @@ namespace antwika::editor
         {
             return edge == voxel::EdgeKind::Interior
                          ? kMarkerGap
-                         : bothMarkerReach() + kBothMarkerSide
+                         : getBothMarkerReach() + kBothMarkerSide
                              + kMarkerGap;
         }
 
-        [[nodiscard]] float markerReach()
+        [[nodiscard]] float getMarkerReach()
         {
             return reachOf(voxel::EdgeKind::Boundary) + kMarkerThick;
         }
 
         [[nodiscard]] gfx::RectF frameOf(const gfx::RectF roomRect)
         {
-            const auto cell = tilemap::gridCellSize();
+            const auto cell = tilemap::getGridCellSize();
             const auto width =
                 static_cast<float>(cell.width) * kInspectedScale;
             const auto scaledHeight =
@@ -186,18 +186,18 @@ namespace antwika::editor
                     roomRect.originPoint.x
                         + ((roomRect.size.width - width) / 2.0F),
                     roomRect.originPoint.y + kPaneMargin + kHeadingText
-                        + markerReach()},
+                        + getMarkerReach()},
                 gfx::SizeF{width, scaledHeight});
         }
     }
 
-    gfx::RectF inspectedTileRect(
+    gfx::RectF getInspectedTileRect(
         const gfx::Size canvasSize, const tilemap::Tile tile)
     {
-        return inspectedTileRect(inspectColumnBounds(canvasSize), tile);
+        return getInspectedTileRect(getInspectColumnBounds(canvasSize), tile);
     }
 
-    gfx::RectF inspectedTileRect(
+    gfx::RectF getInspectedTileRect(
         const gfx::RectF roomRect, const tilemap::Tile tile)
     {
         const auto frame = frameOf(roomRect);
@@ -215,13 +215,13 @@ namespace antwika::editor
             gfx::SizeF{width, scaledHeight});
     }
 
-    gfx::RectF markerPlace(
+    gfx::RectF getMarkerPlace(
         const gfx::Size canvasSize, const tilemap::TileEdge edge)
     {
-        return markerPlace(inspectColumnBounds(canvasSize), edge);
+        return getMarkerPlace(getInspectColumnBounds(canvasSize), edge);
     }
 
-    gfx::RectF markerPlace(
+    gfx::RectF getMarkerPlace(
         const gfx::RectF roomRect, const tilemap::TileEdge edge)
     {
         const auto frame = frameOf(roomRect);
@@ -294,18 +294,18 @@ namespace antwika::editor
         return edges;
     } // GCOVR_EXCL_LINE
 
-    gfx::RectF bothMarkerPlace(
+    gfx::RectF getBothMarkerPlace(
         const gfx::Size canvasSize, const voxel::Side side)
     {
-        return bothMarkerPlace(inspectColumnBounds(canvasSize), side);
+        return getBothMarkerPlace(getInspectColumnBounds(canvasSize), side);
     }
 
-    gfx::RectF bothMarkerPlace(
+    gfx::RectF getBothMarkerPlace(
         const gfx::RectF roomRect,
         const voxel::Side side)
     {
         const auto frame = frameOf(roomRect);
-        const auto reach = bothMarkerReach();
+        const auto reach = getBothMarkerReach();
         const auto edgeOffset =
             liesBefore(side) ? -reach - kBothMarkerSide : reach;
 
@@ -341,7 +341,7 @@ namespace antwika::editor
     std::optional<voxel::Side> bothMarkerAt(
         const gfx::Size canvasSize, const gfx::PointF point)
     {
-        return bothMarkerAt(inspectColumnBounds(canvasSize), point);
+        return bothMarkerAt(getInspectColumnBounds(canvasSize), point);
     }
 
     std::optional<voxel::Side> bothMarkerAt(
@@ -349,7 +349,7 @@ namespace antwika::editor
     {
         for (const auto side : voxel::kEverySide)
         {
-            if (holds(bothMarkerPlace(roomRect, side), point))
+            if (holds(getBothMarkerPlace(roomRect, side), point))
             {
                 return side;
             }
@@ -358,13 +358,13 @@ namespace antwika::editor
         return std::nullopt;
     }
 
-    gfx::RectF cornerPlace(
+    gfx::RectF getCornerPlace(
         const gfx::Size canvasSize, const voxel::Corner corner)
     {
-        return cornerPlace(inspectColumnBounds(canvasSize), corner);
+        return getCornerPlace(getInspectColumnBounds(canvasSize), corner);
     }
 
-    gfx::RectF cornerPlace(
+    gfx::RectF getCornerPlace(
         const gfx::RectF roomRect, const voxel::Corner corner)
     {
         const auto frame = frameOf(roomRect);
@@ -388,7 +388,7 @@ namespace antwika::editor
     std::optional<voxel::Corner> cornerAt(
         const gfx::Size canvasSize, const gfx::PointF point)
     {
-        return cornerAt(inspectColumnBounds(canvasSize), point);
+        return cornerAt(getInspectColumnBounds(canvasSize), point);
     }
 
     std::optional<voxel::Corner> cornerAt(
@@ -396,7 +396,7 @@ namespace antwika::editor
     {
         for (const auto corner : voxel::kEveryCorner)
         {
-            if (holds(cornerPlace(roomRect, corner), point))
+            if (holds(getCornerPlace(roomRect, corner), point))
             {
                 return corner;
             }
@@ -405,25 +405,25 @@ namespace antwika::editor
         return std::nullopt;
     }
 
-    widget::WidgetId edgeToggleWidget(const EdgeToggle whichToggle)
+    widget::WidgetId getEdgeToggleWidget(const EdgeToggle whichToggle)
     {
         return widget::WidgetId{
             whichToggle == EdgeToggle::Boundary ? kBoundaryToggleWidget
                          : kForbiddenToggleWidget};
     }
 
-    std::string_view edgeToggleName(const EdgeToggle whichToggle)
+    std::string_view getEdgeToggleName(const EdgeToggle whichToggle)
     {
         return whichToggle == EdgeToggle::Boundary ? "rim" : "shut";
     }
 
-    gfx::RectF edgeTogglePlace(
+    gfx::RectF getEdgeTogglePlace(
         const gfx::Size canvasSize, const EdgeToggle whichToggle)
     {
-        return edgeTogglePlace(inspectColumnBounds(canvasSize), whichToggle);
+        return getEdgeTogglePlace(getInspectColumnBounds(canvasSize), whichToggle);
     }
 
-    gfx::RectF edgeTogglePlace(
+    gfx::RectF getEdgeTogglePlace(
         const gfx::RectF roomRect, const EdgeToggle whichToggle)
     {
         const auto frame = frameOf(roomRect);
@@ -434,7 +434,7 @@ namespace antwika::editor
             gfx::PointF{
                 frame.originPoint.x + (frame.size.width / 2.0F)
                     - span + (rank * span),
-                frame.originPoint.y + frame.size.height + markerReach()
+                frame.originPoint.y + frame.size.height + getMarkerReach()
                     + kMarkerGap},
             gfx::SizeF{kEdgeToggleSide, kEdgeToggleSide});
     }
@@ -442,7 +442,7 @@ namespace antwika::editor
     std::optional<EdgeToggle> edgeToggleAt(
         const gfx::Size canvasSize, const gfx::PointF point)
     {
-        return edgeToggleAt(inspectColumnBounds(canvasSize), point);
+        return edgeToggleAt(getInspectColumnBounds(canvasSize), point);
     }
 
     std::optional<EdgeToggle> edgeToggleAt(
@@ -450,7 +450,7 @@ namespace antwika::editor
     {
         for (const auto which : kEveryEdgeToggle)
         {
-            if (holds(edgeTogglePlace(roomRect, which), point))
+            if (holds(getEdgeTogglePlace(roomRect, which), point))
             {
                 return which;
             }
@@ -462,7 +462,7 @@ namespace antwika::editor
     std::optional<tilemap::TileEdge> markerAt(
         const gfx::Size canvasSize, const gfx::PointF point)
     {
-        return markerAt(inspectColumnBounds(canvasSize), point);
+        return markerAt(getInspectColumnBounds(canvasSize), point);
     }
 
     std::optional<tilemap::TileEdge> markerAt(
@@ -470,7 +470,7 @@ namespace antwika::editor
     {
         for (const auto edge : tilemap::kEveryTileEdge)
         {
-            if (holds(markerPlace(roomRect, edge), point))
+            if (holds(getMarkerPlace(roomRect, edge), point))
             {
                 return edge;
             }
@@ -490,7 +490,7 @@ namespace antwika::editor
             return std::nullopt;
         }
 
-        return cellAtPoint(tilemap, whereRect, point);
+        return getCellAtPoint(tilemap, whereRect, point);
     }
 
     GestureResult gestureFrom(
@@ -504,9 +504,9 @@ namespace antwika::editor
     {
         return gestureFrom(
             tilemap,
-            inspectColumnBounds(canvasSize),
+            getInspectColumnBounds(canvasSize),
             whereRect,
-            tilemapBounds(canvasSize),
+            getTilemapBounds(canvasSize),
             pressedAtPoint,
             releasedAtPoint,
             looking,
@@ -593,7 +593,7 @@ namespace antwika::editor
             .selection = edgeSelectionOf(*pressedMarker)};
     }
 
-    std::array<gfx::RectF, kBorderSides> outlineRects(
+    std::array<gfx::RectF, kBorderSides> getOutlineRects(
         const gfx::RectF whereRect, const float thickness)
     {
         const auto width = whereRect.size.width + (2.0F * thickness);
@@ -621,12 +621,12 @@ namespace antwika::editor
                 gfx::SizeF{thickness, whereRect.size.height})};
     } // GCOVR_EXCL_LINE
 
-    std::optional<gfx::PointF> tileCenter(
+    std::optional<gfx::PointF> getTileCenter(
         const tilemap::Tilemap &tilemap,
         const gfx::RectF whereRect,
         const tilemap::Tile tile)
     {
-        const auto sits = tilemap::cellHoldingTile(tilemap, tile);
+        const auto sits = tilemap::getCellHoldingTile(tilemap, tile);
 
         if (!sits.has_value())
         {
@@ -634,7 +634,7 @@ namespace antwika::editor
         }
 
         const auto place =
-            tilePlace(tilemap, sits->column, sits->row, whereRect);
+            getTilePlace(tilemap, sits->column, sits->row, whereRect);
 
         return gfx::PointF{
             place.originPoint.x + (place.size.width / 2.0F),

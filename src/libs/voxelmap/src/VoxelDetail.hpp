@@ -24,7 +24,7 @@ namespace antwika::voxelmap::voxeldetail
 
     using voxel::detail::kVoxelFaces;
 
-    using voxel::detail::offsetBy;
+    using voxel::detail::getOffsetBy;
 
     using voxel::detail::kindAt;
 
@@ -38,7 +38,7 @@ namespace antwika::voxelmap::voxeldetail
 
     using voxel::detail::FaceUv;
 
-    using voxel::detail::uvWithinFace;
+    using voxel::detail::getUvWithinFace;
 
     constexpr std::size_t kTiles =
         static_cast<std::size_t>(tilemap::kAtlasColumns * tilemap::kAtlasRows);

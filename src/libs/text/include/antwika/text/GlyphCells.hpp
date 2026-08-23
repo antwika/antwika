@@ -14,7 +14,7 @@ namespace antwika::text
     public:
         explicit GlyphCells(std::uint32_t scale);
 
-        [[nodiscard]] gfx::Size cellSize() const noexcept;
+        [[nodiscard]] gfx::Size getCellSize() const noexcept;
 
         [[nodiscard]] std::uint8_t coverageAt(
             char character,

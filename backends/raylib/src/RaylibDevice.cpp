@@ -143,7 +143,7 @@ namespace antwika::raylib
         flushToStream();
     }
 
-    FrameCount RaylibDevice::pendingFrames() const noexcept
+    FrameCount RaylibDevice::getPendingFrames() const noexcept
     {
         return static_cast<FrameCount>(
             (pending.size() - pendingRead) / channelBuffers.size());
@@ -151,7 +151,7 @@ namespace antwika::raylib
 
     void RaylibDevice::flushToStream()
     {
-        while (pendingFrames() >= bufferCount && IsAudioStreamProcessed(stream))
+        while (getPendingFrames() >= bufferCount && IsAudioStreamProcessed(stream))
         {
             UpdateAudioStream(
                 stream,
@@ -180,17 +180,17 @@ namespace antwika::raylib
         }
     }
 
-    WaveFormat RaylibDevice::format() const
+    WaveFormat RaylibDevice::getFormat() const
     {
         return wave;
     }
 
-    FrameCount RaylibDevice::bufferFrames() const
+    FrameCount RaylibDevice::getBufferFrames() const
     {
         return bufferCount;
     }
 
-    FrameIndex RaylibDevice::framesPlayed() const
+    FrameIndex RaylibDevice::getFramesPlayed() const
     {
         FrameCount bufferedFrames = 0;
 

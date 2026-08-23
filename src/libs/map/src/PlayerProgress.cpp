@@ -28,7 +28,7 @@ namespace antwika::map
         outputStream << document.dump(kIndent) << '\n';
     }
 
-    std::optional<Progress> loadProgress(const std::string &path)
+    std::optional<Progress> getLoadProgress(const std::string &path)
     {
         std::ifstream inputStream(path);
 
@@ -67,9 +67,9 @@ namespace antwika::map
             .stancePlacement = Placement{
                 .position =
                     gfx::Vec3{
-                        fromFixed(atJson[0].get<std::int64_t>()),
-                        fromFixed(atJson[1].get<std::int64_t>()),
-                        fromFixed(atJson[2].get<std::int64_t>())},
+                        getFromFixed(atJson[0].get<std::int64_t>()),
+                        getFromFixed(atJson[1].get<std::int64_t>()),
+                        getFromFixed(atJson[2].get<std::int64_t>())},
                 .way = document[std::string(kWayKey)]
                            .get<std::uint8_t>()}};
     } // GCOVR_EXCL_LINE

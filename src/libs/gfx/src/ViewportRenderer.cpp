@@ -30,7 +30,7 @@ namespace antwika::gfx
         return bound > 0;
     }
 
-    Viewport ViewportRenderer::viewport() const noexcept
+    Viewport ViewportRenderer::getViewport() const noexcept
     {
         return transformViewport;
     }
@@ -40,7 +40,7 @@ namespace antwika::gfx
         return innerRenderer;
     }
 
-    Size ViewportRenderer::windowSize() const noexcept
+    Size ViewportRenderer::getWindowSize() const noexcept
     {
         return reportedSize;
     }
@@ -103,7 +103,7 @@ namespace antwika::gfx
         }
 
         const auto multiplier = textMultiplierOf(scale);
-        const auto encodedScale = encodeTextScale(
+        const auto encodedScale = getEncodeTextScale(
             textFaceOf(scale), transformViewport.toWindowScale(multiplier));
 
         const bool exact =
@@ -125,7 +125,7 @@ namespace antwika::gfx
         for (std::size_t index = 0; index < text.size(); ++index)
         {
             const auto step = static_cast<std::int64_t>(index)
-                              * scaledGlyphAdvance(scale);
+                              * getScaledGlyphAdvance(scale);
 
             const PointF cellPoint{
                 originPoint.x + static_cast<float>(step), originPoint.y};
@@ -247,14 +247,14 @@ namespace antwika::gfx
         innerRenderer.drawMesh(
             mesh,
             modelMatrix,
-            isTargetBound() ? camera : onWindow(camera),
+            isTargetBound() ? camera : getOnWindow(camera),
             material);
     }
 
-    Camera3D ViewportRenderer::onWindow(const Camera3D &camera) const
+    Camera3D ViewportRenderer::getOnWindow(const Camera3D &camera) const
     {
         const auto *how =
-            std::get_if<Orthographic>(&camera.projection());
+            std::get_if<Orthographic>(&camera.getProjection());
 
         if (how == nullptr)
         {
@@ -303,7 +303,7 @@ namespace antwika::gfx
 
     void ViewportRenderer::fillLetterbox(Color color)
     {
-        const auto frame = transformViewport.frame(canvasSize);
+        const auto frame = transformViewport.getFrame(canvasSize);
 
         const auto right = frame.originPoint.x
                            + static_cast<std::int32_t>(frame.size.width);

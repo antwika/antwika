@@ -22,7 +22,7 @@ namespace
         .activatedWidget = kWidget,
         .pointerOverUi = true};
 
-    [[nodiscard]] Interactions everything()
+    [[nodiscard]] Interactions getEverything()
     {
         return Interactions{
             .hoveredWidget = kWidget,
@@ -43,7 +43,7 @@ namespace
 
 TEST(InteractionsTest, OperatorEquals_MatchesWhenEveryFieldMatches)
 {
-    EXPECT_EQ(everything(), everything());
+    EXPECT_EQ(getEverything(), getEverything());
 }
 
 TEST(InteractionsTest, OperatorEquals_DiffersOnTheHoveredWidget)

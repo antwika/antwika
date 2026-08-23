@@ -2,12 +2,12 @@
 
 #include "antwika/sound/WaveformId.hpp"
 
-using antwika::sound::rawValue;
+using antwika::sound::getRawValue;
 using antwika::sound::WaveformId;
 
 TEST(WaveformIdTest, RawValue_UnwrapsToTheNumberItHolds)
 {
-    EXPECT_EQ(rawValue(static_cast<WaveformId>(7)), 7U);
+    EXPECT_EQ(getRawValue(static_cast<WaveformId>(7)), 7U);
 }
 
 TEST(WaveformIdTest, OperatorCompare_ComparesIdsByTheirNumber)

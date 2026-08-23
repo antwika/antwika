@@ -20,7 +20,7 @@ namespace antwika::cli
 
         [[nodiscard]] bool has(std::string_view flag) const;
 
-        [[nodiscard]] std::optional<std::string> value(
+        [[nodiscard]] std::optional<std::string> getValue(
             std::string_view flag) const;
 
     private:
@@ -32,7 +32,7 @@ namespace antwika::cli
     [[nodiscard]] CommandLine parseCommandLine(
         int argc, char **argv, std::span<const FlagSpec> flags);
 
-    [[nodiscard]] std::string helpText(
+    [[nodiscard]] std::string getHelpText(
         std::string_view program, std::span<const FlagSpec> flags);
 
 }

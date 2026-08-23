@@ -49,7 +49,7 @@ namespace antwika::gfx::conformance
     class GfxBackendConformanceTest : public ::testing::Test
     {
     protected:
-        [[nodiscard]] static WindowSpec demoSpec()
+        [[nodiscard]] static WindowSpec getDemoSpec()
         {
             return WindowSpec{
                 .title = "Antwika conformance",
@@ -57,7 +57,7 @@ namespace antwika::gfx::conformance
                 .hidden = true};
         }
 
-        [[nodiscard]] static WindowSpec resizableSpec()
+        [[nodiscard]] static WindowSpec getResizableSpec()
         {
             return WindowSpec{
                 .title = "Antwika conformance, resizable",
@@ -66,7 +66,7 @@ namespace antwika::gfx::conformance
                 .hidden = true};
         }
 
-        [[nodiscard]] static WindowSpec fullscreenSpec()
+        [[nodiscard]] static WindowSpec getFullscreenSpec()
         {
             return WindowSpec{
                 .title = "Antwika conformance, fullscreen",
@@ -75,7 +75,7 @@ namespace antwika::gfx::conformance
                 .hidden = true};
         }
 
-        [[nodiscard]] static Bitmap demoBitmap()
+        [[nodiscard]] static Bitmap getDemoBitmap()
         {
             constexpr std::uint32_t kSide = 4;
 
@@ -85,14 +85,14 @@ namespace antwika::gfx::conformance
                     kSide * kSide * kBytesPerPixel, 128)};
         }
 
-        [[nodiscard]] static Rect wholeBitmap()
+        [[nodiscard]] static Rect getWholeBitmap()
         {
             return Rect{
                 .originPoint = {.x = 0, .y = 0},
-                .size = demoBitmap().size};
+                .size = getDemoBitmap().size};
         }
 
-        [[nodiscard]] static MeshData demoMesh()
+        [[nodiscard]] static MeshData getDemoMesh()
         {
             return MeshData{
                 .vertices =
@@ -115,7 +115,7 @@ namespace antwika::gfx::conformance
                 .indices = {0, 1, 2, 0, 2, 3}};
         }
 
-        [[nodiscard]] static ShaderSource demoShader()
+        [[nodiscard]] static ShaderSource getDemoShader()
         {
             return ShaderSource{
                 .vertex = R"(#version 330
@@ -153,9 +153,9 @@ void main()
 )"};
         }
 
-        [[nodiscard]] static MeshData flatMesh()
+        [[nodiscard]] static MeshData getFlatMesh()
         {
-            auto mesh = demoMesh();
+            auto mesh = getDemoMesh();
 
             for (auto &vertex : mesh.vertices)
             {
@@ -169,18 +169,18 @@ void main()
             return mesh;
         }
 
-        [[nodiscard]] static Mat4 movedBy(const float z)
+        [[nodiscard]] static Mat4 getMovedBy(const float z)
         {
-            auto matrix = identityMatrix();
+            auto matrix = getIdentityMatrix();
 
             matrix[3][2] = z;
 
             return matrix;
         }
 
-        [[nodiscard]] static Mat4 movedAcross(const float x)
+        [[nodiscard]] static Mat4 getMovedAcross(const float x)
         {
-            auto matrix = identityMatrix();
+            auto matrix = getIdentityMatrix();
 
             matrix[3][0] = x;
 
@@ -189,7 +189,7 @@ void main()
 
         [[nodiscard]] static Bitmap bitmapOf(const Color color)
         {
-            auto bitmap = demoBitmap();
+            auto bitmap = getDemoBitmap();
 
             for (std::size_t index = 0; index + 3 < bitmap.pixels.size();
                  index += kBytesPerPixel)
@@ -226,10 +226,10 @@ void main()
                 .alpha = takenBitmap.pixels[byteIndex + 3]};
         }
 
-        [[nodiscard]] static ShaderSource surfaceShader()
+        [[nodiscard]] static ShaderSource getSurfaceShader()
         {
             return ShaderSource{
-                .vertex = demoShader().vertex,
+                .vertex = getDemoShader().vertex,
                 .fragment = R"(#version 330
 
 in vec2 fragTexCoord;
@@ -251,7 +251,7 @@ void main()
 )"};
         }
 
-        [[nodiscard]] static ShaderSource shiftingShader()
+        [[nodiscard]] static ShaderSource getShiftingShader()
         {
             return ShaderSource{
                 .vertex = R"(#version 330
@@ -274,13 +274,13 @@ void main()
     gl_Position = mvp * shift * vec4(vertexPosition, 1.0);
 }
 )",
-                .fragment = demoShader().fragment};
+                .fragment = getDemoShader().fragment};
         }
 
-        [[nodiscard]] static ShaderSource depthShader()
+        [[nodiscard]] static ShaderSource getDepthShader()
         {
             return ShaderSource{
-                .vertex = demoShader().vertex,
+                .vertex = getDemoShader().vertex,
                 .fragment = R"(#version 330
 
 in vec2 fragTexCoord;
@@ -299,7 +299,7 @@ void main()
 )"};
         }
 
-        [[nodiscard]] static Camera3D demoCamera()
+        [[nodiscard]] static Camera3D getDemoCamera()
         {
             return Camera3D{
                 Vec3{0.0F, 0.0F, 4.0F},
@@ -323,12 +323,12 @@ void main()
 
     TYPED_TEST_P(GfxBackendConformanceTest, Name_IsNotEmpty)
     {
-        EXPECT_FALSE(this->backend->name().empty());
+        EXPECT_FALSE(this->backend->getName().empty());
     }
 
     TYPED_TEST_P(GfxBackendConformanceTest, CreateWindow_ReturnsAnOpenWindow)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
 
         ASSERT_NE(window, nullptr);
         EXPECT_TRUE(window->isOpen());
@@ -336,44 +336,44 @@ void main()
 
     TYPED_TEST_P(GfxBackendConformanceTest, CreateWindow_GivesTheWindowARealId)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
 
-        EXPECT_NE(window->id(), kNullWindowId);
+        EXPECT_NE(window->getId(), kNullWindowId);
     }
 
     TYPED_TEST_P(GfxBackendConformanceTest, MaxWindows_IsAtLeastOne)
     {
-        EXPECT_GE(this->backend->maxWindows(), std::size_t{1});
+        EXPECT_GE(this->backend->getMaxWindows(), std::size_t{1});
     }
 
     TYPED_TEST_P(GfxBackendConformanceTest,
                  CreateWindow_GivesEachWindowItsOwnId)
     {
-        if (this->backend->maxWindows() < 2)
+        if (this->backend->getMaxWindows() < 2)
         {
             GTEST_SKIP() << "backend allows only one window at a time";
         }
 
-        const auto first = this->backend->createWindow(this->demoSpec());
-        const auto second = this->backend->createWindow(this->demoSpec());
+        const auto first = this->backend->createWindow(this->getDemoSpec());
+        const auto second = this->backend->createWindow(this->getDemoSpec());
 
-        EXPECT_NE(first->id(), second->id());
+        EXPECT_NE(first->getId(), second->getId());
     }
 
     TYPED_TEST_P(GfxBackendConformanceTest,
                  CreateWindow_RefusesToExceedItsLimit)
     {
-        if (this->backend->maxWindows() != 1)
+        if (this->backend->getMaxWindows() != 1)
         {
             GTEST_SKIP() << "backend allows more than one window";
         }
 
-        const auto first = this->backend->createWindow(this->demoSpec());
+        const auto first = this->backend->createWindow(this->getDemoSpec());
 
         EXPECT_THROW(
             {
                 const auto second =
-                    this->backend->createWindow(this->demoSpec());
+                    this->backend->createWindow(this->getDemoSpec());
             },
             GfxError);
     }
@@ -381,115 +381,115 @@ void main()
     TYPED_TEST_P(GfxBackendConformanceTest,
                  CreateWindow_ReportsTheRequestedTitle)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
 
-        EXPECT_EQ(window->title(), "Antwika conformance");
+        EXPECT_EQ(window->getTitle(), "Antwika conformance");
     }
 
     TYPED_TEST_P(GfxBackendConformanceTest, CreateWindow_ReportsANonZeroSize)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
 
-        EXPECT_GT(window->size().width, 0u);
-        EXPECT_GT(window->size().height, 0u);
+        EXPECT_GT(window->getSize().width, 0u);
+        EXPECT_GT(window->getSize().height, 0u);
     }
 
     TYPED_TEST_P(
         GfxBackendConformanceTest, ConfiguredSize_IsExactlyWhatWasAskedFor)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
 
-        EXPECT_EQ(window->configuredSize(), this->demoSpec().size);
+        EXPECT_EQ(window->getConfiguredSize(), this->getDemoSpec().size);
     }
 
     TYPED_TEST_P(
         GfxBackendConformanceTest, ConfiguredSize_IsUnchangedByClosingTheWindow)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
 
         window->close();
 
-        EXPECT_EQ(window->configuredSize(), this->demoSpec().size);
+        EXPECT_EQ(window->getConfiguredSize(), this->getDemoSpec().size);
     }
 
     TYPED_TEST_P(GfxBackendConformanceTest, ConfiguredSize_IsPerWindow)
     {
-        if (this->backend->maxWindows() < 2)
+        if (this->backend->getMaxWindows() < 2)
         {
             GTEST_SKIP() << "backend allows only one window at a time";
         }
 
-        const auto first = this->backend->createWindow(this->demoSpec());
+        const auto first = this->backend->createWindow(this->getDemoSpec());
         const auto second =
-            this->backend->createWindow(this->resizableSpec());
+            this->backend->createWindow(this->getResizableSpec());
 
-        EXPECT_EQ(first->configuredSize(), this->demoSpec().size);
-        EXPECT_EQ(second->configuredSize(), this->resizableSpec().size);
+        EXPECT_EQ(first->getConfiguredSize(), this->getDemoSpec().size);
+        EXPECT_EQ(second->getConfiguredSize(), this->getResizableSpec().size);
     }
 
     TYPED_TEST_P(GfxBackendConformanceTest,
                  CreateWindow_AcceptsAResizableWindow)
     {
         const auto window =
-            this->backend->createWindow(this->resizableSpec());
+            this->backend->createWindow(this->getResizableSpec());
 
         ASSERT_NE(window, nullptr);
         EXPECT_TRUE(window->isOpen());
 
-        EXPECT_EQ(window->configuredSize(), this->resizableSpec().size);
-        EXPECT_GT(window->size().width, 0u);
-        EXPECT_GT(window->size().height, 0u);
+        EXPECT_EQ(window->getConfiguredSize(), this->getResizableSpec().size);
+        EXPECT_GT(window->getSize().width, 0u);
+        EXPECT_GT(window->getSize().height, 0u);
     }
 
     TYPED_TEST_P(GfxBackendConformanceTest,
                  CreateWindow_AcceptsAFullscreenWindow)
     {
         const auto window =
-            this->backend->createWindow(this->fullscreenSpec());
+            this->backend->createWindow(this->getFullscreenSpec());
 
         ASSERT_NE(window, nullptr);
         EXPECT_TRUE(window->isOpen());
 
-        EXPECT_EQ(window->configuredSize(), this->fullscreenSpec().size);
-        EXPECT_GT(window->size().width, 0u);
-        EXPECT_GT(window->size().height, 0u);
+        EXPECT_EQ(window->getConfiguredSize(), this->getFullscreenSpec().size);
+        EXPECT_GT(window->getSize().width, 0u);
+        EXPECT_GT(window->getSize().height, 0u);
     }
 
     TYPED_TEST_P(GfxBackendConformanceTest, SetFullscreen_LeavesTheWindowUsable)
     {
         const auto window =
-            this->backend->createWindow(this->resizableSpec());
+            this->backend->createWindow(this->getResizableSpec());
 
         window->setFullscreen(true);
         window->setFullscreen(true);
         window->setFullscreen(false);
 
-        EXPECT_EQ(window->configuredSize(), this->resizableSpec().size);
-        EXPECT_GT(window->size().width, 0u);
-        EXPECT_GT(window->size().height, 0u);
+        EXPECT_EQ(window->getConfiguredSize(), this->getResizableSpec().size);
+        EXPECT_GT(window->getSize().width, 0u);
+        EXPECT_GT(window->getSize().height, 0u);
         EXPECT_TRUE(window->isOpen());
     }
 
     TYPED_TEST_P(GfxBackendConformanceTest, SetFullscreen_IsHarmlessOnceClosed)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
 
         window->close();
 
         EXPECT_NO_THROW(window->setFullscreen(true));
-        EXPECT_EQ(window->configuredSize(), this->demoSpec().size);
-        EXPECT_GT(window->size().width, 0u);
+        EXPECT_EQ(window->getConfiguredSize(), this->getDemoSpec().size);
+        EXPECT_GT(window->getSize().width, 0u);
     }
 
     TYPED_TEST_P(GfxBackendConformanceTest, Size_StaysNonZeroAfterClosing)
     {
         const auto window =
-            this->backend->createWindow(this->resizableSpec());
+            this->backend->createWindow(this->getResizableSpec());
 
         window->close();
 
-        EXPECT_GT(window->size().width, 0u);
-        EXPECT_GT(window->size().height, 0u);
+        EXPECT_GT(window->getSize().width, 0u);
+        EXPECT_GT(window->getSize().height, 0u);
     }
 
     TYPED_TEST_P(GfxBackendConformanceTest, CreateWindow_ThrowsWhenWidthIsZero)
@@ -517,13 +517,13 @@ void main()
     TYPED_TEST_P(GfxBackendConformanceTest,
                  CreateWindow_ReturnsIndependentWindows)
     {
-        if (this->backend->maxWindows() < 2)
+        if (this->backend->getMaxWindows() < 2)
         {
             GTEST_SKIP() << "backend allows only one window at a time";
         }
 
-        const auto first = this->backend->createWindow(this->demoSpec());
-        const auto second = this->backend->createWindow(this->demoSpec());
+        const auto first = this->backend->createWindow(this->getDemoSpec());
+        const auto second = this->backend->createWindow(this->getDemoSpec());
 
         first->close();
 
@@ -533,31 +533,31 @@ void main()
 
     TYPED_TEST_P(GfxBackendConformanceTest, SetSize_ResizesTheWindow)
     {
-        if (!this->backend->capabilities().resizesWindows)
+        if (!this->backend->getCapabilities().resizesWindows)
         {
             GTEST_SKIP() << "the backend does not resize windows";
         }
 
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         const Size askedSize{.width = 320, .height = 240};
 
         window->setSize(askedSize);
 
-        EXPECT_EQ(window->size(), askedSize);
+        EXPECT_EQ(window->getSize(), askedSize);
     }
 
     TYPED_TEST_P(GfxBackendConformanceTest, SetTitle_ReplacesTheTitle)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
 
         window->setTitle("Antwika renamed");
 
-        EXPECT_EQ(window->title(), "Antwika renamed");
+        EXPECT_EQ(window->getTitle(), "Antwika renamed");
     }
 
     TYPED_TEST_P(GfxBackendConformanceTest, Close_ClosesTheWindow)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
 
         window->close();
 
@@ -566,7 +566,7 @@ void main()
 
     TYPED_TEST_P(GfxBackendConformanceTest, Close_IsIdempotent)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
 
         window->close();
 
@@ -577,7 +577,7 @@ void main()
     TYPED_TEST_P(GfxBackendConformanceTest,
                  Renderer_AcceptsAFrameWithoutThrowing)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = window->renderer();
 
         EXPECT_NO_THROW({
@@ -599,7 +599,7 @@ void main()
 
     TYPED_TEST_P(GfxBackendConformanceTest, Renderer_AcceptsATranslucentFrame)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = window->renderer();
 
         EXPECT_NO_THROW({
@@ -627,7 +627,7 @@ void main()
 
     TYPED_TEST_P(GfxBackendConformanceTest, DrawLine_AcceptsAwkwardLines)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = window->renderer();
 
         EXPECT_NO_THROW({
@@ -653,7 +653,7 @@ void main()
 
     TYPED_TEST_P(GfxBackendConformanceTest, DrawText_AcceptsAwkwardText)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = window->renderer();
 
         EXPECT_NO_THROW({
@@ -669,19 +669,19 @@ void main()
 
     TYPED_TEST_P(GfxBackendConformanceTest, CreateTexture_ReportsTheBitmapSize)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         const auto texture =
-            window->renderer().createTexture(this->demoBitmap());
+            window->renderer().createTexture(this->getDemoBitmap());
 
         ASSERT_NE(texture, nullptr);
 
-        EXPECT_EQ(texture->size(), this->demoBitmap().size);
+        EXPECT_EQ(texture->getSize(), this->getDemoBitmap().size);
     }
 
     TYPED_TEST_P(
         GfxBackendConformanceTest, CreateTexture_ThrowsOnAnIncompleteBitmap)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = window->renderer();
 
         EXPECT_THROW(
@@ -701,10 +701,10 @@ void main()
     TYPED_TEST_P(
         GfxBackendConformanceTest, DrawTexture_AcceptsAFrameWithoutThrowing)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = window->renderer();
-        const auto texture = renderer.createTexture(this->demoBitmap());
-        const auto bitmap = this->wholeBitmap();
+        const auto texture = renderer.createTexture(this->getDemoBitmap());
+        const auto bitmap = this->getWholeBitmap();
 
         EXPECT_NO_THROW({
             renderer.clear(Color{});
@@ -735,10 +735,10 @@ void main()
 
     TYPED_TEST_P(GfxBackendConformanceTest, DrawTexture_AcceptsAnUndrawableBlit)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = window->renderer();
-        const auto texture = renderer.createTexture(this->demoBitmap());
-        const auto bitmap = this->wholeBitmap();
+        const auto texture = renderer.createTexture(this->getDemoBitmap());
+        const auto bitmap = this->getWholeBitmap();
         const Color whiteColor{.red = 255, .green = 255, .blue = 255};
 
         EXPECT_NO_THROW({
@@ -764,19 +764,19 @@ void main()
         GfxBackendConformanceTest,
         DrawTexture_AcceptsATextureFromAnotherRenderer)
     {
-        if (this->backend->maxWindows() < 2)
+        if (this->backend->getMaxWindows() < 2)
         {
             GTEST_SKIP() << "backend allows only one window at a time";
         }
 
-        const auto first = this->backend->createWindow(this->demoSpec());
-        const auto second = this->backend->createWindow(this->demoSpec());
+        const auto first = this->backend->createWindow(this->getDemoSpec());
+        const auto second = this->backend->createWindow(this->getDemoSpec());
         const auto texture =
-            first->renderer().createTexture(this->demoBitmap());
+            first->renderer().createTexture(this->getDemoBitmap());
 
         EXPECT_NO_THROW({
             second->renderer().drawTexture(
-                *texture, this->wholeBitmap(), this->wholeBitmap(),
+                *texture, this->getWholeBitmap(), this->getWholeBitmap(),
                 Color{.red = 255, .green = 255, .blue = 255});
             second->renderer().present();
         });
@@ -785,9 +785,9 @@ void main()
     TYPED_TEST_P(
         GfxBackendConformanceTest, DrawTexture_AcceptsATextureOfAnotherKind)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         const fakes::FakeForeignTexture foreign;
-        const auto bitmap = this->wholeBitmap();
+        const auto bitmap = this->getWholeBitmap();
 
         EXPECT_NO_THROW({
             window->renderer().drawTexture(
@@ -799,13 +799,13 @@ void main()
 
     TYPED_TEST_P(GfxBackendConformanceTest, Texture_MayOutliveItsWindow)
     {
-        auto window = this->backend->createWindow(this->demoSpec());
-        auto texture = window->renderer().createTexture(this->demoBitmap());
+        auto window = this->backend->createWindow(this->getDemoSpec());
+        auto texture = window->renderer().createTexture(this->getDemoBitmap());
 
         window->close();
 
         EXPECT_NO_THROW(window->renderer().drawTexture(
-            *texture, this->wholeBitmap(), this->wholeBitmap(),
+            *texture, this->getWholeBitmap(), this->getWholeBitmap(),
             Color{.red = 255, .green = 255, .blue = 255}));
 
         this->backend.reset();
@@ -817,20 +817,20 @@ void main()
     TYPED_TEST_P(GfxBackendConformanceTest,
                  CreateMesh_ReportsTheGeometrysCounts)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
-        const auto mesh = renderer.createMesh(this->demoMesh());
+        const auto mesh = renderer.createMesh(this->getDemoMesh());
 
         ASSERT_NE(mesh, nullptr);
 
-        EXPECT_EQ(mesh->vertexCount(), this->demoMesh().vertices.size());
-        EXPECT_EQ(mesh->triangleCount(), this->demoMesh().triangleCount());
+        EXPECT_EQ(mesh->getVertexCount(), this->getDemoMesh().vertices.size());
+        EXPECT_EQ(mesh->getTriangleCount(), this->getDemoMesh().getTriangleCount());
     }
 
     TYPED_TEST_P(GfxBackendConformanceTest, CreateMesh_ThrowsOnIncompleteData)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
         EXPECT_THROW(
@@ -859,24 +859,24 @@ void main()
     TYPED_TEST_P(GfxBackendConformanceTest,
                  DrawMesh_AcceptsAFrameWithoutThrowing)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &windowRenderer = window->renderer();
         auto &renderer = this->rendererOf(*window);
 
-        const auto mesh = renderer.createMesh(this->demoMesh());
-        const auto camera = this->demoCamera();
+        const auto mesh = renderer.createMesh(this->getDemoMesh());
+        const auto camera = this->getDemoCamera();
         const Color whiteColor{.red = 255, .green = 255, .blue = 255};
 
         EXPECT_NO_THROW({
             windowRenderer.clear(Color{.red = 8, .green = 8, .blue = 16});
-            renderer.drawMesh(*mesh, identityMatrix(), camera, whiteColor);
+            renderer.drawMesh(*mesh, getIdentityMatrix(), camera, whiteColor);
             renderer.drawMesh(
                 *mesh,
                 Transform{
                     .position = {0.5F, 0.0F, -1.0F},
                     .rotationRadians = {0.3F, 0.7F, 0.0F},
                     .scale = {0.5F, 0.5F, 0.5F}}
-                    .matrix(),
+                    .getMatrix(),
                 camera,
                 Color{.red = 255, .green = 128, .blue = 0, .alpha = 128});
             windowRenderer.drawRect(
@@ -890,16 +890,16 @@ void main()
 
     TYPED_TEST_P(GfxBackendConformanceTest, DrawMesh_AcceptsAnAwkwardCamera)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
-        const auto mesh = renderer.createMesh(this->demoMesh());
+        const auto mesh = renderer.createMesh(this->getDemoMesh());
         const Color whiteColor{.red = 255, .green = 255, .blue = 255};
 
         EXPECT_NO_THROW({
             renderer.drawMesh(
                 *mesh,
-                identityMatrix(),
+                getIdentityMatrix(),
                 Camera3D{
                     Vec3{0.0F, 0.0F, 0.0F},
                     Vec3{0.0F, 0.0F, 0.0F},
@@ -908,7 +908,7 @@ void main()
                 whiteColor);
             renderer.drawMesh(
                 *mesh,
-                identityMatrix(),
+                getIdentityMatrix(),
                 Camera3D{
                     Vec3{2.0F, 2.0F, 2.0F},
                     Vec3{0.0F, 0.0F, 0.0F},
@@ -922,23 +922,23 @@ void main()
     TYPED_TEST_P(
         GfxBackendConformanceTest, DrawMesh_AcceptsAMeshFromAnotherRenderer)
     {
-        if (this->backend->maxWindows() < 2)
+        if (this->backend->getMaxWindows() < 2)
         {
             GTEST_SKIP() << "backend allows only one window at a time";
         }
 
-        const auto first = this->backend->createWindow(this->demoSpec());
-        const auto second = this->backend->createWindow(this->demoSpec());
+        const auto first = this->backend->createWindow(this->getDemoSpec());
+        const auto second = this->backend->createWindow(this->getDemoSpec());
         auto &mine = this->rendererOf(*first);
         auto &theirs = this->rendererOf(*second);
 
-        const auto mesh = mine.createMesh(this->demoMesh());
+        const auto mesh = mine.createMesh(this->getDemoMesh());
 
         EXPECT_NO_THROW({
             theirs.drawMesh(
                 *mesh,
-                identityMatrix(),
-                this->demoCamera(),
+                getIdentityMatrix(),
+                this->getDemoCamera(),
                 Color{.red = 255, .green = 255, .blue = 255});
             second->renderer().present();
         });
@@ -946,7 +946,7 @@ void main()
 
     TYPED_TEST_P(GfxBackendConformanceTest, DrawMesh_AcceptsAMeshOfAnotherKind)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
         const fakes::FakeForeignMesh foreign;
@@ -954,8 +954,8 @@ void main()
         EXPECT_NO_THROW({
             renderer.drawMesh(
                 foreign,
-                identityMatrix(),
-                this->demoCamera(),
+                getIdentityMatrix(),
+                this->getDemoCamera(),
                 Color{.red = 255, .green = 255, .blue = 255});
             window->renderer().present();
         });
@@ -963,17 +963,17 @@ void main()
 
     TYPED_TEST_P(GfxBackendConformanceTest, Mesh_MayOutliveItsWindow)
     {
-        auto window = this->backend->createWindow(this->demoSpec());
+        auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
-        auto mesh = renderer.createMesh(this->demoMesh());
+        auto mesh = renderer.createMesh(this->getDemoMesh());
 
         window->close();
 
         EXPECT_NO_THROW(renderer.drawMesh(
             *mesh,
-            identityMatrix(),
-            this->demoCamera(),
+            getIdentityMatrix(),
+            this->getDemoCamera(),
             Color{.red = 255, .green = 255, .blue = 255}));
 
         this->backend.reset();
@@ -984,10 +984,10 @@ void main()
 
     TYPED_TEST_P(GfxBackendConformanceTest, CreateShader_ReturnsAReadyProgram)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
-        const auto shader = renderer.createShader(this->demoShader());
+        const auto shader = renderer.createShader(this->getDemoShader());
 
         ASSERT_NE(shader, nullptr);
 
@@ -996,7 +996,7 @@ void main()
 
     TYPED_TEST_P(GfxBackendConformanceTest, CreateShader_ThrowsOnAMissingStage)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
         EXPECT_THROW(
@@ -1007,7 +1007,7 @@ void main()
             {
                 const auto shader = renderer.createShader(
                     ShaderSource{
-                        .vertex = this->demoShader().vertex,
+                        .vertex = this->getDemoShader().vertex,
                         .fragment = ""});
             },
             GfxError);
@@ -1017,25 +1017,25 @@ void main()
                 const auto shader = renderer.createShader(
                     ShaderSource{
                         .vertex = "",
-                        .fragment = this->demoShader().fragment});
+                        .fragment = this->getDemoShader().fragment});
             },
             GfxError);
     }
 
     TYPED_TEST_P(GfxBackendConformanceTest, DrawMesh_AcceptsAFullMaterial)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
-        const auto mesh = renderer.createMesh(this->demoMesh());
-        const auto texture = renderer.createTexture(this->demoBitmap());
-        const auto shader = renderer.createShader(this->demoShader());
+        const auto mesh = renderer.createMesh(this->getDemoMesh());
+        const auto texture = renderer.createTexture(this->getDemoBitmap());
+        const auto shader = renderer.createShader(this->getDemoShader());
 
         EXPECT_NO_THROW({
             renderer.drawMesh(
                 *mesh,
-                identityMatrix(),
-                this->demoCamera(),
+                getIdentityMatrix(),
+                this->getDemoCamera(),
                 MeshMaterial{
                     .texture = texture.get(),
                     .shader = shader.get(),
@@ -1047,17 +1047,17 @@ void main()
     TYPED_TEST_P(GfxBackendConformanceTest,
                  DrawMesh_LeavesLaterFlatDrawingUnshaded)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
-        const auto mesh = renderer.createMesh(this->demoMesh());
-        const auto shader = renderer.createShader(this->demoShader());
+        const auto mesh = renderer.createMesh(this->getDemoMesh());
+        const auto shader = renderer.createShader(this->getDemoShader());
 
         EXPECT_NO_THROW({
             renderer.drawMesh(
                 *mesh,
-                identityMatrix(),
-                this->demoCamera(),
+                getIdentityMatrix(),
+                this->getDemoCamera(),
                 MeshMaterial{.shader = shader.get()});
             renderer.drawRect(
                 Rect{
@@ -1073,18 +1073,18 @@ void main()
     TYPED_TEST_P(
         GfxBackendConformanceTest, DrawMesh_AcceptsAShaderOfAnotherKind)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
-        const auto mesh = renderer.createMesh(this->demoMesh());
+        const auto mesh = renderer.createMesh(this->getDemoMesh());
         const fakes::FakeForeignShader foreign;
         const fakes::FakeForeignTexture foreignTexture;
 
         EXPECT_NO_THROW({
             renderer.drawMesh(
                 *mesh,
-                identityMatrix(),
-                this->demoCamera(),
+                getIdentityMatrix(),
+                this->getDemoCamera(),
                 MeshMaterial{
                     .texture = &foreignTexture, .shader = &foreign});
             window->renderer().present();
@@ -1093,18 +1093,18 @@ void main()
 
     TYPED_TEST_P(GfxBackendConformanceTest, Shader_MayOutliveItsWindow)
     {
-        auto window = this->backend->createWindow(this->demoSpec());
+        auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
-        auto mesh = renderer.createMesh(this->demoMesh());
-        auto shader = renderer.createShader(this->demoShader());
+        auto mesh = renderer.createMesh(this->getDemoMesh());
+        auto shader = renderer.createShader(this->getDemoShader());
 
         window->close();
 
         EXPECT_NO_THROW(renderer.drawMesh(
             *mesh,
-            identityMatrix(),
-            this->demoCamera(),
+            getIdentityMatrix(),
+            this->getDemoCamera(),
             MeshMaterial{.shader = shader.get()}));
 
         this->backend.reset();
@@ -1116,11 +1116,11 @@ void main()
 
     TYPED_TEST_P(GfxBackendConformanceTest, SetShader_TakesEveryKindOfValue)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
-        const auto shader = renderer.createShader(this->demoShader());
-        const auto mesh = renderer.createMesh(this->demoMesh());
+        const auto shader = renderer.createShader(this->getDemoShader());
+        const auto mesh = renderer.createMesh(this->getDemoMesh());
 
         EXPECT_NO_THROW({
             renderer.setShaderNumber(*shader, "colDiffuse", 0.5F);
@@ -1129,11 +1129,11 @@ void main()
             renderer.setShaderColor(
                 *shader, "colDiffuse", Color{.red = 255});
             renderer.setShaderMatrix(
-                *shader, "mvp", identityMatrix());
+                *shader, "mvp", getIdentityMatrix());
             renderer.drawMesh(
                 *mesh,
-                identityMatrix(),
-                this->demoCamera(),
+                getIdentityMatrix(),
+                this->getDemoCamera(),
                 MeshMaterial{.shader = shader.get()});
             renderer.present();
         });
@@ -1141,10 +1141,10 @@ void main()
 
     TYPED_TEST_P(GfxBackendConformanceTest, SetShader_IgnoresAUniformItHasNot)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
-        const auto shader = renderer.createShader(this->demoShader());
+        const auto shader = renderer.createShader(this->getDemoShader());
         const fakes::FakeForeignShader foreign;
 
         EXPECT_NO_THROW({
@@ -1154,9 +1154,9 @@ void main()
             renderer.setShaderColor(
                 foreign, "colDiffuse", Color{.red = 255});
             renderer.setShaderMatrix(
-                *shader, "nothingByThatName", identityMatrix());
+                *shader, "nothingByThatName", getIdentityMatrix());
             renderer.setShaderMatrix(
-                foreign, "mvp", identityMatrix());
+                foreign, "mvp", getIdentityMatrix());
             renderer.present();
         });
     }
@@ -1164,7 +1164,7 @@ void main()
     TYPED_TEST_P(GfxBackendConformanceTest,
                  CreateRenderTarget_KeepsDepthOnlyWhenAskedTo)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
         const Size wantedSize{.width = 64, .height = 32};
@@ -1175,20 +1175,20 @@ void main()
         const auto depthTarget = renderer.createRenderTarget(
             RenderTargetSpec{.size = wantedSize, .depth = true});
 
-        EXPECT_EQ(plain->size().width, wantedSize.width);
-        EXPECT_EQ(plain->size().height, wantedSize.height);
-        EXPECT_NE(plain->color(), nullptr);
-        EXPECT_EQ(plain->depth(), nullptr);
+        EXPECT_EQ(plain->getSize().width, wantedSize.width);
+        EXPECT_EQ(plain->getSize().height, wantedSize.height);
+        EXPECT_NE(plain->getColor(), nullptr);
+        EXPECT_EQ(plain->getDepth(), nullptr);
 
-        EXPECT_NE(depthTarget->color(), nullptr);
-        ASSERT_NE(depthTarget->depth(), nullptr);
-        EXPECT_EQ(depthTarget->depth()->size().width, wantedSize.width);
+        EXPECT_NE(depthTarget->getColor(), nullptr);
+        ASSERT_NE(depthTarget->getDepth(), nullptr);
+        EXPECT_EQ(depthTarget->getDepth()->getSize().width, wantedSize.width);
     }
 
     TYPED_TEST_P(GfxBackendConformanceTest,
                  CreateRenderTarget_ThrowsOnAnEmptySize)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
         EXPECT_THROW(
@@ -1203,13 +1203,13 @@ void main()
     TYPED_TEST_P(GfxBackendConformanceTest,
                  BeginTarget_KeepsWhatWasDrawnIntoIt)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
         const auto target = renderer.createRenderTarget(
             RenderTargetSpec{.size = Size{.width = 64, .height = 64}});
-        const auto mesh = renderer.createMesh(this->flatMesh());
-        const auto shader = renderer.createShader(this->demoShader());
+        const auto mesh = renderer.createMesh(this->getFlatMesh());
+        const auto shader = renderer.createShader(this->getDemoShader());
 
         renderer.beginTarget(*target);
         renderer.clear(Color{.red = 0, .green = 255, .blue = 0});
@@ -1218,16 +1218,16 @@ void main()
         renderer.clear(Color{.red = 0, .green = 0, .blue = 255});
         renderer.drawMesh(
             *mesh,
-            identityMatrix(),
-            this->demoCamera(),
+            getIdentityMatrix(),
+            this->getDemoCamera(),
             MeshMaterial{
-                .texture = target->color(), .shader = shader.get()});
+                .texture = target->getColor(), .shader = shader.get()});
 
         const auto middleColor = this->middleOf(renderer);
 
         renderer.present();
 
-        if (!this->backend->capabilities().readsPixels)
+        if (!this->backend->getCapabilities().readsPixels)
         {
             GTEST_SKIP() << "the backend reads no pixels back";
         }
@@ -1241,13 +1241,13 @@ void main()
     TYPED_TEST_P(GfxBackendConformanceTest,
                  BeginTargetRegion_LeavesTheRestOfTheTargetAsItStood)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
         const auto target = renderer.createRenderTarget(
             RenderTargetSpec{.size = Size{.width = 64, .height = 64}});
-        const auto mesh = renderer.createMesh(this->flatMesh());
-        const auto shader = renderer.createShader(this->demoShader());
+        const auto mesh = renderer.createMesh(this->getFlatMesh());
+        const auto shader = renderer.createShader(this->getDemoShader());
 
         renderer.beginTarget(*target);
         renderer.clear(Color{.red = 0, .green = 255, .blue = 0});
@@ -1264,16 +1264,16 @@ void main()
         renderer.clear(Color{.red = 0, .green = 0, .blue = 255});
         renderer.drawMesh(
             *mesh,
-            identityMatrix(),
-            this->demoCamera(),
+            getIdentityMatrix(),
+            this->getDemoCamera(),
             MeshMaterial{
-                .texture = target->color(), .shader = shader.get()});
+                .texture = target->getColor(), .shader = shader.get()});
 
         const auto middleColor = this->middleOf(renderer);
 
         renderer.present();
 
-        if (!this->backend->capabilities().readsPixels)
+        if (!this->backend->getCapabilities().readsPixels)
         {
             GTEST_SKIP() << "the backend reads no pixels back";
         }
@@ -1287,7 +1287,7 @@ void main()
     TYPED_TEST_P(GfxBackendConformanceTest,
                  BeginTarget_KeepsDepthAsATextureAPassMaySample)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
         const auto target = renderer.createRenderTarget(
@@ -1295,21 +1295,21 @@ void main()
                 .size = Size{.width = 64, .height = 64},
                 .depth = true});
 
-        ASSERT_NE(target->depth(), nullptr);
+        ASSERT_NE(target->getDepth(), nullptr);
 
-        const auto mesh = renderer.createMesh(this->flatMesh());
-        const auto plain = renderer.createShader(this->demoShader());
-        const auto showing = renderer.createShader(this->depthShader());
+        const auto mesh = renderer.createMesh(this->getFlatMesh());
+        const auto plain = renderer.createShader(this->getDemoShader());
+        const auto showing = renderer.createShader(this->getDepthShader());
 
         const auto readBack = [&]
         {
             renderer.clear(Color{.red = 0, .green = 0, .blue = 0});
             renderer.drawMesh(
                 *mesh,
-                identityMatrix(),
-                this->demoCamera(),
+                getIdentityMatrix(),
+                this->getDemoCamera(),
                 MeshMaterial{
-                    .texture = target->depth(),
+                    .texture = target->getDepth(),
                     .shader = showing.get()});
 
             const auto middleColor = this->middleOf(renderer);
@@ -1329,14 +1329,14 @@ void main()
         renderer.clear(Color{.red = 0, .green = 0, .blue = 0});
         renderer.drawMesh(
             *mesh,
-            identityMatrix(),
-            this->demoCamera(),
+            getIdentityMatrix(),
+            this->getDemoCamera(),
             MeshMaterial{.shader = plain.get()});
         renderer.endTarget();
 
         const auto readBitmap = readBack();
 
-        if (!this->backend->capabilities().readsPixels)
+        if (!this->backend->getCapabilities().readsPixels)
         {
             GTEST_SKIP() << "the backend reads no pixels back";
         }
@@ -1351,7 +1351,7 @@ void main()
     TYPED_TEST_P(GfxBackendConformanceTest,
                  RenderTarget_MayOutliveItsWindow)
     {
-        auto window = this->backend->createWindow(this->demoSpec());
+        auto window = this->backend->createWindow(this->getDemoSpec());
         auto target = window->renderer().createRenderTarget(
             RenderTargetSpec{
                 .size = Size{.width = 32, .height = 32},
@@ -1368,12 +1368,12 @@ void main()
     TYPED_TEST_P(GfxBackendConformanceTest,
                  SetShaderMatrix_MovesWhatTheShaderDraws)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
-        const auto mesh = renderer.createMesh(this->flatMesh());
+        const auto mesh = renderer.createMesh(this->getFlatMesh());
         const auto shader =
-            renderer.createShader(this->shiftingShader());
+            renderer.createShader(this->getShiftingShader());
         const auto paint = renderer.createTexture(
             this->bitmapOf(Color{.red = 0, .green = 255, .blue = 0}));
 
@@ -1381,9 +1381,9 @@ void main()
             .texture = paint.get(), .shader = shader.get()};
 
         renderer.clear(Color{.red = 0, .green = 0, .blue = 255});
-        renderer.setShaderMatrix(*shader, "shift", identityMatrix());
+        renderer.setShaderMatrix(*shader, "shift", getIdentityMatrix());
         renderer.drawMesh(
-            *mesh, identityMatrix(), this->demoCamera(), surfacingMaterial);
+            *mesh, getIdentityMatrix(), this->getDemoCamera(), surfacingMaterial);
 
         const auto middleColor = this->middleOf(renderer);
 
@@ -1391,15 +1391,15 @@ void main()
 
         renderer.clear(Color{.red = 0, .green = 0, .blue = 255});
         renderer.setShaderMatrix(
-            *shader, "shift", this->movedAcross(8.0F));
+            *shader, "shift", this->getMovedAcross(8.0F));
         renderer.drawMesh(
-            *mesh, identityMatrix(), this->demoCamera(), surfacingMaterial);
+            *mesh, getIdentityMatrix(), this->getDemoCamera(), surfacingMaterial);
 
         const auto shiftedColor = this->middleOf(renderer);
 
         renderer.present();
 
-        if (!this->backend->capabilities().readsPixels)
+        if (!this->backend->getCapabilities().readsPixels)
         {
             GTEST_SKIP() << "the backend reads no pixels back";
         }
@@ -1415,19 +1415,19 @@ void main()
     TYPED_TEST_P(GfxBackendConformanceTest,
                  DrawMesh_BlendsATranslucentDrawOverTheFrame)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
-        const auto mesh = renderer.createMesh(this->flatMesh());
-        const auto shader = renderer.createShader(this->demoShader());
+        const auto mesh = renderer.createMesh(this->getFlatMesh());
+        const auto shader = renderer.createShader(this->getDemoShader());
         const auto texture = renderer.createTexture(this->bitmapOf(
             Color{.red = 255, .green = 0, .blue = 0, .alpha = 128}));
 
         renderer.clear(Color{.red = 0, .green = 0, .blue = 255});
         renderer.drawMesh(
             *mesh,
-            identityMatrix(),
-            this->demoCamera(),
+            getIdentityMatrix(),
+            this->getDemoCamera(),
             MeshMaterial{
                 .texture = texture.get(),
                 .shader = shader.get(),
@@ -1437,7 +1437,7 @@ void main()
 
         renderer.present();
 
-        if (!this->backend->capabilities().readsPixels)
+        if (!this->backend->getCapabilities().readsPixels)
         {
             GTEST_SKIP() << "the backend reads no pixels back";
         }
@@ -1451,11 +1451,11 @@ void main()
     TYPED_TEST_P(GfxBackendConformanceTest,
                  DrawMesh_KeepsWritingDepthAfterABlendedDraw)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
-        const auto mesh = renderer.createMesh(this->flatMesh());
-        const auto shader = renderer.createShader(this->demoShader());
+        const auto mesh = renderer.createMesh(this->getFlatMesh());
+        const auto shader = renderer.createShader(this->getDemoShader());
         const auto veiledTexture = renderer.createTexture(this->bitmapOf(
             Color{.red = 255, .green = 0, .blue = 0, .alpha = 128}));
         const auto nearTexture = renderer.createTexture(this->bitmapOf(
@@ -1466,22 +1466,22 @@ void main()
         renderer.clear(Color{.red = 0, .green = 0, .blue = 255});
         renderer.drawMesh(
             *mesh,
-            identityMatrix(),
-            this->demoCamera(),
+            getIdentityMatrix(),
+            this->getDemoCamera(),
             MeshMaterial{
                 .texture = veiledTexture.get(),
                 .shader = shader.get(),
                 .blend = BlendMode::Alpha});
         renderer.drawMesh(
             *mesh,
-            this->movedBy(1.0F),
-            this->demoCamera(),
+            this->getMovedBy(1.0F),
+            this->getDemoCamera(),
             MeshMaterial{
                 .texture = nearTexture.get(), .shader = shader.get()});
         renderer.drawMesh(
             *mesh,
-            identityMatrix(),
-            this->demoCamera(),
+            getIdentityMatrix(),
+            this->getDemoCamera(),
             MeshMaterial{
                 .texture = farTexture.get(), .shader = shader.get()});
 
@@ -1489,7 +1489,7 @@ void main()
 
         renderer.present();
 
-        if (!this->backend->capabilities().readsPixels)
+        if (!this->backend->getCapabilities().readsPixels)
         {
             GTEST_SKIP() << "the backend reads no pixels back";
         }
@@ -1503,20 +1503,20 @@ void main()
     TYPED_TEST_P(GfxBackendConformanceTest,
                  DrawMesh_ReadsAPlainSurfaceWithNoMapBound)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
-        const auto mesh = renderer.createMesh(this->flatMesh());
+        const auto mesh = renderer.createMesh(this->getFlatMesh());
         const auto shader =
-            renderer.createShader(this->surfaceShader());
+            renderer.createShader(this->getSurfaceShader());
         const auto texture = renderer.createTexture(this->bitmapOf(
             Color{.red = 255, .green = 255, .blue = 255, .alpha = 255}));
 
         renderer.clear(Color{.red = 0, .green = 0, .blue = 255});
         renderer.drawMesh(
             *mesh,
-            identityMatrix(),
-            this->demoCamera(),
+            getIdentityMatrix(),
+            this->getDemoCamera(),
             MeshMaterial{
                 .texture = texture.get(), .shader = shader.get()});
 
@@ -1524,7 +1524,7 @@ void main()
 
         renderer.present();
 
-        if (!this->backend->capabilities().readsPixels)
+        if (!this->backend->getCapabilities().readsPixels)
         {
             GTEST_SKIP() << "the backend reads no pixels back";
         }
@@ -1539,12 +1539,12 @@ void main()
     TYPED_TEST_P(GfxBackendConformanceTest,
                  DrawMesh_SamplesTheMaterialMapItIsGiven)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
-        const auto mesh = renderer.createMesh(this->flatMesh());
+        const auto mesh = renderer.createMesh(this->getFlatMesh());
         const auto shader =
-            renderer.createShader(this->surfaceShader());
+            renderer.createShader(this->getSurfaceShader());
         const auto texture = renderer.createTexture(this->bitmapOf(
             Color{.red = 255, .green = 255, .blue = 255, .alpha = 255}));
         const auto surface = renderer.createTexture(this->bitmapOf(
@@ -1553,8 +1553,8 @@ void main()
         renderer.clear(Color{.red = 0, .green = 0, .blue = 255});
         renderer.drawMesh(
             *mesh,
-            identityMatrix(),
-            this->demoCamera(),
+            getIdentityMatrix(),
+            this->getDemoCamera(),
             MeshMaterial{
                 .texture = texture.get(),
                 .materialMapTexture = surface.get(),
@@ -1564,7 +1564,7 @@ void main()
 
         renderer.present();
 
-        if (!this->backend->capabilities().readsPixels)
+        if (!this->backend->getCapabilities().readsPixels)
         {
             GTEST_SKIP() << "the backend reads no pixels back";
         }
@@ -1576,7 +1576,7 @@ void main()
 
     TYPED_TEST_P(GfxBackendConformanceTest, ReadPixels_ComesBackComplete)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
         renderer.clear(Color{.red = 8, .green = 16, .blue = 32});
@@ -1591,7 +1591,7 @@ void main()
 
     TYPED_TEST_P(GfxBackendConformanceTest, PollEvent_DrainsToAnEmptyQueue)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
 
         std::uint32_t polls = 0;
 
@@ -1634,7 +1634,7 @@ void main()
 
     TYPED_TEST_P(GfxBackendConformanceTest, Window_MayOutliveItsBackend)
     {
-        auto window = this->backend->createWindow(this->demoSpec());
+        auto window = this->backend->createWindow(this->getDemoSpec());
 
         this->backend.reset();
 
@@ -1644,12 +1644,12 @@ void main()
     TYPED_TEST_P(
         GfxBackendConformanceTest, PushTransform_AcceptsAFrameDrawnUnderIt)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
         EXPECT_NO_THROW({
             renderer.pushTransform(
-                glm::translate(identityMatrix(), Vec3{8.0F, 4.0F, 0.0F}));
+                glm::translate(getIdentityMatrix(), Vec3{8.0F, 4.0F, 0.0F}));
             renderer.drawRect(
                 RectF{PointF{0.0F, 0.0F}, SizeF{16.0F, 16.0F}},
                 Color{.red = 255, .green = 255, .blue = 255});
@@ -1660,14 +1660,14 @@ void main()
 
     TYPED_TEST_P(GfxBackendConformanceTest, PushTransform_Nests)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
         EXPECT_NO_THROW({
             renderer.pushTransform(
-                glm::scale(identityMatrix(), Vec3{2.0F, 2.0F, 1.0F}));
+                glm::scale(getIdentityMatrix(), Vec3{2.0F, 2.0F, 1.0F}));
             renderer.pushTransform(
-                glm::translate(identityMatrix(), Vec3{1.0F, 1.0F, 0.0F}));
+                glm::translate(getIdentityMatrix(), Vec3{1.0F, 1.0F, 0.0F}));
             renderer.popTransform();
             renderer.popTransform();
             renderer.present();
@@ -1677,7 +1677,7 @@ void main()
     TYPED_TEST_P(
         GfxBackendConformanceTest, PopTransform_ThrowsWhenNothingIsPushed)
     {
-        const auto window = this->backend->createWindow(this->demoSpec());
+        const auto window = this->backend->createWindow(this->getDemoSpec());
         auto &renderer = this->rendererOf(*window);
 
         EXPECT_THROW(renderer.popTransform(), GfxError);

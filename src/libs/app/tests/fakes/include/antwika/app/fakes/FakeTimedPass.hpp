@@ -27,7 +27,7 @@ namespace antwika::app::fakes
             clock.advance(each);
         }
 
-        [[nodiscard]] const std::vector<Progress> &drawn() const noexcept
+        [[nodiscard]] const std::vector<Progress> &getDrawn() const noexcept
         {
             return progresses;
         }

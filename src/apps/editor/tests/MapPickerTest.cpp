@@ -7,9 +7,9 @@
 #include "antwika/editor/ui/MapPicker.hpp"
 
 using antwika::editor::kMaxPicked;
-using antwika::editor::ensureMapExtension;
-using antwika::editor::filterMapNames;
-using antwika::editor::mapRowWidget;
+using antwika::editor::getEnsureMapExtension;
+using antwika::editor::getFilterMapNames;
+using antwika::editor::getMapRowWidget;
 
 TEST(MapPickerTest, FilterMapNames_TakesOnlyWhatIsNamedAsAMap)
 {
@@ -17,7 +17,7 @@ TEST(MapPickerTest, FilterMapNames_TakesOnlyWhatIsNamedAsAMap)
         "keep.json", "atlas-15x9.png", "notes", "map.json.bak"};
 
     EXPECT_EQ(
-        filterMapNames(names),
+        getFilterMapNames(names),
         (std::vector<std::string>{"keep.json"}));
 }
 
@@ -27,7 +27,7 @@ TEST(MapPickerTest, FilterMapNames_ListsThemInTheSameOrderEveryTime)
         "second.json", "first.json", "third.json"};
 
     EXPECT_EQ(
-        filterMapNames(names),
+        getFilterMapNames(names),
         (std::vector<std::string>{
             "first.json", "second.json", "third.json"}));
 }
@@ -42,23 +42,23 @@ TEST(MapPickerTest, FilterMapNames_ListsNoMoreThanThePickerHasRoomFor)
             "map" + std::to_string(100 + index) + ".json");
     }
 
-    EXPECT_EQ(filterMapNames(names).size(), kMaxPicked);
+    EXPECT_EQ(getFilterMapNames(names).size(), kMaxPicked);
 }
 
 TEST(MapPickerTest, FilterMapNames_TakesNothingFromAnEmptyFolder)
 {
-    EXPECT_TRUE(filterMapNames(std::vector<std::string>{}).empty());
+    EXPECT_TRUE(getFilterMapNames(std::vector<std::string>{}).empty());
 }
 
 TEST(MapPickerTest, EnsureMapExtension_PutsTheSuffixOnAName)
 {
-    EXPECT_EQ(ensureMapExtension("keep"), "keep.json");
+    EXPECT_EQ(getEnsureMapExtension("keep"), "keep.json");
 }
 
 TEST(MapPickerTest, EnsureMapExtension_LeavesANameThatHasItAlone)
 {
-    EXPECT_EQ(ensureMapExtension("keep.json"), "keep.json");
-    EXPECT_EQ(ensureMapExtension(".json"), ".json.json");
+    EXPECT_EQ(getEnsureMapExtension("keep.json"), "keep.json");
+    EXPECT_EQ(getEnsureMapExtension(".json"), ".json.json");
 }
 
 TEST(MapPickerTest, MapRowWidget_GivesEveryListedNameOneOfItsOwn)
@@ -67,7 +67,7 @@ TEST(MapPickerTest, MapRowWidget_GivesEveryListedNameOneOfItsOwn)
 
     for (std::size_t index = 0; index < kMaxPicked; ++index)
     {
-        EXPECT_TRUE(seenWidgets.insert(mapRowWidget(index)).second);
+        EXPECT_TRUE(seenWidgets.insert(getMapRowWidget(index)).second);
     }
 
     EXPECT_FALSE(seenWidgets.contains(antwika::editor::kPickerNameWidget));

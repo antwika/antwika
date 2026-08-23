@@ -70,12 +70,12 @@ namespace antwika::input
         std::visit(Fold(keys, pointerMouse), event);
     }
 
-    const Keyboard &InputState::keyboard() const noexcept
+    const Keyboard &InputState::getKeyboard() const noexcept
     {
         return keys;
     }
 
-    const Mouse &InputState::mouse() const noexcept
+    const Mouse &InputState::getMouse() const noexcept
     {
         return pointerMouse;
     }

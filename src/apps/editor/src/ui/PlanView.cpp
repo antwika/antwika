@@ -42,25 +42,25 @@ namespace antwika::editor
     void PlanView::open(std::string path)
     {
         planPath = std::move(path);
-        planBoard = loadBoard(planPath).value_or(Board{});
+        planBoard = getLoadBoard(planPath).value_or(Board{});
     }
 
-    const Board &PlanView::board() const noexcept
+    const Board &PlanView::getBoard() const noexcept
     {
         return planBoard;
     }
 
-    bool PlanView::unsaved() const noexcept
+    bool PlanView::isUnsaved() const noexcept
     {
         return planUnsaved;
     }
 
-    bool PlanView::dragging() const noexcept
+    bool PlanView::isDragging() const noexcept
     {
         return planDrag.has_value() && planDrag->moved;
     }
 
-    bool PlanView::picked() const noexcept
+    bool PlanView::isPicked() const noexcept
     {
         return planPicked.has_value();
     }
@@ -128,7 +128,7 @@ namespace antwika::editor
         planDrag.reset();
     }
 
-    std::optional<std::uint32_t> PlanView::cardWidth() const
+    std::optional<std::uint32_t> PlanView::getCardWidth() const
     {
         if (planColumnWidth <= kPanelPadding * 2)
         {
@@ -169,10 +169,10 @@ namespace antwika::editor
                     .heightSizing = antwika::ui::kGrowSizing,
                     .backgroundColor = kPanelColor,
                     .padding = kPanelPadding,
-                    .widgetId = planColumnWidget(which),
+                    .widgetId = getPlanColumnWidget(which),
                     .clips = true});
 
-            panelTitle(context, std::string(columnName(which)));
+            panelTitle(context, std::string(getColumnName(which)));
 
             for (std::size_t index = 0; index < columnCards.size(); ++index)
             {
@@ -181,7 +181,7 @@ namespace antwika::editor
                     const auto slot = context.column(
                         antwika::ui::ContainerSpec{
                             .widthSizing = antwika::ui::kGrowSizing,
-                            .heightSizing = antwika::ui::fixedSize(
+                            .heightSizing = antwika::ui::getFixedSize(
                                 kDropMarkerHeight),
                             .backgroundColor = kSelectionAccentColor});
                 }
@@ -199,7 +199,7 @@ namespace antwika::editor
                     card.title.empty() ? std::string(kUntitled)
                                        : card.title,
                     antwika::ui::ButtonSpec{
-                        .widgetId = planCardWidget(which, index),
+                        .widgetId = getPlanCardWidget(which, index),
                         .widthSizing = antwika::ui::kGrowSizing,
                         .state =
                             cardPicked
@@ -210,7 +210,7 @@ namespace antwika::editor
                         .fillColor = carryingHere
                                    ? std::optional{kTitleBarColor}
                                    : std::nullopt,
-                        .wrapWidth = cardWidth()});
+                        .wrapWidth = getCardWidth()});
             }
 
             if (marking && markedIndex >= columnCards.size())
@@ -219,7 +219,7 @@ namespace antwika::editor
                     antwika::ui::ContainerSpec{
                         .widthSizing = antwika::ui::kGrowSizing,
                         .heightSizing =
-                            antwika::ui::fixedSize(kDropMarkerHeight),
+                            antwika::ui::getFixedSize(kDropMarkerHeight),
                         .backgroundColor = kSelectionAccentColor});
             }
 
@@ -230,14 +230,14 @@ namespace antwika::editor
                 context.button(
                     "+ card",
                     antwika::ui::ButtonSpec{
-                        .widgetId = planAddWidget(which),
+                        .widgetId = getPlanAddWidget(which),
                         .widthSizing = antwika::ui::kGrowSizing});
             }
         }
 
         const auto pane = context.column(
             antwika::ui::ContainerSpec{
-                .widthSizing = antwika::ui::fixedSize(kDetailWidth),
+                .widthSizing = antwika::ui::getFixedSize(kDetailWidth),
                 .heightSizing = antwika::ui::kGrowSizing,
                 .backgroundColor = kPanelColor,
                 .padding = kPanelPadding,
@@ -285,7 +285,7 @@ namespace antwika::editor
         const std::optional<gfx::Point> pointerInWindow)
     {
         const auto first =
-            frame.rects.find(planColumnWidget(kEveryColumn.front()));
+            frame.rects.getFind(getPlanColumnWidget(kEveryColumn.front()));
 
         if (first.has_value())
         {
@@ -302,7 +302,7 @@ namespace antwika::editor
 
         for (const auto which : kEveryColumn)
         {
-            const auto room = frame.rects.find(planColumnWidget(which));
+            const auto room = frame.rects.getFind(getPlanColumnWidget(which));
 
             if (!room.has_value()
                 || !covers(*room, *pointerInWindow))
@@ -317,7 +317,7 @@ namespace antwika::editor
                  ++index)
             {
                 const auto card =
-                    frame.rects.find(planCardWidget(which, index));
+                    frame.rects.getFind(getPlanCardWidget(which, index));
 
                 if (card.has_value())
                 {
@@ -327,7 +327,7 @@ namespace antwika::editor
 
             planDrag->overColumn = which;
             planDrag->dropIndex =
-                dropIndex(drawnRects, pointerInWindow->y);
+                getDropIndex(drawnRects, pointerInWindow->y);
         }
     }
 
@@ -352,21 +352,21 @@ namespace antwika::editor
         const auto titleText = card.title.empty()
                              ? std::string(kUntitled)
                              : card.title;
-        const auto room = cardWidth();
-        const auto lines = antwika::ui::wrapText(
+        const auto room = getCardWidth();
+        const auto lines = antwika::ui::getWrapText(
             titleText,
             room.has_value()
-                ? antwika::ui::wrapColumns(gameTheme(), *room)
+                ? antwika::ui::getWrapColumns(getGameTheme(), *room)
                 : 0);
         const auto pad = static_cast<float>(2 * kUiScale);
-        const auto step = text::textSize(titleText, kUiScale).height;
+        const auto step = text::getTextSize(titleText, kUiScale).height;
 
         std::uint32_t widest = 0;
 
         for (const auto line : lines)
         {
             widest = std::max(
-                widest, text::textSize(line, kUiScale).width);
+                widest, text::getTextSize(line, kUiScale).width);
         }
 
         const auto width =
@@ -402,7 +402,7 @@ namespace antwika::editor
         }
     }
 
-    bool PlanView::handleWidgets(
+    bool PlanView::consumeWidgets(
         const ui::Interactions &interactions,
         const std::optional<gfx::Point> pointerInWindow,
         FocusedField &focusedField,
@@ -411,7 +411,7 @@ namespace antwika::editor
 
         for (const auto which : kEveryColumn)
         {
-            if (interactions.activatedWidget != planAddWidget(which))
+            if (interactions.activatedWidget != getPlanAddWidget(which))
             {
                 continue;
             }
@@ -465,7 +465,7 @@ namespace antwika::editor
             return true;
         }
 
-        const auto card = cardOfWidget(interactions.activatedWidget);
+        const auto card = getCardOfWidget(interactions.activatedWidget);
 
         if (!card.has_value() || !pointerInWindow.has_value()
             || card->second >= cardsOf(planBoard, card->first).size())

@@ -105,7 +105,7 @@ namespace antwika::gameplay
         return player;
     }
 
-    map::Placement startingPlacement(
+    map::Placement getStartingPlacement(
         const map::Map &laidMap,
         const voxel::Voxels &voxels,
         const std::optional<map::Placement> checkpointPlacement)
@@ -127,7 +127,7 @@ namespace antwika::gameplay
                      corner.y + voxel::kCubeSide - 1)
                  + 0.5F)
                 * voxel::kVoxelSide;
-            const auto groundHeight = collision::groundHeightAtColumn(
+            const auto groundHeight = collision::getGroundHeightAtColumn(
                 voxels, middleX, middleZ, feet);
 
             if (groundHeight.has_value())
@@ -140,7 +140,7 @@ namespace antwika::gameplay
                             * voxel::kVoxelSide}};
             }
 
-            const auto restPosition = collision::restPositionOverColumn(
+            const auto restPosition = collision::getRestPositionOverColumn(
                 voxels, middleX, middleZ);
 
             if (restPosition.has_value())
@@ -150,7 +150,7 @@ namespace antwika::gameplay
             }
         }
 
-        const auto hero = map::playerIndex(laidMap);
+        const auto hero = map::getPlayerIndex(laidMap);
 
         if (hero.has_value())
         {
@@ -159,7 +159,7 @@ namespace antwika::gameplay
 
         return map::Placement{
             .position = collision::positionOf(
-                collision::spawnPosition(laidMap.voxels)
+                collision::getSpawnPosition(laidMap.voxels)
                     .value_or(component::Position{}))};
     }
 

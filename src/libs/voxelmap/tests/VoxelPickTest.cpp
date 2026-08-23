@@ -15,16 +15,16 @@
 
 using antwika::tilemap::Atlas;
 using antwika::camera::cameraOf;
-using antwika::voxelmap::faceNormal;
-using antwika::voxelmap::raycastFace;
-using antwika::voxelmap::faceTile;
-using antwika::voxelmap::projectToScreen;
-using antwika::camera::defaultTransform;
-using antwika::voxelmap::demoCells;
+using antwika::voxelmap::getFaceNormal;
+using antwika::voxelmap::getRaycastFace;
+using antwika::voxelmap::getFaceTile;
+using antwika::voxelmap::getProjectToScreen;
+using antwika::camera::getDefaultTransform;
+using antwika::voxelmap::getDemoCells;
 using antwika::voxelmap::Ray;
-using antwika::voxelmap::rayInModelSpace;
-using antwika::voxelmap::rayThrough;
-using antwika::voxelmap::tilePicked;
+using antwika::voxelmap::getRayInModelSpace;
+using antwika::voxelmap::getRayThrough;
+using antwika::voxelmap::getTilePicked;
 using antwika::voxel::VoxelCell;
 using antwika::voxel::VoxelMaterial;
 using antwika::voxel::VoxelPosition;
@@ -41,9 +41,9 @@ namespace
 
     const auto kLone = voxelsOf({VoxelCell{}});
 
-    [[nodiscard]] antwika::gfx::Mat4 unturned()
+    [[nodiscard]] antwika::gfx::Mat4 getUnturned()
     {
-        return antwika::gfx::identityMatrix();
+        return antwika::gfx::getIdentityMatrix();
     }
 }
 
@@ -53,7 +53,7 @@ TEST(VoxelPickTest, RaycastFace_MissesAPileTheRayGoesWideOf)
         .fromPosition = Vec3{10.0F, 10.0F, 10.0F},
         .direction = Vec3{0.0F, 1.0F, 0.0F}};
 
-    EXPECT_FALSE(raycastFace(kLone, ray).has_value());
+    EXPECT_FALSE(getRaycastFace(kLone, ray).has_value());
 }
 
 TEST(VoxelPickTest, RaycastFace_MissesAnEmptyPile)
@@ -62,7 +62,7 @@ TEST(VoxelPickTest, RaycastFace_MissesAnEmptyPile)
         .fromPosition = Vec3{0.0F, 0.0F, 5.0F},
         .direction = Vec3{0.0F, 0.0F, -1.0F}};
 
-    EXPECT_FALSE(raycastFace({}, ray).has_value());
+    EXPECT_FALSE(getRaycastFace({}, ray).has_value());
 }
 
 TEST(VoxelPickTest, RaycastFace_TakesTheSideTheRayComesAt)
@@ -71,10 +71,10 @@ TEST(VoxelPickTest, RaycastFace_TakesTheSideTheRayComesAt)
          side < antwika::voxelmap::kVoxelFaceCount;
          ++side)
     {
-        const auto way = faceNormal(side);
+        const auto way = getFaceNormal(side);
         const Ray ray{
             .fromPosition = way * 5.0F, .direction = -way};
-        const auto pickedFace = raycastFace(kLone, ray);
+        const auto pickedFace = getRaycastFace(kLone, ray);
 
         ASSERT_TRUE(pickedFace.has_value());
         EXPECT_EQ(pickedFace->side, side);
@@ -89,7 +89,7 @@ TEST(VoxelPickTest, RaycastFace_TakesTheNearerOfTwoVoxels)
     const Ray ray{
         .fromPosition = Vec3{0.0F, 0.0F, 9.0F},
         .direction = Vec3{0.0F, 0.0F, -1.0F}};
-    const auto pickedFace = raycastFace(pairCells, ray);
+    const auto pickedFace = getRaycastFace(pairCells, ray);
 
     ASSERT_TRUE(pickedFace.has_value());
     EXPECT_EQ(pickedFace->cell, (VoxelCell{.position = {.z = 1}}));
@@ -101,21 +101,21 @@ TEST(VoxelPickTest, RaycastFace_FollowsARayOnlyForwards)
         .fromPosition = Vec3{0.0F, 0.0F, 5.0F},
         .direction = Vec3{0.0F, 0.0F, 1.0F}};
 
-    EXPECT_FALSE(raycastFace(kLone, ray).has_value());
+    EXPECT_FALSE(getRaycastFace(kLone, ray).has_value());
 }
 
 TEST(VoxelPickTest, RaycastFace_TakesATopOfThePyramidFromAbove)
 {
-    const auto cells = demoCells();
+    const auto cells = getDemoCells();
     const Ray ray{
         .fromPosition = Vec3{0.0F, 9.0F, 0.0F},
         .direction = Vec3{0.0F, -1.0F, 0.0F}};
-    const auto pickedFace = raycastFace(cells, ray);
+    const auto pickedFace = getRaycastFace(cells, ray);
 
     ASSERT_TRUE(pickedFace.has_value());
     EXPECT_EQ(pickedFace->cell, (VoxelCell{.position = {.x = 0, .y = 1,
         .z = 0}}));
-    EXPECT_FLOAT_EQ(faceNormal(pickedFace->side).y, 1.0F);
+    EXPECT_FLOAT_EQ(getFaceNormal(pickedFace->side).y, 1.0F);
 }
 
 TEST(VoxelPickTest, FaceTile_DrawsFloorSidesFromTheFloorAtlas)
@@ -125,8 +125,8 @@ TEST(VoxelPickTest, FaceTile_DrawsFloorSidesFromTheFloorAtlas)
          ++side)
     {
         const auto tile =
-            faceTile({.cell = VoxelCell{}, .side = side});
-        const auto lies = faceNormal(side).y != 0.0F;
+            getFaceTile({.cell = VoxelCell{}, .side = side});
+        const auto lies = getFaceNormal(side).y != 0.0F;
 
         EXPECT_EQ(
             tile.atlas, lies ? Atlas::Floor : Atlas::Wall);
@@ -142,21 +142,21 @@ TEST(VoxelPickTest, FaceTile_MatchesWhatTheMeshDrawsThere)
          ++side)
     {
         EXPECT_EQ(
-            faceTile({.cell = cell, .side = side}).index,
-            antwika::voxelmap::defaultTileIndex(cell.position, side));
+            getFaceTile({.cell = cell, .side = side}).index,
+            antwika::voxelmap::getDefaultTileIndex(cell.position, side));
     }
 }
 
 TEST(VoxelPickTest, RayThrough_RunsAwayFromTheCamera)
 {
     const auto camera =
-        cameraOf(defaultTransform(), kCanvasSize, kViewHalfHeight);
-    const auto ray = rayThrough(
+        cameraOf(getDefaultTransform(), kCanvasSize, kViewHalfHeight);
+    const auto ray = getRayThrough(
         camera,
         kCanvasSize,
         antwika::gfx::PointF{160.0F, 90.0F});
     const auto forward =
-        glm::normalize(camera.target() - camera.position());
+        glm::normalize(camera.getTarget() - camera.getPosition());
 
     EXPECT_NEAR(glm::dot(ray.direction, forward), 1.0F, 1e-3F);
 }
@@ -166,7 +166,7 @@ TEST(VoxelPickTest, RayInModelSpace_LeavesARayAloneWhereNothingIsTurned)
     const Ray ray{
         .fromPosition = Vec3{1.0F, 2.0F, 3.0F},
         .direction = glm::normalize(Vec3{0.0F, -1.0F, -1.0F})};
-    const auto modelRay = rayInModelSpace(ray, unturned());
+    const auto modelRay = getRayInModelSpace(ray, getUnturned());
 
     EXPECT_NEAR(glm::length(modelRay.fromPosition - ray.fromPosition), 0.0F,
         1e-5F);
@@ -176,14 +176,14 @@ TEST(VoxelPickTest, RayInModelSpace_LeavesARayAloneWhereNothingIsTurned)
 TEST(VoxelPickTest, TilePicked_TakesATileWhereThePileIsPointedAt)
 {
     const auto camera =
-        cameraOf(defaultTransform(), kCanvasSize, kViewHalfHeight);
+        cameraOf(getDefaultTransform(), kCanvasSize, kViewHalfHeight);
 
     EXPECT_TRUE(
-        tilePicked(
-            demoCells(),
+        getTilePicked(
+            getDemoCells(),
             {},
             camera,
-            unturned(),
+            getUnturned(),
             kCanvasSize,
             antwika::gfx::PointF{160.0F, 90.0F})
             .has_value());
@@ -192,14 +192,14 @@ TEST(VoxelPickTest, TilePicked_TakesATileWhereThePileIsPointedAt)
 TEST(VoxelPickTest, TilePicked_TakesNoTileFromTheBareCorner)
 {
     const auto camera =
-        cameraOf(defaultTransform(), kCanvasSize, kViewHalfHeight);
+        cameraOf(getDefaultTransform(), kCanvasSize, kViewHalfHeight);
 
     EXPECT_FALSE(
-        tilePicked(
-            demoCells(),
+        getTilePicked(
+            getDemoCells(),
             {},
             camera,
-            unturned(),
+            getUnturned(),
             kCanvasSize,
             antwika::gfx::PointF{2.0F, 2.0F})
             .has_value());
@@ -207,28 +207,28 @@ TEST(VoxelPickTest, TilePicked_TakesNoTileFromTheBareCorner)
 
 TEST(VoxelPickTest, TilePicked_TakesTheTileTheMeshDrawsThere)
 {
-    const auto cells = demoCells();
+    const auto cells = getDemoCells();
     const auto camera =
-        cameraOf(defaultTransform(), kCanvasSize, kViewHalfHeight);
+        cameraOf(getDefaultTransform(), kCanvasSize, kViewHalfHeight);
     const auto screenPoint = antwika::gfx::PointF{160.0F, 90.0F};
     const auto pickedFace =
-        tilePicked(cells, {}, camera, unturned(), kCanvasSize, screenPoint);
-    const auto face = raycastFace(
+        getTilePicked(cells, {}, camera, getUnturned(), kCanvasSize, screenPoint);
+    const auto face = getRaycastFace(
         cells,
-        rayInModelSpace(rayThrough(camera, kCanvasSize, screenPoint),
-        unturned()));
+        getRayInModelSpace(getRayThrough(camera, kCanvasSize, screenPoint),
+        getUnturned()));
 
     ASSERT_TRUE(pickedFace.has_value());
     ASSERT_TRUE(face.has_value());
-    EXPECT_EQ(*pickedFace, faceTile(*face));
+    EXPECT_EQ(*pickedFace, getFaceTile(*face));
 }
 
 TEST(VoxelPickTest, TilePicked_TakesTheTileTheFaceIsDrawingNow)
 {
-    const auto cells = demoCells();
+    const auto cells = getDemoCells();
     const auto faces = antwika::voxelmap::visibleFacesOf(cells);
     const auto camera =
-        cameraOf(defaultTransform(), kCanvasSize, kViewHalfHeight);
+        cameraOf(getDefaultTransform(), kCanvasSize, kViewHalfHeight);
     const auto screenPoint = antwika::gfx::PointF{160.0F, 90.0F};
     constexpr antwika::tilemap::Tile oddTile{
         .atlas = Atlas::Floor, .index = 111};
@@ -236,7 +236,7 @@ TEST(VoxelPickTest, TilePicked_TakesTheTileTheFaceIsDrawingNow)
     std::vector<antwika::tilemap::Tile> drawnTiles(faces.size(), oddTile);
 
     const auto pickedFace =
-        tilePicked(cells, drawnTiles, camera, unturned(), kCanvasSize,
+        getTilePicked(cells, drawnTiles, camera, getUnturned(), kCanvasSize,
             screenPoint);
 
     ASSERT_TRUE(pickedFace.has_value());
@@ -245,35 +245,35 @@ TEST(VoxelPickTest, TilePicked_TakesTheTileTheFaceIsDrawingNow)
 
 TEST(VoxelPickTest, TilePicked_FallsBackOnWhatAFaceWouldDraw)
 {
-    const auto cells = demoCells();
+    const auto cells = getDemoCells();
     const auto camera =
-        cameraOf(defaultTransform(), kCanvasSize, kViewHalfHeight);
+        cameraOf(getDefaultTransform(), kCanvasSize, kViewHalfHeight);
     const auto screenPoint = antwika::gfx::PointF{160.0F, 90.0F};
     const auto pickedFace =
-        tilePicked(cells, {}, camera, unturned(), kCanvasSize, screenPoint);
-    const auto face = raycastFace(
+        getTilePicked(cells, {}, camera, getUnturned(), kCanvasSize, screenPoint);
+    const auto face = getRaycastFace(
         cells,
-        rayInModelSpace(rayThrough(camera, kCanvasSize, screenPoint),
-        unturned()));
+        getRayInModelSpace(getRayThrough(camera, kCanvasSize, screenPoint),
+        getUnturned()));
 
     ASSERT_TRUE(pickedFace.has_value());
     ASSERT_TRUE(face.has_value());
-    EXPECT_EQ(*pickedFace, faceTile(*face));
+    EXPECT_EQ(*pickedFace, getFaceTile(*face));
 }
 
 TEST(VoxelPickTest, FacePicked_NamesTheFaceThePileIsPointedAt)
 {
-    const auto cells = demoCells();
+    const auto cells = getDemoCells();
     const auto faces = antwika::voxelmap::visibleFacesOf(cells);
     const auto camera =
-        cameraOf(defaultTransform(), kCanvasSize, kViewHalfHeight);
+        cameraOf(getDefaultTransform(), kCanvasSize, kViewHalfHeight);
     const auto screenPoint = antwika::gfx::PointF{160.0F, 90.0F};
-    const auto which = antwika::voxelmap::facePicked(
-        cells, faces, camera, unturned(), kCanvasSize, screenPoint);
-    const auto pickedFace = raycastFace(
+    const auto which = antwika::voxelmap::getFacePicked(
+        cells, faces, camera, getUnturned(), kCanvasSize, screenPoint);
+    const auto pickedFace = getRaycastFace(
         cells,
-        rayInModelSpace(rayThrough(camera, kCanvasSize, screenPoint),
-        unturned()));
+        getRayInModelSpace(getRayThrough(camera, kCanvasSize, screenPoint),
+        getUnturned()));
 
     ASSERT_TRUE(which.has_value());
     ASSERT_TRUE(pickedFace.has_value());
@@ -283,17 +283,17 @@ TEST(VoxelPickTest, FacePicked_NamesTheFaceThePileIsPointedAt)
 
 TEST(VoxelPickTest, FacePicked_NamesNothingClearOfThePile)
 {
-    const auto cells = demoCells();
+    const auto cells = getDemoCells();
     const auto faces = antwika::voxelmap::visibleFacesOf(cells);
     const auto camera =
-        cameraOf(defaultTransform(), kCanvasSize, kViewHalfHeight);
+        cameraOf(getDefaultTransform(), kCanvasSize, kViewHalfHeight);
 
     EXPECT_FALSE(
-        antwika::voxelmap::facePicked(
+        antwika::voxelmap::getFacePicked(
             cells,
             faces,
             camera,
-            unturned(),
+            getUnturned(),
             kCanvasSize,
             antwika::gfx::PointF{2.0F, 2.0F})
             .has_value());
@@ -302,14 +302,14 @@ TEST(VoxelPickTest, FacePicked_NamesNothingClearOfThePile)
 TEST(VoxelPickTest, FacePicked_NamesNothingAmongNoFaces)
 {
     const auto camera =
-        cameraOf(defaultTransform(), kCanvasSize, kViewHalfHeight);
+        cameraOf(getDefaultTransform(), kCanvasSize, kViewHalfHeight);
 
     EXPECT_FALSE(
-        antwika::voxelmap::facePicked(
-            demoCells(),
+        antwika::voxelmap::getFacePicked(
+            getDemoCells(),
             {},
             camera,
-            unturned(),
+            getUnturned(),
             kCanvasSize,
             antwika::gfx::PointF{160.0F, 90.0F})
             .has_value());
@@ -317,16 +317,16 @@ TEST(VoxelPickTest, FacePicked_NamesNothingAmongNoFaces)
 
 TEST(VoxelPickTest, TilePicked_TellsOneFaceFromAnotherAmongTheDrawn)
 {
-    const auto cells = demoCells();
+    const auto cells = getDemoCells();
     const auto faces = antwika::voxelmap::visibleFacesOf(cells);
     const auto camera =
-        cameraOf(defaultTransform(), kCanvasSize, kViewHalfHeight);
+        cameraOf(getDefaultTransform(), kCanvasSize, kViewHalfHeight);
     const auto screenPoint = antwika::gfx::PointF{160.0F, 90.0F};
-    auto drawnTiles = antwika::voxelmap::defaultTiles(faces);
-    const auto face = raycastFace(
+    auto drawnTiles = antwika::voxelmap::getDefaultTiles(faces);
+    const auto face = getRaycastFace(
         cells,
-        rayInModelSpace(rayThrough(camera, kCanvasSize, screenPoint),
-        unturned()));
+        getRayInModelSpace(getRayThrough(camera, kCanvasSize, screenPoint),
+        getUnturned()));
 
     ASSERT_TRUE(face.has_value());
 
@@ -340,7 +340,7 @@ TEST(VoxelPickTest, TilePicked_TellsOneFaceFromAnotherAmongTheDrawn)
     }
 
     const auto pickedFace =
-        tilePicked(cells, drawnTiles, camera, unturned(), kCanvasSize,
+        getTilePicked(cells, drawnTiles, camera, getUnturned(), kCanvasSize,
             screenPoint);
 
     ASSERT_TRUE(pickedFace.has_value());
@@ -355,13 +355,13 @@ TEST(VoxelPickTest, FaceMiddle_LiesOnTheFaceNotInTheVoxel)
          side < antwika::voxelmap::kVoxelFaceCount;
          ++side)
     {
-        const auto middlePoint = antwika::voxelmap::faceMiddle(
+        const auto middlePoint = antwika::voxelmap::getFaceMiddle(
             {.cell = VoxelCell{}, .side = side});
 
         EXPECT_NEAR(
             glm::dot(
-                middlePoint - antwika::voxelmap::cellMiddle(VoxelPosition{}),
-                faceNormal(side)),
+                middlePoint - antwika::voxelmap::getCellMiddle(VoxelPosition{}),
+                getFaceNormal(side)),
             antwika::voxel::kVoxelSide / 2.0F,
             1e-5F);
     }
@@ -370,12 +370,12 @@ TEST(VoxelPickTest, FaceMiddle_LiesOnTheFaceNotInTheVoxel)
 TEST(VoxelPickTest, ProjectToScreen_PutsBackWhatRayThroughTookOff)
 {
     const auto camera =
-        cameraOf(defaultTransform(), kCanvasSize, kViewHalfHeight);
+        cameraOf(getDefaultTransform(), kCanvasSize, kViewHalfHeight);
     const antwika::gfx::PointF point{123.0F, 77.0F};
-    const auto ray = rayThrough(camera, kCanvasSize, point);
+    const auto ray = getRayThrough(camera, kCanvasSize, point);
     const auto alongPoint = ray.fromPosition + (ray.direction * 3.0F);
     const auto backPoint =
-        projectToScreen(camera, unturned(), kCanvasSize, alongPoint);
+        getProjectToScreen(camera, getUnturned(), kCanvasSize, alongPoint);
 
     ASSERT_TRUE(backPoint.has_value());
     EXPECT_NEAR(backPoint->x, point.x, 0.01F);
@@ -384,28 +384,28 @@ TEST(VoxelPickTest, ProjectToScreen_PutsBackWhatRayThroughTookOff)
 
 TEST(VoxelPickTest, ProjectToScreen_PutsAFaceWhereItsOwnPixelPicksIt)
 {
-    const auto cells = demoCells();
+    const auto cells = getDemoCells();
     const auto camera =
-        cameraOf(defaultTransform(), kCanvasSize, kViewHalfHeight);
+        cameraOf(getDefaultTransform(), kCanvasSize, kViewHalfHeight);
     const antwika::gfx::PointF point{160.0F, 90.0F};
-    const auto face = raycastFace(
+    const auto face = getRaycastFace(
         cells,
-        rayInModelSpace(rayThrough(camera, kCanvasSize, point), unturned()));
+        getRayInModelSpace(getRayThrough(camera, kCanvasSize, point), getUnturned()));
 
     ASSERT_TRUE(face.has_value());
 
-    const auto where = projectToScreen(
+    const auto where = getProjectToScreen(
         camera,
-        unturned(),
+        getUnturned(),
         kCanvasSize,
-        antwika::voxelmap::faceMiddle(*face));
+        antwika::voxelmap::getFaceMiddle(*face));
 
     ASSERT_TRUE(where.has_value());
 
-    const auto secondFace = raycastFace(
+    const auto secondFace = getRaycastFace(
         cells,
-        rayInModelSpace(
-            rayThrough(camera, kCanvasSize, *where), unturned()));
+        getRayInModelSpace(
+            getRayThrough(camera, kCanvasSize, *where), getUnturned()));
 
     ASSERT_TRUE(secondFace.has_value());
     EXPECT_EQ(*secondFace, *face);
@@ -414,7 +414,7 @@ TEST(VoxelPickTest, ProjectToScreen_PutsAFaceWhereItsOwnPixelPicksIt)
 TEST(VoxelPickTest, IsFrontFacing_TellsTheNearSideFromTheFar)
 {
     const auto camera =
-        cameraOf(defaultTransform(), kCanvasSize, kViewHalfHeight);
+        cameraOf(getDefaultTransform(), kCanvasSize, kViewHalfHeight);
     auto towardsCount = 0;
     auto awayCount = 0;
 
@@ -422,7 +422,7 @@ TEST(VoxelPickTest, IsFrontFacing_TellsTheNearSideFromTheFar)
          side < antwika::voxelmap::kVoxelFaceCount;
          ++side)
     {
-        (antwika::voxelmap::isFrontFacing(camera, unturned(), side)
+        (antwika::voxelmap::isFrontFacing(camera, getUnturned(), side)
              ? towardsCount
              : awayCount)
             += 1;
@@ -436,21 +436,21 @@ TEST(VoxelPickTest, IsFrontFacing_TellsTheNearSideFromTheFar)
 TEST(VoxelPickTest, IsFrontFacing_TurnsAFaceAwayWhereTheModelTurns)
 {
     const auto camera =
-        cameraOf(defaultTransform(), kCanvasSize, kViewHalfHeight);
+        cameraOf(getDefaultTransform(), kCanvasSize, kViewHalfHeight);
     const auto rotationMatrix =
-        antwika::voxelmap::modelRotation(0.0F, std::numbers::pi_v<float>);
+        antwika::voxelmap::getModelRotation(0.0F, std::numbers::pi_v<float>);
 
     for (std::size_t side = 0;
          side < antwika::voxelmap::kVoxelFaceCount;
          ++side)
     {
-        if (std::abs(faceNormal(side).x) > 0.5F)
+        if (std::abs(getFaceNormal(side).x) > 0.5F)
         {
             continue;
         }
 
         EXPECT_NE(
-            antwika::voxelmap::isFrontFacing(camera, unturned(), side),
+            antwika::voxelmap::isFrontFacing(camera, getUnturned(), side),
             antwika::voxelmap::isFrontFacing(camera, rotationMatrix, side));
     }
 }
@@ -461,7 +461,7 @@ TEST(VoxelPickTest, CellAtLevel_TakesTheCellALineMeetsTheLevelIn)
     const Ray downRay{
         .fromPosition = Vec3{0.0F, 5.0F, 0.0F},
         .direction = Vec3{0.0F, -1.0F, 0.0F}};
-    const auto pickedCell = antwika::voxelmap::cellAtLevel(downRay, 0);
+    const auto pickedCell = antwika::voxelmap::getCellAtLevel(downRay, 0);
 
     ASSERT_TRUE(pickedCell.has_value());
     EXPECT_EQ(*pickedCell, VoxelPosition{});
@@ -475,7 +475,7 @@ TEST(VoxelPickTest, CellAtLevel_TakesTheCubeLevelHoldingTheOneGiven)
 
     for (const auto level : {-2, 0, 3})
     {
-        const auto pickedCell = antwika::voxelmap::cellAtLevel(downRay, level);
+        const auto pickedCell = antwika::voxelmap::getCellAtLevel(downRay, level);
 
         ASSERT_TRUE(pickedCell.has_value());
         EXPECT_EQ(pickedCell->y, antwika::voxel::cubeCornerOf(
@@ -491,7 +491,7 @@ TEST(VoxelPickTest, CellAtLevel_MissesALevelALineRunsAlong)
         .direction = Vec3{1.0F, 0.0F, 0.0F}};
 
     EXPECT_FALSE(
-        antwika::voxelmap::cellAtLevel(acrossRay, 0).has_value());
+        antwika::voxelmap::getCellAtLevel(acrossRay, 0).has_value());
 }
 
 TEST(VoxelPickTest, CellAtLevel_MissesALevelBehindWhereItStarts)
@@ -502,17 +502,17 @@ TEST(VoxelPickTest, CellAtLevel_MissesALevelBehindWhereItStarts)
         .direction = Vec3{0.0F, 1.0F, 0.0F}};
 
     EXPECT_FALSE(
-        antwika::voxelmap::cellAtLevel(upRay, 0).has_value());
+        antwika::voxelmap::getCellAtLevel(upRay, 0).has_value());
 }
 
 TEST(VoxelPickTest, CellUnder_TakesTheCellThePileIsPointedAt)
 {
-    const auto cells = demoCells();
+    const auto cells = getDemoCells();
     const auto camera =
-        cameraOf(defaultTransform(), kCanvasSize, kViewHalfHeight);
-    const auto pickedCell = antwika::voxelmap::cellUnder(
+        cameraOf(getDefaultTransform(), kCanvasSize, kViewHalfHeight);
+    const auto pickedCell = antwika::voxelmap::getCellUnder(
         camera,
-        unturned(),
+        getUnturned(),
         kCanvasSize,
         antwika::gfx::PointF{160.0F, 90.0F},
         0);
@@ -524,8 +524,8 @@ TEST(VoxelPickTest, CellUnder_TakesTheCellThePileIsPointedAt)
 TEST(VoxelPickTest, LevelGridLines_RulesTheLevelIntoCubes)
 {
     const auto cells =
-        antwika::voxel::expandCubesToVoxels(voxelsOf({VoxelCell{}}));
-    const auto gridLines = antwika::voxelmap::levelGridLines(cells, 0);
+        antwika::voxel::getExpandCubesToVoxels(voxelsOf({VoxelCell{}}));
+    const auto gridLines = antwika::voxelmap::getLevelGridLines(cells, 0);
 
     EXPECT_FALSE(gridLines.empty());
 
@@ -538,9 +538,9 @@ TEST(VoxelPickTest, LevelGridLines_RulesTheLevelIntoCubes)
 TEST(VoxelPickTest, LevelGridLines_LiesAtTheLevelItIsGiven)
 {
     const auto cells =
-        antwika::voxel::expandCubesToVoxels(voxelsOf({VoxelCell{}}));
-    const auto lowLines = antwika::voxelmap::levelGridLines(cells, 0);
-    const auto highLines = antwika::voxelmap::levelGridLines(cells, 2);
+        antwika::voxel::getExpandCubesToVoxels(voxelsOf({VoxelCell{}}));
+    const auto lowLines = antwika::voxelmap::getLevelGridLines(cells, 0);
+    const auto highLines = antwika::voxelmap::getLevelGridLines(cells, 2);
 
     EXPECT_GT(highLines.front().fromPosition.y,
         lowLines.front().fromPosition.y);
@@ -549,8 +549,8 @@ TEST(VoxelPickTest, LevelGridLines_LiesAtTheLevelItIsGiven)
 TEST(VoxelPickTest, LevelGridLines_ReachesPastThePileEveryWay)
 {
     const auto cells =
-        antwika::voxel::expandCubesToVoxels(voxelsOf({VoxelCell{}}));
-    const auto gridLines = antwika::voxelmap::levelGridLines(cells, 0);
+        antwika::voxel::getExpandCubesToVoxels(voxelsOf({VoxelCell{}}));
+    const auto gridLines = antwika::voxelmap::getLevelGridLines(cells, 0);
     auto least = gridLines.front().fromPosition.x;
     auto most = gridLines.front().toPosition.x;
 
@@ -567,35 +567,35 @@ TEST(VoxelPickTest, LevelGridLines_ReachesPastThePileEveryWay)
 TEST(VoxelPickTest, CubeWireframe_GivesACubeItsTwelveEdges)
 {
     const auto cells =
-        antwika::voxel::expandCubesToVoxels(voxelsOf({VoxelCell{}}));
+        antwika::voxel::getExpandCubesToVoxels(voxelsOf({VoxelCell{}}));
 
-    EXPECT_EQ(antwika::voxelmap::cubeWireframe(VoxelPosition{}).size(),
+    EXPECT_EQ(antwika::voxelmap::getCubeWireframe(VoxelPosition{}).size(),
               12U);
 }
 
 TEST(VoxelPickTest, CubeWireframe_TakesEveryCellOfACubeToTheOneCube)
 {
     const auto cells =
-        antwika::voxel::expandCubesToVoxels(voxelsOf({VoxelCell{}}));
+        antwika::voxel::getExpandCubesToVoxels(voxelsOf({VoxelCell{}}));
     const auto wireframe =
-        antwika::voxelmap::cubeWireframe(VoxelPosition{});
+        antwika::voxelmap::getCubeWireframe(VoxelPosition{});
 
     for (const auto cell :
-         antwika::voxel::cubeCells(
+         antwika::voxel::getCubeCells(
              antwika::voxel::cubeCornerOf(VoxelPosition{})))
     {
         EXPECT_EQ(
-            antwika::voxelmap::cubeWireframe(cell), wireframe);
+            antwika::voxelmap::getCubeWireframe(cell), wireframe);
     }
 }
 
 TEST(VoxelPickTest, CubeWireframe_RunsACubeSideAlongEveryEdge)
 {
     const auto cells =
-        antwika::voxel::expandCubesToVoxels(voxelsOf({VoxelCell{}}));
+        antwika::voxel::getExpandCubesToVoxels(voxelsOf({VoxelCell{}}));
 
     for (const auto &span :
-         antwika::voxelmap::cubeWireframe(VoxelPosition{}))
+         antwika::voxelmap::getCubeWireframe(VoxelPosition{}))
     {
         EXPECT_NEAR(
             glm::length(span.toPosition - span.fromPosition),
@@ -612,7 +612,7 @@ TEST(VoxelPickTest, CellAtLevel_MeetsTheLevelAtTheFootOfItsCube)
 
     for (const auto level : {0, 1})
     {
-        const auto pickedCell = antwika::voxelmap::cellAtLevel(downRay, level);
+        const auto pickedCell = antwika::voxelmap::getCellAtLevel(downRay, level);
 
         ASSERT_TRUE(pickedCell.has_value());
         EXPECT_EQ(pickedCell->y, 0);
@@ -620,7 +620,7 @@ TEST(VoxelPickTest, CellAtLevel_MeetsTheLevelAtTheFootOfItsCube)
 
     for (const auto level : {2, 3})
     {
-        const auto pickedCell = antwika::voxelmap::cellAtLevel(downRay, level);
+        const auto pickedCell = antwika::voxelmap::getCellAtLevel(downRay, level);
 
         ASSERT_TRUE(pickedCell.has_value());
         EXPECT_EQ(pickedCell->y, antwika::voxel::kCubeSide);
@@ -629,16 +629,16 @@ TEST(VoxelPickTest, CellAtLevel_MeetsTheLevelAtTheFootOfItsCube)
 
 TEST(VoxelPickTest, CellAtLevel_StandsACubeOnTheGridItIsRuledOn)
 {
-    const auto gridLines = antwika::voxelmap::levelGridLines(voxelsOf(
+    const auto gridLines = antwika::voxelmap::getLevelGridLines(voxelsOf(
         {VoxelCell{}}), 0);
     const Ray downRay{
         .fromPosition = Vec3{0.0F, 9.0F, 0.0F},
         .direction = Vec3{0.0F, -1.0F, 0.0F}};
-    const auto pickedCell = antwika::voxelmap::cellAtLevel(downRay, 0);
+    const auto pickedCell = antwika::voxelmap::getCellAtLevel(downRay, 0);
 
     ASSERT_TRUE(pickedCell.has_value());
 
-    const auto edges = antwika::voxelmap::cubeWireframe(*pickedCell);
+    const auto edges = antwika::voxelmap::getCubeWireframe(*pickedCell);
     auto lowest = edges.front().fromPosition.y;
 
     for (const auto &span : edges)
@@ -651,10 +651,10 @@ TEST(VoxelPickTest, CellAtLevel_StandsACubeOnTheGridItIsRuledOn)
 
 TEST(VoxelPickTest, OcclusionMask_MarksAPlaceAtItsOwnLevelsBit)
 {
-    using antwika::voxelmap::occlusionMask;
+    using antwika::voxelmap::getOcclusionMask;
 
     const VoxelPosition cornerPosition{.x = -4, .z = -4};
-    const auto mask = occlusionMask(
+    const auto mask = getOcclusionMask(
         voxelsOf({
             VoxelCell{.position = {.x = 0, .y = 9, .z = 0}},
             VoxelCell{.position = {.x = 1, .y = 0, .z = 0}}}),
@@ -678,9 +678,9 @@ TEST(VoxelPickTest, OcclusionMask_MarksAPlaceAtItsOwnLevelsBit)
 
 TEST(VoxelPickTest, OcclusionMask_LeavesOutWhatFallsOffTheSquare)
 {
-    using antwika::voxelmap::occlusionMask;
+    using antwika::voxelmap::getOcclusionMask;
 
-    const auto mask = occlusionMask(
+    const auto mask = getOcclusionMask(
         voxelsOf({
             VoxelCell{.position = {.x = 90, .y = 0, .z = 0}},
             VoxelCell{.position = {.x = 0, .y = 90, .z = 0}}}),

@@ -11,7 +11,7 @@
 namespace antwika::voxelmap
 {
 
-    std::vector<LineSegment> occluderFootprints(
+    std::vector<LineSegment> getOccluderFootprints(
         const voxel::Voxels &hiddenVoxels)
     {
         std::map<std::pair<std::int32_t, std::int32_t>, std::int32_t>
@@ -32,7 +32,7 @@ namespace antwika::voxelmap
                            const std::int32_t y,
                            const std::int32_t z)
         {
-            return cellMiddle(voxel::VoxelPosition{.x = x, .y = y, .z = z})
+            return getCellMiddle(voxel::VoxelPosition{.x = x, .y = y, .z = z})
                    - gfx::Vec3{
                        voxel::kVoxelSide / 2.0F,
                        voxel::kVoxelSide / 2.0F,
@@ -70,7 +70,7 @@ namespace antwika::voxelmap
         return segments;
     } // GCOVR_EXCL_LINE
 
-    voxel::VoxelPosition occlusionMaskOrigin(
+    voxel::VoxelPosition getOcclusionMaskOrigin(
         const voxel::VoxelPosition aboutPosition)
     {
         const auto arm =
@@ -80,7 +80,7 @@ namespace antwika::voxelmap
             .x = aboutPosition.x - arm, .z = aboutPosition.z - arm};
     }
 
-    gfx::Bitmap occlusionMask(
+    gfx::Bitmap getOcclusionMask(
         const voxel::Voxels &hiddenVoxels,
         const voxel::VoxelPosition cornerPosition)
     {

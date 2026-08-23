@@ -15,7 +15,7 @@ namespace antwika::render
 
     namespace
     {
-        [[nodiscard]] gfx::Vec3 sightOrigin(
+        [[nodiscard]] gfx::Vec3 getSightOrigin(
             const std::size_t slot,
             const gfx::Vec3 livePoint,
             const std::vector<light::ActiveLight> &lights,
@@ -119,12 +119,12 @@ namespace antwika::render
             viewportRenderer.setShaderMatrix(
                 *voxelShader,
                 uniformName,
-                light::shadowCamera(gfx::Vec3{}, face)
-                    .viewProjection());
+                light::getShadowCamera(gfx::Vec3{}, face)
+                    .getViewProjection());
         }
     }
 
-    gfx::IShader &WorldShader::program() const noexcept
+    gfx::IShader &WorldShader::getProgram() const noexcept
     {
         return *voxelShader;
     }
@@ -148,13 +148,13 @@ namespace antwika::render
         viewportRenderer.setShaderVector(
             *voxelShader,
             "sightPoint",
-            sightOrigin(
+            getSightOrigin(
                 sightSlot, shaderInputs.sightPoint, lights, bakedLights));
         viewportRenderer.setShaderVector(
             *voxelShader,
             "upperSightPoint",
             shaderInputs.upperSightOn
-                ? sightOrigin(
+                ? getSightOrigin(
                       upperSightSlot,
                       shaderInputs.upperSightPoint,
                       lights,

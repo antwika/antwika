@@ -18,7 +18,7 @@ namespace antwika::editor
         bool showRuleLines = false;
     };
 
-    [[nodiscard]] constexpr bool toolButtonActive(
+    [[nodiscard]] constexpr bool isToolButtonActive(
         const ToolButton whichButton,
         const map::Tool chosenTool,
         const ToolToggles toggles) noexcept

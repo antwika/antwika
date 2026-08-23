@@ -25,7 +25,7 @@ namespace antwika::rng
         return mixedState ^ (mixedState >> 31U);
     }
 
-    std::uint64_t SplitMix64Rng::currentState() const noexcept
+    std::uint64_t SplitMix64Rng::getCurrentState() const noexcept
     {
         return state;
     }

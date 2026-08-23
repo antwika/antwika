@@ -28,15 +28,15 @@ namespace antwika::replay
         bool helpRequested = false;
     };
 
-    [[nodiscard]] std::span<const cli::FlagSpec> replayCliFlags();
+    [[nodiscard]] std::span<const cli::FlagSpec> getReplayCliFlags();
 
     [[nodiscard]] ReplayCliOptions replayCliOptionsFrom(
         const cli::CommandLine &parsedLine);
 
-    [[nodiscard]] std::vector<TickEvent> loadReplayFile(
+    [[nodiscard]] std::vector<TickEvent> getLoadReplayFile(
         const std::string &path, CanvasCheckOptions check = {});
 
-    [[nodiscard]] std::ofstream openReplayFile(const std::string &path);
+    [[nodiscard]] std::ofstream getOpenReplayFile(const std::string &path);
 
     void saveReplayFile(
         const std::vector<TickEvent> &events,

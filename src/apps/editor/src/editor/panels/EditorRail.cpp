@@ -35,9 +35,9 @@ namespace antwika::editor
 
             const auto rail = context.column(
                 antwika::ui::ContainerSpec{
-                    .widthSizing = antwika::ui::fixedSize(
-                        railWidth(
-                            viewportRenderer.windowSize(),
+                    .widthSizing = antwika::ui::getFixedSize(
+                        getRailWidth(
+                            viewportRenderer.getWindowSize(),
                             camera::kCanvasSize)),
                     .gap = antwika::editor::kPanelGap
                            * kUiScale,
@@ -64,7 +64,7 @@ namespace antwika::editor
                      ++which)
                 {
                     const auto side =
-                        antwika::ui::fixedSize(
+                        antwika::ui::getFixedSize(
                             kSwatchWidth * kUiScale);
                     const auto swatchBorderPanel = context.panel(
                         antwika::ui::ContainerSpec{
@@ -81,13 +81,13 @@ namespace antwika::editor
                             .backgroundColor =
                                 document.map.paletteColors.at(which),
                             .padding = 0,
-                            .widgetId = tile::swatchWidget(which)});
+                            .widgetId = tile::getSwatchWidget(which)});
                 }
 
                 if (document.map.paletteColors.size() < tile::kMaxInks)
                 {
                     const auto side =
-                        antwika::ui::fixedSize(
+                        antwika::ui::getFixedSize(
                             kSwatchWidth * kUiScale);
                     const auto swatchBorderPanel = context.panel(
                         antwika::ui::ContainerSpec{
@@ -182,13 +182,13 @@ namespace antwika::editor
                     characterView.mark.selectedFrame.value_or(0)
                     / character::kCharacterFrames);
 
-                panelTitle(context, capitalized(character::directionName(way)));
+                panelTitle(context, getCapitalized(character::getDirectionName(way)));
                 context.image(
                     antwika::ui::Icon{
-                        .sheetTexture = characterView.texture(),
-                        .sourceRect = character::characterCell(
+                        .sheetTexture = characterView.getTexture(),
+                        .sourceRect = character::getCharacterCell(
                             way,
-                            character::currentFrame(
+                            character::getCurrentFrame(
                                 component::AnimationState{
                                     .direction = static_cast<
                                         std::uint8_t>(
@@ -244,9 +244,9 @@ namespace antwika::editor
                         document.map.layers.size() - 1 - layerIndex;
 
                     context.button(
-                        map::layerLabel(reversedIndex),
+                        map::getLayerLabel(reversedIndex),
                         antwika::ui::ButtonSpec{
-                            .widgetId = map::layerWidget(reversedIndex),
+                            .widgetId = map::getLayerWidget(reversedIndex),
                             .widthSizing = antwika::ui::kGrowSizing,
                             .fillColor = reversedIndex == chosenLayer
                                        ? kSelectionAccentColor
@@ -320,13 +320,13 @@ namespace antwika::editor
                             {
                                 const auto width =
                                     antwika::ui::
-                                        fixedSize(
+                                        getFixedSize(
                                             tilemap::kFloorTileSize
                                                 .width
                                             * kUiScale);
                                 const auto height =
                                     antwika::ui::
-                                        fixedSize(
+                                        getFixedSize(
                                             tilemap::kFloorTileSize
                                                 .height
                                             * kUiScale);
@@ -347,7 +347,7 @@ namespace antwika::editor
 
                             const auto tile = *previewTile;
                             const auto sourceRect =
-                                tilemap::tileSource(tile);
+                                tilemap::getTileSource(tile);
                             const antwika::gfx::Rect
                                 cutRect{
                                     .originPoint =
@@ -365,7 +365,7 @@ namespace antwika::editor
                             context.image(
                                 antwika::ui::Icon{
                                     .sheetTexture =
-                                        atlasSheets.texture(
+                                        atlasSheets.getTexture(
                                             tile.atlas),
                                     .sourceRect = cutRect,
                                     .scale = kUiScale},

@@ -16,9 +16,9 @@ namespace antwika::gfx
 
     }
 
-    Mat4 Transform::matrix() const
+    Mat4 Transform::getMatrix() const
     {
-        const Mat4 identityTransform = identityMatrix();
+        const Mat4 identityTransform = getIdentityMatrix();
 
         const Mat4 rotation =
             glm::rotate(identityTransform, rotationRadians.z, kZAxis)

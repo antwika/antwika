@@ -44,7 +44,7 @@ namespace antwika::light
             = default;
     };
 
-    [[nodiscard]] gfx::Vec3 lampPosition(Lamp lamp);
+    [[nodiscard]] gfx::Vec3 getLampPosition(Lamp lamp);
 
     [[nodiscard]] std::vector<Lamp> withoutLampAt(
         const std::vector<Lamp> &lamps, voxel::VoxelPosition position);
@@ -57,15 +57,15 @@ namespace antwika::light
 
     inline constexpr float kLampShadowBias = 0.0002F;
 
-    [[nodiscard]] gfx::Size shadowAtlasSize();
+    [[nodiscard]] gfx::Size getShadowAtlasSize();
 
-    [[nodiscard]] gfx::Rect shadowFaceRect(
+    [[nodiscard]] gfx::Rect getShadowFaceRect(
         std::size_t slot, gfx::CubeFace face);
 
-    [[nodiscard]] gfx::Camera3D shadowCamera(
+    [[nodiscard]] gfx::Camera3D getShadowCamera(
         gfx::Vec3 position, gfx::CubeFace face);
 
-    [[nodiscard]] std::array<voxelmap::LineSegment, 3> lampGizmoSpans(
+    [[nodiscard]] std::array<voxelmap::LineSegment, 3> getLampGizmoSpans(
         Lamp lamp);
 
     [[nodiscard]] std::vector<Lamp> withLampAt(

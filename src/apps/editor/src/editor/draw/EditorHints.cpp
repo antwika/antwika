@@ -57,7 +57,7 @@ namespace antwika::editor
         static_assert(
             enums::tagsInOrder(kToolHints, &HintRow<ToolButton>::value));
 
-        [[nodiscard]] std::string_view toolHint(const ToolButton whichButton)
+        [[nodiscard]] std::string_view getToolHint(const ToolButton whichButton)
         {
             return enums::lookup(kToolHints, whichButton).hint;
         }
@@ -74,7 +74,7 @@ namespace antwika::editor
         static_assert(
             enums::tagsInOrder(kPaintHints, &HintRow<map::Paint>::value));
 
-        [[nodiscard]] std::string_view paintHint(const map::Paint whichPaint)
+        [[nodiscard]] std::string_view getPaintHint(const map::Paint whichPaint)
         {
             return enums::lookup(kPaintHints, whichPaint).hint;
         }
@@ -92,7 +92,7 @@ namespace antwika::editor
         static_assert(
             enums::tagsInOrder(kKindHints, &HintRow<voxel::Kind>::value));
 
-        [[nodiscard]] std::string_view kindHint(const voxel::Kind whichKind)
+        [[nodiscard]] std::string_view getKindHint(const voxel::Kind whichKind)
         {
             return enums::lookup(kKindHints, whichKind).hint;
         }
@@ -110,7 +110,7 @@ namespace antwika::editor
         static_assert(
             enums::tagsInOrder(kFacingHints, &HintRow<voxel::Facing>::value));
 
-        [[nodiscard]] std::string_view facingHint(
+        [[nodiscard]] std::string_view getFacingHint(
             const voxel::Facing whichFacing)
         {
             return enums::lookup(kFacingHints, whichFacing).hint;
@@ -130,7 +130,7 @@ namespace antwika::editor
             enums::tagsInOrder(kStairHalfHints,
                 &HintRow<voxel::StairHalf>::value));
 
-        [[nodiscard]] std::string_view levelHint(
+        [[nodiscard]] std::string_view getLevelHint(
             const voxel::StairHalf whichHalf)
         {
             return enums::lookup(kStairHalfHints, whichHalf).hint;
@@ -144,7 +144,7 @@ namespace antwika::editor
         static_assert(
             enums::tagsInOrder(kEdgeToggleHints, &HintRow<EdgeToggle>::value));
 
-        [[nodiscard]] std::string_view edgeToggleHint(
+        [[nodiscard]] std::string_view getEdgeToggleHint(
             const EdgeToggle whichToggle)
         {
             return enums::lookup(kEdgeToggleHints, whichToggle).hint;
@@ -155,11 +155,11 @@ namespace antwika::editor
     namespace
     {
 
-        [[nodiscard]] bool onToolPanel(const widget::WidgetId whichWidget)
+        [[nodiscard]] bool isOnToolPanel(const widget::WidgetId whichWidget)
         {
             for (const auto button : kEveryToolButton)
             {
-                if (whichWidget == toolWidget(button))
+                if (whichWidget == getToolWidget(button))
                 {
                     return true;
                 }
@@ -167,7 +167,7 @@ namespace antwika::editor
 
             for (const auto paint : kEveryPaint)
             {
-                if (whichWidget == paintWidget(paint))
+                if (whichWidget == getPaintWidget(paint))
                 {
                     return true;
                 }
@@ -175,7 +175,7 @@ namespace antwika::editor
 
             for (const auto kind : voxel::kEveryKind)
             {
-                if (whichWidget == kindWidget(kind))
+                if (whichWidget == getKindWidget(kind))
                 {
                     return true;
                 }
@@ -183,7 +183,7 @@ namespace antwika::editor
 
             for (const auto facing : kMarkedFacings)
             {
-                if (whichWidget == facingWidget(facing))
+                if (whichWidget == getFacingWidget(facing))
                 {
                     return true;
                 }
@@ -191,7 +191,7 @@ namespace antwika::editor
 
             for (const auto level : kMarkedStairHalves)
             {
-                if (whichWidget == levelWidget(level))
+                if (whichWidget == getLevelWidget(level))
                 {
                     return true;
                 }
@@ -209,15 +209,15 @@ namespace antwika::editor
 
     void Editor::drawToolHint(const ui::Frame &frame)
     {
-        if (!tooltipDue(pointer.hoverTracker, tick)
+        if (!isTooltipDue(pointer.hoverTracker, tick)
             || pointer.hoverTracker.widget != pointer.hoveredWidget
-            || !onToolPanel(pointer.hoveredWidget))
+            || !isOnToolPanel(pointer.hoveredWidget))
         {
             return;
         }
 
         const auto hint = hintFor(pointer.hoveredWidget);
-        const auto room = frame.rects.find(pointer.hoveredWidget);
+        const auto room = frame.rects.getFind(pointer.hoveredWidget);
 
         if (hint.empty() || !room.has_value())
         {
@@ -225,12 +225,12 @@ namespace antwika::editor
         }
 
         const auto pad = static_cast<float>(2 * kUiScale);
-        const auto hintSize = text::textSize(hint, kUiScale);
+        const auto hintSize = text::getTextSize(hint, kUiScale);
         const auto width =
             static_cast<float>(hintSize.width) + (pad * 2.0F);
         const auto height =
             static_cast<float>(hintSize.height) + (pad * 2.0F);
-        const auto window = viewportRenderer.windowSize();
+        const auto window = viewportRenderer.getWindowSize();
 
         const auto left = std::min(
             static_cast<float>(
@@ -252,7 +252,7 @@ namespace antwika::editor
     namespace
     {
 
-        [[nodiscard]] std::string tileLabel(
+        [[nodiscard]] std::string getTileLabel(
             const tilemap::Tile tile, const std::string_view tileName = "tile")
         {
             return std::string(
@@ -280,7 +280,7 @@ namespace antwika::editor
             const auto cell = cellUnderPointer();
 
             if (cell.has_value()
-                && document.map.tilemap.at(cell->column, cell->row)
+                && document.map.tilemap.getEntryAt(cell->column, cell->row)
                        .has_value())
             {
                 tileCell = cell;
@@ -290,9 +290,9 @@ namespace antwika::editor
         if (clear && activeView == map::View::World
             && settings.tool == map::Tool::Picker)
         {
-            face = voxelmap::facePicked(
+            face = voxelmap::getFacePicked(
                 visibleCells(),
-                worldMeshes.faces(),
+                worldMeshes.getFaces(),
                 worldCamera(),
                 worldRotation(),
                 camera::kCanvasSize,
@@ -322,7 +322,7 @@ namespace antwika::editor
 
         if (pointer.canvasRest.tileCell.has_value())
         {
-            const auto tile = document.map.tilemap.at(
+            const auto tile = document.map.tilemap.getEntryAt(
                 pointer.canvasRest.tileCell->column,
                 pointer.canvasRest.tileCell->row);
 
@@ -331,29 +331,29 @@ namespace antwika::editor
                 return;
             }
 
-            hint = tileLabel(*tile);
+            hint = getTileLabel(*tile);
         }
         else if (pointer.canvasRest.face.has_value()
-                 && *pointer.canvasRest.face < worldMeshes.faces().size())
+                 && *pointer.canvasRest.face < worldMeshes.getFaces().size())
         {
             const auto face = *pointer.canvasRest.face;
             const auto tile =
-                face < worldMeshes.drawnAs().size()
-                    ? worldMeshes.drawnAs().at(face)
-                    : voxelmap::faceTile(worldMeshes.faces().at(face));
+                face < worldMeshes.getDrawnAs().size()
+                    ? worldMeshes.getDrawnAs().at(face)
+                    : voxelmap::getFaceTile(worldMeshes.getFaces().at(face));
 
             hint = "Voxel face #" + std::to_string(face)
-                   + ", " + tileLabel(tile);
+                   + ", " + getTileLabel(tile);
 
-            for (const auto &[layer, layerDecor] : worldMeshes.decorLayers())
+            for (const auto &[layer, layerDecor] : worldMeshes.getDecorLayers())
             {
                 const auto foundPlacement = layerDecor.find(face);
 
                 if (foundPlacement != layerDecor.end())
                 {
                     hint += ", "
-                            + tileLabel(foundPlacement->second, "decor")
-                            + " (" + map::layerLabel(layer) + ")";
+                            + getTileLabel(foundPlacement->second, "decor")
+                            + " (" + map::getLayerLabel(layer) + ")";
                 }
             }
         }
@@ -363,12 +363,12 @@ namespace antwika::editor
         }
 
         const auto pad = static_cast<float>(2 * kUiScale);
-        const auto hintSize = text::textSize(hint, kUiScale);
+        const auto hintSize = text::getTextSize(hint, kUiScale);
         const auto width =
             static_cast<float>(hintSize.width) + (pad * 2.0F);
         const auto height =
             static_cast<float>(hintSize.height) + (pad * 2.0F);
-        const auto window = viewportRenderer.windowSize();
+        const auto window = viewportRenderer.getWindowSize();
 
         const auto left = std::clamp(
             static_cast<float>(pointer.pointerInWindow->x) + (pad * 2.0F),
@@ -389,71 +389,71 @@ namespace antwika::editor
 
     std::string_view Editor::hintFor(const widget::WidgetId whichWidget) const
     {
-        if (whichWidget == tabWidget(map::View::World))
+        if (whichWidget == getTabWidget(map::View::World))
         {
             return "world - the pile itself, built and played";
         }
 
-        if (whichWidget == tabWidget(map::View::Atlases))
+        if (whichWidget == getTabWidget(map::View::Atlases))
         {
             return "tiles - the atlases the pile is drawn from";
         }
 
-        if (whichWidget == tabWidget(map::View::Character))
+        if (whichWidget == getTabWidget(map::View::Character))
         {
             return "characters - the walkers and their sheets";
         }
 
-        if (whichWidget == tabWidget(map::View::Icons))
+        if (whichWidget == getTabWidget(map::View::Icons))
         {
             return "icons - the editor's own pictures";
         }
 
         for (const auto button : kEveryToolButton)
         {
-            if (whichWidget == toolWidget(button))
+            if (whichWidget == getToolWidget(button))
             {
-                return toolHint(button);
+                return getToolHint(button);
             }
         }
 
         for (const auto paint : kEveryPaint)
         {
-            if (whichWidget == paintWidget(paint))
+            if (whichWidget == getPaintWidget(paint))
             {
-                return paintHint(paint);
+                return getPaintHint(paint);
             }
         }
 
         for (const auto kind : voxel::kEveryKind)
         {
-            if (whichWidget == kindWidget(kind))
+            if (whichWidget == getKindWidget(kind))
             {
-                return kindHint(kind);
+                return getKindHint(kind);
             }
         }
 
         for (const auto facing : kMarkedFacings)
         {
-            if (whichWidget == facingWidget(facing))
+            if (whichWidget == getFacingWidget(facing))
             {
-                return facingHint(facing);
+                return getFacingHint(facing);
             }
         }
 
         for (const auto level : kMarkedStairHalves)
         {
-            if (whichWidget == levelWidget(level))
+            if (whichWidget == getLevelWidget(level))
             {
-                return levelHint(level);
+                return getLevelHint(level);
             }
         }
 
         for (const auto toggle : kEveryEdgeToggle)
         {
-            if (whichWidget == edgeToggleWidget(toggle))
+            if (whichWidget == getEdgeToggleWidget(toggle))
             {
-                return edgeToggleHint(toggle);
+                return getEdgeToggleHint(toggle);
             }
         }
 
@@ -471,7 +471,7 @@ namespace antwika::editor
         for (std::size_t frame = 0; frame < decor::kMaxDecorFrames;
              ++frame)
         {
-            if (whichWidget == decor::frameWidget(frame))
+            if (whichWidget == decor::getFrameWidget(frame))
             {
                 return "picks the frame the canvas draws";
             }
@@ -480,7 +480,7 @@ namespace antwika::editor
         for (std::size_t ink = 0; ink < document.map.paletteColors.size();
              ++ink)
         {
-            if (whichWidget == tile::swatchWidget(ink))
+            if (whichWidget == tile::getSwatchWidget(ink))
             {
                 return "chooses this ink - again mixes it";
             }
@@ -489,7 +489,7 @@ namespace antwika::editor
         for (std::size_t layer = 0; layer < document.map.layers.size();
              ++layer)
         {
-            if (whichWidget == map::layerWidget(layer))
+            if (whichWidget == map::getLayerWidget(layer))
             {
                 return "works on this layer";
             }
@@ -582,7 +582,7 @@ namespace antwika::editor
              ++frame)
         {
             if (whichWidget
-                == decor::flipFrameWidget(frame))
+                == decor::getFlipFrameWidget(frame))
             {
                 return "shows this frame - a grid click "
                        "assigns its tile";
@@ -615,7 +615,7 @@ namespace antwika::editor
              ++index)
         {
             if (whichWidget
-                == tile::transitionRowWidget(index))
+                == tile::getTransitionRowWidget(index))
             {
                 return "shows this transition's pieces";
             }
@@ -636,7 +636,7 @@ namespace antwika::editor
                          * decor::kMaxDecorSpan;
              ++place)
         {
-            if (whichWidget == decor::memberWidget(place))
+            if (whichWidget == decor::getMemberWidget(place))
             {
                 return "shows this place of the span - "
                        "a grid click assigns its tile";

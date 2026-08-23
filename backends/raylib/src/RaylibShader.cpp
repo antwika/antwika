@@ -36,7 +36,7 @@ namespace antwika::gfx::raylib
         return owner == &candidateRenderer;
     }
 
-    const ::Shader &RaylibShader::raw() const noexcept
+    const ::Shader &RaylibShader::getRawHandle() const noexcept
     {
         return shader;
     }

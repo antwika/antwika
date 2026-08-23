@@ -39,12 +39,12 @@ namespace antwika::ecs::detail
             throw EcsError("EntityManager: entity is not alive");
         }
 
-        aliveFlags[rawValue(entity)] = false;
+        aliveFlags[getRawValue(entity)] = false;
     }
 
     bool EntityManager::isAlive(Entity entity) const noexcept
     {
-        const auto value = rawValue(entity);
+        const auto value = getRawValue(entity);
         return value < aliveFlags.size() && aliveFlags[value];
     }
 

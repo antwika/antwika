@@ -19,7 +19,7 @@ namespace antwika::render
         shadowShader = viewportRenderer.createShader(shadowSource);
         lampShadowAtlasTarget = viewportRenderer.createRenderTarget(
             gfx::RenderTargetSpec{
-                .size = light::shadowAtlasSize(), .depth = true});
+                .size = light::getShadowAtlasSize(), .depth = true});
     }
 
     void LightPasses::forget() noexcept
@@ -43,8 +43,8 @@ namespace antwika::render
         occludingVoxelsHeld = std::move(behindVoxels);
         occlusionOriginPosition = aboutPosition;
 
-        const auto drawnOver = voxelmap::occlusionMask(
-            occludingVoxelsHeld, voxelmap::occlusionMaskOrigin(aboutPosition));
+        const auto drawnOver = voxelmap::getOcclusionMask(
+            occludingVoxelsHeld, voxelmap::getOcclusionMaskOrigin(aboutPosition));
 
         if (occlusionTexture)
         {
@@ -56,7 +56,7 @@ namespace antwika::render
         occlusionTexture = viewportRenderer.createTexture(drawnOver);
     }
 
-    const voxel::Voxels &LightPasses::hidden()
+    const voxel::Voxels &LightPasses::getHidden()
         const noexcept
     {
         return occludingVoxelsHeld;
@@ -78,7 +78,7 @@ namespace antwika::render
             return;
         }
 
-        const auto relit = light::dirtyShadowSlots(bakedLights, lights);
+        const auto relit = light::getDirtyShadowSlots(bakedLights, lights);
 
         for (const auto index : relit)
         {
@@ -88,7 +88,7 @@ namespace antwika::render
             {
                 const auto scope = viewportRenderer.targetScope(
                     *lampShadowAtlasTarget,
-                    light::shadowFaceRect(index, face));
+                    light::getShadowFaceRect(index, face));
 
                 viewportRenderer.clear(gfx::Color{});
 
@@ -96,8 +96,8 @@ namespace antwika::render
                 {
                     viewportRenderer.drawMesh(
                         *piece,
-                        gfx::identityMatrix(),
-                        light::shadowCamera(standing, face),
+                        gfx::getIdentityMatrix(),
+                        light::getShadowCamera(standing, face),
                         gfx::MeshMaterial{
                             .shader = shadowShader.get()});
                 }
@@ -113,21 +113,21 @@ namespace antwika::render
     }
 
 
-    std::span<const light::ActiveLight> LightPasses::lamps()
+    std::span<const light::ActiveLight> LightPasses::getLamps()
         const noexcept
     {
         return bakedLights;
     }
 
 
-    const gfx::ITexture *LightPasses::hiding() const noexcept
+    const gfx::ITexture *LightPasses::getHiding() const noexcept
     {
         return occlusionTexture.get();
     }
 
-    const gfx::ITexture *LightPasses::lampShadows() const noexcept
+    const gfx::ITexture *LightPasses::getLampShadows() const noexcept
     {
-        return lampShadowAtlasTarget->depth();
+        return lampShadowAtlasTarget->getDepth();
     }
 
 

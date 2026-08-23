@@ -14,7 +14,7 @@ namespace antwika::sound
 
         FrameCount frames = 0;
 
-        [[nodiscard]] ChannelCount channelCount() const noexcept;
+        [[nodiscard]] ChannelCount getChannelCount() const noexcept;
 
         [[nodiscard]] bool isValid() const noexcept;
 

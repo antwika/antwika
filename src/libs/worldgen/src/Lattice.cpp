@@ -8,7 +8,7 @@ namespace antwika::worldgen::detail
 
     namespace
     {
-        [[nodiscard]] bool anyPartner(
+        [[nodiscard]] bool isAnyPartner(
             const wfc::CompatibilityTable &table,
             const wfc::Domain &beyondDomain,
             const std::size_t value,
@@ -16,8 +16,8 @@ namespace antwika::worldgen::detail
         {
             for (const std::size_t theirs : beyondDomain)
             {
-                const bool fits = asLower ? table.compatible(value, theirs)
-                                : table.compatible(theirs, value);
+                const bool fits = asLower ? table.isCompatible(value, theirs)
+                                : table.isCompatible(theirs, value);
 
                 if (fits)
                 {
@@ -88,7 +88,7 @@ namespace antwika::worldgen::detail
     {
     }
 
-    const std::vector<wfc::Domain> &Board::wave() const
+    const std::vector<wfc::Domain> &Board::getWave() const
     {
         return *heldDomains;
     }
@@ -119,7 +119,7 @@ namespace antwika::worldgen::detail
         }
     }
 
-    std::size_t Board::mark() const
+    std::size_t Board::getMark() const
     {
         return trailCollapses.size();
     }
@@ -141,7 +141,7 @@ namespace antwika::worldgen::detail
         const std::vector<std::size_t> &cells)
     {
         std::vector<std::size_t> worklist = cells;
-        std::vector<bool> queuedFlags(cubeCount(shape), false);
+        std::vector<bool> queuedFlags(getCubeCount(shape), false);
 
         for (const std::size_t cell : worklist)
         {
@@ -169,16 +169,16 @@ namespace antwika::worldgen::detail
                     sideNeighbour.axis);
 
                 const std::vector<std::size_t> theirs(
-                    board.wave()[sideNeighbour.otherCell].begin(),
-                    board.wave()[sideNeighbour.otherCell].end());
+                    board.getWave()[sideNeighbour.otherCell].begin(),
+                    board.getWave()[sideNeighbour.otherCell].end());
 
                 bool thinned = false;
 
                 for (const std::size_t value : theirs)
                 {
-                    if (!anyPartner(
+                    if (!isAnyPartner(
                             table,
-                            board.wave()[cell],
+                            board.getWave()[cell],
                             value,
                             !sideNeighbour.lower))
                     {
@@ -187,7 +187,7 @@ namespace antwika::worldgen::detail
                     }
                 }
 
-                if (board.wave()[sideNeighbour.otherCell].isEmpty())
+                if (board.getWave()[sideNeighbour.otherCell].isEmpty())
                 {
                     return false;
                 }

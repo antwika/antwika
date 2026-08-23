@@ -45,7 +45,7 @@ namespace antwika::sound
 
     void Mixer::play(const PlayRequest &request)
     {
-        const auto &waveform = library.get(request.waveform);
+        const auto &waveform = library.getWaveform(request.waveform);
 
         if (waveform.format.rate != wave.rate)
         {
@@ -86,7 +86,7 @@ namespace antwika::sound
         }
     }
 
-    std::size_t Mixer::activeVoices() const noexcept
+    std::size_t Mixer::getActiveVoices() const noexcept
     {
         return static_cast<std::size_t>(std::ranges::count_if(
             voices, [](const Voice &voice) { return voice.active; }));
@@ -96,7 +96,7 @@ namespace antwika::sound
     {
         samples.silence();
 
-        const auto channels = samples.channelCount();
+        const auto channels = samples.getChannelCount();
 
         for (auto &voice : voices)
         {
@@ -106,7 +106,7 @@ namespace antwika::sound
             }
 
             const auto &source = *voice.sourceWaveform;
-            const auto length = source.frameCount();
+            const auto length = source.getFrameCount();
 
             for (FrameCount frame = 0; frame < samples.frames; ++frame)
             {

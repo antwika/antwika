@@ -18,9 +18,9 @@ namespace antwika::gfx::detail
         NullMesh &operator=(const NullMesh &) = delete;
         NullMesh &operator=(NullMesh &&) = delete;
 
-        [[nodiscard]] std::size_t vertexCount() const override;
+        [[nodiscard]] std::size_t getVertexCount() const override;
 
-        [[nodiscard]] std::size_t triangleCount() const override;
+        [[nodiscard]] std::size_t getTriangleCount() const override;
 
     private:
         std::size_t vertices;

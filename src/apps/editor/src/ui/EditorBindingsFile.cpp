@@ -122,7 +122,7 @@ namespace antwika::editor
 
         constexpr std::string_view kAltKey = "alt";
 
-        [[nodiscard]] std::optional<input::Key> keyNamed(
+        [[nodiscard]] std::optional<input::Key> getKeyNamed(
             const std::string &text)
         {
             for (std::size_t index = 0; index < kKeyNames.size();
@@ -138,14 +138,14 @@ namespace antwika::editor
         }
     }
 
-    std::string_view keyName(const input::Key key)
+    std::string_view getKeyName(const input::Key key)
     {
         const auto keyIndex = static_cast<std::size_t>(key);
 
         return keyIndex < kKeyNames.size() ? kKeyNames.at(keyIndex) : "";
     }
 
-    std::string chordName(const std::optional<Chord> &chord)
+    std::string getChordName(const std::optional<Chord> &chord)
     {
         if (!chord.has_value())
         {
@@ -169,7 +169,7 @@ namespace antwika::editor
             chordText += "alt+";
         }
 
-        return chordText + std::string(keyName(chord->key));
+        return chordText + std::string(getKeyName(chord->key));
     } // GCOVR_EXCL_LINE
 
     void saveChords(
@@ -180,7 +180,7 @@ namespace antwika::editor
         for (const auto &[act, chord] : keyBindings)
         {
             auto &entry =
-                document[std::string(actionKey(act))];
+                document[std::string(getActionKey(act))];
 
             if (!chord.has_value())
             {
@@ -190,7 +190,7 @@ namespace antwika::editor
             }
 
             entry[std::string(kKeyKey)] =
-                std::string(keyName(chord->key));
+                std::string(getKeyName(chord->key));
             entry[std::string(kCtrlKey)] = chord->ctrl;
             entry[std::string(kShiftKey)] = chord->shift;
             entry[std::string(kAltKey)] = chord->alt;
@@ -208,9 +208,9 @@ namespace antwika::editor
             writingPath, path, "the key bindings");
     }
 
-    KeyBindings loadChords(const std::string &path)
+    KeyBindings getLoadChords(const std::string &path)
     {
-        auto chords = defaultChords();
+        auto chords = getDefaultChords();
         std::ifstream inputStream(path);
 
         if (!inputStream)
@@ -234,9 +234,9 @@ namespace antwika::editor
             return chords;
         }
 
-        for (const auto act : allActions())
+        for (const auto act : getAllActions())
         {
-            const auto token = std::string(actionKey(act));
+            const auto token = std::string(getActionKey(act));
 
             if (!document.contains(token))
             {
@@ -259,7 +259,7 @@ namespace antwika::editor
                 continue;
             }
 
-            const auto key = keyNamed(
+            const auto key = getKeyNamed(
                 entry[std::string(kKeyKey)]
                     .get<std::string>());
 

@@ -17,7 +17,7 @@ namespace antwika::voxel
     namespace detail
     {
 
-        VoxelPosition offsetBy(
+        VoxelPosition getOffsetBy(
             const VoxelPosition fromPosition,
             const VoxelPosition byPosition)
         {
@@ -27,7 +27,7 @@ namespace antwika::voxel
                 .z = fromPosition.z + byPosition.z};
         }
 
-        VoxelPosition opposite(const VoxelPosition stepPosition)
+        VoxelPosition getOpposite(const VoxelPosition stepPosition)
         {
             return VoxelPosition{
                 .x = -stepPosition.x,
@@ -63,7 +63,7 @@ namespace antwika::voxel
                               : std::optional{foundVoxel->second};
         }
 
-        [[nodiscard]] bool groundBeside(
+        [[nodiscard]] bool isGroundBeside(
             const Voxels &filledVoxels,
             const VoxelPosition position,
             const VoxelPosition stepPosition)
@@ -100,7 +100,7 @@ namespace antwika::voxel
             return false;
         }
 
-        [[nodiscard]] std::optional<VoxelPosition> shapedClimb(
+        [[nodiscard]] std::optional<VoxelPosition> getShapedClimb(
             const Voxels &filledVoxels, const VoxelPosition position)
         {
             const auto corner = cubeCornerOf(position);
@@ -141,10 +141,10 @@ namespace antwika::voxel
             return std::nullopt;
         }
 
-        [[nodiscard]] VoxelPosition climbWithin(
+        [[nodiscard]] VoxelPosition getClimbWithin(
             const Voxels &filledVoxels, const VoxelPosition position)
         {
-            if (const auto shapedStep = shapedClimb(filledVoxels, position);
+            if (const auto shapedStep = getShapedClimb(filledVoxels, position);
                 shapedStep.has_value())
             {
                 return *shapedStep;
@@ -159,9 +159,9 @@ namespace antwika::voxel
 
             for (const auto step : kAboutPositions)
             {
-                if (groundBeside(filledVoxels, position, step)
-                    && !groundBeside(
-                        filledVoxels, position, opposite(step)))
+                if (isGroundBeside(filledVoxels, position, step)
+                    && !isGroundBeside(
+                        filledVoxels, position, getOpposite(step)))
                 {
                     return step;
                 }
@@ -169,7 +169,7 @@ namespace antwika::voxel
 
             for (const auto step : kAboutPositions)
             {
-                if (groundBeside(filledVoxels, position, step))
+                if (isGroundBeside(filledVoxels, position, step))
                 {
                     return step;
                 }
@@ -180,30 +180,30 @@ namespace antwika::voxel
 
             for (const auto step : kAboutPositions)
             {
-                if (fills(offsetBy(position, step))
-                    && !fills(offsetBy(position, opposite(step))))
+                if (fills(getOffsetBy(position, step))
+                    && !fills(getOffsetBy(position, getOpposite(step))))
                 {
                     return step;
                 }
             }
 
             const auto abovePosition =
-                offsetBy(position, VoxelPosition{.y = 1});
+                getOffsetBy(position, VoxelPosition{.y = 1});
 
             if (isRamped(kindAt(filledVoxels, abovePosition)))
             {
-                return climbWithin(filledVoxels, abovePosition);
+                return getClimbWithin(filledVoxels, abovePosition);
             }
 
             for (const auto step : kAboutPositions)
             {
-                const auto open = offsetBy(position, opposite(step));
+                const auto open = getOffsetBy(position, getOpposite(step));
 
                 if (!filledVoxels.contains(open)
                     && isRamped(
                         kindAt(
                             filledVoxels,
-                            offsetBy(open, kBelowPosition))))
+                            getOffsetBy(open, kBelowPosition))))
                 {
                     return step;
                 }
@@ -212,7 +212,7 @@ namespace antwika::voxel
             return kAboutPositions.front();
         }
 
-        [[nodiscard]] StairHalf levelWithin(
+        [[nodiscard]] StairHalf getLevelWithin(
             const Voxels &filledVoxels, const VoxelPosition position)
         {
             if (!isRamped(kindAt(filledVoxels, position)))
@@ -223,7 +223,7 @@ namespace antwika::voxel
             return isRamped(
                        kindAt(
                            filledVoxels,
-                           offsetBy(position, kBelowPosition)))
+                           getOffsetBy(position, kBelowPosition)))
                        ? StairHalf::Upper
                        : StairHalf::Lower;
         }
@@ -233,7 +233,7 @@ namespace antwika::voxel
         {
             return isRamped(kindAt(filledVoxels, position))
                    && !filledVoxels.contains(
-                       offsetBy(position, VoxelPosition{.y = 1}));
+                       getOffsetBy(position, VoxelPosition{.y = 1}));
         }
 
         std::optional<Kind> effectiveKindAt(
@@ -252,13 +252,13 @@ namespace antwika::voxel
 
     }
 
-    VoxelPosition inferredRampDirection(
+    VoxelPosition getInferredRampDirection(
         const Voxels &filledVoxels, const VoxelPosition position)
     {
-        return climbWithin(filledVoxels, position);
+        return getClimbWithin(filledVoxels, position);
     }
 
-    Facing facingOfStep(const VoxelPosition climbPosition)
+    Facing getFacingOfStep(const VoxelPosition climbPosition)
     {
         if (climbPosition.x > 0)
         {
@@ -300,7 +300,7 @@ namespace antwika::voxel
     StairHalf stairHalfOf(
         const Voxels &filledVoxels, const VoxelPosition position)
     {
-        return levelWithin(filledVoxels, position);
+        return getLevelWithin(filledVoxels, position);
     }
 
 }

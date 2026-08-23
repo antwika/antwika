@@ -49,22 +49,22 @@ namespace antwika::gfx
     {
     }
 
-    Vec3 Camera3D::position() const
+    Vec3 Camera3D::getPosition() const
     {
         return positionValue;
     }
 
-    Vec3 Camera3D::target() const
+    Vec3 Camera3D::getTarget() const
     {
         return targetPoint;
     }
 
-    Vec3 Camera3D::up() const
+    Vec3 Camera3D::getUp() const
     {
         return upVector;
     }
 
-    const Camera3D::Projection &Camera3D::projection() const
+    const Camera3D::Projection &Camera3D::getProjection() const
     {
         return projectionValue;
     }
@@ -84,24 +84,24 @@ namespace antwika::gfx
         projectionValue = valueProjection;
     }
 
-    Mat4 Camera3D::view() const
+    Mat4 Camera3D::getView() const
     {
         if (positionValue == targetPoint)
         {
-            return identityMatrix();
+            return getIdentityMatrix();
         }
 
         return glm::lookAt(positionValue, targetPoint, upVector);
     }
 
-    Mat4 Camera3D::projectionMatrix() const
+    Mat4 Camera3D::getProjectionMatrix() const
     {
         return std::visit(ProjectionMatrix{}, projectionValue);
     }
 
-    Mat4 Camera3D::viewProjection() const
+    Mat4 Camera3D::getViewProjection() const
     {
-        return projectionMatrix() * view();
+        return getProjectionMatrix() * getView();
     }
 
 }

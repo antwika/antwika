@@ -20,7 +20,7 @@ namespace antwika::gameplay
         std::size_t hero,
         map::Placement stancePlacement);
 
-    [[nodiscard]] map::Placement startingPlacement(
+    [[nodiscard]] map::Placement getStartingPlacement(
         const map::Map &laidMap,
         const voxel::Voxels &voxels,
         std::optional<map::Placement> checkpointPlacement);

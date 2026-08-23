@@ -19,20 +19,20 @@ namespace
     using antwika::decor::decorFrameAt;
     using antwika::decor::decorOf;
     using antwika::decor::DecorTile;
-    using antwika::decor::solveDecor;
+    using antwika::decor::getSolveDecor;
     using antwika::voxelmap::visibleFacesOf;
-    using antwika::voxelmap::defaultTiles;
+    using antwika::voxelmap::getDefaultTiles;
     using antwika::decor::kDecorPaceTick;
     using antwika::tilemap::Tile;
     using antwika::tile::TileRules;
-    using antwika::decor::previewNeighbourhood;
-    using antwika::decor::withBaseToggled;
-    using antwika::decor::withDecorToggled;
-    using antwika::decor::withFrameAdded;
-    using antwika::decor::withFrameSet;
-    using antwika::decor::frameWidget;
+    using antwika::decor::getPreviewNeighbourhood;
+    using antwika::decor::getWithBaseToggled;
+    using antwika::decor::getWithDecorToggled;
+    using antwika::decor::getWithFrameAdded;
+    using antwika::decor::getWithFrameSet;
+    using antwika::decor::getFrameWidget;
     using antwika::decor::hasAnimatedDecor;
-    using antwika::decor::memberWidget;
+    using antwika::decor::getMemberWidget;
 
     constexpr Tile kOneTile{.atlas = Atlas::Floor, .index = 1};
     constexpr Tile kOtherTile{.atlas = Atlas::Floor, .index = 2};
@@ -40,12 +40,12 @@ namespace
     TEST(DecorTest, WithDecorToggled_MarksATileAndUnmarksIt)
     {
         const auto toggledDecor =
-            withDecorToggled(std::vector<DecorTile>{}, kOneTile);
+            getWithDecorToggled(std::vector<DecorTile>{}, kOneTile);
 
         ASSERT_NE(decorOf(toggledDecor, kOneTile), nullptr);
         EXPECT_EQ(decorOf(toggledDecor, kOneTile)->frameTiles.size(), 1U);
 
-        const auto untoggledDecor = withDecorToggled(toggledDecor, kOneTile);
+        const auto untoggledDecor = getWithDecorToggled(toggledDecor, kOneTile);
 
         EXPECT_EQ(decorOf(untoggledDecor, kOneTile), nullptr);
     }
@@ -53,15 +53,15 @@ namespace
     TEST(DecorTest, WithBaseToggled_AllowsABaseAndTakesItBack)
     {
         auto decor =
-            withDecorToggled(std::vector<DecorTile>{}, kOneTile);
+            getWithDecorToggled(std::vector<DecorTile>{}, kOneTile);
 
-        decor = withBaseToggled(decor, kOneTile, kOtherTile);
+        decor = getWithBaseToggled(decor, kOneTile, kOtherTile);
 
         ASSERT_EQ(decorOf(decor, kOneTile)->allowedBaseTiles.size(), 1U);
         EXPECT_EQ(
             decorOf(decor, kOneTile)->allowedBaseTiles.front(), kOtherTile);
 
-        decor = withBaseToggled(decor, kOneTile, kOtherTile);
+        decor = getWithBaseToggled(decor, kOneTile, kOtherTile);
 
         EXPECT_TRUE(decorOf(decor, kOneTile)->allowedBaseTiles.empty());
     }
@@ -69,11 +69,11 @@ namespace
     TEST(DecorTest, WithFrameSet_LeavesTheFirstFrameTheTileItself)
     {
         auto decor =
-            withDecorToggled(std::vector<DecorTile>{}, kOneTile);
+            getWithDecorToggled(std::vector<DecorTile>{}, kOneTile);
 
-        decor = withFrameAdded(decor, kOneTile);
-        decor = withFrameSet(decor, kOneTile, 1, kOtherTile);
-        decor = withFrameSet(decor, kOneTile, 0, kOtherTile);
+        decor = getWithFrameAdded(decor, kOneTile);
+        decor = getWithFrameSet(decor, kOneTile, 1, kOtherTile);
+        decor = getWithFrameSet(decor, kOneTile, 0, kOtherTile);
 
         ASSERT_EQ(decorOf(decor, kOneTile)->frameTiles.size(), 2U);
         EXPECT_EQ(decorOf(decor, kOneTile)->frameTiles[0], kOneTile);
@@ -83,17 +83,17 @@ namespace
     TEST(DecorTest, WithFrequencySet_SaysHowOftenAndHoldsTheCeiling)
     {
         auto decor =
-            withDecorToggled(std::vector<DecorTile>{}, kOneTile);
+            getWithDecorToggled(std::vector<DecorTile>{}, kOneTile);
 
         EXPECT_EQ(
             decorOf(decor, kOneTile)->frequency,
             antwika::decor::kFullFrequency);
 
-        decor = antwika::decor::withFrequencySet(decor, kOneTile, 25);
+        decor = antwika::decor::getWithFrequencySet(decor, kOneTile, 25);
 
         EXPECT_EQ(decorOf(decor, kOneTile)->frequency, 25);
 
-        decor = antwika::decor::withFrequencySet(decor, kOneTile, 250);
+        decor = antwika::decor::getWithFrequencySet(decor, kOneTile, 250);
 
         EXPECT_EQ(
             decorOf(decor, kOneTile)->frequency,
@@ -102,30 +102,30 @@ namespace
 
     TEST(DecorTest, SolveDecor_LaysNothingAtAFrequencyOfNought)
     {
-        const auto voxels = antwika::voxel::expandCubesToVoxels(
+        const auto voxels = antwika::voxel::getExpandCubesToVoxels(
             antwika::voxel::voxelsOf({antwika::voxel::VoxelCell{}}));
         const auto faces = visibleFacesOf(voxels);
-        const auto drawnTiles = defaultTiles(faces);
-        auto decor = withDecorToggled({}, kOneTile);
+        const auto drawnTiles = getDefaultTiles(faces);
+        auto decor = getWithDecorToggled({}, kOneTile);
 
         for (const auto tile : drawnTiles)
         {
             if (decorOf(decor, kOneTile)->allowedBaseTiles.empty()
                 || decorOf(decor, kOneTile)->allowedBaseTiles.back() != tile)
             {
-                decor = withBaseToggled(decor, kOneTile, tile);
+                decor = getWithBaseToggled(decor, kOneTile, tile);
             }
         }
 
         const auto solvedDecor =
-            solveDecor(faces, drawnTiles, decor, TileRules{}, 0);
+            getSolveDecor(faces, drawnTiles, decor, TileRules{}, 0);
 
         EXPECT_FALSE(solvedDecor.empty());
 
-        decor = antwika::decor::withFrequencySet(decor, kOneTile, 0);
+        decor = antwika::decor::getWithFrequencySet(decor, kOneTile, 0);
 
         const auto bare =
-            solveDecor(faces, drawnTiles, decor, TileRules{}, 0);
+            getSolveDecor(faces, drawnTiles, decor, TileRules{}, 0);
 
         EXPECT_TRUE(bare.empty());
     }
@@ -133,17 +133,17 @@ namespace
     TEST(DecorTest, WithWeightSet_SaysHowStronglyAndHoldsTheCeiling)
     {
         auto decor =
-            withDecorToggled(std::vector<DecorTile>{}, kOneTile);
+            getWithDecorToggled(std::vector<DecorTile>{}, kOneTile);
 
         EXPECT_EQ(
             decorOf(decor, kOneTile)->weight,
             antwika::decor::kFullFrequency);
 
-        decor = antwika::decor::withWeightSet(decor, kOneTile, 25);
+        decor = antwika::decor::getWithWeightSet(decor, kOneTile, 25);
 
         EXPECT_EQ(decorOf(decor, kOneTile)->weight, 25);
 
-        decor = antwika::decor::withWeightSet(decor, kOneTile, 250);
+        decor = antwika::decor::getWithWeightSet(decor, kOneTile, 250);
 
         EXPECT_EQ(
             decorOf(decor, kOneTile)->weight,
@@ -164,7 +164,7 @@ namespace
         }
 
         const auto voxels =
-            antwika::voxel::expandCubesToVoxels(cubeVoxels);
+            antwika::voxel::getExpandCubesToVoxels(cubeVoxels);
         const auto faces = visibleFacesOf(voxels);
         constexpr Tile kBaseTile{.atlas = Atlas::Floor, .index = 9};
         constexpr Tile kWantedTile{.atlas = Atlas::Floor, .index = 26};
@@ -175,14 +175,14 @@ namespace
 
         for (const auto offeredTile : {kWantedTile, kShunnedTile})
         {
-            decor = withDecorToggled(decor, offeredTile);
-            decor = withBaseToggled(decor, offeredTile, kBaseTile);
+            decor = getWithDecorToggled(decor, offeredTile);
+            decor = getWithBaseToggled(decor, offeredTile, kBaseTile);
         }
 
-        decor = antwika::decor::withWeightSet(decor, kShunnedTile, 0);
+        decor = antwika::decor::getWithWeightSet(decor, kShunnedTile, 0);
 
         const auto solvedDecor =
-            solveDecor(faces, drawnTiles, decor, TileRules{}, 0);
+            getSolveDecor(faces, drawnTiles, decor, TileRules{}, 0);
 
         EXPECT_FALSE(solvedDecor.empty());
 
@@ -206,7 +206,7 @@ namespace
         }
 
         const auto voxels =
-            antwika::voxel::expandCubesToVoxels(cubeVoxels);
+            antwika::voxel::getExpandCubesToVoxels(cubeVoxels);
         const auto faces = visibleFacesOf(voxels);
         constexpr Tile kBaseTile{.atlas = Atlas::Floor, .index = 9};
 
@@ -218,12 +218,12 @@ namespace
             const Tile offeredTile{
                 .atlas = Atlas::Floor, .index = offeredIndex};
 
-            decor = withDecorToggled(decor, offeredTile);
-            decor = withBaseToggled(decor, offeredTile, kBaseTile);
+            decor = getWithDecorToggled(decor, offeredTile);
+            decor = getWithBaseToggled(decor, offeredTile, kBaseTile);
         }
 
         const auto solvedDecor =
-            solveDecor(faces, drawnTiles, decor, TileRules{}, 0);
+            getSolveDecor(faces, drawnTiles, decor, TileRules{}, 0);
 
         std::set<std::uint16_t> seenTiles;
 
@@ -240,22 +240,22 @@ namespace
     TEST(DecorTest, WithDecorLayerSet_MovesADecorToAnotherLayer)
     {
         auto decor =
-            withDecorToggled(std::vector<DecorTile>{}, kOneTile);
+            getWithDecorToggled(std::vector<DecorTile>{}, kOneTile);
 
         EXPECT_EQ(decorOf(decor, kOneTile)->layer, 1U);
 
         decor =
-            antwika::decor::withDecorLayerSet(decor, kOneTile, 3);
+            antwika::decor::getWithDecorLayerSet(decor, kOneTile, 3);
 
         EXPECT_EQ(decorOf(decor, kOneTile)->layer, 3U);
         EXPECT_EQ(
-            antwika::decor::withDecorLayerSet(decor, kOtherTile, 2),
+            antwika::decor::getWithDecorLayerSet(decor, kOtherTile, 2),
             decor);
     }
 
     TEST(DecorTest, SolveDecorLayers_LaysTheLayersOverOneAnother)
     {
-        const auto voxels = antwika::voxel::expandCubesToVoxels(
+        const auto voxels = antwika::voxel::getExpandCubesToVoxels(
             antwika::voxel::voxelsOf({antwika::voxel::VoxelCell{}}));
         const auto faces = visibleFacesOf(voxels);
         constexpr Tile kBaseTile{.atlas = Atlas::Floor, .index = 9};
@@ -265,12 +265,12 @@ namespace
         std::vector<Tile> drawnTiles(faces.size(), kBaseTile);
         std::vector<DecorTile> decor;
 
-        decor = withDecorToggled(decor, kUnderTile, 1);
-        decor = withBaseToggled(decor, kUnderTile, kBaseTile);
-        decor = withDecorToggled(decor, kOverTile, 2);
-        decor = withBaseToggled(decor, kOverTile, kBaseTile);
+        decor = getWithDecorToggled(decor, kUnderTile, 1);
+        decor = getWithBaseToggled(decor, kUnderTile, kBaseTile);
+        decor = getWithDecorToggled(decor, kOverTile, 2);
+        decor = getWithBaseToggled(decor, kOverTile, kBaseTile);
 
-        const auto layers = antwika::decor::solveDecorLayers(
+        const auto layers = antwika::decor::getSolveDecorLayers(
             faces, drawnTiles, decor, TileRules{}, 0);
 
         ASSERT_EQ(layers.size(), 2U);
@@ -293,10 +293,10 @@ namespace
     TEST(DecorTest, DecorFrameAt_WalksTheFramesAsTheClockRuns)
     {
         auto decor =
-            withDecorToggled(std::vector<DecorTile>{}, kOneTile);
+            getWithDecorToggled(std::vector<DecorTile>{}, kOneTile);
 
-        decor = withFrameAdded(decor, kOneTile);
-        decor = withFrameSet(decor, kOneTile, 1, kOtherTile);
+        decor = getWithFrameAdded(decor, kOneTile);
+        decor = getWithFrameSet(decor, kOneTile, 1, kOtherTile);
 
         const auto &decorTile = *decorOf(decor, kOneTile);
 
@@ -310,7 +310,7 @@ namespace
     {
         const TileRules rules;
         const auto preview =
-            previewNeighbourhood(rules, kOneTile, 3, 7);
+            getPreviewNeighbourhood(rules, kOneTile, 3, 7);
 
         ASSERT_TRUE(preview.has_value());
         ASSERT_EQ(preview->size(), 9U);
@@ -318,7 +318,7 @@ namespace
     }
 
 
-    [[nodiscard]] std::vector<Tile> facedWith(
+    [[nodiscard]] std::vector<Tile> getFacedWith(
         const std::vector<antwika::voxelmap::FaceRef> &faces,
         const Tile wallTile,
         const Tile topTile)
@@ -329,7 +329,7 @@ namespace
         {
             tiles.push_back(
                 antwika::gfx::Vec3(
-                    antwika::voxelmap::faceNormal(face.side))
+                    antwika::voxelmap::getFaceNormal(face.side))
                             .y
                         == 0.0F
                          ? wallTile
@@ -348,13 +348,13 @@ namespace
         const auto voxels = antwika::voxel::voxelsOf({
             antwika::voxel::VoxelCell{}});
         const auto faces = visibleFacesOf(voxels);
-        const auto drawnTiles = facedWith(faces, kBrickTile, kOneTile);
-        auto decor = withDecorToggled({}, kMossTile);
+        const auto drawnTiles = getFacedWith(faces, kBrickTile, kOneTile);
+        auto decor = getWithDecorToggled({}, kMossTile);
 
-        decor = withBaseToggled(decor, kMossTile, kBrickTile);
+        decor = getWithBaseToggled(decor, kMossTile, kBrickTile);
 
         const auto placements =
-            solveDecor(faces, drawnTiles, decor, TileRules{}, 0);
+            getSolveDecor(faces, drawnTiles, decor, TileRules{}, 0);
 
         EXPECT_EQ(placements.size(), 4U);
 
@@ -362,7 +362,7 @@ namespace
         {
             EXPECT_EQ(
                 antwika::gfx::Vec3(
-                    antwika::voxelmap::faceNormal(
+                    antwika::voxelmap::getFaceNormal(
                         faces.at(faceIndex).side))
                     .y,
                 0.0F);
@@ -375,13 +375,13 @@ namespace
         const auto voxels = antwika::voxel::voxelsOf({
             antwika::voxel::VoxelCell{}});
         const auto faces = visibleFacesOf(voxels);
-        const auto drawnTiles = facedWith(faces, kBrickTile, kOtherTile);
-        auto decor = withDecorToggled({}, kOneTile);
+        const auto drawnTiles = getFacedWith(faces, kBrickTile, kOtherTile);
+        auto decor = getWithDecorToggled({}, kOneTile);
 
-        decor = withBaseToggled(decor, kOneTile, kBrickTile);
+        decor = getWithBaseToggled(decor, kOneTile, kBrickTile);
 
         EXPECT_TRUE(
-            solveDecor(faces, drawnTiles, decor, TileRules{}, 0)
+            getSolveDecor(faces, drawnTiles, decor, TileRules{}, 0)
                 .empty());
     }
 
@@ -391,10 +391,10 @@ namespace
             antwika::voxel::VoxelCell{},
             antwika::voxel::VoxelCell{.position = {.x = 1}}});
         const auto faces = visibleFacesOf(voxels);
-        const auto drawnTiles = facedWith(faces, kBrickTile, kOneTile);
-        auto decor = withDecorToggled({}, kMossTile);
+        const auto drawnTiles = getFacedWith(faces, kBrickTile, kOneTile);
+        auto decor = getWithDecorToggled({}, kMossTile);
 
-        decor = withBaseToggled(decor, kMossTile, kBrickTile);
+        decor = getWithBaseToggled(decor, kMossTile, kBrickTile);
 
         TileRules rules;
 
@@ -410,7 +410,7 @@ namespace
                 .edge = antwika::voxel::EdgeKind::Interior});
 
         const auto placements =
-            solveDecor(faces, drawnTiles, decor, rules, 0);
+            getSolveDecor(faces, drawnTiles, decor, rules, 0);
         std::size_t front = 0;
 
         for (const auto &[faceIndex, tile] : placements)
@@ -426,10 +426,10 @@ namespace
         const auto voxels = antwika::voxel::voxelsOf({
             antwika::voxel::VoxelCell{}});
         const auto faces = visibleFacesOf(voxels);
-        const auto drawnTiles = facedWith(faces, kBrickTile, kOneTile);
-        auto decor = withDecorToggled({}, kMossTile);
+        const auto drawnTiles = getFacedWith(faces, kBrickTile, kOneTile);
+        auto decor = getWithDecorToggled({}, kMossTile);
 
-        decor = withBaseToggled(decor, kMossTile, kBrickTile);
+        decor = getWithBaseToggled(decor, kMossTile, kBrickTile);
 
         TileRules rules;
 
@@ -445,7 +445,7 @@ namespace
                 .edge = antwika::voxel::EdgeKind::Interior});
 
         EXPECT_EQ(
-            solveDecor(faces, drawnTiles, decor, rules, 0).size(),
+            getSolveDecor(faces, drawnTiles, decor, rules, 0).size(),
             4U);
     }
 
@@ -460,31 +460,31 @@ namespace
         }
 
         const auto faces = visibleFacesOf(voxels);
-        const auto drawnTiles = facedWith(faces, kBrickTile, kOneTile);
-        auto decor = withDecorToggled({}, kMossTile);
+        const auto drawnTiles = getFacedWith(faces, kBrickTile, kOneTile);
+        auto decor = getWithDecorToggled({}, kMossTile);
 
-        decor = withBaseToggled(decor, kMossTile, kBrickTile);
-        decor = antwika::decor::withFrequencySet(decor, kMossTile, 50);
+        decor = getWithBaseToggled(decor, kMossTile, kBrickTile);
+        decor = antwika::decor::getWithFrequencySet(decor, kMossTile, 50);
 
         const auto placements =
-            solveDecor(faces, drawnTiles, decor, TileRules{}, 0);
+            getSolveDecor(faces, drawnTiles, decor, TileRules{}, 0);
 
         EXPECT_GT(placements.size(), 0U);
         EXPECT_LT(placements.size(), 64U);
         EXPECT_EQ(
-            solveDecor(faces, drawnTiles, decor, TileRules{}, 0),
+            getSolveDecor(faces, drawnTiles, decor, TileRules{}, 0),
             placements);
     }
 
 
     TEST(DecorTest, WithSpanSet_GrowsRowByRowAndKeepsTheOverlap)
     {
-        auto decor = withDecorToggled({}, kOneTile);
+        auto decor = getWithDecorToggled({}, kOneTile);
 
-        decor = antwika::decor::withSpanSet(decor, kOneTile, 2, 1);
-        decor = antwika::decor::withMemberSet(
+        decor = antwika::decor::getWithSpanSet(decor, kOneTile, 2, 1);
+        decor = antwika::decor::getWithMemberSet(
             decor, kOneTile, 1, kOtherTile);
-        decor = antwika::decor::withSpanSet(decor, kOneTile, 2, 2);
+        decor = antwika::decor::getWithSpanSet(decor, kOneTile, 2, 2);
 
         const auto &decorTile = *decorOf(decor, kOneTile);
 
@@ -497,9 +497,9 @@ namespace
 
     TEST(DecorTest, WithSpanSet_HoldsTheSpanToItsWidest)
     {
-        auto decor = withDecorToggled({}, kOneTile);
+        auto decor = getWithDecorToggled({}, kOneTile);
 
-        decor = antwika::decor::withSpanSet(decor, kOneTile, 9, 0);
+        decor = antwika::decor::getWithSpanSet(decor, kOneTile, 9, 0);
 
         const auto &decorTile = *decorOf(decor, kOneTile);
 
@@ -510,22 +510,22 @@ namespace
 
     TEST(DecorTest, WithSpanSet_TrimsTheFramesOfASpannedDecor)
     {
-        auto decor = withDecorToggled({}, kOneTile);
+        auto decor = getWithDecorToggled({}, kOneTile);
 
-        decor = withFrameAdded(decor, kOneTile);
-        decor = antwika::decor::withSpanSet(decor, kOneTile, 2, 1);
+        decor = getWithFrameAdded(decor, kOneTile);
+        decor = antwika::decor::getWithSpanSet(decor, kOneTile, 2, 1);
 
         EXPECT_EQ(decorOf(decor, kOneTile)->frameTiles.size(), 1U);
     }
 
     TEST(DecorTest, WithMemberSet_KeepsTheAnchorAndTheAtlas)
     {
-        auto decor = withDecorToggled({}, kOneTile);
+        auto decor = getWithDecorToggled({}, kOneTile);
 
-        decor = antwika::decor::withSpanSet(decor, kOneTile, 2, 1);
-        decor = antwika::decor::withMemberSet(
+        decor = antwika::decor::getWithSpanSet(decor, kOneTile, 2, 1);
+        decor = antwika::decor::getWithMemberSet(
             decor, kOneTile, 0, kOtherTile);
-        decor = antwika::decor::withMemberSet(
+        decor = antwika::decor::getWithMemberSet(
             decor, kOneTile, 1, kBrickTile);
 
         const auto &decorTile = *decorOf(decor, kOneTile);
@@ -540,19 +540,19 @@ namespace
             antwika::voxel::VoxelCell{},
             antwika::voxel::VoxelCell{.position = {.x = 1}}});
         const auto faces = visibleFacesOf(voxels);
-        const auto drawnTiles = facedWith(faces, kBrickTile, kOneTile);
-        auto decor = withDecorToggled({}, kMossTile);
+        const auto drawnTiles = getFacedWith(faces, kBrickTile, kOneTile);
+        auto decor = getWithDecorToggled({}, kMossTile);
 
-        decor = withBaseToggled(decor, kMossTile, kBrickTile);
-        decor = antwika::decor::withSpanSet(decor, kMossTile, 2, 1);
-        decor = antwika::decor::withMemberSet(
+        decor = getWithBaseToggled(decor, kMossTile, kBrickTile);
+        decor = antwika::decor::getWithSpanSet(decor, kMossTile, 2, 1);
+        decor = antwika::decor::getWithMemberSet(
             decor,
             kMossTile,
             1,
             Tile{.atlas = Atlas::Wall, .index = 8});
 
         const auto placements =
-            solveDecor(faces, drawnTiles, decor, TileRules{}, 0);
+            getSolveDecor(faces, drawnTiles, decor, TileRules{}, 0);
         std::size_t front = 0;
         std::size_t second = 0;
 
@@ -582,14 +582,14 @@ namespace
         const auto voxels = antwika::voxel::voxelsOf({
             antwika::voxel::VoxelCell{}});
         const auto faces = visibleFacesOf(voxels);
-        const auto drawnTiles = facedWith(faces, kBrickTile, kOneTile);
-        auto decor = withDecorToggled({}, kMossTile);
+        const auto drawnTiles = getFacedWith(faces, kBrickTile, kOneTile);
+        auto decor = getWithDecorToggled({}, kMossTile);
 
-        decor = withBaseToggled(decor, kMossTile, kBrickTile);
-        decor = antwika::decor::withSpanSet(decor, kMossTile, 3, 1);
+        decor = getWithBaseToggled(decor, kMossTile, kBrickTile);
+        decor = antwika::decor::getWithSpanSet(decor, kMossTile, 3, 1);
 
         EXPECT_TRUE(
-            solveDecor(faces, drawnTiles, decor, TileRules{}, 0)
+            getSolveDecor(faces, drawnTiles, decor, TileRules{}, 0)
                 .empty());
     }
 
@@ -607,21 +607,21 @@ namespace
         }
 
         const auto faces = visibleFacesOf(voxels);
-        const auto drawnTiles = facedWith(faces, kBrickTile, kOneTile);
-        auto decor = withDecorToggled({}, kOneTile);
+        const auto drawnTiles = getFacedWith(faces, kBrickTile, kOneTile);
+        auto decor = getWithDecorToggled({}, kOneTile);
 
-        decor = withBaseToggled(decor, kOneTile, kOneTile);
-        decor = antwika::decor::withSpanSet(decor, kOneTile, 2, 2);
+        decor = getWithBaseToggled(decor, kOneTile, kOneTile);
+        decor = antwika::decor::getWithSpanSet(decor, kOneTile, 2, 2);
         decor =
-            antwika::decor::withFrequencySet(decor, kOneTile, 30);
+            antwika::decor::getWithFrequencySet(decor, kOneTile, 30);
 
         const auto placements =
-            solveDecor(faces, drawnTiles, decor, TileRules{}, 7);
+            getSolveDecor(faces, drawnTiles, decor, TileRules{}, 7);
 
         EXPECT_FALSE(placements.empty());
         EXPECT_EQ(placements.size() % 4, 0U);
         EXPECT_EQ(
-            solveDecor(faces, drawnTiles, decor, TileRules{}, 7),
+            getSolveDecor(faces, drawnTiles, decor, TileRules{}, 7),
             placements);
     }
 
@@ -632,13 +632,13 @@ namespace
             antwika::voxel::VoxelCell{
                 .material = {.kind = antwika::voxel::Kind::Water}}});
         const auto faces = visibleFacesOf(voxels);
-        const auto drawnTiles = facedWith(faces, kBrickTile, kOneTile);
-        auto decor = withDecorToggled({}, kOtherTile);
+        const auto drawnTiles = getFacedWith(faces, kBrickTile, kOneTile);
+        auto decor = getWithDecorToggled({}, kOtherTile);
 
-        decor = withBaseToggled(decor, kOtherTile, kOneTile);
+        decor = getWithBaseToggled(decor, kOtherTile, kOneTile);
 
         const auto placements =
-            solveDecor(faces, drawnTiles, decor, TileRules{}, 0);
+            getSolveDecor(faces, drawnTiles, decor, TileRules{}, 0);
 
         EXPECT_FALSE(placements.empty());
 
@@ -646,7 +646,7 @@ namespace
         {
             EXPECT_GT(
                 antwika::gfx::Vec3(
-                    antwika::voxelmap::faceNormal(
+                    antwika::voxelmap::getFaceNormal(
                         faces.at(faceIndex).side))
                     .y,
                 0.0F);
@@ -659,13 +659,13 @@ namespace
             antwika::voxel::VoxelCell{
                 .material = {.kind = antwika::voxel::Kind::Ladder}}});
         const auto faces = visibleFacesOf(voxels);
-        const auto drawnTiles = facedWith(faces, kBrickTile, kOneTile);
-        auto decor = withDecorToggled({}, kMossTile);
+        const auto drawnTiles = getFacedWith(faces, kBrickTile, kOneTile);
+        auto decor = getWithDecorToggled({}, kMossTile);
 
-        decor = withBaseToggled(decor, kMossTile, kBrickTile);
+        decor = getWithBaseToggled(decor, kMossTile, kBrickTile);
 
         EXPECT_FALSE(
-            solveDecor(faces, drawnTiles, decor, TileRules{}, 0)
+            getSolveDecor(faces, drawnTiles, decor, TileRules{}, 0)
                 .empty());
     }
 
@@ -679,12 +679,12 @@ namespace
                 .side = 4,
                 .climbPosition = antwika::voxel::VoxelPosition{.x = 1}}};
         const std::map<std::size_t, Tile> placedTiles{{0, kOneTile}};
-        const auto mesh = antwika::decor::decorMesh(
-            faces, placedTiles, withDecorToggled({}, kOneTile), 0);
+        const auto mesh = antwika::decor::getDecorMesh(
+            faces, placedTiles, getWithDecorToggled({}, kOneTile), 0);
         std::size_t treads = 0;
 
         for (const auto &quad :
-             antwika::voxel::stairQuads(
+             antwika::voxel::getStairQuads(
                  antwika::voxel::VoxelPosition{.x = 1}))
         {
             treads += quad.side == 4 ? 1U : 0U;
@@ -698,14 +698,14 @@ namespace
 
     TEST(DecorTest, CompactedDecor_LetsUntouchedRecordsGo)
     {
-        auto decor = withDecorToggled({}, kOneTile);
+        auto decor = getWithDecorToggled({}, kOneTile);
 
-        decor = withDecorToggled(decor, kOtherTile);
-        decor = withBaseToggled(decor, kOtherTile, kBrickTile);
-        decor = withDecorToggled(decor, kMossTile);
-        decor = antwika::decor::withFrequencySet(decor, kMossTile, 40);
+        decor = getWithDecorToggled(decor, kOtherTile);
+        decor = getWithBaseToggled(decor, kOtherTile, kBrickTile);
+        decor = getWithDecorToggled(decor, kMossTile);
+        decor = antwika::decor::getWithFrequencySet(decor, kMossTile, 40);
 
-        const auto compactedList = antwika::decor::compactedDecor(decor);
+        const auto compactedList = antwika::decor::getCompactedDecor(decor);
 
         ASSERT_EQ(compactedList.size(), 2U);
         EXPECT_EQ(decorOf(compactedList, kOneTile), nullptr);
@@ -715,32 +715,32 @@ namespace
 
     TEST(DecorTest, SolveDecor_DressesTheTopsItsBasesAllow)
     {
-        const auto voxels = antwika::voxel::expandCubesToVoxels(
+        const auto voxels = antwika::voxel::getExpandCubesToVoxels(
             antwika::voxel::voxelsOf({antwika::voxel::VoxelCell{}}));
         const auto faces = visibleFacesOf(voxels);
-        const auto drawnTiles = defaultTiles(faces);
+        const auto drawnTiles = getDefaultTiles(faces);
 
         std::vector<DecorTile> decor =
-            withDecorToggled({}, kOneTile);
+            getWithDecorToggled({}, kOneTile);
 
         for (const auto tile : drawnTiles)
         {
             if (decorOf(decor, kOneTile)->allowedBaseTiles.empty()
                 || decorOf(decor, kOneTile)->allowedBaseTiles.back() != tile)
             {
-                decor = withBaseToggled(decor, kOneTile, tile);
+                decor = getWithBaseToggled(decor, kOneTile, tile);
             }
         }
 
         const auto placements =
-            solveDecor(faces, drawnTiles, decor, TileRules{}, 0);
+            getSolveDecor(faces, drawnTiles, decor, TileRules{}, 0);
 
         EXPECT_FALSE(placements.empty());
 
-        const auto bare = solveDecor(
+        const auto bare = getSolveDecor(
             faces,
             drawnTiles,
-            withDecorToggled({}, kOneTile),
+            getWithDecorToggled({}, kOneTile),
             TileRules{},
             0);
 
@@ -769,22 +769,22 @@ namespace
 
     TEST(DecorTest, FrameWidget_TellsOneFrameFromTheNext)
     {
-        EXPECT_NE(frameWidget(0), frameWidget(1));
+        EXPECT_NE(getFrameWidget(0), getFrameWidget(1));
         EXPECT_EQ(
-            static_cast<std::uint64_t>(frameWidget(3))
-                - static_cast<std::uint64_t>(frameWidget(0)),
+            static_cast<std::uint64_t>(getFrameWidget(3))
+                - static_cast<std::uint64_t>(getFrameWidget(0)),
             3U);
-        EXPECT_NE(frameWidget(0), antwika::decor::kFrameAddWidget);
+        EXPECT_NE(getFrameWidget(0), antwika::decor::kFrameAddWidget);
     }
 
     TEST(DecorTest, MemberWidget_TellsOneMemberFromTheNext)
     {
-        EXPECT_NE(memberWidget(0), memberWidget(1));
+        EXPECT_NE(getMemberWidget(0), getMemberWidget(1));
         EXPECT_EQ(
-            static_cast<std::uint64_t>(memberWidget(2))
-                - static_cast<std::uint64_t>(memberWidget(0)),
+            static_cast<std::uint64_t>(getMemberWidget(2))
+                - static_cast<std::uint64_t>(getMemberWidget(0)),
             2U);
-        EXPECT_NE(memberWidget(0), frameWidget(0));
+        EXPECT_NE(getMemberWidget(0), getFrameWidget(0));
     }
 
 }

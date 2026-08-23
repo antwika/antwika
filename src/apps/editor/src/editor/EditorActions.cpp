@@ -40,10 +40,10 @@ namespace antwika::editor
         }
 
         character::pasteInto(
-            characterView.sheet(),
+            characterView.getSheet(),
             *characterView.mark.selectedFrame / character::kCharacterFrames,
             *characterView.mark.selectedFrame % character::kCharacterFrames,
-            character::selectionOrigin(*characterView.mark.selection),
+            character::getSelectionOrigin(*characterView.mark.selection),
             *characterView.mark.floatingPatchBuffer);
 
         characterView.mark.floatingPatchBuffer.reset();
@@ -66,7 +66,7 @@ namespace antwika::editor
         if (characterView.mark.floatingPatchBuffer.has_value())
         {
             characterView.mark.floatingPatchBuffer =
-                character::mirroredHorizontally(
+                character::getMirroredHorizontally(
                     *characterView.mark.floatingPatchBuffer);
 
             return;
@@ -74,13 +74,13 @@ namespace antwika::editor
 
         pushUndo();
         character::pasteInto(
-            characterView.sheet(),
+            characterView.getSheet(),
             way,
             frame,
-            character::selectionOrigin(*characterView.mark.selection),
-            character::mirroredHorizontally(
+            character::getSelectionOrigin(*characterView.mark.selection),
+            character::getMirroredHorizontally(
                 character::copiedFrom(
-                    characterView.sheet(),
+                    characterView.getSheet(),
                     way,
                     frame,
                     *characterView.mark.selection)));
@@ -163,7 +163,7 @@ namespace antwika::editor
 
         const auto kind = activeRules().kindOf(*selectedTile);
         const auto shapedRules =
-            tile::rulesFromShapes(activeRules(), kind);
+            tile::getRulesFromShapes(activeRules(), kind);
 
         if (!shapedRules.toAddRules.empty())
         {
@@ -171,7 +171,7 @@ namespace antwika::editor
 
             for (const auto &rule : shapedRules.toAddRules)
             {
-                if (groupContaining(
+                if (getGroupContaining(
                         document.map.familyGroups, rule.tile)
                     != nullptr)
                 {
@@ -180,7 +180,7 @@ namespace antwika::editor
 
                 for (const auto tile : rule.allowedTiles)
                 {
-                    if (groupContaining(
+                    if (getGroupContaining(
                             document.map.familyGroups, tile)
                         != nullptr)
                     {
@@ -205,20 +205,20 @@ namespace antwika::editor
 
     gfx::RectF Editor::sheetClipRect()
     {
-        return sheetRect.value_or(tilemapBounds(camera::kCanvasSize));
+        return sheetRect.value_or(getTilemapBounds(camera::kCanvasSize));
     }
 
     gfx::RectF Editor::gridRect()
     {
-        return panZoomed(
-            tilemapPlace(sheetClipRect(), document.map.tilemap),
+        return getPanZoomed(
+            getTilemapPlace(sheetClipRect(), document.map.tilemap),
             gridPanPoint,
             gridZoom);
     }
 
     gfx::RectF Editor::frameRect()
     {
-        return canvasRect.value_or(inspectColumnBounds(camera::kCanvasSize));
+        return canvasRect.value_or(getInspectColumnBounds(camera::kCanvasSize));
     }
 
     std::optional<geometry::GridCell> Editor::cellUnderPointer()
@@ -236,7 +236,7 @@ namespace antwika::editor
         }
 
         viewportRenderer.drawRect(
-            pickerPlace(camera::kCanvasSize),
+            getPickerPlace(camera::kCanvasSize),
             kGridLineColor);
 
         for (std::size_t cursorY = 0; cursorY < kPickerBands;
@@ -247,20 +247,20 @@ namespace antwika::editor
                  ++column)
             {
                 viewportRenderer.drawRect(
-                    bandPlace(camera::kCanvasSize, column, cursorY),
-                    colorOf(bandHsv(inkPicker.pickerHsv, column, cursorY)));
+                    getBandPlace(camera::kCanvasSize, column, cursorY),
+                    colorOf(getBandHsv(inkPicker.pickerHsv, column, cursorY)));
             }
 
             viewportRenderer.drawRect(
-                hueBandPlace(camera::kCanvasSize, cursorY),
+                getHueBandPlace(camera::kCanvasSize, cursorY),
                 colorOf(
                     Hsv{
-                        .hue = hueBand(cursorY),
+                        .hue = getHueBand(cursorY),
                         .saturation = 1.0F,
                         .value = 1.0F}));
         }
 
-        const auto mark = fieldCursorPos(
+        const auto mark = getFieldCursorPos(
             camera::kCanvasSize,
             inkPicker.pickerHsv);
 
@@ -273,8 +273,8 @@ namespace antwika::editor
             {mark.x, mark.y + kCursorArmLength},
             kTextColor);
 
-        const auto strip = huePlace(camera::kCanvasSize);
-        const auto cursorY = hueCursorPos(
+        const auto strip = getHuePlace(camera::kCanvasSize);
+        const auto cursorY = getHueCursorPos(
             camera::kCanvasSize,
             inkPicker.pickerHsv);
 
@@ -285,7 +285,7 @@ namespace antwika::editor
             kTextColor);
 
         for (const auto bar :
-             outlineRects(pickerPlace(camera::kCanvasSize), kBorderThick))
+             getOutlineRects(getPickerPlace(camera::kCanvasSize), kBorderThick))
         {
             viewportRenderer.drawRect(bar, kTextColor);
         }
@@ -325,7 +325,7 @@ namespace antwika::editor
 
         if (activeView == map::View::Plan)
         {
-            return plan.picked()
+            return plan.isPicked()
                        ? "drag a card to carry it - write its "
                          "title and what it means on the right "
                          "- escape leaves a field"
@@ -407,7 +407,7 @@ namespace antwika::editor
     {
         meters.workRate.record(
             std::chrono::duration_cast<std::chrono::nanoseconds>(
-                clockSource.currentTime() - startedAt));
+                clockSource.getCurrentTime() - startedAt));
     }
 
 }

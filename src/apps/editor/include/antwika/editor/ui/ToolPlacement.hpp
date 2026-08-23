@@ -20,7 +20,7 @@ namespace antwika::editor
         StartOrExit,
     };
 
-    [[nodiscard]] constexpr ToolPlacement lastEnumerator(
+    [[nodiscard]] constexpr ToolPlacement getLastEnumerator(
         ToolPlacement) noexcept
     {
         return ToolPlacement::StartOrExit;

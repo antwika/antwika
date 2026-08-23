@@ -40,8 +40,8 @@ namespace antwika::app
             [&]
             {
                 std::vector<FlagSpec> table(
-                    antwika::replay::replayCliFlags().begin(),
-                    antwika::replay::replayCliFlags().end());
+                    antwika::replay::getReplayCliFlags().begin(),
+                    antwika::replay::getReplayCliFlags().end());
                 table.insert(
                     table.end(), extraFlags.begin(), extraFlags.end());
 
@@ -52,7 +52,7 @@ namespace antwika::app
 
                 if (options.helpRequested)
                 {
-                    help << antwika::cli::helpText(name, table);
+                    help << antwika::cli::getHelpText(name, table);
                     return;
                 }
 
@@ -60,7 +60,7 @@ namespace antwika::app
                 std::optional<ReplayRecorder> recorder;
                 if (options.recordPath)
                 {
-                    recordFile = antwika::replay::openReplayFile(
+                    recordFile = antwika::replay::getOpenReplayFile(
                         *options.recordPath);
                     recorder.emplace(*recordFile, *options.recordPath);
                 }
@@ -80,13 +80,13 @@ namespace antwika::app
             errors);
     }
 
-    std::vector<TickEvent> loadReplayEvents(
+    std::vector<TickEvent> getLoadReplayEvents(
         const std::optional<std::string> &replayPath,
         std::string_view fallback)
     {
         if (replayPath)
         {
-            return antwika::replay::loadReplayFile(*replayPath);
+            return antwika::replay::getLoadReplayFile(*replayPath);
         }
 
         if (fallback.empty())
@@ -94,7 +94,7 @@ namespace antwika::app
             return {};
         }
 
-        return antwika::replay::loadReplayFile(std::string(fallback));
+        return antwika::replay::getLoadReplayFile(std::string(fallback));
     }
 
 }

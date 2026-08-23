@@ -18,7 +18,7 @@ namespace antwika::testing
     {
     public:
         explicit ScratchDirectory(std::string_view prefix)
-            : where(scratchPath(prefix))
+            : where(getScratchPath(prefix))
         {
             std::filesystem::create_directories(where);
         }
@@ -35,12 +35,12 @@ namespace antwika::testing
         ScratchDirectory &operator=(const ScratchDirectory &) = delete;
         ScratchDirectory &operator=(ScratchDirectory &&) = delete;
 
-        [[nodiscard]] const std::filesystem::path &path() const noexcept
+        [[nodiscard]] const std::filesystem::path &getPath() const noexcept
         {
             return where;
         }
 
-        [[nodiscard]] std::string string() const
+        [[nodiscard]] std::string getString() const
         {
             return where.string();
         }

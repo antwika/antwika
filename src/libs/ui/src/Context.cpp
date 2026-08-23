@@ -36,7 +36,7 @@ namespace antwika::ui
         using detail::StateColors;
         using detail::Node;
 
-        Color buttonFill(const Theme &theme, ButtonState state) noexcept
+        Color getButtonFill(const Theme &theme, ButtonState state) noexcept
         {
             if (state == ButtonState::Hovered)
             {
@@ -51,16 +51,16 @@ namespace antwika::ui
             return theme.buttonIdleColor;
         }
 
-        [[nodiscard]] std::size_t panesUnder(
+        [[nodiscard]] std::size_t getPanesUnder(
             const detail::LayoutTree &tree,
             const std::size_t index,
             const std::size_t divider)
         {
             std::size_t panes = 0;
 
-            for (auto child = tree.node(index).firstChild;
+            for (auto child = tree.getNode(index).firstChild;
                  child != detail::kNoNode;
-                 child = tree.node(child).nextSibling)
+                 child = tree.getNode(child).nextSibling)
             {
                 if (child != divider)
                 {
@@ -73,16 +73,16 @@ namespace antwika::ui
 
         void requireTwoPanes(const detail::LayoutTree &tree)
         {
-            for (std::size_t index = 0; index < tree.size(); ++index)
+            for (std::size_t index = 0; index < tree.getSize(); ++index)
             {
-                const auto &node = tree.node(index);
+                const auto &node = tree.getNode(index);
 
                 if (!node.splitInfo)
                 {
                     continue;
                 }
 
-                if (panesUnder(tree, index, node.splitInfo->divider) != 2)
+                if (getPanesUnder(tree, index, node.splitInfo->divider) != 2)
                 {
                     throw UiError{
                         "antwika::ui::Context::build: a split needs "
@@ -95,9 +95,9 @@ namespace antwika::ui
         {
             OccluderRects foundRects;
 
-            for (std::size_t index = 0; index < tree.size(); ++index)
+            for (std::size_t index = 0; index < tree.getSize(); ++index)
             {
-                const auto &node = tree.node(index);
+                const auto &node = tree.getNode(index);
 
                 if (node.overlay)
                 {
@@ -130,7 +130,7 @@ namespace antwika::ui
 
     Context::~Context() = default;
 
-    const Theme &Context::theme() const noexcept
+    const Theme &Context::getTheme() const noexcept
     {
         return themeValue;
     }
@@ -177,7 +177,7 @@ namespace antwika::ui
             .widthSizing = kFitSizing,
             .heightSizing = kFitSizing,
             .text = std::string{text}, // GCOVR_EXCL_LINE
-            .textScale = antwika::gfx::encodeTextScale(
+            .textScale = antwika::gfx::getEncodeTextScale(
                 themeValue.face, themeValue.textScale),
             .textColor = color});
     }
@@ -207,7 +207,7 @@ namespace antwika::ui
             .crossAlignment = Alignment::Center,
             .padding = themeValue.buttonPadding,
             .backgroundColor =
-                spec.fillColor.value_or(buttonFill(themeValue, state)),
+                spec.fillColor.value_or(getButtonFill(themeValue, state)),
             .widgetId = spec.widgetId,
             .styleColors = style,
             .focusStyle = ring});
@@ -215,7 +215,7 @@ namespace antwika::ui
         if (wrapsText)
         {
             for (const auto line :
-                 wrapText(text, wrapColumns(themeValue, *spec.wrapWidth)))
+                 getWrapText(text, getWrapColumns(themeValue, *spec.wrapWidth)))
             {
                 label(line, themeValue.buttonTextColor);
             }
@@ -248,8 +248,8 @@ namespace antwika::ui
 
         tree->open(Node{ // GCOVR_EXCL_LINE
             .axis = Axis::Row,
-            .widthSizing = fixedSize(side),
-            .heightSizing = fixedSize(side),
+            .widthSizing = getFixedSize(side),
+            .heightSizing = getFixedSize(side),
             .crossAlignment = Alignment::Center,
             .padding = inset,
             .backgroundColor = themeValue.fieldColor});
@@ -315,7 +315,7 @@ namespace antwika::ui
             .heightSizing = kFitSizing,
             .crossAlignment = Alignment::Center,
             .padding = themeValue.buttonPadding,
-            .backgroundColor = buttonFill(themeValue, state),
+            .backgroundColor = getButtonFill(themeValue, state),
             .widgetId = spec.widgetId,
             .styleColors = style,
             .focusStyle = ring});
@@ -329,7 +329,7 @@ namespace antwika::ui
 
     void Context::spacer(Sizing alongSizing)
     {
-        const auto axis = tree->node(tree->openIndex()).axis;
+        const auto axis = tree->getNode(tree->getOpenIndex()).axis;
 
         Node node{.axis = axis}; // GCOVR_EXCL_LINE
 
@@ -349,7 +349,7 @@ namespace antwika::ui
 
     Frame Context::build()
     {
-        if (tree->openIndex() != 0)
+        if (tree->getOpenIndex() != 0)
         {
             throw UiError{
                 "antwika::ui::Context::build: a container is still open"};
@@ -373,7 +373,7 @@ namespace antwika::ui
 
         HoverTargets hoverTargets; // GCOVR_EXCL_LINE
 
-        auto commands = detail::buildDrawList(*tree, &hoverTargets);
+        auto commands = detail::createDrawList(*tree, &hoverTargets);
 
         return Frame{ // GCOVR_EXCL_LINE
             .drawList = std::move(commands),

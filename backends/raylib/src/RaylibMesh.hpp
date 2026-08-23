@@ -24,14 +24,14 @@ namespace antwika::gfx::raylib
 
         ~RaylibMesh() override;
 
-        [[nodiscard]] std::size_t vertexCount() const override;
+        [[nodiscard]] std::size_t getVertexCount() const override;
 
-        [[nodiscard]] std::size_t triangleCount() const override;
+        [[nodiscard]] std::size_t getTriangleCount() const override;
 
         [[nodiscard]] bool isOwnedBy(
             const RaylibRenderer &candidateRenderer) const noexcept;
 
-        [[nodiscard]] const ::Mesh &raw() const noexcept;
+        [[nodiscard]] const ::Mesh &getRawHandle() const noexcept;
 
         [[nodiscard]] bool isLoaded() const noexcept;
 

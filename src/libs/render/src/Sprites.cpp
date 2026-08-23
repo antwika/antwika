@@ -14,7 +14,7 @@ namespace antwika::render
 
     namespace
     {
-        [[nodiscard]] gfx::MeshData shadowSpot()
+        [[nodiscard]] gfx::MeshData getShadowSpot()
         {
             constexpr std::size_t kSpokes = 20;
             constexpr float kAcross =
@@ -69,8 +69,8 @@ namespace antwika::render
 
     void Sprites::open(gfx::IRenderer &viewportRenderer)
     {
-        figureMesh = viewportRenderer.createMesh(character::characterMesh());
-        shadowBlobMesh = viewportRenderer.createMesh(shadowSpot());
+        figureMesh = viewportRenderer.createMesh(character::getCharacterMesh());
+        shadowBlobMesh = viewportRenderer.createMesh(getShadowSpot());
     }
 
     void Sprites::drawCharacter(
@@ -85,23 +85,23 @@ namespace antwika::render
         const gfx::ITexture *const lampShadowTexture) const
     {
         const gfx::Vec3 localPosition{position.x, position.y, position.z};
-        const auto frame = character::currentFrame(posedState, tick);
+        const auto frame = character::getCurrentFrame(posedState, tick);
 
         viewportRenderer.setShaderNumber(shader, "spriteLit", 1.0F);
         viewportRenderer.setShaderVector(shader, "spriteAt", localPosition);
         viewportRenderer.setShaderVector(
             shader,
             "spriteFrom",
-            character::frameUvOffset(
+            character::getFrameUvOffset(
                 frame / character::kCharacterFrames,
                 frame % character::kCharacterFrames));
         viewportRenderer.setShaderVector(
-            shader, "spriteSpan", character::frameUvSize());
+            shader, "spriteSpan", character::getFrameUvSize());
         viewportRenderer.drawMesh(
             *figureMesh,
-            character::spriteBillboardMatrix(
+            character::getSpriteBillboardMatrix(
                 gfx::Vec3(modelMatrix * gfx::Vec4(localPosition, 1.0F)),
-                camera.view()),
+                camera.getView()),
             camera,
             gfx::MeshMaterial{
                 .texture = sheetTexture,
@@ -116,7 +116,7 @@ namespace antwika::render
         const gfx::Mat4 &modelMatrix,
         const gfx::Vec3 position) const
     {
-        auto liftMatrix = gfx::identityMatrix();
+        auto liftMatrix = gfx::getIdentityMatrix();
 
         liftMatrix[3] = gfx::Vec4(position.x, position.y, position.z, 1.0F);
         viewportRenderer.drawMesh(

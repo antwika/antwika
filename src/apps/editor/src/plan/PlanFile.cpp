@@ -36,20 +36,20 @@ namespace antwika::editor
         constexpr std::array<std::string_view, 3> kColumnKeys{
             "todo", "doing", "done"};
 
-        [[nodiscard]] nlohmann::json cardSchema()
+        [[nodiscard]] nlohmann::json getCardSchema()
         {
-            auto shape = schema::objectSchema({kTitleKey, kBodyKey});
+            auto shape = schema::getObjectSchema({kTitleKey, kBodyKey});
             shape["properties"][std::string(kTitleKey)] =
-                schema::wordSchema();
+                schema::getWordSchema();
             shape["properties"][std::string(kBodyKey)] =
-                schema::wordSchema();
+                schema::getWordSchema();
 
             return shape;
         } // GCOVR_EXCL_LINE
 
-        [[nodiscard]] nlohmann::json columnsSchema()
+        [[nodiscard]] nlohmann::json getColumnsSchema()
         {
-            auto shape = schema::objectSchema(
+            auto shape = schema::getObjectSchema(
                 {kColumnKeys[0], kColumnKeys[1], kColumnKeys[2]});
 
             for (const auto key : kColumnKeys)
@@ -57,30 +57,30 @@ namespace antwika::editor
                 auto list = nlohmann::json{};
                 list["type"] = "array";
                 list["maxItems"] = kMaxCardsPerColumn;
-                list["items"] = cardSchema();
+                list["items"] = getCardSchema();
                 shape["properties"][std::string(key)] = list;
             }
 
             return shape;
         } // GCOVR_EXCL_LINE
 
-        [[nodiscard]] nlohmann::json planSchema()
+        [[nodiscard]] nlohmann::json getPlanSchema()
         {
-            auto shape = schema::documentSchema(
+            auto shape = schema::getDocumentSchema(
                 "antwika plan",
                 {kMagicKey, schema::kSchemaVersionKey, kColumnsKey});
             shape["properties"][std::string(kMagicKey)]["const"] =
                 std::string(kPlanMagic);
             shape["properties"]
                  [std::string(schema::kSchemaVersionKey)] =
-                     schema::boundedCountSchema(kPlanVersion);
+                     schema::getBoundedCountSchema(kPlanVersion);
             shape["properties"][std::string(kColumnsKey)] =
-                columnsSchema();
+                getColumnsSchema();
 
             return shape;
         } // GCOVR_EXCL_LINE
 
-        [[nodiscard]] const schema::MigrationChain &planMigrations()
+        [[nodiscard]] const schema::MigrationChain &getPlanMigrations()
         {
             static const schema::MigrationChain chain(
                 schema::MigrationList{}, kPlanVersion);
@@ -131,7 +131,7 @@ namespace antwika::editor
         }
 
         const auto wholeDocument = schema::readVersionedDocument<PlanFileError>(
-            document, planMigrations(), schema::validatorFor<planSchema>(),
+            document, getPlanMigrations(), schema::validatorFor<getPlanSchema>(),
             kFailed);
 
         Board board;
@@ -173,9 +173,9 @@ namespace antwika::editor
             writingPath, path, "the plan");
     }
 
-    std::optional<Board> loadBoard(const std::string &path)
+    std::optional<Board> getLoadBoard(const std::string &path)
     {
-        auto inputStream = io::openToReadIfPresent(path);
+        auto inputStream = io::getOpenToReadIfPresent(path);
 
         if (!inputStream.has_value())
         {

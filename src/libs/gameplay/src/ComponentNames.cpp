@@ -104,7 +104,7 @@ namespace antwika::gameplay
                        const SpawnContext &)
                 {
                     world.add<component::Inventory>(
-                        entity, rules::startingInventory());
+                        entity, rules::getStartingInventory());
                 },
                 .claimer = claimerFor<component::Inventory>()},
             plain<component::Velocity>("component::Velocity"),
@@ -115,7 +115,7 @@ namespace antwika::gameplay
             plain<component::CarriedLight>("component::CarriedLight"),
             plain<component::FillLight>("component::FillLight")};
 
-        [[nodiscard]] const NamedComponent *lookedUp(
+        [[nodiscard]] const NamedComponent *getLookedUp(
             const std::string_view name)
         {
             const auto foundEntry = std::ranges::find(
@@ -126,7 +126,7 @@ namespace antwika::gameplay
         }
     }
 
-    std::span<const std::string_view> componentNames()
+    std::span<const std::string_view> getComponentNames()
     {
         static const std::vector<std::string_view> names = []
         {
@@ -143,9 +143,9 @@ namespace antwika::gameplay
         return names;
     }
 
-    bool componentNamed(const std::string_view name)
+    bool isComponentNamed(const std::string_view name)
     {
-        return lookedUp(name) != nullptr;
+        return getLookedUp(name) != nullptr;
     }
 
     void addComponentsNamed(
@@ -156,7 +156,7 @@ namespace antwika::gameplay
     {
         for (const auto &name : names)
         {
-            const auto *const one = lookedUp(name);
+            const auto *const one = getLookedUp(name);
 
             if (one == nullptr)
             {

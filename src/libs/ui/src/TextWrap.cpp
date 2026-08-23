@@ -7,7 +7,7 @@ namespace antwika::ui
 
     namespace
     {
-        [[nodiscard]] std::size_t pastSpaces(
+        [[nodiscard]] std::size_t getPastSpaces(
             const std::string_view run, std::size_t charIndex)
         {
             while (charIndex < run.size() && run.at(charIndex) == ' ')
@@ -18,7 +18,7 @@ namespace antwika::ui
             return charIndex;
         }
 
-        [[nodiscard]] std::string_view trimmed(
+        [[nodiscard]] std::string_view getTrimmed(
             const std::string_view piece)
         {
             return piece.substr(
@@ -30,7 +30,7 @@ namespace antwika::ui
             const std::size_t columns,
             std::vector<std::string_view> &lines)
         {
-            auto charIndex = pastSpaces(run, 0);
+            auto charIndex = getPastSpaces(run, 0);
 
             while (run.size() - charIndex > columns)
             {
@@ -44,31 +44,31 @@ namespace antwika::ui
                 }
                 else
                 {
-                    lines.push_back(trimmed(run.substr(charIndex, space)));
+                    lines.push_back(getTrimmed(run.substr(charIndex, space)));
                     charIndex += space;
                 }
 
-                charIndex = pastSpaces(run, charIndex);
+                charIndex = getPastSpaces(run, charIndex);
             }
 
-            lines.push_back(trimmed(run.substr(charIndex)));
+            lines.push_back(getTrimmed(run.substr(charIndex)));
         }
     }
 
-    std::size_t wrapColumns(
+    std::size_t getWrapColumns(
         const Theme &theme, const std::uint32_t width) noexcept
     {
         const auto sides = std::uint64_t{theme.buttonPadding} * 2;
         const auto inner =
             std::uint64_t{width} > sides ? width - sides : 0;
-        const auto advance = antwika::gfx::scaledGlyphAdvance(
-            antwika::gfx::encodeTextScale(
+        const auto advance = antwika::gfx::getScaledGlyphAdvance(
+            antwika::gfx::getEncodeTextScale(
                 theme.face, theme.textScale));
 
         return advance > 0 ? inner / advance : 0;
     }
 
-    std::vector<std::string_view> wrapText(
+    std::vector<std::string_view> getWrapText(
         const std::string_view text, const std::size_t columns)
     {
         std::vector<std::string_view> lines;

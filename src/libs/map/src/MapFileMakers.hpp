@@ -36,7 +36,7 @@ namespace antwika::map::mapfile
         return static_cast<Holds<Member> *>(record)->*Member;
     }
 
-    [[nodiscard]] inline nlohmann::json flagShape()
+    [[nodiscard]] inline nlohmann::json getFlagShape()
     {
         nlohmann::json shape;
 
@@ -50,7 +50,7 @@ namespace antwika::map::mapfile
     {
         return Field{
             .key = key,
-            .shape = &flagShape,
+            .shape = &getFlagShape,
             .valueOf = [](const void *record)
             { return nlohmann::json(memberOf<Member>(record)); },
             .setFrom = [](void *record, const nlohmann::json &json)
@@ -62,19 +62,19 @@ namespace antwika::map::mapfile
     {
         return Field{
             .key = key,
-            .shape = &cellSchema,
+            .shape = &getCellSchema,
             .valueOf = [](const void *record)
             { return jsonOf(memberOf<Member>(record)); },
             .setFrom = [](void *record, const nlohmann::json &json)
             { memberIn<Member>(record) = voxelPositionFrom(json); }};
     }
 
-    [[nodiscard]] inline nlohmann::json cellListShape()
+    [[nodiscard]] inline nlohmann::json getCellListShape()
     {
         nlohmann::json shape;
 
         shape["type"] = "array";
-        shape["items"] = cellSchema();
+        shape["items"] = getCellSchema();
 
         return shape;
     } // GCOVR_EXCL_LINE
@@ -85,7 +85,7 @@ namespace antwika::map::mapfile
     {
         return Field{
             .key = key,
-            .shape = &cellListShape,
+            .shape = &getCellListShape,
             .valueOf = [](const void *record)
             {
                 auto arrayJson = nlohmann::json::array();
@@ -98,7 +98,7 @@ namespace antwika::map::mapfile
                 return arrayJson;
             },
             .setFrom = [](void *record, const nlohmann::json &json)
-            { memberIn<Member>(record) = readCells(json); }};
+            { memberIn<Member>(record) = getReadCells(json); }};
     }
 
     template <auto Member>
@@ -106,14 +106,14 @@ namespace antwika::map::mapfile
     {
         return Field{
             .key = key,
-            .shape = &colourSchema,
+            .shape = &getColourSchema,
             .valueOf = [](const void *record)
             { return jsonOf(memberOf<Member>(record)); },
             .setFrom = [](void *record, const nlohmann::json &json)
             { memberIn<Member>(record) = colorFrom(json); }};
     }
 
-    [[nodiscard]] inline nlohmann::json textShape()
+    [[nodiscard]] inline nlohmann::json getTextShape()
     {
         nlohmann::json shape;
 
@@ -127,7 +127,7 @@ namespace antwika::map::mapfile
     {
         return Field{
             .key = key,
-            .shape = &textShape,
+            .shape = &getTextShape,
             .valueOf = [](const void *record)
             { return nlohmann::json(memberOf<Member>(record)); },
             .setFrom = [](void *record, const nlohmann::json &json)
@@ -139,14 +139,14 @@ namespace antwika::map::mapfile
     {
         return Field{
             .key = key,
-            .shape = &tileSchema,
+            .shape = &getTileSchema,
             .valueOf = [](const void *record)
-            { return writtenTile(memberOf<Member>(record)); },
+            { return getWrittenTile(memberOf<Member>(record)); },
             .setFrom = [](void *record, const nlohmann::json &json)
-            { memberIn<Member>(record) = readTile(json); }};
+            { memberIn<Member>(record) = getReadTile(json); }};
     }
 
-    [[nodiscard]] inline nlohmann::json textListShape()
+    [[nodiscard]] inline nlohmann::json getTextListShape()
     {
         nlohmann::json shape;
 
@@ -162,7 +162,7 @@ namespace antwika::map::mapfile
     {
         return Field{
             .key = key,
-            .shape = &textListShape,
+            .shape = &getTextListShape,
             .valueOf = [](const void *record)
             { return nlohmann::json(memberOf<Member>(record)); },
             .setFrom = [](void *record, const nlohmann::json &json)
@@ -178,13 +178,13 @@ namespace antwika::map::mapfile
             }};
     }
 
-    [[nodiscard]] inline nlohmann::json fixedPlaceShape()
+    [[nodiscard]] inline nlohmann::json getFixedPlaceShape()
     {
         nlohmann::json shape;
 
         shape["type"] = "array";
         shape["items"] =
-            wholeSchema(-kMaxCameraCoord, kMaxCameraCoord);
+            getWholeSchema(-kMaxCameraCoord, kMaxCameraCoord);
         shape["minItems"] = kAxisCount;
         shape["maxItems"] = kAxisCount;
 
@@ -197,7 +197,7 @@ namespace antwika::map::mapfile
     {
         return Field{
             .key = key,
-            .shape = &fixedPlaceShape,
+            .shape = &getFixedPlaceShape,
             .valueOf = [](const void *record)
             {
                 const auto place = memberOf<Member>(record);
@@ -210,18 +210,18 @@ namespace antwika::map::mapfile
             .setFrom = [](void *record, const nlohmann::json &json)
             {
                 memberIn<Member>(record) = gfx::Vec3{
-                    fromFixed(json[0].get<std::int64_t>()),
-                    fromFixed(json[1].get<std::int64_t>()),
-                    fromFixed(json[2].get<std::int64_t>())};
+                    getFromFixed(json[0].get<std::int64_t>()),
+                    getFromFixed(json[1].get<std::int64_t>()),
+                    getFromFixed(json[2].get<std::int64_t>())};
             }};
     }
 
-    [[nodiscard]] inline nlohmann::json uniqueTileListShape()
+    [[nodiscard]] inline nlohmann::json getUniqueTileListShape()
     {
         nlohmann::json shape;
 
         shape["type"] = "array";
-        shape["items"] = tileSchema();
+        shape["items"] = getTileSchema();
         shape["uniqueItems"] = true;
 
         return shape;
@@ -233,14 +233,14 @@ namespace antwika::map::mapfile
     {
         return Field{
             .key = key,
-            .shape = &uniqueTileListShape,
+            .shape = &getUniqueTileListShape,
             .valueOf = [](const void *record)
             {
                 auto arrayJson = nlohmann::json::array();
 
                 for (const auto tile : memberOf<Member>(record))
                 {
-                    arrayJson.push_back(writtenTile(tile));
+                    arrayJson.push_back(getWrittenTile(tile));
                 }
 
                 return arrayJson;
@@ -253,7 +253,7 @@ namespace antwika::map::mapfile
 
                 for (const auto &tileJson : json)
                 {
-                    tiles.push_back(readTile(tileJson));
+                    tiles.push_back(getReadTile(tileJson));
                 }
             }};
     }
@@ -269,7 +269,7 @@ namespace antwika::map::mapfile
                 nlohmann::json shape;
 
                 shape["type"] = "array";
-                shape["items"] = wholeSchema(Least, Most);
+                shape["items"] = getWholeSchema(Least, Most);
                 shape["minItems"] = 2;
                 shape["maxItems"] = 2;
 
@@ -290,7 +290,7 @@ namespace antwika::map::mapfile
             }};
     }
 
-    [[nodiscard]] inline nlohmann::json maybeTileListShape()
+    [[nodiscard]] inline nlohmann::json getMaybeTileListShape()
     {
         nlohmann::json nullShape;
 
@@ -299,7 +299,7 @@ namespace antwika::map::mapfile
         nlohmann::json shape;
 
         shape["type"] = "array";
-        shape["items"]["oneOf"] = {tileSchema(), nullShape};
+        shape["items"]["oneOf"] = {getTileSchema(), nullShape};
 
         return shape;
     } // GCOVR_EXCL_LINE
@@ -310,7 +310,7 @@ namespace antwika::map::mapfile
     {
         return Field{
             .key = key,
-            .shape = &maybeTileListShape,
+            .shape = &getMaybeTileListShape,
             .valueOf = [](const void *record)
             {
                 auto arrayJson = nlohmann::json::array();
@@ -318,7 +318,7 @@ namespace antwika::map::mapfile
                 for (const auto tile : memberOf<Member>(record))
                 {
                     arrayJson.push_back(
-                        tile.has_value() ? writtenTile(*tile)
+                        tile.has_value() ? getWrittenTile(*tile)
                                          : nlohmann::json());
                 }
 
@@ -336,7 +336,7 @@ namespace antwika::map::mapfile
                         tileJson.is_null()
                             ? std::optional<tilemap::Tile>{}
                             : std::optional<tilemap::Tile>{
-                                  readTile(tileJson)});
+                                  getReadTile(tileJson)});
                 }
             }};
     }
@@ -347,7 +347,7 @@ namespace antwika::map::mapfile
     {
         return Field{
             .key = key,
-            .shape = &fixedPlaceShape,
+            .shape = &getFixedPlaceShape,
             .valueOf = [](const void *record)
             {
                 const auto place = memberOf<Outer>(record).*Inner;
@@ -360,9 +360,9 @@ namespace antwika::map::mapfile
             .setFrom = [](void *record, const nlohmann::json &json)
             {
                 memberIn<Outer>(record).*Inner = gfx::Vec3{
-                    fromFixed(json[0].get<std::int64_t>()),
-                    fromFixed(json[1].get<std::int64_t>()),
-                    fromFixed(json[2].get<std::int64_t>())};
+                    getFromFixed(json[0].get<std::int64_t>()),
+                    getFromFixed(json[1].get<std::int64_t>()),
+                    getFromFixed(json[2].get<std::int64_t>())};
             }};
     }
 
@@ -374,7 +374,7 @@ namespace antwika::map::mapfile
             .key = key,
             .shape = []
             {
-                return wholeSchema(
+                return getWholeSchema(
                     -kMaxCameraCoord, kMaxCameraCoord);
             },
             .valueOf = [](const void *record)
@@ -385,11 +385,11 @@ namespace antwika::map::mapfile
             .setFrom = [](void *record, const nlohmann::json &json)
             {
                 memberIn<Outer>(record).*Inner =
-                    fromFixed(json.get<std::int64_t>());
+                    getFromFixed(json.get<std::int64_t>());
             }};
     }
 
-    [[nodiscard]] inline nlohmann::json orNullShape(
+    [[nodiscard]] inline nlohmann::json getOrNullShape(
         nlohmann::json shape)
     {
         nlohmann::json nullShape;
@@ -424,7 +424,7 @@ namespace antwika::map::mapfile
     {
         return Field{
             .key = key,
-            .shape = [] { return wholeSchema(Least, Most); },
+            .shape = [] { return getWholeSchema(Least, Most); },
             .valueOf = [](const void *record)
             { return nlohmann::json(memberOf<Member>(record)); },
             .setFrom = [](void *record, const nlohmann::json &json)
@@ -487,7 +487,7 @@ namespace antwika::map::mapfile
                 nlohmann::json shape;
 
                 shape["type"] = "array";
-                shape["items"] = tileSchema();
+                shape["items"] = getTileSchema();
                 shape["minItems"] = Least;
                 shape["maxItems"] = Most;
 
@@ -499,7 +499,7 @@ namespace antwika::map::mapfile
 
                 for (const auto tile : memberOf<Member>(record))
                 {
-                    arrayJson.push_back(writtenTile(tile));
+                    arrayJson.push_back(getWrittenTile(tile));
                 }
 
                 return arrayJson;
@@ -512,7 +512,7 @@ namespace antwika::map::mapfile
 
                 for (const auto &tileJson : json)
                 {
-                    tiles.push_back(readTile(tileJson));
+                    tiles.push_back(getReadTile(tileJson));
                 }
             }};
     }
@@ -533,7 +533,7 @@ namespace antwika::map::mapfile
             .valueOf = [](const void *record)
             {
                 return nlohmann::json(
-                    std::string(Names.name(memberOf<Member>(record))));
+                    std::string(Names.getName(memberOf<Member>(record))));
             },
             .setFrom = [](void *record, const nlohmann::json &json)
             {

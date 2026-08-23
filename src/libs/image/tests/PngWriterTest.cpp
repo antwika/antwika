@@ -20,7 +20,7 @@ using antwika::gfx::Size;
 
 namespace
 {
-    Bitmap twoByTwo()
+    Bitmap getTwoByTwo()
     {
         return Bitmap{
             .size = {.width = 2, .height = 2},
@@ -29,7 +29,7 @@ namespace
                 0,   0,   255, 0,   17, 34,  51,  128}};
     }
 
-    std::string writtenBytes(const Bitmap &bitmap)
+    std::string getWrittenBytes(const Bitmap &bitmap)
     {
         std::ostringstream outputStream;
         PngWriter{}.write(bitmap, outputStream);
@@ -39,16 +39,16 @@ namespace
 
 TEST(PngWriterTest, Write_ProducesBytesAPngReaderDecodesUnchanged)
 {
-    const auto original = twoByTwo();
+    const auto original = getTwoByTwo();
 
-    std::istringstream inputStream(writtenBytes(original));
+    std::istringstream inputStream(getWrittenBytes(original));
 
     EXPECT_EQ(PngReader{}.read(inputStream), original);
 }
 
 TEST(PngWriterTest, Write_StartsWithThePngSignature)
 {
-    const auto bytes = writtenBytes(twoByTwo());
+    const auto bytes = getWrittenBytes(getTwoByTwo());
 
     ASSERT_GE(bytes.size(), 8U);
     EXPECT_EQ(
@@ -69,7 +69,7 @@ TEST(PngWriterTest, Write_RoundTripsEveryByteOfALargerImage)
         originalBitmap.pixels.push_back(static_cast<std::uint8_t>(index % 256));
     }
 
-    std::istringstream inputStream(writtenBytes(originalBitmap));
+    std::istringstream inputStream(getWrittenBytes(originalBitmap));
 
     EXPECT_EQ(PngReader{}.read(inputStream), originalBitmap);
 }
@@ -114,7 +114,7 @@ TEST(PngWriterTest, Write_ThrowsWhenTheStreamWillNotTakeTheBytes)
     std::ostringstream outputStream;
     outputStream.setstate(std::ios::badbit);
 
-    EXPECT_THROW(PngWriter{}.write(twoByTwo(), outputStream), GfxError);
+    EXPECT_THROW(PngWriter{}.write(getTwoByTwo(), outputStream), GfxError);
 }
 
 TEST(PngWriterTest, Write_SaysTheStreamWasWhatFailed)
@@ -124,7 +124,7 @@ TEST(PngWriterTest, Write_SaysTheStreamWasWhatFailed)
 
     try
     {
-        PngWriter{}.write(twoByTwo(), outputStream);
+        PngWriter{}.write(getTwoByTwo(), outputStream);
         FAIL() << "expected a GfxError";
     }
     catch (const GfxError &error)

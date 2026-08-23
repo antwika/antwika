@@ -16,7 +16,7 @@ namespace antwika::input
         void publish(PointerHint hint) noexcept;
 
         [[nodiscard]] std::optional<PointerHint>
-        latest() const noexcept;
+        getLatest() const noexcept;
 
     private:
         std::optional<PointerHint> latestHint;

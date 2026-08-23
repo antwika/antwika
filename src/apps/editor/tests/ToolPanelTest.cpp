@@ -17,22 +17,22 @@ namespace
 {
 
     using antwika::voxel::Facing;
-    using antwika::editor::facingWidget;
+    using antwika::editor::getFacingWidget;
     using antwika::editor::iconOf;
     using antwika::voxel::kEveryKind;
     using antwika::editor::kEveryPaint;
     using antwika::editor::kEveryToolButton;
     using antwika::editor::kIconSide;
-    using antwika::editor::kindWidget;
+    using antwika::editor::getKindWidget;
     using antwika::editor::kMarkedFacings;
     using antwika::editor::kMarkedStairHalves;
     using antwika::voxel::Kind;
     using antwika::voxel::StairHalf;
-    using antwika::editor::levelWidget;
+    using antwika::editor::getLevelWidget;
     using antwika::map::Paint;
-    using antwika::editor::paintWidget;
+    using antwika::editor::getPaintWidget;
     using antwika::editor::ToolButton;
-    using antwika::editor::toolWidget;
+    using antwika::editor::getToolWidget;
     using antwika::input::Key;
 
     TEST(ToolPanelTest, IconOf_GivesEveryButtonACellOfItsOwn)
@@ -125,27 +125,27 @@ namespace
 
         for (const auto which : kEveryToolButton)
         {
-            EXPECT_TRUE(seenWidgets.insert(toolWidget(which)).second);
+            EXPECT_TRUE(seenWidgets.insert(getToolWidget(which)).second);
         }
 
         for (const auto which : kEveryPaint)
         {
-            EXPECT_TRUE(seenWidgets.insert(paintWidget(which)).second);
+            EXPECT_TRUE(seenWidgets.insert(getPaintWidget(which)).second);
         }
 
         for (const auto which : kEveryKind)
         {
-            EXPECT_TRUE(seenWidgets.insert(kindWidget(which)).second);
+            EXPECT_TRUE(seenWidgets.insert(getKindWidget(which)).second);
         }
 
         for (const auto which : kMarkedFacings)
         {
-            EXPECT_TRUE(seenWidgets.insert(facingWidget(which)).second);
+            EXPECT_TRUE(seenWidgets.insert(getFacingWidget(which)).second);
         }
 
         for (const auto which : kMarkedStairHalves)
         {
-            EXPECT_TRUE(seenWidgets.insert(levelWidget(which)).second);
+            EXPECT_TRUE(seenWidgets.insert(getLevelWidget(which)).second);
         }
 
         EXPECT_EQ(seenWidgets.size(), 33U);
@@ -190,8 +190,8 @@ namespace
 
     TEST(ToolPanelTest, Icons_HoldACellForEveryButtonDrawn)
     {
-        const auto sheet = antwika::image::readPngFile(
-            antwika::io::assetPath(
+        const auto sheet = antwika::image::getReadPngFile(
+            antwika::io::getAssetPath(
                 std::string("icons-16.png")),
             "antwika_editor_tests");
         const auto cells =
@@ -222,7 +222,7 @@ TEST(ToolPanelTest, ToolButtonActive_LightsTheButtonForTheChosenTool)
         }
 
         EXPECT_TRUE(
-            antwika::editor::toolButtonActive(
+            antwika::editor::isToolButtonActive(
                 row.button, *row.tool, ToolToggles{}));
     }
 }
@@ -240,7 +240,7 @@ TEST(ToolPanelTest, ToolButtonActive_LeavesTheOtherToolButtonsDark)
         }
 
         EXPECT_FALSE(
-            antwika::editor::toolButtonActive(
+            antwika::editor::isToolButtonActive(
                 row.button, Tool::Brush, ToolToggles{}));
     }
 }
@@ -254,7 +254,7 @@ TEST(ToolPanelTest, ToolButtonActive_KeepsRuleLinesOffTheToolButtons)
     const ToolToggles ruleLinesToggles{.showRuleLines = true};
 
     EXPECT_TRUE(
-        antwika::editor::toolButtonActive(
+        antwika::editor::isToolButtonActive(
             ToolButton::RuleLines, Tool::Brush, ruleLinesToggles));
 
     for (const auto button :
@@ -265,7 +265,7 @@ TEST(ToolPanelTest, ToolButtonActive_KeepsRuleLinesOffTheToolButtons)
           ToolButton::Water})
     {
         EXPECT_FALSE(
-            antwika::editor::toolButtonActive(
+            antwika::editor::isToolButtonActive(
                 button, Tool::Brush, ruleLinesToggles));
     }
 }
@@ -277,15 +277,15 @@ TEST(ToolPanelTest, ToolButtonActive_ReadsEachToggleFromItsOwnFlag)
     using antwika::map::Tool;
 
     EXPECT_TRUE(
-        antwika::editor::toolButtonActive(
+        antwika::editor::isToolButtonActive(
             ToolButton::FreeLook, Tool::Brush,
             ToolToggles{.freeLook = true}));
     EXPECT_TRUE(
-        antwika::editor::toolButtonActive(
+        antwika::editor::isToolButtonActive(
             ToolButton::Lighting, Tool::Brush,
             ToolToggles{.lighting = true}));
     EXPECT_FALSE(
-        antwika::editor::toolButtonActive(
+        antwika::editor::isToolButtonActive(
             ToolButton::FreeLook, Tool::Brush,
             ToolToggles{.lighting = true}));
 }

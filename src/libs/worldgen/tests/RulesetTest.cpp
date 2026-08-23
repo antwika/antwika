@@ -30,7 +30,7 @@ using antwika::worldgen::WorldgenError;
 
 namespace
 {
-    Ruleset plainRuleset()
+    Ruleset getPlainRuleset()
     {
         Ruleset ruleset;
 
@@ -104,7 +104,7 @@ namespace
 
 TEST(RulesetTest, FaultsIn_SaysNothingOfARulesetABlockCanBeGrownBy)
 {
-    EXPECT_TRUE(faultsIn(plainRuleset()).empty());
+    EXPECT_TRUE(faultsIn(getPlainRuleset()).empty());
 }
 
 TEST(RulesetTest, FaultsIn_NamesARulesetWithNoPrototypeInIt)
@@ -117,7 +117,7 @@ TEST(RulesetTest, FaultsIn_NamesARulesetWithNoPrototypeInIt)
 
 TEST(RulesetTest, FaultsIn_NamesARampWithNoWayAbout)
 {
-    Ruleset ruleset = plainRuleset();
+    Ruleset ruleset = getPlainRuleset();
     ruleset.prototypes[3].facing = Facing::Any;
 
     EXPECT_TRUE(holdsFault(ruleset, RulesetFault::RampWithoutFacing));
@@ -125,7 +125,7 @@ TEST(RulesetTest, FaultsIn_NamesARampWithNoWayAbout)
 
 TEST(RulesetTest, FaultsIn_NamesAFaceNoPrototypeMayStandAgainst)
 {
-    Ruleset ruleset = plainRuleset();
+    Ruleset ruleset = getPlainRuleset();
     ruleset.prototypes[2].sockets[static_cast<std::size_t>(Face::East)] =
         Socket::NeedsLanding;
 
@@ -195,7 +195,7 @@ TEST(RulesetTest, FaultsIn_NamesABottomNoTopCarries)
 
 TEST(RulesetTest, FaultsIn_NamesARoleNoPrototypeWears)
 {
-    Ruleset ruleset = plainRuleset();
+    Ruleset ruleset = getPlainRuleset();
     ruleset.prototypes[3].roles = 0;
 
     EXPECT_TRUE(holdsFault(ruleset, RulesetFault::RoleWornByNoPrototype));
@@ -203,7 +203,7 @@ TEST(RulesetTest, FaultsIn_NamesARoleNoPrototypeWears)
 
 TEST(RulesetTest, FaultsIn_NamesARulesetWithNoDistrictInIt)
 {
-    Ruleset ruleset = plainRuleset();
+    Ruleset ruleset = getPlainRuleset();
     ruleset.districts.clear();
 
     EXPECT_TRUE(holdsFault(ruleset, RulesetFault::NoDistricts));
@@ -211,7 +211,7 @@ TEST(RulesetTest, FaultsIn_NamesARulesetWithNoDistrictInIt)
 
 TEST(RulesetTest, FaultsIn_NamesDistrictsThatDoNotRiseToTheTop)
 {
-    Ruleset ruleset = plainRuleset();
+    Ruleset ruleset = getPlainRuleset();
     ruleset.districts.front().untilShare = 60;
 
     EXPECT_TRUE(holdsFault(ruleset, RulesetFault::DistrictsDoNotRise));
@@ -225,7 +225,7 @@ TEST(RulesetTest, FaultsIn_NamesDistrictsThatDoNotRiseToTheTop)
 
 TEST(RulesetTest, FaultsIn_NamesADistrictWantingOneThingForEveryPrototype)
 {
-    Ruleset ruleset = plainRuleset();
+    Ruleset ruleset = getPlainRuleset();
     ruleset.districts.front().desire = {1};
 
     EXPECT_TRUE(holdsFault(ruleset, RulesetFault::DistrictMissizes));
@@ -233,7 +233,7 @@ TEST(RulesetTest, FaultsIn_NamesADistrictWantingOneThingForEveryPrototype)
 
 TEST(RulesetTest, FaultsIn_NamesADistrictThatWantsNothingAtAll)
 {
-    Ruleset ruleset = plainRuleset();
+    Ruleset ruleset = getPlainRuleset();
     ruleset.districts.front().desire = {0, 0, 0, 0};
 
     EXPECT_TRUE(holdsFault(ruleset, RulesetFault::DistrictAllowsNothing));
@@ -274,7 +274,7 @@ TEST(RulesetTest, IsDemand_NamesOnlyTheSocketsAskingToBeHeldUp)
 
 TEST(RulesetTest, TableAlong_HoldsOneTableForAWayAboutRatherThanForALink)
 {
-    const CompiledRuleset compiledRuleset(plainRuleset());
+    const CompiledRuleset compiledRuleset(getPlainRuleset());
 
     EXPECT_EQ(
         compiledRuleset.sharedTableAlong(Axis::Across).get(),
@@ -286,10 +286,10 @@ TEST(RulesetTest, TableAlong_HoldsOneTableForAWayAboutRatherThanForALink)
 
 TEST(RulesetTest, TableAlong_RefusesASolidAboveAir)
 {
-    const CompiledRuleset compiledRuleset(plainRuleset());
+    const CompiledRuleset compiledRuleset(getPlainRuleset());
 
-    EXPECT_FALSE(compiledRuleset.tableAlong(Axis::Upright).compatible(0, 2));
-    EXPECT_TRUE(compiledRuleset.tableAlong(Axis::Upright).compatible(2, 1));
+    EXPECT_FALSE(compiledRuleset.tableAlong(Axis::Upright).isCompatible(0, 2));
+    EXPECT_TRUE(compiledRuleset.tableAlong(Axis::Upright).isCompatible(2, 1));
 }
 
 TEST(RulesetTest, CompiledRuleset_TurnsAwayARulesetWithFaultsInIt)
@@ -299,40 +299,40 @@ TEST(RulesetTest, CompiledRuleset_TurnsAwayARulesetWithFaultsInIt)
 
 TEST(RulesetTest, Matching_NamesEveryPrototypeLaidOutAsAKind)
 {
-    const CompiledRuleset compiledRuleset(plainRuleset());
+    const CompiledRuleset compiledRuleset(getPlainRuleset());
 
-    const auto stones = compiledRuleset.matching(Kind::Normal, Facing::Any);
+    const auto stones = compiledRuleset.getMatching(Kind::Normal, Facing::Any);
     ASSERT_EQ(stones.size(), 1U);
     EXPECT_EQ(stones.front(), 2U);
 
-    EXPECT_EQ(compiledRuleset.matching(Kind::Ramp, Facing::East).size(), 1U);
-    EXPECT_TRUE(compiledRuleset.matching(Kind::Ramp, Facing::West).empty());
-    EXPECT_EQ(compiledRuleset.matching(Kind::Ramp, Facing::Any).size(), 1U);
+    EXPECT_EQ(compiledRuleset.getMatching(Kind::Ramp, Facing::East).size(), 1U);
+    EXPECT_TRUE(compiledRuleset.getMatching(Kind::Ramp, Facing::West).empty());
+    EXPECT_EQ(compiledRuleset.getMatching(Kind::Ramp, Facing::Any).size(), 1U);
 }
 
 TEST(RulesetTest, Wearing_NamesEveryPrototypeWearingARole)
 {
-    const CompiledRuleset compiledRuleset(plainRuleset());
+    const CompiledRuleset compiledRuleset(getPlainRuleset());
 
-    ASSERT_EQ(compiledRuleset.wearing(Role::Bear).size(), 1U);
-    EXPECT_EQ(compiledRuleset.wearing(Role::Bear).front(), 2U);
+    ASSERT_EQ(compiledRuleset.getWearing(Role::Bear).size(), 1U);
+    EXPECT_EQ(compiledRuleset.getWearing(Role::Bear).front(), 2U);
     EXPECT_TRUE(compiledRuleset.wears(2, Role::Land));
     EXPECT_FALSE(compiledRuleset.wears(0, Role::Land));
 }
 
 TEST(RulesetTest, At_TurnsAwayAPrototypeTheRulesetHasNot)
 {
-    const CompiledRuleset compiledRuleset(plainRuleset());
+    const CompiledRuleset compiledRuleset(getPlainRuleset());
 
     EXPECT_THROW(
-        (void)compiledRuleset.at(compiledRuleset.size()), WorldgenError);
-    EXPECT_EQ(compiledRuleset.size(), 4U);
-    EXPECT_EQ(compiledRuleset.source().prototypes.size(), 4U);
+        (void)compiledRuleset.getEntryAt(compiledRuleset.getSize()), WorldgenError);
+    EXPECT_EQ(compiledRuleset.getSize(), 4U);
+    EXPECT_EQ(compiledRuleset.getSource().prototypes.size(), 4U);
 }
 
 TEST(RulesetTest, DistrictOf_SharesTheHeightOutBetweenTheDistricts)
 {
-    Ruleset ruleset = plainRuleset();
+    Ruleset ruleset = getPlainRuleset();
     ruleset.districts = {
         District{.name = "low", .untilShare = 50, .desire = {1, 1, 1, 1}},
         District{.name = "high", .untilShare = 100, .desire = {1, 1, 1, 1}}};
@@ -348,7 +348,7 @@ TEST(RulesetTest, DistrictOf_SharesTheHeightOutBetweenTheDistricts)
 
 TEST(RulesetTest, DistrictOf_HoldsALevelOutsideTheChunkToTheNearestOne)
 {
-    const CompiledRuleset compiledRuleset(plainRuleset());
+    const CompiledRuleset compiledRuleset(getPlainRuleset());
     constexpr ChunkShape shape{.height = 8};
 
     EXPECT_EQ(compiledRuleset.districtOf(shape, -4), 0U);
@@ -360,7 +360,7 @@ TEST(RulesetTest, DistrictOf_HoldsALevelOutsideTheChunkToTheNearestOne)
 
 TEST(RulesetTest, DesireIn_TurnsAwayADistrictTheRulesetHasNot)
 {
-    const CompiledRuleset compiledRuleset(plainRuleset());
+    const CompiledRuleset compiledRuleset(getPlainRuleset());
 
     EXPECT_EQ(compiledRuleset.desireIn(0).size(), 4U);
     EXPECT_THROW((void)compiledRuleset.desireIn(1), WorldgenError);

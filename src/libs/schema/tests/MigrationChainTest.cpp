@@ -22,18 +22,18 @@ using antwika::schema::SchemaVersionError;
 
 namespace
 {
-    std::shared_ptr<const IMigration> step(
+    std::shared_ptr<const IMigration> getStep(
         std::uint32_t fromVersion, std::uint32_t toVersion, std::string label)
     {
         return std::make_shared<const FakeTrailMigration>(
             fromVersion, toVersion, std::move(label));
     }
 
-    MigrationChain chainToThree()
+    MigrationChain getChainToThree()
     {
         MigrationList migrations;
-        migrations.push_back(step(1, 2, "one-to-two"));
-        migrations.push_back(step(2, 3, "two-to-three"));
+        migrations.push_back(getStep(1, 2, "one-to-two"));
+        migrations.push_back(getStep(2, 3, "two-to-three"));
         return MigrationChain(std::move(migrations), 3);
     }
 }
@@ -43,7 +43,7 @@ TEST(MigrationChainTest, Migrate_StepsThroughEveryVersionInOrder)
     nlohmann::json document;
     document["version"] = 1;
 
-    chainToThree().migrate(document);
+    getChainToThree().migrate(document);
 
     EXPECT_EQ(document["version"], 3);
     EXPECT_EQ(
@@ -56,7 +56,7 @@ TEST(MigrationChainTest, Migrate_StartsFromTheStatedVersion)
     nlohmann::json document;
     document["version"] = 2;
 
-    chainToThree().migrate(document);
+    getChainToThree().migrate(document);
 
     EXPECT_EQ(document["version"], 3);
     EXPECT_EQ(document["trail"], nlohmann::json({"two-to-three"}));
@@ -66,7 +66,7 @@ TEST(MigrationChainTest, Migrate_StartsFromOneWithNoVersion)
 {
     nlohmann::json document = nlohmann::json::object();
 
-    chainToThree().migrate(document);
+    getChainToThree().migrate(document);
 
     EXPECT_EQ(document["version"], 3);
     EXPECT_EQ(
@@ -80,7 +80,7 @@ TEST(MigrationChainTest, Migrate_LeavesACurrentDocumentAlone)
     document["version"] = 3;
     document["kept"] = "as it was";
 
-    chainToThree().migrate(document);
+    getChainToThree().migrate(document);
 
     EXPECT_EQ(document["version"], 3);
     EXPECT_EQ(document["kept"], "as it was");
@@ -90,7 +90,7 @@ TEST(MigrationChainTest, Migrate_LeavesACurrentDocumentAlone)
 TEST(MigrationChainTest, Migrate_ReportsAGapWithBothVersions)
 {
     MigrationList migrations;
-    migrations.push_back(step(1, 2, "one-to-two"));
+    migrations.push_back(getStep(1, 2, "one-to-two"));
     const MigrationChain chain(std::move(migrations), 3);
 
     nlohmann::json document;
@@ -117,7 +117,7 @@ TEST(MigrationChainTest, Migrate_RefusesANewerDocument)
 
     try
     {
-        chainToThree().migrate(document);
+        getChainToThree().migrate(document);
         FAIL() << "expected a SchemaVersionError";
     }
     catch (const SchemaVersionError &error)
@@ -136,7 +136,7 @@ TEST(MigrationChainTest, Migrate_RefusesATooOldVersion)
 
     try
     {
-        chainToThree().migrate(document);
+        getChainToThree().migrate(document);
         FAIL() << "expected a SchemaVersionError";
     }
     catch (const SchemaVersionError &error)
@@ -155,14 +155,14 @@ TEST(MigrationChainTest, Migrate_RefusesAnUnreadableVersion)
     nlohmann::json document;
     document["version"] = "two";
 
-    EXPECT_THROW(chainToThree().migrate(document), SchemaVersionError);
+    EXPECT_THROW(getChainToThree().migrate(document), SchemaVersionError);
 }
 
 TEST(MigrationChainTest, Migrate_LeavesANonObjectAlone)
 {
     nlohmann::json document = nlohmann::json::array({1, 2});
 
-    chainToThree().migrate(document);
+    getChainToThree().migrate(document);
 
     EXPECT_EQ(document, nlohmann::json::array({1, 2}));
 }
@@ -170,7 +170,7 @@ TEST(MigrationChainTest, Migrate_LeavesANonObjectAlone)
 TEST(MigrationChainTest, Migrate_RefusesAMultiStepMigration)
 {
     MigrationList migrations;
-    migrations.push_back(step(1, 3, "one-to-three"));
+    migrations.push_back(getStep(1, 3, "one-to-three"));
 
     try
     {
@@ -188,8 +188,8 @@ TEST(MigrationChainTest, Migrate_RefusesAMultiStepMigration)
 TEST(MigrationChainTest, Migrate_RefusesTwoStepsFromOneVersion)
 {
     MigrationList migrations;
-    migrations.push_back(step(1, 2, "one-to-two"));
-    migrations.push_back(step(1, 2, "one-to-two-again"));
+    migrations.push_back(getStep(1, 2, "one-to-two"));
+    migrations.push_back(getStep(1, 2, "one-to-two-again"));
 
     try
     {
@@ -209,7 +209,7 @@ TEST(MigrationChainTest, Migrate_RefusesTwoStepsFromOneVersion)
 TEST(MigrationChainTest, Migrate_AcceptsACallersOwnVersionKey)
 {
     MigrationList migrations;
-    migrations.push_back(step(1, 2, "one-to-two"));
+    migrations.push_back(getStep(1, 2, "one-to-two"));
     const MigrationChain chain(
         std::move(migrations), 2, "schemaVersion");
 

@@ -18,11 +18,11 @@ namespace antwika::sound
 
         virtual FrameCount advance(FrameCount frames) = 0;
 
-        [[nodiscard]] virtual WaveFormat format() const = 0;
+        [[nodiscard]] virtual WaveFormat getFormat() const = 0;
 
-        [[nodiscard]] virtual FrameCount bufferFrames() const = 0;
+        [[nodiscard]] virtual FrameCount getBufferFrames() const = 0;
 
-        [[nodiscard]] virtual FrameIndex framesPlayed() const = 0;
+        [[nodiscard]] virtual FrameIndex getFramesPlayed() const = 0;
     };
 
 }

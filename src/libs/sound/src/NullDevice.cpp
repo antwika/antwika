@@ -49,17 +49,17 @@ namespace antwika::sound
         return doneFrames;
     }
 
-    WaveFormat NullDevice::format() const
+    WaveFormat NullDevice::getFormat() const
     {
         return wave;
     }
 
-    FrameCount NullDevice::bufferFrames() const
+    FrameCount NullDevice::getBufferFrames() const
     {
         return bufferCount;
     }
 
-    FrameIndex NullDevice::framesPlayed() const
+    FrameIndex NullDevice::getFramesPlayed() const
     {
         return playedIndex;
     }

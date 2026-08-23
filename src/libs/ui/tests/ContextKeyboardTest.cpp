@@ -26,12 +26,12 @@ using antwika::gfx::Size;
 using antwika::ui::Context;
 using antwika::ui::DrawList;
 using antwika::ui::FillRect;
-using antwika::ui::fixedSize;
+using antwika::ui::getFixedSize;
 using antwika::ui::Key;
 using antwika::ui::Keyboard;
 using antwika::widget::kNoWidget;
 using antwika::ui::Pointer;
-using antwika::ui::scaledTheme;
+using antwika::ui::getScaledTheme;
 using antwika::ui::Theme;
 using antwika::widget::WidgetId;
 
@@ -49,7 +49,7 @@ namespace
 
     constexpr Point kOnTheButtonPoint{.x = 5, .y = 4};
 
-    Theme plainTheme(std::uint32_t thickness)
+    Theme getPlainTheme(std::uint32_t thickness)
     {
         return Theme{
             .focusRingColor = kRingColor,
@@ -60,7 +60,7 @@ namespace
             .focusRingThickness = thickness};
     }
 
-    DrawList ringAround(Rect boxRect, std::uint32_t thickness)
+    DrawList getRingAround(Rect boxRect, std::uint32_t thickness)
     {
         const auto ringHeight = std::min(thickness, boxRect.size.height);
         const auto ringWidth = std::min(thickness, boxRect.size.width);
@@ -107,10 +107,10 @@ namespace
 
 TEST(ContextKeyboardTest, Context_DrawsTheSameThingWithoutAKeyboard)
 {
-    Context bareContext{kCanvasSize, plainTheme(2)};
+    Context bareContext{kCanvasSize, getPlainTheme(2)};
     bareContext.button("ab", {.widgetId = kOneWidget});
 
-    Context keyedContext{kCanvasSize, plainTheme(2), Pointer{}, Keyboard{}};
+    Context keyedContext{kCanvasSize, getPlainTheme(2), Pointer{}, Keyboard{}};
     keyedContext.button("ab", {.widgetId = kOneWidget});
 
     const auto expectedFrame = bareContext.build();
@@ -126,7 +126,7 @@ TEST(ContextKeyboardTest, Context_TabFocusesTheFirstButton)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(2),
+        getPlainTheme(2),
         Pointer{},
         Keyboard{.keys = {Key::FocusNext}}};
 
@@ -140,7 +140,7 @@ TEST(ContextKeyboardTest, Context_TabCarriesOnFromTheFocusItWasGiven)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(2),
+        getPlainTheme(2),
         Pointer{},
         Keyboard{.keys = {Key::FocusNext}},
         kOneWidget};
@@ -155,7 +155,7 @@ TEST(ContextKeyboardTest, Context_SkipsAButtonNothingCanName)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(2),
+        getPlainTheme(2),
         Pointer{},
         Keyboard{.keys = {Key::FocusNext}}};
 
@@ -169,7 +169,7 @@ TEST(ContextKeyboardTest, Context_ActivatesTheFocusedButtonOnEnter)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(2),
+        getPlainTheme(2),
         Pointer{},
         Keyboard{.keys = {Key::Activate}},
         kTwoWidget};
@@ -184,7 +184,7 @@ TEST(ContextKeyboardTest, Context_HandsFocusOnToTheNextFrame)
 {
     Context firstContext{
         kCanvasSize,
-        plainTheme(2),
+        getPlainTheme(2),
         Pointer{},
         Keyboard{.keys = {Key::FocusNext, Key::FocusNext}}};
 
@@ -195,7 +195,7 @@ TEST(ContextKeyboardTest, Context_HandsFocusOnToTheNextFrame)
 
     Context secondContext{
         kCanvasSize,
-        plainTheme(2),
+        getPlainTheme(2),
         Pointer{},
         Keyboard{.keys = {Key::Activate}},
         focus};
@@ -209,7 +209,7 @@ TEST(ContextKeyboardTest, Context_HandsFocusOnToTheNextFrame)
 
 TEST(ContextKeyboardTest, Context_DrawsFourBarsRoundTheFocusedButton)
 {
-    Context uiContext{kCanvasSize, plainTheme(
+    Context uiContext{kCanvasSize, getPlainTheme(
         3), Pointer{}, Keyboard{}, kOneWidget};
 
     uiContext.button("ab", {.widgetId = kOneWidget});
@@ -217,33 +217,33 @@ TEST(ContextKeyboardTest, Context_DrawsFourBarsRoundTheFocusedButton)
 
     const auto commands = uiContext.build().drawList;
 
-    EXPECT_EQ(ringAround(kFirstButtonRect, 3), tailOf(commands, 4));
+    EXPECT_EQ(getRingAround(kFirstButtonRect, 3), tailOf(commands, 4));
 }
 
 TEST(ContextKeyboardTest, Context_ClampsTheRingToASmallerWidget)
 {
-    Context uiContext{kCanvasSize, plainTheme(
+    Context uiContext{kCanvasSize, getPlainTheme(
         40), Pointer{}, Keyboard{}, kOneWidget};
 
     uiContext.button(
         "ab",
-        {.widgetId = kOneWidget, .widthSizing = fixedSize(4)});
+        {.widgetId = kOneWidget, .widthSizing = getFixedSize(4)});
 
     const auto commands = uiContext.build().drawList;
     const auto box = std::get<FillRect>(commands.at(0)).rect;
 
     EXPECT_EQ(4U, box.size.width);
-    EXPECT_EQ(ringAround(box, 40), tailOf(commands, 4));
+    EXPECT_EQ(getRingAround(box, 40), tailOf(commands, 4));
 }
 
 TEST(ContextKeyboardTest, Context_DrawsNoRingWhenTheThemeHasNoThickness)
 {
-    Context bareContext{kCanvasSize, plainTheme(0)};
+    Context bareContext{kCanvasSize, getPlainTheme(0)};
     bareContext.button("ab", {.widgetId = kOneWidget});
 
     Context focusedContext{
         kCanvasSize,
-        plainTheme(0),
+        getPlainTheme(0),
         Pointer{},
         Keyboard{},
         kOneWidget};
@@ -260,7 +260,7 @@ TEST(ContextKeyboardTest, Context_MovesTheRingToAClickedButton)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(3),
+        getPlainTheme(3),
         Pointer{.positionPoint = kOnTheButtonPoint, .pressed = true},
         Keyboard{},
         kTwoWidget};
@@ -271,7 +271,7 @@ TEST(ContextKeyboardTest, Context_MovesTheRingToAClickedButton)
     const auto frame = uiContext.build();
 
     EXPECT_EQ(kOneWidget, frame.interactions.focusedWidget);
-    EXPECT_EQ(ringAround(kFirstButtonRect, 3), tailOf(frame.drawList, 4));
+    EXPECT_EQ(getRingAround(kFirstButtonRect, 3), tailOf(frame.drawList, 4));
 }
 
 TEST(ContextKeyboardTest, Theme_DefaultsToAYellowRingOnePixelThick)
@@ -287,7 +287,7 @@ TEST(ContextKeyboardTest, ScaledTheme_MultipliesTheRingThickness)
 {
     constexpr Theme baseTheme{};
 
-    const auto theme = scaledTheme(baseTheme, 3);
+    const auto theme = getScaledTheme(baseTheme, 3);
 
     EXPECT_EQ(3U, theme.focusRingThickness);
     EXPECT_EQ(baseTheme.focusRingColor, theme.focusRingColor);

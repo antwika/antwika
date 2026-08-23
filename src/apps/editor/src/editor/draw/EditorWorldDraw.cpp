@@ -22,7 +22,7 @@ namespace antwika::editor
         const ui::Frame &frame,
         const std::chrono::time_point<std::chrono::system_clock> startedAt)
     {
-        const auto worldFrom = clockSource.currentTime();
+        const auto worldFrom = clockSource.getCurrentTime();
         const auto modelMatrix = worldRotation();
         const auto camera = worldCamera();
 
@@ -34,58 +34,58 @@ namespace antwika::editor
 
         const auto pile = [&]
         {
-            for (const auto &piece : worldMeshes.solid())
+            for (const auto &piece : worldMeshes.getSolid())
             {
                 viewportRenderer.drawMesh(
                     *piece,
                     modelMatrix,
                     camera,
                     antwika::gfx::MeshMaterial{
-                        .texture = atlasSheets.texture(tilemap::Atlas::Floor),
-                        .materialMapTexture = atlasSheets.texture(
+                        .texture = atlasSheets.getTexture(tilemap::Atlas::Floor),
+                        .materialMapTexture = atlasSheets.getTexture(
                             tilemap::Atlas::Wall),
-                        .shadowMapTexture = lightPasses.hiding(),
+                        .shadowMapTexture = lightPasses.getHiding(),
                         .pointLightShadowAtlasTexture =
-                            lightPasses.lampShadows(),
-                        .shader = &worldShader.program()});
+                            lightPasses.getLampShadows(),
+                        .shader = &worldShader.getProgram()});
             }
 
-            if (worldMeshes.decor() != nullptr)
+            if (worldMeshes.getDecor() != nullptr)
             {
                 viewportRenderer.drawMesh(
-                    *worldMeshes.decor(),
+                    *worldMeshes.getDecor(),
                     modelMatrix,
                     camera,
                     antwika::gfx::MeshMaterial{
-                        .texture = atlasSheets.keyed(tilemap::Atlas::Floor),
-                        .materialMapTexture = atlasSheets.keyed(
+                        .texture = atlasSheets.getKeyed(tilemap::Atlas::Floor),
+                        .materialMapTexture = atlasSheets.getKeyed(
                             tilemap::Atlas::Wall),
-                        .shadowMapTexture = lightPasses.hiding(),
+                        .shadowMapTexture = lightPasses.getHiding(),
                         .pointLightShadowAtlasTexture =
-                            lightPasses.lampShadows(),
-                        .shader = &worldShader.program()});
+                            lightPasses.getLampShadows(),
+                        .shader = &worldShader.getProgram()});
             }
 
-            for (const auto &piece : worldMeshes.water())
+            for (const auto &piece : worldMeshes.getWater())
             {
                 viewportRenderer.drawMesh(
                     *piece,
                     modelMatrix,
                     camera,
                     antwika::gfx::MeshMaterial{
-                        .texture = atlasSheets.texture(tilemap::Atlas::Floor),
-                        .materialMapTexture = atlasSheets.texture(
+                        .texture = atlasSheets.getTexture(tilemap::Atlas::Floor),
+                        .materialMapTexture = atlasSheets.getTexture(
                             tilemap::Atlas::Wall),
-                        .shadowMapTexture = lightPasses.hiding(),
+                        .shadowMapTexture = lightPasses.getHiding(),
                         .pointLightShadowAtlasTexture =
-                            lightPasses.lampShadows(),
-                        .shader = &worldShader.program()});
+                            lightPasses.getLampShadows(),
+                        .shader = &worldShader.getProgram()});
             }
         };
 
         scenePass.draw(
             viewportRenderer,
-            worldShader.program(),
+            worldShader.getProgram(),
             play.playing ? kPlayBackgroundColor : kEditorBackgroundColor,
             pile,
             [&]
@@ -93,11 +93,11 @@ namespace antwika::editor
                 if (play.playing)
                 {
                     const auto stoodPosition =
-                        play.game->world().get<component::Position>(
-                            play.game->player());
+                        play.game->getWorld().get<component::Position>(
+                            play.game->getPlayer());
 
-                    const auto ground = collision::groundHeightUnderFootprint(
-                        worldMeshes.cells(), stoodPosition.x, stoodPosition.z,
+                    const auto ground = collision::getGroundHeightUnderFootprint(
+                        worldMeshes.getCells(), stoodPosition.x, stoodPosition.z,
                         stoodPosition.y);
 
                     if (ground.has_value())
@@ -112,18 +112,18 @@ namespace antwika::editor
                     }
 
                     for (const auto entity :
-                         play.game->world()
+                         play.game->getWorld()
                              .view<
                                  component::Position,
                                  component::AnimationState,
                                  component::RosterIndex>())
                     {
                         const auto index =
-                            play.game->world()
+                            play.game->getWorld()
                                 .get<component::RosterIndex>(entity)
                                 .index;
 
-                        if (index >= characterView.skins().size())
+                        if (index >= characterView.getSkins().size())
                         {
                             continue;
                         }
@@ -131,10 +131,10 @@ namespace antwika::editor
                         drawSprite(
                             camera,
                             modelMatrix,
-                            characterView.skinTexture(index),
-                            play.game->world().get<component::Position>(
+                            characterView.getSkinTexture(index),
+                            play.game->getWorld().get<component::Position>(
                                 entity),
-                            play.game->world()
+                            play.game->getWorld()
                                 .get<component::AnimationState>(
                                     entity));
                     }
@@ -169,11 +169,11 @@ namespace antwika::editor
 
         if (play.playing && play.titleScreenUp)
         {
-            const auto slash = document.path().find_last_of("/\\");
+            const auto slash = document.getPath().find_last_of("/\\");
             const auto fileName =
                 slash == std::string::npos
-                       ? document.path()
-                       : document.path().substr(slash + 1);
+                       ? document.getPath()
+                       : document.getPath().substr(slash + 1);
 
             viewportRenderer.drawRect(
                 antwika::gfx::RectF(
@@ -198,20 +198,20 @@ namespace antwika::editor
         if (play.playing)
         {
             const auto rateText =
-                time::formatFrameRate(meters.frameRate.perSecond());
+                time::getFormatFrameRate(meters.frameRate.getPerSecond());
             const auto workText =
-                time::formatFrameTime(meters.workRate.averageFrameTime())
+                time::getFormatFrameTime(meters.workRate.getAverageFrameTime())
                 + " l "
-                + time::formatFrameTime(meters.lampRate.averageFrameTime())
+                + time::getFormatFrameTime(meters.lampRate.getAverageFrameTime())
                 + " c "
-                + time::formatFrameTime(meters.sightRate.averageFrameTime())
+                + time::getFormatFrameTime(meters.sightRate.getAverageFrameTime())
                 + " h "
-                + time::formatFrameTime(meters.hideRate.averageFrameTime());
+                + time::getFormatFrameTime(meters.hideRate.getAverageFrameTime());
 
             viewportRenderer.drawText(
                 {static_cast<float>(camera::kCanvasSize.width)
                      - static_cast<float>(
-                         antwika::text::textSize(rateText, 1)
+                         antwika::text::getTextSize(rateText, 1)
                              .width)
                      - 4.0F,
                  4.0F},
@@ -221,7 +221,7 @@ namespace antwika::editor
             viewportRenderer.drawText(
                 {static_cast<float>(camera::kCanvasSize.width)
                      - static_cast<float>(
-                         antwika::text::textSize(workText, 1)
+                         antwika::text::getTextSize(workText, 1)
                              .width)
                      - 4.0F,
                  16.0F},
@@ -245,7 +245,7 @@ namespace antwika::editor
         meters.worldRate.record(
             std::chrono::duration_cast<
                 std::chrono::nanoseconds>(
-                clockSource.currentTime() - worldFrom));
+                clockSource.getCurrentTime() - worldFrom));
 
         viewportRenderer.present();
 

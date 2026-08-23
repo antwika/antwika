@@ -76,9 +76,9 @@ namespace antwika::ui
         std::uint32_t dividerThickness = 6;
     };
 
-    [[nodiscard]] std::uint32_t scaleForCanvas(Size canvasSize) noexcept;
+    [[nodiscard]] std::uint32_t getScaleForCanvas(Size canvasSize) noexcept;
 
-    [[nodiscard]] Theme scaledTheme(
+    [[nodiscard]] Theme getScaledTheme(
         Theme baseTheme, std::uint32_t scale) noexcept;
 
 }

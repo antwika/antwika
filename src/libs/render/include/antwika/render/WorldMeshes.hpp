@@ -41,30 +41,30 @@ namespace antwika::render
             std::uint32_t tick);
 
         [[nodiscard]] std::span<const std::unique_ptr<gfx::IMesh>>
-        solid() const noexcept;
+        getSolid() const noexcept;
 
         [[nodiscard]] std::span<const std::unique_ptr<gfx::IMesh>>
-        water() const noexcept;
+        getWater() const noexcept;
 
-        [[nodiscard]] const gfx::IMesh *decor() const noexcept;
+        [[nodiscard]] const gfx::IMesh *getDecor() const noexcept;
 
-        [[nodiscard]] const voxel::Voxels &cells()
+        [[nodiscard]] const voxel::Voxels &getCells()
             const noexcept;
 
-        [[nodiscard]] const std::vector<voxelmap::FaceRef> &faces()
+        [[nodiscard]] const std::vector<voxelmap::FaceRef> &getFaces()
             const noexcept;
 
-        [[nodiscard]] const std::vector<tilemap::Tile> &solved()
+        [[nodiscard]] const std::vector<tilemap::Tile> &getSolved()
             const noexcept;
 
-        [[nodiscard]] const std::vector<tilemap::Tile> &drawnAs()
+        [[nodiscard]] const std::vector<tilemap::Tile> &getDrawnAs()
             const noexcept;
 
-        [[nodiscard]] const tile::TileRules &rules() const noexcept;
+        [[nodiscard]] const tile::TileRules &getRules() const noexcept;
 
         [[nodiscard]] const std::vector<
             std::pair<std::size_t, std::map<std::size_t, tilemap::Tile>>>
-            &decorLayers() const noexcept;
+            &getDecorLayers() const noexcept;
 
     private:
         std::map<voxelmap::FaceRef, tilemap::Tile> faceTileCache;

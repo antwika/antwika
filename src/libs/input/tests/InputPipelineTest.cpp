@@ -54,17 +54,17 @@ namespace
         .suppressIdleMotion = true,
         .stopOnKey = Key::Escape};
 
-    [[nodiscard]] InputEvent moved(std::int32_t x, std::int32_t y)
+    [[nodiscard]] InputEvent getMoved(std::int32_t x, std::int32_t y)
     {
         return PointerMoved{.position = {.x = x, .y = y}};
     }
 
-    [[nodiscard]] Event move(std::int32_t x, std::int32_t y)
+    [[nodiscard]] Event getMove(std::int32_t x, std::int32_t y)
     {
-        return kCodec.encode(moved(x, y));
+        return kCodec.getEncode(getMoved(x, y));
     }
 
-    [[nodiscard]] TickEvent at(Tick tick, Event event)
+    [[nodiscard]] TickEvent getEntryAt(Tick tick, Event event)
     {
         return TickEvent{.tick = tick, .event = std::move(event)};
     }
@@ -88,7 +88,7 @@ namespace
         {
             for (auto &event : pipeline.eventsFor(tick))
             {
-                recordedEvents.push_back(at(tick, std::move(event)));
+                recordedEvents.push_back(getEntryAt(tick, std::move(event)));
             }
         }
         return recordedEvents;
@@ -97,7 +97,7 @@ namespace
 
 TEST(InputPipelineTest, EventsFor_PassesTheInnerSourceThroughUntouched)
 {
-    ReplaySource innerSource({at(0, move(1, 1)), at(0, move(2, 2))});
+    ReplaySource innerSource({getEntryAt(0, getMove(1, 1)), getEntryAt(0, getMove(2, 2))});
     FakeInputBackend backend;
 
     InputPipeline pipeline(
@@ -108,13 +108,13 @@ TEST(InputPipelineTest, EventsFor_PassesTheInnerSourceThroughUntouched)
 
     EXPECT_EQ(
         pipeline.eventsFor(0),
-        (std::vector<Event>{move(1, 1), move(2, 2)}));
+        (std::vector<Event>{getMove(1, 1), getMove(2, 2)}));
 }
 
 TEST(InputPipelineTest, EventsFor_ReadsTheDeviceWhenItWasAskedTo)
 {
     ReplaySource innerSource({});
-    FakeInputBackend backend({moved(4, 5)});
+    FakeInputBackend backend({getMoved(4, 5)});
 
     InputPipeline pipeline(
         innerSource,
@@ -122,13 +122,13 @@ TEST(InputPipelineTest, EventsFor_ReadsTheDeviceWhenItWasAskedTo)
         kCodec,
         InputPipelineOptions{.readsDevice = true});
 
-    EXPECT_EQ(pipeline.eventsFor(0), (std::vector<Event>{move(4, 5)}));
+    EXPECT_EQ(pipeline.eventsFor(0), (std::vector<Event>{getMove(4, 5)}));
 }
 
 TEST(InputPipelineTest, EventsFor_LeavesTheDeviceAloneWhenReplaying)
 {
     ReplaySource innerSource({});
-    FakeInputBackend backend({moved(4, 5)});
+    FakeInputBackend backend({getMoved(4, 5)});
 
     InputPipeline pipeline(
         innerSource,
@@ -143,9 +143,9 @@ TEST(InputPipelineTest, EventsFor_ThinsWhatTheDeviceReportedNotJustTheFile)
 {
     ReplaySource innerSource({});
     FakeInputBackend backend(
-        {moved(1, 1),
-         moved(2, 2),
-         moved(3, 3),
+        {getMoved(1, 1),
+         getMoved(2, 2),
+         getMoved(3, 3),
          PointerButtonPressed{
              .button = MouseButton::Left, .position = {.x = 3, .y = 3}}});
 
@@ -162,8 +162,8 @@ TEST(InputPipelineTest, EventsFor_CoalescesOnlyWhenItWasAskedTo)
     ReplaySource innerSource({});
     FakeInputBackend backend(
         {PointerButtonPressed{.button = MouseButton::Left},
-         moved(1, 1),
-         moved(2, 2)});
+         getMoved(1, 1),
+         getMoved(2, 2)});
 
     InputPipeline pipeline(
         innerSource,
@@ -181,7 +181,7 @@ TEST(InputPipelineTest, EventsFor_CoalescesOnlyWhenItWasAskedTo)
 
 TEST(InputPipelineTest, EventsFor_ThinsIdleMotionOnlyWhenItWasAskedTo)
 {
-    ReplaySource innerSource({at(0, move(1, 1))});
+    ReplaySource innerSource({getEntryAt(0, getMove(1, 1))});
     FakeInputBackend backend;
 
     InputPipeline gatedPipeline(
@@ -212,14 +212,14 @@ TEST(InputPipelineTest, EventsFor_StopsOnTheChosenKeyOnlyWhenOneWasNamed)
 TEST(InputPipelineTest, EventsFor_RunsAReplayThroughTheSameStackAsTheRun)
 {
     const std::vector<std::vector<InputEvent>> scriptEvents{
-        {moved(1, 1), moved(2, 2)},
+        {getMoved(1, 1), getMoved(2, 2)},
         {PointerButtonPressed{
              .button = MouseButton::Left, .position = {.x = 2, .y = 2}},
-         moved(3, 3),
-         moved(4, 4)},
+         getMoved(3, 3),
+         getMoved(4, 4)},
         {PointerButtonReleased{
              .button = MouseButton::Left, .position = {.x = 4, .y = 4}},
-         moved(5, 5)}};
+         getMoved(5, 5)}};
 
     ReplaySource nothingScriptedSource({});
     FakeInputBackend backend(scriptEvents);
@@ -250,7 +250,7 @@ TEST(InputPipelineTest, EventsFor_RunsAReplayThroughTheSameStackAsTheRun)
 TEST(InputPipelineTest, EventsFor_PublishesTheMotionTheGateHoldsBack)
 {
     ReplaySource innerSource({});
-    FakeInputBackend backend({moved(1, 1), moved(2, 2), moved(3, 3)});
+    FakeInputBackend backend({getMoved(1, 1), getMoved(2, 2), getMoved(3, 3)});
     PointerHintChannel channel;
 
     InputPipelineOptions drawsAHoverOptions = kEverythingOptions;
@@ -260,20 +260,20 @@ TEST(InputPipelineTest, EventsFor_PublishesTheMotionTheGateHoldsBack)
 
     EXPECT_TRUE(pipeline.eventsFor(0).empty());
     EXPECT_EQ(
-        channel.latest(),
+        channel.getLatest(),
         (PointerHint{.position = {.x = 3, .y = 3}}));
 }
 
 TEST(InputPipelineTest, EventsFor_RecordsTheSameStreamWithAChannelAndWithout)
 {
     const std::vector<std::vector<InputEvent>> scriptEvents{
-        {moved(1, 1), moved(2, 2)},
+        {getMoved(1, 1), getMoved(2, 2)},
         {PointerButtonPressed{
              .button = MouseButton::Left, .position = {.x = 2, .y = 2}},
-         moved(3, 3)},
+         getMoved(3, 3)},
         {PointerButtonReleased{
              .button = MouseButton::Left, .position = {.x = 3, .y = 3}},
-         moved(9, 9)}};
+         getMoved(9, 9)}};
 
     ReplaySource plainInnerSource({});
     FakeInputBackend plainBackend(scriptEvents);
@@ -300,16 +300,16 @@ TEST(InputPipelineTest, EventsFor_RecordsTheSameStreamWithAChannelAndWithout)
     EXPECT_EQ(drain(observedPipeline, 3), withoutChannel);
 
     EXPECT_EQ(
-        channel.latest(),
+        channel.getLatest(),
         (PointerHint{.position = {.x = 9, .y = 9}}));
 }
 
 namespace
 {
-    [[nodiscard]] std::vector<std::vector<InputEvent>> hintScript()
+    [[nodiscard]] std::vector<std::vector<InputEvent>> getHintScript()
     {
         return {
-            {moved(1, 1), moved(2, 2)},
+            {getMoved(1, 1), getMoved(2, 2)},
             {PointerButtonPressed{
                 .button = MouseButton::Left, .position = {.x = 5, .y = 5}}}};
     }
@@ -318,7 +318,7 @@ namespace
 TEST(InputPipelineTest, EventsFor_HintsTheMotionOfATickThatRecordedNothing)
 {
     ReplaySource nothingScriptedSource({});
-    FakeInputBackend backend(hintScript());
+    FakeInputBackend backend(getHintScript());
     PointerHintChannel liveChannel;
     InputPipelineOptions options = kEverythingOptions;
     options.pointerHint = liveChannel;
@@ -328,14 +328,14 @@ TEST(InputPipelineTest, EventsFor_HintsTheMotionOfATickThatRecordedNothing)
 
     EXPECT_TRUE(firstTick.empty());
     EXPECT_EQ(
-        liveChannel.latest(),
+        liveChannel.getLatest(),
         (PointerHint{.position = {.x = 2, .y = 2}}));
 }
 
 TEST(InputPipelineTest, EventsFor_HintsNothingWhenItReplaysWhatWasRecorded)
 {
     ReplaySource nothingScriptedSource({});
-    FakeInputBackend backend(hintScript());
+    FakeInputBackend backend(getHintScript());
     PointerHintChannel liveChannel;
     InputPipelineOptions options = kEverythingOptions;
     options.pointerHint = liveChannel;
@@ -359,13 +359,13 @@ TEST(InputPipelineTest, EventsFor_HintsNothingWhenItReplaysWhatWasRecorded)
         replayingOptions);
 
     EXPECT_TRUE(replayedPipeline.eventsFor(0).empty());
-    EXPECT_EQ(replayedChannel.latest(), std::nullopt);
+    EXPECT_EQ(replayedChannel.getLatest(), std::nullopt);
 }
 
 TEST(InputPipelineTest, EventsFor_PublishesWithNeitherThinnerAttached)
 {
     ReplaySource innerSource({});
-    FakeInputBackend backend({moved(4, 5)});
+    FakeInputBackend backend({getMoved(4, 5)});
     PointerHintChannel channel;
 
     InputPipeline pipeline(
@@ -374,16 +374,16 @@ TEST(InputPipelineTest, EventsFor_PublishesWithNeitherThinnerAttached)
         kCodec,
         InputPipelineOptions{.pointerHint = channel});
 
-    EXPECT_EQ(pipeline.eventsFor(0), (std::vector<Event>{move(4, 5)}));
+    EXPECT_EQ(pipeline.eventsFor(0), (std::vector<Event>{getMove(4, 5)}));
     EXPECT_EQ(
-        channel.latest(),
+        channel.getLatest(),
         (PointerHint{.position = {.x = 4, .y = 5}}));
 }
 
 TEST(InputPipelineTest, EventsFor_MapsWhatTheDeviceReported)
 {
     ReplaySource innerSource({});
-    FakeInputBackend backend({moved(40, 20)});
+    FakeInputBackend backend({getMoved(40, 20)});
     const FakeHalvingPointerMapping mapping;
 
     InputPipeline pipeline(
@@ -392,13 +392,13 @@ TEST(InputPipelineTest, EventsFor_MapsWhatTheDeviceReported)
         kCodec,
         InputPipelineOptions{.pointerMapping = mapping});
 
-    EXPECT_EQ(pipeline.eventsFor(0), (std::vector<Event>{move(20, 10)}));
+    EXPECT_EQ(pipeline.eventsFor(0), (std::vector<Event>{getMove(20, 10)}));
 }
 
 TEST(InputPipelineTest, EventsFor_PublishesTheMappedPositionToTheHint)
 {
     ReplaySource innerSource({});
-    FakeInputBackend backend({moved(40, 20)});
+    FakeInputBackend backend({getMoved(40, 20)});
     PointerHintChannel channel;
     const FakeHalvingPointerMapping mapping;
 
@@ -409,16 +409,16 @@ TEST(InputPipelineTest, EventsFor_PublishesTheMappedPositionToTheHint)
         InputPipelineOptions{
             .pointerMapping = mapping, .pointerHint = channel});
 
-    EXPECT_EQ(pipeline.eventsFor(0), (std::vector<Event>{move(20, 10)}));
+    EXPECT_EQ(pipeline.eventsFor(0), (std::vector<Event>{getMove(20, 10)}));
     EXPECT_EQ(
-        channel.latest(),
+        channel.getLatest(),
         (PointerHint{.position = {.x = 20, .y = 10}}));
 }
 
 TEST(InputPipelineTest, FramePump_RefreshesTheHintWithoutWaitingForATick)
 {
     const std::vector<std::vector<InputEvent>> roundEvents{
-        {moved(1, 1)}, {moved(2, 2)}};
+        {getMoved(1, 1)}, {getMoved(2, 2)}};
 
     ReplaySource innerSource({});
     FakeInputBackend backend(roundEvents);
@@ -436,13 +436,13 @@ TEST(InputPipelineTest, FramePump_RefreshesTheHintWithoutWaitingForATick)
     pump->get().pollFrame(0);
 
     EXPECT_EQ(
-        channel.latest(),
+        channel.getLatest(),
         (PointerHint{.position = {.x = 1, .y = 1}}));
 }
 
 TEST(InputPipelineTest, FramePump_IsAbsentWhenTheDeviceIsNotRead)
 {
-    ReplaySource innerSource({at(0, move(1, 1))});
+    ReplaySource innerSource({getEntryAt(0, getMove(1, 1))});
     FakeInputBackend backend;
 
     InputPipelineOptions replayingOptions = kEverythingOptions;
@@ -458,8 +458,8 @@ TEST(InputPipelineTest, EventsFor_ThinsAcrossPumpsAsThoughOneTickReadThem)
     const std::vector<std::vector<InputEvent>> roundEvents{
         {PointerButtonPressed{
             .button = MouseButton::Left, .position = {.x = 1, .y = 1}}},
-        {moved(2, 2)},
-        {moved(3, 3), moved(4, 4)}};
+        {getMoved(2, 2)},
+        {getMoved(3, 3), getMoved(4, 4)}};
 
     ReplaySource innerSource({});
     FakeInputBackend backend(roundEvents);
@@ -481,7 +481,7 @@ TEST(InputPipelineTest, EventsFor_ThinsAcrossPumpsAsThoughOneTickReadThem)
 
 TEST(InputPipelineTest, EventsFor_LeavesAReplayedPositionUnmapped)
 {
-    ReplaySource innerSource({at(0, move(40, 20))});
+    ReplaySource innerSource({getEntryAt(0, getMove(40, 20))});
     FakeInputBackend backend;
     const FakeHalvingPointerMapping mapping;
 
@@ -492,5 +492,5 @@ TEST(InputPipelineTest, EventsFor_LeavesAReplayedPositionUnmapped)
         InputPipelineOptions{
             .readsDevice = false, .pointerMapping = mapping});
 
-    EXPECT_EQ(pipeline.eventsFor(0), (std::vector<Event>{move(40, 20)}));
+    EXPECT_EQ(pipeline.eventsFor(0), (std::vector<Event>{getMove(40, 20)}));
 }

@@ -212,7 +212,7 @@ namespace antwika::editor
         std::optional<std::size_t> platePicked;
         std::optional<voxel::VoxelPosition> lastPlateStoodOnPosition;
 
-        KeyBindings bindings = defaultChords();
+        KeyBindings bindings = getDefaultChords();
         input::ActionMap actions = actionMapFrom(bindings);
         bool keysOpen = false;
         std::optional<Action> rebindingAction;
@@ -289,7 +289,7 @@ namespace antwika::editor
 
         void pressTool(ToolButton whichButton);
 
-        [[nodiscard]] bool toolButtonActive(
+        [[nodiscard]] bool isToolButtonActive(
             ToolButton whichButton) const;
         [[nodiscard]] tile::TileRules &activeRules();
         [[nodiscard]] bool isDecorLayer();
@@ -308,11 +308,11 @@ namespace antwika::editor
         void drawColorPicker();
         using MenuFlag = bool &(*)(Editor &);
 
-        [[nodiscard]] static MenuFlag toggledFlag(MenuItem item);
+        [[nodiscard]] static MenuFlag getToggledFlag(MenuItem item);
 
         void takeSettings(const map::Settings &shownSettings);
 
-        [[nodiscard]] map::Settings settingsAsShown() const;
+        [[nodiscard]] map::Settings getSettingsAsShown() const;
         void onMenuItem(MenuItem item);
         [[nodiscard]] bool isChecked(MenuItem item);
         [[nodiscard]] std::string statusText();
@@ -331,7 +331,7 @@ namespace antwika::editor
             std::chrono::time_point<std::chrono::system_clock>
                 startedAt);
 
-        [[nodiscard]] std::vector<voxel::VoxelPosition> shapedCubes(
+        [[nodiscard]] std::vector<voxel::VoxelPosition> getShapedCubes(
             voxel::VoxelPosition fromPosition,
             voxel::VoxelPosition toPosition) const;
 
@@ -348,10 +348,10 @@ namespace antwika::editor
 
         void finishStamp(input::MouseButton button);
 
-        [[nodiscard]] std::vector<voxel::VoxelPosition> stampGhost(
+        [[nodiscard]] std::vector<voxel::VoxelPosition> getStampGhost(
             voxel::VoxelPosition positionCell) const;
 
-        [[nodiscard]] std::string characterSheetPath(
+        [[nodiscard]] std::string getCharacterSheetPath(
             std::size_t position) const;
 
         void loadCharacterSkins();
@@ -394,7 +394,7 @@ namespace antwika::editor
         [[nodiscard]] bool variantWidgets(
             const ui::Interactions &interactions);
         void pickedVariant(tilemap::Tile tile);
-        [[nodiscard]] bool handleAssignClick(tilemap::Tile tile);
+        [[nodiscard]] bool consumeAssignClick(tilemap::Tile tile);
         [[nodiscard]] bool blockedAsVariant();
         [[nodiscard]] std::uint8_t variantWeightOf(
             tilemap::Tile tile) const;
@@ -429,7 +429,7 @@ namespace antwika::editor
         [[nodiscard]] bool tryUnlockExit();
         void resetGates();
         void clearAssignModes();
-        [[nodiscard]] static widget::WidgetId widgetForField(
+        [[nodiscard]] static widget::WidgetId getWidgetForField(
             FocusedField focusedField);
         void sayCaption(
             const std::string &name,
@@ -454,7 +454,7 @@ namespace antwika::editor
 
         void layoutFigureChooser(ui::Context &context);
 
-        [[nodiscard]] bool handlePaletteWidgets(
+        [[nodiscard]] bool consumePaletteWidgets(
             const ui::Interactions &interactions);
 
         [[nodiscard]] bool consumePickerPress(
@@ -499,13 +499,13 @@ namespace antwika::editor
 
         void takeExit();
 
-        [[nodiscard]] std::string progressPath() const;
+        [[nodiscard]] std::string getProgressPath() const;
 
         void savePlayerProgress();
 
         void setBindings(KeyBindings keyBindings);
 
-        [[nodiscard]] input::KeyModifiers heldModifiers() const noexcept;
+        [[nodiscard]] input::KeyModifiers getHeldModifiers() const noexcept;
 
         [[nodiscard]] bool matchesChord(
             Action action, input::Key key) const;
@@ -517,14 +517,14 @@ namespace antwika::editor
 
         void applyRunKey(input::Key key, bool down);
 
-        [[nodiscard]] bool handleBindingsKey(
+        [[nodiscard]] bool consumeBindingsKey(
             const input::KeyPressed &pressedKey);
 
-        [[nodiscard]] std::string chordsPath() const;
+        [[nodiscard]] std::string getChordsPath() const;
 
         [[nodiscard]] bool layoutModals(ui::Context &context);
 
-        [[nodiscard]] bool handleModalWidgets(
+        [[nodiscard]] bool consumeModalWidgets(
             const ui::Interactions &interactions);
 
         [[nodiscard]] bool consumeTextInput(
@@ -555,7 +555,7 @@ namespace antwika::editor
 
         void onPointerPressed(
             const input::PointerButtonPressed &downPressed);
-        [[nodiscard]] bool handleWidgets(
+        [[nodiscard]] bool consumeWidgets(
             const ui::Interactions &interactions);
 
         void onKeyReleased(const input::KeyReleased &releasedEvent);

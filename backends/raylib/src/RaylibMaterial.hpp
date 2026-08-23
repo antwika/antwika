@@ -34,12 +34,12 @@ namespace antwika::gfx::raylib
 
         void restoreDefaults() noexcept;
 
-        [[nodiscard]] const ::Material &raw() const noexcept;
+        [[nodiscard]] const ::Material &getRawHandle() const noexcept;
 
     private:
-        [[nodiscard]] static ::Texture2D makeNeutralSurfaceMap();
+        [[nodiscard]] static ::Texture2D createNeutralSurfaceMap();
 
-        [[nodiscard]] static ::Texture2D makeUnoccludedShadowMap();
+        [[nodiscard]] static ::Texture2D createUnoccludedShadowMap();
 
         ::Material material;
         ::Shader defaultShader;

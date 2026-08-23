@@ -24,7 +24,7 @@ namespace antwika::app
     using antwika::ui::HoverPointer;
     using antwika::ui::Pointer;
 
-    [[nodiscard]] constexpr Point asPoint(Position position) noexcept
+    [[nodiscard]] constexpr Point getAsPoint(Position position) noexcept
     {
         return Point{.x = position.x, .y = position.y};
     }
@@ -59,7 +59,7 @@ namespace antwika::app
     }
 
     [[nodiscard]] constexpr const antwika::input::PointerButtonPressed *
-    leftPress(const InputEvent &event) noexcept
+    getLeftPress(const InputEvent &event) noexcept
     {
         return pressOf(event, MouseButton::Left);
     }
@@ -98,7 +98,7 @@ namespace antwika::app
             return HoverPointer{};
         }
 
-        return HoverPointer{.positionPoint = asPoint(hint->position)};
+        return HoverPointer{.positionPoint = getAsPoint(hint->position)};
     }
 
 }

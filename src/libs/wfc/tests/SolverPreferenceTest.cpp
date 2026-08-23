@@ -30,7 +30,7 @@ TEST(SolverPreferenceTest, Solve_TakesThePreferredValueWhereItIsFree)
             {},
             {std::optional<std::size_t>{2},
              std::optional<std::size_t>{1}})
-            .solve();
+            .getSolve();
 
     ASSERT_EQ(solution.outcome, SolveOutcome::Solved);
     EXPECT_EQ(solution.assignment[0], 2U);
@@ -48,8 +48,8 @@ TEST(SolverPreferenceTest, Solve_PrefersNothingWhereNothingIsAsked)
             {},
             {},
             {std::optional<std::size_t>{2}, std::nullopt})
-            .solve();
-    const auto bare = Solver(waveDomains, {}).solve();
+            .getSolve();
+    const auto bare = Solver(waveDomains, {}).getSolve();
 
     ASSERT_EQ(solution.outcome, SolveOutcome::Solved);
     ASSERT_EQ(bare.outcome, SolveOutcome::Solved);
@@ -82,7 +82,7 @@ TEST(SolverPreferenceTest, Solve_LetsGoOfAPreferenceTheConstraintsRefuse)
             {},
             {},
             {std::optional<std::size_t>{2}, std::nullopt})
-            .solve();
+            .getSolve();
 
     ASSERT_EQ(solution.outcome, SolveOutcome::Solved);
     EXPECT_EQ(solution.assignment[0], 0U);

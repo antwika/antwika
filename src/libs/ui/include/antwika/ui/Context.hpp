@@ -52,7 +52,7 @@ namespace antwika::ui
         Context &operator=(const Context &) = delete;
         Context &operator=(Context &&) = delete;
 
-        [[nodiscard]] const Theme &theme() const noexcept;
+        [[nodiscard]] const Theme &getTheme() const noexcept;
 
         void setTheme(Theme theme) noexcept;
 

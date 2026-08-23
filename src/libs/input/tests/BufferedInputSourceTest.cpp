@@ -25,21 +25,21 @@ namespace
 {
     const InputEventCodec kCodec;
 
-    [[nodiscard]] InputEvent moved(std::int32_t x, std::int32_t y)
+    [[nodiscard]] InputEvent getMoved(std::int32_t x, std::int32_t y)
     {
         return PointerMoved{.position = {.x = x, .y = y}};
     }
 
-    [[nodiscard]] Event move(std::int32_t x, std::int32_t y)
+    [[nodiscard]] Event getMove(std::int32_t x, std::int32_t y)
     {
-        return kCodec.encode(moved(x, y));
+        return kCodec.getEncode(getMoved(x, y));
     }
 }
 
 TEST(BufferedInputSourceTest, EventsFor_HandsBackWhatEveryPumpRead)
 {
     const std::vector<std::vector<InputEvent>> roundEvents{
-        {moved(1, 1)}, {moved(2, 2)}, {moved(3, 3)}};
+        {getMoved(1, 1)}, {getMoved(2, 2)}, {getMoved(3, 3)}};
 
     ReplaySource nothingScriptedSource({});
     FakeInputBackend backend(roundEvents);
@@ -51,24 +51,24 @@ TEST(BufferedInputSourceTest, EventsFor_HandsBackWhatEveryPumpRead)
 
     EXPECT_EQ(
         bufferedSource.eventsFor(0),
-        (std::vector<Event>{move(1, 1), move(2, 2), move(3, 3)}));
+        (std::vector<Event>{getMove(1, 1), getMove(2, 2), getMove(3, 3)}));
 }
 
 TEST(BufferedInputSourceTest, EventsFor_ReadsTheSourceItselfWhenNothingPumped)
 {
-    const std::vector<std::vector<InputEvent>> roundEvents{{moved(4, 5)}};
+    const std::vector<std::vector<InputEvent>> roundEvents{{getMoved(4, 5)}};
 
     ReplaySource nothingScriptedSource({});
     FakeInputBackend backend(roundEvents);
     LiveInputSource liveSource(nothingScriptedSource, backend, kCodec);
     BufferedInputSource bufferedSource(liveSource);
 
-    EXPECT_EQ(bufferedSource.eventsFor(0), (std::vector<Event>{move(4, 5)}));
+    EXPECT_EQ(bufferedSource.eventsFor(0), (std::vector<Event>{getMove(4, 5)}));
 }
 
 TEST(BufferedInputSourceTest, EventsFor_KeepsNothingBackForTheNextTick)
 {
-    const std::vector<std::vector<InputEvent>> roundEvents{{moved(1, 1)}, {}};
+    const std::vector<std::vector<InputEvent>> roundEvents{{getMoved(1, 1)}, {}};
 
     ReplaySource nothingScriptedSource({});
     FakeInputBackend backend(roundEvents);

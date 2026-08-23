@@ -24,10 +24,10 @@ namespace antwika::ui::detail
         bool multiline = false;
     };
 
-    [[nodiscard]] std::size_t beginOfLine(
+    [[nodiscard]] std::size_t getBeginOfLine(
         std::string_view text, std::size_t charIndex) noexcept;
 
-    [[nodiscard]] std::size_t endOfLine(
+    [[nodiscard]] std::size_t getEndOfLine(
         std::string_view text, std::size_t charIndex) noexcept;
 
     [[nodiscard]] std::optional<TextEdit> editFor(

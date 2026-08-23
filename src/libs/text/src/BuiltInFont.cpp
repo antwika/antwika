@@ -10,7 +10,7 @@
 namespace antwika::text::detail
 {
 
-    const font::Font &builtInFont()
+    const font::Font &getBuiltInFont()
     {
         static const font::Font font{std::vector<std::uint8_t>(
             kBuiltInFontBytes,

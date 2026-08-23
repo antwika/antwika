@@ -46,7 +46,7 @@ namespace antwika::app
         const auto kEpoch =
             std::chrono::time_point<std::chrono::system_clock>{};
 
-        [[nodiscard]] std::vector<TickEvent> scriptedSource()
+        [[nodiscard]] std::vector<TickEvent> getScriptedSource()
         {
             return {
                 TickEvent{.tick = 0, .event = Event{.name = "one"}},
@@ -74,7 +74,7 @@ namespace antwika::app
 
     TEST(FramePacedSourceTest, EventsFor_HandsBackWhatTheSourceGaveIt)
     {
-        ReplaySource innerSource(scriptedSource());
+        ReplaySource innerSource(getScriptedSource());
         FakeFramePass pass;
         FakeClock clock(kEpoch);
         FakeSleeper sleeper(clock);
@@ -94,7 +94,7 @@ namespace antwika::app
 
     TEST(FramePacedSourceTest, EventsFor_NeitherWaitsNorDrawsExtraByDefault)
     {
-        ReplaySource innerSource(scriptedSource());
+        ReplaySource innerSource(getScriptedSource());
         FakeFramePass pass;
         FakeClock clock(kEpoch);
         FakeSleeper sleeper(clock);
@@ -108,15 +108,15 @@ namespace antwika::app
 
         (void)pacedSource.eventsFor(0);
 
-        EXPECT_EQ(pass.count(), 0U);
+        EXPECT_EQ(pass.getCount(), 0U);
         EXPECT_EQ(
-            sleeper.requestedSpans(),
+            sleeper.getRequestedSpans(),
             std::vector<milliseconds>{milliseconds{0}});
     }
 
     TEST(FramePacedSourceTest, EventsFor_DrawsNoExtraFrameWhenATickIsOne)
     {
-        ReplaySource innerSource(scriptedSource());
+        ReplaySource innerSource(getScriptedSource());
         FakeFramePass pass;
         FakeClock clock(kEpoch);
         FakeSleeper sleeper(clock);
@@ -130,15 +130,15 @@ namespace antwika::app
 
         (void)pacedSource.eventsFor(0);
 
-        EXPECT_EQ(pass.count(), 0U);
+        EXPECT_EQ(pass.getCount(), 0U);
         EXPECT_EQ(
-            sleeper.requestedSpans(),
+            sleeper.getRequestedSpans(),
             std::vector<milliseconds>{kInterval});
     }
 
     TEST(FramePacedSourceTest, EventsFor_DrawsEveryFrameButTheTicksOwn)
     {
-        ReplaySource innerSource(scriptedSource());
+        ReplaySource innerSource(getScriptedSource());
         FakeFramePass pass;
         FakeClock clock(kEpoch);
         FakeSleeper sleeper(clock);
@@ -155,12 +155,12 @@ namespace antwika::app
         const std::vector<Progress> wantedProgresses{
             Progress(1, 4), Progress(2, 4), Progress(3, 4)};
 
-        EXPECT_EQ(pass.drawn(), wantedProgresses);
+        EXPECT_EQ(pass.getDrawn(), wantedProgresses);
     }
 
     TEST(FramePacedSourceTest, EventsFor_WaitsAWholeIntervalHoweverItIsCut)
     {
-        ReplaySource innerSource(scriptedSource());
+        ReplaySource innerSource(getScriptedSource());
         FakeFramePass pass;
         FakeClock clock(kEpoch);
         FakeSleeper sleeper(clock);
@@ -177,14 +177,14 @@ namespace antwika::app
         const std::vector<milliseconds> wantedSpans{
             milliseconds{13}, milliseconds{13}, milliseconds{14}};
 
-        EXPECT_EQ(sleeper.requestedSpans(), wantedSpans);
-        EXPECT_EQ(sleeper.total(), kInterval);
-        EXPECT_EQ(clock.currentTime() - kEpoch, kInterval);
+        EXPECT_EQ(sleeper.getRequestedSpans(), wantedSpans);
+        EXPECT_EQ(sleeper.getTotal(), kInterval);
+        EXPECT_EQ(clock.getCurrentTime() - kEpoch, kInterval);
     }
 
     TEST(FramePacedSourceTest, EventsFor_SpacesFramesThatFallBetweenMillis)
     {
-        ReplaySource innerSource(scriptedSource());
+        ReplaySource innerSource(getScriptedSource());
         FakeFramePass pass;
         FakeClock clock(kEpoch);
         FakeSleeper sleeper(clock);
@@ -199,8 +199,8 @@ namespace antwika::app
         (void)pacedSource.eventsFor(0);
 
         const std::vector<milliseconds> opening(
-            sleeper.requestedSpans().begin(),
-            sleeper.requestedSpans().begin() + 4);
+            sleeper.getRequestedSpans().begin(),
+            sleeper.getRequestedSpans().begin() + 4);
 
         EXPECT_EQ(
             opening,
@@ -210,13 +210,13 @@ namespace antwika::app
                 milliseconds{0},
                 milliseconds{1}}));
 
-        EXPECT_EQ(pass.count(), 79U);
-        EXPECT_EQ(clock.currentTime() - kEpoch, kInterval);
+        EXPECT_EQ(pass.getCount(), 79U);
+        EXPECT_EQ(clock.getCurrentTime() - kEpoch, kInterval);
     }
 
     TEST(FramePacedSourceTest, EventsFor_DrawsItsFramesOnEveryTick)
     {
-        ReplaySource innerSource(scriptedSource());
+        ReplaySource innerSource(getScriptedSource());
         FakeFramePass pass;
         FakeClock clock(kEpoch);
         FakeSleeper sleeper(clock);
@@ -231,13 +231,13 @@ namespace antwika::app
         (void)pacedSource.eventsFor(0);
         (void)pacedSource.eventsFor(1);
 
-        EXPECT_EQ(pass.count(), 4U);
-        EXPECT_EQ(sleeper.total(), kInterval * 2);
+        EXPECT_EQ(pass.getCount(), 4U);
+        EXPECT_EQ(sleeper.getTotal(), kInterval * 2);
     }
 
     TEST(FramePacedSourceTest, EventsFor_StillDrawsWhenNoTimeIsSpent)
     {
-        ReplaySource innerSource(scriptedSource());
+        ReplaySource innerSource(getScriptedSource());
         FakeFramePass pass;
         FakeClock clock(kEpoch);
         FakeSleeper sleeper(clock);
@@ -252,13 +252,13 @@ namespace antwika::app
         const auto events = pacedSource.eventsFor(0);
 
         ASSERT_EQ(events.size(), 1U);
-        EXPECT_EQ(pass.count(), 1U);
-        EXPECT_EQ(sleeper.total(), milliseconds{0});
+        EXPECT_EQ(pass.getCount(), 1U);
+        EXPECT_EQ(sleeper.getTotal(), milliseconds{0});
     }
 
     TEST(FramePacedSourceTest, EventsFor_AbsorbsASleeperThatOvershoots)
     {
-        ReplaySource innerSource(scriptedSource());
+        ReplaySource innerSource(getScriptedSource());
         FakeFramePass pass;
         FakeClock clock(kEpoch);
         FakeOvershootingSleeper sleeper(clock, milliseconds{1});
@@ -273,20 +273,20 @@ namespace antwika::app
         (void)pacedSource.eventsFor(0);
 
         EXPECT_EQ(
-            sleeper.requestedSpans(),
+            sleeper.getRequestedSpans(),
             (std::vector<milliseconds>{
                 milliseconds{10},
                 milliseconds{9},
                 milliseconds{9},
                 milliseconds{9}}));
 
-        EXPECT_EQ(clock.currentTime() - kEpoch, kInterval + milliseconds{1});
-        EXPECT_EQ(pass.count(), 3U);
+        EXPECT_EQ(clock.getCurrentTime() - kEpoch, kInterval + milliseconds{1});
+        EXPECT_EQ(pass.getCount(), 3U);
     }
 
     TEST(FramePacedSourceTest, EventsFor_PumpsTheInputBeforeEveryFrameItDraws)
     {
-        ReplaySource innerSource(scriptedSource());
+        ReplaySource innerSource(getScriptedSource());
         FakePacingTrace trace;
         FakeClock clock(kEpoch);
         FakeSleeper sleeper(clock);
@@ -309,12 +309,12 @@ namespace antwika::app
             PacingStep::Pumped,
             PacingStep::Drawn};
 
-        EXPECT_EQ(trace.recordedSteps(), wantedSteps);
+        EXPECT_EQ(trace.getRecordedSteps(), wantedSteps);
     }
 
     TEST(FramePacedSourceTest, EventsFor_PumpsForTheTickItIsPacing)
     {
-        ReplaySource innerSource(scriptedSource());
+        ReplaySource innerSource(getScriptedSource());
         FakePacingTrace trace;
         FakeClock clock(kEpoch);
         FakeSleeper sleeper(clock);
@@ -330,13 +330,13 @@ namespace antwika::app
         (void)pacedSource.eventsFor(1);
 
         EXPECT_EQ(
-            trace.ticks(),
+            trace.getTicks(),
             (std::vector<antwika::time::Tick>{1, 1}));
     }
 
     TEST(FramePacedSourceTest, EventsFor_TellsThePacingSinkOfEveryFrameDrawn)
     {
-        ReplaySource innerSource(scriptedSource());
+        ReplaySource innerSource(getScriptedSource());
         FakeFramePass pass;
         FakeClock clock(kEpoch);
         FakeSleeper sleeper(clock);
@@ -354,17 +354,17 @@ namespace antwika::app
         (void)source.eventsFor(2);
 
         EXPECT_EQ(
-            pacedSink.recordedFrames(),
+            pacedSink.getRecordedFrames(),
             (std::vector<PacedFrame>{
                 PacedFrame::Drawn, PacedFrame::Drawn, PacedFrame::Drawn}));
         EXPECT_EQ(
-            pacedSink.recordedTicks(),
+            pacedSink.getRecordedTicks(),
             (std::vector<antwika::time::Tick>{2, 2, 2}));
     }
 
     TEST(FramePacedSourceTest, EventsFor_TellsThePacingSinkOfEveryFrameDropped)
     {
-        ReplaySource innerSource(scriptedSource());
+        ReplaySource innerSource(getScriptedSource());
         FakeClock clock(kEpoch);
         FakeOvershootingSleeper sleeper(clock, milliseconds{5});
         FakeFramePass pass;
@@ -392,12 +392,12 @@ namespace antwika::app
             PacedFrame::Dropped,
             PacedFrame::Drawn};
 
-        EXPECT_EQ(pacedSink.recordedFrames(), wantedFrames);
+        EXPECT_EQ(pacedSink.getRecordedFrames(), wantedFrames);
     }
 
     TEST(FramePacedSourceTest, EventsFor_DoesNotPumpForAFrameItDrops)
     {
-        ReplaySource innerSource(scriptedSource());
+        ReplaySource innerSource(getScriptedSource());
         FakePacingTrace trace;
         FakeClock clock(kEpoch);
         FakeOvershootingSleeper sleeper(clock, milliseconds{5});
@@ -424,12 +424,12 @@ namespace antwika::app
             PacingStep::Pumped,
             PacingStep::Drawn};
 
-        EXPECT_EQ(trace.recordedSteps(), wantedSteps);
+        EXPECT_EQ(trace.getRecordedSteps(), wantedSteps);
     }
 
     TEST(FramePacedSourceTest, EventsFor_DropsAFrameItCannotDrawInTime)
     {
-        ReplaySource innerSource(scriptedSource());
+        ReplaySource innerSource(getScriptedSource());
         FakeClock clock(kEpoch);
         FakeSleeper sleeper(clock);
 
@@ -445,7 +445,7 @@ namespace antwika::app
         (void)pacedSource.eventsFor(0);
 
         EXPECT_EQ(
-            pass.drawn(),
+            pass.getDrawn(),
             (std::vector<Progress>{
                 Progress(1, 10),
                 Progress(3, 10),
@@ -453,7 +453,7 @@ namespace antwika::app
                 Progress(7, 10),
                 Progress(9, 10)}));
 
-        EXPECT_EQ(sleeper.total(), milliseconds{12});
+        EXPECT_EQ(sleeper.getTotal(), milliseconds{12});
     }
 
 }

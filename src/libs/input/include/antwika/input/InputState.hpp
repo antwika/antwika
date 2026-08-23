@@ -14,9 +14,9 @@ namespace antwika::input
 
         void apply(const InputEvent &event) noexcept;
 
-        [[nodiscard]] const Keyboard &keyboard() const noexcept;
+        [[nodiscard]] const Keyboard &getKeyboard() const noexcept;
 
-        [[nodiscard]] const Mouse &mouse() const noexcept;
+        [[nodiscard]] const Mouse &getMouse() const noexcept;
 
     private:
         Keyboard keys;

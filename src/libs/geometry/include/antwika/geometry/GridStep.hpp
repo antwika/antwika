@@ -30,7 +30,7 @@ namespace antwika::geometry
         const GridCell fromCell,
         const GridStep step) noexcept
     {
-        return cellWithin(
+        return getCellWithin(
             gridSize,
             static_cast<std::int64_t>(fromCell.column) + step.acrossStep,
             static_cast<std::int64_t>(fromCell.row) + step.downStep);

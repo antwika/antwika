@@ -28,8 +28,8 @@ using antwika::ecs::World;
 using antwika::gameplay::GameLoop;
 using antwika::gameplay::Phase;
 using antwika::log::mocks::MockLogger;
-using antwika::rules::consumedVitals;
-using antwika::rules::inventoryWith;
+using antwika::rules::getConsumedVitals;
+using antwika::rules::getInventoryWith;
 using antwika::system::ConsumeSystem;
 using testing::NiceMock;
 
@@ -77,7 +77,7 @@ namespace
 TEST(ConsumeTest, Update_TakesTheItemOutOfTheBag)
 {
     ConsumeHarness harness;
-    const auto bagInventory = *inventoryWith(Inventory{}, ItemKind::Food);
+    const auto bagInventory = *getInventoryWith(Inventory{}, ItemKind::Food);
     const auto entity = harness.walker(bagInventory);
 
     harness.wish(entity, ItemKind::Food);
@@ -90,7 +90,7 @@ TEST(ConsumeTest, Update_TakesTheItemOutOfTheBag)
 TEST(ConsumeTest, Update_LiftsTheHealthTheRulesSay)
 {
     ConsumeHarness harness;
-    const auto bagInventory = *inventoryWith(Inventory{}, ItemKind::Food);
+    const auto bagInventory = *getInventoryWith(Inventory{}, ItemKind::Food);
     const auto entity = harness.walker(bagInventory);
     const Vitals heldVitals{
         .health = Health{}, .inventory = bagInventory};
@@ -100,14 +100,14 @@ TEST(ConsumeTest, Update_LiftsTheHealthTheRulesSay)
 
     EXPECT_EQ(
         harness.world.get<Health>(entity).food,
-        consumedVitals(heldVitals, ItemKind::Food).health.food);
+        getConsumedVitals(heldVitals, ItemKind::Food).health.food);
 }
 
 TEST(ConsumeTest, Update_ReportsThatSomethingWasLeftToTake)
 {
     ConsumeHarness harness;
     const auto entity =
-        harness.walker(*inventoryWith(Inventory{}, ItemKind::Food));
+        harness.walker(*getInventoryWith(Inventory{}, ItemKind::Food));
 
     harness.wish(entity, ItemKind::Food);
     harness.gameLoop.run(0);
@@ -133,7 +133,7 @@ TEST(ConsumeTest, Update_CarriesTheKindItWasAskedFor)
 {
     ConsumeHarness harness;
     const auto entity =
-        harness.walker(*inventoryWith(Inventory{}, ItemKind::Water));
+        harness.walker(*getInventoryWith(Inventory{}, ItemKind::Water));
 
     harness.wish(entity, ItemKind::Water);
     harness.gameLoop.run(0);
@@ -148,7 +148,7 @@ TEST(ConsumeTest, Update_LetsGoOfTheWishItHasAnswered)
 {
     ConsumeHarness harness;
     const auto entity =
-        harness.walker(*inventoryWith(Inventory{}, ItemKind::Food));
+        harness.walker(*getInventoryWith(Inventory{}, ItemKind::Food));
 
     harness.wish(entity, ItemKind::Food);
     harness.gameLoop.run(0);
@@ -160,7 +160,7 @@ TEST(ConsumeTest, Update_LeavesAWalkerWithNoWishAlone)
 {
     ConsumeHarness harness;
     const auto entity =
-        harness.walker(*inventoryWith(Inventory{}, ItemKind::Food));
+        harness.walker(*getInventoryWith(Inventory{}, ItemKind::Food));
 
     harness.gameLoop.run(0);
 

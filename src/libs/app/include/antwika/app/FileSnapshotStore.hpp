@@ -31,7 +31,7 @@ namespace antwika::app
         {
         }
 
-        [[nodiscard]] std::optional<ValueT> loadIfPresent() const
+        [[nodiscard]] std::optional<ValueT> getLoadIfPresent() const
         {
             auto file = io::openToReadIfPresent(path);
 

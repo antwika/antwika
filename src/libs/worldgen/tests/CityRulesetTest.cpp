@@ -15,7 +15,7 @@ using antwika::voxel::Kind;
 using antwika::worldgen::ChunkShape;
 using antwika::worldgen::CityDistrict;
 using antwika::worldgen::CityPiece;
-using antwika::worldgen::cityRuleset;
+using antwika::worldgen::getCityRuleset;
 using antwika::worldgen::CompiledRuleset;
 using antwika::worldgen::faultsIn;
 using antwika::worldgen::indexOf;
@@ -24,12 +24,12 @@ using antwika::worldgen::Role;
 
 TEST(CityRulesetTest, CityRuleset_HasNothingWrongWithIt)
 {
-    EXPECT_TRUE(faultsIn(cityRuleset()).empty());
+    EXPECT_TRUE(faultsIn(getCityRuleset()).empty());
 }
 
 TEST(CityRulesetTest, CityRuleset_NamesAWayAboutForEveryRamp)
 {
-    for (const auto &prototype : cityRuleset().prototypes)
+    for (const auto &prototype : getCityRuleset().prototypes)
     {
         if (prototype.kind == Kind::Ramp)
         {
@@ -40,7 +40,7 @@ TEST(CityRulesetTest, CityRuleset_NamesAWayAboutForEveryRamp)
 
 TEST(CityRulesetTest, CityRuleset_LetsNothingMassiveStandInTheHeights)
 {
-    const auto ruleset = cityRuleset();
+    const auto ruleset = getCityRuleset();
     const auto &heights =
         ruleset.districts[static_cast<std::size_t>(CityDistrict::Heights)];
 
@@ -52,7 +52,7 @@ TEST(CityRulesetTest, CityRuleset_LetsNothingMassiveStandInTheHeights)
 
 TEST(CityRulesetTest, CityRuleset_PutsTheSlumsBelowTheTerraces)
 {
-    const auto ruleset = cityRuleset();
+    const auto ruleset = getCityRuleset();
     const auto &slums =
         ruleset.districts[static_cast<std::size_t>(CityDistrict::Slums)];
     const auto &heights =
@@ -69,7 +69,7 @@ TEST(CityRulesetTest, CityRuleset_PutsTheSlumsBelowTheTerraces)
 
 TEST(CityRulesetTest, CityRuleset_WantsMostlyRockAtTheFootOfTheCity)
 {
-    const auto ruleset = cityRuleset();
+    const auto ruleset = getCityRuleset();
     const auto &bedrock =
         ruleset.districts[static_cast<std::size_t>(CityDistrict::Bedrock)];
 
@@ -89,7 +89,7 @@ TEST(CityRulesetTest, CityRuleset_WantsMostlyRockAtTheFootOfTheCity)
 
 TEST(CityRulesetTest, CityRuleset_LetsACellarBeCutIntoTheRock)
 {
-    const auto ruleset = cityRuleset();
+    const auto ruleset = getCityRuleset();
     const auto &bedrock =
         ruleset.districts[static_cast<std::size_t>(CityDistrict::Bedrock)];
 
@@ -100,20 +100,20 @@ TEST(CityRulesetTest, CityRuleset_LetsACellarBeCutIntoTheRock)
 
 TEST(CityRulesetTest, CityRuleset_HoldsAPieceForEveryRole)
 {
-    const CompiledRuleset compiledRuleset(cityRuleset());
+    const CompiledRuleset compiledRuleset(getCityRuleset());
 
-    EXPECT_EQ(compiledRuleset.size(), kCityPieces);
-    EXPECT_FALSE(compiledRuleset.wearing(Role::Room).empty());
-    EXPECT_FALSE(compiledRuleset.wearing(Role::Perch).empty());
-    EXPECT_FALSE(compiledRuleset.wearing(Role::Bear).empty());
-    EXPECT_FALSE(compiledRuleset.wearing(Role::Climb).empty());
-    EXPECT_FALSE(compiledRuleset.wearing(Role::Step).empty());
-    EXPECT_FALSE(compiledRuleset.wearing(Role::Land).empty());
+    EXPECT_EQ(compiledRuleset.getSize(), kCityPieces);
+    EXPECT_FALSE(compiledRuleset.getWearing(Role::Room).empty());
+    EXPECT_FALSE(compiledRuleset.getWearing(Role::Perch).empty());
+    EXPECT_FALSE(compiledRuleset.getWearing(Role::Bear).empty());
+    EXPECT_FALSE(compiledRuleset.getWearing(Role::Climb).empty());
+    EXPECT_FALSE(compiledRuleset.getWearing(Role::Step).empty());
+    EXPECT_FALSE(compiledRuleset.getWearing(Role::Land).empty());
 }
 
 TEST(CityRulesetTest, CityRuleset_GivesTheDistrictsTheirOwnBandsOfHeight)
 {
-    const CompiledRuleset compiledRuleset(cityRuleset());
+    const CompiledRuleset compiledRuleset(getCityRuleset());
     constexpr ChunkShape shape{};
 
     EXPECT_EQ(
@@ -129,13 +129,13 @@ TEST(CityRulesetTest, CityRuleset_GivesTheDistrictsTheirOwnBandsOfHeight)
 
 TEST(CityRulesetTest, CityRuleset_MatchesEveryPaintedCubeToSomePiece)
 {
-    const CompiledRuleset compiledRuleset(cityRuleset());
+    const CompiledRuleset compiledRuleset(getCityRuleset());
 
-    EXPECT_FALSE(compiledRuleset.matching(Kind::Normal, Facing::Any).empty());
-    EXPECT_FALSE(compiledRuleset.matching(Kind::Water, Facing::Any).empty());
-    EXPECT_EQ(compiledRuleset.matching(Kind::Ladder, Facing::Any).size(), 4U);
-    EXPECT_EQ(compiledRuleset.matching(Kind::Ramp, Facing::Any).size(), 4U);
-    EXPECT_EQ(compiledRuleset.matching(Kind::Ramp, Facing::East).size(), 1U);
+    EXPECT_FALSE(compiledRuleset.getMatching(Kind::Normal, Facing::Any).empty());
+    EXPECT_FALSE(compiledRuleset.getMatching(Kind::Water, Facing::Any).empty());
+    EXPECT_EQ(compiledRuleset.getMatching(Kind::Ladder, Facing::Any).size(), 4U);
+    EXPECT_EQ(compiledRuleset.getMatching(Kind::Ramp, Facing::Any).size(), 4U);
+    EXPECT_EQ(compiledRuleset.getMatching(Kind::Ramp, Facing::East).size(), 1U);
 }
 
 TEST(CityRulesetTest, CityRuleset_ListsItsPiecesAsTheEnumNamesThem)
@@ -163,7 +163,7 @@ TEST(CityRulesetTest, CityRuleset_ListsItsPiecesAsTheEnumNamesThem)
             {CityPiece::LadderSouth, "ladder south"},
             {CityPiece::Cistern, "cistern"}}};
 
-    const auto ruleset = cityRuleset();
+    const auto ruleset = getCityRuleset();
 
     ASSERT_EQ(ruleset.prototypes.size(), kCityPieces);
 

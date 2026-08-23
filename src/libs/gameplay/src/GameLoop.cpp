@@ -5,7 +5,7 @@
 namespace antwika::gameplay
 {
 
-    std::string_view phaseName(const Phase phase)
+    std::string_view getPhaseName(const Phase phase)
     {
         switch (phase)
         {
@@ -27,16 +27,16 @@ namespace antwika::gameplay
         for (const auto phase : kAllPhases)
         {
             phases.at(enums::index(phase)) =
-                scheduler.createPhase(phaseName(phase));
+                scheduler.createPhase(getPhaseName(phase));
         }
     }
 
-    ecs::World &GameLoop::world() noexcept
+    ecs::World &GameLoop::getWorld() noexcept
     {
         return *worldValue;
     }
 
-    const ecs::World &GameLoop::world() const noexcept
+    const ecs::World &GameLoop::getWorld() const noexcept
     {
         return *worldValue;
     }

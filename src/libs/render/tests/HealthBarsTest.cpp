@@ -8,7 +8,7 @@
 
 using antwika::component::Health;
 using antwika::component::kFullHealth;
-using antwika::render::healthBars;
+using antwika::render::getHealthBars;
 using antwika::render::kHealthBarGap;
 using antwika::render::kHealthBarTall;
 using antwika::render::kHealthBarWide;
@@ -22,7 +22,7 @@ namespace
 
 TEST(HealthBarsTest, HealthBars_PutFoodAboveWater)
 {
-    const auto bars = healthBars({100.0F, 50.0F}, Health{});
+    const auto bars = getHealthBars({100.0F, 50.0F}, Health{});
 
     EXPECT_LT(bars.at(0).originPoint.y, bars.at(2).originPoint.y);
     EXPECT_NEAR(
@@ -33,7 +33,7 @@ TEST(HealthBarsTest, HealthBars_PutFoodAboveWater)
 }
 TEST(HealthBarsTest, HealthBars_CentreBothBarsOverThePointGiven)
 {
-    const auto bars = healthBars({100.0F, 50.0F}, Health{});
+    const auto bars = getHealthBars({100.0F, 50.0F}, Health{});
 
     for (const auto which : kGroundBars)
     {
@@ -49,7 +49,7 @@ TEST(HealthBarsTest, HealthBars_CentreBothBarsOverThePointGiven)
 }
 TEST(HealthBarsTest, HealthBars_FillEachAsAShareOfTheWhole)
 {
-    const auto bars = healthBars(
+    const auto bars = getHealthBars(
         {100.0F, 50.0F},
         Health{
             .food = kFullHealth,
@@ -66,14 +66,14 @@ TEST(HealthBarsTest, HealthBars_FillEachAsAShareOfTheWhole)
 TEST(HealthBarsTest, HealthBars_FillNothingForADepletedLevel)
 {
     const auto bars =
-        healthBars({100.0F, 50.0F}, Health{.food = 0, .water = 0});
+        getHealthBars({100.0F, 50.0F}, Health{.food = 0, .water = 0});
 
     EXPECT_NEAR(bars.at(1).size.width, 0.0F, kTolerance);
     EXPECT_NEAR(bars.at(3).size.width, 0.0F, kTolerance);
 }
 TEST(HealthBarsTest, HealthBars_LandOnWholeCanvasPixels)
 {
-    const auto bars = healthBars(
+    const auto bars = getHealthBars(
         {100.3F, 50.7F},
         Health{.food = 7, .water = kFullHealth});
 

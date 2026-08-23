@@ -20,12 +20,12 @@ namespace antwika::gfx::raylib
           defaultTexture(material.maps[MATERIAL_MAP_DIFFUSE].texture),
           defaultSurfaceMap(
               material.maps[kSurfaceMapSlot].texture),
-          plainSurfaceMap(makeNeutralSurfaceMap()),
+          plainSurfaceMap(createNeutralSurfaceMap()),
           defaultShadowMap(material.maps[kShadowMapSlot].texture),
           defaultLampShadows(
               material.maps[kLampShadowsSlot].texture),
           defaultSightMap(material.maps[kSightMapSlot].texture),
-          openShadows(makeUnoccludedShadowMap())
+          openShadows(createUnoccludedShadowMap())
     {
     }
 
@@ -38,7 +38,7 @@ namespace antwika::gfx::raylib
         UnloadMaterial(material);
     }
 
-    ::Texture2D RaylibMaterial::makeNeutralSurfaceMap()
+    ::Texture2D RaylibMaterial::createNeutralSurfaceMap()
     {
         const ::Color plain{.r = 0, .g = 0, .b = 0, .a = 255};
         ::Image image = GenImageColor(1, 1, plain);
@@ -71,7 +71,7 @@ namespace antwika::gfx::raylib
             texture == nullptr ? plainSurfaceMap : *texture;
     }
 
-    ::Texture2D RaylibMaterial::makeUnoccludedShadowMap()
+    ::Texture2D RaylibMaterial::createUnoccludedShadowMap()
     {
         const ::Color open{.r = 255, .g = 255, .b = 255, .a = 255};
         ::Image image = GenImageColor(1, 1, open);
@@ -113,7 +113,7 @@ namespace antwika::gfx::raylib
         material.maps[kSightMapSlot].texture = defaultSightMap;
     }
 
-    const ::Material &RaylibMaterial::raw() const noexcept
+    const ::Material &RaylibMaterial::getRawHandle() const noexcept
     {
         return material;
     }

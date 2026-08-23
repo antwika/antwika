@@ -59,44 +59,44 @@ namespace antwika::character
     inline constexpr std::string_view kCharacterSheet =
         "character-20x28.png";
 
-    [[nodiscard]] gfx::Size characterSheetSize();
+    [[nodiscard]] gfx::Size getCharacterSheetSize();
 
-    [[nodiscard]] gfx::Bitmap blankCharacter();
+    [[nodiscard]] gfx::Bitmap getBlankCharacter();
 
-    [[nodiscard]] std::string_view directionName(std::size_t direction);
+    [[nodiscard]] std::string_view getDirectionName(std::size_t direction);
 
-    [[nodiscard]] gfx::Rect characterCell(
+    [[nodiscard]] gfx::Rect getCharacterCell(
         std::size_t direction, std::size_t frame);
 
-    [[nodiscard]] gfx::RectF characterSource(
+    [[nodiscard]] gfx::RectF getCharacterSource(
         std::size_t direction, std::size_t frame);
 
-    [[nodiscard]] std::optional<std::size_t> facingFromVelocity(
+    [[nodiscard]] std::optional<std::size_t> getFacingFromVelocity(
         component::Velocity velocity);
 
-    [[nodiscard]] animation::Clip walkingClip(std::size_t direction);
+    [[nodiscard]] animation::Clip getWalkingClip(std::size_t direction);
 
-    [[nodiscard]] animation::Clip standingClip(std::size_t direction);
+    [[nodiscard]] animation::Clip getStandingClip(std::size_t direction);
 
-    [[nodiscard]] std::size_t currentFrame(
+    [[nodiscard]] std::size_t getCurrentFrame(
         component::AnimationState posedState, time::Tick tick);
 
     inline constexpr std::size_t kTransparentInk = 0;
 
-    [[nodiscard]] gfx::Color characterPaletteColor(
+    [[nodiscard]] gfx::Color getCharacterPaletteColor(
         std::span<const gfx::Color> paletteColors, std::size_t which);
 
-    [[nodiscard]] gfx::MeshData characterMesh();
+    [[nodiscard]] gfx::MeshData getCharacterMesh();
 
-    [[nodiscard]] gfx::Mat4 spriteBillboardMatrix(
+    [[nodiscard]] gfx::Mat4 getSpriteBillboardMatrix(
         gfx::Vec3 position, const gfx::Mat4 &viewMatrix);
 
-    [[nodiscard]] gfx::Vec3 frameUvOffset(
+    [[nodiscard]] gfx::Vec3 getFrameUvOffset(
         std::size_t direction, std::size_t frame);
 
-    [[nodiscard]] gfx::Vec3 frameUvSize();
+    [[nodiscard]] gfx::Vec3 getFrameUvSize();
 
-    [[nodiscard]] geometry::GridCell characterPixel(
+    [[nodiscard]] geometry::GridCell getCharacterPixel(
         std::size_t direction,
         std::size_t frame,
         geometry::GridCell pixelCell);
@@ -126,10 +126,10 @@ namespace antwika::character
     [[nodiscard]] std::optional<geometry::GridCell> characterPixelAt(
         gfx::RectF whereRect, gfx::PointF point);
 
-    [[nodiscard]] gfx::RectF characterPixelPlace(
+    [[nodiscard]] gfx::RectF getCharacterPixelPlace(
         gfx::RectF whereRect, geometry::GridCell pixelCell);
 
-    [[nodiscard]] gfx::Color characterPixelColor(
+    [[nodiscard]] gfx::Color getCharacterPixelColor(
         const gfx::Bitmap &sheetBitmap,
         std::size_t direction,
         std::size_t frame,

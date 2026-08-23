@@ -8,7 +8,7 @@
 namespace antwika::ui::detail
 {
 
-    [[nodiscard]] DrawList buildDrawList(
+    [[nodiscard]] DrawList createDrawList(
         const LayoutTree &tree, HoverTargets *targets = nullptr);
 
 }

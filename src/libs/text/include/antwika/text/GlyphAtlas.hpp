@@ -14,12 +14,12 @@
 namespace antwika::text
 {
 
-    [[nodiscard]] gfx::Bitmap glyphAtlasBitmap(const GlyphCells &cells);
+    [[nodiscard]] gfx::Bitmap getGlyphAtlasBitmap(const GlyphCells &cells);
 
-    [[nodiscard]] std::optional<gfx::Rect> glyphAtlasCell(
+    [[nodiscard]] std::optional<gfx::Rect> getGlyphAtlasCell(
         const GlyphCells &cells, char character) noexcept;
 
-    [[nodiscard]] std::vector<GlyphBlit> glyphAtlasBlits(
+    [[nodiscard]] std::vector<GlyphBlit> getGlyphAtlasBlits(
         const GlyphCells &cells, gfx::Point originPoint, std::string_view text);
 
 }

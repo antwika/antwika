@@ -37,7 +37,7 @@ namespace
 
     constexpr const char *kScripted = "app.something";
 
-    [[nodiscard]] std::vector<TickEvent> oneEventAtTickZero()
+    [[nodiscard]] std::vector<TickEvent> getOneEventAtTickZero()
     {
         return {
             TickEvent{
@@ -57,7 +57,7 @@ class WindowCloseSourceTest : public ::testing::Test
 protected:
     void SetUp() override
     {
-        ON_CALL(window, id()).WillByDefault(Return(kOurWindow));
+        ON_CALL(window, getId()).WillByDefault(Return(kOurWindow));
         ON_CALL(window, isOpen()).WillByDefault(Return(true));
     }
 
@@ -70,7 +70,7 @@ protected:
     bool open = true;
     NiceMock<MockGfxBackend> backend;
     NiceMock<MockWindow> window;
-    ReplaySource innerSource{oneEventAtTickZero()};
+    ReplaySource innerSource{getOneEventAtTickZero()};
 };
 
 TEST_F(WindowCloseSourceTest, EventsFor_PassesTheWrappedEventsThrough)

@@ -11,7 +11,7 @@ namespace antwika::cli
 
     namespace
     {
-        const FlagSpec &helpSpec()
+        const FlagSpec &getHelpSpec()
         {
             static const FlagSpec spec{
                 .name = kHelpFlag,
@@ -21,12 +21,12 @@ namespace antwika::cli
             return spec;
         }
 
-        const FlagSpec *findFlag(
+        const FlagSpec *getFindFlag(
             std::span<const FlagSpec> flags, std::string_view name)
         {
             if (name == kHelpFlag)
             {
-                return &helpSpec();
+                return &getHelpSpec();
             }
 
             const auto foundFlag = std::ranges::find(
@@ -34,7 +34,7 @@ namespace antwika::cli
             return foundFlag == flags.end() ? nullptr : &*foundFlag;
         }
 
-        std::size_t widestFlag(std::span<const FlagSpec> flags)
+        std::size_t getWidestFlag(std::span<const FlagSpec> flags)
         {
             std::size_t widest = kHelpFlag.size();
             for (const auto &flag : flags)
@@ -78,7 +78,7 @@ namespace antwika::cli
         return values.find(flag) != values.end();
     }
 
-    std::optional<std::string> CommandLine::value(
+    std::optional<std::string> CommandLine::getValue(
         std::string_view flag) const
     {
         const auto foundFlag = values.find(flag);
@@ -97,7 +97,7 @@ namespace antwika::cli
         {
             const std::string_view argument = argv[i];
 
-            const FlagSpec *flag = findFlag(flags, argument);
+            const FlagSpec *flag = getFindFlag(flags, argument);
             if (flag == nullptr)
             {
                 throw CommandLineError(
@@ -123,10 +123,10 @@ namespace antwika::cli
         return CommandLine(std::move(values));
     }
 
-    std::string helpText(
+    std::string getHelpText(
         std::string_view program, std::span<const FlagSpec> flags)
     {
-        const std::size_t width = widestFlag(flags);
+        const std::size_t width = getWidestFlag(flags);
 
         std::string text = "Usage: ";
         text += program;
@@ -136,7 +136,7 @@ namespace antwika::cli
         {
             appendFlagLine(text, flag, width);
         }
-        appendFlagLine(text, helpSpec(), width);
+        appendFlagLine(text, getHelpSpec(), width);
 
         return text;
     } // GCOVR_EXCL_LINE

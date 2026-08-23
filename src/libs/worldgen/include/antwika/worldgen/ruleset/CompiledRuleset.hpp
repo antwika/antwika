@@ -24,18 +24,18 @@ namespace antwika::worldgen
     public:
         explicit CompiledRuleset(Ruleset ruleset);
 
-        [[nodiscard]] const Ruleset &source() const;
+        [[nodiscard]] const Ruleset &getSource() const;
 
-        [[nodiscard]] std::size_t size() const;
+        [[nodiscard]] std::size_t getSize() const;
 
-        [[nodiscard]] const Prototype &at(std::size_t which) const;
+        [[nodiscard]] const Prototype &getEntryAt(std::size_t which) const;
 
         [[nodiscard]] bool wears(std::size_t which, Role role) const;
 
-        [[nodiscard]] std::span<const std::size_t> wearing(
+        [[nodiscard]] std::span<const std::size_t> getWearing(
             Role role) const;
 
-        [[nodiscard]] std::span<const std::size_t> matching(
+        [[nodiscard]] std::span<const std::size_t> getMatching(
             voxel::Kind kind, voxel::Facing facing) const;
 
         [[nodiscard]] std::size_t districtOf(

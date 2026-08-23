@@ -14,17 +14,17 @@ namespace antwika::gfx::fakes
         {
         }
 
-        [[nodiscard]] Size size() const override
+        [[nodiscard]] Size getSize() const override
         {
             return askedSize;
         }
 
-        [[nodiscard]] const ITexture *color() const override
+        [[nodiscard]] const ITexture *getColor() const override
         {
             return nullptr;
         }
 
-        [[nodiscard]] const ITexture *depth() const override
+        [[nodiscard]] const ITexture *getDepth() const override
         {
             return nullptr;
         }

@@ -14,7 +14,7 @@ namespace antwika::ui
         Track,
     };
 
-    [[nodiscard]] constexpr DragOrigin lastEnumerator(DragOrigin) noexcept
+    [[nodiscard]] constexpr DragOrigin getLastEnumerator(DragOrigin) noexcept
     {
         return DragOrigin::Track;
     }

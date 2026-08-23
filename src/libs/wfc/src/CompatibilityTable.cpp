@@ -9,16 +9,16 @@ namespace antwika::wfc
     }
 
     void CompatibilityTable::set(
-        std::size_t left, std::size_t right, bool isCompatible)
+        std::size_t left, std::size_t right, bool compatible)
     {
         if (left >= size || right >= size)
         {
             return;
         }
-        entries[left * size + right] = isCompatible;
+        entries[left * size + right] = compatible;
     }
 
-    bool CompatibilityTable::compatible(
+    bool CompatibilityTable::isCompatible(
         std::size_t left, std::size_t right) const
     {
         if (left >= size || right >= size)

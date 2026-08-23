@@ -11,17 +11,17 @@
 using antwika::input::InputError;
 using antwika::input::kMouseButtonCount;
 using antwika::input::MouseButton;
-using antwika::input::mouseButtonFromString;
-using antwika::input::mouseButtonIndex;
+using antwika::input::getMouseButtonFromString;
+using antwika::input::getMouseButtonIndex;
 using antwika::input::toString;
 
 TEST(MouseButtonTest, MouseButtonIndex_NumbersTheButtonsFromZero)
 {
-    EXPECT_EQ(mouseButtonIndex(MouseButton::Left), 0u);
-    EXPECT_EQ(mouseButtonIndex(MouseButton::Middle), 1u);
-    EXPECT_EQ(mouseButtonIndex(MouseButton::Right), 2u);
-    EXPECT_EQ(mouseButtonIndex(MouseButton::X1), 3u);
-    EXPECT_EQ(mouseButtonIndex(MouseButton::X2), 4u);
+    EXPECT_EQ(getMouseButtonIndex(MouseButton::Left), 0u);
+    EXPECT_EQ(getMouseButtonIndex(MouseButton::Middle), 1u);
+    EXPECT_EQ(getMouseButtonIndex(MouseButton::Right), 2u);
+    EXPECT_EQ(getMouseButtonIndex(MouseButton::X1), 3u);
+    EXPECT_EQ(getMouseButtonIndex(MouseButton::X2), 4u);
 }
 
 TEST(MouseButtonTest, MouseButtonIndex_StaysBelowTheButtonCount)
@@ -30,7 +30,7 @@ TEST(MouseButtonTest, MouseButtonIndex_StaysBelowTheButtonCount)
     {
         const auto button = static_cast<MouseButton>(index);
 
-        EXPECT_LT(mouseButtonIndex(button), kMouseButtonCount)
+        EXPECT_LT(getMouseButtonIndex(button), kMouseButtonCount)
             << toString(button);
     }
 }
@@ -96,7 +96,7 @@ TEST(MouseButtonTest, ToString_GivesEveryButtonItsOwnName)
 
 TEST(MouseButtonTest, MouseButtonFromString_FindsTheButtonANameRefersTo)
 {
-    EXPECT_EQ(mouseButtonFromString("Right"), MouseButton::Right);
+    EXPECT_EQ(getMouseButtonFromString("Right"), MouseButton::Right);
 }
 
 TEST(MouseButtonTest, MouseButtonFromString_RoundTripsEveryButton)
@@ -105,7 +105,7 @@ TEST(MouseButtonTest, MouseButtonFromString_RoundTripsEveryButton)
     {
         const auto button = static_cast<MouseButton>(index);
 
-        EXPECT_EQ(mouseButtonFromString(toString(button)), button)
+        EXPECT_EQ(getMouseButtonFromString(toString(button)), button)
             << toString(button);
     }
 }
@@ -113,14 +113,14 @@ TEST(MouseButtonTest, MouseButtonFromString_RoundTripsEveryButton)
 TEST(MouseButtonTest, MouseButtonFromString_ThrowsOnANameNoButtonGoesBy)
 {
     EXPECT_THROW(
-        static_cast<void>(mouseButtonFromString("Fourth")), InputError);
+        static_cast<void>(getMouseButtonFromString("Fourth")), InputError);
 }
 
 TEST(MouseButtonTest, MouseButtonFromString_SaysWhichNameItRejected)
 {
     try
     {
-        const auto button = mouseButtonFromString("Fourth");
+        const auto button = getMouseButtonFromString("Fourth");
         FAIL() << "expected an InputError, got " << toString(button);
     }
     catch (const InputError &error)

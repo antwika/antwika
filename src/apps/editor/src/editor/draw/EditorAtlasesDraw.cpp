@@ -17,13 +17,13 @@
 namespace
 {
 
-    [[nodiscard]] std::optional<antwika::voxel::Kind> hoveredKind(
+    [[nodiscard]] std::optional<antwika::voxel::Kind> getHoveredKind(
         const antwika::ui::Frame &frame)
     {
         for (const auto kind : antwika::voxel::kEveryKind)
         {
             if (frame.interactions.hoveredWidget
-                == antwika::editor::kindWidget(kind))
+                == antwika::editor::getKindWidget(kind))
             {
                 return kind;
             }
@@ -44,7 +44,7 @@ namespace antwika::editor
         const auto where = gridRect();
         const auto fadeOthers = selectedTile.has_value()
                              && selectedEdges.has_value();
-        const auto hoveredTileKind = hoveredKind(frame);
+        const auto hoveredTileKind = getHoveredKind(frame);
         const auto sheetClip = sheetClipRect();
         const auto frameArea = frameRect();
 
@@ -62,11 +62,11 @@ namespace antwika::editor
                      column < document.map.tilemap.columns;
                      ++column)
                 {
-                    const auto tile = document.map.tilemap.at(column, row);
+                    const auto tile = document.map.tilemap.getEntryAt(column, row);
 
                     if (!tile.has_value())
                     {
-                        const auto place = tilePlace(
+                        const auto place = getTilePlace(
                             document.map.tilemap, column, row, where);
                         const auto middle =
                             antwika::gfx::PointF{
@@ -100,11 +100,11 @@ namespace antwika::editor
                                    == *hoveredTileKind);
                     const auto size = tilemap::tileSizeOf(
                         tile->atlas);
-                    const auto place = tilePlace(
+                    const auto place = getTilePlace(
                         document.map.tilemap, column, row, where);
 
                     viewportRenderer.drawTexture(
-                        *atlasSheets.checker(tile->atlas),
+                        *atlasSheets.getChecker(tile->atlas),
                         antwika::gfx::RectF(
                             {0.0F, 0.0F},
                             {static_cast<float>(size.width),
@@ -117,8 +117,8 @@ namespace antwika::editor
                             document.map.decor, *tile);
 
                     viewportRenderer.drawTexture(
-                        *atlasSheets.texture(tile->atlas),
-                        tilemap::tileSource(
+                        *atlasSheets.getTexture(tile->atlas),
+                        tilemap::getTileSource(
                             strolling != nullptr
                                        ? decor::decorFrameAt(
                                       *strolling, tick)
@@ -164,14 +164,14 @@ namespace antwika::editor
             if (selectedTile.has_value())
             {
                 const auto fromPoint =
-                    tileCenter(document.map.tilemap, where, *selectedTile);
+                    getTileCenter(document.map.tilemap, where, *selectedTile);
 
                 for (const auto edge : tilemap::kEveryTileEdge)
                 {
                     for (const auto neighbor :
-                         activeRules().allowed(*selectedTile, edge))
+                         activeRules().getAllowed(*selectedTile, edge))
                     {
-                        const auto toPoint = tileCenter(
+                        const auto toPoint = getTileCenter(
                             document.map.tilemap, where, neighbor);
 
                         if (fromPoint.has_value()
@@ -194,15 +194,15 @@ namespace antwika::editor
                         const tilemap::Tile tile, const gfx::Color tone)
                 {
                     const auto stands =
-                        tilemap::cellHoldingTile(document.map.tilemap, tile);
+                        tilemap::getCellHoldingTile(document.map.tilemap, tile);
 
                     if (!stands.has_value())
                     {
                         return;
                     }
 
-                    for (const auto bar : outlineRects(
-                             tilePlace(
+                    for (const auto bar : getOutlineRects(
+                             getTilePlace(
                                  document.map.tilemap,
                                  stands->column,
                                  stands->row,
@@ -226,7 +226,7 @@ namespace antwika::editor
                              ++column)
                         {
                             const auto neighbourTile =
-                                document.map.tilemap.at(column, row);
+                                document.map.tilemap.getEntryAt(column, row);
 
                             if (!neighbourTile.has_value()
                                 || *neighbourTile == *selectedTile
@@ -277,11 +277,11 @@ namespace antwika::editor
                 }
 
                 const auto *family =
-                    groupLedBy(document.map.familyGroups, *selectedTile);
+                    getGroupLedBy(document.map.familyGroups, *selectedTile);
 
                 if (family == nullptr)
                 {
-                    family = groupContaining(
+                    family = getGroupContaining(
                         document.map.familyGroups, *selectedTile);
                 }
 
@@ -320,24 +320,24 @@ namespace antwika::editor
                         tilemap::tileSizeOf(selectedTile->atlas);
 
                     viewportRenderer.drawTexture(
-                        *atlasSheets.checker(selectedTile->atlas),
+                        *atlasSheets.getChecker(selectedTile->atlas),
                         antwika::gfx::RectF(
                             {0.0F, 0.0F},
                             {static_cast<float>(size.width),
                              static_cast<float>(
                                  size.height)}),
-                        inspectedTileRect(frameRect(), *selectedTile),
+                        getInspectedTileRect(frameRect(), *selectedTile),
                         kWhiteColor);
                 }
 
                 viewportRenderer.drawTexture(
-                    *atlasSheets.texture(selectedTile->atlas),
-                    tilemap::tileSource(editedTile()),
-                    inspectedTileRect(frameRect(), *selectedTile),
+                    *atlasSheets.getTexture(selectedTile->atlas),
+                    tilemap::getTileSource(editedTile()),
+                    getInspectedTileRect(frameRect(), *selectedTile),
                     kWhiteColor);
 
-                for (const auto bar : outlineRects(
-                         inspectedTileRect(frameRect(), *selectedTile),
+                for (const auto bar : getOutlineRects(
+                         getInspectedTileRect(frameRect(), *selectedTile),
                          kBorderThick))
                 {
                     viewportRenderer.drawRect(bar, kTextColor);
@@ -346,10 +346,10 @@ namespace antwika::editor
                 for (const auto corner : voxel::kEveryCorner)
                 {
                     const auto cornerRule =
-                        activeRules().corner(*selectedTile, corner);
+                        activeRules().getCorner(*selectedTile, corner);
 
                     viewportRenderer.drawRect(
-                        cornerPlace(frameRect(), corner),
+                        getCornerPlace(frameRect(), corner),
                         !cornerRule.has_value() ? kTextColor
                         : *cornerRule           ? kCornerFilledMarkerColor
                                            : kCornerEmptyMarkerColor);
@@ -366,7 +366,7 @@ namespace antwika::editor
                                    ? kForbiddenMarkerColor
                                    : kTextColor);
                     const auto where =
-                        markerPlace(frameRect(), edge);
+                        getMarkerPlace(frameRect(), edge);
 
                     viewportRenderer.drawRect(where, ink);
 
@@ -401,7 +401,7 @@ namespace antwika::editor
                         });
 
                     viewportRenderer.drawRect(
-                        bothMarkerPlace(frameRect(), side),
+                        getBothMarkerPlace(frameRect(), side),
                         selectedEdges == pair  ? kSelectionAccentColor
                         : forbidden            ? kForbiddenMarkerColor
                                                : kTextColor);
@@ -413,7 +413,7 @@ namespace antwika::editor
         if (selectedTile.has_value())
         {
             const auto face =
-                inspectedTileRect(frameRect(), *selectedTile);
+                getInspectedTileRect(frameRect(), *selectedTile);
             const auto pixel =
                 tile::pixelAt(*selectedTile, face, pointer.pointerOnCanvas);
 
@@ -423,19 +423,19 @@ namespace antwika::editor
                     !lineFromCell.has_value()
                         ? std::vector{*pixel}
                     : settings.paint == map::Paint::Rect
-                        ? tile::rectPixels(
+                        ? tile::getRectPixels(
                               *lineFromCell, *pixel)
                     : settings.paint == map::Paint::Circle
-                        ? tile::circlePixels(
+                        ? tile::getCirclePixels(
                               *lineFromCell, *pixel)
                     : settings.paint == map::Paint::Line
-                        ? tile::linePixels(*lineFromCell, *pixel)
+                        ? tile::getLinePixels(*lineFromCell, *pixel)
                         : std::vector{*pixel};
 
                 for (const auto one : markedTiles)
                 {
-                    for (const auto bar : outlineRects(
-                             tile::pixelPlace(
+                    for (const auto bar : getOutlineRects(
+                             tile::getPixelPlace(
                                  *selectedTile, face, one),
                              kCursorThickness))
                     {
@@ -447,20 +447,20 @@ namespace antwika::editor
 
         if (dragFromCell.has_value()
             && document.map.tilemap
-                   .at(dragFromCell->column, dragFromCell->row)
+                   .getEntryAt(dragFromCell->column, dragFromCell->row)
                    .has_value())
         {
-            const auto tile = document.map.tilemap.at(
+            const auto tile = document.map.tilemap.getEntryAt(
                 dragFromCell->column, dragFromCell->row);
-            const auto cell = tilePlace(
+            const auto cell = getTilePlace(
                 document.map.tilemap,
                 dragFromCell->column,
                 dragFromCell->row,
                 where);
 
             viewportRenderer.drawTexture(
-                *atlasSheets.texture(tile->atlas),
-                tilemap::tileSource(*tile),
+                *atlasSheets.getTexture(tile->atlas),
+                tilemap::getTileSource(*tile),
                 antwika::gfx::RectF(
                     {pointer.pointerOnCanvas.x - (cell.size.width / 2.0F),
                      pointer.pointerOnCanvas.y

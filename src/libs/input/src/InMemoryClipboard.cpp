@@ -3,7 +3,7 @@
 namespace antwika::input
 {
 
-    std::string InMemoryClipboard::text() const
+    std::string InMemoryClipboard::getText() const
     {
         return heldText;
     }

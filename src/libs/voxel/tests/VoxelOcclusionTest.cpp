@@ -12,7 +12,7 @@ using antwika::voxel::Voxels;
 
 TEST(VoxelOcclusionTest, OccludingVoxels_HidesNothingWithNothingInTheWay)
 {
-    using antwika::voxel::occludingVoxels;
+    using antwika::voxel::getOccludingVoxels;
 
     Voxels filledVoxels;
 
@@ -26,7 +26,7 @@ TEST(VoxelOcclusionTest, OccludingVoxels_HidesNothingWithNothingInTheWay)
     }
 
     EXPECT_TRUE(
-        occludingVoxels(filledVoxels, glm::vec3{0.0F, 0.5F, 0.0F})
+        getOccludingVoxels(filledVoxels, glm::vec3{0.0F, 0.5F, 0.0F})
             .empty());
 }
 
@@ -40,7 +40,7 @@ namespace
 namespace
 {
 
-    [[nodiscard]] Voxels groundUnder()
+    [[nodiscard]] Voxels getGroundUnder()
     {
         Voxels filledVoxels;
 
@@ -62,9 +62,9 @@ TEST(
     VoxelOcclusionTest,
     OccludingVoxels_LiftsTheRoofOverTheHeadWholeBothWays)
 {
-    using antwika::voxel::occludingVoxels;
+    using antwika::voxel::getOccludingVoxels;
 
-    auto filledVoxels = groundUnder();
+    auto filledVoxels = getGroundUnder();
 
     for (std::int32_t z = -4; z <= 4; ++z)
     {
@@ -73,7 +73,7 @@ TEST(
     }
 
     const auto occludingCells =
-        occludingVoxels(filledVoxels, kStanding);
+        getOccludingVoxels(filledVoxels, kStanding);
 
     EXPECT_TRUE(occludingCells.contains(VoxelPosition{.x = 0, .y = 3, .z = 0}));
     EXPECT_TRUE(occludingCells.contains(VoxelPosition{.x = 0, .y = 3,
@@ -85,9 +85,9 @@ TEST(
     VoxelOcclusionTest,
     OccludingVoxels_LeavesTheRoofStandingFarAcrossFromTheHead)
 {
-    using antwika::voxel::occludingVoxels;
+    using antwika::voxel::getOccludingVoxels;
 
-    auto filledVoxels = groundUnder();
+    auto filledVoxels = getGroundUnder();
 
     for (std::int32_t x = -20; x <= 20; ++x)
     {
@@ -99,7 +99,7 @@ TEST(
     }
 
     const auto occludingCells =
-        occludingVoxels(filledVoxels, kStanding);
+        getOccludingVoxels(filledVoxels, kStanding);
 
     EXPECT_TRUE(occludingCells.contains(VoxelPosition{.x = 0, .y = 3, .z = 0}));
     EXPECT_TRUE(occludingCells.contains(VoxelPosition{.x = 12, .y = 3,
@@ -114,9 +114,9 @@ TEST(
     VoxelOcclusionTest,
     OccludingVoxels_LiftsARoofItIsCutOffFromOverTheHead)
 {
-    using antwika::voxel::occludingVoxels;
+    using antwika::voxel::getOccludingVoxels;
 
-    auto filledVoxels = groundUnder();
+    auto filledVoxels = getGroundUnder();
 
     filledVoxels[VoxelPosition{.x = 0, .y = 3, .z = 0}] =
                 VoxelMaterial{};
@@ -124,7 +124,7 @@ TEST(
                 VoxelMaterial{};
 
     const auto occludingCells =
-        occludingVoxels(filledVoxels, kStanding);
+        getOccludingVoxels(filledVoxels, kStanding);
 
     EXPECT_TRUE(occludingCells.contains(VoxelPosition{.x = 0, .y = 3, .z = 0}));
     EXPECT_TRUE(occludingCells.contains(VoxelPosition{.x = 5, .y = 3, .z = 0}));
@@ -134,9 +134,9 @@ TEST(
     VoxelOcclusionTest,
     OccludingVoxels_LeavesWhatStandsUnderTheRoofItLifts)
 {
-    using antwika::voxel::occludingVoxels;
+    using antwika::voxel::getOccludingVoxels;
 
-    auto filledVoxels = groundUnder();
+    auto filledVoxels = getGroundUnder();
 
     for (std::int32_t x = -3; x <= 3; ++x)
     {
@@ -150,7 +150,7 @@ TEST(
                 VoxelMaterial{};
 
     const auto occludingCells =
-        occludingVoxels(filledVoxels, kStanding);
+        getOccludingVoxels(filledVoxels, kStanding);
 
     EXPECT_TRUE(occludingCells.contains(VoxelPosition{.x = 3, .y = 3, .z = 0}));
     EXPECT_FALSE(occludingCells.contains(VoxelPosition{.x = 3, .y = 2,
@@ -208,7 +208,7 @@ TEST(
     VoxelOcclusionTest,
     OccludingVoxels_LiftsTheFloorOfTheStoreyOverTheWallsAbout)
 {
-    using antwika::voxel::occludingVoxels;
+    using antwika::voxel::getOccludingVoxels;
 
     auto filledVoxels = roomShutIn();
 
@@ -217,7 +217,7 @@ TEST(
     filledVoxels[storeyOverPosition] = VoxelMaterial{};
 
     const auto occludingCells =
-        occludingVoxels(filledVoxels, kStanding);
+        getOccludingVoxels(filledVoxels, kStanding);
 
     EXPECT_TRUE(occludingCells.contains(storeyOverPosition));
 }
@@ -226,10 +226,10 @@ TEST(
     VoxelOcclusionTest,
     OccludingVoxels_LeavesTheWallsOfTheRoomItStandsIn)
 {
-    using antwika::voxel::occludingVoxels;
+    using antwika::voxel::getOccludingVoxels;
 
     const auto occludingCells =
-        occludingVoxels(roomShutIn(), kStanding);
+        getOccludingVoxels(roomShutIn(), kStanding);
 
     EXPECT_FALSE(occludingCells.contains(VoxelPosition{.x = -4, .y = 3,
         .z = 0}));
@@ -243,10 +243,10 @@ TEST(
     VoxelOcclusionTest,
     OccludingVoxels_LeavesTheGroundUnderTheRoomItLiftsOver)
 {
-    using antwika::voxel::occludingVoxels;
+    using antwika::voxel::getOccludingVoxels;
 
     const auto occludingCells =
-        occludingVoxels(roomShutIn(), kStanding);
+        getOccludingVoxels(roomShutIn(), kStanding);
 
     EXPECT_FALSE(occludingCells.contains(VoxelPosition{.x = 0, .y = 0,
         .z = 0}));
@@ -258,9 +258,9 @@ TEST(
     VoxelOcclusionTest,
     OccludingVoxels_LeavesTheRoofStandingFarSouthOfTheHead)
 {
-    using antwika::voxel::occludingVoxels;
+    using antwika::voxel::getOccludingVoxels;
 
-    auto filledVoxels = groundUnder();
+    auto filledVoxels = getGroundUnder();
 
     for (std::int32_t z = -20; z <= 20; ++z)
     {
@@ -269,7 +269,7 @@ TEST(
     }
 
     const auto occludingCells =
-        occludingVoxels(filledVoxels, kStanding);
+        getOccludingVoxels(filledVoxels, kStanding);
 
     EXPECT_TRUE(occludingCells.contains(VoxelPosition{.x = 0, .y = 3, .z = 0}));
     EXPECT_FALSE(occludingCells.contains(VoxelPosition{.x = 0, .y = 3,
@@ -280,9 +280,9 @@ TEST(
     VoxelOcclusionTest,
     OccludingVoxels_LeavesWhatARoofRestsOnStandingBelowIt)
 {
-    using antwika::voxel::occludingVoxels;
+    using antwika::voxel::getOccludingVoxels;
 
-    auto filledVoxels = groundUnder();
+    auto filledVoxels = getGroundUnder();
 
     for (std::int32_t z = -4; z <= 4; ++z)
     {
@@ -297,7 +297,7 @@ TEST(
                 VoxelMaterial{};
 
     const auto occludingCells =
-        occludingVoxels(filledVoxels, kStanding);
+        getOccludingVoxels(filledVoxels, kStanding);
 
     EXPECT_TRUE(occludingCells.contains(VoxelPosition{.x = 0, .y = 3,
         .z = -3}));
@@ -310,9 +310,9 @@ TEST(
     VoxelOcclusionTest,
     OccludingVoxels_LiftsNoRoofOverTheReachOfTheSightPoint)
 {
-    using antwika::voxel::occludingVoxels;
+    using antwika::voxel::getOccludingVoxels;
 
-    auto filledVoxels = groundUnder();
+    auto filledVoxels = getGroundUnder();
 
     for (std::int32_t x = -3; x <= 3; ++x)
     {
@@ -323,32 +323,32 @@ TEST(
         }
     }
 
-    EXPECT_TRUE(occludingVoxels(filledVoxels, kStanding).empty());
+    EXPECT_TRUE(getOccludingVoxels(filledVoxels, kStanding).empty());
 }
 
 TEST(
     VoxelOcclusionTest,
     OccludingVoxels_LiftsNoRoofWhereTheSkyIsOverTheHead)
 {
-    using antwika::voxel::occludingVoxels;
+    using antwika::voxel::getOccludingVoxels;
 
-    auto filledVoxels = groundUnder();
+    auto filledVoxels = getGroundUnder();
     const VoxelPosition asidePosition{.x = 2, .y = 3, .z = -3};
 
     filledVoxels[asidePosition] = VoxelMaterial{};
 
     const auto occludingCells =
-        occludingVoxels(filledVoxels, kStanding);
+        getOccludingVoxels(filledVoxels, kStanding);
 
     EXPECT_FALSE(occludingCells.contains(asidePosition));
 }
 
 TEST(VoxelOcclusionTest, VoxelUnder_TakesTheCellThePointFallsIn)
 {
-    using antwika::voxel::voxelUnder;
+    using antwika::voxel::getVoxelUnder;
 
     EXPECT_EQ(
-        voxelUnder(glm::vec3{0.5F, 3.5F, -0.5F}),
+        getVoxelUnder(glm::vec3{0.5F, 3.5F, -0.5F}),
         (VoxelPosition{.x = 0, .y = 3, .z = -1}));
 }
 
@@ -361,58 +361,58 @@ namespace
 
 TEST(VoxelOcclusionTest, CubeAbove_FindsNothingUnderTheOpenSky)
 {
-    using antwika::voxel::cubeAbove;
+    using antwika::voxel::isCubeAbove;
 
-    EXPECT_FALSE(cubeAbove(groundUnder(), kStanding, kSightClearance));
+    EXPECT_FALSE(isCubeAbove(getGroundUnder(), kStanding, kSightClearance));
 }
 
 TEST(VoxelOcclusionTest, CubeAbove_FindsTheCubeOverTheHead)
 {
-    using antwika::voxel::cubeAbove;
+    using antwika::voxel::isCubeAbove;
 
-    auto filledVoxels = groundUnder();
+    auto filledVoxels = getGroundUnder();
 
     filledVoxels[VoxelPosition{.x = 1, .y = 2, .z = 1}] = VoxelMaterial{};
 
-    EXPECT_TRUE(cubeAbove(filledVoxels, kStanding, kSightClearance));
+    EXPECT_TRUE(isCubeAbove(filledVoxels, kStanding, kSightClearance));
 }
 
 TEST(VoxelOcclusionTest, CubeAbove_FindsNothingWhereTheWaterIs)
 {
-    using antwika::voxel::cubeAbove;
+    using antwika::voxel::isCubeAbove;
 
-    auto filledVoxels = groundUnder();
+    auto filledVoxels = getGroundUnder();
 
     filledVoxels[VoxelPosition{.x = 0, .y = 3, .z = 0}] =
         VoxelMaterial{.kind = antwika::voxel::Kind::Water};
 
-    EXPECT_FALSE(cubeAbove(filledVoxels, kStanding, kSightClearance));
+    EXPECT_FALSE(isCubeAbove(filledVoxels, kStanding, kSightClearance));
 }
 
 TEST(VoxelOcclusionTest, CubeAbove_FindsTheCubeTheClearanceReaches)
 {
-    using antwika::voxel::cubeAbove;
+    using antwika::voxel::isCubeAbove;
 
-    auto filledVoxels = groundUnder();
+    auto filledVoxels = getGroundUnder();
 
     filledVoxels[VoxelPosition{.x = 0, .y = 2, .z = 2}] = VoxelMaterial{};
 
     const glm::vec3 aboutToEnter{0.0F, 0.5F, 1.9F};
 
-    EXPECT_FALSE(cubeAbove(filledVoxels, aboutToEnter, 0.0F));
-    EXPECT_TRUE(cubeAbove(filledVoxels, aboutToEnter, kSightClearance));
+    EXPECT_FALSE(isCubeAbove(filledVoxels, aboutToEnter, 0.0F));
+    EXPECT_TRUE(isCubeAbove(filledVoxels, aboutToEnter, kSightClearance));
 }
 
 TEST(VoxelOcclusionTest, CubeAbove_LeavesTheCubeAClearWalkAwayAlone)
 {
-    using antwika::voxel::cubeAbove;
+    using antwika::voxel::isCubeAbove;
 
-    auto filledVoxels = groundUnder();
+    auto filledVoxels = getGroundUnder();
 
     filledVoxels[VoxelPosition{.x = 0, .y = 2, .z = 2}] = VoxelMaterial{};
 
     EXPECT_FALSE(
-        cubeAbove(
+        isCubeAbove(
             filledVoxels,
             glm::vec3{0.0F, 0.5F, 1.0F},
             kSightClearance));

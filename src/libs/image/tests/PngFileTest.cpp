@@ -19,7 +19,7 @@
 #include "antwika/image/PngFile.hpp"
 
 using antwika::gfx::GfxError;
-using antwika::image::readPngFile;
+using antwika::image::getReadPngFile;
 using antwika::image::writePngFile;
 
 namespace
@@ -38,13 +38,13 @@ TEST(PngFileTest, ReadPngFile_ReadsAPngOffDisk)
 {
     const antwika::testing::ScratchFile file("antwika-app-one-pixel.png");
     {
-        std::ofstream outputStream(file.string(), std::ios::binary);
+        std::ofstream outputStream(file.getString(), std::ios::binary);
         outputStream.write(
             reinterpret_cast<const char *>(kOnePixelPng.data()),
             static_cast<std::streamsize>(kOnePixelPng.size()));
     }
 
-    const auto bitmap = readPngFile(file.string(), "antwika_test");
+    const auto bitmap = getReadPngFile(file.getString(), "antwika_test");
 
     EXPECT_EQ(bitmap.size.width, 1U);
     EXPECT_EQ(bitmap.size.height, 1U);
@@ -58,7 +58,7 @@ TEST(PngFileTest, ReadPngFile_NamesTheMissingFileAndCaller)
 
     try
     {
-        static_cast<void>(readPngFile(missing, "antwika_test"));
+        static_cast<void>(getReadPngFile(missing, "antwika_test"));
         FAIL() << "expected a GfxError";
     }
     catch (const GfxError &error)
@@ -72,7 +72,7 @@ TEST(PngFileTest, ReadPngFile_NamesTheMissingFileAndCaller)
 TEST(PngFileTest, WritePngFile_WritesWhatReadPngFileReadsBack)
 {
     const auto path =
-        antwika::testing::scratchPath("png-file-written.png").string();
+        antwika::testing::getScratchPath("png-file-written.png").string();
 
     const antwika::gfx::Bitmap pageBitmap{
         .size = {.width = 2, .height = 1},
@@ -81,7 +81,7 @@ TEST(PngFileTest, WritePngFile_WritesWhatReadPngFileReadsBack)
 
     writePngFile(pageBitmap, path, "test");
 
-    EXPECT_EQ(readPngFile(path, "test"), pageBitmap);
+    EXPECT_EQ(getReadPngFile(path, "test"), pageBitmap);
 
     std::error_code errorCode;
     std::filesystem::remove(path, errorCode);
@@ -101,7 +101,7 @@ TEST(PngFileTest, WritePngFile_SaysWhichFileItCouldNotWrite)
 TEST(PngFileTest, WritePngFile_KeepsTheArtworkItWritesOver)
 {
     const auto path =
-        antwika::testing::scratchPath("png-file-kept.png").string();
+        antwika::testing::getScratchPath("png-file-kept.png").string();
     const auto backupPath = antwika::io::backupPathFor(path);
     const auto writingPath = antwika::io::writingPathFor(path);
 
@@ -126,8 +126,8 @@ TEST(PngFileTest, WritePngFile_KeepsTheArtworkItWritesOver)
     writePngFile(drawnOverBitmap, path, "test");
 
     ASSERT_TRUE(std::filesystem::exists(backupPath));
-    EXPECT_EQ(readPngFile(path, "test"), drawnOverBitmap);
-    EXPECT_EQ(readPngFile(backupPath, "test"), drawnFirstBitmap);
+    EXPECT_EQ(getReadPngFile(path, "test"), drawnOverBitmap);
+    EXPECT_EQ(getReadPngFile(backupPath, "test"), drawnFirstBitmap);
     EXPECT_FALSE(std::filesystem::exists(writingPath));
 
     std::filesystem::remove(path, errorCode);
@@ -137,7 +137,7 @@ TEST(PngFileTest, WritePngFile_KeepsTheArtworkItWritesOver)
 TEST(PngFileTest, WritePngFile_LeavesTheArtworkAloneWhenItCannotWrite)
 {
     const auto path =
-        antwika::testing::scratchPath("png-file-safe.png").string();
+        antwika::testing::getScratchPath("png-file-safe.png").string();
 
     const antwika::gfx::Bitmap drawnBitmap{
         .size = {.width = 1, .height = 1},
@@ -153,7 +153,7 @@ TEST(PngFileTest, WritePngFile_LeavesTheArtworkAloneWhenItCannotWrite)
         .pixels = std::vector<std::uint8_t>{0, 0, 0, 255}};
 
     EXPECT_THROW(writePngFile(brokenBitmap, path, "test"), GfxError);
-    EXPECT_EQ(readPngFile(path, "test"), drawnBitmap);
+    EXPECT_EQ(getReadPngFile(path, "test"), drawnBitmap);
 
     std::filesystem::remove(path, errorCode);
     std::filesystem::remove(

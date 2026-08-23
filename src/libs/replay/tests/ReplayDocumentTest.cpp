@@ -11,7 +11,7 @@ using antwika::replay::ReplayDocument;
 
 namespace
 {
-    [[nodiscard]] ReplayDocument aDocument()
+    [[nodiscard]] ReplayDocument getADocument()
     {
         return ReplayDocument{
             .events =
@@ -28,31 +28,31 @@ namespace
 
 TEST(ReplayDocumentTest, OperatorEquals_MatchesAnIdenticalDocument)
 {
-    EXPECT_EQ(aDocument(), aDocument());
+    EXPECT_EQ(getADocument(), getADocument());
 }
 
 TEST(ReplayDocumentTest, OperatorEquals_SeparatesDifferentEvents)
 {
-    ReplayDocument otherDocument = aDocument();
+    ReplayDocument otherDocument = getADocument();
     otherDocument.events.clear();
 
-    EXPECT_NE(aDocument(), otherDocument);
+    EXPECT_NE(getADocument(), otherDocument);
 }
 
 TEST(ReplayDocumentTest, OperatorEquals_SeparatesOneRecordedCanvas)
 {
-    ReplayDocument otherDocument = aDocument();
+    ReplayDocument otherDocument = getADocument();
     otherDocument.canvasSize.reset();
 
-    EXPECT_NE(aDocument(), otherDocument);
+    EXPECT_NE(getADocument(), otherDocument);
 }
 
 TEST(ReplayDocumentTest, OperatorEquals_SeparatesTwoUnequalCanvases)
 {
-    ReplayDocument otherDocument = aDocument();
+    ReplayDocument otherDocument = getADocument();
     otherDocument.canvasSize = Size{.width = 800, .height = 600};
 
-    EXPECT_NE(aDocument(), otherDocument);
+    EXPECT_NE(getADocument(), otherDocument);
 }
 
 TEST(ReplayDocumentTest, Ctor_DefaultsToNoEventsOrCanvas)

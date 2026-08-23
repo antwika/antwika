@@ -32,7 +32,7 @@ namespace antwika::worldgen
             const voxel::VoxelPosition climbPosition)
         {
             for (const auto &[place, grownMaterial] :
-                 voxel::cubeVoxels(
+                 voxel::getCubeVoxels(
                      cornerPosition, material.kind, climbPosition))
             {
                 laidVoxels[place] = voxel::VoxelMaterial{
@@ -45,7 +45,7 @@ namespace antwika::worldgen
 
     }
 
-    voxel::Voxels chunkVoxels(const voxel::Voxels &cubeVoxels)
+    voxel::Voxels getChunkVoxels(const voxel::Voxels &cubeVoxels)
     {
         voxel::Voxels laidVoxels;
 

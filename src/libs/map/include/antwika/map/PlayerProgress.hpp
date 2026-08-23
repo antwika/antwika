@@ -21,7 +21,7 @@ namespace antwika::map
     void saveProgress(
         const Progress &progress, const std::string &path);
 
-    [[nodiscard]] std::optional<Progress> loadProgress(
+    [[nodiscard]] std::optional<Progress> getLoadProgress(
         const std::string &path);
 
 }

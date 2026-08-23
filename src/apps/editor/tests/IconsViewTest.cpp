@@ -17,7 +17,7 @@
 #include "antwika/editor/ui/IconsView.hpp"
 
 using antwika::editor::IconsView;
-using antwika::editor::iconPixelColor;
+using antwika::editor::getIconPixelColor;
 using antwika::editor::kIconCellSize;
 using antwika::gfx::Bitmap;
 using antwika::gfx::ITexture;
@@ -35,7 +35,7 @@ namespace
 
     constexpr std::size_t kSomeIcons = 4;
 
-    [[nodiscard]] Bitmap blankSheet(const std::size_t count)
+    [[nodiscard]] Bitmap getBlankSheet(const std::size_t count)
     {
         return Bitmap{
             .size =
@@ -65,12 +65,12 @@ TEST(IconsViewTest, Open_CarriesTheSheetAndItsBackingToPictures)
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     IconsView icons;
 
-    icons.open(viewportRenderer, blankSheet(kSomeIcons));
+    icons.open(viewportRenderer, getBlankSheet(kSomeIcons));
 
-    EXPECT_NE(icons.texture(), nullptr);
-    EXPECT_NE(icons.checker(), nullptr);
-    EXPECT_EQ(icons.count(), kSomeIcons);
-    EXPECT_FALSE(icons.unsaved());
+    EXPECT_NE(icons.getTexture(), nullptr);
+    EXPECT_NE(icons.getChecker(), nullptr);
+    EXPECT_EQ(icons.getCount(), kSomeIcons);
+    EXPECT_FALSE(icons.isUnsaved());
 }
 
 TEST(IconsViewTest, Pick_TakesUpAnIconAndPutsItDown)
@@ -80,14 +80,14 @@ TEST(IconsViewTest, Pick_TakesUpAnIconAndPutsItDown)
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     IconsView icons;
 
-    icons.open(viewportRenderer, blankSheet(kSomeIcons));
+    icons.open(viewportRenderer, getBlankSheet(kSomeIcons));
     icons.pick(2);
 
-    EXPECT_EQ(icons.picked(), std::optional<std::size_t>{2});
+    EXPECT_EQ(icons.getPicked(), std::optional<std::size_t>{2});
 
     icons.pick(std::nullopt);
 
-    EXPECT_FALSE(icons.picked().has_value());
+    EXPECT_FALSE(icons.getPicked().has_value());
 }
 
 TEST(IconsViewTest, Paint_ColorsThePixelAndLeavesTheSheetUnsaved)
@@ -97,15 +97,15 @@ TEST(IconsViewTest, Paint_ColorsThePixelAndLeavesTheSheetUnsaved)
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     IconsView icons;
 
-    icons.open(viewportRenderer, blankSheet(kSomeIcons));
+    icons.open(viewportRenderer, getBlankSheet(kSomeIcons));
     icons.pick(1);
     icons.paint(viewportRenderer, {.column = 3, .row = 4}, false);
 
     EXPECT_EQ(
-        iconPixelColor(icons.sheet(), 1, {.column = 3, .row = 4})
+        getIconPixelColor(icons.getSheet(), 1, {.column = 3, .row = 4})
             .alpha,
         255);
-    EXPECT_TRUE(icons.unsaved());
+    EXPECT_TRUE(icons.isUnsaved());
 }
 
 TEST(IconsViewTest, Paint_ErasingClearsThePixelAgain)
@@ -115,13 +115,13 @@ TEST(IconsViewTest, Paint_ErasingClearsThePixelAgain)
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     IconsView icons;
 
-    icons.open(viewportRenderer, blankSheet(kSomeIcons));
+    icons.open(viewportRenderer, getBlankSheet(kSomeIcons));
     icons.pick(0);
     icons.paint(viewportRenderer, {.column = 1, .row = 1}, false);
     icons.paint(viewportRenderer, {.column = 1, .row = 1}, true);
 
     EXPECT_EQ(
-        iconPixelColor(icons.sheet(), 0, {.column = 1, .row = 1})
+        getIconPixelColor(icons.getSheet(), 0, {.column = 1, .row = 1})
             .alpha,
         0);
 }
@@ -133,12 +133,12 @@ TEST(IconsViewTest, Keep_MarksWhatWasDrawnAsWritten)
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     IconsView icons;
 
-    icons.open(viewportRenderer, blankSheet(kSomeIcons));
+    icons.open(viewportRenderer, getBlankSheet(kSomeIcons));
     icons.pick(0);
     icons.paint(viewportRenderer, {.column = 0, .row = 0}, false);
     icons.keep();
 
-    EXPECT_FALSE(icons.unsaved());
+    EXPECT_FALSE(icons.isUnsaved());
 }
 
 TEST(IconsViewTest, Draw_DrawsEveryIconAndTheOneTakenUp)
@@ -148,7 +148,7 @@ TEST(IconsViewTest, Draw_DrawsEveryIconAndTheOneTakenUp)
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     IconsView icons;
 
-    icons.open(viewportRenderer, blankSheet(kSomeIcons));
+    icons.open(viewportRenderer, getBlankSheet(kSomeIcons));
     icons.pick(1);
 
     EXPECT_CALL(innerRenderer, drawTexture)
@@ -168,7 +168,7 @@ TEST(IconsViewTest, Draw_LeavesTheBlownUpIconOutWhereNoneIsTakenUp)
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     IconsView icons;
 
-    icons.open(viewportRenderer, blankSheet(kSomeIcons));
+    icons.open(viewportRenderer, getBlankSheet(kSomeIcons));
     icons.pick(std::nullopt);
 
     EXPECT_CALL(innerRenderer, drawRect).Times(0);

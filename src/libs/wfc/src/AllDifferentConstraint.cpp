@@ -9,7 +9,7 @@ namespace antwika::wfc
     {
     }
 
-    std::span<const std::size_t> AllDifferentConstraint::cells() const
+    std::span<const std::size_t> AllDifferentConstraint::getCells() const
     {
         return cellIndices;
     }

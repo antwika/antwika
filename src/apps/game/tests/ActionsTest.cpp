@@ -6,7 +6,7 @@
 
 #include "antwika/game/app/Actions.hpp"
 
-using antwika::game::defaultActions;
+using antwika::game::getDefaultActions;
 using antwika::game::kLeave;
 using antwika::game::kRun;
 using antwika::game::kWalkEast;
@@ -33,7 +33,7 @@ namespace
 
     TEST(ActionsTest, DefaultActions_SendsTheWalkerEveryWayByLetter)
     {
-        const auto actions = defaultActions();
+        const auto actions = getDefaultActions();
         InputState state;
 
         press(state, Key::W);
@@ -49,7 +49,7 @@ namespace
 
     TEST(ActionsTest, DefaultActions_SendsTheWalkerEveryWayByArrow)
     {
-        const auto actions = defaultActions();
+        const auto actions = getDefaultActions();
         InputState state;
 
         press(state, Key::ArrowUp);
@@ -65,7 +65,7 @@ namespace
 
     TEST(ActionsTest, DefaultActions_LetsAWayGoWhenTheKeyIsLetGo)
     {
-        const auto actions = defaultActions();
+        const auto actions = getDefaultActions();
         InputState state;
 
         press(state, Key::W);
@@ -78,7 +78,7 @@ namespace
 
     TEST(ActionsTest, DefaultActions_AsksToLeaveOnEscapeStruck)
     {
-        const auto actions = defaultActions();
+        const auto actions = getDefaultActions();
         InputState state;
 
         press(state, Key::Escape);
@@ -92,7 +92,7 @@ namespace
 
     TEST(ActionsTest, DefaultActions_AsksToRunWhileEitherShiftIsHeld)
     {
-        const auto actions = defaultActions();
+        const auto actions = getDefaultActions();
         InputState state;
 
         press(state, Key::LeftShift);
@@ -107,7 +107,7 @@ namespace
 
     TEST(ActionsTest, DefaultActions_LeavesAKeyOfNoConcernAlone)
     {
-        const auto actions = defaultActions();
+        const auto actions = getDefaultActions();
         InputState state;
 
         press(state, Key::Q);
@@ -122,7 +122,7 @@ namespace
 
     TEST(ActionsTest, DefaultActions_WalksOnWhileTheRunKeyIsHeldToo)
     {
-        const auto actions = defaultActions();
+        const auto actions = getDefaultActions();
         InputState state;
 
         press(state, Key::LeftShift);

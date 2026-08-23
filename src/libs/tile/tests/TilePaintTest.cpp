@@ -8,21 +8,21 @@
 #include <antwika/tile/TilePaint.hpp>
 
 using antwika::tilemap::Atlas;
-using antwika::tilemap::atlasSize;
+using antwika::tilemap::getAtlasSize;
 using antwika::tilemap::kFloorTileSize;
 using antwika::tile::kPaletteColors;
 using antwika::tile::kPaletteSize;
 using antwika::tilemap::kWallTileSize;
 using antwika::tile::paint;
 using antwika::tile::paintedAt;
-using antwika::tile::filledPixels;
-using antwika::tile::linePixels;
+using antwika::tile::getFilledPixels;
+using antwika::tile::getLinePixels;
 using antwika::tile::paintFill;
 using antwika::tile::paintLine;
 using antwika::tile::pixelAt;
-using antwika::tile::pixelPlace;
+using antwika::tile::getPixelPlace;
 using antwika::tilemap::Tile;
-using antwika::tilemap::tilePixels;
+using antwika::tilemap::getTilePixels;
 using antwika::tilemap::tileSizeOf;
 using antwika::geometry::GridCell;
 using antwika::gfx::PointF;
@@ -35,7 +35,7 @@ namespace
 {
     constexpr float kDrawnScale = 6.0F;
 
-    [[nodiscard]] RectF inspectedTileRect(const Tile tile)
+    [[nodiscard]] RectF getInspectedTileRect(const Tile tile)
     {
         const auto size = tileSizeOf(tile.atlas);
 
@@ -49,9 +49,9 @@ namespace
     constexpr Color kRedColor{
         .red = 255, .green = 0, .blue = 0, .alpha = 255};
 
-    [[nodiscard]] Bitmap blankAtlas(const Atlas atlas)
+    [[nodiscard]] Bitmap getBlankAtlas(const Atlas atlas)
     {
-        const auto wholeSize = atlasSize(tileSizeOf(atlas));
+        const auto wholeSize = getAtlasSize(tileSizeOf(atlas));
 
         return Bitmap{
             .size = wholeSize,
@@ -77,7 +77,7 @@ namespace
 TEST(TilePaintTest, PixelAt_FindsTheCornersOfATile)
 {
     constexpr Tile tile{.atlas = Atlas::Floor, .index = 0};
-    const auto where = inspectedTileRect(tile);
+    const auto where = getInspectedTileRect(tile);
     const auto tileSize = tileSizeOf(tile.atlas);
     const auto first = pixelAt(
         tile,
@@ -101,7 +101,7 @@ TEST(TilePaintTest, PixelAt_FindsTheCornersOfATile)
 TEST(TilePaintTest, PixelAt_FindsNothingOutsideTheTile)
 {
     constexpr Tile tile{.atlas = Atlas::Floor, .index = 0};
-    const auto where = inspectedTileRect(tile);
+    const auto where = getInspectedTileRect(tile);
 
     EXPECT_FALSE(
         pixelAt(
@@ -122,7 +122,7 @@ TEST(TilePaintTest, PixelAt_FindsNothingOutsideTheTile)
 TEST(TilePaintTest, PixelAt_ReachesEveryPixelOfATile)
 {
     constexpr Tile tile{.atlas = Atlas::Wall, .index = 0};
-    const auto where = inspectedTileRect(tile);
+    const auto where = getInspectedTileRect(tile);
     const auto tileSize = tileSizeOf(tile.atlas);
     std::set<std::pair<std::uint32_t, std::uint32_t>> reachedCells;
 
@@ -153,7 +153,7 @@ TEST(TilePaintTest, PixelAt_ReachesEveryPixelOfATile)
 TEST(TilePaintTest, Paint_ColorsThePixelItIsGiven)
 {
     constexpr Tile tile{.atlas = Atlas::Floor, .index = 37};
-    auto atlas = blankAtlas(Atlas::Floor);
+    auto atlas = getBlankAtlas(Atlas::Floor);
     constexpr GridCell pixelCell{.column = 3, .row = 5};
 
     antwika::tile::paint(atlas, tile, pixelCell, kRedColor);
@@ -164,7 +164,7 @@ TEST(TilePaintTest, Paint_ColorsThePixelItIsGiven)
 TEST(TilePaintTest, Paint_LeavesTheRestOfTheAtlasAlone)
 {
     constexpr Tile tile{.atlas = Atlas::Floor, .index = 37};
-    auto atlas = blankAtlas(Atlas::Floor);
+    auto atlas = getBlankAtlas(Atlas::Floor);
     const auto beforePixels = atlas.pixels;
 
     antwika::tile::paint(atlas, tile, {.column = 3, .row = 5}, kRedColor);
@@ -182,8 +182,8 @@ TEST(TilePaintTest, Paint_LeavesTheRestOfTheAtlasAlone)
 TEST(TilePaintTest, Paint_WritesWithinTheTileItIsGiven)
 {
     constexpr Tile tile{.atlas = Atlas::Floor, .index = 37};
-    auto atlas = blankAtlas(Atlas::Floor);
-    const auto tileRect = tilePixels(tile.index, kFloorTileSize);
+    auto atlas = getBlankAtlas(Atlas::Floor);
+    const auto tileRect = getTilePixels(tile.index, kFloorTileSize);
 
     antwika::tile::paint(atlas, tile, {.column = 0, .row = 0}, kRedColor);
 
@@ -200,7 +200,7 @@ TEST(TilePaintTest, Paint_TellsOneTileOfAnAtlasFromTheNext)
 {
     constexpr Tile oneTile{.atlas = Atlas::Wall, .index = 10};
     constexpr Tile otherTile{.atlas = Atlas::Wall, .index = 11};
-    auto atlas = blankAtlas(Atlas::Wall);
+    auto atlas = getBlankAtlas(Atlas::Wall);
     constexpr GridCell pixelCell{.column = 2, .row = 2};
 
     antwika::tile::paint(atlas, oneTile, pixelCell, kRedColor);
@@ -212,7 +212,7 @@ TEST(TilePaintTest, Paint_TellsOneTileOfAnAtlasFromTheNext)
 TEST(TilePaintTest, PixelPlace_StandsWherePixelAtWouldFindIt)
 {
     const Tile tile{.atlas = Atlas::Floor, .index = 3};
-    const auto where = inspectedTileRect(tile);
+    const auto where = getInspectedTileRect(tile);
 
     for (const auto pixelCell :
          {GridCell{.column = 0, .row = 0},
@@ -221,7 +221,7 @@ TEST(TilePaintTest, PixelPlace_StandsWherePixelAtWouldFindIt)
               .column = tileSizeOf(tile.atlas).width - 1,
               .row = tileSizeOf(tile.atlas).height - 1}})
     {
-        const auto place = pixelPlace(tile, where, pixelCell);
+        const auto place = getPixelPlace(tile, where, pixelCell);
 
         EXPECT_EQ(pixelAt(tile, where, middleOf(place)), pixelCell);
     }
@@ -230,7 +230,7 @@ TEST(TilePaintTest, PixelPlace_StandsWherePixelAtWouldFindIt)
 TEST(TilePaintTest, PixelPlace_KeepsEveryPixelInsideTheTile)
 {
     const Tile tile{.atlas = Atlas::Wall, .index = 1};
-    const auto where = inspectedTileRect(tile);
+    const auto where = getInspectedTileRect(tile);
     const auto tileSize = tileSizeOf(tile.atlas);
 
     for (std::uint32_t row = 0; row < tileSize.height; ++row)
@@ -238,7 +238,7 @@ TEST(TilePaintTest, PixelPlace_KeepsEveryPixelInsideTheTile)
         for (std::uint32_t column = 0; column < tileSize.width;
              ++column)
         {
-            const auto place = pixelPlace(
+            const auto place = getPixelPlace(
                 tile, where, GridCell{.column = column, .row = row});
 
             EXPECT_GE(place.originPoint.x, where.originPoint.x - 1e-3F);
@@ -255,7 +255,7 @@ TEST(TilePaintTest, PixelPlace_KeepsEveryPixelInsideTheTile)
 
 TEST(TilePaintTest, LinePixels_RunsFromTheOneToTheOther)
 {
-    const auto run = linePixels(
+    const auto run = getLinePixels(
         GridCell{.column = 2, .row = 3},
         GridCell{.column = 9, .row = 6});
 
@@ -266,7 +266,7 @@ TEST(TilePaintTest, LinePixels_RunsFromTheOneToTheOther)
 
 TEST(TilePaintTest, LinePixels_LeavesNoGapBetweenPixels)
 {
-    const auto run = linePixels(
+    const auto run = getLinePixels(
         GridCell{.column = 1, .row = 1},
         GridCell{.column = 12, .row = 4});
 
@@ -293,19 +293,19 @@ TEST(TilePaintTest, LinePixels_GivesOnePixelForALineOfNoLength)
 {
     const GridCell cell{.column = 4, .row = 5};
 
-    EXPECT_EQ(linePixels(cell, cell).size(), 1U);
+    EXPECT_EQ(getLinePixels(cell, cell).size(), 1U);
 }
 
 TEST(TilePaintTest, PaintLine_ColorsEveryPixelOfTheRun)
 {
-    auto atlas = blankAtlas(Atlas::Floor);
+    auto atlas = getBlankAtlas(Atlas::Floor);
     const Tile tile{.atlas = Atlas::Floor, .index = 2};
     const GridCell fromCell{.column = 1, .row = 1};
     const GridCell toCell{.column = 8, .row = 5};
 
     paintLine(atlas, tile, fromCell, toCell, kRedColor);
 
-    for (const auto pixelCell : linePixels(fromCell, toCell))
+    for (const auto pixelCell : getLinePixels(fromCell, toCell))
     {
         EXPECT_EQ(paintedAt(atlas, tile, pixelCell), kRedColor);
     }
@@ -317,11 +317,11 @@ TEST(TilePaintTest, PaintLine_ColorsEveryPixelOfTheRun)
 
 TEST(TilePaintTest, FilledPixels_TakesTheWholeOfABlankTile)
 {
-    auto atlas = blankAtlas(Atlas::Wall);
+    auto atlas = getBlankAtlas(Atlas::Wall);
     const Tile tile{.atlas = Atlas::Wall, .index = 0};
     const auto tileSize = tileSizeOf(tile.atlas);
     const auto field =
-        filledPixels(atlas, tile, GridCell{.column = 0, .row = 0});
+        getFilledPixels(atlas, tile, GridCell{.column = 0, .row = 0});
 
     EXPECT_EQ(
         field.size(),
@@ -331,7 +331,7 @@ TEST(TilePaintTest, FilledPixels_TakesTheWholeOfABlankTile)
 
 TEST(TilePaintTest, FilledPixels_StopsAtAColorOfItsOwn)
 {
-    auto atlas = blankAtlas(Atlas::Floor);
+    auto atlas = getBlankAtlas(Atlas::Floor);
     const Tile tile{.atlas = Atlas::Floor, .index = 0};
     const auto tileSize = tileSizeOf(tile.atlas);
 
@@ -342,7 +342,7 @@ TEST(TilePaintTest, FilledPixels_StopsAtAColorOfItsOwn)
     }
 
     const auto field =
-        filledPixels(atlas, tile, GridCell{.column = 0, .row = 0});
+        getFilledPixels(atlas, tile, GridCell{.column = 0, .row = 0});
 
     for (const auto pixelCell : field)
     {
@@ -356,7 +356,7 @@ TEST(TilePaintTest, FilledPixels_StopsAtAColorOfItsOwn)
 
 TEST(TilePaintTest, PaintFill_ColorsOneFieldAndLeavesTheOther)
 {
-    auto atlas = blankAtlas(Atlas::Floor);
+    auto atlas = getBlankAtlas(Atlas::Floor);
     const Tile tile{.atlas = Atlas::Floor, .index = 5};
     const auto tileSize = tileSizeOf(tile.atlas);
     const Color kWallColor{
@@ -383,7 +383,7 @@ TEST(TilePaintTest, PaintFill_ColorsOneFieldAndLeavesTheOther)
 
 TEST(TilePaintTest, PaintFill_LeavesTheNeighbouringTileAlone)
 {
-    auto atlas = blankAtlas(Atlas::Floor);
+    auto atlas = getBlankAtlas(Atlas::Floor);
     const Tile tile{.atlas = Atlas::Floor, .index = 0};
     const Tile nextTile{.atlas = Atlas::Floor, .index = 1};
 
@@ -402,7 +402,7 @@ TEST(TilePaintTest, SwatchWidget_GivesEveryInkASwatchOfItsOwn)
          ++which)
     {
         EXPECT_TRUE(
-            seenWidgets.insert(antwika::tile::swatchWidget(which)).second);
+            seenWidgets.insert(antwika::tile::getSwatchWidget(which)).second);
     }
 }
 
@@ -413,7 +413,7 @@ TEST(TilePaintTest, SoleInk_KnowsAnInkAloneInItsColor)
 
     for (std::size_t which = 0; which < paletteColors.size(); ++which)
     {
-        EXPECT_TRUE(antwika::tile::soleInk(paletteColors, which));
+        EXPECT_TRUE(antwika::tile::isSoleInk(paletteColors, which));
     }
 }
 
@@ -424,15 +424,15 @@ TEST(TilePaintTest, SoleInk_KnowsAColorTwoInksOffer)
 
     paletteColors.push_back(paletteColors.front());
 
-    EXPECT_FALSE(antwika::tile::soleInk(paletteColors, 0));
+    EXPECT_FALSE(antwika::tile::isSoleInk(paletteColors, 0));
     EXPECT_FALSE(
-        antwika::tile::soleInk(paletteColors, paletteColors.size() - 1));
-    EXPECT_TRUE(antwika::tile::soleInk(paletteColors, 1));
+        antwika::tile::isSoleInk(paletteColors, paletteColors.size() - 1));
+    EXPECT_TRUE(antwika::tile::isSoleInk(paletteColors, 1));
 }
 
 TEST(TilePaintTest, PaintedWith_FindsEveryPixelOfAColor)
 {
-    auto atlas = blankAtlas(Atlas::Floor);
+    auto atlas = getBlankAtlas(Atlas::Floor);
     const Tile tile{.atlas = Atlas::Floor, .index = 0};
 
     antwika::tile::paint(
@@ -448,23 +448,23 @@ TEST(TilePaintTest, PaintedWith_FindsEveryPixelOfAColor)
     antwika::tile::paint(
         atlas, tile, GridCell{.column = 2, .row = 2}, kPaletteColors[2]);
 
-    EXPECT_EQ(antwika::tile::paintedWith(atlas, kRedColor).size(), 2U);
+    EXPECT_EQ(antwika::tile::getPaintedWith(atlas, kRedColor).size(), 2U);
     EXPECT_EQ(
-        antwika::tile::paintedWith(atlas, kPaletteColors[2]).size(), 1U);
+        antwika::tile::getPaintedWith(atlas, kPaletteColors[2]).size(), 1U);
 }
 
 TEST(TilePaintTest, PaintedWith_LeavesAPixelRubbedOutAlone)
 {
-    const auto atlas = blankAtlas(Atlas::Floor);
+    const auto atlas = getBlankAtlas(Atlas::Floor);
 
     EXPECT_TRUE(
-        antwika::tile::paintedWith(atlas, Color{.alpha = 0})
+        antwika::tile::getPaintedWith(atlas, Color{.alpha = 0})
             .empty());
 }
 
 TEST(TilePaintTest, RepaintAt_CarriesEveryPixelToTheColor)
 {
-    auto atlas = blankAtlas(
+    auto atlas = getBlankAtlas(
         Atlas::Floor);
     const Tile tile{.atlas = Atlas::Floor, .index = 0};
     const auto otherTile = kPaletteColors[3];
@@ -487,7 +487,7 @@ TEST(TilePaintTest, RepaintAt_CarriesEveryPixelToTheColor)
 
     antwika::tile::repaintAt(
         atlas,
-        antwika::tile::paintedWith(atlas, kRedColor),
+        antwika::tile::getPaintedWith(atlas, kRedColor),
         kPaletteColors[4]);
 
     EXPECT_EQ(
@@ -499,12 +499,12 @@ TEST(TilePaintTest, RepaintAt_CarriesEveryPixelToTheColor)
     EXPECT_EQ(
         paintedAt(atlas, tile, GridCell{.column = 2, .row = 2}),
         otherTile);
-    EXPECT_TRUE(antwika::tile::paintedWith(atlas, kRedColor).empty());
+    EXPECT_TRUE(antwika::tile::getPaintedWith(atlas, kRedColor).empty());
 }
 
 TEST(TilePaintTest, RectPixels_TracesTheEdgeAndLeavesTheMiddle)
 {
-    const auto cells = antwika::tile::rectPixels(
+    const auto cells = antwika::tile::getRectPixels(
         GridCell{.column = 1, .row = 1}, GridCell{.column = 4, .row = 3});
     const std::set<std::pair<std::uint32_t, std::uint32_t>> seenCells(
         [&cells]
@@ -528,7 +528,7 @@ TEST(TilePaintTest, RectPixels_TracesTheEdgeAndLeavesTheMiddle)
 
 TEST(TilePaintTest, RectPixels_GivesOneCellForAnEdgeOfNoLength)
 {
-    const auto cells = antwika::tile::rectPixels(
+    const auto cells = antwika::tile::getRectPixels(
         GridCell{.column = 2, .row = 5}, GridCell{.column = 2, .row = 5});
 
     ASSERT_EQ(cells.size(), 1U);
@@ -538,7 +538,7 @@ TEST(TilePaintTest, RectPixels_GivesOneCellForAnEdgeOfNoLength)
 
 TEST(TilePaintTest, CirclePixels_KeepsTheRingInsideTheBox)
 {
-    const auto cells = antwika::tile::circlePixels(
+    const auto cells = antwika::tile::getCirclePixels(
         GridCell{.column = 2, .row = 1}, GridCell{.column = 10, .row = 9});
 
     EXPECT_FALSE(cells.empty());
@@ -555,7 +555,7 @@ TEST(TilePaintTest, CirclePixels_KeepsTheRingInsideTheBox)
 
 TEST(TilePaintTest, CirclePixels_GivesOneCellForACircleOfNoWidth)
 {
-    const auto cells = antwika::tile::circlePixels(
+    const auto cells = antwika::tile::getCirclePixels(
         GridCell{.column = 3, .row = 4}, GridCell{.column = 3, .row = 4});
 
     ASSERT_EQ(cells.size(), 1U);
@@ -565,7 +565,7 @@ TEST(TilePaintTest, CirclePixels_GivesOneCellForACircleOfNoWidth)
 
 TEST(TilePaintTest, PaintPixels_CarriesTheColorToEveryCellGiven)
 {
-    auto atlas = blankAtlas(Atlas::Floor);
+    auto atlas = getBlankAtlas(Atlas::Floor);
     constexpr Tile tile{.atlas = Atlas::Floor, .index = 0};
     const std::vector<GridCell> pixelCells{
         GridCell{.column = 0, .row = 0},

@@ -43,18 +43,18 @@ namespace antwika::raylib
 
         [[nodiscard]] FrameCount advance(FrameCount frames) override;
 
-        [[nodiscard]] WaveFormat format() const override;
+        [[nodiscard]] WaveFormat getFormat() const override;
 
-        [[nodiscard]] FrameCount bufferFrames() const override;
+        [[nodiscard]] FrameCount getBufferFrames() const override;
 
-        [[nodiscard]] FrameIndex framesPlayed() const override;
+        [[nodiscard]] FrameIndex getFramesPlayed() const override;
 
     private:
         void render(FrameCount frames);
 
         void flushToStream();
 
-        [[nodiscard]] FrameCount pendingFrames() const noexcept;
+        [[nodiscard]] FrameCount getPendingFrames() const noexcept;
 
         std::shared_ptr<RaylibAudioRuntime> audio;
 

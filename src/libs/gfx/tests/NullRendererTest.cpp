@@ -33,7 +33,7 @@ using ::testing::NiceMock;
 
 namespace
 {
-    Bitmap twoByTwo()
+    Bitmap getTwoByTwo()
     {
         return Bitmap{
             .size = {.width = 2, .height = 2},
@@ -118,10 +118,10 @@ TEST(NullRendererTest, CreateTexture_ReportsTheBitmapSizeAndTracesIt)
 
     EXPECT_CALL(logger, log(Level::Trace, "gfx.null: create texture"));
 
-    const auto texture = renderer.createTexture(twoByTwo());
+    const auto texture = renderer.createTexture(getTwoByTwo());
 
     ASSERT_NE(texture, nullptr);
-    EXPECT_EQ(texture->size(), (Size{.width = 2, .height = 2}));
+    EXPECT_EQ(texture->getSize(), (Size{.width = 2, .height = 2}));
 }
 
 TEST(NullRendererTest, CreateTexture_ThrowsOnAnIncompleteBitmap)
@@ -144,7 +144,7 @@ TEST(NullRendererTest, DrawTexture_DiscardsTheBlitAndTracesIt)
     EXPECT_CALL(logger, log(Level::Trace, "gfx.null: create texture"));
     EXPECT_CALL(logger, log(Level::Trace, "gfx.null: draw texture"));
 
-    const auto texture = renderer.createTexture(twoByTwo());
+    const auto texture = renderer.createTexture(getTwoByTwo());
     const Rect wholeRect{
         .originPoint = {.x = 0, .y = 0},
         .size = {.width = 2, .height = 2}};
@@ -189,7 +189,7 @@ TEST(NullRendererTest, PushTransform_TracesTheMatrixItWasGiven)
 
     EXPECT_CALL(logger, log(Level::Trace, "gfx.null: push transform"));
 
-    renderer.pushTransform(antwika::gfx::identityMatrix());
+    renderer.pushTransform(antwika::gfx::getIdentityMatrix());
 }
 
 TEST(NullRendererTest, PopTransform_ThrowsWhenNothingIsPushed)
@@ -205,8 +205,8 @@ TEST(NullRendererTest, PopTransform_UndoesOnePushEach)
     NiceMock<MockLogger> logger;
     NullRenderer renderer(logger);
 
-    renderer.pushTransform(antwika::gfx::identityMatrix());
-    renderer.pushTransform(antwika::gfx::identityMatrix());
+    renderer.pushTransform(antwika::gfx::getIdentityMatrix());
+    renderer.pushTransform(antwika::gfx::getIdentityMatrix());
     renderer.popTransform();
     renderer.popTransform();
 

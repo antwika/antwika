@@ -20,4 +20,4 @@ extern "C" antwika::gameplay::IGame *antwikaGameCreate(
 
 extern "C" void antwikaGameDestroy(antwika::gameplay::IGame *game);
 
-extern "C" std::uint64_t antwikaGameStamp();
+extern "C" std::uint64_t getAntwikaGameStamp();

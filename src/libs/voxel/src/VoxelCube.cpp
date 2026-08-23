@@ -9,12 +9,12 @@
 namespace antwika::voxel
 {
 
-    std::int32_t cubeTop(const std::int32_t cube)
+    std::int32_t getCubeTop(const std::int32_t cube)
     {
         return (cube * kCubeSide) + kCubeSide - 1;
     }
 
-    std::int32_t cubeIndexOfLevel(const std::int32_t level)
+    std::int32_t getCubeIndexOfLevel(const std::int32_t level)
     {
         const auto underLevel = level < 0 ? level - kCubeSide + 1 : level;
 
@@ -37,7 +37,7 @@ namespace antwika::voxel
             VoxelPosition{.z = 1},
             VoxelPosition{.z = -1}};
 
-        [[nodiscard]] bool groundBeside(
+        [[nodiscard]] bool isGroundBeside(
             const Voxels &standingVoxels,
             const VoxelPosition cornerPosition,
             const VoxelPosition stepPosition,
@@ -101,7 +101,7 @@ namespace antwika::voxel
         {
             auto foundAny = false;
 
-            for (const auto place : cubeCells(cubeCornerOf(position)))
+            for (const auto place : getCubeCells(cubeCornerOf(position)))
             {
                 const auto foundVoxel = voxels.find(place);
 
@@ -129,7 +129,7 @@ namespace antwika::voxel
         {
             std::size_t standing = 0;
 
-            for (const auto place : cubeCells(cubeCornerOf(position)))
+            for (const auto place : getCubeCells(cubeCornerOf(position)))
             {
                 if (!voxels.contains(place))
                 {
@@ -148,7 +148,7 @@ namespace antwika::voxel
         }
     }
 
-    Side facing(const Side side)
+    Side getFacing(const Side side)
     {
         struct SideRow final
         {
@@ -167,10 +167,10 @@ namespace antwika::voxel
         return enums::lookup(kSideRows, side).facingSide;
     }
 
-    FaceEdge facing(const FaceEdge edge)
+    FaceEdge getFacing(const FaceEdge edge)
     {
         return FaceEdge{
-            .side = facing(edge.side), .edge = edge.edge};
+            .side = getFacing(edge.side), .edge = edge.edge};
     }
 
     VoxelPosition cubeCornerOf(const VoxelPosition position)
@@ -181,7 +181,7 @@ namespace antwika::voxel
             .z = lowestOf(position.z)};
     }
 
-    std::vector<VoxelPosition> cubeCells(const VoxelPosition cornerPosition)
+    std::vector<VoxelPosition> getCubeCells(const VoxelPosition cornerPosition)
     {
         std::vector<VoxelPosition> positions;
 
@@ -205,13 +205,13 @@ namespace antwika::voxel
         return positions;
     } // GCOVR_EXCL_LINE
 
-    Voxels expandCubesToVoxels(const Voxels &cubeVoxels)
+    Voxels getExpandCubesToVoxels(const Voxels &cubeVoxels)
     {
         Voxels expandedVoxels;
 
         for (const auto &[position, material] : cubeVoxels)
         {
-            for (const auto place : cubeCells(
+            for (const auto place : getCubeCells(
                      VoxelPosition{
                          .x = position.x * kCubeSide,
                          .y = position.y * kCubeSide,
@@ -236,14 +236,14 @@ namespace antwika::voxel
             {
                 for (const auto step : kAboutACubePositions)
                 {
-                    if (!groundBeside(filledVoxels, corner, step, reach))
+                    if (!isGroundBeside(filledVoxels, corner, step, reach))
                     {
                         continue;
                     }
 
                     if (wantsAWayIn
                         && standsBeside(
-                            filledVoxels, corner, detail::opposite(step)))
+                            filledVoxels, corner, detail::getOpposite(step)))
                     {
                         continue;
                     }
@@ -256,7 +256,7 @@ namespace antwika::voxel
         return kAboutACubePositions.front();
     }
 
-    Voxels cubeVoxels(
+    Voxels getCubeVoxels(
         const VoxelPosition cornerPosition,
         const Kind kind,
         const VoxelPosition climbPosition)
@@ -265,7 +265,7 @@ namespace antwika::voxel
 
         if (!isRamped(kind))
         {
-            for (const auto place : cubeCells(cornerPosition))
+            for (const auto place : getCubeCells(cornerPosition))
             {
                 grownVoxels[place] = VoxelMaterial{.kind = kind};
             }
@@ -310,7 +310,7 @@ namespace antwika::voxel
                          : stepVectorFor(facingOverride);
 
         for (const auto &[place, material] :
-             cubeVoxels(cubeCornerOf(position), kind, climb))
+             getCubeVoxels(cubeCornerOf(position), kind, climb))
         {
             updatedVoxels[place] = VoxelMaterial{
                 .kind = material.kind,
@@ -321,7 +321,7 @@ namespace antwika::voxel
         return updatedVoxels;
     } // GCOVR_EXCL_LINE
 
-    Voxels withRampsRebuilt(
+    Voxels getWithRampsRebuilt(
         const Voxels &filledVoxels, const VoxelPosition position)
     {
         const auto corner = cubeCornerOf(position);
@@ -339,7 +339,7 @@ namespace antwika::voxel
                 continue;
             }
 
-            const auto wantedVoxels = cubeVoxels(
+            const auto wantedVoxels = getCubeVoxels(
                 cubeCornerOf(besidePosition),
                 Kind::Ramp,
                 rampDirectionFor(updatedVoxels, besidePosition));
@@ -361,7 +361,7 @@ namespace antwika::voxel
     {
         auto keptVoxels = filledVoxels;
 
-        for (const auto place : cubeCells(cubeCornerOf(position)))
+        for (const auto place : getCubeCells(cubeCornerOf(position)))
         {
             keptVoxels.erase(place);
         }

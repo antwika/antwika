@@ -8,7 +8,7 @@ TEST(FakeClockTest, Now_ReportsWhatItWasConstructedWith)
 {
     auto nowTime = std::chrono::system_clock::now();
     FakeClock clock{nowTime};
-    EXPECT_EQ(clock.currentTime(), nowTime);
+    EXPECT_EQ(clock.getCurrentTime(), nowTime);
 }
 
 TEST(FakeClockTest, Advance_MovesTheReportedTimeForward)
@@ -17,7 +17,7 @@ TEST(FakeClockTest, Advance_MovesTheReportedTimeForward)
     FakeClock clock{nowTime};
     std::chrono::seconds s{5};
     clock.advance(s);
-    EXPECT_EQ(clock.currentTime(), nowTime + s);
+    EXPECT_EQ(clock.getCurrentTime(), nowTime + s);
 }
 
 TEST(FakeClockTest, Set_ReplacesTheReportedTime)
@@ -26,5 +26,5 @@ TEST(FakeClockTest, Set_ReplacesTheReportedTime)
     FakeClock clock{nowTime};
     auto updatedNow = nowTime + std::chrono::seconds{5};
     clock.set(updatedNow);
-    EXPECT_EQ(clock.currentTime(), updatedNow);
+    EXPECT_EQ(clock.getCurrentTime(), updatedNow);
 }

@@ -22,13 +22,13 @@
 using antwika::gfx::Color;
 using antwika::gfx::Point;
 using antwika::gfx::Size;
-using antwika::ui::support::fillsColored;
+using antwika::ui::support::getFillsColored;
 using antwika::ui::support::textsOf;
 using antwika::ui::Context;
 using antwika::ui::DrawList;
 using antwika::ui::DrawText;
 using antwika::ui::FillRect;
-using antwika::ui::fixedSize;
+using antwika::ui::getFixedSize;
 using antwika::ui::kCaretAtEnd;
 using antwika::ui::Pointer;
 using antwika::ui::TextFieldSpec;
@@ -49,7 +49,7 @@ namespace
 
     constexpr Size kCanvasSize{.width = 100, .height = 50};
 
-    Theme plainTheme()
+    Theme getPlainTheme()
     {
         return Theme{
             .textColor = kInkColor,
@@ -67,7 +67,7 @@ namespace
 
 TEST(TextFieldTest, TextField_DrawsItsCharactersOverTheUnfocusedFill)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.textField(TextFieldSpec{.text = "ab"});
 
@@ -81,7 +81,7 @@ TEST(TextFieldTest, TextField_DrawsItsCharactersOverTheUnfocusedFill)
 
 TEST(TextFieldTest, TextField_ShowsThePlaceholderMutedWhileItIsEmpty)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.textField(TextFieldSpec{.placeholder = "name"});
 
@@ -94,7 +94,7 @@ TEST(TextFieldTest, TextField_ShowsThePlaceholderMutedWhileItIsEmpty)
 
 TEST(TextFieldTest, TextField_DrawsNothingButItsBoxWhileEmptyAndUnnamed)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.textField(TextFieldSpec{});
 
@@ -103,25 +103,25 @@ TEST(TextFieldTest, TextField_DrawsNothingButItsBoxWhileEmptyAndUnnamed)
 
 TEST(TextFieldTest, TextField_AFocusedFieldTakesTheFocusedFillAndACaret)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.textField(TextFieldSpec{.text = "ab", .focused = true});
 
     const auto commands = uiContext.build().drawList;
 
     EXPECT_EQ(kFocusedColor, std::get<FillRect>(commands.at(0)).color);
-    ASSERT_EQ(1U, fillsColored(commands, kCaretColor).size());
+    ASSERT_EQ(1U, getFillsColored(commands, kCaretColor).size());
 }
 
 TEST(TextFieldTest, TextField_TheCaretSitsAfterTheLastCharacterByDefault)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.textField(TextFieldSpec{
         .text = "ab", .cursor = kCaretAtEnd, .focused = true});
 
     const auto commands = uiContext.build().drawList;
-    const auto carets = fillsColored(commands, kCaretColor);
+    const auto carets = getFillsColored(commands, kCaretColor);
 
     ASSERT_EQ(1U, carets.size());
 
@@ -131,7 +131,7 @@ TEST(TextFieldTest, TextField_TheCaretSitsAfterTheLastCharacterByDefault)
 
 TEST(TextFieldTest, TextField_TheCaretSplitsTheTextWhereTheCursorIs)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.textField(
         TextFieldSpec{.text = "abc", .cursor = 1, .focused = true});
@@ -142,20 +142,20 @@ TEST(TextFieldTest, TextField_TheCaretSplitsTheTextWhereTheCursorIs)
     ASSERT_EQ(2U, texts.size());
     EXPECT_EQ("a", texts.at(0));
     EXPECT_EQ("bc", texts.at(1));
-    EXPECT_EQ(6, fillsColored(commands, kCaretColor).at(0).rect.originPoint.x);
+    EXPECT_EQ(6, getFillsColored(commands, kCaretColor).at(0).rect.originPoint.x);
 }
 
 TEST(TextFieldTest, TextField_TheCaretSitsAtTheStartOfAnEmptyFocusedField)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.textField(
         TextFieldSpec{.placeholder = "name", .focused = true});
 
     const auto commands = uiContext.build().drawList;
 
-    ASSERT_EQ(1U, fillsColored(commands, kCaretColor).size());
-    EXPECT_EQ(0, fillsColored(commands, kCaretColor).at(0).rect.originPoint.x);
+    ASSERT_EQ(1U, getFillsColored(commands, kCaretColor).size());
+    EXPECT_EQ(0, getFillsColored(commands, kCaretColor).at(0).rect.originPoint.x);
     EXPECT_EQ("name", textsOf(commands).at(0));
 }
 
@@ -163,7 +163,7 @@ TEST(TextFieldTest, TextField_AnUnfocusedFieldReportsNoEditAtAll)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::Character}, .typedText = "c"}};
 
@@ -174,7 +174,7 @@ TEST(TextFieldTest, TextField_AnUnfocusedFieldReportsNoEditAtAll)
 
 TEST(TextFieldTest, TextField_AQuietFrameReportsNoEditEither)
 {
-    Context uiContext{kCanvasSize, plainTheme(), Pointer{}, Keyboard{}};
+    Context uiContext{kCanvasSize, getPlainTheme(), Pointer{}, Keyboard{}};
 
     uiContext.textField(
         TextFieldSpec{.widgetId = kNameWidget, .text = "ab", .focused = true});
@@ -184,7 +184,7 @@ TEST(TextFieldTest, TextField_AQuietFrameReportsNoEditEither)
 
 TEST(TextFieldTest, TextField_TypingIsReportedAsTheTextItWouldMake)
 {
-    Context uiContext{kCanvasSize, plainTheme(), Pointer{}, Keyboard{
+    Context uiContext{kCanvasSize, getPlainTheme(), Pointer{}, Keyboard{
             .keys = {Key::Character, Key::Character}, .typedText = "cd"}};
 
     uiContext.textField(
@@ -204,7 +204,7 @@ TEST(TextFieldTest, TextField_TypingGoesInWhereTheCursorIs)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::Character}, .typedText = "X"}};
 
@@ -222,7 +222,7 @@ TEST(TextFieldTest, TextField_BackspaceTakesTheCharacterBeforeTheCursor)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::Backspace}}};
 
@@ -240,7 +240,7 @@ TEST(TextFieldTest, TextField_BackspaceAtTheStartChangesNothing)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::Backspace}}};
 
@@ -254,7 +254,7 @@ TEST(TextFieldTest, TextField_TheArrowsWalkTheCursorOneCharacter)
 {
     Context leftContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::MoveLeft}}};
 
@@ -269,7 +269,7 @@ TEST(TextFieldTest, TextField_TheArrowsWalkTheCursorOneCharacter)
 
     Context rightContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::MoveRight}}};
 
@@ -287,7 +287,7 @@ TEST(TextFieldTest, TextField_TheArrowsStopAtEitherEndOfTheText)
 {
     Context startContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::MoveLeft}}};
 
@@ -298,7 +298,7 @@ TEST(TextFieldTest, TextField_TheArrowsStopAtEitherEndOfTheText)
 
     Context endContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::MoveRight}}};
 
@@ -312,7 +312,7 @@ TEST(TextFieldTest, TextField_EnterAndEscapeAreReportedWithoutChangingTheText)
 {
     Context submitContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::Activate}}};
 
@@ -327,7 +327,7 @@ TEST(TextFieldTest, TextField_EnterAndEscapeAreReportedWithoutChangingTheText)
     EXPECT_EQ("ab", submittedInteractions->text);
 
     Context cancelContext{
-        kCanvasSize, plainTheme(), Pointer{}, Keyboard{.keys = {Key::Cancel}}};
+        kCanvasSize, getPlainTheme(), Pointer{}, Keyboard{.keys = {Key::Cancel}}};
 
     cancelContext.textField(
         TextFieldSpec{.widgetId = kNameWidget, .text = "ab", .focused = true});
@@ -342,7 +342,7 @@ TEST(TextFieldTest, TextField_ACursorPastTheEndIsTheEnd)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::Character}, .typedText = "c"}};
 
@@ -360,7 +360,7 @@ TEST(TextFieldTest, TextField_APressOnTheBoxNamesTheField)
     const Pointer pointer{
         .positionPoint = Point{.x = 4, .y = 2}, .pressed = true};
 
-    Context uiContext{kCanvasSize, plainTheme(), pointer};
+    Context uiContext{kCanvasSize, getPlainTheme(), pointer};
 
     uiContext.textField(TextFieldSpec{.widgetId = kNameWidget, .text = "ab"});
 
@@ -369,10 +369,10 @@ TEST(TextFieldTest, TextField_APressOnTheBoxNamesTheField)
 
 TEST(TextFieldTest, TextField_AFixedWidthFieldTakesExactlyThatMuch)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.textField(
-        TextFieldSpec{.widthSizing = fixedSize(30), .text = "ab"});
+        TextFieldSpec{.widthSizing = getFixedSize(30), .text = "ab"});
 
     const auto commands = uiContext.build().drawList;
 
@@ -381,14 +381,14 @@ TEST(TextFieldTest, TextField_AFixedWidthFieldTakesExactlyThatMuch)
 
 TEST(TextFieldTest, TextField_ACaretIsAtLeastOnePixelWideAtAZeroScale)
 {
-    auto theme = plainTheme();
+    auto theme = getPlainTheme();
     theme.textScale = 0;
 
     Context uiContext{kCanvasSize, theme};
 
     uiContext.textField(TextFieldSpec{.text = "ab", .focused = true});
 
-    const auto carets = fillsColored(uiContext.build().drawList, kCaretColor);
+    const auto carets = getFillsColored(uiContext.build().drawList, kCaretColor);
 
     ASSERT_EQ(1U, carets.size());
     EXPECT_EQ(1U, carets.at(0).rect.size.width);
@@ -398,7 +398,7 @@ TEST(TextFieldTest, TextField_TabReachesAFieldAndTheNextFrameTypesIntoIt)
 {
     Context firstContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::FocusNext}}};
 
@@ -409,11 +409,11 @@ TEST(TextFieldTest, TextField_TabReachesAFieldAndTheNextFrameTypesIntoIt)
 
     EXPECT_EQ(kNameWidget, firstFrame.interactions.focusedWidget);
     EXPECT_FALSE(firstFrame.interactions.edit.has_value());
-    EXPECT_TRUE(fillsColored(firstFrame.drawList, kCaretColor).empty());
+    EXPECT_TRUE(getFillsColored(firstFrame.drawList, kCaretColor).empty());
 
     Context secondContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::Character}, .typedText = "c"},
         firstFrame.interactions.focusedWidget};
@@ -426,7 +426,7 @@ TEST(TextFieldTest, TextField_TabReachesAFieldAndTheNextFrameTypesIntoIt)
     ASSERT_TRUE(typedFrame.interactions.edit.has_value());
     EXPECT_EQ("abc", typedFrame.interactions.edit->text);
 
-    EXPECT_EQ(1U, fillsColored(typedFrame.drawList, kCaretColor).size());
+    EXPECT_EQ(1U, getFillsColored(typedFrame.drawList, kCaretColor).size());
     EXPECT_EQ(kFocusedColor,
         std::get<FillRect>(typedFrame.drawList.at(0)).color);
 }
@@ -435,7 +435,7 @@ TEST(TextFieldTest, TextField_EnterOnAFocusedFieldActivatesItAndSubmitsIt)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::Activate}},
         kNameWidget};
@@ -454,7 +454,7 @@ TEST(TextFieldTest, TextField_TabbingAwayLeavesTheCaretWhereItWas)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::FocusPrevious}},
         kNameWidget};
@@ -469,7 +469,7 @@ TEST(TextFieldTest, TextField_ACharacterAndABackspaceKeepTheOrderTheyArrivedIn)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{
             .keys = {Key::Character, Key::Backspace, Key::Character},
@@ -488,7 +488,7 @@ TEST(TextFieldTest, TextField_ACharacterAndABackspaceKeepTheOrderTheyArrivedIn)
 TEST(TextFieldTest, TextField_ACharacterWithNoEdgeToTakeItIsNotTyped)
 {
     Context uiContext{
-        kCanvasSize, plainTheme(), Pointer{}, Keyboard{.typedText = "c"}};
+        kCanvasSize, getPlainTheme(), Pointer{}, Keyboard{.typedText = "c"}};
 
     uiContext.textField(
         TextFieldSpec{.widgetId = kNameWidget, .text = "ab", .focused = true});
@@ -500,7 +500,7 @@ TEST(TextFieldTest, TextField_MoreCharacterEdgesThanCharactersTypeWhatThereIs)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{
             .keys = {Key::Character, Key::Character}, .typedText = "c"}};
@@ -518,7 +518,7 @@ TEST(TextFieldTest, TextField_AFieldIsOneLineSoTheVerticalKeysDoNothing)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::MoveUp, Key::MoveDown}}};
 
@@ -532,7 +532,7 @@ TEST(TextFieldTest, TextField_AFieldsOneLineIsWhatHomeAndEndMoveOver)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::MoveLineStart}}};
 
@@ -550,7 +550,7 @@ TEST(TextFieldTest, TextField_AFieldsOneLineIsWhatHomeAndEndMoveOver)
 
     Context againContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::MoveLineEnd}}};
 

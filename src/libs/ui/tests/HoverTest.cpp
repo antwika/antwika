@@ -48,14 +48,14 @@ namespace
             .size = {.width = 10, .height = 10}};
     }
 
-    [[nodiscard]] DrawList twoBoxes()
+    [[nodiscard]] DrawList getTwoBoxes()
     {
         return DrawList{
             FillRect{.rect = boxAt(0), .color = kIdleColor},
             FillRect{.rect = boxAt(20), .color = kIdleColor}};
     }
 
-    [[nodiscard]] HoverTargets twoTargets()
+    [[nodiscard]] HoverTargets getTwoTargets()
     {
         return HoverTargets{
             HoverTarget{
@@ -78,7 +78,7 @@ namespace
         return std::get<FillRect>(drawList.at(commandIndex)).color;
     }
 
-    [[nodiscard]] HoverPointer over(std::int32_t x, std::int32_t y)
+    [[nodiscard]] HoverPointer getOver(std::int32_t x, std::int32_t y)
     {
         return HoverPointer{.positionPoint = Point{.x = x, .y = y}};
     }
@@ -86,18 +86,18 @@ namespace
 
 TEST(HoverTest, ApplyHover_ChangesNothingWhenNothingReportsAPosition)
 {
-    auto commands = twoBoxes();
+    auto commands = getTwoBoxes();
 
-    applyHover(commands, twoTargets(), HoverPointer{});
+    applyHover(commands, getTwoTargets(), HoverPointer{});
 
-    EXPECT_EQ(twoBoxes(), commands);
+    EXPECT_EQ(getTwoBoxes(), commands);
 }
 
 TEST(HoverTest, ApplyHover_PaintsTheTargetUnderThePointerHovered)
 {
-    auto commands = twoBoxes();
+    auto commands = getTwoBoxes();
 
-    applyHover(commands, twoTargets(), over(5, 5));
+    applyHover(commands, getTwoTargets(), getOver(5, 5));
 
     EXPECT_EQ(kHoveredColor, colorAt(commands, 0));
     EXPECT_EQ(kIdleColor, colorAt(commands, 1));
@@ -109,7 +109,7 @@ TEST(HoverTest, ApplyHover_PutsEveryTargetItIsNotOverBackToIdle)
         FillRect{.rect = boxAt(0), .color = kHoveredColor},
         FillRect{.rect = boxAt(20), .color = kIdleColor}};
 
-    applyHover(commands, twoTargets(), over(25, 5));
+    applyHover(commands, getTwoTargets(), getOver(25, 5));
 
     EXPECT_EQ(kIdleColor, colorAt(commands, 0));
     EXPECT_EQ(kHoveredColor, colorAt(commands, 1));
@@ -135,7 +135,7 @@ TEST(HoverTest, ApplyHover_TakesTheFrontmostOfTwoOverlappingTargets)
             .idleColor = kIdleColor,
             .hoveredColor = kHoveredColor}};
 
-    applyHover(commands, targets, over(5, 5));
+    applyHover(commands, targets, getOver(5, 5));
 
     EXPECT_EQ(kIdleColor, colorAt(commands, 0));
     EXPECT_EQ(kHoveredColor, colorAt(commands, 1));
@@ -143,13 +143,13 @@ TEST(HoverTest, ApplyHover_TakesTheFrontmostOfTwoOverlappingTargets)
 
 TEST(HoverTest, ApplyHover_LightsEveryTargetSharingTheFrontmostsId)
 {
-    auto commands = twoBoxes();
+    auto commands = getTwoBoxes();
 
-    auto targets = twoTargets();
+    auto targets = getTwoTargets();
     targets.at(0).widgetId = kFirstWidget;
     targets.at(1).widgetId = kFirstWidget;
 
-    applyHover(commands, targets, over(25, 5));
+    applyHover(commands, targets, getOver(25, 5));
 
     EXPECT_EQ(kHoveredColor, colorAt(commands, 0));
     EXPECT_EQ(kHoveredColor, colorAt(commands, 1));
@@ -157,13 +157,13 @@ TEST(HoverTest, ApplyHover_LightsEveryTargetSharingTheFrontmostsId)
 
 TEST(HoverTest, ApplyHover_NeverPairsTwoUnnamedTargets)
 {
-    auto commands = twoBoxes();
+    auto commands = getTwoBoxes();
 
-    auto targets = twoTargets();
+    auto targets = getTwoTargets();
     targets.at(0).widgetId = kNoWidget;
     targets.at(1).widgetId = kNoWidget;
 
-    applyHover(commands, targets, over(25, 5));
+    applyHover(commands, targets, getOver(25, 5));
 
     EXPECT_EQ(kIdleColor, colorAt(commands, 0));
     EXPECT_EQ(kHoveredColor, colorAt(commands, 1));
@@ -175,10 +175,10 @@ TEST(HoverTest, ApplyHover_LeavesAHeldTargetLookingPressed)
         FillRect{.rect = boxAt(0), .color = kHeldColor},
         FillRect{.rect = boxAt(20), .color = kIdleColor}};
 
-    auto targets = twoTargets();
+    auto targets = getTwoTargets();
     targets.at(0).held = true;
 
-    applyHover(commands, targets, over(5, 5));
+    applyHover(commands, targets, getOver(5, 5));
 
     EXPECT_EQ(kHeldColor, colorAt(commands, 0));
     EXPECT_EQ(kIdleColor, colorAt(commands, 1));
@@ -190,10 +190,10 @@ TEST(HoverTest, ApplyHover_LetsAHeldTargetBeDraggedOffWithoutLightingUp)
         FillRect{.rect = boxAt(0), .color = kHeldColor},
         FillRect{.rect = boxAt(20), .color = kIdleColor}};
 
-    auto targets = twoTargets();
+    auto targets = getTwoTargets();
     targets.at(0).held = true;
 
-    applyHover(commands, targets, over(25, 5));
+    applyHover(commands, targets, getOver(25, 5));
 
     EXPECT_EQ(kHeldColor, colorAt(commands, 0));
     EXPECT_EQ(kHoveredColor, colorAt(commands, 1));
@@ -201,34 +201,34 @@ TEST(HoverTest, ApplyHover_LetsAHeldTargetBeDraggedOffWithoutLightingUp)
 
 TEST(HoverTest, ApplyHover_TreatsAWidgetsAreaAsHalfOpen)
 {
-    auto commands = twoBoxes();
+    auto commands = getTwoBoxes();
 
-    applyHover(commands, twoTargets(), over(9, 9));
+    applyHover(commands, getTwoTargets(), getOver(9, 9));
     EXPECT_EQ(kHoveredColor, colorAt(commands, 0));
 
-    applyHover(commands, twoTargets(), over(10, 9));
+    applyHover(commands, getTwoTargets(), getOver(10, 9));
     EXPECT_EQ(kIdleColor, colorAt(commands, 0));
 }
 
 TEST(HoverTest, ApplyHover_ChangesNothingWithNoTargets)
 {
-    auto commands = twoBoxes();
+    auto commands = getTwoBoxes();
 
-    applyHover(commands, HoverTargets{}, over(5, 5));
+    applyHover(commands, HoverTargets{}, getOver(5, 5));
 
-    EXPECT_EQ(twoBoxes(), commands);
+    EXPECT_EQ(getTwoBoxes(), commands);
 }
 
 TEST(HoverTest, ApplyHover_SkipsATargetNamingACommandThatIsNotThere)
 {
-    auto commands = twoBoxes();
+    auto commands = getTwoBoxes();
 
-    HoverTargets targets{twoTargets().at(0)};
+    HoverTargets targets{getTwoTargets().at(0)};
     targets.at(0).command = 7;
 
-    applyHover(commands, targets, over(5, 5));
+    applyHover(commands, targets, getOver(5, 5));
 
-    EXPECT_EQ(twoBoxes(), commands);
+    EXPECT_EQ(getTwoBoxes(), commands);
 }
 
 TEST(HoverTest, ApplyHover_SkipsATargetNamingSomethingThatIsNotAFill)
@@ -240,9 +240,9 @@ TEST(HoverTest, ApplyHover_SkipsATargetNamingSomethingThatIsNotAFill)
             .scale = 1,
             .color = kIdleColor}};
 
-    HoverTargets targets{twoTargets().at(0)};
+    HoverTargets targets{getTwoTargets().at(0)};
 
-    applyHover(drawList, targets, over(5, 5));
+    applyHover(drawList, targets, getOver(5, 5));
 
     EXPECT_EQ(kIdleColor, std::get<DrawText>(drawList.at(0)).color);
 }
@@ -254,14 +254,14 @@ TEST(HoverTest, HoverPointer_ReportsNoPositionByDefault)
 
     EXPECT_FALSE(restingPointer.positionPoint.has_value());
     EXPECT_EQ(restingPointer, elsewherePointer);
-    EXPECT_NE(restingPointer, over(0, 0));
+    EXPECT_NE(restingPointer, getOver(0, 0));
 }
 
 TEST(HoverTest, HoverTarget_ComparesEveryFieldItCarries)
 {
-    const auto original = twoTargets().at(0);
+    const auto original = getTwoTargets().at(0);
 
-    EXPECT_EQ(original, twoTargets().at(0));
+    EXPECT_EQ(original, getTwoTargets().at(0));
 
     using Change = void (*)(HoverTarget &);
 

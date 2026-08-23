@@ -26,25 +26,25 @@ namespace antwika::decor
     [[nodiscard]] const TileAnimation *animationOf(
         std::span<const TileAnimation> flipAnimations, tilemap::Tile tile);
 
-    [[nodiscard]] std::vector<TileAnimation> withAnimationToggled(
+    [[nodiscard]] std::vector<TileAnimation> getWithAnimationToggled(
         const std::vector<TileAnimation> &flipAnimations, tilemap::Tile tile);
 
-    [[nodiscard]] std::vector<TileAnimation> withAnimationFrameAdded(
+    [[nodiscard]] std::vector<TileAnimation> getWithAnimationFrameAdded(
         const std::vector<TileAnimation> &flipAnimations, tilemap::Tile tile);
 
-    [[nodiscard]] std::vector<TileAnimation> withAnimationFrameSet(
+    [[nodiscard]] std::vector<TileAnimation> getWithAnimationFrameSet(
         const std::vector<TileAnimation> &flipAnimations,
         tilemap::Tile tile,
         std::size_t frame,
         tilemap::Tile drawnTile);
 
-    [[nodiscard]] bool anyTileAnimated(
+    [[nodiscard]] bool isAnyTileAnimated(
         std::span<const TileAnimation> flipAnimations);
 
     [[nodiscard]] tilemap::Tile animationFrameAt(
         const TileAnimation &flipAnimation, time::Tick tick);
 
-    [[nodiscard]] gfx::Bitmap atlasWithAnimationFrames(
+    [[nodiscard]] gfx::Bitmap getAtlasWithAnimationFrames(
         gfx::Bitmap sheetBitmap,
         tilemap::Atlas atlas,
         std::span<const TileAnimation> flipAnimations,
@@ -54,6 +54,6 @@ namespace antwika::decor
 
     inline constexpr widget::WidgetId kAddFrameWidget{370};
 
-    [[nodiscard]] widget::WidgetId flipFrameWidget(std::size_t frame);
+    [[nodiscard]] widget::WidgetId getFlipFrameWidget(std::size_t frame);
 
 }

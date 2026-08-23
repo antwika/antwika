@@ -19,22 +19,22 @@ namespace antwika::camera
         constexpr float kNearPlane = -kFarPlane;
     }
 
-    float isometricPitch()
+    float getIsometricPitch()
     {
         return -std::atan(4.0F / 3.0F);
     }
 
-    CameraTransform snappedPitch(CameraTransform transform)
+    CameraTransform getSnappedPitch(CameraTransform transform)
     {
-        if (std::abs(transform.pitch - isometricPitch()) < kPitchSnapWithin)
+        if (std::abs(transform.pitch - getIsometricPitch()) < kPitchSnapWithin)
         {
-            transform.pitch = isometricPitch();
+            transform.pitch = getIsometricPitch();
         }
 
         return transform;
     }
 
-    float orthoHalfHeight(
+    float getOrthoHalfHeight(
         const gfx::Size canvasSize,
         const std::int32_t pixelsPerVoxel)
     {
@@ -42,10 +42,10 @@ namespace antwika::camera
                / (2.0F * static_cast<float>(pixelsPerVoxel));
     }
 
-    CameraTransform defaultTransform()
+    CameraTransform getDefaultTransform()
     {
-        const auto dropping = std::sin(-isometricPitch());
-        const auto ahead = std::cos(-isometricPitch());
+        const auto dropping = std::sin(-getIsometricPitch());
+        const auto ahead = std::cos(-getIsometricPitch());
 
         return CameraTransform{
             .position =
@@ -54,26 +54,26 @@ namespace antwika::camera
                     dropping * kOpeningReach,
                     ahead * kOpeningReach},
             .yaw = 0.0F,
-            .pitch = isometricPitch()};
+            .pitch = getIsometricPitch()};
     }
 
-    CameraTransform resetToIsometric(CameraTransform transform)
+    CameraTransform getResetToIsometric(CameraTransform transform)
     {
         transform.yaw = 0.0F;
-        transform.pitch = isometricPitch();
+        transform.pitch = getIsometricPitch();
 
         return transform;
     }
 
-    CameraTransform centeredOn(
+    CameraTransform getCenteredOn(
         CameraTransform transform, const gfx::Vec3 position)
     {
-        transform.position = defaultTransform().position + position;
+        transform.position = getDefaultTransform().position + position;
 
         return transform;
     }
 
-    gfx::Vec3 forward(const CameraTransform &transform)
+    gfx::Vec3 getForward(const CameraTransform &transform)
     {
         const auto level = std::cos(transform.pitch);
 
@@ -83,13 +83,13 @@ namespace antwika::camera
             -std::cos(transform.yaw) * level};
     }
 
-    gfx::Vec3 forwardOnGround(const CameraTransform &transform)
+    gfx::Vec3 getForwardOnGround(const CameraTransform &transform)
     {
         return gfx::Vec3{
             std::sin(transform.yaw), 0.0F, -std::cos(transform.yaw)};
     }
 
-    CameraTransform rotated(
+    CameraTransform getRotated(
         CameraTransform transform, const float byYaw, const float byPitch)
     {
         transform.yaw += byYaw;
@@ -99,13 +99,13 @@ namespace antwika::camera
         return transform;
     }
 
-    CameraTransform panned(
+    CameraTransform getPanned(
         CameraTransform transform,
         const float acrossDistance,
         const float upDistance,
         const float step)
     {
-        const auto ahead = forward(transform);
+        const auto ahead = getForward(transform);
         const auto right = glm::normalize(
             glm::cross(ahead, gfx::Vec3{0.0F, 1.0F, 0.0F}));
         const auto overhead = glm::cross(right, ahead);
@@ -116,14 +116,14 @@ namespace antwika::camera
         return transform;
     }
 
-    CameraTransform movedOnGround(
+    CameraTransform getMovedOnGround(
         CameraTransform transform,
         const float ahead,
         const float acrossDistance,
         const float step)
     {
         const auto askedVector =
-            (forwardOnGround(transform) * ahead)
+            (getForwardOnGround(transform) * ahead)
             + (gfx::Vec3{
                    std::cos(transform.yaw), 0.0F, std::sin(transform.yaw)}
                * acrossDistance);
@@ -149,7 +149,7 @@ namespace antwika::camera
             / static_cast<float>(canvasSize.height);
         return gfx::Camera3D{
             transform.position,
-            transform.position + forward(transform),
+            transform.position + getForward(transform),
             gfx::Vec3{0.0F, 1.0F, 0.0F},
             gfx::Orthographic{ // GCOVR_EXCL_LINE
                 .halfWidth = halfWidth,
@@ -163,7 +163,7 @@ namespace antwika::camera
         const gfx::Size canvasSize,
         const float halfHeight)
     {
-        const auto ahead = forward(transform);
+        const auto ahead = getForward(transform);
         const auto backDistance =
             halfHeight / std::tan(kEditorFov / 2.0F);
 
@@ -180,14 +180,14 @@ namespace antwika::camera
                 .farPlane = backDistance + (2.0F * kFarPlane)}};
     } // GCOVR_EXCL_LINE
 
-    CameraTransform movedAlongView(
+    CameraTransform getMovedAlongView(
         CameraTransform transform,
         const float ahead,
         const float acrossDistance,
         const float rise,
         const float step)
     {
-        const auto forwardDirection = forward(transform);
+        const auto forwardDirection = getForward(transform);
         const auto right = glm::normalize(
             glm::cross(forwardDirection, gfx::Vec3{0.0F, 1.0F, 0.0F}));
         const auto overhead =

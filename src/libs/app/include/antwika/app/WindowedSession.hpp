@@ -45,11 +45,11 @@ namespace antwika::app
         WindowedSession &operator=(const WindowedSession &) = delete;
         WindowedSession &operator=(WindowedSession &&) = delete;
 
-        [[nodiscard]] IWindow &window() const noexcept;
+        [[nodiscard]] IWindow &getWindow() const noexcept;
 
-        [[nodiscard]] Size canvas() const noexcept;
+        [[nodiscard]] Size getCanvas() const noexcept;
 
-        [[nodiscard]] const InputEventCodec &codec() const noexcept;
+        [[nodiscard]] const InputEventCodec &getCodec() const noexcept;
 
         [[nodiscard]] ITickEventSource &source() noexcept;
 

@@ -40,7 +40,7 @@ namespace antwika::engine
 
             engine.step(tick);
 
-            if (stop.stopped())
+            if (stop.isStopped())
             {
                 break;
             }

@@ -10,11 +10,11 @@ namespace antwika::rules
 
     inline constexpr float kMaxPitch = 1.0F;
 
-    [[nodiscard]] component::Orientation rotatedBy(
+    [[nodiscard]] component::Orientation getRotatedBy(
         component::Orientation orientation,
         component::TurnIntent intent);
 
-    [[nodiscard]] component::Orientation turnedBy(
+    [[nodiscard]] component::Orientation getTurnedBy(
         component::Orientation orientation, float byYaw, float byPitch);
 
 }

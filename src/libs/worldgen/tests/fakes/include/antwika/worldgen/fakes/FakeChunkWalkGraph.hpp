@@ -41,7 +41,7 @@ namespace antwika::worldgen::fakes
             }
         }
 
-        [[nodiscard]] bool within(const GridPos gridPosition) const
+        [[nodiscard]] bool isWithin(const GridPos gridPosition) const
         {
             return gridPosition.x >= 0
                    && gridPosition.x < shape.width
@@ -50,9 +50,9 @@ namespace antwika::worldgen::fakes
                    && gridPosition.z < shape.depth;
         }
 
-        [[nodiscard]] bool roomy(const GridPos gridPosition) const
+        [[nodiscard]] bool isRoomy(const GridPos gridPosition) const
         {
-            if (!within(gridPosition))
+            if (!isWithin(gridPosition))
             {
                 return false;
             }
@@ -71,30 +71,30 @@ namespace antwika::worldgen::fakes
                    && foundCell->second.kind == Kind::Normal;
         }
 
-        [[nodiscard]] std::vector<GridPos> neighbors(
+        [[nodiscard]] std::vector<GridPos> getNeighbors(
             const GridPos fromPos) const override
         {
             std::vector<GridPos> foundPoses;
 
-            if (laddered(fromPos) && roomy(above(fromPos)))
+            if (isLaddered(fromPos) && isRoomy(getAbove(fromPos)))
             {
-                foundPoses.push_back(above(fromPos));
+                foundPoses.push_back(getAbove(fromPos));
             }
 
             for (const Facing facing : kEveryWayAboutFacings)
             {
-                const auto besidePos = stepped(fromPos, facing, 1);
+                const auto besidePos = getStepped(fromPos, facing, 1);
 
-                if (roomy(besidePos)
-                    && (bears(below(besidePos)) || laddered(besidePos)))
+                if (isRoomy(besidePos)
+                    && (bears(getBelow(besidePos)) || isLaddered(besidePos)))
                 {
                     foundPoses.push_back(besidePos);
                 }
 
-                const auto land = stepped(fromPos, facing, 2);
-                const auto ontoPos = above(land);
+                const auto land = getStepped(fromPos, facing, 2);
+                const auto ontoPos = getAbove(land);
 
-                if (climbs(besidePos, facing) && bears(land) && roomy(ontoPos))
+                if (climbs(besidePos, facing) && bears(land) && isRoomy(ontoPos))
                 {
                     foundPoses.push_back(ontoPos);
                 }
@@ -103,7 +103,7 @@ namespace antwika::worldgen::fakes
             return foundPoses;
         } // GCOVR_EXCL_LINE
 
-        [[nodiscard]] std::vector<GridPos> streets() const
+        [[nodiscard]] std::vector<GridPos> getStreets() const
         {
             std::vector<GridPos> wayPositions;
 
@@ -115,7 +115,7 @@ namespace antwika::worldgen::fakes
                     {
                         const GridPos gridPosition{.x = x, .y = y, .z = z};
 
-                        if (roomy(gridPosition) && bears(below(gridPosition)))
+                        if (isRoomy(gridPosition) && bears(getBelow(gridPosition)))
                         {
                             wayPositions.push_back(gridPosition);
                             break;
@@ -131,7 +131,7 @@ namespace antwika::worldgen::fakes
         ChunkShape shape;
         std::map<GridPos, VoxelMaterial> stoodMaterials{};
 
-        [[nodiscard]] bool laddered(const GridPos gridPosition) const
+        [[nodiscard]] bool isLaddered(const GridPos gridPosition) const
         {
             const auto foundPoses = stoodMaterials.find(gridPosition);
 
@@ -149,7 +149,7 @@ namespace antwika::worldgen::fakes
                    && foundPoses->second.facing == facing;
         }
 
-        [[nodiscard]] static GridPos above(const GridPos gridPosition)
+        [[nodiscard]] static GridPos getAbove(const GridPos gridPosition)
         {
             return GridPos{
                 .x = gridPosition.x,
@@ -157,7 +157,7 @@ namespace antwika::worldgen::fakes
                 .z = gridPosition.z};
         }
 
-        [[nodiscard]] static GridPos below(const GridPos gridPosition)
+        [[nodiscard]] static GridPos getBelow(const GridPos gridPosition)
         {
             return GridPos{
                 .x = gridPosition.x,
@@ -165,7 +165,7 @@ namespace antwika::worldgen::fakes
                 .z = gridPosition.z};
         }
 
-        [[nodiscard]] static GridPos stepped(
+        [[nodiscard]] static GridPos getStepped(
             const GridPos gridPosition,
             const Facing facing,
             const std::int32_t times)

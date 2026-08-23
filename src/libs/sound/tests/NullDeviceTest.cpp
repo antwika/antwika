@@ -25,7 +25,7 @@ namespace
         return arg.frames == frames && arg.isValid();
     }
 
-    [[nodiscard]] DeviceSpec usable()
+    [[nodiscard]] DeviceSpec getUsable()
     {
         return DeviceSpec{
             .format = WaveFormat{.rate = 48000, .channels = 2},
@@ -35,25 +35,25 @@ namespace
 
 TEST(NullDeviceTest, Format_ReportsWhatItWasOpenedAs)
 {
-    const NullDevice device(usable());
+    const NullDevice device(getUsable());
 
-    EXPECT_EQ(device.format(), (WaveFormat{.rate = 48000, .channels = 2}));
-    EXPECT_EQ(device.bufferFrames(), 64U);
+    EXPECT_EQ(device.getFormat(), (WaveFormat{.rate = 48000, .channels = 2}));
+    EXPECT_EQ(device.getBufferFrames(), 64U);
 }
 
 TEST(NullDeviceTest, BufferFrames_FallBackWhenNoneWasAsked)
 {
-    auto spec = usable();
+    auto spec = getUsable();
     spec.preferredBufferFrames = 0;
 
     const NullDevice device(spec);
 
-    EXPECT_EQ(device.bufferFrames(), antwika::sound::kDefaultBufferFrames);
+    EXPECT_EQ(device.getBufferFrames(), antwika::sound::kDefaultBufferFrames);
 }
 
 TEST(NullDeviceTest, Start_RefusesASecondStart)
 {
-    NullDevice device(usable());
+    NullDevice device(getUsable());
     NiceMock<MockRenderCallback> callback;
 
     device.start(callback);
@@ -63,7 +63,7 @@ TEST(NullDeviceTest, Start_RefusesASecondStart)
 
 TEST(NullDeviceTest, Start_IsAllowedAgainAfterAStop)
 {
-    NullDevice device(usable());
+    NullDevice device(getUsable());
     NiceMock<MockRenderCallback> callback;
 
     device.start(callback);
@@ -74,15 +74,15 @@ TEST(NullDeviceTest, Start_IsAllowedAgainAfterAStop)
 
 TEST(NullDeviceTest, Advance_RendersNothingBeforeAStart)
 {
-    NullDevice device(usable());
+    NullDevice device(getUsable());
 
     EXPECT_EQ(device.advance(128), 0U);
-    EXPECT_EQ(device.framesPlayed(), 0U);
+    EXPECT_EQ(device.getFramesPlayed(), 0U);
 }
 
 TEST(NullDeviceTest, Advance_RendersExactlyWhatWasAsked)
 {
-    NullDevice device(usable());
+    NullDevice device(getUsable());
     NiceMock<MockRenderCallback> callback;
 
     EXPECT_CALL(callback, render(_, _)).Times(3);
@@ -90,12 +90,12 @@ TEST(NullDeviceTest, Advance_RendersExactlyWhatWasAsked)
     device.start(callback);
 
     EXPECT_EQ(device.advance(192), 192U);
-    EXPECT_EQ(device.framesPlayed(), 192U);
+    EXPECT_EQ(device.getFramesPlayed(), 192U);
 }
 
 TEST(NullDeviceTest, Advance_ClampsTheFinalChunkToWhatIsLeft)
 {
-    NullDevice device(usable());
+    NullDevice device(getUsable());
     NiceMock<MockRenderCallback> callback;
 
     {
@@ -107,27 +107,27 @@ TEST(NullDeviceTest, Advance_ClampsTheFinalChunkToWhatIsLeft)
     device.start(callback);
 
     EXPECT_EQ(device.advance(70), 70U);
-    EXPECT_EQ(device.framesPlayed(), 70U);
+    EXPECT_EQ(device.getFramesPlayed(), 70U);
 }
 
 TEST(NullDeviceTest, FramesPlayed_MovesOnlyUnderAnAdvance)
 {
-    NullDevice device(usable());
+    NullDevice device(getUsable());
     NiceMock<MockRenderCallback> callback;
 
     device.start(callback);
 
-    EXPECT_EQ(device.framesPlayed(), 0U);
-    EXPECT_EQ(device.framesPlayed(), 0U);
+    EXPECT_EQ(device.getFramesPlayed(), 0U);
+    EXPECT_EQ(device.getFramesPlayed(), 0U);
 
     (void)device.advance(10);
 
-    EXPECT_EQ(device.framesPlayed(), 10U);
+    EXPECT_EQ(device.getFramesPlayed(), 10U);
 }
 
 TEST(NullDeviceTest, Advance_RendersNothingAfterAStop)
 {
-    NullDevice device(usable());
+    NullDevice device(getUsable());
     NiceMock<MockRenderCallback> callback;
 
     device.start(callback);

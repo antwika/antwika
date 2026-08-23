@@ -33,7 +33,7 @@ using antwika::ui::FillRect;
 using antwika::ui::PopClip;
 using antwika::ui::PushClip;
 using antwika::ui::kGrowSizing;
-using antwika::ui::detail::buildDrawList;
+using antwika::ui::detail::createDrawList;
 using antwika::ui::detail::FocusRing;
 using antwika::ui::detail::LayoutTree;
 using antwika::ui::detail::layout;
@@ -45,12 +45,12 @@ namespace
     constexpr Color kInkColor{.red = 220, .green = 224, .blue = 228};
     constexpr Color kPanelColor{.red = 20, .green = 24, .blue = 30};
 
-    Node container(std::optional<Color> backgroundColor)
+    Node getContainer(std::optional<Color> backgroundColor)
     {
         return Node{.axis = Axis::Column, .backgroundColor = backgroundColor};
     }
 
-    Node text(std::string value, std::uint32_t scale)
+    Node getText(std::string value, std::uint32_t scale)
     {
         return Node{
             .kind = NodeKind::Text,
@@ -67,7 +67,7 @@ namespace
         .originPoint = {.x = 0, .y = 0},
         .size = {.width = 10, .height = 10}};
 
-    Node bordered(Color fillColor, Color ringColor, bool overlay)
+    Node getBordered(Color fillColor, Color ringColor, bool overlay)
     {
         return Node{
             .backgroundColor = fillColor,
@@ -91,30 +91,30 @@ namespace
 
 TEST(BuildDrawListTest, BuildDrawList_EmitsNothingForNodesWithNothingToDraw)
 {
-    LayoutTree tree{container(std::nullopt)};
+    LayoutTree tree{getContainer(std::nullopt)};
 
-    tree.add(container(std::nullopt));
+    tree.add(getContainer(std::nullopt));
 
-    EXPECT_EQ(DrawList{}, buildDrawList(tree));
+    EXPECT_EQ(DrawList{}, createDrawList(tree));
 }
 
 TEST(BuildDrawListTest, BuildDrawList_EmitsAFillForANodeWithABackground)
 {
-    LayoutTree tree{container(kPanelColor)};
+    LayoutTree tree{getContainer(kPanelColor)};
 
-    tree.node(0).arrangedRect = kRoomyRect;
+    tree.getNode(0).arrangedRect = kRoomyRect;
 
     EXPECT_EQ(
         (DrawList{FillRect{.rect = kRoomyRect, .color = kPanelColor}}),
-        buildDrawList(tree));
+        createDrawList(tree));
 }
 
 TEST(BuildDrawListTest, BuildDrawList_EmitsTextAtWhereItWasArranged)
 {
-    LayoutTree tree{container(std::nullopt)};
+    LayoutTree tree{getContainer(std::nullopt)};
 
-    const auto label = tree.add(text("ab", 1));
-    tree.node(label).arrangedRect = kRoomyRect;
+    const auto label = tree.add(getText("ab", 1));
+    tree.getNode(label).arrangedRect = kRoomyRect;
 
     EXPECT_EQ(
         (DrawList{DrawText{
@@ -122,15 +122,15 @@ TEST(BuildDrawListTest, BuildDrawList_EmitsTextAtWhereItWasArranged)
             .text = "ab",
             .scale = 1,
             .color = kInkColor}}),
-        buildDrawList(tree));
+        createDrawList(tree));
 }
 
 TEST(BuildDrawListTest, BuildDrawList_CutsTextToTheWholeCellsThatFit)
 {
-    LayoutTree tree{container(std::nullopt)};
+    LayoutTree tree{getContainer(std::nullopt)};
 
-    const auto label = tree.add(text("abcdef", 1));
-    tree.node(label).arrangedRect = Rect{
+    const auto label = tree.add(getText("abcdef", 1));
+    tree.getNode(label).arrangedRect = Rect{
         .originPoint = {.x = 0, .y = 0},
         .size = {.width = 20, .height = 20}};
 
@@ -140,16 +140,16 @@ TEST(BuildDrawListTest, BuildDrawList_CutsTextToTheWholeCellsThatFit)
             .text = "abc",
             .scale = 1,
             .color = kInkColor}}),
-        buildDrawList(tree));
+        createDrawList(tree));
 }
 
 TEST(BuildDrawListTest, BuildDrawList_CutsALongLineToTheCellsThatFit)
 {
-    LayoutTree tree{container(std::nullopt)};
+    LayoutTree tree{getContainer(std::nullopt)};
 
     const auto label = tree.add(
-        text("abcdefghijklmnopqrstuvwxyz0123456789", 1));
-    tree.node(label).arrangedRect = Rect{
+        getText("abcdefghijklmnopqrstuvwxyz0123456789", 1));
+    tree.getNode(label).arrangedRect = Rect{
         .originPoint = {.x = 0, .y = 0},
         .size = {.width = 120, .height = 20}};
 
@@ -159,51 +159,51 @@ TEST(BuildDrawListTest, BuildDrawList_CutsALongLineToTheCellsThatFit)
             .text = "abcdefghijklmnopqrst",
             .scale = 1,
             .color = kInkColor}}),
-        buildDrawList(tree));
+        createDrawList(tree));
 }
 
 TEST(BuildDrawListTest, BuildDrawList_LeavesOutTextWithNoRoomForAWholeCell)
 {
-    LayoutTree tree{container(std::nullopt)};
+    LayoutTree tree{getContainer(std::nullopt)};
 
-    const auto label = tree.add(text("ab", 1));
-    tree.node(label).arrangedRect = Rect{
+    const auto label = tree.add(getText("ab", 1));
+    tree.getNode(label).arrangedRect = Rect{
         .originPoint = {.x = 0, .y = 0},
         .size = {.width = 4, .height = 20}};
 
-    EXPECT_EQ(DrawList{}, buildDrawList(tree));
+    EXPECT_EQ(DrawList{}, createDrawList(tree));
 }
 
 TEST(BuildDrawListTest, BuildDrawList_LeavesOutTextTallerThanItsBox)
 {
-    LayoutTree tree{container(std::nullopt)};
+    LayoutTree tree{getContainer(std::nullopt)};
 
-    const auto label = tree.add(text("ab", 1));
-    tree.node(label).arrangedRect = Rect{
+    const auto label = tree.add(getText("ab", 1));
+    tree.getNode(label).arrangedRect = Rect{
         .originPoint = {.x = 0, .y = 0},
         .size = {.width = 100, .height = 5}};
 
-    EXPECT_EQ(DrawList{}, buildDrawList(tree));
+    EXPECT_EQ(DrawList{}, createDrawList(tree));
 }
 
 TEST(BuildDrawListTest, BuildDrawList_LeavesOutTextAtZeroScale)
 {
-    LayoutTree tree{container(std::nullopt)};
+    LayoutTree tree{getContainer(std::nullopt)};
 
-    const auto label = tree.add(text("ab", 0));
-    tree.node(label).arrangedRect = kRoomyRect;
+    const auto label = tree.add(getText("ab", 0));
+    tree.getNode(label).arrangedRect = kRoomyRect;
 
-    EXPECT_EQ(DrawList{}, buildDrawList(tree));
+    EXPECT_EQ(DrawList{}, createDrawList(tree));
 }
 
 TEST(BuildDrawListTest, BuildDrawList_DrawsAContainerBeforeWhatIsInsideIt)
 {
-    LayoutTree tree{container(kPanelColor)};
+    LayoutTree tree{getContainer(kPanelColor)};
 
-    tree.node(0).arrangedRect = kRoomyRect;
+    tree.getNode(0).arrangedRect = kRoomyRect;
 
-    const auto label = tree.add(text("ab", 1));
-    tree.node(label).arrangedRect = kRoomyRect;
+    const auto label = tree.add(getText("ab", 1));
+    tree.getNode(label).arrangedRect = kRoomyRect;
 
     EXPECT_EQ(
         (DrawList{
@@ -213,7 +213,7 @@ TEST(BuildDrawListTest, BuildDrawList_DrawsAContainerBeforeWhatIsInsideIt)
                 .text = "ab",
                 .scale = 1,
                 .color = kInkColor}}),
-        buildDrawList(tree));
+        createDrawList(tree));
 }
 
 TEST(BuildDrawListTest, BuildDrawList_EmitsEachLayersBorderWithThatLayer)
@@ -223,10 +223,10 @@ TEST(BuildDrawListTest, BuildDrawList_EmitsEachLayersBorderWithThatLayer)
     constexpr Color kOverFillColor{.red = 30};
     constexpr Color kOverRingColor{.red = 40};
 
-    LayoutTree tree{container(std::nullopt)};
+    LayoutTree tree{getContainer(std::nullopt)};
 
-    tree.add(bordered(kBaseFillColor, kBaseRingColor, false));
-    tree.add(bordered(kOverFillColor, kOverRingColor, true));
+    tree.add(getBordered(kBaseFillColor, kBaseRingColor, false));
+    tree.add(getBordered(kOverFillColor, kOverRingColor, true));
 
     EXPECT_EQ(
         (std::vector<Color>{
@@ -240,23 +240,23 @@ TEST(BuildDrawListTest, BuildDrawList_EmitsEachLayersBorderWithThatLayer)
             kOverRingColor,
             kOverRingColor,
             kOverRingColor}),
-        colorsOf(buildDrawList(tree)));
+        colorsOf(createDrawList(tree)));
 }
 
 TEST(BuildDrawListTest, BuildDrawList_WrapsWhatAClippingNodeHoldsInAClip)
 {
-    LayoutTree tree{container(std::nullopt)};
+    LayoutTree tree{getContainer(std::nullopt)};
 
     const auto cut =
         tree.open(Node{.axis = Axis::Column, .clips = true});
-    tree.node(cut).arrangedRect = kBoxRect;
+    tree.getNode(cut).arrangedRect = kBoxRect;
 
-    const auto insideNode = tree.add(text("ab", 1));
-    tree.node(insideNode).arrangedRect = kRoomyRect;
+    const auto insideNode = tree.add(getText("ab", 1));
+    tree.getNode(insideNode).arrangedRect = kRoomyRect;
     tree.close();
 
-    const auto secondNode = tree.add(text("cd", 1));
-    tree.node(secondNode).arrangedRect = kRoomyRect;
+    const auto secondNode = tree.add(getText("cd", 1));
+    tree.getNode(secondNode).arrangedRect = kRoomyRect;
 
     EXPECT_EQ(
         (DrawList{
@@ -272,23 +272,23 @@ TEST(BuildDrawListTest, BuildDrawList_WrapsWhatAClippingNodeHoldsInAClip)
                 .text = "cd",
                 .scale = 1,
                 .color = kInkColor}}),
-        buildDrawList(tree));
+        createDrawList(tree));
 }
 
 TEST(BuildDrawListTest, BuildDrawList_EndsAClipWithItsAncestorsSibling)
 {
-    LayoutTree tree{container(std::nullopt)};
+    LayoutTree tree{getContainer(std::nullopt)};
 
     tree.open(Node{.axis = Axis::Column});
 
     const auto cut =
         tree.open(Node{.axis = Axis::Column, .clips = true});
-    tree.node(cut).arrangedRect = kBoxRect;
+    tree.getNode(cut).arrangedRect = kBoxRect;
     tree.close();
     tree.close();
 
-    const auto secondNode = tree.add(text("cd", 1));
-    tree.node(secondNode).arrangedRect = kRoomyRect;
+    const auto secondNode = tree.add(getText("cd", 1));
+    tree.getNode(secondNode).arrangedRect = kRoomyRect;
 
     EXPECT_EQ(
         (DrawList{
@@ -299,20 +299,20 @@ TEST(BuildDrawListTest, BuildDrawList_EndsAClipWithItsAncestorsSibling)
                 .text = "cd",
                 .scale = 1,
                 .color = kInkColor}}),
-        buildDrawList(tree));
+        createDrawList(tree));
 }
 
 TEST(BuildDrawListTest, BuildDrawList_ClosesEveryClipStillOpenAtTheEnd)
 {
-    LayoutTree tree{container(std::nullopt)};
+    LayoutTree tree{getContainer(std::nullopt)};
 
     const auto outer =
         tree.open(Node{.axis = Axis::Column, .clips = true});
-    tree.node(outer).arrangedRect = kRoomyRect;
+    tree.getNode(outer).arrangedRect = kRoomyRect;
 
     const auto inner =
         tree.open(Node{.axis = Axis::Column, .clips = true});
-    tree.node(inner).arrangedRect = kBoxRect;
+    tree.getNode(inner).arrangedRect = kBoxRect;
     tree.close();
     tree.close();
 
@@ -322,12 +322,12 @@ TEST(BuildDrawListTest, BuildDrawList_ClosesEveryClipStillOpenAtTheEnd)
             PushClip{.rect = kBoxRect},
             PopClip{},
             PopClip{}}),
-        buildDrawList(tree));
+        createDrawList(tree));
 }
 
 TEST(BuildDrawListTest, BuildDrawList_TurnsALaidOutTreeIntoAWholePicture)
 {
-    auto root = container(kPanelColor);
+    auto root = getContainer(kPanelColor);
     root.widthSizing = kGrowSizing;
     root.heightSizing = kGrowSizing;
     root.padding = 4;
@@ -335,7 +335,7 @@ TEST(BuildDrawListTest, BuildDrawList_TurnsALaidOutTreeIntoAWholePicture)
 
     LayoutTree tree{std::move(root)};
 
-    tree.add(text("ab", 1));
+    tree.add(getText("ab", 1));
 
     layout(tree, Size{.width = 40, .height = 20});
 
@@ -351,5 +351,5 @@ TEST(BuildDrawListTest, BuildDrawList_TurnsALaidOutTreeIntoAWholePicture)
                 .text = "ab",
                 .scale = 1,
                 .color = kInkColor}}),
-        buildDrawList(tree));
+        createDrawList(tree));
 }

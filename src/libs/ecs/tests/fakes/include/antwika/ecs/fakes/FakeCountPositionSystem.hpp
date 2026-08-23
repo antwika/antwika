@@ -23,7 +23,7 @@ namespace antwika::ecs::fakes
 
         void update(World &world, antwika::time::Tick) override
         {
-            seenCounts->push_back(world.view<PositionT>().size());
+            seenCounts->push_back(world.view<PositionT>().getSize());
         }
 
     private:

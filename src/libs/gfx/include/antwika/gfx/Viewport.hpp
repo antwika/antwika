@@ -38,7 +38,7 @@ namespace antwika::gfx
         [[nodiscard]] std::uint32_t toWindowScale(
             std::uint32_t scale) const noexcept;
 
-        [[nodiscard]] Rect frame(Size canvasSize) const noexcept;
+        [[nodiscard]] Rect getFrame(Size canvasSize) const noexcept;
     };
 
     enum class Fit : std::uint8_t

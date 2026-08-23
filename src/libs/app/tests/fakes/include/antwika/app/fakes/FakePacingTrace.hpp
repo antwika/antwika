@@ -35,13 +35,13 @@ namespace antwika::app::fakes
             steps.push_back(PacingStep::Drawn);
         }
 
-        [[nodiscard]] const std::vector<PacingStep> &recordedSteps()
+        [[nodiscard]] const std::vector<PacingStep> &getRecordedSteps()
             const noexcept
         {
             return steps;
         }
 
-        [[nodiscard]] const std::vector<antwika::time::Tick> &ticks()
+        [[nodiscard]] const std::vector<antwika::time::Tick> &getTicks()
             const noexcept
         {
             return sampledTicks;

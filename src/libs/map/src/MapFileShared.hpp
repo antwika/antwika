@@ -268,7 +268,7 @@ namespace antwika::map::mapfile
             * tilemap::kAtlasRows
         - 1;
 
-    [[nodiscard]] inline nlohmann::json wholeSchema(
+    [[nodiscard]] inline nlohmann::json getWholeSchema(
         const std::int64_t lowest, const std::int64_t highest)
     {
         nlohmann::json shape;
@@ -280,7 +280,7 @@ namespace antwika::map::mapfile
         return shape;
     } // GCOVR_EXCL_LINE
 
-    [[nodiscard]] inline nlohmann::json tileSchema()
+    [[nodiscard]] inline nlohmann::json getTileSchema()
     {
         nlohmann::json enumSchema;
         enumSchema["enum"] = {
@@ -288,7 +288,7 @@ namespace antwika::map::mapfile
 
         nlohmann::json shape;
         shape["type"] = "array";
-        shape["items"] = {enumSchema, wholeSchema(0, kLastTile)};
+        shape["items"] = {enumSchema, getWholeSchema(0, kLastTile)};
         shape["minItems"] = kTileFieldCount;
         shape["maxItems"] = kTileFieldCount;
 
@@ -304,60 +304,60 @@ namespace antwika::map::mapfile
 
     [[nodiscard]] inline std::string_view nameOf(const voxel::Side side)
     {
-        return kSideNames.name(side);
+        return kSideNames.getName(side);
     }
 
     [[nodiscard]] inline std::string_view nameOf(const voxel::Corner corner)
     {
-        return kCornerNames.name(corner);
+        return kCornerNames.getName(corner);
     }
 
     [[nodiscard]] inline std::string_view nameOf(const voxel::EdgeKind edge)
     {
-        return kEdgeNames.name(edge);
+        return kEdgeNames.getName(edge);
     }
 
     [[nodiscard]] inline std::string_view nameOf(const voxel::Kind kind)
     {
-        return kKindNames.name(kind);
+        return kKindNames.getName(kind);
     }
 
     [[nodiscard]] inline std::string_view nameOf(const voxel::Facing facing)
     {
-        return kFacingNames.name(facing);
+        return kFacingNames.getName(facing);
     }
 
     [[nodiscard]] inline std::string_view nameOf(
         const voxel::StairHalf levelHalf)
     {
-        return kStairHalfNames.name(levelHalf);
+        return kStairHalfNames.getName(levelHalf);
     }
 
     [[nodiscard]] inline std::string_view nameOf(const voxel::StairPart part)
     {
-        return kPartNames.name(part);
+        return kPartNames.getName(part);
     }
 
     [[nodiscard]] inline std::string_view nameOf(const Tool tool)
     {
-        return kToolNames.name(tool);
+        return kToolNames.getName(tool);
     }
 
     [[nodiscard]] inline std::string_view nameOf(const Paint paint)
     {
-        return kDrawingNames.name(paint);
+        return kDrawingNames.getName(paint);
     }
 
     [[nodiscard]] inline std::string_view nameOf(const View view)
     {
-        return kViewNames.name(view);
+        return kViewNames.getName(view);
     }
 
     template <typename Enum>
     [[nodiscard]] inline Enum enumFromName(
         const enums::NameTable<Enum> &names, const std::string &text)
     {
-        const auto namedValue = names.from(text);
+        const auto namedValue = names.getFrom(text);
 
         if (!namedValue.has_value())
         {
@@ -369,13 +369,13 @@ namespace antwika::map::mapfile
         return *namedValue;
     }
 
-    [[nodiscard]] inline nlohmann::json writtenTile(const tilemap::Tile tile)
+    [[nodiscard]] inline nlohmann::json getWrittenTile(const tilemap::Tile tile)
     {
         return nlohmann::json::array(
             {std::string(nameOf(tile.atlas)), tile.index});
     } // GCOVR_EXCL_LINE
 
-    [[nodiscard]] inline tilemap::Tile readTile(const nlohmann::json &json)
+    [[nodiscard]] inline tilemap::Tile getReadTile(const nlohmann::json &json)
     {
         return tilemap::Tile{
             .atlas = json[0].get<std::string>() == kFlatName
@@ -390,40 +390,40 @@ namespace antwika::map::mapfile
             static_cast<double>(value) * kCameraScale);
     }
 
-    [[nodiscard]] inline float fromFixed(const std::int64_t fixedValue)
+    [[nodiscard]] inline float getFromFixed(const std::int64_t fixedValue)
     {
         return static_cast<float>(fixedValue)
                / static_cast<float>(kCameraScale);
     }
 
-    [[nodiscard]] inline nlohmann::json cellSchema()
+    [[nodiscard]] inline nlohmann::json getCellSchema()
     {
         nlohmann::json shape;
 
         shape["type"] = "array";
         shape["items"] =
-            wholeSchema(-kMaxCellCoord, kMaxCellCoord);
+            getWholeSchema(-kMaxCellCoord, kMaxCellCoord);
         shape["minItems"] = kAxisCount;
         shape["maxItems"] = kAxisCount;
 
         return shape;
     } // GCOVR_EXCL_LINE
 
-    [[nodiscard]] inline nlohmann::json colourSchema()
+    [[nodiscard]] inline nlohmann::json getColourSchema()
     {
         nlohmann::json shape;
 
         shape["type"] = "array";
-        shape["items"] = wholeSchema(0, 255);
+        shape["items"] = getWholeSchema(0, 255);
         shape["minItems"] = kColorComponentCount;
         shape["maxItems"] = kColorComponentCount;
 
         return shape;
     } // GCOVR_EXCL_LINE
 
-    [[nodiscard]] nlohmann::json plateSchema();
+    [[nodiscard]] nlohmann::json getPlateSchema();
 
-    [[nodiscard]] nlohmann::json markedCubeSchema();
+    [[nodiscard]] nlohmann::json getMarkedCubeSchema();
 
     [[nodiscard]] inline nlohmann::json jsonOf(
         const voxel::VoxelPosition position)
@@ -457,9 +457,9 @@ namespace antwika::map::mapfile
     }
 
     [[nodiscard]] const nlohmann::json_schema::json_validator &
-    mapValidator();
+    getMapValidator();
 
-    [[nodiscard]] schema::MigrationChain mapMigrations();
+    [[nodiscard]] schema::MigrationChain getMapMigrations();
 
     void earlyMapMigrations(schema::MigrationList &migrations);
 

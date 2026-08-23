@@ -16,7 +16,7 @@
 namespace antwika::worldgen::detail
 {
 
-    [[nodiscard]] std::size_t walkSteps(ChunkShape shape);
+    [[nodiscard]] std::size_t getWalkSteps(ChunkShape shape);
 
     inline constexpr std::uint32_t kRouteAttempts = 8;
 
@@ -34,7 +34,7 @@ namespace antwika::worldgen::detail
         std::size_t cell,
         std::span<const std::size_t> wantedCells);
 
-    [[nodiscard]] std::int32_t highestTerrace(
+    [[nodiscard]] std::int32_t getHighestTerrace(
         const CompiledRuleset &compiledRuleset, ChunkShape shape);
 
     [[nodiscard]] StairResult layWays(

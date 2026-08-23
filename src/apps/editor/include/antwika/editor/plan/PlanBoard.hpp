@@ -26,7 +26,7 @@ namespace antwika::editor
         Done,
     };
 
-    [[nodiscard]] constexpr Column lastEnumerator(Column) noexcept
+    [[nodiscard]] constexpr Column getLastEnumerator(Column) noexcept
     {
         return Column::Done;
     }
@@ -36,7 +36,7 @@ namespace antwika::editor
 
     inline constexpr std::size_t kMaxCardsPerColumn = 64;
 
-    [[nodiscard]] std::string_view columnName(Column whichColumn);
+    [[nodiscard]] std::string_view getColumnName(Column whichColumn);
 
     [[nodiscard]] const std::vector<Card> &cardsOf(
         const Board &board, Column whichColumn);
@@ -53,7 +53,7 @@ namespace antwika::editor
         Column toColumn,
         std::size_t dropIndex);
 
-    [[nodiscard]] std::size_t dropIndex(
+    [[nodiscard]] std::size_t getDropIndex(
         std::span<const gfx::Rect> cardRects, std::int32_t pointerY);
 
     inline constexpr widget::WidgetId kPlanDetailWidget{410};
@@ -70,7 +70,7 @@ namespace antwika::editor
 
     inline constexpr std::uint64_t kFirstPlanCardWidget = 512;
 
-    [[nodiscard]] constexpr widget::WidgetId planColumnWidget(
+    [[nodiscard]] constexpr widget::WidgetId getPlanColumnWidget(
         const Column whichColumn) noexcept
     {
         return widget::WidgetId{
@@ -78,7 +78,7 @@ namespace antwika::editor
             + static_cast<std::uint64_t>(whichColumn)};
     }
 
-    [[nodiscard]] constexpr widget::WidgetId planAddWidget(
+    [[nodiscard]] constexpr widget::WidgetId getPlanAddWidget(
         const Column whichColumn) noexcept
     {
         return widget::WidgetId{
@@ -86,7 +86,7 @@ namespace antwika::editor
             + static_cast<std::uint64_t>(whichColumn)};
     }
 
-    [[nodiscard]] constexpr widget::WidgetId planCardWidget(
+    [[nodiscard]] constexpr widget::WidgetId getPlanCardWidget(
         const Column whichColumn, const std::size_t cardIndex) noexcept
     {
         return widget::WidgetId{
@@ -97,6 +97,6 @@ namespace antwika::editor
     }
 
     [[nodiscard]] std::optional<std::pair<Column, std::size_t>>
-    cardOfWidget(widget::WidgetId whichWidget);
+    getCardOfWidget(widget::WidgetId whichWidget);
 
 }

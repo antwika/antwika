@@ -30,24 +30,24 @@ namespace antwika::animation
         }
     }
 
-    time::Tick Progress::numerator() const noexcept
+    time::Tick Progress::getNumerator() const noexcept
     {
         return numTick;
     }
 
-    time::Tick Progress::denominator() const noexcept
+    time::Tick Progress::getDenominator() const noexcept
     {
         return denTick;
     }
 
-    std::int64_t interpolate(
+    std::int64_t getInterpolate(
         std::int64_t fromValue, std::int64_t toValue,
         Progress progress) noexcept
     {
         const std::int64_t span = toValue - fromValue;
-        const auto numerator = static_cast<std::int64_t>(progress.numerator());
+        const auto numerator = static_cast<std::int64_t>(progress.getNumerator());
         const auto denominator =
-            static_cast<std::int64_t>(progress.denominator());
+            static_cast<std::int64_t>(progress.getDenominator());
 
         return fromValue + span * numerator / denominator;
     }

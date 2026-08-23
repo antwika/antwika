@@ -18,7 +18,7 @@ namespace antwika::tilemap
                == static_cast<std::size_t>(columns) * rows;
     }
 
-    std::optional<Tile> Tilemap::at(
+    std::optional<Tile> Tilemap::getEntryAt(
         const std::uint32_t column, const std::uint32_t row) const
     {
         if (column >= columns || row >= rows)
@@ -42,12 +42,12 @@ namespace antwika::tilemap
         return atlas == Atlas::Floor ? kFloorTileSize : kWallTileSize;
     }
 
-    gfx::RectF tileSource(const Tile tile)
+    gfx::RectF getTileSource(const Tile tile)
     {
-        return tilePixels(tile.index, tileSizeOf(tile.atlas));
+        return getTilePixels(tile.index, tileSizeOf(tile.atlas));
     }
 
-    Tilemap defaultTilemap()
+    Tilemap getDefaultTilemap()
     {
         const auto columnCount = static_cast<std::uint32_t>(kAtlasColumns);
         const auto rowCount = static_cast<std::uint32_t>(kAtlasRows);
@@ -80,7 +80,7 @@ namespace antwika::tilemap
         return tilemap;
     } // GCOVR_EXCL_LINE
 
-    gfx::Size gridCellSize()
+    gfx::Size getGridCellSize()
     {
         return gfx::Size{
             .width = std::max(kWallTileSize.width, kFloorTileSize.width),
@@ -91,15 +91,15 @@ namespace antwika::tilemap
     std::optional<Tile> suggestedTileFor(
         const Tilemap &tilemap, const geometry::GridCell cell)
     {
-        const auto wholeTilemap = defaultTilemap();
-        const auto belongs = wholeTilemap.at(cell.column, cell.row);
+        const auto wholeTilemap = getDefaultTilemap();
+        const auto belongs = wholeTilemap.getEntryAt(cell.column, cell.row);
 
         if (!belongs.has_value())
         {
             return std::nullopt;
         }
 
-        if (!cellHoldingTile(tilemap, *belongs).has_value())
+        if (!getCellHoldingTile(tilemap, *belongs).has_value())
         {
             return belongs;
         }
@@ -107,7 +107,7 @@ namespace antwika::tilemap
         for (const auto tile : wholeTilemap.tiles)
         {
             if (tile.has_value() && tile->atlas == belongs->atlas
-                && !cellHoldingTile(tilemap, *tile).has_value())
+                && !getCellHoldingTile(tilemap, *tile).has_value())
             {
                 return tile;
             }
@@ -146,7 +146,7 @@ namespace antwika::tilemap
             tilemap.tiles.at(tileAt(toCell)));
     }
 
-    std::optional<geometry::GridCell> cellHoldingTile(
+    std::optional<geometry::GridCell> getCellHoldingTile(
         const Tilemap &tilemap, const Tile tile)
     {
         for (std::uint32_t row = 0; row < tilemap.rows; ++row)
@@ -154,7 +154,7 @@ namespace antwika::tilemap
             for (std::uint32_t column = 0; column < tilemap.columns;
                  ++column)
             {
-                if (tilemap.at(column, row) == tile)
+                if (tilemap.getEntryAt(column, row) == tile)
                 {
                     return geometry::GridCell{
                         .column = column, .row = row};

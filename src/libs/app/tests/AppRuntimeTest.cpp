@@ -48,8 +48,8 @@ namespace
                     auto window =
                         std::make_unique<NiceMock<MockWindow>>();
 
-                    ON_CALL(*window, id).WillByDefault(Return(kWindow));
-                    ON_CALL(*window, size).WillByDefault(Return(kCanvasSize));
+                    ON_CALL(*window, getId).WillByDefault(Return(kWindow));
+                    ON_CALL(*window, getSize).WillByDefault(Return(kCanvasSize));
 
                     return window;
                 });
@@ -62,13 +62,13 @@ namespace
         return std::make_unique<FakeInputBackend>();
     }
 
-    [[nodiscard]] BackendFactories working()
+    [[nodiscard]] BackendFactories getWorking()
     {
         return BackendFactories{
             .gfx = aGfxBackend, .input = anInputBackend};
     }
 
-    [[nodiscard]] WindowedSessionSpec aSpec()
+    [[nodiscard]] WindowedSessionSpec getASpec()
     {
         return WindowedSessionSpec{
             .name = "host", .windowTitle = "Host", .canvasSize = kCanvasSize};
@@ -79,16 +79,16 @@ TEST(AppRuntimeTest, Ctor_OpensASessionOnTheMadeBackends)
 {
     std::ostringstream outputStream;
 
-    AppRuntime hostRuntime(outputStream, Level::Info, working(), aSpec());
+    AppRuntime hostRuntime(outputStream, Level::Info, getWorking(), getASpec());
 
-    EXPECT_EQ(hostRuntime.session().canvas(), kCanvasSize);
+    EXPECT_EQ(hostRuntime.session().getCanvas(), kCanvasSize);
 }
 
 TEST(AppRuntimeTest, Logger_WritesToTheStreamItWasGiven)
 {
     std::ostringstream outputStream;
 
-    AppRuntime hostRuntime(outputStream, Level::Info, working(), aSpec());
+    AppRuntime hostRuntime(outputStream, Level::Info, getWorking(), getASpec());
 
     hostRuntime.logger().log(Level::Info, "hello");
 
@@ -99,7 +99,7 @@ TEST(AppRuntimeTest, Logger_KeepsBackWhatIsBelowTheMinimum)
 {
     std::ostringstream outputStream;
 
-    AppRuntime hostRuntime(outputStream, Level::Warning, working(), aSpec());
+    AppRuntime hostRuntime(outputStream, Level::Warning, getWorking(), getASpec());
 
     hostRuntime.logger().log(Level::Info, "hello");
 
@@ -115,7 +115,7 @@ TEST(AppRuntimeTest, Ctor_RefusesAnAbsentGraphicsFactory)
             outputStream,
             Level::Info,
             BackendFactories{.gfx = {}, .input = anInputBackend},
-            aSpec()),
+            getASpec()),
         std::invalid_argument);
 }
 
@@ -128,7 +128,7 @@ TEST(AppRuntimeTest, Ctor_RefusesAnAbsentInputFactory)
             outputStream,
             Level::Info,
             BackendFactories{.gfx = aGfxBackend, .input = {}},
-            aSpec()),
+            getASpec()),
         std::invalid_argument);
 }
 
@@ -143,7 +143,7 @@ TEST(AppRuntimeTest, Ctor_RefusesAGraphicsFactoryThatMakesNothing)
             BackendFactories{
                 .gfx = [](ILogger &) { return nullptr; },
                 .input = anInputBackend},
-            aSpec()),
+            getASpec()),
         std::invalid_argument);
 }
 
@@ -158,6 +158,6 @@ TEST(AppRuntimeTest, Ctor_RefusesAnInputFactoryThatMakesNothing)
             BackendFactories{
                 .gfx = aGfxBackend,
                 .input = [](ILogger &) { return nullptr; }},
-            aSpec()),
+            getASpec()),
         std::invalid_argument);
 }

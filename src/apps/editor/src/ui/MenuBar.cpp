@@ -140,12 +140,12 @@ namespace antwika::editor
         static_assert(enums::tagsInOrder(kMenuRows, &MenuRow::menu));
     }
 
-    std::string_view menuName(const Menu menu)
+    std::string_view getMenuName(const Menu menu)
     {
         return enums::lookup(kMenuRows, menu).name;
     }
 
-    std::string_view itemName(const MenuItem item)
+    std::string_view getItemName(const MenuItem item)
     {
         return enums::lookup(kMenuItemRows, item).name;
     }
@@ -160,12 +160,12 @@ namespace antwika::editor
         return enums::lookup(kMenuItemRows, item).toggle;
     }
 
-    widget::WidgetId menuWidget(const Menu menu)
+    widget::WidgetId getMenuWidget(const Menu menu)
     {
         return enums::lookup(kMenuRows, menu).widget;
     }
 
-    widget::WidgetId firstItemWidget(const Menu menu)
+    widget::WidgetId getFirstItemWidget(const Menu menu)
     {
         return enums::lookup(kMenuRows, menu).firstItemWidget;
     }

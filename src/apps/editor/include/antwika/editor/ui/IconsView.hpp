@@ -19,16 +19,16 @@ namespace antwika::editor
             gfx::ViewportRenderer &viewportRenderer,
             gfx::Bitmap sheetBitmap);
 
-        [[nodiscard]] gfx::ITexture *texture() const noexcept;
+        [[nodiscard]] gfx::ITexture *getTexture() const noexcept;
 
-        [[nodiscard]] const gfx::Bitmap &sheet() const noexcept;
+        [[nodiscard]] const gfx::Bitmap &getSheet() const noexcept;
 
-        [[nodiscard]] gfx::ITexture *checker() const noexcept;
+        [[nodiscard]] gfx::ITexture *getChecker() const noexcept;
 
-        [[nodiscard]] std::optional<std::size_t> picked()
+        [[nodiscard]] std::optional<std::size_t> getPicked()
             const noexcept;
 
-        [[nodiscard]] bool unsaved() const noexcept;
+        [[nodiscard]] bool isUnsaved() const noexcept;
 
         void keep() noexcept;
 
@@ -41,7 +41,7 @@ namespace antwika::editor
 
         void draw(gfx::ViewportRenderer &viewportRenderer) const;
 
-        [[nodiscard]] std::size_t count() const;
+        [[nodiscard]] std::size_t getCount() const;
 
     private:
         gfx::Bitmap iconSheet;

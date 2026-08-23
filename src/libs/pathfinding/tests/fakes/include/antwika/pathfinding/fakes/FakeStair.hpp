@@ -12,7 +12,7 @@ namespace antwika::pathfinding::fakes
     public:
         FakeStair() = default;
 
-        [[nodiscard]] std::vector<GridPos> neighbors(
+        [[nodiscard]] std::vector<GridPos> getNeighbors(
             const GridPos fromPos) const override
         {
             std::vector<GridPos> gridPositions;

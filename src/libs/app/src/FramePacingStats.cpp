@@ -53,14 +53,14 @@ namespace antwika::app
             return 7;
         }
 
-        [[nodiscard]] std::string counted(
+        [[nodiscard]] std::string getCounted(
             const char *name, std::uint32_t amount)
         {
             return std::string(name) + " " + std::to_string(amount);
         }
     }
 
-    std::vector<std::string> formatPacingReport(const FramePacingReport &report)
+    std::vector<std::string> getFormatPacingReport(const FramePacingReport &report)
     {
         const auto scheduledFrames = report.drawnFrames + report.droppedFrames;
 
@@ -75,14 +75,14 @@ namespace antwika::app
         std::vector<std::string> lines;
 
         lines.push_back(
-            "pacing " + counted("drawn", report.drawnFrames) + " of "
+            "pacing " + getCounted("drawn", report.drawnFrames) + " of "
             + std::to_string(scheduledFrames) + " over "
-            + counted("ticks", report.ticks));
+            + getCounted("ticks", report.ticks));
 
         lines.push_back(
-            "pacing " + counted("longest drop run", report.longestDropRun)
-            + ", " + counted("leanest tick", report.minFramesPerTick)
-            + ", " + counted("fattest tick", report.maxFramesPerTick));
+            "pacing " + getCounted("longest drop run", report.longestDropRun)
+            + ", " + getCounted("leanest tick", report.minFramesPerTick)
+            + ", " + getCounted("fattest tick", report.maxFramesPerTick));
 
         lines.push_back(std::move(spread));
 
@@ -99,7 +99,7 @@ namespace antwika::app
 
     void FramePacingStats::closeWindow()
     {
-        for (const auto &line : formatPacingReport(currentReport))
+        for (const auto &line : getFormatPacingReport(currentReport))
         {
             logger.log(antwika::log::Level::Info, line);
         }
@@ -134,7 +134,7 @@ namespace antwika::app
     {
         closeTick(tick);
 
-        const auto nowTime = clock.currentTime();
+        const auto nowTime = clock.getCurrentTime();
 
         if (!windowStart.has_value())
         {

@@ -18,7 +18,7 @@ namespace antwika::render
             gfx::IRenderer &viewportRenderer,
             std::vector<gfx::Bitmap> skinBitmaps);
 
-        [[nodiscard]] const std::vector<gfx::Bitmap> &sheets()
+        [[nodiscard]] const std::vector<gfx::Bitmap> &getSheets()
             const noexcept;
 
         void lay(
@@ -26,10 +26,10 @@ namespace antwika::render
             std::size_t skinIndex,
             gfx::Bitmap skinBitmap);
 
-        [[nodiscard]] gfx::ITexture *picture(
+        [[nodiscard]] gfx::ITexture *getPicture(
             std::size_t skinIndex) const noexcept;
 
-        [[nodiscard]] std::size_t size() const noexcept;
+        [[nodiscard]] std::size_t getSize() const noexcept;
 
     private:
         std::vector<gfx::Bitmap> skins;

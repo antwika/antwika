@@ -16,7 +16,7 @@ namespace antwika::component
         Water,
     };
 
-    [[nodiscard]] constexpr ItemKind lastEnumerator(ItemKind) noexcept
+    [[nodiscard]] constexpr ItemKind getLastEnumerator(ItemKind) noexcept
     {
         return ItemKind::Water;
     }

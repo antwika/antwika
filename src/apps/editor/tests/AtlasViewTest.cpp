@@ -13,22 +13,22 @@
 using antwika::gfx::PointF;
 using antwika::gfx::SizeF;
 using antwika::tilemap::Atlas;
-using antwika::editor::outlineRects;
-using antwika::tilemap::defaultTilemap;
-using antwika::editor::cellAtPoint;
+using antwika::editor::getOutlineRects;
+using antwika::tilemap::getDefaultTilemap;
+using antwika::editor::getCellAtPoint;
 using antwika::editor::cellShownAt;
-using antwika::editor::cornerPlace;
+using antwika::editor::getCornerPlace;
 using antwika::voxel::Corner;
 using antwika::editor::gestureFrom;
-using antwika::editor::inspectColumnBounds;
+using antwika::editor::getInspectColumnBounds;
 using antwika::voxel::kEveryCorner;
-using antwika::editor::tilemapBounds;
+using antwika::editor::getTilemapBounds;
 using antwika::editor::kEveryEdgeToggle;
 using antwika::map::kEveryView;
-using antwika::editor::panZoomed;
+using antwika::editor::getPanZoomed;
 using antwika::editor::EdgeToggle;
 using antwika::editor::edgeToggleAt;
-using antwika::editor::edgeTogglePlace;
+using antwika::editor::getEdgeTogglePlace;
 using antwika::editor::GestureResult;
 using antwika::voxel::EdgeKind;
 using antwika::editor::PointerAction;
@@ -36,25 +36,25 @@ using antwika::editor::kBorderThick;
 using antwika::tilemap::kEveryTileEdge;
 using antwika::voxel::Side;
 using antwika::tilemap::TileEdge;
-using antwika::editor::inspectedTileRect;
+using antwika::editor::getInspectedTileRect;
 using antwika::editor::kTopBarHeight;
 using antwika::editor::bothEdgesOf;
 using antwika::editor::bothMarkerAt;
-using antwika::editor::bothMarkerPlace;
+using antwika::editor::getBothMarkerPlace;
 using antwika::editor::EdgeSelection;
 using antwika::editor::edgeSelectionOf;
 using antwika::editor::edgesIn;
 using antwika::voxel::kEverySide;
 using antwika::editor::markerAt;
-using antwika::editor::markerPlace;
+using antwika::editor::getMarkerPlace;
 using antwika::map::View;
-using antwika::editor::viewAfterKey;
+using antwika::editor::getViewAfterKey;
 using antwika::tilemap::Tile;
 using antwika::tilemap::swapTiles;
 using antwika::tilemap::Tilemap;
-using antwika::editor::tilemapPlace;
-using antwika::editor::tileCenter;
-using antwika::editor::tilePlace;
+using antwika::editor::getTilemapPlace;
+using antwika::editor::getTileCenter;
+using antwika::editor::getTilePlace;
 using antwika::gfx::RectF;
 using antwika::gfx::Size;
 using antwika::input::Key;
@@ -91,7 +91,7 @@ namespace
         return gestureFrom(
             tilemap,
             canvasSize,
-            tilemapPlace(canvasSize, tilemap),
+            getTilemapPlace(canvasSize, tilemap),
             dragFromPoint,
             releasedAtPoint,
             looking,
@@ -103,7 +103,7 @@ namespace
         return std::max(whereRect.size.width, whereRect.size.height);
     }
 
-    [[nodiscard]] bool overlap(const RectF oneRect, const RectF otherRect)
+    [[nodiscard]] bool isOverlap(const RectF oneRect, const RectF otherRect)
     {
         return oneRect.originPoint.x
                    < otherRect.originPoint.x + otherRect.size.width
@@ -115,7 +115,7 @@ namespace
                       < oneRect.originPoint.y + oneRect.size.height;
     }
 
-    [[nodiscard]] float apartness(
+    [[nodiscard]] float getApartness(
         const RectF markerRect, const RectF tileRect)
     {
         const auto acrossGap = std::max(
@@ -134,20 +134,20 @@ namespace
         return std::max(acrossGap, downGap);
     }
 
-    [[nodiscard]] PointF placeMiddle(
+    [[nodiscard]] PointF getPlaceMiddle(
         const Tilemap &tilemap,
         const std::uint32_t column,
         const std::uint32_t row)
     {
         const auto where =
-            tilePlace(tilemap, column, row, tilemapPlace(kCanvasSize, tilemap));
+            getTilePlace(tilemap, column, row, getTilemapPlace(kCanvasSize, tilemap));
 
         return PointF{
             where.originPoint.x + (where.size.width / 2.0F),
             where.originPoint.y + (where.size.height / 2.0F)};
     }
 
-    [[nodiscard]] GestureResult gestureShown(
+    [[nodiscard]] GestureResult getGestureShown(
         const Tilemap &tilemap,
         const RectF whereRect,
         const std::optional<PointF> dragFromPoint,
@@ -157,19 +157,19 @@ namespace
     {
         return gestureFrom(
             tilemap,
-            inspectColumnBounds(kCanvasSize),
+            getInspectColumnBounds(kCanvasSize),
             whereRect,
-            tilemapBounds(kCanvasSize),
+            getTilemapBounds(kCanvasSize),
             dragFromPoint,
             releasedAtPoint,
             looking,
             settlingSelection);
     }
 
-    [[nodiscard]] RectF reachingGrid(const Tilemap &tilemap)
+    [[nodiscard]] RectF getReachingGrid(const Tilemap &tilemap)
     {
-        return panZoomed(
-            tilemapPlace(kCanvasSize, tilemap), PointF{0.0F, 0.0F}, 4.0F);
+        return getPanZoomed(
+            getTilemapPlace(kCanvasSize, tilemap), PointF{0.0F, 0.0F}, 4.0F);
     }
 
     [[nodiscard]] PointF middleOf(const RectF whereRect)
@@ -183,48 +183,48 @@ namespace
 TEST(AtlasViewTest, ShownAfter_TakesADigitToAViewApiece)
 {
     EXPECT_EQ(
-        viewAfterKey(View::Atlases, Key::Digit1, false), View::World);
+        getViewAfterKey(View::Atlases, Key::Digit1, false), View::World);
     EXPECT_EQ(
-        viewAfterKey(View::World, Key::Digit2, false), View::Atlases);
+        getViewAfterKey(View::World, Key::Digit2, false), View::Atlases);
     EXPECT_EQ(
-        viewAfterKey(View::World, Key::Digit3, false),
+        getViewAfterKey(View::World, Key::Digit3, false),
         View::Character);
     EXPECT_EQ(
-        viewAfterKey(View::World, Key::Digit4, false),
+        getViewAfterKey(View::World, Key::Digit4, false),
         View::Icons);
     EXPECT_EQ(
-        viewAfterKey(View::World, Key::Digit5, false),
+        getViewAfterKey(View::World, Key::Digit5, false),
         View::Plan);
 }
 
 TEST(AtlasViewTest, ShownAfter_TurnsRoundEveryViewAndBackToTheFirst)
 {
     EXPECT_EQ(
-        viewAfterKey(View::World, Key::Tab, false), View::Atlases);
+        getViewAfterKey(View::World, Key::Tab, false), View::Atlases);
     EXPECT_EQ(
-        viewAfterKey(View::Atlases, Key::Tab, false),
+        getViewAfterKey(View::Atlases, Key::Tab, false),
         View::Character);
     EXPECT_EQ(
-        viewAfterKey(View::Character, Key::Tab, false),
+        getViewAfterKey(View::Character, Key::Tab, false),
         View::Icons);
     EXPECT_EQ(
-        viewAfterKey(View::Icons, Key::Tab, false), View::Plan);
+        getViewAfterKey(View::Icons, Key::Tab, false), View::Plan);
     EXPECT_EQ(
-        viewAfterKey(View::Plan, Key::Tab, false), View::World);
+        getViewAfterKey(View::Plan, Key::Tab, false), View::World);
 }
 
 TEST(AtlasViewTest, ShownAfter_TurnsTheOtherWayRoundWhileHeldBack)
 {
     EXPECT_EQ(
-        viewAfterKey(View::World, Key::Tab, true), View::Plan);
+        getViewAfterKey(View::World, Key::Tab, true), View::Plan);
     EXPECT_EQ(
-        viewAfterKey(View::Plan, Key::Tab, true), View::Icons);
+        getViewAfterKey(View::Plan, Key::Tab, true), View::Icons);
     EXPECT_EQ(
-        viewAfterKey(View::Icons, Key::Tab, true), View::Character);
+        getViewAfterKey(View::Icons, Key::Tab, true), View::Character);
     EXPECT_EQ(
-        viewAfterKey(View::Character, Key::Tab, true), View::Atlases);
+        getViewAfterKey(View::Character, Key::Tab, true), View::Atlases);
     EXPECT_EQ(
-        viewAfterKey(View::Atlases, Key::Tab, true), View::World);
+        getViewAfterKey(View::Atlases, Key::Tab, true), View::World);
 }
 
 TEST(AtlasViewTest, ShownAfter_TakesEveryViewBackWhereItCameFrom)
@@ -232,8 +232,8 @@ TEST(AtlasViewTest, ShownAfter_TakesEveryViewBackWhereItCameFrom)
     for (const auto view : kEveryView)
     {
         EXPECT_EQ(
-            viewAfterKey(
-                viewAfterKey(view, Key::Tab, false), Key::Tab, true),
+            getViewAfterKey(
+                getViewAfterKey(view, Key::Tab, false), Key::Tab, true),
             view);
     }
 }
@@ -243,24 +243,24 @@ TEST(AtlasViewTest, ShownAfter_StaysWhereItIsForAnyOtherKey)
     for (const auto key :
          {Key::W, Key::Digit6, Key::F5, Key::Escape, Key::ArrowUp})
     {
-        EXPECT_EQ(viewAfterKey(View::World, key, false), View::World);
+        EXPECT_EQ(getViewAfterKey(View::World, key, false), View::World);
         EXPECT_EQ(
-            viewAfterKey(View::Atlases, key, true), View::Atlases);
+            getViewAfterKey(View::Atlases, key, true), View::Atlases);
         EXPECT_EQ(
-            viewAfterKey(View::Character, key, false),
+            getViewAfterKey(View::Character, key, false),
             View::Character);
     }
 }
 
 TEST(AtlasViewTest, InspectedTileRect_DrawsTheTileLargerThanInTheGrid)
 {
-    const Tilemap tilemap = defaultTilemap();
-    const auto grid = tilePlace(
+    const Tilemap tilemap = getDefaultTilemap();
+    const auto grid = getTilePlace(
         tilemap,
         0,
         0,
-        tilemapPlace(kCanvasSize, tilemap));
-    const auto close = inspectedTileRect(kCanvasSize, kFloorTile);
+        getTilemapPlace(kCanvasSize, tilemap));
+    const auto close = getInspectedTileRect(kCanvasSize, kFloorTile);
 
     EXPECT_GT(close.size.width, grid.size.width);
     EXPECT_GT(close.size.height, grid.size.height);
@@ -268,7 +268,7 @@ TEST(AtlasViewTest, InspectedTileRect_DrawsTheTileLargerThanInTheGrid)
 
 TEST(AtlasViewTest, InspectedTileRect_StandsInItsOwnColumn)
 {
-    const auto close = inspectedTileRect(kCanvasSize, kFloorTile);
+    const auto close = getInspectedTileRect(kCanvasSize, kFloorTile);
 
     EXPECT_GT(
         middleOf(close).x,
@@ -281,14 +281,14 @@ TEST(AtlasViewTest, InspectedTileRect_StandsInItsOwnColumn)
 
 TEST(AtlasViewTest, InspectedTileRect_KeepsClearOfTheGrid)
 {
-    const Tilemap tilemap = defaultTilemap();
-    const auto grid = tilemapPlace(kCanvasSize, tilemap);
+    const Tilemap tilemap = getDefaultTilemap();
+    const auto grid = getTilemapPlace(kCanvasSize, tilemap);
 
     EXPECT_GE(
-        inspectedTileRect(kCanvasSize, kFloorTile).originPoint.x,
+        getInspectedTileRect(kCanvasSize, kFloorTile).originPoint.x,
         grid.originPoint.x + grid.size.width);
     EXPECT_GE(
-        markerPlace(
+        getMarkerPlace(
             kCanvasSize,
             TileEdge{.side = Side::Left,
                      .edge = EdgeKind::Boundary})
@@ -298,8 +298,8 @@ TEST(AtlasViewTest, InspectedTileRect_KeepsClearOfTheGrid)
 
 TEST(AtlasViewTest, InspectedTileRect_KeepsTheShapeOfTheTile)
 {
-    const auto floorRect = inspectedTileRect(kCanvasSize, kFloorTile);
-    const auto wallRect = inspectedTileRect(kCanvasSize, kWallTile);
+    const auto floorRect = getInspectedTileRect(kCanvasSize, kFloorTile);
+    const auto wallRect = getInspectedTileRect(kCanvasSize, kWallTile);
 
     EXPECT_GT(floorRect.size.height, wallRect.size.height);
     EXPECT_FLOAT_EQ(floorRect.size.width, wallRect.size.width);
@@ -327,10 +327,10 @@ TEST(AtlasViewTest, MarkerPlace_MarksTheBoundaryKindTheLongerOne)
     for (const auto side :
          {Side::Top, Side::Bottom, Side::Left, Side::Right})
     {
-        const auto outward = markerPlace(
+        const auto outward = getMarkerPlace(
             kCanvasSize, TileEdge{.side = side,
                               .edge = EdgeKind::Boundary});
-        const auto inward = markerPlace(
+        const auto inward = getMarkerPlace(
             kCanvasSize,
             TileEdge{.side = side, .edge = EdgeKind::Interior});
 
@@ -345,7 +345,7 @@ TEST(AtlasViewTest, MarkerPlace_LaysAcrossEdgesAcrossAndDownEdgesDown)
     {
         for (const auto side : {Side::Top, Side::Bottom})
         {
-            const auto where = markerPlace(
+            const auto where = getMarkerPlace(
                 kCanvasSize, TileEdge{.side = side, .edge = kind});
 
             EXPECT_GT(where.size.width, where.size.height);
@@ -353,7 +353,7 @@ TEST(AtlasViewTest, MarkerPlace_LaysAcrossEdgesAcrossAndDownEdgesDown)
 
         for (const auto side : {Side::Left, Side::Right})
         {
-            const auto where = markerPlace(
+            const auto where = getMarkerPlace(
                 kCanvasSize, TileEdge{.side = side, .edge = kind});
 
             EXPECT_GT(where.size.height, where.size.width);
@@ -363,26 +363,26 @@ TEST(AtlasViewTest, MarkerPlace_LaysAcrossEdgesAcrossAndDownEdgesDown)
 
 TEST(AtlasViewTest, MarkerPlace_LaysEveryMarkerBesideItsOwnEdge)
 {
-    const auto close = inspectedTileRect(kCanvasSize, kFloorTile);
+    const auto close = getInspectedTileRect(kCanvasSize, kFloorTile);
 
     EXPECT_LE(
-        bottomOf(markerPlace(
+        bottomOf(getMarkerPlace(
             kCanvasSize,
             TileEdge{.side = Side::Top, .edge = EdgeKind::Interior})),
         close.originPoint.y);
     EXPECT_GE(
-        markerPlace(
+        getMarkerPlace(
             kCanvasSize,
             TileEdge{.side = Side::Bottom, .edge = EdgeKind::Interior})
             .originPoint.y,
         bottomOf(close));
     EXPECT_LE(
-        rightOf(markerPlace(
+        rightOf(getMarkerPlace(
             kCanvasSize,
             TileEdge{.side = Side::Left, .edge = EdgeKind::Interior})),
         close.originPoint.x);
     EXPECT_GE(
-        markerPlace(
+        getMarkerPlace(
             kCanvasSize,
             TileEdge{.side = Side::Right, .edge = EdgeKind::Interior})
             .originPoint.x,
@@ -391,19 +391,19 @@ TEST(AtlasViewTest, MarkerPlace_LaysEveryMarkerBesideItsOwnEdge)
 
 TEST(AtlasViewTest, MarkerPlace_LaysTheInteriorKindNearerTheTile)
 {
-    const auto frame = inspectedTileRect(kCanvasSize, kFloorTile);
+    const auto frame = getInspectedTileRect(kCanvasSize, kFloorTile);
 
     for (const auto side :
          {Side::Top, Side::Bottom, Side::Left, Side::Right})
     {
-        const auto inward = markerPlace(
+        const auto inward = getMarkerPlace(
             kCanvasSize,
             TileEdge{.side = side, .edge = EdgeKind::Interior});
-        const auto outward = markerPlace(
+        const auto outward = getMarkerPlace(
             kCanvasSize,
             TileEdge{.side = side, .edge = EdgeKind::Boundary});
 
-        EXPECT_LT(apartness(inward, frame), apartness(outward, frame));
+        EXPECT_LT(getApartness(inward, frame), getApartness(outward, frame));
     }
 }
 
@@ -419,9 +419,9 @@ TEST(AtlasViewTest, MarkerPlace_KeepsEveryMarkerClearOfEveryOther)
             }
 
             EXPECT_FALSE(
-                overlap(
-                    markerPlace(kCanvasSize, one),
-                    markerPlace(kCanvasSize, otherEdge)))
+                isOverlap(
+                    getMarkerPlace(kCanvasSize, one),
+                    getMarkerPlace(kCanvasSize, otherEdge)))
                 << static_cast<int>(one.side)
                 << static_cast<int>(one.edge)
                 << static_cast<int>(otherEdge.side)
@@ -432,22 +432,22 @@ TEST(AtlasViewTest, MarkerPlace_KeepsEveryMarkerClearOfEveryOther)
 
 TEST(AtlasViewTest, MarkerPlace_KeepsEveryMarkerClearOfTheGrid)
 {
-    const Tilemap tilemap = defaultTilemap();
-    const auto grid = tilemapPlace(kCanvasSize, tilemap);
+    const Tilemap tilemap = getDefaultTilemap();
+    const auto grid = getTilemapPlace(kCanvasSize, tilemap);
 
     for (const auto edge : kEveryTileEdge)
     {
         EXPECT_GE(
-            markerPlace(kCanvasSize, edge).originPoint.x,
+            getMarkerPlace(kCanvasSize, edge).originPoint.x,
             grid.originPoint.x + grid.size.width);
     }
 }
 
 TEST(AtlasViewTest, MarkerPlace_HoldsStillAsTheTileChangesShape)
 {
-    const auto tallest = inspectedTileRect(kCanvasSize, kFloorTile);
-    const auto shortest = inspectedTileRect(kCanvasSize, kWallTile);
-    const auto belowRect = markerPlace(
+    const auto tallest = getInspectedTileRect(kCanvasSize, kFloorTile);
+    const auto shortest = getInspectedTileRect(kCanvasSize, kWallTile);
+    const auto belowRect = getMarkerPlace(
         kCanvasSize,
         TileEdge{.side = Side::Bottom, .edge = EdgeKind::Interior});
 
@@ -461,14 +461,14 @@ TEST(AtlasViewTest, MarkerAt_FindsTheMarkerAPointFallsOn)
     for (const auto edge : kEveryTileEdge)
     {
         EXPECT_EQ(
-            markerAt(kCanvasSize, middleOf(markerPlace(kCanvasSize, edge))),
+            markerAt(kCanvasSize, middleOf(getMarkerPlace(kCanvasSize, edge))),
             edge);
     }
 }
 
 TEST(AtlasViewTest, MarkerAt_FindsTheMarkerFromEitherEnd)
 {
-    const auto where = markerPlace(
+    const auto where = getMarkerPlace(
         kCanvasSize,
         TileEdge{.side = Side::Bottom, .edge = EdgeKind::Boundary});
 
@@ -491,7 +491,7 @@ TEST(AtlasViewTest, MarkerAt_FindsNothingWellClearOfThemAll)
 
 TEST(AtlasViewTest, MarkerAt_FindsNothingBesideAShortMarker)
 {
-    const auto where = markerPlace(
+    const auto where = getMarkerPlace(
         kCanvasSize,
         TileEdge{.side = Side::Top, .edge = EdgeKind::Interior});
 
@@ -507,16 +507,16 @@ TEST(AtlasViewTest, MarkerAt_FindsNothingOnTheTileItself)
     EXPECT_FALSE(
         markerAt(
             kCanvasSize,
-            middleOf(inspectedTileRect(kCanvasSize, kFloorTile)))
+            middleOf(getInspectedTileRect(kCanvasSize, kFloorTile)))
             .has_value());
 }
 
 TEST(AtlasViewTest, MarkerAt_FindsNothingOverTheGrid)
 {
-    const Tilemap tilemap = defaultTilemap();
+    const Tilemap tilemap = getDefaultTilemap();
 
     EXPECT_FALSE(
-        markerAt(kCanvasSize, middleOf(tilemapPlace(kCanvasSize, tilemap)))
+        markerAt(kCanvasSize, middleOf(getTilemapPlace(kCanvasSize, tilemap)))
             .has_value());
 }
 
@@ -557,22 +557,22 @@ TEST(AtlasViewTest, BothEdgesOf_NamesBothKindsOfTheOneSide)
 
 TEST(AtlasViewTest, BothMarkerPlace_StandsBetweenItsSidesTwoMarkers)
 {
-    const auto frame = inspectedTileRect(kCanvasSize, kFloorTile);
+    const auto frame = getInspectedTileRect(kCanvasSize, kFloorTile);
 
     for (const auto side : kEverySide)
     {
-        const auto inward = markerPlace(
+        const auto inward = getMarkerPlace(
             kCanvasSize,
             TileEdge{.side = side, .edge = EdgeKind::Interior});
-        const auto outward = markerPlace(
+        const auto outward = getMarkerPlace(
             kCanvasSize,
             TileEdge{.side = side, .edge = EdgeKind::Boundary});
-        const auto betweenRect = bothMarkerPlace(kCanvasSize, side);
+        const auto betweenRect = getBothMarkerPlace(kCanvasSize, side);
 
         EXPECT_LT(
-            apartness(inward, frame), apartness(betweenRect, frame));
+            getApartness(inward, frame), getApartness(betweenRect, frame));
         EXPECT_LT(
-            apartness(betweenRect, frame), apartness(outward, frame));
+            getApartness(betweenRect, frame), getApartness(outward, frame));
     }
 }
 
@@ -580,12 +580,12 @@ TEST(AtlasViewTest, BothMarkerPlace_IsDrawnSmallerThanEitherMarker)
 {
     for (const auto side : kEverySide)
     {
-        const auto betweenRect = bothMarkerPlace(kCanvasSize, side);
+        const auto betweenRect = getBothMarkerPlace(kCanvasSize, side);
 
         EXPECT_FLOAT_EQ(betweenRect.size.width, betweenRect.size.height);
         EXPECT_LT(
             longestOf(betweenRect),
-            longestOf(markerPlace(
+            longestOf(getMarkerPlace(
                 kCanvasSize,
                 TileEdge{.side = side, .edge = EdgeKind::Interior})));
     }
@@ -598,9 +598,9 @@ TEST(AtlasViewTest, BothMarkerPlace_KeepsClearOfEveryMarker)
         for (const auto edge : kEveryTileEdge)
         {
             EXPECT_FALSE(
-                overlap(
-                    bothMarkerPlace(kCanvasSize, side),
-                    markerPlace(kCanvasSize, edge)))
+                isOverlap(
+                    getBothMarkerPlace(kCanvasSize, side),
+                    getMarkerPlace(kCanvasSize, edge)))
                 << static_cast<int>(side)
                 << static_cast<int>(edge.side)
                 << static_cast<int>(edge.edge);
@@ -610,13 +610,13 @@ TEST(AtlasViewTest, BothMarkerPlace_KeepsClearOfEveryMarker)
 
 TEST(AtlasViewTest, BothMarkerPlace_KeepsClearOfEveryOtherAndTheGrid)
 {
-    const Tilemap tilemap = defaultTilemap();
-    const auto grid = tilemapPlace(kCanvasSize, tilemap);
+    const Tilemap tilemap = getDefaultTilemap();
+    const auto grid = getTilemapPlace(kCanvasSize, tilemap);
 
     for (const auto one : kEverySide)
     {
         EXPECT_GE(
-            bothMarkerPlace(kCanvasSize, one).originPoint.x,
+            getBothMarkerPlace(kCanvasSize, one).originPoint.x,
             grid.originPoint.x + grid.size.width);
 
         for (const auto otherSide : kEverySide)
@@ -627,9 +627,9 @@ TEST(AtlasViewTest, BothMarkerPlace_KeepsClearOfEveryOtherAndTheGrid)
             }
 
             EXPECT_FALSE(
-                overlap(
-                    bothMarkerPlace(kCanvasSize, one),
-                    bothMarkerPlace(kCanvasSize, otherSide)))
+                isOverlap(
+                    getBothMarkerPlace(kCanvasSize, one),
+                    getBothMarkerPlace(kCanvasSize, otherSide)))
                 << static_cast<int>(one)
                 << static_cast<int>(otherSide);
         }
@@ -643,9 +643,9 @@ TEST(AtlasViewTest, BothMarkerPlace_KeepsClearOfEveryCornerMark)
         for (const auto corner : kEveryCorner)
         {
             EXPECT_FALSE(
-                overlap(
-                    bothMarkerPlace(kCanvasSize, side),
-                    cornerPlace(kCanvasSize, corner)))
+                isOverlap(
+                    getBothMarkerPlace(kCanvasSize, side),
+                    getCornerPlace(kCanvasSize, corner)))
                 << static_cast<int>(side)
                 << static_cast<int>(corner);
         }
@@ -654,7 +654,7 @@ TEST(AtlasViewTest, BothMarkerPlace_KeepsClearOfEveryCornerMark)
 
 TEST(AtlasViewTest, BothMarkerPlace_LeavesEveryMarkPlaceWithinTheColumn)
 {
-    const auto column = inspectColumnBounds(kCanvasSize);
+    const auto column = getInspectColumnBounds(kCanvasSize);
 
     const auto insideColumn = [&column](const RectF where) {
         return where.originPoint.x >= column.originPoint.x
@@ -663,13 +663,13 @@ TEST(AtlasViewTest, BothMarkerPlace_LeavesEveryMarkPlaceWithinTheColumn)
 
     for (const auto side : kEverySide)
     {
-        EXPECT_TRUE(insideColumn(bothMarkerPlace(kCanvasSize, side)))
+        EXPECT_TRUE(insideColumn(getBothMarkerPlace(kCanvasSize, side)))
             << static_cast<int>(side);
     }
 
     for (const auto edge : kEveryTileEdge)
     {
-        EXPECT_TRUE(insideColumn(markerPlace(kCanvasSize, edge)))
+        EXPECT_TRUE(insideColumn(getMarkerPlace(kCanvasSize, edge)))
             << static_cast<int>(edge.side)
             << static_cast<int>(edge.edge);
     }
@@ -681,7 +681,7 @@ TEST(AtlasViewTest, BothMarkerAt_FindsTheButtonAPointFallsOn)
     {
         EXPECT_EQ(
             bothMarkerAt(
-                kCanvasSize, middleOf(bothMarkerPlace(kCanvasSize, side))),
+                kCanvasSize, middleOf(getBothMarkerPlace(kCanvasSize, side))),
             side);
     }
 }
@@ -695,7 +695,7 @@ TEST(AtlasViewTest, BothMarkerAt_FindsNothingOnAMarkerOrWellClear)
     {
         EXPECT_FALSE(
             bothMarkerAt(
-                kCanvasSize, middleOf(markerPlace(kCanvasSize, edge)))
+                kCanvasSize, middleOf(getMarkerPlace(kCanvasSize, edge)))
                 .has_value());
     }
 }
@@ -706,18 +706,18 @@ TEST(AtlasViewTest, MarkerAt_FindsNothingOnTheButtonBetweenTheTwo)
     {
         EXPECT_FALSE(
             markerAt(
-                kCanvasSize, middleOf(bothMarkerPlace(kCanvasSize, side)))
+                kCanvasSize, middleOf(getBothMarkerPlace(kCanvasSize, side)))
                 .has_value());
     }
 }
 
 TEST(AtlasViewTest, GestureFrom_SettlesBothKindsFromTheButtonBetween)
 {
-    const Tilemap tilemap = defaultTilemap();
+    const Tilemap tilemap = getDefaultTilemap();
 
     for (const auto side : kEverySide)
     {
-        const auto middlePoint = middleOf(bothMarkerPlace(kCanvasSize, side));
+        const auto middlePoint = middleOf(getBothMarkerPlace(kCanvasSize, side));
 
         EXPECT_EQ(
             gestureIn(tilemap, kCanvasSize, middlePoint, middlePoint, true,
@@ -730,10 +730,10 @@ TEST(AtlasViewTest, GestureFrom_SettlesBothKindsFromTheButtonBetween)
 
 TEST(AtlasViewTest, GestureFrom_SettlesNothingWhereTheHandSlipsOff)
 {
-    const Tilemap tilemap = defaultTilemap();
-    const auto middlePoint = middleOf(bothMarkerPlace(kCanvasSize, Side::Top));
+    const Tilemap tilemap = getDefaultTilemap();
+    const auto middlePoint = middleOf(getBothMarkerPlace(kCanvasSize, Side::Top));
     const auto awayPoint =
-        middleOf(bothMarkerPlace(kCanvasSize, Side::Bottom));
+        middleOf(getBothMarkerPlace(kCanvasSize, Side::Bottom));
 
     EXPECT_EQ(
         gestureIn(tilemap, kCanvasSize, middlePoint, awayPoint, true,
@@ -743,14 +743,14 @@ TEST(AtlasViewTest, GestureFrom_SettlesNothingWhereTheHandSlipsOff)
 
 TEST(AtlasViewTest, GestureFrom_SwapsWhereADragRunsBetweenTwoPlaces)
 {
-    const Tilemap tilemap = defaultTilemap();
+    const Tilemap tilemap = getDefaultTilemap();
 
     EXPECT_EQ(
         gestureIn(
             tilemap,
             kCanvasSize,
-            placeMiddle(tilemap, 0, 0),
-            placeMiddle(tilemap, 3, 2),
+            getPlaceMiddle(tilemap, 0, 0),
+            getPlaceMiddle(tilemap, 3, 2),
             false,
             std::nullopt),
         (GestureResult{
@@ -761,8 +761,8 @@ TEST(AtlasViewTest, GestureFrom_SwapsWhereADragRunsBetweenTwoPlaces)
 
 TEST(AtlasViewTest, GestureFrom_LooksWhereAClickStaysOnOnePlace)
 {
-    const Tilemap tilemap = defaultTilemap();
-    const auto middlePoint = placeMiddle(tilemap, 5, 4);
+    const Tilemap tilemap = getDefaultTilemap();
+    const auto middlePoint = getPlaceMiddle(tilemap, 5, 4);
 
     EXPECT_EQ(
         gestureIn(tilemap, kCanvasSize, middlePoint, middlePoint, false,
@@ -774,12 +774,12 @@ TEST(AtlasViewTest, GestureFrom_LooksWhereAClickStaysOnOnePlace)
 
 TEST(AtlasViewTest, GestureFrom_NeverSwapsAPlaceWithItself)
 {
-    const Tilemap tilemap = defaultTilemap();
-    const auto where = tilePlace(
+    const Tilemap tilemap = getDefaultTilemap();
+    const auto where = getTilePlace(
         tilemap,
         5,
         4,
-        tilemapPlace(kCanvasSize, tilemap));
+        getTilemapPlace(kCanvasSize, tilemap));
     const auto nearPoint = PointF{
         where.originPoint.x + 0.5F, where.originPoint.y + 0.5F};
 
@@ -792,8 +792,8 @@ TEST(AtlasViewTest, GestureFrom_NeverSwapsAPlaceWithItself)
 
 TEST(AtlasViewTest, GestureFrom_LaysARuleWhileAnEdgeIsBeingSettled)
 {
-    const Tilemap tilemap = defaultTilemap();
-    const auto middlePoint = placeMiddle(tilemap, 5, 4);
+    const Tilemap tilemap = getDefaultTilemap();
+    const auto middlePoint = getPlaceMiddle(tilemap, 5, 4);
 
     EXPECT_EQ(
         gestureIn(
@@ -810,8 +810,8 @@ TEST(AtlasViewTest, GestureFrom_LaysARuleWhileAnEdgeIsBeingSettled)
 
 TEST(AtlasViewTest, GestureFrom_LooksRatherThanRulesWithNoEdgeSettled)
 {
-    const Tilemap tilemap = defaultTilemap();
-    const auto middlePoint = placeMiddle(tilemap, 5, 4);
+    const Tilemap tilemap = getDefaultTilemap();
+    const auto middlePoint = getPlaceMiddle(tilemap, 5, 4);
 
     EXPECT_EQ(
         gestureIn(tilemap, kCanvasSize, middlePoint, middlePoint, true,
@@ -821,14 +821,14 @@ TEST(AtlasViewTest, GestureFrom_LooksRatherThanRulesWithNoEdgeSettled)
 
 TEST(AtlasViewTest, GestureFrom_StillSwapsWhileAnEdgeIsBeingSettled)
 {
-    const Tilemap tilemap = defaultTilemap();
+    const Tilemap tilemap = getDefaultTilemap();
 
     EXPECT_EQ(
         gestureIn(
             tilemap,
             kCanvasSize,
-            placeMiddle(tilemap, 0, 0),
-            placeMiddle(tilemap, 1, 0),
+            getPlaceMiddle(tilemap, 0, 0),
+            getPlaceMiddle(tilemap, 1, 0),
             true,
             edgeSelectionOf(kInwardTopEdge))
             .action,
@@ -837,11 +837,11 @@ TEST(AtlasViewTest, GestureFrom_StillSwapsWhileAnEdgeIsBeingSettled)
 
 TEST(AtlasViewTest, GestureFrom_MarksTheEdgeAClickOnItsMarkerNames)
 {
-    const Tilemap tilemap = defaultTilemap();
+    const Tilemap tilemap = getDefaultTilemap();
 
     for (const auto edge : kEveryTileEdge)
     {
-        const auto middlePoint = middleOf(markerPlace(kCanvasSize, edge));
+        const auto middlePoint = middleOf(getMarkerPlace(kCanvasSize, edge));
 
         EXPECT_EQ(
             gestureIn(tilemap, kCanvasSize, middlePoint, middlePoint, true,
@@ -854,8 +854,8 @@ TEST(AtlasViewTest, GestureFrom_MarksTheEdgeAClickOnItsMarkerNames)
 
 TEST(AtlasViewTest, GestureFrom_MarksNothingWithNoTileBeingLookedAt)
 {
-    const Tilemap tilemap = defaultTilemap();
-    const auto middlePoint = middleOf(markerPlace(kCanvasSize, kInwardTopEdge));
+    const Tilemap tilemap = getDefaultTilemap();
+    const auto middlePoint = middleOf(getMarkerPlace(kCanvasSize, kInwardTopEdge));
 
     EXPECT_EQ(
         gestureIn(tilemap, kCanvasSize, middlePoint, middlePoint, false,
@@ -865,14 +865,14 @@ TEST(AtlasViewTest, GestureFrom_MarksNothingWithNoTileBeingLookedAt)
 
 TEST(AtlasViewTest, GestureFrom_MarksNothingWhenTheHandSlipsBetweenThem)
 {
-    const Tilemap tilemap = defaultTilemap();
+    const Tilemap tilemap = getDefaultTilemap();
 
     EXPECT_EQ(
         gestureIn(
             tilemap,
             kCanvasSize,
-            middleOf(markerPlace(kCanvasSize, kInwardTopEdge)),
-            middleOf(markerPlace(
+            middleOf(getMarkerPlace(kCanvasSize, kInwardTopEdge)),
+            middleOf(getMarkerPlace(
                 kCanvasSize,
                 TileEdge{.side = Side::Bottom,
                          .edge = EdgeKind::Boundary})),
@@ -884,7 +884,7 @@ TEST(AtlasViewTest, GestureFrom_MarksNothingWhenTheHandSlipsBetweenThem)
 
 TEST(AtlasViewTest, GestureFrom_AsksNothingOfTheBareCanvas)
 {
-    const Tilemap tilemap = defaultTilemap();
+    const Tilemap tilemap = getDefaultTilemap();
     const PointF cornerPoint{1.0F, 1.0F};
 
     EXPECT_EQ(
@@ -901,13 +901,13 @@ TEST(AtlasViewTest, GestureFrom_AsksNothingOfTheBareCanvas)
 
 TEST(AtlasViewTest, GestureFrom_AsksNothingOfADragOffTheGrid)
 {
-    const Tilemap tilemap = defaultTilemap();
+    const Tilemap tilemap = getDefaultTilemap();
 
     EXPECT_EQ(
         gestureIn(
             tilemap,
             kCanvasSize,
-            placeMiddle(tilemap, 0, 0),
+            getPlaceMiddle(tilemap, 0, 0),
             PointF{1.0F, 1.0F},
             true,
             edgeSelectionOf(kInwardTopEdge))
@@ -919,16 +919,16 @@ TEST(AtlasViewTest, OutlineRects_LaysFourBarsClearOfWhatTheyRing)
 {
     const RectF insideRect(PointF{10.0F, 20.0F}, SizeF{8.0F, 6.0F});
 
-    for (const auto bar : outlineRects(insideRect, kBorderThick))
+    for (const auto bar : getOutlineRects(insideRect, kBorderThick))
     {
-        EXPECT_FALSE(overlap(bar, insideRect));
+        EXPECT_FALSE(isOverlap(bar, insideRect));
     }
 }
 
 TEST(AtlasViewTest, OutlineRects_LeavesNoGapAtTheCorners)
 {
     const RectF insideRect(PointF{10.0F, 20.0F}, SizeF{8.0F, 6.0F});
-    const auto bars = outlineRects(insideRect, kBorderThick);
+    const auto bars = getOutlineRects(insideRect, kBorderThick);
     auto least = PointF{bars.front().originPoint};
     auto most = PointF{
         bars.front().originPoint.x + bars.front().size.width,
@@ -955,7 +955,7 @@ TEST(AtlasViewTest, OutlineRects_LeavesNoGapAtTheCorners)
 TEST(AtlasViewTest, OutlineRects_RingsEverySideOfWhatItRings)
 {
     const RectF insideRect(PointF{10.0F, 20.0F}, SizeF{8.0F, 6.0F});
-    const auto bars = outlineRects(insideRect, kBorderThick);
+    const auto bars = getOutlineRects(insideRect, kBorderThick);
     const auto wider = RectF(
         PointF{
             insideRect.originPoint.x - kBorderThick,
@@ -967,7 +967,7 @@ TEST(AtlasViewTest, OutlineRects_RingsEverySideOfWhatItRings)
 
     for (const auto bar : bars)
     {
-        coveredCount += overlap(bar, wider) ? 1 : 0;
+        coveredCount += isOverlap(bar, wider) ? 1 : 0;
     }
 
     EXPECT_EQ(coveredCount, 4);
@@ -975,14 +975,14 @@ TEST(AtlasViewTest, OutlineRects_RingsEverySideOfWhatItRings)
 
 TEST(AtlasViewTest, GestureFrom_AsksNothingOfAReleaseWithNoPressBehindIt)
 {
-    const Tilemap tilemap = defaultTilemap();
+    const Tilemap tilemap = getDefaultTilemap();
 
     EXPECT_EQ(
         gestureIn(
             tilemap,
             kCanvasSize,
             std::nullopt,
-            placeMiddle(tilemap, 3, 2),
+            getPlaceMiddle(tilemap, 3, 2),
             false,
             std::nullopt)
             .action,
@@ -991,12 +991,12 @@ TEST(AtlasViewTest, GestureFrom_AsksNothingOfAReleaseWithNoPressBehindIt)
 
 TEST(AtlasViewTest, GestureFrom_SwapsNothingWhenAViewWasLeftMidPress)
 {
-    const Tilemap tilemap = defaultTilemap();
+    const Tilemap tilemap = getDefaultTilemap();
     const auto swappedGesture = gestureIn(
         tilemap,
         kCanvasSize,
-        placeMiddle(tilemap, 0, 0),
-        placeMiddle(tilemap, 3, 2),
+        getPlaceMiddle(tilemap, 0, 0),
+        getPlaceMiddle(tilemap, 3, 2),
         false,
         std::nullopt);
 
@@ -1006,7 +1006,7 @@ TEST(AtlasViewTest, GestureFrom_SwapsNothingWhenAViewWasLeftMidPress)
             tilemap,
             kCanvasSize,
             std::nullopt,
-            placeMiddle(tilemap, 3, 2),
+            getPlaceMiddle(tilemap, 3, 2),
             false,
             std::nullopt)
             .action,
@@ -1015,14 +1015,14 @@ TEST(AtlasViewTest, GestureFrom_SwapsNothingWhenAViewWasLeftMidPress)
 
 TEST(AtlasViewTest, GestureFrom_MarksNothingWithNoPressBehindIt)
 {
-    const Tilemap tilemap = defaultTilemap();
+    const Tilemap tilemap = getDefaultTilemap();
 
     EXPECT_EQ(
         gestureIn(
             tilemap,
             kCanvasSize,
             std::nullopt,
-            middleOf(markerPlace(kCanvasSize, kInwardTopEdge)),
+            middleOf(getMarkerPlace(kCanvasSize, kInwardTopEdge)),
             true,
             std::nullopt)
             .action,
@@ -1031,16 +1031,16 @@ TEST(AtlasViewTest, GestureFrom_MarksNothingWithNoPressBehindIt)
 
 TEST(AtlasViewTest, TileCenter_LandsInsideThePlaceHoldingTheTile)
 {
-    const Tilemap tilemap = defaultTilemap();
-    const auto where = tilemapPlace(kCanvasSize, tilemap);
-    const auto tile = tilemap.at(6, 4);
+    const Tilemap tilemap = getDefaultTilemap();
+    const auto where = getTilemapPlace(kCanvasSize, tilemap);
+    const auto tile = tilemap.getEntryAt(6, 4);
     ASSERT_TRUE(tile.has_value());
 
-    const auto middle = tileCenter(tilemap, where, *tile);
+    const auto middle = getTileCenter(tilemap, where, *tile);
 
     ASSERT_TRUE(middle.has_value());
 
-    const auto place = cellAtPoint(tilemap, where, *middle);
+    const auto place = getCellAtPoint(tilemap, where, *middle);
 
     ASSERT_TRUE(place.has_value());
     EXPECT_EQ(place->column, 6U);
@@ -1049,19 +1049,19 @@ TEST(AtlasViewTest, TileCenter_LandsInsideThePlaceHoldingTheTile)
 
 TEST(AtlasViewTest, TileCenter_FollowsATileThroughASwap)
 {
-    Tilemap tilemap = defaultTilemap();
-    const auto where = tilemapPlace(kCanvasSize, tilemap);
-    const auto tile = tilemap.at(6, 4);
+    Tilemap tilemap = getDefaultTilemap();
+    const auto where = getTilemapPlace(kCanvasSize, tilemap);
+    const auto tile = tilemap.getEntryAt(6, 4);
 
     swapTiles(tilemap, {.column = 6, .row = 4}, {.column = 1, .row = 0});
 
     ASSERT_TRUE(tile.has_value());
 
-    const auto middle = tileCenter(tilemap, where, *tile);
+    const auto middle = getTileCenter(tilemap, where, *tile);
 
     ASSERT_TRUE(middle.has_value());
 
-    const auto place = cellAtPoint(tilemap, where, *middle);
+    const auto place = getCellAtPoint(tilemap, where, *middle);
 
     ASSERT_TRUE(place.has_value());
     EXPECT_EQ(place->column, 1U);
@@ -1070,25 +1070,25 @@ TEST(AtlasViewTest, TileCenter_FollowsATileThroughASwap)
 
 TEST(AtlasViewTest, TileCenter_FindsNothingForATileTheGridLacks)
 {
-    const Tilemap tilemap = defaultTilemap();
+    const Tilemap tilemap = getDefaultTilemap();
 
     EXPECT_FALSE(
-        tileCenter(
+        getTileCenter(
             tilemap,
-            tilemapPlace(kCanvasSize, tilemap),
+            getTilemapPlace(kCanvasSize, tilemap),
             Tile{.atlas = Atlas::Floor, .index = 9999})
             .has_value());
 }
 
 TEST(AtlasViewTest, TileCenter_LandsOnTheTileAndNotTheRoomAroundIt)
 {
-    const Tilemap tilemap = defaultTilemap();
-    const auto where = tilemapPlace(kCanvasSize, tilemap);
-    const auto tile = tilemap.at(3, 2);
+    const Tilemap tilemap = getDefaultTilemap();
+    const auto where = getTilemapPlace(kCanvasSize, tilemap);
+    const auto tile = tilemap.getEntryAt(3, 2);
     ASSERT_TRUE(tile.has_value());
 
-    const auto middle = tileCenter(tilemap, where, *tile);
-    const auto drawnRect = tilePlace(tilemap, 3, 2, where);
+    const auto middle = getTileCenter(tilemap, where, *tile);
+    const auto drawnRect = getTilePlace(tilemap, 3, 2, where);
 
     ASSERT_TRUE(middle.has_value());
     EXPECT_GE(middle->x, drawnRect.originPoint.x);
@@ -1099,15 +1099,15 @@ TEST(AtlasViewTest, TileCenter_LandsOnTheTileAndNotTheRoomAroundIt)
 
 TEST(AtlasViewTest, PanZoomed_LeavesAGridNeitherZoomedNorPushed)
 {
-    const auto where = tilemapPlace(kCanvasSize, defaultTilemap());
+    const auto where = getTilemapPlace(kCanvasSize, getDefaultTilemap());
 
-    EXPECT_EQ(panZoomed(where, PointF{0.0F, 0.0F}, 1.0F), where);
+    EXPECT_EQ(getPanZoomed(where, PointF{0.0F, 0.0F}, 1.0F), where);
 }
 
 TEST(AtlasViewTest, PanZoomed_HoldsTheMiddleStillWhileZooming)
 {
-    const auto where = tilemapPlace(kCanvasSize, defaultTilemap());
-    const auto zoomedView = panZoomed(where, PointF{0.0F, 0.0F}, 2.0F);
+    const auto where = getTilemapPlace(kCanvasSize, getDefaultTilemap());
+    const auto zoomedView = getPanZoomed(where, PointF{0.0F, 0.0F}, 2.0F);
 
     EXPECT_NEAR(
         zoomedView.originPoint.x + (zoomedView.size.width / 2.0F),
@@ -1122,8 +1122,8 @@ TEST(AtlasViewTest, PanZoomed_HoldsTheMiddleStillWhileZooming)
 
 TEST(AtlasViewTest, PanZoomed_PushesTheGridByWhatItIsTold)
 {
-    const auto where = tilemapPlace(kCanvasSize, defaultTilemap());
-    const auto pannedView = panZoomed(where, PointF{7.0F, -5.0F}, 1.0F);
+    const auto where = getTilemapPlace(kCanvasSize, getDefaultTilemap());
+    const auto pannedView = getPanZoomed(where, PointF{7.0F, -5.0F}, 1.0F);
 
     EXPECT_NEAR(pannedView.originPoint.x, where.originPoint.x + 7.0F, 1e-3F);
     EXPECT_NEAR(pannedView.originPoint.y, where.originPoint.y - 5.0F, 1e-3F);
@@ -1131,9 +1131,9 @@ TEST(AtlasViewTest, PanZoomed_PushesTheGridByWhatItIsTold)
 
 TEST(AtlasViewTest, GestureFrom_LooksWhereTheGridIsDrawnRatherThanWhereItWould)
 {
-    const auto map = defaultTilemap();
-    const auto where = tilemapPlace(kCanvasSize, map);
-    const auto pannedView = panZoomed(where, PointF{0.0F, 0.0F}, 0.5F);
+    const auto map = getDefaultTilemap();
+    const auto where = getTilemapPlace(kCanvasSize, map);
+    const auto pannedView = getPanZoomed(where, PointF{0.0F, 0.0F}, 0.5F);
     const auto middlePoint = PointF{
         pannedView.originPoint.x + (pannedView.size.width * 0.75F),
         pannedView.originPoint.y + (pannedView.size.height * 0.75F)};
@@ -1153,7 +1153,7 @@ TEST(AtlasViewTest, EdgeTogglePlace_StandsClearOfTheTileAndItsMarkers)
 {
     for (const auto which : kEveryEdgeToggle)
     {
-        const auto where = edgeTogglePlace(kCanvasSize, which);
+        const auto where = getEdgeTogglePlace(kCanvasSize, which);
         const auto middle = middleOf(where);
 
         EXPECT_FALSE(markerAt(kCanvasSize, middle).has_value());
@@ -1161,7 +1161,7 @@ TEST(AtlasViewTest, EdgeTogglePlace_StandsClearOfTheTileAndItsMarkers)
             antwika::editor::cornerAt(kCanvasSize, middle).has_value());
         EXPECT_GT(
             where.originPoint.y,
-            bottomOf(inspectedTileRect(kCanvasSize, kFloorTile)));
+            bottomOf(getInspectedTileRect(kCanvasSize, kFloorTile)));
     }
 }
 
@@ -1172,14 +1172,14 @@ TEST(AtlasViewTest, EdgeToggleAt_FindsTheToggleUnderThePoint)
         EXPECT_EQ(
             edgeToggleAt(
                 kCanvasSize,
-                middleOf(edgeTogglePlace(kCanvasSize, which))),
+                middleOf(getEdgeTogglePlace(kCanvasSize, which))),
             which);
     }
 }
 
 TEST(AtlasViewTest, EdgeToggleAt_FindsNothingBesideTheToggles)
 {
-    const auto where = edgeTogglePlace(kCanvasSize, EdgeToggle::Boundary);
+    const auto where = getEdgeTogglePlace(kCanvasSize, EdgeToggle::Boundary);
 
     EXPECT_FALSE(
         edgeToggleAt(
@@ -1190,8 +1190,8 @@ TEST(AtlasViewTest, EdgeToggleAt_FindsNothingBesideTheToggles)
 
 TEST(AtlasViewTest, EdgeTogglePlace_LeavesTheTwoApart)
 {
-    const auto rim = edgeTogglePlace(kCanvasSize, EdgeToggle::Boundary);
-    const auto shutRect = edgeTogglePlace(kCanvasSize, EdgeToggle::Forbidden);
+    const auto rim = getEdgeTogglePlace(kCanvasSize, EdgeToggle::Boundary);
+    const auto shutRect = getEdgeTogglePlace(kCanvasSize, EdgeToggle::Forbidden);
 
     EXPECT_LE(rightOf(rim), shutRect.originPoint.x);
     EXPECT_FLOAT_EQ(rim.originPoint.y, shutRect.originPoint.y);
@@ -1199,25 +1199,25 @@ TEST(AtlasViewTest, EdgeTogglePlace_LeavesTheTwoApart)
 
 TEST(AtlasViewTest, CellShownAt_FindsThePlaceUnderAPointItShows)
 {
-    const auto map = defaultTilemap();
-    const auto where = tilemapPlace(kCanvasSize, map);
-    const auto middlePoint = placeMiddle(map, 1, 1);
+    const auto map = getDefaultTilemap();
+    const auto where = getTilemapPlace(kCanvasSize, map);
+    const auto middlePoint = getPlaceMiddle(map, 1, 1);
 
     EXPECT_EQ(
-        cellShownAt(map, where, tilemapBounds(kCanvasSize), middlePoint),
-        cellAtPoint(map, where, middlePoint));
+        cellShownAt(map, where, getTilemapBounds(kCanvasSize), middlePoint),
+        getCellAtPoint(map, where, middlePoint));
 }
 
 TEST(AtlasViewTest, CellShownAt_FindsNothingBeyondWhatItShows)
 {
-    const auto map = defaultTilemap();
-    const auto where = reachingGrid(map);
-    const auto middlePoint = middleOf(markerPlace(kCanvasSize, kInwardTopEdge));
+    const auto map = getDefaultTilemap();
+    const auto where = getReachingGrid(map);
+    const auto middlePoint = middleOf(getMarkerPlace(kCanvasSize, kInwardTopEdge));
 
-    ASSERT_TRUE(cellAtPoint(map, where, middlePoint).has_value());
+    ASSERT_TRUE(getCellAtPoint(map, where, middlePoint).has_value());
 
     EXPECT_FALSE(
-        cellShownAt(map, where, tilemapBounds(kCanvasSize), middlePoint)
+        cellShownAt(map, where, getTilemapBounds(kCanvasSize), middlePoint)
             .has_value());
 }
 
@@ -1225,19 +1225,19 @@ TEST(
     AtlasViewTest,
     GestureFrom_MarksTheEdgeItsMarkerNamesThoughTheGridReachesUnder)
 {
-    const auto map = defaultTilemap();
-    const auto where = reachingGrid(map);
+    const auto map = getDefaultTilemap();
+    const auto where = getReachingGrid(map);
     auto reachedCount = 0;
 
     for (const auto edge : kEveryTileEdge)
     {
-        const auto middlePoint = middleOf(markerPlace(kCanvasSize, edge));
+        const auto middlePoint = middleOf(getMarkerPlace(kCanvasSize, edge));
 
-        reachedCount += cellAtPoint(map, where,
+        reachedCount += getCellAtPoint(map, where,
             middlePoint).has_value() ? 1 : 0;
 
         EXPECT_EQ(
-            gestureShown(map, where, middlePoint, middlePoint, true,
+            getGestureShown(map, where, middlePoint, middlePoint, true,
             std::nullopt),
             (GestureResult{
                 .action = PointerAction::PixelSelection,
@@ -1251,17 +1251,17 @@ TEST(
     AtlasViewTest,
     GestureFrom_TurnsTheCornerItsMarkNamesThoughTheGridReachesUnder)
 {
-    const auto map = defaultTilemap();
-    const auto where = reachingGrid(map);
+    const auto map = getDefaultTilemap();
+    const auto where = getReachingGrid(map);
 
     for (const auto corner : kEveryCorner)
     {
-        const auto middlePoint = middleOf(cornerPlace(kCanvasSize, corner));
+        const auto middlePoint = middleOf(getCornerPlace(kCanvasSize, corner));
 
-        ASSERT_TRUE(cellAtPoint(map, where, middlePoint).has_value());
+        ASSERT_TRUE(getCellAtPoint(map, where, middlePoint).has_value());
 
         const auto gesture =
-            gestureShown(map, where, middlePoint, middlePoint, true,
+            getGestureShown(map, where, middlePoint, middlePoint, true,
                 std::nullopt);
 
         EXPECT_EQ(gesture.action, PointerAction::Turn);
@@ -1271,17 +1271,17 @@ TEST(
 
 TEST(AtlasViewTest, GestureFrom_SwapsNothingWhereTheDragLeavesWhatIsShown)
 {
-    const auto map = defaultTilemap();
-    const auto where = reachingGrid(map);
-    const auto fromPoint = middleOf(tilemapBounds(kCanvasSize));
-    const auto ontoPoint = middleOf(markerPlace(kCanvasSize, kInwardTopEdge));
-    const auto reachedCell = cellAtPoint(map, where, ontoPoint);
+    const auto map = getDefaultTilemap();
+    const auto where = getReachingGrid(map);
+    const auto fromPoint = middleOf(getTilemapBounds(kCanvasSize));
+    const auto ontoPoint = middleOf(getMarkerPlace(kCanvasSize, kInwardTopEdge));
+    const auto reachedCell = getCellAtPoint(map, where, ontoPoint);
 
     ASSERT_TRUE(reachedCell.has_value());
-    ASSERT_NE(cellAtPoint(map, where, fromPoint), reachedCell);
+    ASSERT_NE(getCellAtPoint(map, where, fromPoint), reachedCell);
 
     EXPECT_EQ(
-        gestureShown(
+        getGestureShown(
             map,
             where,
             fromPoint,
@@ -1294,28 +1294,28 @@ TEST(AtlasViewTest, GestureFrom_SwapsNothingWhereTheDragLeavesWhatIsShown)
 
 TEST(AtlasViewTest, GestureFrom_StillSwapsBetweenTwoPlacesBothShown)
 {
-    const auto map = defaultTilemap();
-    const auto where = tilemapPlace(kCanvasSize, map);
-    const auto fromPoint = placeMiddle(map, 0, 0);
-    const auto ontoPoint = placeMiddle(map, 1, 0);
+    const auto map = getDefaultTilemap();
+    const auto where = getTilemapPlace(kCanvasSize, map);
+    const auto fromPoint = getPlaceMiddle(map, 0, 0);
+    const auto ontoPoint = getPlaceMiddle(map, 1, 0);
 
     EXPECT_EQ(
-        gestureShown(map, where, fromPoint, ontoPoint, false, std::nullopt)
+        getGestureShown(map, where, fromPoint, ontoPoint, false, std::nullopt)
             .action,
         PointerAction::Swap);
 }
 
 TEST(AtlasViewTest, GestureFrom_AsksNothingOfAPlaceTheClipKeepsHidden)
 {
-    const auto map = defaultTilemap();
-    const auto where = reachingGrid(map);
+    const auto map = getDefaultTilemap();
+    const auto where = getReachingGrid(map);
     const auto middlePoint =
-        middleOf(inspectedTileRect(kCanvasSize, kFloorTile));
+        middleOf(getInspectedTileRect(kCanvasSize, kFloorTile));
 
-    ASSERT_TRUE(cellAtPoint(map, where, middlePoint).has_value());
+    ASSERT_TRUE(getCellAtPoint(map, where, middlePoint).has_value());
 
     EXPECT_EQ(
-        gestureShown(map, where, middlePoint, middlePoint, false,
+        getGestureShown(map, where, middlePoint, middlePoint, false,
         std::nullopt).action,
         PointerAction::Nothing);
 }

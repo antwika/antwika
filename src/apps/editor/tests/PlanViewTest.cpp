@@ -26,8 +26,8 @@ using antwika::editor::kPlanTitleWidget;
 using antwika::editor::PlanDrag;
 using antwika::editor::PlanView;
 using antwika::editor::cardsOf;
-using antwika::editor::planAddWidget;
-using antwika::editor::planCardWidget;
+using antwika::editor::getPlanAddWidget;
+using antwika::editor::getPlanCardWidget;
 using antwika::gfx::Point;
 using antwika::gfx::Size;
 using antwika::ui::Context;
@@ -40,16 +40,16 @@ namespace
 {
     constexpr Size kCanvasSize{.width = 640, .height = 360};
 
-    [[nodiscard]] std::string boardPath(const std::string &name)
+    [[nodiscard]] std::string getBoardPath(const std::string &name)
     {
         return (std::filesystem::temp_directory_path()
                 / ("antwika-plan-" + name + ".json"))
             .string();
     }
 
-    [[nodiscard]] PlanView emptyBoard(const std::string &name)
+    [[nodiscard]] PlanView getEmptyBoard(const std::string &name)
     {
-        const auto path = boardPath(name);
+        const auto path = getBoardPath(name);
 
         std::filesystem::remove(path);
 
@@ -60,7 +60,7 @@ namespace
         return view;
     }
 
-    [[nodiscard]] Interactions pressOn(
+    [[nodiscard]] Interactions getPressOn(
         const antwika::widget::WidgetId whichWidget)
     {
         return Interactions{.activatedWidget = whichWidget};
@@ -78,77 +78,77 @@ namespace
 
 TEST(PlanViewTest, Open_ReadsAnEmptyBoardWhereThePathHoldsNone)
 {
-    const auto view = emptyBoard("open");
+    const auto view = getEmptyBoard("open");
 
     for (const auto which : antwika::editor::kEveryColumn)
     {
-        EXPECT_TRUE(cardsOf(view.board(), which).empty());
+        EXPECT_TRUE(cardsOf(view.getBoard(), which).empty());
     }
 
-    EXPECT_FALSE(view.unsaved());
-    EXPECT_FALSE(view.picked());
-    EXPECT_FALSE(view.dragging());
+    EXPECT_FALSE(view.isUnsaved());
+    EXPECT_FALSE(view.isPicked());
+    EXPECT_FALSE(view.isDragging());
 }
 
 TEST(PlanViewTest, HandleWidgets_AddsACardAndPicksItToBeWrittenIn)
 {
-    auto view = emptyBoard("add");
+    auto view = getEmptyBoard("add");
     auto focusedField = FocusedField::Nothing;
     std::optional<std::string> notice;
 
-    EXPECT_TRUE(view.handleWidgets(
-        pressOn(planAddWidget(Column::Doing)),
+    EXPECT_TRUE(view.consumeWidgets(
+        getPressOn(getPlanAddWidget(Column::Doing)),
         Point{},
         focusedField,
         notice));
 
-    EXPECT_EQ(cardsOf(view.board(), Column::Doing).size(), 1U);
+    EXPECT_EQ(cardsOf(view.getBoard(), Column::Doing).size(), 1U);
     EXPECT_EQ(focusedField, FocusedField::PlanTitle);
-    EXPECT_TRUE(view.picked());
-    EXPECT_TRUE(view.unsaved());
+    EXPECT_TRUE(view.isPicked());
+    EXPECT_TRUE(view.isUnsaved());
     EXPECT_FALSE(notice.has_value());
 }
 
 TEST(PlanViewTest, HandleWidgets_LeavesAPressOnNothingOfItsOwnAlone)
 {
-    auto view = emptyBoard("stranger");
+    auto view = getEmptyBoard("stranger");
     auto focusedField = FocusedField::Nothing;
     std::optional<std::string> notice;
 
-    EXPECT_FALSE(view.handleWidgets(
-        pressOn(antwika::widget::WidgetId{9999}),
+    EXPECT_FALSE(view.consumeWidgets(
+        getPressOn(antwika::widget::WidgetId{9999}),
         Point{},
         focusedField,
         notice));
-    EXPECT_FALSE(view.picked());
+    EXPECT_FALSE(view.isPicked());
 }
 
 TEST(PlanViewTest, HandleWidgets_TakesUpACardOfTheBoard)
 {
-    auto view = emptyBoard("pick");
+    auto view = getEmptyBoard("pick");
     auto focusedField = FocusedField::Nothing;
     std::optional<std::string> notice;
 
-    EXPECT_TRUE(view.handleWidgets(
-        pressOn(planAddWidget(Column::Todo)), Point{}, focusedField, notice));
-    EXPECT_TRUE(view.handleWidgets(
-        pressOn(planCardWidget(Column::Todo, 0)),
+    EXPECT_TRUE(view.consumeWidgets(
+        getPressOn(getPlanAddWidget(Column::Todo)), Point{}, focusedField, notice));
+    EXPECT_TRUE(view.consumeWidgets(
+        getPressOn(getPlanCardWidget(Column::Todo, 0)),
         Point{.x = 5, .y = 5},
         focusedField,
         notice));
 
     EXPECT_EQ(focusedField, FocusedField::Nothing);
-    EXPECT_TRUE(view.picked());
+    EXPECT_TRUE(view.isPicked());
 }
 
 TEST(PlanViewTest, HandleWidgets_LeavesACardThatIsNotThereAlone)
 {
-    auto view = emptyBoard("missing");
+    auto view = getEmptyBoard("missing");
     auto focusedField = FocusedField::Nothing;
     std::optional<std::string> notice;
 
-    EXPECT_FALSE(view.handleWidgets(
-        pressOn(planCardWidget(Column::Todo, 2)),
+    EXPECT_FALSE(view.consumeWidgets(
+        getPressOn(getPlanCardWidget(Column::Todo, 2)),
         Point{},
         focusedField,
         notice));
@@ -156,46 +156,46 @@ TEST(PlanViewTest, HandleWidgets_LeavesACardThatIsNotThereAlone)
 
 TEST(PlanViewTest, HandleWidgets_FocusesTheTitleAndTheBodyOfAPickedCard)
 {
-    auto view = emptyBoard("focus");
+    auto view = getEmptyBoard("focus");
     auto focusedField = FocusedField::Nothing;
     std::optional<std::string> notice;
 
-    EXPECT_TRUE(view.handleWidgets(
-        pressOn(planAddWidget(Column::Todo)), Point{}, focusedField, notice));
+    EXPECT_TRUE(view.consumeWidgets(
+        getPressOn(getPlanAddWidget(Column::Todo)), Point{}, focusedField, notice));
     focusedField = FocusedField::Nothing;
 
-    EXPECT_TRUE(view.handleWidgets(
-        pressOn(kPlanBodyWidget), Point{}, focusedField, notice));
+    EXPECT_TRUE(view.consumeWidgets(
+        getPressOn(kPlanBodyWidget), Point{}, focusedField, notice));
     EXPECT_EQ(focusedField, FocusedField::PlanBody);
-    EXPECT_TRUE(view.handleWidgets(
-        pressOn(kPlanTitleWidget), Point{}, focusedField, notice));
+    EXPECT_TRUE(view.consumeWidgets(
+        getPressOn(kPlanTitleWidget), Point{}, focusedField, notice));
     EXPECT_EQ(focusedField, FocusedField::PlanTitle);
 }
 
 TEST(PlanViewTest, HandleWidgets_DeletesThePickedCard)
 {
-    auto view = emptyBoard("delete");
+    auto view = getEmptyBoard("delete");
     auto focusedField = FocusedField::Nothing;
     std::optional<std::string> notice;
 
-    EXPECT_TRUE(view.handleWidgets(
-        pressOn(planAddWidget(Column::Todo)), Point{}, focusedField, notice));
-    EXPECT_TRUE(view.handleWidgets(
-        pressOn(kPlanDeleteWidget), Point{}, focusedField, notice));
+    EXPECT_TRUE(view.consumeWidgets(
+        getPressOn(getPlanAddWidget(Column::Todo)), Point{}, focusedField, notice));
+    EXPECT_TRUE(view.consumeWidgets(
+        getPressOn(kPlanDeleteWidget), Point{}, focusedField, notice));
 
-    EXPECT_TRUE(cardsOf(view.board(), Column::Todo).empty());
-    EXPECT_FALSE(view.picked());
+    EXPECT_TRUE(cardsOf(view.getBoard(), Column::Todo).empty());
+    EXPECT_FALSE(view.isPicked());
     EXPECT_EQ(notice, std::optional<std::string>{"card deleted"});
 }
 
 TEST(PlanViewTest, CarryEdits_WritesWhatWasTypedIntoThePickedCard)
 {
-    auto view = emptyBoard("edits");
+    auto view = getEmptyBoard("edits");
     auto focusedField = FocusedField::Nothing;
     std::optional<std::string> notice;
 
-    EXPECT_TRUE(view.handleWidgets(
-        pressOn(planAddWidget(Column::Todo)), Point{}, focusedField, notice));
+    EXPECT_TRUE(view.consumeWidgets(
+        getPressOn(getPlanAddWidget(Column::Todo)), Point{}, focusedField, notice));
 
     Frame typedFrame;
 
@@ -203,18 +203,18 @@ TEST(PlanViewTest, CarryEdits_WritesWhatWasTypedIntoThePickedCard)
         TextEdit{.fieldWidget = kPlanTitleWidget, .text = "a title"};
     view.carryEdits(typedFrame, focusedField);
 
-    EXPECT_EQ(cardsOf(view.board(), Column::Todo).front().title, "a title");
+    EXPECT_EQ(cardsOf(view.getBoard(), Column::Todo).front().title, "a title");
 
     typedFrame.interactions.edit =
         TextEdit{.fieldWidget = kPlanBodyWidget, .text = "a body", .cursor = 3};
     view.carryEdits(typedFrame, focusedField);
 
-    EXPECT_EQ(cardsOf(view.board(), Column::Todo).front().body, "a body");
+    EXPECT_EQ(cardsOf(view.getBoard(), Column::Todo).front().body, "a body");
 }
 
 TEST(PlanViewTest, CarryEdits_LeavesTheBoardAloneWithNoCardPicked)
 {
-    auto view = emptyBoard("noedits");
+    auto view = getEmptyBoard("noedits");
     auto focusedField = FocusedField::Nothing;
     Frame typedFrame;
 
@@ -222,17 +222,17 @@ TEST(PlanViewTest, CarryEdits_LeavesTheBoardAloneWithNoCardPicked)
         TextEdit{.fieldWidget = kPlanTitleWidget, .text = "a title"};
     view.carryEdits(typedFrame, focusedField);
 
-    EXPECT_FALSE(view.unsaved());
+    EXPECT_FALSE(view.isUnsaved());
 }
 
 TEST(PlanViewTest, DraggedTo_TellsACarryFromAClick)
 {
-    auto view = emptyBoard("drag");
+    auto view = getEmptyBoard("drag");
     auto focusedField = FocusedField::Nothing;
     std::optional<std::string> notice;
 
-    EXPECT_TRUE(view.handleWidgets(
-        pressOn(planAddWidget(Column::Todo)), Point{}, focusedField, notice));
+    EXPECT_TRUE(view.consumeWidgets(
+        getPressOn(getPlanAddWidget(Column::Todo)), Point{}, focusedField, notice));
     view.carry(
         PlanDrag{
             .fromColumn = Column::Todo,
@@ -243,21 +243,21 @@ TEST(PlanViewTest, DraggedTo_TellsACarryFromAClick)
             .dropIndex = 0});
     view.draggedTo(Point{.x = 11, .y = 11});
 
-    EXPECT_FALSE(view.dragging());
+    EXPECT_FALSE(view.isDragging());
 
     view.draggedTo(Point{.x = 40, .y = 40});
 
-    EXPECT_TRUE(view.dragging());
+    EXPECT_TRUE(view.isDragging());
 }
 
 TEST(PlanViewTest, LetGo_LeavesTheCardWhereItWasWithNowhereToLandIt)
 {
-    auto view = emptyBoard("letgo");
+    auto view = getEmptyBoard("letgo");
     auto focusedField = FocusedField::Nothing;
     std::optional<std::string> notice;
 
-    EXPECT_TRUE(view.handleWidgets(
-        pressOn(planAddWidget(Column::Todo)), Point{}, focusedField, notice));
+    EXPECT_TRUE(view.consumeWidgets(
+        getPressOn(getPlanAddWidget(Column::Todo)), Point{}, focusedField, notice));
     view.carry(
         PlanDrag{
             .fromColumn = Column::Todo,
@@ -268,13 +268,13 @@ TEST(PlanViewTest, LetGo_LeavesTheCardWhereItWasWithNowhereToLandIt)
             .dropIndex = 0});
 
     EXPECT_FALSE(view.letGo().has_value());
-    EXPECT_EQ(cardsOf(view.board(), Column::Todo).size(), 1U);
-    EXPECT_FALSE(view.dragging());
+    EXPECT_EQ(cardsOf(view.getBoard(), Column::Todo).size(), 1U);
+    EXPECT_FALSE(view.isDragging());
 }
 
 TEST(PlanViewTest, EndDrag_LetsGoOfWhateverWasBeingCarried)
 {
-    auto view = emptyBoard("enddrag");
+    auto view = getEmptyBoard("enddrag");
 
     view.carry(
         PlanDrag{
@@ -285,27 +285,27 @@ TEST(PlanViewTest, EndDrag_LetsGoOfWhateverWasBeingCarried)
             .overColumn = std::nullopt,
             .dropIndex = 0});
 
-    EXPECT_TRUE(view.dragging());
+    EXPECT_TRUE(view.isDragging());
 
     view.endDrag();
 
-    EXPECT_FALSE(view.dragging());
+    EXPECT_FALSE(view.isDragging());
 }
 
 TEST(PlanViewTest, Layout_LaysEveryColumnOutAndSaysHowWideTheyCame)
 {
-    auto view = emptyBoard("layout");
+    auto view = getEmptyBoard("layout");
     auto focusedField = FocusedField::Nothing;
     std::optional<std::string> notice;
 
-    EXPECT_TRUE(view.handleWidgets(
-        pressOn(planAddWidget(Column::Todo)), Point{}, focusedField, notice));
+    EXPECT_TRUE(view.consumeWidgets(
+        getPressOn(getPlanAddWidget(Column::Todo)), Point{}, focusedField, notice));
 
     const auto frame = laidOut(view);
 
     EXPECT_FALSE(frame.drawList.empty());
     EXPECT_TRUE(frame.rects
-                    .find(antwika::editor::planColumnWidget(
+                    .getFind(antwika::editor::getPlanColumnWidget(
                         Column::Todo))
                     .has_value());
 
@@ -314,22 +314,22 @@ TEST(PlanViewTest, Layout_LaysEveryColumnOutAndSaysHowWideTheyCame)
 
 TEST(PlanViewTest, Save_WritesTheBoardBackAndOnlyWhereItChanged)
 {
-    auto view = emptyBoard("save");
+    auto view = getEmptyBoard("save");
     auto focusedField = FocusedField::Nothing;
     std::optional<std::string> notice;
 
     EXPECT_FALSE(view.save().has_value());
-    EXPECT_TRUE(view.handleWidgets(
-        pressOn(planAddWidget(Column::Todo)), Point{}, focusedField, notice));
-    EXPECT_TRUE(view.unsaved());
+    EXPECT_TRUE(view.consumeWidgets(
+        getPressOn(getPlanAddWidget(Column::Todo)), Point{}, focusedField, notice));
+    EXPECT_TRUE(view.isUnsaved());
     EXPECT_FALSE(view.save().has_value());
-    EXPECT_FALSE(view.unsaved());
+    EXPECT_FALSE(view.isUnsaved());
 
     PlanView readView;
 
-    readView.open(boardPath("save"));
+    readView.open(getBoardPath("save"));
 
-    EXPECT_EQ(cardsOf(readView.board(), Column::Todo).size(), 1U);
+    EXPECT_EQ(cardsOf(readView.getBoard(), Column::Todo).size(), 1U);
 
-    std::filesystem::remove(boardPath("save"));
+    std::filesystem::remove(getBoardPath("save"));
 }

@@ -18,7 +18,7 @@ namespace antwika::render
         }
     }
 
-    const std::vector<gfx::Bitmap> &CharacterSkins::sheets()
+    const std::vector<gfx::Bitmap> &CharacterSkins::getSheets()
         const noexcept
     {
         return skins;
@@ -39,7 +39,7 @@ namespace antwika::render
             viewportRenderer.createTexture(skins.at(skinIndex));
     }
 
-    gfx::ITexture *CharacterSkins::picture(
+    gfx::ITexture *CharacterSkins::getPicture(
         const std::size_t skinIndex) const noexcept
     {
         return skinIndex < pictureTextures.size()
@@ -47,7 +47,7 @@ namespace antwika::render
                    : nullptr;
     }
 
-    std::size_t CharacterSkins::size() const noexcept
+    std::size_t CharacterSkins::getSize() const noexcept
     {
         return skins.size();
     }

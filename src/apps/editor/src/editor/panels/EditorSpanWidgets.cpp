@@ -22,7 +22,7 @@ namespace antwika::editor
             const auto *decor = decor::decorOf(
                 document.map.decor, *selectedTile);
 
-            document.map.decor = withSpanSet(
+            document.map.decor = getWithSpanSet(
                 document.map.decor,
                 *selectedTile,
                 static_cast<std::uint8_t>(
@@ -74,7 +74,7 @@ namespace antwika::editor
              ++place)
         {
             if (interactions.activatedWidget
-                != decor::memberWidget(place))
+                != decor::getMemberWidget(place))
             {
                 continue;
             }

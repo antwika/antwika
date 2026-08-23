@@ -58,7 +58,7 @@ namespace antwika::tile
             for (const auto &[corner, answerSide] :
                  cornersAlong(edge.side))
             {
-                const auto cornerRule = rules.corner(tile, corner);
+                const auto cornerRule = rules.getCorner(tile, corner);
 
                 if (!cornerRule.has_value())
                 {
@@ -84,7 +84,7 @@ namespace antwika::tile
         {
             std::set<tilemap::Tile> tiles;
 
-            for (const auto &rule : rules.allRules())
+            for (const auto &rule : rules.getAllRules())
             {
                 if (rules.kindOf(rule.tile) == kind)
                 {
@@ -117,16 +117,16 @@ namespace antwika::tile
         }
 
         if (hasBorder(rules, tile, edge)
-            || hasBorder(rules, otherTile, voxel::facing(edge)))
+            || hasBorder(rules, otherTile, voxel::getFacing(edge)))
         {
             return false;
         }
 
         return cornersAgree(rules, tile, edge, otherTile)
-               && cornersAgree(rules, otherTile, voxel::facing(edge), tile);
+               && cornersAgree(rules, otherTile, voxel::getFacing(edge), tile);
     }
 
-    ShapedJunctions rulesFromShapes(
+    ShapedJunctions getRulesFromShapes(
         const TileRules &rules, const voxel::Kind kind)
     {
         const auto tiles = spokenOf(rules, kind);
@@ -137,7 +137,7 @@ namespace antwika::tile
         {
             for (const auto edge : tilemap::kEveryTileEdge)
             {
-                const auto allowedTiles = rules.allowed(tile, edge);
+                const auto allowedTiles = rules.getAllowed(tile, edge);
 
                 for (const auto other : tiles)
                 {

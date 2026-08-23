@@ -9,7 +9,7 @@
 using antwika::ecs::EcsError;
 using antwika::ecs::Entity;
 using antwika::ecs::kNullEntity;
-using antwika::ecs::rawValue;
+using antwika::ecs::getRawValue;
 using antwika::ecs::detail::EntityManager;
 using antwika::log::Level;
 using antwika::log::mocks::MockLogger;
@@ -23,8 +23,8 @@ TEST(EntityManagerTest, Create_ReturnsIncreasingValuesFromOne)
     const auto first = manager.create();
     const auto second = manager.create();
 
-    EXPECT_EQ(rawValue(first), 1U);
-    EXPECT_EQ(rawValue(second), 2U);
+    EXPECT_EQ(getRawValue(first), 1U);
+    EXPECT_EQ(getRawValue(second), 2U);
 }
 
 TEST(EntityManagerTest, Alive_IsTrueForANewEntity)
@@ -47,8 +47,8 @@ TEST(EntityManagerTest, Destroy_LeavesTheIndexDeadAndUnreused)
     const auto second = manager.create();
 
     EXPECT_FALSE(manager.isAlive(first));
-    EXPECT_NE(rawValue(first), rawValue(second));
-    EXPECT_EQ(rawValue(second), 2U);
+    EXPECT_NE(getRawValue(first), getRawValue(second));
+    EXPECT_EQ(getRawValue(second), 2U);
 }
 
 TEST(EntityManagerTest, Destroy_ThrowsOnADeadEntity)
@@ -85,7 +85,7 @@ TEST(EntityManagerTest, Alive_IsFalseForTheValueJustPastTheLastCreated)
     EntityManager manager(logger);
     const auto only = manager.create();
 
-    EXPECT_FALSE(manager.isAlive(Entity{rawValue(only) + 1}));
+    EXPECT_FALSE(manager.isAlive(Entity{getRawValue(only) + 1}));
 }
 
 TEST(EntityManagerTest, Create_LogsFatalAndThrowsWhenExhausted)

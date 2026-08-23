@@ -25,8 +25,8 @@ namespace antwika::editor
         play.game->stepAlongPath(play.playing);
         moveCamera();
         play.game->setWalkerFrozen(
-            !play.playing || heldModifiers().control || heldModifiers().shift
-                || heldModifiers().alt);
+            !play.playing || getHeldModifiers().control || getHeldModifiers().shift
+                || getHeldModifiers().alt);
         play.game->setWorldFrozen(!play.playing);
         play.game->setSpeaking(
             tick < caption.untilTick && caption.speaker.has_value()
@@ -38,14 +38,14 @@ namespace antwika::editor
         sayConsumeReport();
         sayDialogueLine();
 
-        if (play.playing && !play.game->world().isAlive(play.game->player()))
+        if (play.playing && !play.game->getWorld().isAlive(play.game->getPlayer()))
         {
             sayCaption("the walker", "it gave out");
             standPlayer();
         }
 
         const auto walkerStood =
-            play.game->world().get<component::Position>(play.game->player());
+            play.game->getWorld().get<component::Position>(play.game->getPlayer());
         const antwika::gfx::Vec3 walkerPosition{
             walkerStood.x, walkerStood.y, walkerStood.z};
 
@@ -125,7 +125,7 @@ namespace antwika::editor
 
         const auto model = worldRotation();
         const auto walkerStood =
-            play.game->world().get<component::Position>(play.game->player());
+            play.game->getWorld().get<component::Position>(play.game->getPlayer());
         const antwika::gfx::Vec3 walkerPosition{
             walkerStood.x, walkerStood.y, walkerStood.z};
 
@@ -135,12 +135,12 @@ namespace antwika::editor
                 play.playing
                     ? std::optional<
                           antwika::voxel::VoxelPosition>{}
-                    : voxelmap::cellUnder(
+                    : voxelmap::getCellUnder(
                           worldCamera(),
                           model,
                           camera::kCanvasSize,
                           pointer.pointerOnCanvas,
-                          antwika::voxel::cubeTop(editLevel));
+                          antwika::voxel::getCubeTop(editLevel));
             const auto anchoredTarget =
                 play.playing
                     ? walkerPosition
@@ -152,7 +152,7 @@ namespace antwika::editor
                                   .x)
                               + 0.5F,
                           static_cast<float>(
-                              antwika::voxel::cubeTop(
+                              antwika::voxel::getCubeTop(
                                   editLevel))
                               + 0.5F,
                           static_cast<float>(
@@ -161,11 +161,11 @@ namespace antwika::editor
                                             VoxelPosition{})
                                   .z)
                               + 0.5F};
-            const auto hideFrom = clockSource.currentTime();
+            const auto hideFrom = clockSource.getCurrentTime();
             auto behind =
                 play.playing || aimedRotation.has_value()
-                    ? antwika::voxel::occludingVoxels(
-                          worldMeshes.cells(), anchoredTarget)
+                    ? antwika::voxel::getOccludingVoxels(
+                          worldMeshes.getCells(), anchoredTarget)
                     : antwika::voxel::Voxels{};
 
             pointer.hoveredPosition = aimedRotation;
@@ -196,23 +196,23 @@ namespace antwika::editor
             meters.hideRate.record(
                 std::chrono::duration_cast<
                     std::chrono::nanoseconds>(
-                    clockSource.currentTime() - hideFrom));
+                    clockSource.getCurrentTime() - hideFrom));
 
             const auto corner =
-                voxelmap::occlusionMaskOrigin(aboutPosition);
+                voxelmap::getOcclusionMaskOrigin(aboutPosition);
             const auto lights = currentLights();
 
-            const auto lampFrom = clockSource.currentTime();
+            const auto lampFrom = clockSource.getCurrentTime();
 
             lightPasses.bakeLamps(
                 viewportRenderer,
-                worldMeshes.solid(),
+                worldMeshes.getSolid(),
                 lights);
 
             meters.lampRate.record(
                 std::chrono::duration_cast<
                     std::chrono::nanoseconds>(
-                    clockSource.currentTime() - lampFrom));
+                    clockSource.getCurrentTime() - lampFrom));
 
             worldShader.setLook(
                 viewportRenderer,
@@ -227,21 +227,21 @@ namespace antwika::editor
                         play.playing
                             ? walkerStood.y
                             : (static_cast<float>(
-                                   antwika::voxel::cubeTop(editLevel)
+                                   antwika::voxel::getCubeTop(editLevel)
                                    - voxel::kCubeSide)
                                + 0.5F)
                                   * antwika::voxel::kVoxelSide,
                     .carrying = std::optional<std::size_t>{},
                     .hidingCornerPosition = corner,
                     .sightPoint =
-                        antwika::voxel::lineOfSight(walkerPosition),
+                        antwika::voxel::getLineOfSight(walkerPosition),
                     .sightSlot = 0,
                     .upperSightPoint =
-                        antwika::voxel::upperLineOfSight(walkerPosition),
+                        antwika::voxel::getUpperLineOfSight(walkerPosition),
                     .upperSightSlot = 1,
                     .upperSightOn = upperSightOn()},
                 lights,
-                lightPasses.lamps());
+                lightPasses.getLamps());
         }
 
         atlasSheets.refresh(
@@ -264,7 +264,7 @@ namespace antwika::editor
                 previewForTile = selectedTile;
                 previewLayer = chosenLayer;
                 previewSeed = seedNow;
-                previewTiles = decor::previewNeighbourhood(
+                previewTiles = decor::getPreviewNeighbourhood(
                     activeRules(), *selectedTile, 3, previewSeed);
             }
         }
@@ -276,7 +276,7 @@ namespace antwika::editor
             && !rebindingAction.has_value() && !slidingWidget.has_value()
             && focusedField == FocusedField::Nothing;
 
-        const auto uiFrom = clockSource.currentTime();
+        const auto uiFrom = clockSource.getCurrentTime();
         const auto uiFrame = uiResting
                            ? ui::Frame{}
                            : layoutUi(false, pointer.pointerHeld);
@@ -284,10 +284,10 @@ namespace antwika::editor
         meters.uiRate.record(
             std::chrono::duration_cast<
                 std::chrono::nanoseconds>(
-                clockSource.currentTime() - uiFrom));
+                clockSource.getCurrentTime() - uiFrom));
 
         pointer.hoveredWidget = uiFrame.interactions.hoveredWidget;
-        pointer.hoverTracker = updateHover(
+        pointer.hoverTracker = getUpdateHover(
             pointer.hoverTracker, pointer.hoveredWidget, tick);
         updateCanvasHover(uiFrame);
         plan.updateFrame(uiFrame, pointer.pointerInWindow);
@@ -313,7 +313,7 @@ namespace antwika::editor
         {
             inkPicker.hexText = uiFrame.interactions.edit->text;
 
-            const auto parsedColor = colorFromHex(inkPicker.hexText);
+            const auto parsedColor = getColorFromHex(inkPicker.hexText);
 
             if (parsedColor.has_value())
             {
@@ -328,7 +328,7 @@ namespace antwika::editor
             && uiFrame.interactions.slidChange->sliderWidget
                    == decor::kFrequencyWidget)
         {
-            document.map.decor = withFrequencySet(
+            document.map.decor = getWithFrequencySet(
                 document.map.decor,
                 *selectedTile,
                 static_cast<std::uint8_t>(
@@ -341,7 +341,7 @@ namespace antwika::editor
             && uiFrame.interactions.slidChange->sliderWidget
                    == decor::kDecorWeightWidget)
         {
-            document.map.decor = withWeightSet(
+            document.map.decor = getWithWeightSet(
                 document.map.decor,
                 *selectedTile,
                 static_cast<std::uint8_t>(
@@ -376,7 +376,7 @@ namespace antwika::editor
             && uiFrame.interactions.slidChange->sliderWidget
                    == decor::kVariantWeightWidget)
         {
-            document.map.familyGroups = withVariantWeightSet(
+            document.map.familyGroups = getWithVariantWeightSet(
                 document.map.familyGroups,
                 *selectedTile,
                 static_cast<std::uint8_t>(

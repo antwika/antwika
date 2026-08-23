@@ -16,9 +16,9 @@ namespace antwika::voxel
 
     inline constexpr std::int32_t kCubeSide = 2;
 
-    [[nodiscard]] std::int32_t cubeTop(std::int32_t cube);
+    [[nodiscard]] std::int32_t getCubeTop(std::int32_t cube);
 
-    [[nodiscard]] std::int32_t cubeIndexOfLevel(std::int32_t level);
+    [[nodiscard]] std::int32_t getCubeIndexOfLevel(std::int32_t level);
 
     inline constexpr std::size_t kCubeVoxels =
         static_cast<std::size_t>(kCubeSide * kCubeSide * kCubeSide);
@@ -31,7 +31,7 @@ namespace antwika::voxel
         Right,
     };
 
-    [[nodiscard]] constexpr Side lastEnumerator(Side) noexcept
+    [[nodiscard]] constexpr Side getLastEnumerator(Side) noexcept
     {
         return Side::Right;
     }
@@ -47,7 +47,7 @@ namespace antwika::voxel
         Interior,
     };
 
-    [[nodiscard]] constexpr EdgeKind lastEnumerator(EdgeKind) noexcept
+    [[nodiscard]] constexpr EdgeKind getLastEnumerator(EdgeKind) noexcept
     {
         return EdgeKind::Interior;
     }
@@ -60,7 +60,7 @@ namespace antwika::voxel
         BottomRight,
     };
 
-    [[nodiscard]] constexpr Corner lastEnumerator(Corner) noexcept
+    [[nodiscard]] constexpr Corner getLastEnumerator(Corner) noexcept
     {
         return Corner::BottomRight;
     }
@@ -83,9 +83,9 @@ namespace antwika::voxel
             = default;
     };
 
-    [[nodiscard]] Side facing(Side side);
+    [[nodiscard]] Side getFacing(Side side);
 
-    [[nodiscard]] FaceEdge facing(FaceEdge edge);
+    [[nodiscard]] FaceEdge getFacing(FaceEdge edge);
 
     inline constexpr std::size_t kFaceEdges = 8;
 
@@ -101,15 +101,15 @@ namespace antwika::voxel
 
     [[nodiscard]] VoxelPosition cubeCornerOf(VoxelPosition position);
 
-    [[nodiscard]] std::vector<VoxelPosition> cubeCells(
+    [[nodiscard]] std::vector<VoxelPosition> getCubeCells(
         VoxelPosition cornerPosition);
 
-    [[nodiscard]] Voxels expandCubesToVoxels(const Voxels &cubeVoxels);
+    [[nodiscard]] Voxels getExpandCubesToVoxels(const Voxels &cubeVoxels);
 
     [[nodiscard]] VoxelPosition rampDirectionFor(
         const Voxels &filledVoxels, VoxelPosition position);
 
-    [[nodiscard]] Voxels cubeVoxels(
+    [[nodiscard]] Voxels getCubeVoxels(
         VoxelPosition cornerPosition,
         Kind kind,
         VoxelPosition climbPosition);
@@ -123,7 +123,7 @@ namespace antwika::voxel
     [[nodiscard]] Voxels withoutBlockAt(
         const Voxels &filledVoxels, VoxelPosition position);
 
-    [[nodiscard]] Voxels withRampsRebuilt(
+    [[nodiscard]] Voxels getWithRampsRebuilt(
         const Voxels &filledVoxels, VoxelPosition position);
 
 }

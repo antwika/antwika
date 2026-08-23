@@ -12,7 +12,7 @@ namespace antwika::pathfinding
     public:
         virtual ~IWalkGraph() = default;
 
-        [[nodiscard]] virtual std::vector<GridPos> neighbors(
+        [[nodiscard]] virtual std::vector<GridPos> getNeighbors(
             GridPos fromPos) const = 0;
     };
 

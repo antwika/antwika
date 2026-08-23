@@ -19,7 +19,7 @@ namespace antwika::system
              world.view<component::Velocity, AnimationState>())
         {
             const auto was = world.get<AnimationState>(entity);
-            const auto direction = character::facingFromVelocity(
+            const auto direction = character::getFacingFromVelocity(
                 world.get<component::Velocity>(entity));
             const auto facing =
                 direction.has_value()

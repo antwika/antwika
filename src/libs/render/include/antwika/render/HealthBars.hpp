@@ -20,7 +20,7 @@ namespace antwika::render
 
     inline constexpr std::size_t kHealthBarParts = 4;
 
-    [[nodiscard]] std::array<gfx::RectF, kHealthBarParts> healthBars(
+    [[nodiscard]] std::array<gfx::RectF, kHealthBarParts> getHealthBars(
         gfx::PointF overheadPoint, component::Health health) noexcept;
 
 }

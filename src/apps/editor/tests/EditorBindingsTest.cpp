@@ -9,13 +9,13 @@
 #include "antwika/editor/ui/EditorBindings.hpp"
 
 using antwika::editor::Action;
-using antwika::editor::actionKey;
+using antwika::editor::getActionKey;
 using antwika::editor::actionMapFrom;
 using antwika::editor::Chord;
-using antwika::editor::defaultChords;
-using antwika::editor::heldAction;
+using antwika::editor::getDefaultChords;
+using antwika::editor::getHeldAction;
 using antwika::editor::KeyBindings;
-using antwika::editor::shiftedAction;
+using antwika::editor::getShiftedAction;
 using antwika::input::Key;
 using antwika::input::KeyModifiers;
 
@@ -31,7 +31,7 @@ namespace
 
         EXPECT_TRUE(
             actions.matches(
-                actionKey(Action::Save),
+                getActionKey(Action::Save),
                 Key::S,
                 KeyModifiers{.control = true}));
     }
@@ -45,7 +45,7 @@ namespace
 
         EXPECT_FALSE(
             actions.matches(
-                actionKey(Action::Save), Key::S, KeyModifiers{}));
+                getActionKey(Action::Save), Key::S, KeyModifiers{}));
     }
 
     TEST(EditorBindingsTest, ActionMapFrom_RefusesAModifierTheChordDoesNotName)
@@ -57,7 +57,7 @@ namespace
 
         EXPECT_FALSE(
             actions.matches(
-                actionKey(Action::Save),
+                getActionKey(Action::Save),
                 Key::S,
                 KeyModifiers{.shift = true, .control = true}));
     }
@@ -71,10 +71,10 @@ namespace
 
         EXPECT_TRUE(
             actions.matches(
-                actionKey(Action::ToolBrush), Key::B, KeyModifiers{}));
+                getActionKey(Action::ToolBrush), Key::B, KeyModifiers{}));
         EXPECT_FALSE(
             actions.matches(
-                actionKey(Action::ToolBrush),
+                getActionKey(Action::ToolBrush),
                 Key::B,
                 KeyModifiers{.control = true}));
     }
@@ -86,10 +86,10 @@ namespace
 
         const auto actions = actionMapFrom(keyBindings);
 
-        EXPECT_FALSE(actions.isBound(actionKey(Action::ToolLamp)));
+        EXPECT_FALSE(actions.isBound(getActionKey(Action::ToolLamp)));
         EXPECT_FALSE(
             actions.matches(
-                actionKey(Action::ToolLamp), Key::L, KeyModifiers{}));
+                getActionKey(Action::ToolLamp), Key::L, KeyModifiers{}));
     }
 
     TEST(EditorBindingsTest, HeldAction_TakesTheKeyWhateverIsHeldBeside)
@@ -101,15 +101,15 @@ namespace
 
         EXPECT_TRUE(
             actions.matches(
-                heldAction(Action::WalkNorth), Key::W, KeyModifiers{}));
+                getHeldAction(Action::WalkNorth), Key::W, KeyModifiers{}));
         EXPECT_TRUE(
             actions.matches(
-                heldAction(Action::WalkNorth),
+                getHeldAction(Action::WalkNorth),
                 Key::W,
                 KeyModifiers{.shift = true}));
         EXPECT_FALSE(
             actions.matches(
-                heldAction(Action::WalkNorth), Key::A, KeyModifiers{}));
+                getHeldAction(Action::WalkNorth), Key::A, KeyModifiers{}));
     }
 
     TEST(EditorBindingsTest, ShiftedAction_TakesThePlainChordUnderShiftAlone)
@@ -121,15 +121,15 @@ namespace
 
         EXPECT_TRUE(
             actions.matches(
-                shiftedAction(Action::KindStone),
+                getShiftedAction(Action::KindStone),
                 Key::N,
                 KeyModifiers{.shift = true}));
         EXPECT_FALSE(
             actions.matches(
-                shiftedAction(Action::KindStone), Key::N, KeyModifiers{}));
+                getShiftedAction(Action::KindStone), Key::N, KeyModifiers{}));
         EXPECT_FALSE(
             actions.matches(
-                shiftedAction(Action::KindStone),
+                getShiftedAction(Action::KindStone),
                 Key::N,
                 KeyModifiers{.shift = true, .control = true}));
     }
@@ -142,18 +142,18 @@ namespace
 
         const auto actions = actionMapFrom(keyBindings);
 
-        EXPECT_FALSE(actions.isBound(shiftedAction(Action::Redo)));
+        EXPECT_FALSE(actions.isBound(getShiftedAction(Action::Redo)));
     }
 
     TEST(EditorBindingsTest, ActionMapFrom_BindsEveryChordTheDefaultsName)
     {
-        const auto keyBindings = defaultChords();
+        const auto keyBindings = getDefaultChords();
         const auto actions = actionMapFrom(keyBindings);
 
         for (const auto &[action, chord] : keyBindings)
         {
-            EXPECT_EQ(actions.isBound(actionKey(action)), chord.has_value())
-                << actionKey(action);
+            EXPECT_EQ(actions.isBound(getActionKey(action)), chord.has_value())
+                << getActionKey(action);
         }
     }
 

@@ -18,7 +18,7 @@ namespace antwika::app
 
     namespace
     {
-        [[nodiscard]] std::string quotedForCommandLine(
+        [[nodiscard]] std::string getQuotedForCommandLine(
             const std::string &argument)
         {
             if (!argument.empty() &&
@@ -57,7 +57,7 @@ namespace antwika::app
         }
     }
 
-    bool spawnDetached(
+    bool isSpawnDetached(
         const std::string &program,
         const std::vector<std::string> &arguments)
     {
@@ -100,7 +100,7 @@ namespace antwika::app
 
 #else
 
-    bool spawnDetached(
+    bool isSpawnDetached(
         const std::string &program,
         const std::vector<std::string> &arguments)
     {

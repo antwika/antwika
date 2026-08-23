@@ -75,7 +75,7 @@ namespace antwika::map
 
         std::vector<light::Lamp> lamps{};
 
-        std::vector<Layer> layers = defaultLayers();
+        std::vector<Layer> layers = getDefaultLayers();
 
         std::vector<Character> characters{};
 

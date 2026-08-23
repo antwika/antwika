@@ -29,11 +29,11 @@ namespace antwika::editor
 
     inline constexpr float kIconSheetLeft = 64.0F;
 
-    [[nodiscard]] std::size_t iconCount(gfx::Size sheetSize);
+    [[nodiscard]] std::size_t getIconCount(gfx::Size sheetSize);
 
-    [[nodiscard]] gfx::Rect iconSource(std::size_t iconIndex);
+    [[nodiscard]] gfx::Rect getIconSource(std::size_t iconIndex);
 
-    [[nodiscard]] gfx::RectF iconCellRect(
+    [[nodiscard]] gfx::RectF getIconCellRect(
         gfx::Size canvasSize, std::size_t count, std::size_t iconIndex);
 
     [[nodiscard]] std::optional<std::size_t> iconCellAt(
@@ -41,15 +41,15 @@ namespace antwika::editor
         std::size_t count,
         gfx::PointF point);
 
-    [[nodiscard]] gfx::RectF editedIconRect(gfx::Size canvasSize);
+    [[nodiscard]] gfx::RectF getEditedIconRect(gfx::Size canvasSize);
 
-    [[nodiscard]] gfx::RectF iconPixelRect(
+    [[nodiscard]] gfx::RectF getIconPixelRect(
         gfx::RectF roomRect, geometry::GridCell pixelCell);
 
     [[nodiscard]] std::optional<geometry::GridCell> iconPixelAt(
         gfx::RectF roomRect, gfx::PointF point);
 
-    [[nodiscard]] gfx::Color iconPixelColor(
+    [[nodiscard]] gfx::Color getIconPixelColor(
         const gfx::Bitmap &sheetBitmap,
         std::size_t iconIndex,
         geometry::GridCell pixelCell);
@@ -60,7 +60,7 @@ namespace antwika::editor
         geometry::GridCell pixelCell,
         gfx::Color inkColor);
 
-    [[nodiscard]] gfx::Bitmap loadIconSheet(
+    [[nodiscard]] gfx::Bitmap getLoadIconSheet(
         const std::string &mapPath, std::string_view app);
 
 }

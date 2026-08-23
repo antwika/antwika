@@ -10,7 +10,7 @@
 namespace antwika::pathfinding
 {
 
-    [[nodiscard]] std::optional<std::vector<GridPos>> pathBetween(
+    [[nodiscard]] std::optional<std::vector<GridPos>> getPathBetween(
         const IWalkGraph &graph,
         GridPos fromPosition,
         GridPos toPosition,

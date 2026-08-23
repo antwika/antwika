@@ -976,7 +976,9 @@ def _function_site(
     spelled = _returned(lead)
 
     if lead != before:
-        member = True
+        # An out-of-line definition cannot show the static or virtual it was
+        # declared with, so the declaration is the one that answers for it.
+        return None
 
     if re.search(r"\bstatic\b", before):
         member = False
@@ -1391,8 +1393,20 @@ def _function_kind(site: Site) -> str | None:
 
 def judge_functions(sites: list[Site]) -> list[Violation]:
     found = []
+    asking = {
+        site.name
+        for site in sites
+        if site.changes_nothing and _returns(site.spelled) not in ("void", "")
+    }
 
     for site in sites:
+        if (
+            GET_PREFIXED.match(site.name)
+            and not site.changes_nothing
+            and site.name in asking
+        ):
+            continue
+
         if not LOWER_CAMEL.match(site.name):
             found.append(
                 Violation(

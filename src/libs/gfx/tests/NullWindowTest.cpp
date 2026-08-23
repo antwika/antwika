@@ -19,14 +19,14 @@ namespace
 {
     constexpr WindowId kWindowId{7};
 
-    WindowSpec demoSpec()
+    WindowSpec getDemoSpec()
     {
         return WindowSpec{
             .title = "Antwika",
             .size = {.width = 640, .height = 480}};
     }
 
-    WindowSpec resizableSpec()
+    WindowSpec getResizableSpec()
     {
         return WindowSpec{
             .title = "Antwika",
@@ -38,7 +38,7 @@ namespace
 TEST(NullWindowTest, IsOpen_IsTrueForANewWindow)
 {
     NiceMock<MockLogger> logger;
-    NullWindow window(logger, kWindowId, demoSpec());
+    NullWindow window(logger, kWindowId, getDemoSpec());
 
     EXPECT_TRUE(window.isOpen());
 }
@@ -46,70 +46,70 @@ TEST(NullWindowTest, IsOpen_IsTrueForANewWindow)
 TEST(NullWindowTest, Id_IsTheIdTheBackendAssigned)
 {
     NiceMock<MockLogger> logger;
-    NullWindow window(logger, kWindowId, demoSpec());
+    NullWindow window(logger, kWindowId, getDemoSpec());
 
-    EXPECT_EQ(window.id(), kWindowId);
+    EXPECT_EQ(window.getId(), kWindowId);
 }
 
 TEST(NullWindowTest, Title_IsTheRequestedTitle)
 {
     NiceMock<MockLogger> logger;
-    NullWindow window(logger, kWindowId, demoSpec());
+    NullWindow window(logger, kWindowId, getDemoSpec());
 
-    EXPECT_EQ(window.title(), "Antwika");
+    EXPECT_EQ(window.getTitle(), "Antwika");
 }
 
 TEST(NullWindowTest, Size_IsTheRequestedSize)
 {
     NiceMock<MockLogger> logger;
-    NullWindow window(logger, kWindowId, demoSpec());
+    NullWindow window(logger, kWindowId, getDemoSpec());
 
-    EXPECT_EQ(window.size().width, 640u);
-    EXPECT_EQ(window.size().height, 480u);
+    EXPECT_EQ(window.getSize().width, 640u);
+    EXPECT_EQ(window.getSize().height, 480u);
 }
 
 TEST(NullWindowTest, ConfiguredSize_IsTheRequestedSize)
 {
     NiceMock<MockLogger> logger;
-    NullWindow window(logger, kWindowId, demoSpec());
+    NullWindow window(logger, kWindowId, getDemoSpec());
 
-    EXPECT_EQ(window.configuredSize(), demoSpec().size);
+    EXPECT_EQ(window.getConfiguredSize(), getDemoSpec().size);
 }
 
 TEST(NullWindowTest, Size_MatchesConfiguredSizeWhenResizable)
 {
     NiceMock<MockLogger> logger;
-    NullWindow window(logger, kWindowId, resizableSpec());
+    NullWindow window(logger, kWindowId, getResizableSpec());
 
-    EXPECT_EQ(window.size(), resizableSpec().size);
-    EXPECT_EQ(window.configuredSize(), resizableSpec().size);
+    EXPECT_EQ(window.getSize(), getResizableSpec().size);
+    EXPECT_EQ(window.getConfiguredSize(), getResizableSpec().size);
 }
 
 TEST(NullWindowTest, ConfiguredSize_SurvivesClosingTheWindow)
 {
     NiceMock<MockLogger> logger;
-    NullWindow window(logger, kWindowId, demoSpec());
+    NullWindow window(logger, kWindowId, getDemoSpec());
 
     window.close();
 
-    EXPECT_EQ(window.configuredSize(), demoSpec().size);
-    EXPECT_EQ(window.size(), demoSpec().size);
+    EXPECT_EQ(window.getConfiguredSize(), getDemoSpec().size);
+    EXPECT_EQ(window.getSize(), getDemoSpec().size);
 }
 
 TEST(NullWindowTest, SetTitle_ReplacesTheTitle)
 {
     NiceMock<MockLogger> logger;
-    NullWindow window(logger, kWindowId, demoSpec());
+    NullWindow window(logger, kWindowId, getDemoSpec());
 
     window.setTitle("Antwika Life");
 
-    EXPECT_EQ(window.title(), "Antwika Life");
+    EXPECT_EQ(window.getTitle(), "Antwika Life");
 }
 
 TEST(NullWindowTest, Renderer_ReturnsTheSameRendererEveryCall)
 {
     NiceMock<MockLogger> logger;
-    NullWindow window(logger, kWindowId, demoSpec());
+    NullWindow window(logger, kWindowId, getDemoSpec());
 
     EXPECT_EQ(&window.renderer(), &window.renderer());
 }
@@ -117,7 +117,7 @@ TEST(NullWindowTest, Renderer_ReturnsTheSameRendererEveryCall)
 TEST(NullWindowTest, Close_MakesTheWindowClosed)
 {
     NiceMock<MockLogger> logger;
-    NullWindow window(logger, kWindowId, demoSpec());
+    NullWindow window(logger, kWindowId, getDemoSpec());
 
     window.close();
 
@@ -127,7 +127,7 @@ TEST(NullWindowTest, Close_MakesTheWindowClosed)
 TEST(NullWindowTest, Close_LogsThatTheWindowWasClosed)
 {
     MockLogger logger;
-    NullWindow window(logger, kWindowId, demoSpec());
+    NullWindow window(logger, kWindowId, getDemoSpec());
 
     EXPECT_CALL(logger, log(Level::Debug, "gfx.null: closed window"));
 
@@ -137,7 +137,7 @@ TEST(NullWindowTest, Close_LogsThatTheWindowWasClosed)
 TEST(NullWindowTest, Close_IsIdempotentAndOnlyLogsOnce)
 {
     MockLogger logger;
-    NullWindow window(logger, kWindowId, demoSpec());
+    NullWindow window(logger, kWindowId, getDemoSpec());
 
     EXPECT_CALL(logger, log(Level::Debug, "gfx.null: closed window")).Times(1);
 
@@ -150,7 +150,7 @@ TEST(NullWindowTest, Close_IsIdempotentAndOnlyLogsOnce)
 TEST(NullWindowTest, IsFullscreen_IsFalseByDefault)
 {
     NiceMock<MockLogger> logger;
-    NullWindow window(logger, kWindowId, demoSpec());
+    NullWindow window(logger, kWindowId, getDemoSpec());
 
     EXPECT_FALSE(window.isFullscreen());
 }
@@ -172,13 +172,13 @@ TEST(NullWindowTest, IsFullscreen_IsWhatTheDescriptionAskedFor)
 TEST(NullWindowTest, SetFullscreen_ChangesNeitherSize)
 {
     NiceMock<MockLogger> logger;
-    NullWindow window(logger, kWindowId, demoSpec());
+    NullWindow window(logger, kWindowId, getDemoSpec());
 
     window.setFullscreen(true);
 
     EXPECT_TRUE(window.isFullscreen());
-    EXPECT_EQ(window.size(), demoSpec().size);
-    EXPECT_EQ(window.configuredSize(), demoSpec().size);
+    EXPECT_EQ(window.getSize(), getDemoSpec().size);
+    EXPECT_EQ(window.getConfiguredSize(), getDemoSpec().size);
 
     window.setFullscreen(false);
 

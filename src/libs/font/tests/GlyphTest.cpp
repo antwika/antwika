@@ -6,7 +6,7 @@ using antwika::font::Glyph;
 
 namespace
 {
-    Glyph reference()
+    Glyph getReference()
     {
         return Glyph{
             .metrics = {.advance = 18, .bearingX = 2, .bearingY = -15},
@@ -17,21 +17,21 @@ namespace
 
 TEST(GlyphTest, OperatorEquals_IsTrueForTheSameMetricsAndCoverage)
 {
-    EXPECT_EQ(reference(), reference());
+    EXPECT_EQ(getReference(), getReference());
 }
 
 TEST(GlyphTest, OperatorEquals_IsFalseWhenTheMetricsDiffer)
 {
-    Glyph otherGlyph = reference();
+    Glyph otherGlyph = getReference();
     otherGlyph.metrics.advance = 19;
 
-    EXPECT_NE(reference(), otherGlyph);
+    EXPECT_NE(getReference(), otherGlyph);
 }
 
 TEST(GlyphTest, OperatorEquals_IsFalseWhenTheCoverageDiffers)
 {
-    Glyph otherGlyph = reference();
+    Glyph otherGlyph = getReference();
     otherGlyph.coverage.samples[0] = 0;
 
-    EXPECT_NE(reference(), otherGlyph);
+    EXPECT_NE(getReference(), otherGlyph);
 }

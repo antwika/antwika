@@ -18,17 +18,17 @@ namespace antwika::gfx
     {
     }
 
-    std::string_view NullBackend::name() const
+    std::string_view NullBackend::getName() const
     {
         return "null";
     }
 
-    std::size_t NullBackend::maxWindows() const
+    std::size_t NullBackend::getMaxWindows() const
     {
         return kUnlimitedWindows;
     }
 
-    GfxCapabilities NullBackend::capabilities() const
+    GfxCapabilities NullBackend::getCapabilities() const
     {
         return GfxCapabilities{
             .readsPixels = false, .resizesWindows = true};

@@ -21,7 +21,7 @@ namespace antwika::geometry
         [[nodiscard]] bool operator==(const Grid &other) const = default;
     };
 
-    [[nodiscard]] constexpr std::optional<Grid> gridFit(
+    [[nodiscard]] constexpr std::optional<Grid> getGridFit(
         const Rect areaRect,
         const std::uint32_t columns,
         const std::uint32_t rows) noexcept
@@ -56,7 +56,7 @@ namespace antwika::geometry
             .rows = rows};
     }
 
-    [[nodiscard]] constexpr std::optional<Grid> gridFitBelow(
+    [[nodiscard]] constexpr std::optional<Grid> getGridFitBelow(
         const Size canvasSize,
         const std::uint32_t reservedPixels,
         const std::uint32_t columns,
@@ -67,7 +67,7 @@ namespace antwika::geometry
             return std::nullopt;
         }
 
-        return gridFit(
+        return getGridFit(
             Rect{
                 .originPoint = {.x = 0,
                            .y = static_cast<std::int32_t>(reservedPixels)},
@@ -108,7 +108,7 @@ namespace antwika::geometry
             .row = static_cast<std::uint32_t>(row)};
     }
 
-    [[nodiscard]] constexpr Rect cellRect(
+    [[nodiscard]] constexpr Rect getCellRect(
         const Grid &grid, const GridCell cell) noexcept
     {
         return Rect{

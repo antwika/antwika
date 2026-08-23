@@ -21,7 +21,7 @@ namespace antwika::system
             const component::Vitals heldVitals{
                 .health = world.get<component::Health>(entity),
                 .inventory = world.get<component::Inventory>(entity)};
-            const auto afterVitals = rules::consumedVitals(
+            const auto afterVitals = rules::getConsumedVitals(
                 heldVitals, static_cast<component::ItemKind>(intent.kind));
             const auto anyLeft =
                 afterVitals.inventory.slots != heldVitals.inventory.slots;

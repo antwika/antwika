@@ -34,7 +34,7 @@ namespace antwika::image
             std::istreambuf_iterator<char>(inputStream),
             std::istreambuf_iterator<char>()};
 
-        const auto decodedImage = detail::decodeImage(
+        const auto decodedImage = detail::getDecodeImage(
             bytes.data(),
             static_cast<int>(bytes.size()),
             static_cast<int>(gfx::kBytesPerPixel));
@@ -45,7 +45,7 @@ namespace antwika::image
         {
             throw gfx::GfxError(
                 std::string("gfx: could not decode a PNG: ")
-                + detail::decodeFailureReason());
+                + detail::getDecodeFailureReason());
         }
 
         const auto count = static_cast<std::size_t>(decodedImage.width)

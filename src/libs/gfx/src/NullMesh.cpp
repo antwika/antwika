@@ -11,12 +11,12 @@ namespace antwika::gfx::detail
     {
     }
 
-    std::size_t NullMesh::vertexCount() const
+    std::size_t NullMesh::getVertexCount() const
     {
         return vertices;
     }
 
-    std::size_t NullMesh::triangleCount() const
+    std::size_t NullMesh::getTriangleCount() const
     {
         return triangles;
     }

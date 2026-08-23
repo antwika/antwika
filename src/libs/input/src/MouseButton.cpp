@@ -35,7 +35,7 @@ namespace antwika::input
 
                 for (const auto &entry : kMouseButtonNames)
                 {
-                    if (mouseButtonIndex(entry.button) == index)
+                    if (getMouseButtonIndex(entry.button) == index)
                     {
                         ++rows;
                     }
@@ -90,10 +90,10 @@ namespace antwika::input
 
         throw InputError(
             "input: no name for mouse button "
-            + std::to_string(mouseButtonIndex(button)));
+            + std::to_string(getMouseButtonIndex(button)));
     }
 
-    MouseButton mouseButtonFromString(std::string_view name)
+    MouseButton getMouseButtonFromString(std::string_view name)
     {
         for (const auto &entry : kMouseButtonNames)
         {

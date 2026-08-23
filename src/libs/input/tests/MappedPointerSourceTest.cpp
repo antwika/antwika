@@ -41,7 +41,7 @@ namespace
 {
     const InputEventCodec kCodec;
 
-    [[nodiscard]] TickEvent at(Tick tick, Event event)
+    [[nodiscard]] TickEvent getEntryAt(Tick tick, Event event)
     {
         return TickEvent{.tick = tick, .event = std::move(event)};
     }
@@ -53,7 +53,7 @@ namespace
 
         for (const auto &event : events)
         {
-            if (const auto edge = kCodec.decode(event))
+            if (const auto edge = kCodec.getDecode(event))
             {
                 decodedEvents.push_back(*edge);
             }
@@ -66,14 +66,14 @@ namespace
 TEST(MappedPointerSourceTest, EventsFor_MapsEveryPositionalEdge)
 {
     ReplaySource innerSource(
-        {at(0, kCodec.encode(PointerMoved{.position = {.x = 40, .y = 20}})),
-         at(0,
-            kCodec.encode(
+        {getEntryAt(0, kCodec.getEncode(PointerMoved{.position = {.x = 40, .y = 20}})),
+         getEntryAt(0,
+            kCodec.getEncode(
                 PointerButtonPressed{
                     .button = MouseButton::Right,
                     .position = {.x = 10, .y = 6}})),
-         at(0,
-            kCodec.encode(
+         getEntryAt(0,
+            kCodec.getEncode(
                 PointerButtonReleased{
                     .button = MouseButton::Right,
                     .position = {.x = 12, .y = 8}}))});
@@ -95,10 +95,10 @@ TEST(MappedPointerSourceTest, EventsFor_MapsEveryPositionalEdge)
 
 TEST(MappedPointerSourceTest, EventsFor_LeavesAPositionlessEdgeAlone)
 {
-    const auto key = kCodec.encode(KeyPressed{.key = Key::F10});
-    const auto scroll = kCodec.encode(PointerScrolled{.vertical = 1});
+    const auto key = kCodec.getEncode(KeyPressed{.key = Key::F10});
+    const auto scroll = kCodec.getEncode(PointerScrolled{.vertical = 1});
 
-    ReplaySource innerSource({at(0, key), at(0, scroll)});
+    ReplaySource innerSource({getEntryAt(0, key), getEntryAt(0, scroll)});
 
     const FakeHalvingPointerMapping mapping;
     MappedPointerSource source(innerSource, kCodec, mapping);
@@ -110,7 +110,7 @@ TEST(MappedPointerSourceTest, EventsFor_LeavesAnUnrelatedEventAlone)
 {
     const Event otherEvent{.name = "game.score_increment", .payload = "{}"};
 
-    ReplaySource innerSource({at(0, otherEvent)});
+    ReplaySource innerSource({getEntryAt(0, otherEvent)});
 
     const FakeHalvingPointerMapping mapping;
     MappedPointerSource source(innerSource, kCodec, mapping);
@@ -121,9 +121,9 @@ TEST(MappedPointerSourceTest, EventsFor_LeavesAnUnrelatedEventAlone)
 TEST(MappedPointerSourceTest, EventsFor_KeepsTheStreamsShapeExactly)
 {
     ReplaySource innerSource(
-        {at(0, kCodec.encode(PointerMoved{.position = {.x = 2, .y = 2}})),
-         at(1, kCodec.encode(KeyPressed{.key = Key::A})),
-         at(1, kCodec.encode(PointerMoved{.position = {.x = 4, .y = 4}}))});
+        {getEntryAt(0, kCodec.getEncode(PointerMoved{.position = {.x = 2, .y = 2}})),
+         getEntryAt(1, kCodec.getEncode(KeyPressed{.key = Key::A})),
+         getEntryAt(1, kCodec.getEncode(PointerMoved{.position = {.x = 4, .y = 4}}))});
 
     const FakeHalvingPointerMapping mapping;
     MappedPointerSource source(innerSource, kCodec, mapping);
@@ -136,7 +136,7 @@ TEST(MappedPointerSourceTest, EventsFor_KeepsTheStreamsShapeExactly)
 TEST(MappedPointerSourceTest, EventsFor_LetsABadPayloadThrough)
 {
     ReplaySource innerSource(
-        {at(0,
+        {getEntryAt(0,
             antwika::event::Event{
                 .name = "input.pointer_move",
                 .payload = R"({"x":"far","y":2})"})});

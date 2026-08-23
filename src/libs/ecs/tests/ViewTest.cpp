@@ -45,7 +45,7 @@ TEST(ViewTest, View_IsEmptyForANullStorage)
 
     const View<Position, Velocity> view(&positions, nullptr);
 
-    EXPECT_EQ(view.size(), 0U);
+    EXPECT_EQ(view.getSize(), 0U);
 }
 
 TEST(ViewTest, View_IntersectsTwoComponents)

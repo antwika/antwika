@@ -12,16 +12,16 @@ namespace
 
     using antwika::editor::isToggle;
     using antwika::editor::itemAt;
-    using antwika::editor::itemName;
+    using antwika::editor::getItemName;
     using antwika::editor::itemNamesOf;
     using antwika::editor::itemsOf;
-    using antwika::editor::firstItemWidget;
+    using antwika::editor::getFirstItemWidget;
     using antwika::editor::kBarMenus;
     using antwika::editor::kMaxMenuLines;
     using antwika::editor::Menu;
     using antwika::editor::MenuItem;
-    using antwika::editor::menuName;
-    using antwika::editor::menuWidget;
+    using antwika::editor::getMenuName;
+    using antwika::editor::getMenuWidget;
 
     constexpr std::array kEveryMenu{
         Menu::File, Menu::Edit, Menu::View, Menu::Settings};
@@ -35,7 +35,7 @@ namespace
             for (const auto item : itemsOf(menu))
             {
                 EXPECT_TRUE(seenItems.insert(item).second);
-                EXPECT_FALSE(itemName(item).empty());
+                EXPECT_FALSE(getItemName(item).empty());
             }
         }
 
@@ -71,7 +71,7 @@ namespace
 
             for (std::size_t index = 0; index < items.size(); ++index)
             {
-                EXPECT_EQ(names[index], itemName(items[index]));
+                EXPECT_EQ(names[index], getItemName(items[index]));
             }
         }
     }
@@ -98,8 +98,8 @@ namespace
 
         for (const auto menu : kEveryMenu)
         {
-            EXPECT_NE(menuWidget(menu), antwika::widget::kNoWidget);
-            EXPECT_TRUE(seenWidgets.insert(menuWidget(menu)).second);
+            EXPECT_NE(getMenuWidget(menu), antwika::widget::kNoWidget);
+            EXPECT_TRUE(seenWidgets.insert(getMenuWidget(menu)).second);
         }
     }
 
@@ -110,7 +110,7 @@ namespace
         for (const auto menu : kEveryMenu)
         {
             const auto first =
-                static_cast<std::uint64_t>(firstItemWidget(menu));
+                static_cast<std::uint64_t>(getFirstItemWidget(menu));
 
             for (std::size_t index = 0; index < itemsOf(menu).size(); ++index)
             {
@@ -118,7 +118,7 @@ namespace
                     first + static_cast<std::uint64_t>(index)};
 
                 EXPECT_TRUE(seenWidgets.insert(widget).second);
-                EXPECT_NE(widget, menuWidget(menu));
+                EXPECT_NE(widget, getMenuWidget(menu));
             }
         }
     }
@@ -142,7 +142,7 @@ namespace
     {
         for (const auto menu : kEveryMenu)
         {
-            EXPECT_FALSE(menuName(menu).empty());
+            EXPECT_FALSE(getMenuName(menu).empty());
         }
     }
 

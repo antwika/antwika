@@ -28,9 +28,9 @@ namespace antwika::worldgen
             = default;
     };
 
-    [[nodiscard]] std::size_t cubeCount(ChunkShape shape);
+    [[nodiscard]] std::size_t getCubeCount(ChunkShape shape);
 
-    [[nodiscard]] bool within(ChunkShape shape,
+    [[nodiscard]] bool isWithin(ChunkShape shape,
         voxel::VoxelPosition cubePosition);
 
     [[nodiscard]] std::size_t cellOf(
@@ -39,7 +39,7 @@ namespace antwika::worldgen
     [[nodiscard]] voxel::VoxelPosition cubeAt(
         ChunkShape shape, std::size_t cell);
 
-    [[nodiscard]] VoxelBox chunkBox(
+    [[nodiscard]] VoxelBox getChunkBox(
         ChunkShape shape, voxel::VoxelPosition originPosition);
 
     [[nodiscard]] bool holds(VoxelBox box, voxel::VoxelPosition position);

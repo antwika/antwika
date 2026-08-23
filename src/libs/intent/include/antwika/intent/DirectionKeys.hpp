@@ -10,9 +10,9 @@ namespace antwika::intent
         bool west = false;
         bool east = false;
 
-        [[nodiscard]] float axisX() const noexcept;
+        [[nodiscard]] float getAxisX() const noexcept;
 
-        [[nodiscard]] float axisZ() const noexcept;
+        [[nodiscard]] float getAxisZ() const noexcept;
 
         [[nodiscard]] bool operator==(
             const DirectionKeys &other) const = default;

@@ -20,7 +20,7 @@ namespace antwika::gfx::detail
     {
     }
 
-    WindowId NullWindow::id() const
+    WindowId NullWindow::getId() const
     {
         return windowId;
     }
@@ -30,17 +30,17 @@ namespace antwika::gfx::detail
         return open;
     }
 
-    std::string NullWindow::title() const
+    std::string NullWindow::getTitle() const
     {
         return windowTitle;
     }
 
-    Size NullWindow::configuredSize() const
+    Size NullWindow::getConfiguredSize() const
     {
         return windowSize;
     }
 
-    Size NullWindow::size() const
+    Size NullWindow::getSize() const
     {
         return windowSize;
     }

@@ -37,17 +37,17 @@ namespace
 {
     const InputEventCodec kCodec;
 
-    [[nodiscard]] TickEvent at(antwika::time::Tick tick, InputEvent edgeEvent)
+    [[nodiscard]] TickEvent getEntryAt(antwika::time::Tick tick, InputEvent edgeEvent)
     {
-        return TickEvent{.tick = tick, .event = kCodec.encode(edgeEvent)};
+        return TickEvent{.tick = tick, .event = kCodec.getEncode(edgeEvent)};
     }
 
-    [[nodiscard]] InputEvent moved(std::int32_t x, std::int32_t y)
+    [[nodiscard]] InputEvent getMoved(std::int32_t x, std::int32_t y)
     {
         return PointerMoved{.position = {.x = x, .y = y}};
     }
 
-    [[nodiscard]] PointerHint hint(std::int32_t x, std::int32_t y)
+    [[nodiscard]] PointerHint getHint(std::int32_t x, std::int32_t y)
     {
         return PointerHint{.position = {.x = x, .y = y}};
     }
@@ -61,35 +61,35 @@ namespace
 TEST(PointerHintSourceTest, EventsFor_ReturnsTheInnerEventsUntouched)
 {
     ReplaySource innerSource(
-        {at(0, moved(1, 1)),
+        {getEntryAt(0, getMoved(1, 1)),
          TickEvent{.tick = 0, .event = Event{.name = "game.score_increment"}},
-         at(0, moved(2, 2))});
+         getEntryAt(0, getMoved(2, 2))});
     PointerHintChannel channel;
     PointerHintSource source(innerSource, kCodec, channel);
 
     EXPECT_EQ(
         source.eventsFor(0),
         (std::vector<Event>{
-            kCodec.encode(moved(1, 1)),
+            kCodec.getEncode(getMoved(1, 1)),
             Event{.name = "game.score_increment"},
-            kCodec.encode(moved(2, 2))}));
+            kCodec.getEncode(getMoved(2, 2))}));
 }
 
 TEST(PointerHintSourceTest, EventsFor_PublishesThePositionAMovementCarried)
 {
-    ReplaySource innerSource({at(0, moved(4, 5))});
+    ReplaySource innerSource({getEntryAt(0, getMoved(4, 5))});
     PointerHintChannel channel;
     PointerHintSource source(innerSource, kCodec, channel);
 
     run(source, 0);
 
-    EXPECT_EQ(channel.latest(), hint(4, 5));
+    EXPECT_EQ(channel.getLatest(), getHint(4, 5));
 }
 
 TEST(PointerHintSourceTest, EventsFor_PublishesThePositionAPressCarried)
 {
     ReplaySource innerSource(
-        {at(0,
+        {getEntryAt(0,
             PointerButtonPressed{
                 .button = MouseButton::Left, .position = {.x = 6, .y = 7}})});
     PointerHintChannel channel;
@@ -97,13 +97,13 @@ TEST(PointerHintSourceTest, EventsFor_PublishesThePositionAPressCarried)
 
     run(source, 0);
 
-    EXPECT_EQ(channel.latest(), hint(6, 7));
+    EXPECT_EQ(channel.getLatest(), getHint(6, 7));
 }
 
 TEST(PointerHintSourceTest, EventsFor_PublishesThePositionAReleaseCarried)
 {
     ReplaySource innerSource(
-        {at(0,
+        {getEntryAt(0,
             PointerButtonReleased{
                 .button = MouseButton::Left, .position = {.x = 8, .y = 9}})});
     PointerHintChannel channel;
@@ -111,45 +111,47 @@ TEST(PointerHintSourceTest, EventsFor_PublishesThePositionAReleaseCarried)
 
     run(source, 0);
 
-    EXPECT_EQ(channel.latest(), hint(8, 9));
+    EXPECT_EQ(channel.getLatest(), getHint(8, 9));
 }
 
 TEST(PointerHintSourceTest, EventsFor_PublishesTheLastPositionOfTheTick)
 {
     ReplaySource innerSource(
-        {at(0, moved(1, 1)), at(0, moved(2, 2)), at(0, moved(3, 3))});
+        {getEntryAt(0, getMoved(1, 1)),
+         getEntryAt(0, getMoved(2, 2)),
+         getEntryAt(0, getMoved(3, 3))});
     PointerHintChannel channel;
     PointerHintSource source(innerSource, kCodec, channel);
 
     run(source, 0);
 
-    EXPECT_EQ(channel.latest(), hint(3, 3));
+    EXPECT_EQ(channel.getLatest(), getHint(3, 3));
 }
 
 TEST(PointerHintSourceTest, EventsFor_PublishesNothingBeforeAPositionArrives)
 {
     ReplaySource innerSource(
-        {at(0, PointerScrolled{.vertical = 1}),
-         at(0, KeyPressed{.key = Key::A})});
+        {getEntryAt(0, PointerScrolled{.vertical = 1}),
+         getEntryAt(0, KeyPressed{.key = Key::A})});
     PointerHintChannel channel;
     PointerHintSource source(innerSource, kCodec, channel);
 
     run(source, 0);
 
-    EXPECT_EQ(channel.latest(), std::nullopt);
+    EXPECT_EQ(channel.getLatest(), std::nullopt);
 }
 
 TEST(PointerHintSourceTest, EventsFor_LeavesTheHintAloneOnAPositionlessTick)
 {
     ReplaySource innerSource(
-        {at(0, moved(4, 5)), at(1, PointerScrolled{.vertical = 1})});
+        {getEntryAt(0, getMoved(4, 5)), getEntryAt(1, PointerScrolled{.vertical = 1})});
     PointerHintChannel channel;
     PointerHintSource source(innerSource, kCodec, channel);
 
     run(source, 0);
     run(source, 1);
 
-    EXPECT_EQ(channel.latest(), hint(4, 5));
+    EXPECT_EQ(channel.getLatest(), getHint(4, 5));
 }
 
 TEST(PointerHintSourceTest, EventsFor_IgnoresAnEventThatIsNotInput)
@@ -161,5 +163,5 @@ TEST(PointerHintSourceTest, EventsFor_IgnoresAnEventThatIsNotInput)
 
     run(source, 0);
 
-    EXPECT_EQ(channel.latest(), std::nullopt);
+    EXPECT_EQ(channel.getLatest(), std::nullopt);
 }

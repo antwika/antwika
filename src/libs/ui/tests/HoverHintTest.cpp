@@ -3,9 +3,9 @@
 #include "antwika/ui/HoverHint.hpp"
 
 using antwika::ui::HoverTrack;
-using antwika::ui::tooltipDue;
+using antwika::ui::isTooltipDue;
 using antwika::ui::kTooltipDelayFrames;
-using antwika::ui::updateHover;
+using antwika::ui::getUpdateHover;
 
 namespace
 {
@@ -17,7 +17,7 @@ namespace
 TEST(HoverHintTest, UpdateHover_BeginsARestWhereTheHoverMoves)
 {
     const auto track =
-        updateHover(HoverTrack{}, kSomeButtonWidget, 100);
+        getUpdateHover(HoverTrack{}, kSomeButtonWidget, 100);
 
     EXPECT_EQ(track.widget, kSomeButtonWidget);
     EXPECT_EQ(track.sinceFrame, 100U);
@@ -26,8 +26,8 @@ TEST(HoverHintTest, UpdateHover_BeginsARestWhereTheHoverMoves)
 TEST(HoverHintTest, UpdateHover_HoldsTheRestWhereTheHoverStays)
 {
     const auto begunHover =
-        updateHover(HoverTrack{}, kSomeButtonWidget, 100);
-    const auto track = updateHover(begunHover, kSomeButtonWidget, 150);
+        getUpdateHover(HoverTrack{}, kSomeButtonWidget, 100);
+    const auto track = getUpdateHover(begunHover, kSomeButtonWidget, 150);
 
     EXPECT_EQ(track, begunHover);
 }
@@ -35,8 +35,8 @@ TEST(HoverHintTest, UpdateHover_HoldsTheRestWhereTheHoverStays)
 TEST(HoverHintTest, UpdateHover_BeginsAfreshOnAnotherWidget)
 {
     const auto begunHover =
-        updateHover(HoverTrack{}, kSomeButtonWidget, 100);
-    const auto movedHover = updateHover(begunHover, kOtherButtonWidget, 130);
+        getUpdateHover(HoverTrack{}, kSomeButtonWidget, 100);
+    const auto movedHover = getUpdateHover(begunHover, kOtherButtonWidget, 130);
 
     EXPECT_EQ(movedHover.widget, kOtherButtonWidget);
     EXPECT_EQ(movedHover.sinceFrame, 130U);
@@ -45,25 +45,25 @@ TEST(HoverHintTest, UpdateHover_BeginsAfreshOnAnotherWidget)
 TEST(HoverHintTest, TooltipDue_RaisesNothingBeforeTheSecondIsUp)
 {
     const auto track =
-        updateHover(HoverTrack{}, kSomeButtonWidget, 100);
+        getUpdateHover(HoverTrack{}, kSomeButtonWidget, 100);
 
     EXPECT_FALSE(
-        tooltipDue(track, 100 + kTooltipDelayFrames - 1));
+        isTooltipDue(track, 100 + kTooltipDelayFrames - 1));
 }
 
 TEST(HoverHintTest, TooltipDue_RaisesTheHintOnceTheSecondIsUp)
 {
     const auto track =
-        updateHover(HoverTrack{}, kSomeButtonWidget, 100);
+        getUpdateHover(HoverTrack{}, kSomeButtonWidget, 100);
 
-    EXPECT_TRUE(tooltipDue(track, 100 + kTooltipDelayFrames));
+    EXPECT_TRUE(isTooltipDue(track, 100 + kTooltipDelayFrames));
 }
 
 TEST(HoverHintTest, TooltipDue_RaisesNothingOverNoWidgetAtAll)
 {
-    const auto track = updateHover(
+    const auto track = getUpdateHover(
         HoverTrack{}, antwika::widget::kNoWidget, 100);
 
     EXPECT_FALSE(
-        tooltipDue(track, 100 + kTooltipDelayFrames + 100));
+        isTooltipDue(track, 100 + kTooltipDelayFrames + 100));
 }

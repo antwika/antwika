@@ -12,7 +12,7 @@ TEST(AllDifferentConstraintTest, Cells_ReturnsTheConstructedIndices)
 {
     AllDifferentConstraint constraint({0, 2, 4});
     std::vector<std::size_t> cells(
-        constraint.cells().begin(), constraint.cells().end());
+        constraint.getCells().begin(), constraint.getCells().end());
     EXPECT_EQ(cells, (std::vector<std::size_t>{0, 2, 4}));
 }
 

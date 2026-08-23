@@ -19,10 +19,10 @@ namespace antwika::ui
             = default;
     };
 
-    [[nodiscard]] HoverTrack updateHover(
+    [[nodiscard]] HoverTrack getUpdateHover(
         HoverTrack track, WidgetId nowWidget, std::uint32_t clock);
 
-    [[nodiscard]] bool tooltipDue(
+    [[nodiscard]] bool isTooltipDue(
         HoverTrack track,
         std::uint32_t clock,
         std::uint32_t delayFrames = kTooltipDelayFrames);

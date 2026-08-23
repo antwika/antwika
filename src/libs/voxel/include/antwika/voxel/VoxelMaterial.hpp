@@ -17,7 +17,7 @@ namespace antwika::voxel
         Ladder,
     };
 
-    [[nodiscard]] constexpr Kind lastEnumerator(Kind) noexcept
+    [[nodiscard]] constexpr Kind getLastEnumerator(Kind) noexcept
     {
         return Kind::Ladder;
     }
@@ -31,7 +31,7 @@ namespace antwika::voxel
         South,
     };
 
-    [[nodiscard]] constexpr Facing lastEnumerator(Facing) noexcept
+    [[nodiscard]] constexpr Facing getLastEnumerator(Facing) noexcept
     {
         return Facing::South;
     }

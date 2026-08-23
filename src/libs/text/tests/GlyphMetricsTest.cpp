@@ -4,7 +4,7 @@
 
 #include "antwika/gfx/Glyphs.hpp"
 
-using antwika::gfx::encodeTextScale;
+using antwika::gfx::getEncodeTextScale;
 using antwika::gfx::glyphAdvanceOf;
 using antwika::gfx::glyphLineHeightOf;
 using antwika::gfx::kGlyphAdvance;
@@ -30,7 +30,7 @@ TEST(GlyphMetricsTest, GlyphLineHeightOf_ShortensForTheSmallFace)
 
 TEST(GlyphMetricsTest, EncodeTextScale_RoundTripsThroughBothParts)
 {
-    const auto scale = encodeTextScale(TextFace::Small, 3);
+    const auto scale = getEncodeTextScale(TextFace::Small, 3);
 
     EXPECT_EQ(textFaceOf(scale), TextFace::Small);
     EXPECT_EQ(textMultiplierOf(scale), 3U);
@@ -38,6 +38,6 @@ TEST(GlyphMetricsTest, EncodeTextScale_RoundTripsThroughBothParts)
 
 TEST(GlyphMetricsTest, EncodeTextScale_LeavesANormalScaleBare)
 {
-    EXPECT_EQ(encodeTextScale(TextFace::Normal, 2), 2U);
+    EXPECT_EQ(getEncodeTextScale(TextFace::Normal, 2), 2U);
     EXPECT_EQ(textFaceOf(2), TextFace::Normal);
 }

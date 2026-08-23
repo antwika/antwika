@@ -28,31 +28,31 @@ namespace antwika::editor
         if (!iconCheckerTexture)
         {
             iconCheckerTexture = viewportRenderer.createTexture(
-                render::checkered(kIconCellSize, 4));
+                render::getCheckered(kIconCellSize, 4));
         }
     }
 
-    gfx::ITexture *IconsView::texture() const noexcept
+    gfx::ITexture *IconsView::getTexture() const noexcept
     {
         return iconsTexture.get();
     }
 
-    const gfx::Bitmap &IconsView::sheet() const noexcept
+    const gfx::Bitmap &IconsView::getSheet() const noexcept
     {
         return iconSheet;
     }
 
-    gfx::ITexture *IconsView::checker() const noexcept
+    gfx::ITexture *IconsView::getChecker() const noexcept
     {
         return iconCheckerTexture.get();
     }
 
-    std::optional<std::size_t> IconsView::picked() const noexcept
+    std::optional<std::size_t> IconsView::getPicked() const noexcept
     {
         return iconPicked;
     }
 
-    bool IconsView::unsaved() const noexcept
+    bool IconsView::isUnsaved() const noexcept
     {
         return iconsUnsaved;
     }
@@ -84,12 +84,12 @@ namespace antwika::editor
     void IconsView::draw(gfx::ViewportRenderer &viewportRenderer) const
     {
         const auto count =
-            antwika::editor::iconCount(iconSheet.size);
+            antwika::editor::getIconCount(iconSheet.size);
 
         for (std::size_t index = 0; index < count; ++index)
         {
             const auto iconChosen = iconPicked == index;
-            const auto place = antwika::editor::iconCellRect(
+            const auto place = antwika::editor::getIconCellRect(
                 camera::kCanvasSize, count, index);
 
             viewportRenderer.drawTexture(
@@ -104,7 +104,7 @@ namespace antwika::editor
                 kWhiteColor);
             viewportRenderer.drawTexture(
                 *iconsTexture,
-                antwika::editor::iconSource(index),
+                antwika::editor::getIconSource(index),
                 place,
                 iconChosen ? kWhiteColor : kDisabledTintColor);
 
@@ -117,7 +117,7 @@ namespace antwika::editor
         if (iconPicked.has_value() && *iconPicked < count)
         {
             const auto drawnAt =
-                antwika::editor::editedIconRect(camera::kCanvasSize);
+                antwika::editor::getEditedIconRect(camera::kCanvasSize);
 
             viewportRenderer.drawRect(drawnAt, kPanelColor);
             viewportRenderer.drawTexture(
@@ -143,18 +143,18 @@ namespace antwika::editor
                         column, row};
 
                     viewportRenderer.drawRect(
-                        antwika::editor::iconPixelRect(
+                        antwika::editor::getIconPixelRect(
                             drawnAt, pixelCell),
-                        antwika::editor::iconPixelColor(
+                        antwika::editor::getIconPixelColor(
                             iconSheet, *iconPicked, pixelCell));
                 }
             }
         }
     }
 
-    std::size_t IconsView::count() const
+    std::size_t IconsView::getCount() const
     {
-        return iconCount(iconSheet.size);
+        return getIconCount(iconSheet.size);
     }
 
 }

@@ -16,22 +16,22 @@ namespace
 
 TEST(NameTableTest, Name_AnswersTheNameAtTheEnumeratorsIndex)
 {
-    EXPECT_EQ(kColors.name(Color::Blue), "blue");
+    EXPECT_EQ(kColors.getName(Color::Blue), "blue");
 }
 
 TEST(NameTableTest, Name_WrapsAnEnumeratorPastTheBound)
 {
-    EXPECT_EQ(kColors.name(static_cast<Color>(kCount<Color>)), "red");
+    EXPECT_EQ(kColors.getName(static_cast<Color>(kCount<Color>)), "red");
 }
 
 TEST(NameTableTest, From_AnswersTheEnumeratorTheNameSitsAt)
 {
-    EXPECT_EQ(kColors.from("green"), Color::Green);
+    EXPECT_EQ(kColors.getFrom("green"), Color::Green);
 }
 
 TEST(NameTableTest, From_AnswersNothingForANameTheTableLacks)
 {
-    EXPECT_FALSE(kColors.from("puce").has_value());
+    EXPECT_FALSE(kColors.getFrom("puce").has_value());
 }
 
 TEST(NameTableTest, IsComplete_HoldsWhenEveryEnumeratorIsNamed)

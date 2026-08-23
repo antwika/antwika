@@ -11,7 +11,7 @@ namespace antwika::gfx::raylib
 
     namespace
     {
-        [[nodiscard]] ::Texture2D wornAs(
+        [[nodiscard]] ::Texture2D getWornAs(
             const unsigned int id, const Size size, const int format)
         {
             return ::Texture2D{
@@ -82,7 +82,7 @@ namespace antwika::gfx::raylib
 
         colorTexture = std::make_unique<RaylibTexture>(
             ownerRenderer,
-            wornAs(
+            getWornAs(
                 colorId,
                 spec.size,
                 RL_PIXELFORMAT_UNCOMPRESSED_R8G8B8A8),
@@ -93,7 +93,7 @@ namespace antwika::gfx::raylib
         {
             depthTexture = std::make_unique<RaylibTexture>(
                 ownerRenderer,
-                wornAs(
+                getWornAs(
                     depthId,
                     spec.size,
                     RL_PIXELFORMAT_UNCOMPRESSED_R32),
@@ -142,22 +142,22 @@ namespace antwika::gfx::raylib
         }
     }
 
-    Size RaylibRenderTarget::size() const
+    Size RaylibRenderTarget::getSize() const
     {
         return targetSize;
     }
 
-    const ITexture *RaylibRenderTarget::color() const
+    const ITexture *RaylibRenderTarget::getColor() const
     {
         return colorTexture.get();
     }
 
-    const ITexture *RaylibRenderTarget::depth() const
+    const ITexture *RaylibRenderTarget::getDepth() const
     {
         return depthTexture.get();
     }
 
-    unsigned int RaylibRenderTarget::frameBuffer() const noexcept
+    unsigned int RaylibRenderTarget::getFrameBuffer() const noexcept
     {
         return fbo;
     }

@@ -63,22 +63,22 @@ namespace antwika::animation
     {
     }
 
-    const std::vector<KeyFrame> &Clip::frames() const noexcept
+    const std::vector<KeyFrame> &Clip::getFrames() const noexcept
     {
         return keyFrames;
     }
 
-    LoopMode Clip::loop() const noexcept
+    LoopMode Clip::getLoop() const noexcept
     {
         return loopMode;
     }
 
-    time::Tick Clip::durationTicks() const noexcept
+    time::Tick Clip::getDurationTicks() const noexcept
     {
         return durationTick;
     }
 
-    Clip uniformClip(
+    Clip getUniformClip(
         std::size_t firstIndex,
         std::size_t frameCount,
         time::Tick ticksPerFrame,

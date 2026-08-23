@@ -40,7 +40,7 @@ namespace
     constexpr Color kInkColor{
         .red = 200, .green = 100, .blue = 50, .alpha = 255};
 
-    [[nodiscard]] std::unique_ptr<ITexture> aTexture()
+    [[nodiscard]] std::unique_ptr<ITexture> getATexture()
     {
         return std::make_unique<NiceMock<MockTexture>>();
     }
@@ -52,7 +52,7 @@ TEST(GlyphAtlasTexturesTest, Draw_BlitsOneGlyphRatherThanOnePixel)
     GlyphAtlasTextures atlases;
 
     EXPECT_CALL(renderer, createTexture(_))
-        .WillOnce([](const Bitmap &) { return aTexture(); });
+        .WillOnce([](const Bitmap &) { return getATexture(); });
 
     EXPECT_CALL(renderer, drawTexture(_, _, _, kInkColor)).Times(3);
 
@@ -66,7 +66,7 @@ TEST(GlyphAtlasTexturesTest, Draw_UploadsOneAtlasForEveryLineAtAScale)
 
     EXPECT_CALL(renderer, createTexture(_))
         .Times(1)
-        .WillOnce([](const Bitmap &) { return aTexture(); });
+        .WillOnce([](const Bitmap &) { return getATexture(); });
 
     atlases.draw(renderer, kOriginPoint, "one", kScale, kInkColor);
     atlases.draw(renderer, kOriginPoint, "two", kScale, kInkColor);
@@ -80,7 +80,7 @@ TEST(GlyphAtlasTexturesTest, Draw_UploadsAnAtlasOfItsOwnForEachScale)
 
     EXPECT_CALL(renderer, createTexture(_))
         .Times(2)
-        .WillRepeatedly([](const Bitmap &) { return aTexture(); });
+        .WillRepeatedly([](const Bitmap &) { return getATexture(); });
 
     atlases.draw(renderer, kOriginPoint, "small", 1, kInkColor);
     atlases.draw(renderer, kOriginPoint, "large", 3, kInkColor);
@@ -92,14 +92,14 @@ TEST(GlyphAtlasTexturesTest, Draw_UploadsAnAtlasCutToTheScaleItWasAsked)
     GlyphAtlasTextures atlases;
 
     GlyphCellsCache cells;
-    const Size cellSize = cells.at(3).cellSize();
+    const Size cellSize = cells.at(3).getCellSize();
 
     Size uploadedSize{};
 
     EXPECT_CALL(renderer, createTexture(_))
         .WillOnce([&uploadedSize](const Bitmap &atlas) {
             uploadedSize = atlas.size;
-            return aTexture();
+            return getATexture();
         });
 
     atlases.draw(renderer, kOriginPoint, "a", 3, kInkColor);

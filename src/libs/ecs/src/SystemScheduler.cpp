@@ -36,7 +36,7 @@ namespace antwika::ecs
 
     void SystemScheduler::addSystem(PhaseId phase, ISystem &system)
     {
-        if (rawValue(phase) >= phases.size())
+        if (getRawValue(phase) >= phases.size())
         {
             std::vector<std::string> names;
             names.reserve(phases.size());
@@ -50,7 +50,7 @@ namespace antwika::ecs
                 "SystemScheduler: unknown phase, " + phaseNamesOf(names));
         }
 
-        phases[rawValue(phase)].systems.push_back(&system);
+        phases[getRawValue(phase)].systems.push_back(&system);
     }
 
     void SystemScheduler::run(World &world, antwika::time::Tick tick)

@@ -7,7 +7,7 @@
 namespace antwika::editor
 {
 
-    std::string_view columnName(const Column whichColumn)
+    std::string_view getColumnName(const Column whichColumn)
     {
         switch (whichColumn)
         {
@@ -111,7 +111,7 @@ namespace antwika::editor
         return landing;
     }
 
-    std::size_t dropIndex(
+    std::size_t getDropIndex(
         const std::span<const gfx::Rect> cardRects,
         const std::int32_t pointerY)
     {
@@ -134,7 +134,7 @@ namespace antwika::editor
         return landing;
     }
 
-    std::optional<std::pair<Column, std::size_t>> cardOfWidget(
+    std::optional<std::pair<Column, std::size_t>> getCardOfWidget(
         const widget::WidgetId whichWidget)
     {
         const auto idValue = static_cast<std::uint64_t>(whichWidget);

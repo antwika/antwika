@@ -16,7 +16,7 @@ namespace antwika::gfx::raylib
 
     namespace
     {
-        Size currentSize()
+        Size getCurrentSize()
         {
             return Size{
                 .width = static_cast<std::uint32_t>(GetScreenWidth()),
@@ -75,7 +75,7 @@ namespace antwika::gfx::raylib
 
         setFullscreen(spec.fullscreen);
 
-        lastSize = currentSize();
+        lastSize = getCurrentSize();
 
         logger.log(Level::Debug, "gfx.raylib: created window");
     }
@@ -85,7 +85,7 @@ namespace antwika::gfx::raylib
         close();
     }
 
-    WindowId RaylibWindow::id() const
+    WindowId RaylibWindow::getId() const
     {
         return windowId;
     }
@@ -95,19 +95,19 @@ namespace antwika::gfx::raylib
         return open;
     }
 
-    std::string RaylibWindow::title() const
+    std::string RaylibWindow::getTitle() const
     {
         return windowTitle;
     }
 
-    Size RaylibWindow::configuredSize() const
+    Size RaylibWindow::getConfiguredSize() const
     {
         return requestedSize;
     }
 
-    Size RaylibWindow::size() const
+    Size RaylibWindow::getSize() const
     {
-        return open ? currentSize() : lastSize;
+        return open ? getCurrentSize() : lastSize;
     }
 
     bool RaylibWindow::isFullscreen() const
@@ -171,7 +171,7 @@ namespace antwika::gfx::raylib
         }
 
         lastFullscreen = IsWindowFullscreen();
-        lastSize = currentSize();
+        lastSize = getCurrentSize();
 
         raylibRenderer.detach();
 
@@ -207,7 +207,7 @@ namespace antwika::gfx::raylib
                 .payload = CloseRequested{}};
         }
 
-        const Size nowSize = currentSize();
+        const Size nowSize = getCurrentSize();
 
         if (nowSize != lastSize)
         {

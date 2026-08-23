@@ -29,7 +29,7 @@ using antwika::sound::fakes::FakeRampCallback;
 
 namespace
 {
-    [[nodiscard]] DeviceSpec usable(antwika::sound::FrameCount bufferCount)
+    [[nodiscard]] DeviceSpec getUsable(antwika::sound::FrameCount bufferCount)
     {
         return DeviceSpec{
             .format = WaveFormat{.rate = 48000, .channels = 2},
@@ -40,7 +40,7 @@ namespace
 TEST(OfflineDeviceTest, Ctor_StampsTheOutputWaveformWithTheFormat)
 {
     Waveform waveform;
-    const OfflineDevice device(usable(64), waveform);
+    const OfflineDevice device(getUsable(64), waveform);
 
     EXPECT_EQ(waveform.format, (WaveFormat{.rate = 48000, .channels = 2}));
 }
@@ -48,13 +48,13 @@ TEST(OfflineDeviceTest, Ctor_StampsTheOutputWaveformWithTheFormat)
 TEST(OfflineDeviceTest, Advance_AppendsExactlyTheFramesAsked)
 {
     Waveform waveform;
-    OfflineDevice device(usable(64), waveform);
+    OfflineDevice device(getUsable(64), waveform);
     FakeRampCallback callback;
 
     device.start(callback);
 
     EXPECT_EQ(device.advance(480), 480U);
-    EXPECT_EQ(waveform.frameCount(), 480U);
+    EXPECT_EQ(waveform.getFrameCount(), 480U);
     EXPECT_TRUE(waveform.isValid());
 }
 
@@ -64,27 +64,27 @@ TEST(OfflineDeviceTest, Advance_ProducesTheSameAudioWhateverTheBufferSize)
     Waveform largeWaveform;
 
     {
-        OfflineDevice device(usable(1), smallWaveform);
+        OfflineDevice device(getUsable(1), smallWaveform);
         FakeRampCallback callback;
         device.start(callback);
         (void)device.advance(100);
     }
 
     {
-        OfflineDevice device(usable(1024), largeWaveform);
+        OfflineDevice device(getUsable(1024), largeWaveform);
         FakeRampCallback callback;
         device.start(callback);
         (void)device.advance(100);
     }
 
-    ASSERT_EQ(smallWaveform.frameCount(), 100U);
+    ASSERT_EQ(smallWaveform.getFrameCount(), 100U);
     EXPECT_EQ(smallWaveform, largeWaveform);
 }
 
 TEST(OfflineDeviceTest, Advance_InterleavesEveryChannelInFrameOrder)
 {
     Waveform waveform;
-    OfflineDevice device(usable(2), waveform);
+    OfflineDevice device(getUsable(2), waveform);
     FakePerChannelCallback callback;
 
     device.start(callback);
@@ -101,14 +101,14 @@ TEST(OfflineDeviceTest, Advance_InterleavesEveryChannelInFrameOrder)
 TEST(OfflineDeviceTest, Advance_KeepsAppendingAcrossCalls)
 {
     Waveform waveform;
-    OfflineDevice device(usable(8), waveform);
+    OfflineDevice device(getUsable(8), waveform);
     FakeRampCallback callback;
 
     device.start(callback);
     (void)device.advance(8);
     (void)device.advance(8);
 
-    ASSERT_EQ(waveform.frameCount(), 16U);
+    ASSERT_EQ(waveform.getFrameCount(), 16U);
 
     EXPECT_EQ(waveform.samples[8 * 2], 8.0F);
 }
@@ -116,7 +116,7 @@ TEST(OfflineDeviceTest, Advance_KeepsAppendingAcrossCalls)
 TEST(OfflineDeviceTest, Advance_WritesNothingBeforeAStart)
 {
     Waveform waveform;
-    OfflineDevice device(usable(8), waveform);
+    OfflineDevice device(getUsable(8), waveform);
 
     EXPECT_EQ(device.advance(8), 0U);
     EXPECT_TRUE(waveform.samples.empty());
@@ -125,7 +125,7 @@ TEST(OfflineDeviceTest, Advance_WritesNothingBeforeAStart)
 TEST(OfflineDeviceTest, Start_RefusesASecondStart)
 {
     Waveform waveform;
-    OfflineDevice device(usable(8), waveform);
+    OfflineDevice device(getUsable(8), waveform);
     FakeRampCallback callback;
 
     device.start(callback);
@@ -136,23 +136,23 @@ TEST(OfflineDeviceTest, Start_RefusesASecondStart)
 TEST(OfflineDeviceTest, Format_ReportsWhatItWasOpenedWith)
 {
     Waveform waveform;
-    OfflineDevice device(usable(0), waveform);
+    OfflineDevice device(getUsable(0), waveform);
 
-    EXPECT_EQ(device.format(), (WaveFormat{.rate = 48000, .channels = 2}));
-    EXPECT_EQ(device.bufferFrames(), antwika::sound::kDefaultBufferFrames);
-    EXPECT_EQ(device.framesPlayed(), 0U);
+    EXPECT_EQ(device.getFormat(), (WaveFormat{.rate = 48000, .channels = 2}));
+    EXPECT_EQ(device.getBufferFrames(), antwika::sound::kDefaultBufferFrames);
+    EXPECT_EQ(device.getFramesPlayed(), 0U);
 }
 
 TEST(OfflineDeviceTest, Stop_LeavesWhatWasAlreadyRendered)
 {
     Waveform waveform;
-    OfflineDevice device(usable(8), waveform);
+    OfflineDevice device(getUsable(8), waveform);
     FakeRampCallback callback;
 
     device.start(callback);
     (void)device.advance(8);
     device.stop();
 
-    EXPECT_EQ(waveform.frameCount(), 8U);
+    EXPECT_EQ(waveform.getFrameCount(), 8U);
     EXPECT_EQ(device.advance(8), 0U);
 }

@@ -5,19 +5,19 @@
 #include "antwika/gfx/WindowId.hpp"
 
 using antwika::gfx::kNullWindowId;
-using antwika::gfx::rawValue;
+using antwika::gfx::getRawValue;
 using antwika::gfx::WindowId;
 
 TEST(WindowIdTest, RawValue_UnwrapsTheBackingInteger)
 {
     constexpr WindowId idWindow{42};
 
-    EXPECT_EQ(rawValue(idWindow), std::uint64_t{42});
+    EXPECT_EQ(getRawValue(idWindow), std::uint64_t{42});
 }
 
 TEST(WindowIdTest, RawValue_OfTheNullIdIsZero)
 {
-    EXPECT_EQ(rawValue(kNullWindowId), std::uint64_t{0});
+    EXPECT_EQ(getRawValue(kNullWindowId), std::uint64_t{0});
 }
 
 TEST(WindowIdTest, OperatorEquals_DistinguishesDifferentIds)

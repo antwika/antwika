@@ -30,7 +30,7 @@ using antwika::replay::ReplayWriter;
 
 namespace
 {
-    std::vector<TickEvent> roundTrip(const std::vector<TickEvent> &events)
+    std::vector<TickEvent> getRoundTrip(const std::vector<TickEvent> &events)
     {
         const ReplayWriter writer;
         const ReplayReader reader;
@@ -40,7 +40,7 @@ namespace
         return reader.read(stream);
     }
 
-    [[nodiscard]] std::vector<TickEvent> aSession()
+    [[nodiscard]] std::vector<TickEvent> getASession()
     {
         std::vector<TickEvent> events;
         for (antwika::time::Tick tick = 0; tick < 20; ++tick)
@@ -56,7 +56,7 @@ namespace
         return events;
     }
 
-    [[nodiscard]] std::string written(const std::vector<TickEvent> &events)
+    [[nodiscard]] std::string getWritten(const std::vector<TickEvent> &events)
     {
         const ReplayWriter writer;
 
@@ -65,7 +65,7 @@ namespace
         return stream.str();
     }
 
-    [[nodiscard]] std::vector<TickEvent> readText(const std::string &text)
+    [[nodiscard]] std::vector<TickEvent> getReadText(const std::string &text)
     {
         std::stringstream stream(text);
         return ReplayReader().read(stream);
@@ -74,7 +74,7 @@ namespace
 
 TEST(ReplayWriterReaderTest, Write_RoundTripsZeroEvents)
 {
-    EXPECT_EQ(roundTrip({}), std::vector<TickEvent>{});
+    EXPECT_EQ(getRoundTrip({}), std::vector<TickEvent>{});
 }
 
 TEST(ReplayWriterReaderTest, Write_RoundTripsOneEvent)
@@ -82,7 +82,7 @@ TEST(ReplayWriterReaderTest, Write_RoundTripsOneEvent)
     const std::vector<TickEvent> events{
         TickEvent{.tick = 0, .event = Event{.name = "life.step"}},
     };
-    EXPECT_EQ(roundTrip(events), events);
+    EXPECT_EQ(getRoundTrip(events), events);
 }
 
 TEST(ReplayWriterReaderTest, Write_RoundTripsManyEventsInOrder)
@@ -106,12 +106,12 @@ TEST(ReplayWriterReaderTest, Write_RoundTripsManyEventsInOrder)
             },
         },
     };
-    EXPECT_EQ(roundTrip(events), events);
+    EXPECT_EQ(getRoundTrip(events), events);
 }
 
 TEST(ReplayWriterReaderTest, Write_WritesAHeaderAndOneLinePerEvent)
 {
-    const auto text = written(aSession());
+    const auto text = getWritten(getASession());
 
     EXPECT_EQ(std::count(text.begin(), text.end(), '\n'), 21);
     EXPECT_EQ(text.find("antwika-replay"), 10U) << text;
@@ -124,26 +124,26 @@ TEST(ReplayWriterReaderTest, Write_KeepsANewlinePayloadOnOneLine)
             .tick = 0,
             .event = Event{.name = "a.b", .payload = "one\ntwo"}},
     };
-    const auto text = written(events);
+    const auto text = getWritten(events);
 
     EXPECT_EQ(std::count(text.begin(), text.end(), '\n'), 2);
-    EXPECT_EQ(roundTrip(events), events);
+    EXPECT_EQ(getRoundTrip(events), events);
 }
 
 TEST(ReplayWriterReaderTest, Read_ThrowsOnAStreamThatIsNotJson)
 {
-    EXPECT_THROW(std::ignore = readText("not json"), ReplayFormatError);
+    EXPECT_THROW(std::ignore = getReadText("not json"), ReplayFormatError);
 }
 
 TEST(ReplayWriterReaderTest, Read_ThrowsOnAnEmptyStream)
 {
-    EXPECT_THROW(std::ignore = readText(""), ReplayFormatError);
+    EXPECT_THROW(std::ignore = getReadText(""), ReplayFormatError);
 }
 
 TEST(ReplayWriterReaderTest, Read_ThrowsWhenTheHeaderFailsTheSchema)
 {
     EXPECT_THROW(
-        std::ignore = readText(R"({"magic":"nope","version":2})"),
+        std::ignore = getReadText(R"({"magic":"nope","version":2})"),
         ReplayFormatError);
 }
 
@@ -158,7 +158,7 @@ TEST(ReplayWriterReaderTest, Read_ThrowsOnALineThatIsNotJson)
 
     try
     {
-        std::ignore = readText(text);
+        std::ignore = getReadText(text);
         FAIL() << "a line that is not a JSON value should have thrown";
     }
     catch (const ReplayFormatError &error)
@@ -178,7 +178,7 @@ TEST(ReplayWriterReaderTest, Read_RefusesALineNestedPastTheBound)
 
     try
     {
-        std::ignore = readText(text);
+        std::ignore = getReadText(text);
         FAIL() << "a line nested past the bound should have thrown";
     }
     catch (const ReplayFormatError &error)
@@ -197,7 +197,7 @@ TEST(ReplayWriterReaderTest, Read_RefusesAnOpeningValueTooDeep)
 
     try
     {
-        std::ignore = readText(text);
+        std::ignore = getReadText(text);
         FAIL() << "an opening value nested past the bound should have "
                   "thrown";
     }
@@ -220,7 +220,7 @@ TEST(ReplayWriterReaderTest, Read_DropsATornFinalLine)
         R"({"tick":1,"event":{"name":"a.)";
 
     EXPECT_EQ(
-        readText(text),
+        getReadText(text),
         (std::vector<TickEvent>{
             TickEvent{.tick = 0, .event = Event{.name = "a.b"}}}));
 }
@@ -235,7 +235,7 @@ TEST(ReplayWriterReaderTest, Read_KeepsAFinalRecordWithNoNewline)
         R"({"tick":1,"event":{"name":"c.d","payload":""}})";
 
     EXPECT_EQ(
-        readText(text),
+        getReadText(text),
         (std::vector<TickEvent>{
             TickEvent{.tick = 0, .event = Event{.name = "a.b"}},
             TickEvent{.tick = 1, .event = Event{.name = "c.d"}}}));
@@ -249,7 +249,7 @@ TEST(ReplayWriterReaderTest, Read_IgnoresBlankLinesBetweenRecords)
         R"({"tick":0,"event":{"name":"a.b","payload":""}})"
         "\n\n";
 
-    EXPECT_EQ(readText(text).size(), 1U);
+    EXPECT_EQ(getReadText(text).size(), 1U);
 }
 
 TEST(ReplayWriterReaderTest, Read_NamesTheRecordThatFailsTheSchema)
@@ -264,7 +264,7 @@ TEST(ReplayWriterReaderTest, Read_NamesTheRecordThatFailsTheSchema)
 
     try
     {
-        std::ignore = readText(text);
+        std::ignore = getReadText(text);
         FAIL() << "a record failing the schema should have thrown";
     }
     catch (const ReplayFormatError &error)
@@ -284,7 +284,7 @@ TEST(ReplayWriterReaderTest, Read_TakesAnOlderBuildsWholeDocument)
         R"({"tick":4,"event":{"name":"c.d","payload":"2"}}]})";
 
     EXPECT_EQ(
-        readText(text),
+        getReadText(text),
         (std::vector<TickEvent>{
             TickEvent{
                 .tick = 0,
@@ -302,7 +302,7 @@ TEST(ReplayWriterReaderTest, Read_RefusesContentAfterAWholeDocument)
 
     try
     {
-        std::ignore = readText(document + "\n" + document + "\n");
+        std::ignore = getReadText(document + "\n" + document + "\n");
         FAIL() << "a second recording should have thrown";
     }
     catch (const ReplayFormatError &error)
@@ -322,7 +322,7 @@ TEST(ReplayWriterReaderTest, Read_NamesTheVersionWhenContentFollows)
 
     try
     {
-        std::ignore = readText(document + "\ntrailing\n");
+        std::ignore = getReadText(document + "\ntrailing\n");
         FAIL() << "content after a whole document should have thrown";
     }
     catch (const ReplayFormatError &error)
@@ -343,7 +343,7 @@ TEST(ReplayWriterReaderTest, Read_LoadsAHeaderWithAnUnknownMember)
         R"({"tick":0,"event":{"name":"a.b","payload":""}})"
         "\n";
 
-    EXPECT_EQ(readText(text).size(), 1U);
+    EXPECT_EQ(getReadText(text).size(), 1U);
 }
 
 TEST(ReplayWriterReaderTest, Read_RefusesAHandCraftedEngineTick)
@@ -356,7 +356,7 @@ TEST(ReplayWriterReaderTest, Read_RefusesAHandCraftedEngineTick)
 
     try
     {
-        std::ignore = readText(text);
+        std::ignore = getReadText(text);
         FAIL() << "an engine.tick record should have thrown";
     }
     catch (const ReplayFormatError &error)
@@ -376,7 +376,7 @@ TEST(ReplayWriterReaderTest, Read_TakesCarriageReturnLineEndings)
         R"({"tick":0,"event":{"name":"a.b","payload":""}})"
         "\r\n";
 
-    EXPECT_EQ(readText(text).size(), 1U);
+    EXPECT_EQ(getReadText(text).size(), 1U);
 }
 
 TEST(ReplayWriterReaderTest, Read_TakesALeadingByteOrderMark)
@@ -388,7 +388,7 @@ TEST(ReplayWriterReaderTest, Read_TakesALeadingByteOrderMark)
         R"({"tick":0,"event":{"name":"a.b","payload":""}})"
         "\n";
 
-    EXPECT_EQ(readText(text).size(), 1U);
+    EXPECT_EQ(getReadText(text).size(), 1U);
 }
 
 TEST(ReplayWriterReaderTest, Read_TakesAPrettyPrintedWholeDocument)
@@ -402,12 +402,12 @@ TEST(ReplayWriterReaderTest, Read_TakesAPrettyPrintedWholeDocument)
   ]
 })";
 
-    EXPECT_EQ(readText(text).size(), 1U);
+    EXPECT_EQ(getReadText(text).size(), 1U);
 }
 
 namespace
 {
-    [[nodiscard]] std::vector<std::string> warningsFromRoundTrip(
+    [[nodiscard]] std::vector<std::string> getWarningsFromRoundTrip(
         std::optional<Size> recordedSize, std::optional<Size> expectedSize)
     {
         std::vector<std::string> warnings;
@@ -421,7 +421,7 @@ namespace
 
         const ReplayWriter writer(recordedSize);
         std::stringstream stream;
-        writer.write(aSession(), stream);
+        writer.write(getASession(), stream);
 
         const ReplayReader reader(
             CanvasCheckOptions{.canvasSize = expectedSize, .logger = logger});
@@ -433,7 +433,7 @@ namespace
 
 TEST(ReplayWriterReaderTest, Read_WarnsOnACanvasMismatch)
 {
-    const auto warnings = warningsFromRoundTrip(
+    const auto warnings = getWarningsFromRoundTrip(
         Size{.width = 1024, .height = 640},
         Size{.width = 800, .height = 600});
 
@@ -447,7 +447,7 @@ TEST(ReplayWriterReaderTest, Read_WarnsOnACanvasMismatch)
 TEST(ReplayWriterReaderTest, Read_SaysNothingWhenTheCanvasesMatch)
 {
     EXPECT_TRUE(
-        warningsFromRoundTrip(
+        getWarningsFromRoundTrip(
             Size{.width = 1024, .height = 640},
             Size{.width = 1024, .height = 640})
             .empty());
@@ -456,7 +456,7 @@ TEST(ReplayWriterReaderTest, Read_SaysNothingWhenTheCanvasesMatch)
 TEST(ReplayWriterReaderTest, Read_SaysNothingWithNoRecordedCanvas)
 {
     EXPECT_TRUE(
-        warningsFromRoundTrip(
+        getWarningsFromRoundTrip(
             std::nullopt, Size{.width = 800, .height = 600})
             .empty());
 }
@@ -464,7 +464,7 @@ TEST(ReplayWriterReaderTest, Read_SaysNothingWithNoRecordedCanvas)
 TEST(ReplayWriterReaderTest, Read_SaysNothingWhenTheCallerClaimsNone)
 {
     EXPECT_TRUE(
-        warningsFromRoundTrip(
+        getWarningsFromRoundTrip(
             Size{.width = 1024, .height = 640}, std::nullopt)
             .empty());
 }
@@ -473,10 +473,10 @@ TEST(ReplayWriterReaderTest, Read_HandlesAMismatchWithNoLogger)
 {
     const ReplayWriter writer(Size{.width = 1024, .height = 640});
     std::stringstream stream;
-    writer.write(aSession(), stream);
+    writer.write(getASession(), stream);
 
     const ReplayReader reader(
         CanvasCheckOptions{.canvasSize = Size{.width = 800, .height = 600}});
 
-    EXPECT_EQ(reader.read(stream), aSession());
+    EXPECT_EQ(reader.read(stream), getASession());
 }

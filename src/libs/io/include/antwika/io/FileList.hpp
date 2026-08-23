@@ -25,6 +25,6 @@ namespace antwika::io
     [[nodiscard]] std::string pathIn(
         const std::string &directory, const std::string &name);
 
-    [[nodiscard]] std::string entryText(const FileEntry &entry);
+    [[nodiscard]] std::string getEntryText(const FileEntry &entry);
 
 }

@@ -45,7 +45,7 @@ namespace
         {
         }
 
-        [[nodiscard]] const DrawList &commands() const noexcept
+        [[nodiscard]] const DrawList &getCommands() const noexcept
         {
             return picture;
         }
@@ -71,13 +71,13 @@ namespace
 
     constexpr Color kSurroundColor{.red = 0, .green = 0, .blue = 0};
 
-    [[nodiscard]] TickEvent tickEvent()
+    [[nodiscard]] TickEvent getTickEvent()
     {
         return TickEvent{
             .event = Event{.name = antwika::engine::events::kTick}};
     }
 
-    [[nodiscard]] Overlay overlay()
+    [[nodiscard]] Overlay getOverlay()
     {
         return Overlay(DrawList{
             FillRect{.rect = kOverlayRect, .color = kOverlayColor}});
@@ -99,7 +99,7 @@ TEST(FramePresentationTest, DrawsOn_IsFalseWhileTheWindowIsShut)
     NiceMock<MockWindow> window;
     ON_CALL(window, isOpen()).WillByDefault(Return(false));
 
-    EXPECT_FALSE(antwika::app::shouldDraw(tickEvent(), window));
+    EXPECT_FALSE(antwika::app::shouldDraw(getTickEvent(), window));
 }
 
 TEST(FramePresentationTest, DrawsOn_IsTrueOnATickIntoAnOpenWindow)
@@ -107,13 +107,13 @@ TEST(FramePresentationTest, DrawsOn_IsTrueOnATickIntoAnOpenWindow)
     NiceMock<MockWindow> window;
     ON_CALL(window, isOpen()).WillByDefault(Return(true));
 
-    EXPECT_TRUE(antwika::app::shouldDraw(tickEvent(), window));
+    EXPECT_TRUE(antwika::app::shouldDraw(getTickEvent(), window));
 }
 
 TEST(FramePresentationTest, PaintOver_PaintsEveryCommandTheOverlayHolds)
 {
     MockRenderer renderer;
-    const auto picture = overlay();
+    const auto picture = getOverlay();
 
     EXPECT_CALL(renderer, drawRect(RectF{kOverlayRect}, kOverlayColor));
 
@@ -123,7 +123,7 @@ TEST(FramePresentationTest, PaintOver_PaintsEveryCommandTheOverlayHolds)
 TEST(FramePresentationTest, PaintOver_PaintsAnOverlayThatIsMounted)
 {
     MockRenderer renderer;
-    const auto picture = overlay();
+    const auto picture = getOverlay();
     const OptionalOverlay mountedOverlay{std::cref(picture)};
 
     EXPECT_CALL(renderer, drawRect(RectF{kOverlayRect}, kOverlayColor));
@@ -164,7 +164,7 @@ TEST(FramePresentationTest, PresentFrame_PaintsTheOverlayLastOfAll)
     MockRenderer renderer;
     ON_CALL(window, renderer()).WillByDefault(ReturnRef(renderer));
 
-    const auto picture = overlay();
+    const auto picture = getOverlay();
 
     const InSequence order;
     EXPECT_CALL(renderer, drawRect(RectF{kSceneRect}, kSceneColor));
@@ -185,10 +185,10 @@ TEST(FramePresentationTest, PresentViewport_FillsTheLetterboxLastOfAll)
     NiceMock<MockWindow> window;
     MockRenderer renderer;
     ON_CALL(window, renderer()).WillByDefault(ReturnRef(renderer));
-    ON_CALL(window, size())
+    ON_CALL(window, getSize())
         .WillByDefault(Return(Size{.width = 200, .height = 100}));
 
-    const auto picture = overlay();
+    const auto picture = getOverlay();
 
     const InSequence order;
 

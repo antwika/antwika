@@ -30,16 +30,16 @@ namespace antwika::map
             = default;
     };
 
-    [[nodiscard]] std::vector<Layer> defaultLayers();
+    [[nodiscard]] std::vector<Layer> getDefaultLayers();
 
-    [[nodiscard]] std::vector<Layer> withLayerAdded(
+    [[nodiscard]] std::vector<Layer> getWithLayerAdded(
         const std::vector<Layer> &layers);
 
-    [[nodiscard]] std::string layerLabel(std::size_t layerIndex);
+    [[nodiscard]] std::string getLayerLabel(std::size_t layerIndex);
 
-    [[nodiscard]] std::vector<Layer> withLayerRemoved(
+    [[nodiscard]] std::vector<Layer> getWithLayerRemoved(
         const std::vector<Layer> &layers, std::size_t layerIndex);
 
-    [[nodiscard]] widget::WidgetId layerWidget(std::size_t layerIndex);
+    [[nodiscard]] widget::WidgetId getLayerWidget(std::size_t layerIndex);
 
 }

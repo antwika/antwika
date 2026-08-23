@@ -54,17 +54,17 @@ namespace antwika::map::mapfile
 
     constexpr std::string_view kSlotKey = "slot";
 
-    [[nodiscard]] nlohmann::json familySchema();
+    [[nodiscard]] nlohmann::json getFamilySchema();
 
-    [[nodiscard]] nlohmann::json decorSchema();
+    [[nodiscard]] nlohmann::json getDecorSchema();
 
-    [[nodiscard]] nlohmann::json flipSchema();
+    [[nodiscard]] nlohmann::json getFlipSchema();
 
-    [[nodiscard]] nlohmann::json transitionSchema();
+    [[nodiscard]] nlohmann::json getTransitionSchema();
 
-    [[nodiscard]] nlohmann::json characterSchemaLatest();
+    [[nodiscard]] nlohmann::json getCharacterSchemaLatest();
 
-    [[nodiscard]] inline std::vector<voxel::VoxelPosition> readCells(
+    [[nodiscard]] inline std::vector<voxel::VoxelPosition> getReadCells(
         const nlohmann::json &json)
     {
         std::vector<voxel::VoxelPosition> positions;
@@ -85,7 +85,7 @@ namespace antwika::map::mapfile
 
     void readGates(Map &map, const nlohmann::json &documentJson);
 
-    [[nodiscard]] nlohmann::json settingsSchema();
+    [[nodiscard]] nlohmann::json getSettingsSchema();
 
     void gatesSchemaWiring(nlohmann::json &schema);
 

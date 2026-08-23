@@ -106,7 +106,7 @@ namespace antwika::ecs
                 drivingEntities, drivingEntities.size(), pools);
         }
 
-        [[nodiscard]] std::size_t size() const noexcept
+        [[nodiscard]] std::size_t getSize() const noexcept
         {
             return static_cast<std::size_t>(std::distance(begin(), end()));
         }
@@ -121,7 +121,7 @@ namespace antwika::ecs
 
             auto consider = [&](auto *storage) // GCOVR_EXCL_LINE
             {
-                const auto entities = storage->entities();
+                const auto entities = storage->getEntities();
                 if (entities.size() < smallestSize) // GCOVR_EXCL_LINE
                 {
                     smallestSize = entities.size();

@@ -26,7 +26,7 @@ namespace antwika::ui
 
     inline constexpr Sizing kGrowSizing{.mode = SizeMode::Grow};
 
-    [[nodiscard]] constexpr Sizing fixedSize(std::uint32_t pixels) noexcept
+    [[nodiscard]] constexpr Sizing getFixedSize(std::uint32_t pixels) noexcept
     {
         return Sizing{.mode = SizeMode::Fixed, .pixels = pixels};
     }

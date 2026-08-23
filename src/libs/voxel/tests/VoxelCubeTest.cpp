@@ -23,14 +23,14 @@ namespace antwika::voxel
 
         TEST(VoxelCubeTest, CubeTop_StandsTheLowestCubeAtTheGround)
         {
-            EXPECT_EQ(cubeTop(0), kCubeSide - 1);
+            EXPECT_EQ(getCubeTop(0), kCubeSide - 1);
         }
 
         TEST(VoxelCubeTest, CubeTop_RisesOneCubeAtATime)
         {
             for (std::int32_t cube = -4; cube < 8; ++cube)
             {
-                EXPECT_EQ(cubeTop(cube + 1) - cubeTop(cube), kCubeSide);
+                EXPECT_EQ(getCubeTop(cube + 1) - getCubeTop(cube), kCubeSide);
             }
         }
 
@@ -38,7 +38,7 @@ namespace antwika::voxel
         {
             for (std::int32_t cube = -4; cube < 8; ++cube)
             {
-                EXPECT_EQ(cubeIndexOfLevel(cubeTop(cube)), cube);
+                EXPECT_EQ(getCubeIndexOfLevel(getCubeTop(cube)), cube);
             }
         }
 
@@ -46,29 +46,29 @@ namespace antwika::voxel
         {
             for (std::int32_t level = -8; level < 16; ++level)
             {
-                const auto cube = cubeIndexOfLevel(level);
+                const auto cube = getCubeIndexOfLevel(level);
 
-                EXPECT_LE(cubeTop(cube) - (kCubeSide - 1), level);
-                EXPECT_GE(cubeTop(cube), level);
+                EXPECT_LE(getCubeTop(cube) - (kCubeSide - 1), level);
+                EXPECT_GE(getCubeTop(cube), level);
             }
         }
 
         TEST(VoxelCubeTest, CubeIndexOfLevel_CountsOnDownUnderTheGround)
         {
-            EXPECT_EQ(cubeIndexOfLevel(0), 0);
-            EXPECT_EQ(cubeIndexOfLevel(-1), -1);
-            EXPECT_EQ(cubeIndexOfLevel(-2), -1);
-            EXPECT_EQ(cubeIndexOfLevel(-3), -2);
+            EXPECT_EQ(getCubeIndexOfLevel(0), 0);
+            EXPECT_EQ(getCubeIndexOfLevel(-1), -1);
+            EXPECT_EQ(getCubeIndexOfLevel(-2), -1);
+            EXPECT_EQ(getCubeIndexOfLevel(-3), -2);
         }
 
         TEST(VoxelCubeTest, CubeCells_HoldsAsManyVoxelsAsACubeHas)
         {
-            EXPECT_EQ(cubeCells(VoxelPosition{}).size(), kCubeVoxels);
+            EXPECT_EQ(getCubeCells(VoxelPosition{}).size(), kCubeVoxels);
         }
 
         TEST(VoxelCubeTest, CubeCells_HoldsNoVoxelTwice)
         {
-            const auto voxels = cubeCells(VoxelPosition{.x = 4, .y = -2});
+            const auto voxels = getCubeCells(VoxelPosition{.x = 4, .y = -2});
             const std::set<VoxelPosition> apartPositions(
                 voxels.begin(), voxels.end());
 
@@ -79,7 +79,7 @@ namespace antwika::voxel
         {
             const VoxelPosition cornerPosition{.x = 6, .y = -4, .z = 2};
 
-            for (const auto cell : cubeCells(cornerPosition))
+            for (const auto cell : getCubeCells(cornerPosition))
             {
                 EXPECT_GE(cell.x, cornerPosition.x);
                 EXPECT_GE(cell.y, cornerPosition.y);
@@ -94,7 +94,7 @@ namespace antwika::voxel
         {
             const VoxelPosition cornerPosition{.x = -6, .y = 2, .z = 4};
 
-            for (const auto cell : cubeCells(cornerPosition))
+            for (const auto cell : getCubeCells(cornerPosition))
             {
                 EXPECT_EQ(cubeCornerOf(cell), cornerPosition);
             }
@@ -117,9 +117,9 @@ namespace antwika::voxel
         TEST(VoxelCubeTest, CubeCornerOf_LeavesNoVoxelBetweenNeighbouringCubes)
         {
             const auto hereCells =
-                cubeCells(cubeCornerOf(VoxelPosition{.x = 0}));
+                getCubeCells(cubeCornerOf(VoxelPosition{.x = 0}));
             const auto thereCells =
-                cubeCells(cubeCornerOf(VoxelPosition{.x = kCubeSide}));
+                getCubeCells(cubeCornerOf(VoxelPosition{.x = kCubeSide}));
             std::set<VoxelPosition> bothPositions(hereCells.begin(),
                 hereCells.end());
 
@@ -136,7 +136,7 @@ namespace antwika::voxel
                 voxelsOf({VoxelCell{}, VoxelCell{.position = {.x = 1}}});
 
             EXPECT_EQ(
-                expandCubesToVoxels(voxels).size(),
+                getExpandCubesToVoxels(voxels).size(),
                 voxels.size() * kCubeVoxels);
         }
 
@@ -147,7 +147,7 @@ namespace antwika::voxel
                 VoxelCell{.position = {.x = 1}},
                 VoxelCell{.position = {.y = 1}},
                 VoxelCell{.position = {.x = -1, .z = 2}}});
-            const auto voxels = expandCubesToVoxels(cubeVoxels);
+            const auto voxels = getExpandCubesToVoxels(cubeVoxels);
 
             EXPECT_EQ(voxels.size(), cubeVoxels.size() * kCubeVoxels);
         }
@@ -156,7 +156,7 @@ namespace antwika::voxel
         {
             const auto cubeVoxels = voxelsOf({VoxelCell{.position = {.x = 2,
                 .y = -1}}});
-            const auto voxels = expandCubesToVoxels(cubeVoxels);
+            const auto voxels = getExpandCubesToVoxels(cubeVoxels);
             std::set<VoxelPosition> cubePositions;
 
             for (const auto &[position, material] : voxels)
@@ -171,7 +171,7 @@ namespace antwika::voxel
     VoxelCubeTest,
     ExpandCubesToVoxels_KeepsNeighbouringCellsNeighbours)
         {
-            const auto voxels = expandCubesToVoxels(
+            const auto voxels = getExpandCubesToVoxels(
                 voxelsOf({VoxelCell{}, VoxelCell{.position = {.x = 1}}}));
 
             EXPECT_TRUE(voxels.contains(VoxelPosition{.x = 1}));
@@ -198,18 +198,18 @@ namespace antwika::voxel
 
         TEST(VoxelCubeTest, Facing_TurnsEverySideIntoTheOneOpposite)
         {
-            EXPECT_EQ(facing(Side::Top), Side::Bottom);
-            EXPECT_EQ(facing(Side::Bottom), Side::Top);
-            EXPECT_EQ(facing(Side::Left), Side::Right);
-            EXPECT_EQ(facing(Side::Right), Side::Left);
+            EXPECT_EQ(getFacing(Side::Top), Side::Bottom);
+            EXPECT_EQ(getFacing(Side::Bottom), Side::Top);
+            EXPECT_EQ(getFacing(Side::Left), Side::Right);
+            EXPECT_EQ(getFacing(Side::Right), Side::Left);
         }
 
         TEST(VoxelCubeTest, Facing_ComesBackWhereItStartedTakenTwice)
         {
             for (const auto edge : kEveryFaceEdge)
             {
-                EXPECT_NE(facing(edge), edge);
-                EXPECT_EQ(facing(facing(edge)), edge);
+                EXPECT_NE(getFacing(edge), edge);
+                EXPECT_EQ(getFacing(getFacing(edge)), edge);
             }
         }
 
@@ -217,7 +217,7 @@ namespace antwika::voxel
         {
             for (const auto edge : kEveryFaceEdge)
             {
-                EXPECT_EQ(facing(edge).edge, edge.edge);
+                EXPECT_EQ(getFacing(edge).edge, edge.edge);
             }
         }
 
@@ -283,7 +283,7 @@ namespace antwika::voxel
 
         TEST(VoxelCubeTest, WithBlockAt_AndWithoutComeBackToWhereItWas)
         {
-            const auto beforeCells = expandCubesToVoxels(
+            const auto beforeCells = getExpandCubesToVoxels(
                 voxelsOf({VoxelCell{}, VoxelCell{.position = {.x = 1}}}));
             const auto updatedCells = withoutBlockAt(
                 withBlockAt(beforeCells, VoxelPosition{.x = 40}),
@@ -304,7 +304,7 @@ namespace antwika::voxel
     TEST(VoxelCubeTest, CubeVoxels_FillsThePlaceForASolidCube)
     {
     
-        const auto voxels = cubeVoxels(
+        const auto voxels = getCubeVoxels(
             VoxelPosition{}, Kind::Water, VoxelPosition{.x = 1});
 
         EXPECT_EQ(voxels.size(), kCubeVoxels);
@@ -319,7 +319,7 @@ namespace antwika::voxel
     {
     
         const auto voxels =
-            cubeVoxels(VoxelPosition{}, Kind::Ramp, VoxelPosition{.x = 1});
+            getCubeVoxels(VoxelPosition{}, Kind::Ramp, VoxelPosition{.x = 1});
 
         EXPECT_EQ(voxels.size(), 6U);
 
@@ -338,7 +338,7 @@ namespace antwika::voxel
     {
     
         const auto voxels =
-            cubeVoxels(VoxelPosition{}, Kind::Ramp, VoxelPosition{.z = -1});
+            getCubeVoxels(VoxelPosition{}, Kind::Ramp, VoxelPosition{.z = -1});
 
         for (const auto &[position, material] : voxels)
         {
@@ -395,7 +395,7 @@ TEST(VoxelCubeTest, WithBlockAt_ShapesARampTheWayItIsTold)
 {
     using antwika::voxel::Facing;
     using antwika::voxel::Kind;
-    using antwika::voxel::inferredRampDirection;
+    using antwika::voxel::getInferredRampDirection;
     using antwika::voxel::stepVectorFor;
     using antwika::voxel::withBlockAt;
 
@@ -408,7 +408,7 @@ TEST(VoxelCubeTest, WithBlockAt_ShapesARampTheWayItIsTold)
     {
         EXPECT_EQ(material.facing, Facing::North);
         EXPECT_EQ(
-            inferredRampDirection(voxels, position),
+            getInferredRampDirection(voxels, position),
             stepVectorFor(Facing::North));
     }
 }
@@ -432,14 +432,14 @@ TEST(VoxelCubeTest, WithBlockAt_TellsASolidBlockNothing)
 
 TEST(VoxelCubeTest, RampDirectionFor_IsDrawnByGroundAndNotByAnotherRamp)
 {
-    using antwika::voxel::cubeVoxels;
+    using antwika::voxel::getCubeVoxels;
     using antwika::voxel::rampDirectionFor;
     using antwika::voxel::Kind;
 
     antwika::voxel::Voxels voxels;
 
     for (const auto &[position, material] :
-         cubeVoxels(
+         getCubeVoxels(
              antwika::voxel::VoxelPosition{.x = 2},
              Kind::Ramp,
              antwika::voxel::VoxelPosition{.x = -1}))
@@ -448,7 +448,7 @@ TEST(VoxelCubeTest, RampDirectionFor_IsDrawnByGroundAndNotByAnotherRamp)
     }
 
     for (const auto &[position, material] :
-         cubeVoxels(
+         getCubeVoxels(
              antwika::voxel::VoxelPosition{.z = -2},
              Kind::Normal,
              antwika::voxel::VoxelPosition{}))
@@ -466,7 +466,7 @@ TEST(VoxelCubeTest, WithRampsRebuilt_TurnsARampToGroundLaidBesideIt)
     using antwika::voxel::Facing;
     using antwika::voxel::Kind;
     using antwika::voxel::kCubeSide;
-    using antwika::voxel::inferredRampDirection;
+    using antwika::voxel::getInferredRampDirection;
     using antwika::voxel::stepVectorFor;
     using antwika::voxel::VoxelCell;
 using antwika::voxel::VoxelPosition;
@@ -474,14 +474,14 @@ using antwika::voxel::voxelsOf;
 using antwika::voxel::Voxels;
     using antwika::voxel::withBlockAt;
     using antwika::voxel::withoutBlockAt;
-    using antwika::voxel::withRampsRebuilt;
+    using antwika::voxel::getWithRampsRebuilt;
 
     const VoxelPosition rampPosition{};
     const VoxelPosition southPosition{.z = kCubeSide};
     const VoxelPosition westPosition{.x = -kCubeSide};
 
     auto pile = withBlockAt({}, southPosition, Kind::Normal);
-    pile = withRampsRebuilt(
+    pile = getWithRampsRebuilt(
         withBlockAt(pile, rampPosition, Kind::Ramp), rampPosition);
 
     for (const auto &[position, material] : pile)
@@ -489,13 +489,13 @@ using antwika::voxel::Voxels;
         if (material.kind == Kind::Ramp)
         {
             EXPECT_EQ(
-                inferredRampDirection(pile, position),
+                getInferredRampDirection(pile, position),
                 stepVectorFor(Facing::South));
         }
     }
 
-    pile = withRampsRebuilt(withoutBlockAt(pile, southPosition), southPosition);
-    pile = withRampsRebuilt(
+    pile = getWithRampsRebuilt(withoutBlockAt(pile, southPosition), southPosition);
+    pile = getWithRampsRebuilt(
         withBlockAt(pile, westPosition, Kind::Normal), westPosition);
 
     auto stoodCount = 0;
@@ -505,7 +505,7 @@ using antwika::voxel::Voxels;
         if (material.kind == Kind::Ramp)
         {
             EXPECT_EQ(
-                inferredRampDirection(pile, position),
+                getInferredRampDirection(pile, position),
                 stepVectorFor(Facing::West));
             ++stoodCount;
         }
@@ -519,17 +519,17 @@ TEST(VoxelCubeTest, WithRampsRebuilt_LeavesARampThatWasToldItsWay)
     using antwika::voxel::Facing;
     using antwika::voxel::Kind;
     using antwika::voxel::kCubeSide;
-    using antwika::voxel::inferredRampDirection;
+    using antwika::voxel::getInferredRampDirection;
     using antwika::voxel::stepVectorFor;
     using antwika::voxel::VoxelPosition;
     using antwika::voxel::withBlockAt;
-    using antwika::voxel::withRampsRebuilt;
+    using antwika::voxel::getWithRampsRebuilt;
 
     const VoxelPosition rampPosition{};
     const VoxelPosition westPosition{.x = -kCubeSide};
 
     auto pile = withBlockAt({}, rampPosition, Kind::Ramp, Facing::North);
-    pile = withRampsRebuilt(
+    pile = getWithRampsRebuilt(
         withBlockAt(pile, westPosition, Kind::Normal), westPosition);
 
     for (const auto &[position, material] : pile)
@@ -537,7 +537,7 @@ TEST(VoxelCubeTest, WithRampsRebuilt_LeavesARampThatWasToldItsWay)
         if (material.kind == Kind::Ramp)
         {
             EXPECT_EQ(
-                inferredRampDirection(pile, position),
+                getInferredRampDirection(pile, position),
                 stepVectorFor(Facing::North));
         }
     }
@@ -549,16 +549,16 @@ TEST(VoxelCubeTest, WithRampsRebuilt_LeavesAPileItWouldLayTheSameWay)
     using antwika::voxel::kCubeSide;
     using antwika::voxel::VoxelPosition;
     using antwika::voxel::withBlockAt;
-    using antwika::voxel::withRampsRebuilt;
+    using antwika::voxel::getWithRampsRebuilt;
 
     const VoxelPosition rampPosition{};
     const VoxelPosition westPosition{.x = -kCubeSide};
 
     auto pile = withBlockAt({}, westPosition, Kind::Normal);
-    pile = withRampsRebuilt(
+    pile = getWithRampsRebuilt(
         withBlockAt(pile, rampPosition, Kind::Ramp), rampPosition);
 
-    const auto rebuiltCells = withRampsRebuilt(pile, westPosition);
+    const auto rebuiltCells = getWithRampsRebuilt(pile, westPosition);
 
     EXPECT_EQ(rebuiltCells, pile);
 }

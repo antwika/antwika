@@ -32,13 +32,13 @@ TEST(EntropyDeterminismTest, PickNext_OrdersExactlyAcrossEveryCount)
 
     for (std::size_t remaining = waveDomains.size(); remaining > 0; --remaining)
     {
-        ASSERT_TRUE(entropyIndex.pickNext().has_value());
-        EXPECT_EQ(*entropyIndex.pickNext(), remaining - 1);
+        ASSERT_TRUE(entropyIndex.getPickNext().has_value());
+        EXPECT_EQ(*entropyIndex.getPickNext(), remaining - 1);
         entropyIndex.update(
             remaining - 1, Domain::createSingleton(0, 8));
     }
 
-    EXPECT_FALSE(entropyIndex.pickNext().has_value());
+    EXPECT_FALSE(entropyIndex.getPickNext().has_value());
 }
 
 TEST(EntropyDeterminismTest, PickNext_BreaksAWeightedTieOnIndex)
@@ -53,13 +53,13 @@ TEST(EntropyDeterminismTest, PickNext_BreaksAWeightedTieOnIndex)
     const std::vector<double> weights{1.0, 1.0, 1.0, 1.0 + 1e-5};
     EntropyIndex entropyIndex({cell0Domain, cell1Domain}, weights);
 
-    ASSERT_TRUE(entropyIndex.pickNext().has_value());
-    EXPECT_EQ(*entropyIndex.pickNext(), 0U);
+    ASSERT_TRUE(entropyIndex.getPickNext().has_value());
+    EXPECT_EQ(*entropyIndex.getPickNext(), 0U);
 }
 
 namespace
 {
-    std::vector<Domain> waveTheWeightsReorder()
+    std::vector<Domain> getWaveTheWeightsReorder()
     {
         Domain cell1Domain(3);
         cell1Domain.remove(2);
@@ -72,9 +72,9 @@ TEST(EntropyDeterminismTest, Solve_RepeatsAWeightedAssignment)
     AllDifferentConstraint allDifferent({0, 1});
     const std::vector<double> weights{1.0, 1.0, 1000.0};
 
-    Solver solver(waveTheWeightsReorder(), {std::cref(allDifferent)}, weights);
-    const auto first = solver.solve();
-    const auto second = solver.solve();
+    Solver solver(getWaveTheWeightsReorder(), {std::cref(allDifferent)}, weights);
+    const auto first = solver.getSolve();
+    const auto second = solver.getSolve();
 
     EXPECT_EQ(first.outcome, SolveOutcome::Solved);
     EXPECT_EQ(first.assignment, (std::vector<std::size_t>{0, 1}));
@@ -86,8 +86,8 @@ TEST(EntropyDeterminismTest, Solve_OpensOnTheOtherCellWhenUnweighted)
 {
     AllDifferentConstraint allDifferent({0, 1});
 
-    Solver solver(waveTheWeightsReorder(), {std::cref(allDifferent)});
-    const auto result = solver.solve();
+    Solver solver(getWaveTheWeightsReorder(), {std::cref(allDifferent)});
+    const auto result = solver.getSolve();
 
     EXPECT_EQ(result.outcome, SolveOutcome::Solved);
     EXPECT_EQ(result.assignment, (std::vector<std::size_t>{1, 0}));

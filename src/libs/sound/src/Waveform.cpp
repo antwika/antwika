@@ -5,7 +5,7 @@
 namespace antwika::sound
 {
 
-    FrameCount Waveform::frameCount() const noexcept
+    FrameCount Waveform::getFrameCount() const noexcept
     {
         if (format.channels == 0)
         {

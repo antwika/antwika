@@ -10,13 +10,13 @@
 
 using antwika::gfx::Color;
 using antwika::gfx::Size;
-using antwika::ui::scaledTheme;
-using antwika::ui::scaleForCanvas;
+using antwika::ui::getScaledTheme;
+using antwika::ui::getScaleForCanvas;
 using antwika::ui::Theme;
 
 namespace
 {
-    [[nodiscard]] constexpr Color rgb(
+    [[nodiscard]] constexpr Color getRgb(
         std::uint8_t red, std::uint8_t green, std::uint8_t blue)
     {
         return Color{.red = red, .green = green, .blue = blue};
@@ -38,43 +38,43 @@ TEST(ThemeTest, Theme_DefaultsToADarkChromeWithLightInk)
 {
     constexpr Theme theme{};
 
-    EXPECT_EQ(rgb(28, 30, 38), theme.panelColor);
-    EXPECT_EQ(rgb(232, 236, 232), theme.textColor);
-    EXPECT_EQ(rgb(120, 140, 128), theme.mutedColor);
-    EXPECT_EQ(rgb(48, 52, 64), theme.buttonIdleColor);
-    EXPECT_EQ(rgb(68, 74, 92), theme.buttonHoveredColor);
-    EXPECT_EQ(rgb(32, 36, 44), theme.buttonPressedColor);
-    EXPECT_EQ(rgb(240, 240, 240), theme.buttonTextColor);
+    EXPECT_EQ(getRgb(28, 30, 38), theme.panelColor);
+    EXPECT_EQ(getRgb(232, 236, 232), theme.textColor);
+    EXPECT_EQ(getRgb(120, 140, 128), theme.mutedColor);
+    EXPECT_EQ(getRgb(48, 52, 64), theme.buttonIdleColor);
+    EXPECT_EQ(getRgb(68, 74, 92), theme.buttonHoveredColor);
+    EXPECT_EQ(getRgb(32, 36, 44), theme.buttonPressedColor);
+    EXPECT_EQ(getRgb(240, 240, 240), theme.buttonTextColor);
 }
 
 TEST(ThemeTest, Theme_DefaultsToADarkerFieldThanItsPanel)
 {
     constexpr Theme theme{};
 
-    EXPECT_EQ(rgb(20, 22, 28), theme.fieldColor);
-    EXPECT_EQ(rgb(14, 16, 20), theme.fieldFocusedColor);
-    EXPECT_EQ(rgb(232, 236, 232), theme.caretColor);
-    EXPECT_EQ(rgb(44, 72, 116), theme.selectionColor);
-    EXPECT_EQ(rgb(38, 84, 52), theme.highlightColor);
-    EXPECT_EQ(rgb(30, 33, 42), theme.scrollTrackColor);
-    EXPECT_EQ(rgb(78, 86, 106), theme.scrollThumbColor);
+    EXPECT_EQ(getRgb(20, 22, 28), theme.fieldColor);
+    EXPECT_EQ(getRgb(14, 16, 20), theme.fieldFocusedColor);
+    EXPECT_EQ(getRgb(232, 236, 232), theme.caretColor);
+    EXPECT_EQ(getRgb(44, 72, 116), theme.selectionColor);
+    EXPECT_EQ(getRgb(38, 84, 52), theme.highlightColor);
+    EXPECT_EQ(getRgb(30, 33, 42), theme.scrollTrackColor);
+    EXPECT_EQ(getRgb(78, 86, 106), theme.scrollThumbColor);
 }
 
 TEST(ThemeTest, ScaleForCanvas_IsOneForASmallCanvas)
 {
     EXPECT_EQ(
-        1U, scaleForCanvas(Size{.width = 320, .height = 100}));
+        1U, getScaleForCanvas(Size{.width = 320, .height = 100}));
 }
 
 TEST(ThemeTest, ScaleForCanvas_GrowsWithTheCanvasHeight)
 {
     EXPECT_EQ(
-        3U, scaleForCanvas(Size{.width = 1280, .height = 720}));
+        3U, getScaleForCanvas(Size{.width = 1280, .height = 720}));
 }
 
 TEST(ThemeTest, ScaledTheme_MultipliesEveryMetric)
 {
-    const auto theme = scaledTheme(Theme{}, 3);
+    const auto theme = getScaledTheme(Theme{}, 3);
 
     EXPECT_EQ(3U, theme.textScale);
     EXPECT_EQ(12U, theme.padding);
@@ -87,9 +87,9 @@ TEST(ThemeTest, ScaledTheme_CarriesColorsOverUntouched)
 {
     constexpr Theme baseTheme{};
 
-    const auto theme = scaledTheme(baseTheme, 4);
+    const auto theme = getScaledTheme(baseTheme, 4);
 
-    EXPECT_EQ(rgb(232, 236, 232), theme.textColor);
+    EXPECT_EQ(getRgb(232, 236, 232), theme.textColor);
 
     EXPECT_EQ(baseTheme.panelColor, theme.panelColor);
     EXPECT_EQ(baseTheme.textColor, theme.textColor);
@@ -102,7 +102,7 @@ TEST(ThemeTest, ScaledTheme_CarriesColorsOverUntouched)
 
 TEST(ThemeTest, ScaledTheme_AtZeroLeavesNoMetrics)
 {
-    const auto theme = scaledTheme(Theme{}, 0);
+    const auto theme = getScaledTheme(Theme{}, 0);
 
     EXPECT_EQ(0U, theme.textScale);
     EXPECT_EQ(0U, theme.padding);
@@ -115,7 +115,7 @@ TEST(ThemeTest, ScaledTheme_ClampsAMetricThatWouldOverflow)
 {
     constexpr auto kMax = std::numeric_limits<std::uint32_t>::max();
 
-    const auto theme = scaledTheme(Theme{}, kMax);
+    const auto theme = getScaledTheme(Theme{}, kMax);
 
     EXPECT_EQ(kMax, theme.padding);
 }

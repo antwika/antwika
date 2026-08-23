@@ -7,7 +7,7 @@
 namespace antwika::app
 {
 
-    std::optional<antwika::time::Tick> parseMaxTicks(
+    std::optional<antwika::time::Tick> getParseMaxTicks(
         const std::optional<std::string_view> value,
         const std::optional<antwika::time::Tick> fallbackTick)
     {

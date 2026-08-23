@@ -63,7 +63,7 @@ namespace antwika::voxelmap
         return position.y;
     }
 
-    std::int32_t topLevel(const voxel::Voxels &voxels)
+    std::int32_t getTopLevel(const voxel::Voxels &voxels)
     {
         if (voxels.empty())
         {
@@ -80,7 +80,7 @@ namespace antwika::voxelmap
         return highest;
     }
 
-    std::int32_t bottomLevel(const voxel::Voxels &voxels)
+    std::int32_t getBottomLevel(const voxel::Voxels &voxels)
     {
         if (voxels.empty())
         {
@@ -97,7 +97,7 @@ namespace antwika::voxelmap
         return lowest;
     }
 
-    std::vector<tilemap::Tile> defaultTiles(
+    std::vector<tilemap::Tile> getDefaultTiles(
         const std::vector<FaceRef> &faces)
     {
         std::vector<tilemap::Tile> tiles;
@@ -112,18 +112,18 @@ namespace antwika::voxelmap
                            ? tilemap::Atlas::Floor
                            : tilemap::Atlas::Wall,
                     .index = static_cast<std::uint16_t>(
-                        defaultTileIndex(face.cell.position, face.side))});
+                        getDefaultTileIndex(face.cell.position, face.side))});
         }
 
         return tiles;
     } // GCOVR_EXCL_LINE
 
-    gfx::Vec3 voxelsCenter(const voxel::Voxels &voxels)
+    gfx::Vec3 getVoxelsCenter(const voxel::Voxels &voxels)
     {
         return middleOf(voxels) * voxel::kVoxelSide;
     }
 
-    gfx::Vec3 cellMiddle(const voxel::VoxelPosition position)
+    gfx::Vec3 getCellMiddle(const voxel::VoxelPosition position)
     {
         return gfx::Vec3{
             (static_cast<float>(position.x) + 0.5F) * voxel::kVoxelSide,
@@ -131,7 +131,7 @@ namespace antwika::voxelmap
             (static_cast<float>(position.z) + 0.5F) * voxel::kVoxelSide};
     }
 
-    std::size_t defaultTileIndex(
+    std::size_t getDefaultTileIndex(
         const voxel::VoxelPosition position, const std::size_t face)
     {
         const auto apart =
@@ -147,7 +147,7 @@ namespace antwika::voxelmap
                        : wrappedIndex);
     }
 
-    voxel::Voxels demoCells()
+    voxel::Voxels getDemoCells()
     {
         voxel::Voxels voxels;
 
@@ -166,11 +166,11 @@ namespace antwika::voxelmap
         return voxels;
     } // GCOVR_EXCL_LINE
 
-    gfx::Mat4 modelRotation(
+    gfx::Mat4 getModelRotation(
         const float yawRadians, const float pitchRadians)
     {
         const auto rotationMatrix = glm::rotate(
-            gfx::identityMatrix(),
+            gfx::getIdentityMatrix(),
             pitchRadians,
             gfx::Vec3{1.0F, 0.0F, 0.0F});
 

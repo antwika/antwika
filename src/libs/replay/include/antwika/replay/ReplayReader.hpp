@@ -18,7 +18,7 @@ namespace antwika::replay
     public:
         explicit ReplayReader(
             CanvasCheckOptions check = {},
-            MigrationChain migrations = standardReplayMigrations());
+            MigrationChain migrations = getStandardReplayMigrations());
 
         [[nodiscard]] std::vector<TickEvent> read(
             std::istream &inputStream) const;

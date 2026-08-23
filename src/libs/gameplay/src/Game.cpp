@@ -46,22 +46,22 @@ namespace antwika::gameplay
         world.add<component::Orientation>(eyeEntity, component::Orientation{});
     }
 
-    ecs::World &Game::world() noexcept
+    ecs::World &Game::getWorld() noexcept
     {
-        return loop.world();
+        return loop.getWorld();
     }
 
-    const ecs::World &Game::world() const noexcept
+    const ecs::World &Game::getWorld() const noexcept
     {
-        return loop.world();
+        return loop.getWorld();
     }
 
-    ecs::Entity Game::eye() const noexcept
+    ecs::Entity Game::getEye() const noexcept
     {
         return eyeEntity;
     }
 
-    ecs::Entity Game::player() const noexcept
+    ecs::Entity Game::getPlayer() const noexcept
     {
         return playerEntity;
     }
@@ -126,27 +126,27 @@ namespace antwika::gameplay
     gfx::Vec3 Game::playerAt() const
     {
         const auto stoodPosition =
-            loop.world().get<component::Position>(playerEntity);
+            loop.getWorld().get<component::Position>(playerEntity);
 
         return gfx::Vec3{stoodPosition.x, stoodPosition.y, stoodPosition.z};
     }
 
-    GateState &Game::gates() noexcept
+    GateState &Game::getGates() noexcept
     {
         return gateState;
     }
 
-    const GateState &Game::gates() const noexcept
+    const GateState &Game::getGates() const noexcept
     {
         return gateState;
     }
 
-    camera::CameraTransform &Game::cameraTransform() noexcept
+    camera::CameraTransform &Game::getCameraTransform() noexcept
     {
         return playTransform;
     }
 
-    const camera::CameraTransform &Game::cameraTransform() const noexcept
+    const camera::CameraTransform &Game::getCameraTransform() const noexcept
     {
         return playTransform;
     }
@@ -164,7 +164,7 @@ namespace antwika::gameplay
     void Game::aimAt(const gfx::Mat4 &modelMatrix, const gfx::Vec3 position)
     {
         cameraPosition = position;
-        playTransform = camera::centeredOn(
+        playTransform = camera::getCenteredOn(
             playTransform,
             gfx::Vec3(modelMatrix * gfx::Vec4{cameraPosition, 1.0F}));
     }
@@ -173,7 +173,7 @@ namespace antwika::gameplay
     {
         cameraPosition =
             cameraPosition + ((position - cameraPosition) * kCameraFollowLerp);
-        playTransform = camera::centeredOn(
+        playTransform = camera::getCenteredOn(
             playTransform,
             gfx::Vec3(modelMatrix * gfx::Vec4{cameraPosition, 1.0F}));
     }
@@ -187,13 +187,13 @@ namespace antwika::gameplay
         stopsGoalPosition = goalPosition;
     }
 
-    const std::vector<gfx::Vec3> &Game::path() const noexcept
+    const std::vector<gfx::Vec3> &Game::getPath() const noexcept
     {
         return stopPositions;
     }
 
     const std::optional<voxel::VoxelPosition> &
-    Game::pathGoal() const noexcept
+    Game::getPathGoal() const noexcept
     {
         return stopsGoalPosition;
     }
@@ -213,12 +213,12 @@ namespace antwika::gameplay
             return;
         }
 
-        const auto keysHeld = wasdDirectionKeys.axisX() != 0.0F
-                           || wasdDirectionKeys.axisZ() != 0.0F
-                           || arrowDirectionKeys.axisX() != 0.0F
-                           || arrowDirectionKeys.axisZ() != 0.0F;
+        const auto keysHeld = wasdDirectionKeys.getAxisX() != 0.0F
+                           || wasdDirectionKeys.getAxisZ() != 0.0F
+                           || arrowDirectionKeys.getAxisX() != 0.0F
+                           || arrowDirectionKeys.getAxisZ() != 0.0F;
         const auto standing =
-            loop.world().get<component::Position>(playerEntity);
+            loop.getWorld().get<component::Position>(playerEntity);
 
         while (!keysHeld && stopIndex < stopPositions.size())
         {
@@ -242,16 +242,16 @@ namespace antwika::gameplay
         intentSystem.clearSteering();
     }
 
-    map::Progress Game::progress(std::string mapName) const
+    map::Progress Game::getProgress(std::string mapName) const
     {
         const auto stoodPosition =
-            loop.world().get<component::Position>(playerEntity);
+            loop.getWorld().get<component::Position>(playerEntity);
 
         return map::Progress{
             .map = std::move(mapName),
             .stancePlacement = map::Placement{
                 .position = collision::positionOf(stoodPosition),
-                .way = loop.world()
+                .way = loop.getWorld()
                            .get<component::AnimationState>(
                                playerEntity)
                            .direction}};

@@ -10,7 +10,7 @@ namespace antwika::gfx
     public:
         virtual ~ITexture() = default;
 
-        [[nodiscard]] virtual Size size() const = 0;
+        [[nodiscard]] virtual Size getSize() const = 0;
     };
 
 }

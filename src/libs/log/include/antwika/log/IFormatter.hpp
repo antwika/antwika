@@ -13,7 +13,7 @@ namespace antwika::log
     public:
         virtual ~IFormatter() = default;
 
-        [[nodiscard]] virtual std::string format(
+        [[nodiscard]] virtual std::string getFormat(
             std::chrono::system_clock::time_point time,
             Level level,
             std::string_view message) const = 0;

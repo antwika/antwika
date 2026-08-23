@@ -39,7 +39,7 @@ namespace antwika::input
             ')', '!', '@', '#', '$', '%', '^', '&', '*', '('};
     }
 
-    std::string charTypedBy(const Key key, const bool shiftHeld)
+    std::string getCharTypedBy(const Key key, const bool shiftHeld)
     {
         const auto rank = rankOf(key);
 

@@ -35,28 +35,28 @@ namespace antwika::tile
     [[nodiscard]] const TransitionTile *transitionOf(
         std::span<const TransitionTile> transitions, tilemap::Tile slotTile);
 
-    [[nodiscard]] bool maskSelectsFirst(
+    [[nodiscard]] bool isMaskSelectsFirst(
         const gfx::Bitmap &sheetBitmap,
         std::size_t x,
         std::size_t y,
         gfx::Color firstColor);
 
-    [[nodiscard]] std::vector<bool> maskEdgeBits(
+    [[nodiscard]] std::vector<bool> getMaskEdgeBits(
         const gfx::Bitmap &sheetBitmap,
         tilemap::Tile maskTile,
         voxel::Side side,
         gfx::Color firstColor);
 
-    [[nodiscard]] gfx::Bitmap compositedAtlas(
+    [[nodiscard]] gfx::Bitmap getCompositedAtlas(
         gfx::Bitmap sheetBitmap,
         tilemap::Atlas atlas,
         std::span<const TransitionTile> transitions,
         std::span<const gfx::Color> paletteColors);
 
-    [[nodiscard]] std::optional<tilemap::Tile> firstUnusedTile(
+    [[nodiscard]] std::optional<tilemap::Tile> getFirstUnusedTile(
         const tilemap::Tilemap &tilemap, tilemap::Atlas atlas);
 
-    [[nodiscard]] TileRules rulesWithTransitions(
+    [[nodiscard]] TileRules getRulesWithTransitions(
         const TileRules &rules,
         std::span<const TransitionTile> transitions,
         const gfx::Bitmap &uprightBitmap,
@@ -67,7 +67,7 @@ namespace antwika::tile
 
     inline constexpr widget::WidgetId kRemoveTransitionWidget{352};
 
-    [[nodiscard]] widget::WidgetId transitionRowWidget(
+    [[nodiscard]] widget::WidgetId getTransitionRowWidget(
         std::size_t rowIndex);
 
 }

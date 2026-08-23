@@ -10,7 +10,7 @@ namespace antwika::decor
 
     namespace
     {
-        using decordetail::hashMix;
+        using decordetail::getHashMix;
 
         [[nodiscard]] std::uint32_t rolledAt(
             const voxelmap::FaceRef &face, const std::uint32_t seed)
@@ -26,7 +26,7 @@ namespace antwika::decor
                      * 2654435761U;
             mixedSeed ^= seed * 2246822519U;
 
-            return hashMix(mixedSeed | 1U);
+            return getHashMix(mixedSeed | 1U);
         }
 
         [[nodiscard]] std::uint32_t weightOf(
@@ -60,7 +60,7 @@ namespace antwika::decor
         }
     }
 
-    const VariantGroup *groupLedBy(
+    const VariantGroup *getGroupLedBy(
         const std::span<const VariantGroup> familyGroups,
         const tilemap::Tile tile)
     {
@@ -75,7 +75,7 @@ namespace antwika::decor
         return nullptr;
     }
 
-    const VariantGroup *groupContaining(
+    const VariantGroup *getGroupContaining(
         const std::span<const VariantGroup> familyGroups,
         const tilemap::Tile tile)
     {
@@ -97,12 +97,12 @@ namespace antwika::decor
         const std::span<const VariantGroup> familyGroups,
         const tilemap::Tile tile)
     {
-        const auto *group = groupContaining(familyGroups, tile);
+        const auto *group = getGroupContaining(familyGroups, tile);
 
         return group == nullptr ? tile : group->canonicalTile;
     }
 
-    std::vector<VariantGroup> withVariantToggled(
+    std::vector<VariantGroup> getWithVariantToggled(
         const std::vector<VariantGroup> &familyGroups,
         const tilemap::Tile canonicalTile,
         const tilemap::Tile tile)
@@ -152,7 +152,7 @@ namespace antwika::decor
         return updatedGroups;
     } // GCOVR_EXCL_LINE
 
-    std::vector<VariantGroup> withVariantWeightSet(
+    std::vector<VariantGroup> getWithVariantWeightSet(
         const std::vector<VariantGroup> &familyGroups,
         const tilemap::Tile tile,
         const std::uint8_t weight)
@@ -191,14 +191,14 @@ namespace antwika::decor
         const tilemap::Tile tile)
     {
         if (canonicalTile == tile || canonicalTile.atlas != tile.atlas
-            || groupContaining(familyGroups, canonicalTile) != nullptr
-            || groupLedBy(familyGroups, tile) != nullptr
+            || getGroupContaining(familyGroups, canonicalTile) != nullptr
+            || getGroupLedBy(familyGroups, tile) != nullptr
             || decorOf(decor, tile) != nullptr)
         {
             return false;
         }
 
-        const auto *group = groupContaining(familyGroups, tile);
+        const auto *group = getGroupContaining(familyGroups, tile);
 
         if (group != nullptr && group->canonicalTile != canonicalTile)
         {
@@ -212,7 +212,7 @@ namespace antwika::decor
                && rules.levelOf(tile) == voxel::StairHalf::Any;
     }
 
-    std::vector<tilemap::Tile> withVariantsApplied(
+    std::vector<tilemap::Tile> getWithVariantsApplied(
         const std::vector<voxelmap::FaceRef> &faces,
         const std::span<const tilemap::Tile> wovenTiles,
         const std::span<const VariantGroup> familyGroups,
@@ -229,7 +229,7 @@ namespace antwika::decor
              index < faces.size() && index < tiles.size();
              ++index)
         {
-            const auto *family = groupLedBy(familyGroups, tiles.at(index));
+            const auto *family = getGroupLedBy(familyGroups, tiles.at(index));
 
             if (family == nullptr)
             {

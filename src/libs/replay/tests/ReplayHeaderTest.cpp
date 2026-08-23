@@ -11,7 +11,7 @@ using antwika::replay::ReplayHeader;
 
 namespace
 {
-    [[nodiscard]] ReplayHeader aHeader()
+    [[nodiscard]] ReplayHeader getAHeader()
     {
         return ReplayHeader{
             .version = kReplayDocumentVersion,
@@ -21,31 +21,31 @@ namespace
 
 TEST(ReplayHeaderTest, OperatorEquals_MatchesAnIdenticalHeader)
 {
-    EXPECT_EQ(aHeader(), aHeader());
+    EXPECT_EQ(getAHeader(), getAHeader());
 }
 
 TEST(ReplayHeaderTest, OperatorEquals_SeparatesADifferentVersion)
 {
-    ReplayHeader otherHeader = aHeader();
+    ReplayHeader otherHeader = getAHeader();
     otherHeader.version = kReplayDocumentVersion + 1;
 
-    EXPECT_NE(aHeader(), otherHeader);
+    EXPECT_NE(getAHeader(), otherHeader);
 }
 
 TEST(ReplayHeaderTest, OperatorEquals_SeparatesOneStatedCanvas)
 {
-    ReplayHeader otherHeader = aHeader();
+    ReplayHeader otherHeader = getAHeader();
     otherHeader.canvasSize.reset();
 
-    EXPECT_NE(aHeader(), otherHeader);
+    EXPECT_NE(getAHeader(), otherHeader);
 }
 
 TEST(ReplayHeaderTest, OperatorEquals_SeparatesTwoUnequalCanvases)
 {
-    ReplayHeader otherHeader = aHeader();
+    ReplayHeader otherHeader = getAHeader();
     otherHeader.canvasSize = Size{.width = 800, .height = 600};
 
-    EXPECT_NE(aHeader(), otherHeader);
+    EXPECT_NE(getAHeader(), otherHeader);
 }
 
 TEST(ReplayHeaderTest, OperatorEquals_MatchesTwoHeadersWithNoCanvas)

@@ -11,7 +11,7 @@ namespace antwika::input
     class InMemoryClipboard final : public IClipboard
     {
     public:
-        [[nodiscard]] std::string text() const override;
+        [[nodiscard]] std::string getText() const override;
 
         void setText(std::string_view text) override;
 

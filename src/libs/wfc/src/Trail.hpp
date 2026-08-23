@@ -17,7 +17,7 @@ namespace antwika::wfc::detail
     public:
         void record(std::size_t cell, std::size_t value);
 
-        [[nodiscard]] std::size_t checkpoint() const;
+        [[nodiscard]] std::size_t getCheckpoint() const;
 
         void rewindTo(
             std::size_t checkpoint,

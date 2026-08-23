@@ -24,7 +24,7 @@ namespace antwika::input::raylib
                 {MouseButton::X2, MOUSE_BUTTON_EXTRA},
             }};
 
-        [[nodiscard]] Position positionNow()
+        [[nodiscard]] Position getPositionNow()
         {
             const Vector2 position = GetMousePosition();
 
@@ -142,7 +142,7 @@ namespace antwika::input::raylib
 
                 for (const auto &entry : kKeys)
                 {
-                    if (keyIndex(entry.first) == index)
+                    if (getKeyIndex(entry.first) == index)
                     {
                         ++rows;
                     }
@@ -162,7 +162,7 @@ namespace antwika::input::raylib
             "kKeys must give every Key a raylib code exactly once, "
             "kUnmappedKey where raylib has none");
 
-        [[nodiscard]] KeyModifiers modifiersNow()
+        [[nodiscard]] KeyModifiers getModifiersNow()
         {
             return KeyModifiers{
                 .shift = IsKeyDown(KEY_LEFT_SHIFT)
@@ -175,7 +175,7 @@ namespace antwika::input::raylib
                          || IsKeyDown(KEY_RIGHT_SUPER)};
         }
 
-        [[nodiscard]] std::optional<Key> keyFromCode(const int code)
+        [[nodiscard]] std::optional<Key> getKeyFromCode(const int code)
         {
             for (const auto &[key, raylibKey] : kKeys)
             {
@@ -194,12 +194,12 @@ namespace antwika::input::raylib
         logger.log(Level::Debug, "input.raylib: reading the mouse");
     }
 
-    std::string_view RaylibInputBackend::name() const
+    std::string_view RaylibInputBackend::getName() const
     {
         return "raylib";
     }
 
-    InputCapabilities RaylibInputBackend::capabilities() const
+    InputCapabilities RaylibInputBackend::getCapabilities() const
     {
         return InputCapabilities{.keyboard = true, .pointer = true};
     }
@@ -229,7 +229,7 @@ namespace antwika::input::raylib
             return;
         }
 
-        const auto position = positionNow();
+        const auto position = getPositionNow();
 
         if (!lastPosition)
         {
@@ -244,7 +244,7 @@ namespace antwika::input::raylib
         for (const auto &[button, raylibButton] : kButtons)
         {
             const bool down = IsMouseButtonDown(raylibButton);
-            auto &wasDown = heldButtons[mouseButtonIndex(button)];
+            auto &wasDown = heldButtons[getMouseButtonIndex(button)];
 
             if (down == wasDown)
             {
@@ -258,39 +258,39 @@ namespace antwika::input::raylib
                 pendingEvents.push_back(PointerButtonPressed{
                     .button = button,
                     .position = position,
-                    .modifiers = modifiersNow()});
+                    .modifiers = getModifiersNow()});
             }
             else
             {
                 pendingEvents.push_back(PointerButtonReleased{
                     .button = button,
                     .position = position,
-                    .modifiers = modifiersNow()});
+                    .modifiers = getModifiersNow()});
             }
         }
 
         for (int code = GetKeyPressed(); code != 0;
              code = GetKeyPressed())
         {
-            const auto key = keyFromCode(code);
+            const auto key = getKeyFromCode(code);
 
             if (!key.has_value())
             {
                 continue;
             }
 
-            auto &wasDown = heldKeys[keyIndex(*key)];
+            auto &wasDown = heldKeys[getKeyIndex(*key)];
 
             pendingEvents.push_back(KeyPressed{
                 .key = *key,
-                .modifiers = modifiersNow(),
+                .modifiers = getModifiersNow(),
                 .repeat = wasDown});
             wasDown = true;
         }
 
         for (const auto &[key, raylibKey] : kKeys)
         {
-            auto &wasDown = heldKeys[keyIndex(key)];
+            auto &wasDown = heldKeys[getKeyIndex(key)];
 
             if (raylibKey == kUnmappedKey || !wasDown
                 || IsKeyDown(raylibKey))
@@ -300,10 +300,10 @@ namespace antwika::input::raylib
 
             wasDown = false;
             pendingEvents.push_back(KeyReleased{
-                .key = key, .modifiers = modifiersNow()});
+                .key = key, .modifiers = getModifiersNow()});
         }
 
-        const auto frame = antwika::raylib::frameCount();
+        const auto frame = antwika::raylib::getFrameCount();
 
         if (frame == lastWheelFrame)
         {

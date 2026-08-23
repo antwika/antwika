@@ -22,7 +22,7 @@ namespace antwika::editor
         Settings,
     };
 
-    [[nodiscard]] constexpr Menu lastEnumerator(Menu) noexcept
+    [[nodiscard]] constexpr Menu getLastEnumerator(Menu) noexcept
     {
         return Menu::Settings;
     }
@@ -54,7 +54,7 @@ namespace antwika::editor
         AboveHidden,
     };
 
-    [[nodiscard]] constexpr MenuItem lastEnumerator(MenuItem) noexcept
+    [[nodiscard]] constexpr MenuItem getLastEnumerator(MenuItem) noexcept
     {
         return MenuItem::AboveHidden;
     }
@@ -62,17 +62,17 @@ namespace antwika::editor
     inline constexpr std::array<Menu, 3> kBarMenus{
         Menu::File, Menu::Edit, Menu::View};
 
-    [[nodiscard]] std::string_view menuName(Menu menu);
+    [[nodiscard]] std::string_view getMenuName(Menu menu);
 
-    [[nodiscard]] std::string_view itemName(MenuItem item);
+    [[nodiscard]] std::string_view getItemName(MenuItem item);
 
     [[nodiscard]] std::span<const MenuItem> itemsOf(Menu menu);
 
     [[nodiscard]] bool isToggle(MenuItem item);
 
-    [[nodiscard]] widget::WidgetId menuWidget(Menu menu);
+    [[nodiscard]] widget::WidgetId getMenuWidget(Menu menu);
 
-    [[nodiscard]] widget::WidgetId firstItemWidget(Menu menu);
+    [[nodiscard]] widget::WidgetId getFirstItemWidget(Menu menu);
 
     [[nodiscard]] std::span<const std::string_view> itemNamesOf(
         Menu menu);

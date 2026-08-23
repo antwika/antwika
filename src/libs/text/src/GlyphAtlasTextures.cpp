@@ -41,7 +41,7 @@ namespace antwika::text
                         .emplace(
                             scale,
                             renderer.createTexture(
-                                glyphAtlasBitmap(bakedCells)))
+                                getGlyphAtlasBitmap(bakedCells)))
                         .first;
         }
 
@@ -51,7 +51,7 @@ namespace antwika::text
         }
 
         for (const GlyphBlit &blit :
-             glyphAtlasBlits(bakedCells, gfx::Point{}, text))
+             getGlyphAtlasBlits(bakedCells, gfx::Point{}, text))
         {
             const gfx::RectF destinationRect{
                 antwika::gfx::PointF{

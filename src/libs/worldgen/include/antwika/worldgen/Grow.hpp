@@ -21,10 +21,10 @@ namespace antwika::worldgen
 
     inline constexpr std::uint64_t kFillSalt = 0x9E3779B97F4A7C15ULL;
 
-    [[nodiscard]] ChunkResult growChunk(
+    [[nodiscard]] ChunkResult getGrowChunk(
         const CompiledRuleset &compiledRuleset, const ChunkRequest &request);
 
-    [[nodiscard]] ChunkResult growChunk(
+    [[nodiscard]] ChunkResult getGrowChunk(
         const CompiledRuleset &compiledRuleset,
         const ChunkRequest &request,
         rng::IRng &waysRng,

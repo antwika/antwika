@@ -10,11 +10,11 @@ namespace antwika::app
         bool located,
         MouseButton button) noexcept
     {
-        const auto &mouse = state.mouse();
+        const auto &mouse = state.getMouse();
         return Pointer{
             .positionPoint = located
-                            ? std::optional<Point>{asPoint(
-                                  mouse.position())}
+                            ? std::optional<Point>{getAsPoint(
+                                  mouse.getPosition())}
                             : std::nullopt,
             .down = mouse.isDown(button),
             .pressed = mouse.wasPressed(button)};

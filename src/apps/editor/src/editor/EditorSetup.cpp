@@ -54,28 +54,28 @@ namespace antwika::editor
                       .size = app::kDefaultWindowSize,
                       .resizable = true})),
           viewportRenderer(
-              window->renderer(), window->size(), camera::kCanvasSize),
-          play(logger, worldMeshes.cells())
+              window->renderer(), window->getSize(), camera::kCanvasSize),
+          play(logger, worldMeshes.getCells())
     {
         document.startFrom(std::move(mapPathGiven));
         document.map = map::Map{
-            .voxels = voxel::expandCubesToVoxels(voxelmap::demoCells()),
-            .tilemap = tilemap::defaultTilemap()};
+            .voxels = voxel::getExpandCubesToVoxels(voxelmap::getDemoCells()),
+            .tilemap = tilemap::getDefaultTilemap()};
 
-        worldShader.open(viewportRenderer, map::loadShader("voxel"));
-        setBindings(loadChords(chordsPath()));
+        worldShader.open(viewportRenderer, map::getLoadShader("voxel"));
+        setBindings(getLoadChords(getChordsPath()));
 
         try
         {
-            document.map = map::loadMap(document.path());
+            document.map = map::getLoadMap(document.getPath());
 
-            logger.log(log::Level::Info, "Loaded " + document.path());
+            logger.log(log::Level::Info, "Loaded " + document.getPath());
         }
         catch (const map::MapFileError &)
         {
             logger.log(
                 log::Level::Info,
-                "No map at " + document.path()
+                "No map at " + document.getPath()
                     + ", starting from the built-in one");
         }
 
@@ -89,22 +89,22 @@ namespace antwika::editor
         }
 
         editLevel =
-            antwika::voxel::cubeIndexOfLevel(voxelmap::topLevel(
+            antwika::voxel::getCubeIndexOfLevel(voxelmap::getTopLevel(
                     document.map.voxels));
 
         atlasSheets.open(
             viewportRenderer,
-            map::loadAtlasPairOrBlank(document.path(), kAppName),
+            map::getLoadAtlasPairOrBlank(document.getPath(), kAppName),
             document.map,
             tick);
         characterView.open(
-            viewportRenderer, map::loadCharacterSheet(document.path(),
+            viewportRenderer, map::getLoadCharacterSheet(document.getPath(),
                 kAppName));
         iconsView.open(
-            viewportRenderer, loadIconSheet(document.path(), kAppName));
+            viewportRenderer, getLoadIconSheet(document.getPath(), kAppName));
         sprites.open(viewportRenderer);
-        lightPasses.open(viewportRenderer, map::loadShader("shadow"));
-        scenePass.open(viewportRenderer, map::loadShader("bloom"));
+        lightPasses.open(viewportRenderer, map::getLoadShader("shadow"));
+        scenePass.open(viewportRenderer, map::getLoadShader("bloom"));
 
         takeSettings(document.map.settings);
 
@@ -114,20 +114,20 @@ namespace antwika::editor
         loadCharacterSkins();
 
         const auto opening = map::CameraView{
-            .transform = camera::centeredOn(camera::defaultTransform(),
-                voxelmap::voxelsCenter(document.map.voxels))};
+            .transform = camera::getCenteredOn(camera::getDefaultTransform(),
+                voxelmap::getVoxelsCenter(document.map.voxels))};
 
         cameraRig.view = document.map.camera.value_or(opening);
         cameraRig.viewHeight =
-            camera::orthoHalfHeight(camera::kCanvasSize, cameraRig.view.zoom);
+            camera::getOrthoHalfHeight(camera::kCanvasSize, cameraRig.view.zoom);
 
         if (playOnly)
         {
-            const auto progress = map::loadProgress(progressPath());
+            const auto progress = map::getLoadProgress(getProgressPath());
 
             if (progress.has_value())
             {
-                document.openAt((std::filesystem::path(document.startPath())
+                document.openAt((std::filesystem::path(document.getStartPath())
                                .parent_path()
                            / progress->map)
                               .string());
@@ -135,14 +135,14 @@ namespace antwika::editor
                 if (loadCurrentMap())
                 {
                     {
-                        const ecs::OpenPhase phase(play.game->world());
+                        const ecs::OpenPhase phase(play.game->getWorld());
 
-                        play.game->world().set<component::Position>(
-                            play.game->player(),
+                        play.game->getWorld().set<component::Position>(
+                            play.game->getPlayer(),
                             collision::positionFrom(
                                 progress->stancePlacement.position));
-                        play.game->world().set<component::AnimationState>(
-                            play.game->player(),
+                        play.game->getWorld().set<component::AnimationState>(
+                            play.game->getPlayer(),
                             component::AnimationState{
                                 .direction =
                                     progress->stancePlacement.way});
@@ -153,7 +153,7 @@ namespace antwika::editor
                 }
                 else
                 {
-                    document.openAt(document.startPath());
+                    document.openAt(document.getStartPath());
                 }
             }
 
@@ -168,7 +168,7 @@ namespace antwika::editor
 
     bool Editor::pollWindow()
     {
-        const auto changes = app::windowChanges(backend, window->id());
+        const auto changes = app::windowChanges(backend, window->getId());
 
         if (changes.resizedSize.has_value())
         {

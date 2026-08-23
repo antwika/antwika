@@ -5,7 +5,7 @@
 namespace antwika::log
 {
 
-    std::string PlainFormatter::format(
+    std::string PlainFormatter::getFormat(
         std::chrono::system_clock::time_point time,
         Level level,
         std::string_view message) const

@@ -29,10 +29,10 @@ namespace antwika::solver
     namespace
     {
 
-        [[nodiscard]] std::string_view facingNamed(
+        [[nodiscard]] std::string_view getFacingNamed(
             const std::size_t side)
         {
-            const auto normal = voxelmap::faceNormal(side);
+            const auto normal = voxelmap::getFaceNormal(side);
 
             if (normal.y > 0.0F)
             {
@@ -57,7 +57,7 @@ namespace antwika::solver
             return normal.x > 0.0F ? "east side" : "west side";
         }
 
-        [[nodiscard]] std::string whereNamed(
+        [[nodiscard]] std::string getWhereNamed(
             const std::vector<voxelmap::FaceRef> &conflictFaces)
         {
             if (conflictFaces.empty())
@@ -70,7 +70,7 @@ namespace antwika::solver
             for (std::size_t index = 0; index < conflictFaces.size(); ++index)
             {
                 message += index == 0 ? "" : ", the ";
-                message += std::string(facingNamed(conflictFaces[index].side))
+                message += std::string(getFacingNamed(conflictFaces[index].side))
                         + " of ("
                         + std::to_string(
                             conflictFaces[index].cell.position.x) + ","
@@ -97,23 +97,23 @@ namespace antwika::solver
 
         static_assert(enums::tagsInOrder(kSideNames, &SideNameRow::side));
 
-        [[nodiscard]] std::string_view sideNamed(const voxel::Side side)
+        [[nodiscard]] std::string_view getSideNamed(const voxel::Side side)
         {
             return enums::lookup(kSideNames, side).name;
         }
 
-        [[nodiscard]] std::string_view edgeNamed(const voxel::EdgeKind edge)
+        [[nodiscard]] std::string_view getEdgeNamed(const voxel::EdgeKind edge)
         {
             return edge == voxel::EdgeKind::Interior ? "inward" : "outward";
         }
     }
 
-    std::vector<WeaveGap> missingRules(
+    std::vector<WeaveGap> getMissingRules(
         const std::vector<voxelmap::FaceRef> &faces,
         const tile::TileRules &rules,
         const CornerSeams corners)
     {
-        const auto tilesByDomain = ruledTilesByDomain(rules);
+        const auto tilesByDomain = getRuledTilesByDomain(rules);
 
         std::vector<WeaveGap> wantedGaps;
 
@@ -129,7 +129,7 @@ namespace antwika::solver
 
         std::set<tilemap::TileEdge> namedEdges;
 
-        for (const auto &seam : faceAdjacency(faces, corners))
+        for (const auto &seam : getFaceAdjacency(faces, corners))
         {
             const auto asks = DomainKey{
                 atlasOf(faces[seam.faceA].side),
@@ -176,7 +176,7 @@ namespace antwika::solver
         return wantedGaps;
     } // GCOVR_EXCL_LINE
 
-    std::string weaveErrorMessage(
+    std::string getWeaveErrorMessage(
         const std::vector<voxelmap::FaceRef> &faces,
         const tile::TileRules &rules,
         const TileSolve &solve,
@@ -197,16 +197,16 @@ namespace antwika::solver
 
         std::string message = "no texturing";
 
-        for (const auto &want : missingRules(faces, rules, corners))
+        for (const auto &want : getMissingRules(faces, rules, corners))
         {
             message += want.troubleFailure == SolveFailure::EmptyDomain
                      ? "; no tile of either atlas has rules yet"
                      : ("; nothing may meet along a "
                            + std::string(
-                               sideNamed(want.unsatisfiedEdge.side))
+                               getSideNamed(want.unsatisfiedEdge.side))
                            + " "
                            + std::string(
-                               edgeNamed(want.unsatisfiedEdge.edge))
+                               getEdgeNamed(want.unsatisfiedEdge.edge))
                            + " edge");
         }
 
@@ -214,7 +214,7 @@ namespace antwika::solver
         {
             message += "; no way of laying them all keeps every rule "
                     "at once"
-                    + whereNamed(solve.conflictFaces);
+                    + getWhereNamed(solve.conflictFaces);
         }
 
         if (solve.troubleFailure == SolveFailure::IncompatibleEdge
@@ -223,11 +223,11 @@ namespace antwika::solver
             message += "; nothing either face is left with may meet "
                     "along a "
                     + std::string(
-                        sideNamed(solve.unsatisfiedEdge.side))
+                        getSideNamed(solve.unsatisfiedEdge.side))
                     + " "
                     + std::string(
-                        edgeNamed(solve.unsatisfiedEdge.edge))
-                    + " edge" + whereNamed(solve.conflictFaces);
+                        getEdgeNamed(solve.unsatisfiedEdge.edge))
+                    + " edge" + getWhereNamed(solve.conflictFaces);
         }
 
         if (solve.troubleFailure == SolveFailure::EmptyDomain
@@ -239,7 +239,7 @@ namespace antwika::solver
                                                 ? "flat"
                                                 : "upright")
                     + " tile is allowed to lie at"
-                    + whereNamed(solve.conflictFaces);
+                    + getWhereNamed(solve.conflictFaces);
         }
 
         return message + alone;

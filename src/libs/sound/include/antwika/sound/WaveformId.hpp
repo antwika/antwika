@@ -9,7 +9,7 @@ namespace antwika::sound
     {
     };
 
-    [[nodiscard]] constexpr std::uint32_t rawValue(
+    [[nodiscard]] constexpr std::uint32_t getRawValue(
         WaveformId idWaveform) noexcept
     {
         return static_cast<std::uint32_t>(idWaveform);

@@ -20,7 +20,7 @@
 namespace antwika::map
 {
 
-    [[nodiscard]] std::vector<tilemap::Tile> fallbackTiles(
+    [[nodiscard]] std::vector<tilemap::Tile> getFallbackTiles(
         const std::vector<voxelmap::FaceRef> &faces,
         const tile::TileRules &rules);
 
@@ -29,7 +29,7 @@ namespace antwika::map
         solver::CornerSeams corners,
         std::map<voxelmap::FaceRef, tilemap::Tile> &tileCache);
 
-    [[nodiscard]] gfx::Bitmap readSharedOrBundled(
+    [[nodiscard]] gfx::Bitmap getReadSharedOrBundled(
         const std::string &mapPath,
         std::string_view name,
         std::string_view app);
@@ -52,26 +52,26 @@ namespace antwika::map
                 .name = "atlas-15x12.png",
                 .tileSize = tilemap::kFloorTileSize}};
 
-    [[nodiscard]] gfx::Bitmap loadAtlas(
+    [[nodiscard]] gfx::Bitmap getLoadAtlas(
         const std::string &mapPath,
         std::string_view name,
         gfx::Size tileSize,
         std::string_view app);
 
-    [[nodiscard]] std::array<gfx::Bitmap, kAtlasSheetCount> loadAtlasPair(
+    [[nodiscard]] std::array<gfx::Bitmap, kAtlasSheetCount> getLoadAtlasPair(
         const std::string &mapPath, std::string_view app);
 
     [[nodiscard]] std::array<gfx::Bitmap, kAtlasSheetCount>
-    loadAtlasPairOrBlank(
+    getLoadAtlasPairOrBlank(
         const std::string &mapPath, std::string_view app);
 
-    [[nodiscard]] gfx::Bitmap loadAtlasOrBlank(
+    [[nodiscard]] gfx::Bitmap getLoadAtlasOrBlank(
         const std::string &mapPath,
         std::string_view name,
         gfx::Size tileSize,
         std::string_view app);
 
-    [[nodiscard]] gfx::Bitmap loadCharacterSheet(
+    [[nodiscard]] gfx::Bitmap getLoadCharacterSheet(
         const std::string &mapPath, std::string_view app);
 
     void writeSharedTexture(
@@ -80,7 +80,7 @@ namespace antwika::map
         std::string_view name,
         std::string_view app);
 
-    [[nodiscard]] gfx::ShaderSource loadShader(
+    [[nodiscard]] gfx::ShaderSource getLoadShader(
         std::string_view stem);
 
 }

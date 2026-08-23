@@ -52,7 +52,7 @@ namespace antwika::tile
         [[nodiscard]] bool allowsBoundary(
             tilemap::Tile tile, tilemap::TileEdge edge) const;
 
-        [[nodiscard]] bool boundaryOnly(
+        [[nodiscard]] bool isBoundaryOnly(
             tilemap::Tile tile, tilemap::TileEdge edge) const;
 
         void setAllowsBoundary(
@@ -69,7 +69,7 @@ namespace antwika::tile
             tilemap::TileEdge edge,
             tilemap::Atlas atlas) const;
 
-        [[nodiscard]] std::optional<bool> corner(
+        [[nodiscard]] std::optional<bool> getCorner(
             tilemap::Tile tile, voxel::Corner corner) const;
 
         void setCorner(
@@ -84,7 +84,7 @@ namespace antwika::tile
 
         void setKind(tilemap::Tile tile, voxel::Kind kind);
 
-        [[nodiscard]] std::vector<std::pair<tilemap::Tile, voxel::Kind>> kinds()
+        [[nodiscard]] std::vector<std::pair<tilemap::Tile, voxel::Kind>> getKinds()
             const;
 
         [[nodiscard]] voxel::Facing facingOf(tilemap::Tile tile) const;
@@ -92,7 +92,7 @@ namespace antwika::tile
         void setFacing(tilemap::Tile tile, voxel::Facing facing);
 
         [[nodiscard]] std::vector<std::pair<tilemap::Tile, voxel::Facing>>
-        facings()
+        getFacings()
             const;
 
         [[nodiscard]] voxel::StairHalf levelOf(tilemap::Tile tile) const;
@@ -100,7 +100,7 @@ namespace antwika::tile
         void setLevel(tilemap::Tile tile, voxel::StairHalf levelHalf);
 
         [[nodiscard]] std::vector<std::pair<tilemap::Tile, voxel::StairHalf>>
-        levels()
+        getLevels()
             const;
 
         [[nodiscard]] voxel::StairPart partOf(tilemap::Tile tile) const;
@@ -108,15 +108,15 @@ namespace antwika::tile
         void setPart(tilemap::Tile tile, voxel::StairPart part);
 
         [[nodiscard]] std::vector<std::pair<tilemap::Tile, voxel::StairPart>>
-        parts()
+        getParts()
             const;
 
-        [[nodiscard]] std::set<tilemap::Tile> allowed(
+        [[nodiscard]] std::set<tilemap::Tile> getAllowed(
             tilemap::Tile tile, tilemap::TileEdge edge) const;
 
-        [[nodiscard]] std::vector<TileRule> allRules() const;
+        [[nodiscard]] std::vector<TileRule> getAllRules() const;
 
-        [[nodiscard]] std::size_t size() const;
+        [[nodiscard]] std::size_t getSize() const;
 
         [[nodiscard]] bool operator==(const TileRules &other) const
             = default;

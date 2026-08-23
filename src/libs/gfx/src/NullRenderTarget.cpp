@@ -9,7 +9,7 @@ namespace antwika::gfx::detail
     {
     }
 
-    Size NullRenderTargetTexture::size() const
+    Size NullRenderTargetTexture::getSize() const
     {
         return extent;
     }
@@ -22,17 +22,17 @@ namespace antwika::gfx::detail
     {
     }
 
-    Size NullRenderTarget::size() const
+    Size NullRenderTarget::getSize() const
     {
         return extent;
     }
 
-    const ITexture *NullRenderTarget::color() const
+    const ITexture *NullRenderTarget::getColor() const
     {
         return &colorTexture;
     }
 
-    const ITexture *NullRenderTarget::depth() const
+    const ITexture *NullRenderTarget::getDepth() const
     {
         return keepsDepth ? &depthTexture : nullptr;
     }

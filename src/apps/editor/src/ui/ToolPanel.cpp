@@ -262,7 +262,7 @@ namespace antwika::editor
             + rankOf(whichHalf));
     }
 
-    gfx::Rect mirrorIcon()
+    gfx::Rect getMirrorIcon()
     {
         return iconAt(
             kEveryToolButton.size() + kEveryPaint.size()
@@ -270,47 +270,47 @@ namespace antwika::editor
             + kMarkedStairHalves.size());
     }
 
-    widget::WidgetId kindWidget(const voxel::Kind whichKind)
+    widget::WidgetId getKindWidget(const voxel::Kind whichKind)
     {
         return widget::WidgetId{
             kFirstKindWidget
             + static_cast<std::uint64_t>(rankOf(whichKind))};
     }
 
-    widget::WidgetId facingWidget(const voxel::Facing whichFacing)
+    widget::WidgetId getFacingWidget(const voxel::Facing whichFacing)
     {
         return widget::WidgetId{
             kFirstFacingWidget
             + static_cast<std::uint64_t>(rankOf(whichFacing))};
     }
 
-    widget::WidgetId levelWidget(const voxel::StairHalf whichHalf)
+    widget::WidgetId getLevelWidget(const voxel::StairHalf whichHalf)
     {
         return widget::WidgetId{
             kFirstLevelWidget
             + static_cast<std::uint64_t>(rankOf(whichHalf))};
     }
 
-    widget::WidgetId partWidget(const voxel::StairPart whichPart)
+    widget::WidgetId getPartWidget(const voxel::StairPart whichPart)
     {
         return whichPart == voxel::StairPart::Side ? kPartSideWidget
                           : kPartFrontWidget;
     }
 
-    widget::WidgetId figureWidget(const std::size_t figureIndex)
+    widget::WidgetId getFigureWidget(const std::size_t figureIndex)
     {
         return widget::WidgetId{
             282 + static_cast<std::uint64_t>(figureIndex)};
     }
 
-    widget::WidgetId toolWidget(const ToolButton whichButton)
+    widget::WidgetId getToolWidget(const ToolButton whichButton)
     {
         return widget::WidgetId{
             kFirstToolWidget + static_cast<std::uint64_t>(
                                    rankOf(whichButton))};
     }
 
-    widget::WidgetId paintWidget(const map::Paint whichPaint)
+    widget::WidgetId getPaintWidget(const map::Paint whichPaint)
     {
         return widget::WidgetId{
             kFirstPaintWidget + static_cast<std::uint64_t>(

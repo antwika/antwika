@@ -21,10 +21,10 @@ namespace antwika::gfx::mocks
     class MockGfxBackend : public IGfxBackend
     {
     public:
-        MOCK_METHOD(std::string_view, name, (), (const, override));
-        MOCK_METHOD(std::size_t, maxWindows, (), (const, override));
+        MOCK_METHOD(std::string_view, getName, (), (const, override));
+        MOCK_METHOD(std::size_t, getMaxWindows, (), (const, override));
         MOCK_METHOD(
-            GfxCapabilities, capabilities, (), (const, override));
+            GfxCapabilities, getCapabilities, (), (const, override));
 
         MOCK_METHOD(
             std::unique_ptr<IWindow>,

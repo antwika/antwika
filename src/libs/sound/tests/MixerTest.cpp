@@ -26,7 +26,7 @@ namespace
 {
     constexpr WaveFormat kStereo48Format{.rate = 48000, .channels = 2};
 
-    [[nodiscard]] Waveform mono(std::vector<float> samples)
+    [[nodiscard]] Waveform getMono(std::vector<float> samples)
     {
         return Waveform{
             .format = WaveFormat{.rate = 48000, .channels = 1},
@@ -71,7 +71,7 @@ TEST(MixerTest, ActiveVoices_StartAtNone)
     const WaveformLibrary library;
     Mixer mixer(library, MixerSpec{.format = kStereo48Format});
 
-    EXPECT_EQ(mixer.activeVoices(), 0U);
+    EXPECT_EQ(mixer.getActiveVoices(), 0U);
 }
 
 TEST(MixerTest, Play_RefusesAWaveformNothingWasAddedUnder)
@@ -101,7 +101,7 @@ TEST(MixerTest, Render_IsSilentWithNothingPlaying)
 
     const auto renderedWaveform = renderedIndex(mixer, 8);
 
-    ASSERT_EQ(renderedWaveform.frameCount(), 8U);
+    ASSERT_EQ(renderedWaveform.getFrameCount(), 8U);
     ASSERT_EQ(renderedWaveform.samples.size(), 16U);
 
     for (const auto sample : renderedWaveform.samples)
@@ -113,14 +113,14 @@ TEST(MixerTest, Render_IsSilentWithNothingPlaying)
 TEST(MixerTest, Render_PlacesAVoiceOnTheExactFrameItWasAskedFor)
 {
     WaveformLibrary library;
-    const auto id = library.add(mono({1.0F}));
+    const auto id = library.add(getMono({1.0F}));
 
     Mixer mixer(library, MixerSpec{.format = kStereo48Format});
     mixer.play(PlayRequest{.waveform = id, .startFrame = 37});
 
     const auto renderedWaveform = renderedIndex(mixer, 64);
 
-    ASSERT_EQ(renderedWaveform.frameCount(), 64U);
+    ASSERT_EQ(renderedWaveform.getFrameCount(), 64U);
 
     for (std::size_t frame = 0; frame < 64; ++frame)
     {
@@ -140,8 +140,8 @@ TEST(MixerTest, Render_PlacesAVoiceOnTheExactFrameItWasAskedFor)
 TEST(MixerTest, Render_SumsTwoVoicesRatherThanReplacingOne)
 {
     WaveformLibrary library;
-    const auto quietId = library.add(mono({0.25F}));
-    const auto loudId = library.add(mono({0.5F}));
+    const auto quietId = library.add(getMono({0.25F}));
+    const auto loudId = library.add(getMono({0.5F}));
 
     Mixer mixer(library, MixerSpec{.format = kStereo48Format});
     mixer.play(PlayRequest{.waveform = quietId});
@@ -155,7 +155,7 @@ TEST(MixerTest, Render_SumsTwoVoicesRatherThanReplacingOne)
 TEST(MixerTest, Render_AppliesGain)
 {
     WaveformLibrary library;
-    const auto id = library.add(mono({1.0F}));
+    const auto id = library.add(getMono({1.0F}));
 
     Mixer mixer(library, MixerSpec{.format = kStereo48Format});
     mixer.play(PlayRequest{.waveform = id, .gain = 0.5F});
@@ -168,7 +168,7 @@ TEST(MixerTest, Render_AppliesGain)
 TEST(MixerTest, Render_PansHardLeftAndHardRight)
 {
     WaveformLibrary library;
-    const auto id = library.add(mono({1.0F}));
+    const auto id = library.add(getMono({1.0F}));
 
     {
         Mixer mixer(library, MixerSpec{.format = kStereo48Format});
@@ -194,25 +194,25 @@ TEST(MixerTest, Render_PansHardLeftAndHardRight)
 TEST(MixerTest, Render_StopsAVoiceOnceItRunsOut)
 {
     WaveformLibrary library;
-    const auto id = library.add(mono({1.0F, 1.0F}));
+    const auto id = library.add(getMono({1.0F, 1.0F}));
 
     Mixer mixer(library, MixerSpec{.format = kStereo48Format});
     mixer.play(PlayRequest{.waveform = id});
 
-    ASSERT_EQ(mixer.activeVoices(), 1U);
+    ASSERT_EQ(mixer.getActiveVoices(), 1U);
 
     const auto renderedWaveform = renderedIndex(mixer, 8);
 
     EXPECT_FLOAT_EQ(renderedWaveform.samples[0], 1.0F);
     EXPECT_FLOAT_EQ(renderedWaveform.samples[2], 1.0F);
     EXPECT_FLOAT_EQ(renderedWaveform.samples[4], 0.0F);
-    EXPECT_EQ(mixer.activeVoices(), 0U);
+    EXPECT_EQ(mixer.getActiveVoices(), 0U);
 }
 
 TEST(MixerTest, Render_StartsALoopingVoiceAgainRatherThanStopping)
 {
     WaveformLibrary library;
-    const auto id = library.add(mono({1.0F, 0.5F}));
+    const auto id = library.add(getMono({1.0F, 0.5F}));
 
     Mixer mixer(library, MixerSpec{.format = kStereo48Format});
     mixer.play(PlayRequest{.waveform = id, .looping = true});
@@ -222,7 +222,7 @@ TEST(MixerTest, Render_StartsALoopingVoiceAgainRatherThanStopping)
     EXPECT_FLOAT_EQ(renderedWaveform.samples[0], 1.0F);
     EXPECT_FLOAT_EQ(renderedWaveform.samples[2], 0.5F);
     EXPECT_FLOAT_EQ(renderedWaveform.samples[4], 1.0F);
-    EXPECT_EQ(mixer.activeVoices(), 1U);
+    EXPECT_EQ(mixer.getActiveVoices(), 1U);
 }
 
 TEST(MixerTest, Render_RepeatsALoopingWaveformOverSeveralCycles)
@@ -230,14 +230,14 @@ TEST(MixerTest, Render_RepeatsALoopingWaveformOverSeveralCycles)
     const std::vector<float> cycle{1.0F, 0.5F, 0.25F};
 
     WaveformLibrary library;
-    const auto id = library.add(mono(cycle));
+    const auto id = library.add(getMono(cycle));
 
     Mixer mixer(library, MixerSpec{.format = kStereo48Format});
     mixer.play(PlayRequest{.waveform = id, .looping = true});
 
     const auto renderedWaveform = renderedIndex(mixer, 9);
 
-    ASSERT_EQ(renderedWaveform.frameCount(), 9U);
+    ASSERT_EQ(renderedWaveform.getFrameCount(), 9U);
 
     for (std::size_t frame = 0; frame < 9; ++frame)
     {
@@ -249,33 +249,33 @@ TEST(MixerTest, Render_RepeatsALoopingWaveformOverSeveralCycles)
             expectedSample) << frame;
     }
 
-    EXPECT_EQ(mixer.activeVoices(), 1U);
+    EXPECT_EQ(mixer.getActiveVoices(), 1U);
 }
 
 TEST(MixerTest, Render_RepeatsALoopingWaveformOfOneFrame)
 {
     WaveformLibrary library;
-    const auto id = library.add(mono({0.75F}));
+    const auto id = library.add(getMono({0.75F}));
 
     Mixer mixer(library, MixerSpec{.format = kStereo48Format});
     mixer.play(PlayRequest{.waveform = id, .looping = true});
 
     const auto renderedWaveform = renderedIndex(mixer, 4);
 
-    ASSERT_EQ(renderedWaveform.frameCount(), 4U);
+    ASSERT_EQ(renderedWaveform.getFrameCount(), 4U);
 
     for (const auto sample : renderedWaveform.samples)
     {
         EXPECT_FLOAT_EQ(sample, 0.75F);
     }
 
-    EXPECT_EQ(mixer.activeVoices(), 1U);
+    EXPECT_EQ(mixer.getActiveVoices(), 1U);
 }
 
 TEST(MixerTest, Render_FeedsEveryChannelFromAMonoSource)
 {
     WaveformLibrary library;
-    const auto id = library.add(mono({1.0F}));
+    const auto id = library.add(getMono({1.0F}));
 
     Mixer mixer(library, MixerSpec{.format = kStereo48Format});
     mixer.play(PlayRequest{.waveform = id});
@@ -304,23 +304,23 @@ TEST(MixerTest, Render_ReadsAStereoSourceChannelForChannel)
 TEST(MixerTest, StopAll_SilencesEverythingSounding)
 {
     WaveformLibrary library;
-    const auto id = library.add(mono({1.0F, 1.0F, 1.0F, 1.0F}));
+    const auto id = library.add(getMono({1.0F, 1.0F, 1.0F, 1.0F}));
 
     Mixer mixer(library, MixerSpec{.format = kStereo48Format});
     mixer.play(PlayRequest{.waveform = id});
     mixer.play(PlayRequest{.waveform = id});
 
-    ASSERT_EQ(mixer.activeVoices(), 2U);
+    ASSERT_EQ(mixer.getActiveVoices(), 2U);
 
     mixer.stopAll();
 
-    EXPECT_EQ(mixer.activeVoices(), 0U);
+    EXPECT_EQ(mixer.getActiveVoices(), 0U);
 }
 
 TEST(MixerTest, Play_StealsAVoiceOnceEveryOneIsBusy)
 {
     WaveformLibrary library;
-    const auto id = library.add(mono({1.0F, 1.0F, 1.0F, 1.0F}));
+    const auto id = library.add(getMono({1.0F, 1.0F, 1.0F, 1.0F}));
 
     Mixer mixer(library, MixerSpec{.format = kStereo48Format, .maxVoices = 2});
 
@@ -328,7 +328,7 @@ TEST(MixerTest, Play_StealsAVoiceOnceEveryOneIsBusy)
     mixer.play(PlayRequest{.waveform = id});
     mixer.play(PlayRequest{.waveform = id});
 
-    EXPECT_EQ(mixer.activeVoices(), 2U);
+    EXPECT_EQ(mixer.getActiveVoices(), 2U);
 }
 
 TEST(MixerTest, Render_PlacesADelayedVoiceAcrossBufferBoundaries)
@@ -336,7 +336,7 @@ TEST(MixerTest, Render_PlacesADelayedVoiceAcrossBufferBoundaries)
     const std::vector<float> voice{0.5F, 0.25F, 0.125F};
 
     WaveformLibrary library;
-    const auto id = library.add(mono(voice));
+    const auto id = library.add(getMono(voice));
 
     Mixer mixer(library, MixerSpec{.format = kStereo48Format});
     mixer.play(PlayRequest{.waveform = id, .startFrame = 3});
@@ -348,7 +348,7 @@ TEST(MixerTest, Render_PlacesADelayedVoiceAcrossBufferBoundaries)
     device.start(mixer);
     (void)device.advance(32);
 
-    ASSERT_EQ(waveform.frameCount(), 32U);
+    ASSERT_EQ(waveform.getFrameCount(), 32U);
 
     for (std::size_t frame = 0; frame < 32; ++frame)
     {

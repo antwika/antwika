@@ -41,11 +41,11 @@ namespace antwika::gfx
         ViewportRenderer &operator=(const ViewportRenderer &) = delete;
         ViewportRenderer &operator=(ViewportRenderer &&) = delete;
 
-        [[nodiscard]] Viewport viewport() const noexcept;
+        [[nodiscard]] Viewport getViewport() const noexcept;
 
         [[nodiscard]] IRenderer &nativeRenderer() noexcept;
 
-        [[nodiscard]] Size windowSize() const noexcept;
+        [[nodiscard]] Size getWindowSize() const noexcept;
 
         void resize(Size newReportedSize);
 
@@ -136,7 +136,7 @@ namespace antwika::gfx
     private:
         void fillIfDrawable(Rect rect, Color color);
 
-        [[nodiscard]] Camera3D onWindow(const Camera3D &camera) const;
+        [[nodiscard]] Camera3D getOnWindow(const Camera3D &camera) const;
 
         IRenderer &innerRenderer;
         Size reportedSize;

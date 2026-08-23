@@ -15,7 +15,7 @@
 namespace
 {
 
-    [[nodiscard]] std::int64_t wayOfSheet(const std::int64_t way)
+    [[nodiscard]] std::int64_t getWayOfSheet(const std::int64_t way)
     {
         switch (way)
         {
@@ -154,7 +154,7 @@ namespace antwika::map
                 auto &way = figure[std::string(kHomeKey)]
                                   [std::string(kWayKey)];
 
-                way = wayOfSheet(way.get<std::int64_t>());
+                way = getWayOfSheet(way.get<std::int64_t>());
             }
 
             const auto &walker =
@@ -292,7 +292,7 @@ namespace antwika::map
 
     namespace mapfile
     {
-        schema::MigrationChain mapMigrations()
+        schema::MigrationChain getMapMigrations()
         {
             schema::MigrationList migrations;
 
@@ -308,98 +308,98 @@ namespace antwika::map
         void latestMapMigrations(
             schema::MigrationList &migrations)
         {
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 30,
                 31,
                 "antwika::map: a map may group tiles into "
                 "variant families now",
                 mapV30ToV31));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 31,
                 32,
                 "antwika::map: a decor may span several "
                 "tiles now",
                 mapV31ToV32));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 32,
                 33,
                 "antwika::map: a tile of the world may be "
                 "walked through frames now",
                 mapV32ToV33));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 33,
                 34,
                 "antwika::map: a map may weave "
                 "transitions between materials now",
                 mapV33ToV34));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 34,
                 35,
                 "antwika::map: a map may hold keys, "
                 "doors and checkpoints now",
                 mapV34ToV35));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 35,
                 36,
                 "antwika::map: a figure may carry a lamp "
                 "now",
                 mapV35ToV36));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 36,
                 37,
                 "antwika::map: a decor goes unnamed now, "
                 "there being too many to call",
                 mapV36ToV37));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 37,
                 38,
                 "antwika::map: a tile now says which part "
                 "of a flight it was drawn for, its fronts "
                 "or its stepped side",
                 mapV37ToV38));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 38,
                 39,
                 "antwika::map: a decor now says how "
                 "strongly it is weighed against the others "
                 "its base offers",
                 mapV38ToV39));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 39,
                 40,
                 "antwika::map: a decor now says which "
                 "layer it dresses for, the layers laying "
                 "their decor over one another",
                 mapV39ToV40));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 40,
                 41,
                 "antwika::map: the figures and the walker "
                 "are one roster now, the player marked "
                 "among them",
                 mapV40ToV41));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 41,
                 42,
                 "antwika::map: a map may lay food and "
                 "water about for whoever walks it to pick "
                 "up",
                 mapV41ToV42));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 42,
                 43,
                 "antwika::map: a figure names the "
                 "components it carries, the lamp flag "
                 "being the first of them",
                 mapV42ToV43));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 43,
                 44,
                 "antwika::map: a figure names every "
                 "component it spawns with, not only the "
                 "ones it carries",
                 mapV43ToV44));
-            migrations.push_back(schema::step(
+            migrations.push_back(schema::getStep(
                 44,
                 45,
                 "antwika::map: every component a figure "

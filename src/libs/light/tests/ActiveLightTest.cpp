@@ -17,11 +17,11 @@ using antwika::ecs::OpenPhase;
 using antwika::ecs::World;
 using antwika::component::kCarriedLightHeight;
 using antwika::light::kMaxLamps;
-using antwika::light::carriedLightSlot;
+using antwika::light::getCarriedLightSlot;
 using antwika::light::Lamp;
 using antwika::light::ActiveLight;
-using antwika::light::dirtyShadowSlots;
-using antwika::light::activeLights;
+using antwika::light::getDirtyShadowSlots;
+using antwika::light::getActiveLights;
 using antwika::component::CarriedLight;
 using antwika::component::FillLight;
 using antwika::component::kFillLightHeight;
@@ -49,7 +49,7 @@ TEST(ActiveLightTest, ActiveLights_TakesEveryLampSetDown)
         Lamp{.position = VoxelPosition{.x = 1, .y = 2, .z = 3},
             .tintColor = kRedColor}};
 
-    const auto lights = activeLights(world, lamps);
+    const auto lights = getActiveLights(world, lamps);
 
     ASSERT_EQ(lights.size(), 1U);
     EXPECT_NEAR(lights.front().position.y, 2.5F, kTolerance);
@@ -72,7 +72,7 @@ TEST(
         world.add<CarriedLight>(entity, CarriedLight{.tintColor = kRedColor});
     }
 
-    const auto lights = activeLights(world, {});
+    const auto lights = getActiveLights(world, {});
 
     ASSERT_EQ(lights.size(), 1U);
     EXPECT_NEAR(lights.front().position.x, 4.0F, kTolerance);
@@ -108,7 +108,7 @@ TEST(
                     index)}});
     }
 
-    const auto lights = activeLights(world, lamps);
+    const auto lights = getActiveLights(world, lamps);
 
     ASSERT_EQ(lights.size(), kMaxLamps);
     EXPECT_EQ(lights.front().tintColor, kRedColor);
@@ -133,7 +133,7 @@ TEST(
         }
     }
 
-    EXPECT_EQ(activeLights(world, {}).size(), kMaxLamps);
+    EXPECT_EQ(getActiveLights(world, {}).size(), kMaxLamps);
 }
 
 namespace
@@ -155,7 +155,7 @@ TEST(
     const std::vector<ActiveLight> lights{
         lightAt(1.0F), lightAt(2.0F)};
 
-    EXPECT_TRUE(dirtyShadowSlots(lights, lights).empty());
+    EXPECT_TRUE(getDirtyShadowSlots(lights, lights).empty());
 }
 
 TEST(
@@ -168,7 +168,7 @@ TEST(
         lightAt(1.0F), lightAt(5.0F)};
 
     EXPECT_EQ(
-        dirtyShadowSlots(bakedLights, currentLights),
+        getDirtyShadowSlots(bakedLights, currentLights),
         (std::vector<std::size_t>{1}));
 }
 
@@ -184,7 +184,7 @@ TEST(
             .red = 0, .green = 255, .blue = 0, .alpha = 255};
 
     EXPECT_EQ(
-        dirtyShadowSlots(bakedLights, currentLights),
+        getDirtyShadowSlots(bakedLights, currentLights),
         (std::vector<std::size_t>{0}));
 }
 
@@ -196,7 +196,7 @@ TEST(
         lightAt(1.0F), lightAt(2.0F), lightAt(3.0F)};
 
     EXPECT_EQ(
-        dirtyShadowSlots({}, currentLights),
+        getDirtyShadowSlots({}, currentLights),
         (std::vector<std::size_t>{0, 1, 2}));
 }
 
@@ -207,7 +207,7 @@ TEST(ActiveLightTest, DirtyShadowSlots_AsksForALightNewlyLit)
         lightAt(1.0F), lightAt(2.0F)};
 
     EXPECT_EQ(
-        dirtyShadowSlots(bakedLights, currentLights),
+        getDirtyShadowSlots(bakedLights, currentLights),
         (std::vector<std::size_t>{1}));
 }
 
@@ -219,7 +219,7 @@ TEST(
         lightAt(1.0F), lightAt(2.0F)};
     const std::vector<ActiveLight> currentLights{lightAt(1.0F)};
 
-    EXPECT_TRUE(dirtyShadowSlots(bakedLights, currentLights).empty());
+    EXPECT_TRUE(getDirtyShadowSlots(bakedLights, currentLights).empty());
 }
 
 TEST(
@@ -233,7 +233,7 @@ TEST(
     currentLights.at(0).position.x += antwika::light::kShadowRedrawDistance;
 
     EXPECT_EQ(
-        dirtyShadowSlots(bakedLights, currentLights),
+        getDirtyShadowSlots(bakedLights, currentLights),
         (std::vector<std::size_t>{0}));
 }
 
@@ -249,7 +249,7 @@ TEST(
         antwika::light::kShadowRedrawDistance * 0.5F;
 
     EXPECT_EQ(
-        dirtyShadowSlots(bakedLights, currentLights),
+        getDirtyShadowSlots(bakedLights, currentLights),
         (std::vector<std::size_t>{}));
 }
 
@@ -267,7 +267,7 @@ TEST(
         world.add<Position>(bareEntity, Position{});
     }
 
-    EXPECT_FALSE(carriedLightSlot(world, bareEntity).has_value());
+    EXPECT_FALSE(getCarriedLightSlot(world, bareEntity).has_value());
 }
 
 TEST(
@@ -290,13 +290,13 @@ TEST(
         }
     }
 
-    const auto slot = carriedLightSlot(world, second);
-    const auto lights = activeLights(world, {});
+    const auto slot = getCarriedLightSlot(world, second);
+    const auto lights = getActiveLights(world, {});
 
     ASSERT_TRUE(slot.has_value());
     ASSERT_LT(*slot, lights.size());
     EXPECT_EQ(
-        carriedLightSlot(world, first),
+        getCarriedLightSlot(world, first),
         std::optional<std::size_t>{0});
     EXPECT_EQ(slot, std::optional<std::size_t>{1});
 }
@@ -322,7 +322,7 @@ TEST(
         }
     }
 
-    EXPECT_FALSE(carriedLightSlot(world, litEntities.back()).has_value());
+    EXPECT_FALSE(getCarriedLightSlot(world, litEntities.back()).has_value());
 }
 
 TEST(
@@ -341,7 +341,7 @@ TEST(
         world.add<CarriedLight>(entity, CarriedLight{});
     }
 
-    const auto lights = activeLights(world, {});
+    const auto lights = getActiveLights(world, {});
 
     ASSERT_EQ(lights.size(), 1U);
 
@@ -371,7 +371,7 @@ TEST(
 
     const std::vector<Lamp> lamps{
         Lamp{.position = VoxelPosition{.x = 6, .y = 0, .z = 0}}};
-    const auto lights = activeLights(world, lamps);
+    const auto lights = getActiveLights(world, lamps);
 
     ASSERT_EQ(lights.size(), 2U);
     EXPECT_NEAR(
@@ -411,7 +411,7 @@ TEST(ActiveLightTest, ActiveLights_CountsFolkAfterTheCarriedLight)
 
     const std::vector<ActiveLight> folkLights{
         ActiveLight{.position = {1.0F, 2.0F, 3.0F}}};
-    const auto lights = activeLights(world, folkLights, {});
+    const auto lights = getActiveLights(world, folkLights, {});
 
     ASSERT_EQ(lights.size(), 2U);
     EXPECT_EQ(lights.front().tintColor, kRedColor);
@@ -432,7 +432,7 @@ TEST(ActiveLightTest, ActiveLights_CountsFolkBeforeALampSetDown)
                     index)}});
     }
 
-    const auto lights = activeLights(folkLights, lamps);
+    const auto lights = getActiveLights(folkLights, lamps);
 
     ASSERT_EQ(lights.size(), kMaxLamps);
     EXPECT_EQ(lights.front().tintColor, kRedColor);
@@ -455,10 +455,10 @@ TEST(ActiveLightTest, ActiveLights_MatchesItsOldWaysWithNoFolk)
         Lamp{.position = VoxelPosition{.x = 4}}};
 
     EXPECT_EQ(
-        activeLights(world, lamps), activeLights(world, {}, lamps));
+        getActiveLights(world, lamps), getActiveLights(world, {}, lamps));
     EXPECT_EQ(
-        activeLights(lamps),
-        activeLights(std::vector<ActiveLight>{}, lamps));
+        getActiveLights(lamps),
+        getActiveLights(std::vector<ActiveLight>{}, lamps));
 }
 
 TEST(
@@ -477,7 +477,7 @@ TEST(
         world.add<FillLight>(entity, FillLight{});
     }
 
-    const auto lights = activeLights(world, {});
+    const auto lights = getActiveLights(world, {});
 
     ASSERT_EQ(lights.size(), 1U);
     EXPECT_NEAR(lights.front().position.x, 4.0F, kTolerance);
@@ -503,7 +503,7 @@ TEST(ActiveLightTest, ActiveLights_HangsAFillLightOverACarriedOne)
         world.add<FillLight>(entity, FillLight{});
     }
 
-    const auto lights = activeLights(world, {});
+    const auto lights = getActiveLights(world, {});
 
     ASSERT_EQ(lights.size(), 2U);
     EXPECT_GT(lights.back().position.y, lights.front().position.y);
@@ -566,12 +566,12 @@ TEST(
         world.add<CarriedLight>(second, CarriedLight{.tintColor = kRedColor});
     }
 
-    const auto lights = activeLights(world, {});
+    const auto lights = getActiveLights(world, {});
 
     ASSERT_EQ(lights.size(), 2U);
     EXPECT_EQ(lights.front().tintColor, kRedColor);
     EXPECT_EQ(
-        carriedLightSlot(world, second),
+        getCarriedLightSlot(world, second),
         std::optional<std::size_t>{0});
 }
 
@@ -590,7 +590,7 @@ TEST(ActiveLightTest, ActiveLights_CountsAFillLightBeforeTheFolk)
 
     const std::vector<ActiveLight> folkLights{
         ActiveLight{.position = {1.0F, 2.0F, 3.0F}, .tintColor = kRedColor}};
-    const auto lights = activeLights(world, folkLights, {});
+    const auto lights = getActiveLights(world, folkLights, {});
 
     ASSERT_EQ(lights.size(), 2U);
     EXPECT_FALSE(lights.front().castsShadows);
@@ -617,7 +617,7 @@ TEST(
         }
     }
 
-    EXPECT_EQ(activeLights(world, {}).size(), kMaxLamps);
+    EXPECT_EQ(getActiveLights(world, {}).size(), kMaxLamps);
 }
 
 TEST(
@@ -630,7 +630,7 @@ TEST(
     currentLights.at(1).castsShadows = false;
 
     EXPECT_EQ(
-        dirtyShadowSlots({}, currentLights),
+        getDirtyShadowSlots({}, currentLights),
         (std::vector<std::size_t>{0, 2}));
 }
 
@@ -645,7 +645,7 @@ TEST(
     currentLights.at(0).castsShadows = false;
     currentLights.at(0).position.x = 9.0F;
 
-    EXPECT_TRUE(dirtyShadowSlots(bakedLights, currentLights).empty());
+    EXPECT_TRUE(getDirtyShadowSlots(bakedLights, currentLights).empty());
 }
 
 TEST(
@@ -668,7 +668,7 @@ TEST(
         world.add<CarriedLight>(hanging, CarriedLight{});
     }
 
-    const auto lights = activeLights(world, {});
+    const auto lights = getActiveLights(world, {});
 
     ASSERT_EQ(lights.size(), 3U);
     EXPECT_TRUE(lights.at(0).castsShadows);
@@ -703,9 +703,9 @@ TEST(
     }
 
     EXPECT_EQ(
-        carriedLightSlot(world, first),
+        getCarriedLightSlot(world, first),
         std::optional<std::size_t>{0});
     EXPECT_EQ(
-        carriedLightSlot(world, third),
+        getCarriedLightSlot(world, third),
         std::optional<std::size_t>{1});
 }

@@ -24,16 +24,16 @@ namespace antwika::voxel
     inline constexpr float kUpperSightRise =
         kLineOfSightRise + (2.0F * kVoxelSide);
 
-    [[nodiscard]] glm::vec3 lineOfSight(glm::vec3 standing);
+    [[nodiscard]] glm::vec3 getLineOfSight(glm::vec3 standing);
 
-    [[nodiscard]] glm::vec3 upperLineOfSight(glm::vec3 standing);
+    [[nodiscard]] glm::vec3 getUpperLineOfSight(glm::vec3 standing);
 
-    [[nodiscard]] VoxelPosition voxelUnder(glm::vec3 point);
+    [[nodiscard]] VoxelPosition getVoxelUnder(glm::vec3 point);
 
-    [[nodiscard]] bool cubeAbove(
+    [[nodiscard]] bool isCubeAbove(
         const Voxels &filledVoxels, glm::vec3 standing, float clearance);
 
-    [[nodiscard]] Voxels occludingVoxels(
+    [[nodiscard]] Voxels getOccludingVoxels(
         const Voxels &filledVoxels, glm::vec3 standing);
 
 }

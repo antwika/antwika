@@ -33,7 +33,7 @@ namespace antwika::io
             std::filesystem::remove(where, errorCode);
         }
 
-        [[nodiscard]] const std::string &path() const noexcept
+        [[nodiscard]] const std::string &getPath() const noexcept
         {
             return where;
         }

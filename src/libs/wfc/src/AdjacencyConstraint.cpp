@@ -28,7 +28,7 @@ namespace antwika::wfc
         }
     }
 
-    std::span<const std::size_t> AdjacencyConstraint::cells() const
+    std::span<const std::size_t> AdjacencyConstraint::getCells() const
     {
         return cellIndices;
     }
@@ -53,7 +53,7 @@ namespace antwika::wfc
             bool hasCompatible = false;
             for (const std::size_t rightValue : rightDomain)
             {
-                if (table->compatible(leftValue, rightValue))
+                if (table->isCompatible(leftValue, rightValue))
                 {
                     hasCompatible = true;
                     break;
@@ -81,7 +81,7 @@ namespace antwika::wfc
             bool hasCompatible = false;
             for (const std::size_t leftValue : leftDomain)
             {
-                if (table->compatible(leftValue, rightValue))
+                if (table->isCompatible(leftValue, rightValue))
                 {
                     hasCompatible = true;
                     break;

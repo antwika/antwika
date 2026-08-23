@@ -21,14 +21,14 @@ namespace antwika::tilemap
     inline constexpr gfx::Size kWallTileSize{
         .width = 15, .height = 9};
 
-    [[nodiscard]] gfx::Size atlasSize(gfx::Size tileSize);
+    [[nodiscard]] gfx::Size getAtlasSize(gfx::Size tileSize);
 
-    [[nodiscard]] gfx::Bitmap blankAtlas(gfx::Size tileSize);
+    [[nodiscard]] gfx::Bitmap getBlankAtlas(gfx::Size tileSize);
 
-    [[nodiscard]] gfx::RectF tilePixels(
+    [[nodiscard]] gfx::RectF getTilePixels(
         std::size_t index, gfx::Size tileSize);
 
-    [[nodiscard]] gfx::RectF tileCoords(
+    [[nodiscard]] gfx::RectF getTileCoords(
         std::size_t index, gfx::Size tileSize);
 
 }

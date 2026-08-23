@@ -5,13 +5,13 @@
 namespace antwika::rules
 {
 
-    component::Inventory startingInventory() noexcept
+    component::Inventory getStartingInventory() noexcept
     {
         component::Inventory bagInventory{};
 
         for (const auto kind : component::kEveryItemKind)
         {
-            bagInventory = inventoryWith(
+            bagInventory = getInventoryWith(
                 bagInventory,
                 kind).value_or(bagInventory);
         }
@@ -25,14 +25,14 @@ namespace antwika::rules
             static_cast<std::uint8_t>(kind) + 1U);
     }
 
-    bool inventoryHolds(
+    bool isInventoryHolds(
         const component::Inventory bagInventory,
         const component::ItemKind kind) noexcept
     {
-        return inventoryCount(bagInventory, kind) > 0;
+        return getInventoryCount(bagInventory, kind) > 0;
     }
 
-    std::size_t inventoryCount(
+    std::size_t getInventoryCount(
         const component::Inventory bagInventory,
         const component::ItemKind kind) noexcept
     {
@@ -50,7 +50,7 @@ namespace antwika::rules
         return many;
     }
 
-    std::optional<component::Inventory> inventoryWith(
+    std::optional<component::Inventory> getInventoryWith(
         component::Inventory bagInventory,
         const component::ItemKind kind) noexcept
     {
@@ -67,7 +67,7 @@ namespace antwika::rules
         return std::nullopt;
     }
 
-    component::Inventory inventoryWithout(
+    component::Inventory getInventoryWithout(
         component::Inventory bagInventory,
         const component::ItemKind kind) noexcept
     {

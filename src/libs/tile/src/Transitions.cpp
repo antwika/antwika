@@ -61,13 +61,13 @@ namespace antwika::tile
             const tilemap::Tile materialTile)
         {
             inheritedRules.allow(slotTile, edge, materialTile);
-            inheritedRules.allow(materialTile, voxel::facing(edge), slotTile);
+            inheritedRules.allow(materialTile, voxel::getFacing(edge), slotTile);
 
             for (const auto neighbour :
-                 rules.allowed(materialTile, edge))
+                 rules.getAllowed(materialTile, edge))
             {
                 inheritedRules.allow(slotTile, edge, neighbour);
-                inheritedRules.allow(neighbour, voxel::facing(edge), slotTile);
+                inheritedRules.allow(neighbour, voxel::getFacing(edge), slotTile);
             }
 
             if (rules.allowsBoundary(materialTile, edge))
@@ -92,7 +92,7 @@ namespace antwika::tile
         return nullptr;
     }
 
-    bool maskSelectsFirst(
+    bool isMaskSelectsFirst(
         const gfx::Bitmap &sheetBitmap,
         const std::size_t x,
         const std::size_t y,
@@ -111,13 +111,13 @@ namespace antwika::tile
                    && sheetBitmap.pixels[pixelColor + 2] == firstColor.blue);
     }
 
-    std::vector<bool> maskEdgeBits(
+    std::vector<bool> getMaskEdgeBits(
         const gfx::Bitmap &sheetBitmap,
         const tilemap::Tile maskTile,
         const voxel::Side side,
         const gfx::Color firstColor)
     {
-        const auto place = tilemap::tileSource(maskTile);
+        const auto place = tilemap::getTileSource(maskTile);
         const auto left =
             static_cast<std::size_t>(place.originPoint.x);
         const auto top =
@@ -147,13 +147,13 @@ namespace antwika::tile
                          : top + edgeIndex;
 
             edgeFlags.push_back(
-                !maskSelectsFirst(sheetBitmap, x, y, firstColor));
+                !isMaskSelectsFirst(sheetBitmap, x, y, firstColor));
         }
 
         return edgeFlags;
     } // GCOVR_EXCL_LINE
 
-    gfx::Bitmap compositedAtlas(
+    gfx::Bitmap getCompositedAtlas(
         gfx::Bitmap sheetBitmap,
         const tilemap::Atlas atlas,
         const std::span<const TransitionTile> transitions,
@@ -169,10 +169,10 @@ namespace antwika::tile
                 continue;
             }
 
-            const auto outRect = tilemap::tileSource(transition.outputTile);
-            const auto mask = tilemap::tileSource(transition.maskTile);
-            const auto fromRect = tilemap::tileSource(transition.fromTile);
-            const auto toRect = tilemap::tileSource(transition.toTile);
+            const auto outRect = tilemap::getTileSource(transition.outputTile);
+            const auto mask = tilemap::getTileSource(transition.maskTile);
+            const auto fromRect = tilemap::getTileSource(transition.fromTile);
+            const auto toRect = tilemap::getTileSource(transition.toTile);
             const auto width =
                 static_cast<std::size_t>(outRect.size.width);
             const auto outHeight =
@@ -182,7 +182,7 @@ namespace antwika::tile
             {
                 for (std::size_t x = 0; x < width; ++x)
                 {
-                    const auto taking = maskSelectsFirst(
+                    const auto taking = isMaskSelectsFirst(
                         sheetBitmap,
                         static_cast<std::size_t>(
                             mask.originPoint.x)
@@ -224,7 +224,7 @@ namespace antwika::tile
         return sheetBitmap;
     } // GCOVR_EXCL_LINE
 
-    std::optional<tilemap::Tile> firstUnusedTile(
+    std::optional<tilemap::Tile> getFirstUnusedTile(
         const tilemap::Tilemap &tilemap, const tilemap::Atlas atlas)
     {
         for (std::uint16_t index = 0;
@@ -233,7 +233,7 @@ namespace antwika::tile
         {
             const tilemap::Tile tile{.atlas = atlas, .index = index};
 
-            if (!tilemap::cellHoldingTile(tilemap, tile).has_value())
+            if (!tilemap::getCellHoldingTile(tilemap, tile).has_value())
             {
                 return tile;
             }
@@ -242,7 +242,7 @@ namespace antwika::tile
         return std::nullopt;
     }
 
-    TileRules rulesWithTransitions(
+    TileRules getRulesWithTransitions(
         const TileRules &rules,
         const std::span<const TransitionTile> transitions,
         const gfx::Bitmap &uprightBitmap,
@@ -256,7 +256,7 @@ namespace antwika::tile
         const auto borderOf = [&](const TransitionTile &transition,
                                   const voxel::Side side)
         {
-            return maskEdgeBits(
+            return getMaskEdgeBits(
                 sheetFor(
                     transition.outputTile.atlas,
                     uprightBitmap,
@@ -317,7 +317,7 @@ namespace antwika::tile
                     }
 
                     const auto theirs = borderOf(
-                        other, voxel::facing(edge).side);
+                        other, voxel::getFacing(edge).side);
 
                     if (bordersAgree(
                             border, theirs, sameFromTile))
@@ -328,7 +328,7 @@ namespace antwika::tile
                             other.outputTile);
                         updatedRules.allow(
                             other.outputTile,
-                            voxel::facing(edge),
+                            voxel::getFacing(edge),
                             transition.outputTile);
                     }
                 }
@@ -338,7 +338,7 @@ namespace antwika::tile
         return updatedRules;
     } // GCOVR_EXCL_LINE
 
-    widget::WidgetId transitionRowWidget(const std::size_t rowIndex)
+    widget::WidgetId getTransitionRowWidget(const std::size_t rowIndex)
     {
         return widget::WidgetId{
             353 + static_cast<std::uint64_t>(rowIndex)};

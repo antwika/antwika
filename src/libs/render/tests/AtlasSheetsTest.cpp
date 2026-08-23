@@ -40,7 +40,7 @@ namespace
     [[nodiscard]] Bitmap sheetOf(
         const Size tileSize, const std::uint8_t shade)
     {
-        const auto size = antwika::tilemap::atlasSize(tileSize);
+        const auto size = antwika::tilemap::getAtlasSize(tileSize);
 
         return Bitmap{
             .size = size,
@@ -50,7 +50,7 @@ namespace
                 shade)};
     }
 
-    [[nodiscard]] std::array<Bitmap, 2> bothSheets(
+    [[nodiscard]] std::array<Bitmap, 2> getBothSheets(
         const std::uint8_t shade)
     {
         return {
@@ -69,7 +69,7 @@ namespace
                 });
     }
 
-    [[nodiscard]] antwika::map::Map mapWithFlippingWalls()
+    [[nodiscard]] antwika::map::Map getMapWithFlippingWalls()
     {
         antwika::map::Map drawnMap;
 
@@ -92,15 +92,15 @@ TEST(AtlasSheetsTest, Open_CarriesBothSheetsAndTheirBackingsToPictures)
     AtlasSheets sheets;
     const antwika::map::Map drawnMap;
 
-    sheets.open(viewportRenderer, bothSheets(3), drawnMap, 0);
+    sheets.open(viewportRenderer, getBothSheets(3), drawnMap, 0);
 
-    EXPECT_NE(sheets.texture(Atlas::Wall), nullptr);
-    EXPECT_NE(sheets.texture(Atlas::Floor), nullptr);
-    EXPECT_NE(sheets.keyed(Atlas::Wall), nullptr);
-    EXPECT_NE(sheets.keyed(Atlas::Floor), nullptr);
-    EXPECT_NE(sheets.checker(Atlas::Wall), nullptr);
-    EXPECT_NE(sheets.checker(Atlas::Floor), nullptr);
-    EXPECT_FALSE(sheets.touched());
+    EXPECT_NE(sheets.getTexture(Atlas::Wall), nullptr);
+    EXPECT_NE(sheets.getTexture(Atlas::Floor), nullptr);
+    EXPECT_NE(sheets.getKeyed(Atlas::Wall), nullptr);
+    EXPECT_NE(sheets.getKeyed(Atlas::Floor), nullptr);
+    EXPECT_NE(sheets.getChecker(Atlas::Wall), nullptr);
+    EXPECT_NE(sheets.getChecker(Atlas::Floor), nullptr);
+    EXPECT_FALSE(sheets.isTouched());
 }
 
 TEST(AtlasSheetsTest, Sheet_IsTheOneTheAtlasIsPaintedFrom)
@@ -111,13 +111,13 @@ TEST(AtlasSheetsTest, Sheet_IsTheOneTheAtlasIsPaintedFrom)
     AtlasSheets sheets;
     const antwika::map::Map drawnMap;
 
-    sheets.open(viewportRenderer, bothSheets(3), drawnMap, 0);
+    sheets.open(viewportRenderer, getBothSheets(3), drawnMap, 0);
     sheets.sheet(Atlas::Wall).pixels.front() = 11;
     sheets.sheet(Atlas::Floor).pixels.front() = 22;
 
     EXPECT_EQ(sheets.sheet(0U).pixels.front(), 11);
     EXPECT_EQ(sheets.sheet(1U).pixels.front(), 22);
-    EXPECT_EQ(sheets.sheets().size(), 2U);
+    EXPECT_EQ(sheets.getSheets().size(), 2U);
 }
 
 TEST(AtlasSheetsTest, Take_LaysTheSheetsDownAndLeavesThemToTheRefresh)
@@ -128,10 +128,10 @@ TEST(AtlasSheetsTest, Take_LaysTheSheetsDownAndLeavesThemToTheRefresh)
     AtlasSheets sheets;
     const antwika::map::Map drawnMap;
 
-    sheets.open(viewportRenderer, bothSheets(3), drawnMap, 0);
-    sheets.take(bothSheets(9));
+    sheets.open(viewportRenderer, getBothSheets(3), drawnMap, 0);
+    sheets.take(getBothSheets(9));
 
-    EXPECT_TRUE(sheets.touched());
+    EXPECT_TRUE(sheets.isTouched());
     EXPECT_EQ(sheets.sheet(Atlas::Wall).pixels.front(), 9);
 }
 
@@ -143,7 +143,7 @@ TEST(AtlasSheetsTest, Refresh_MakesNoPictureWhereNothingWasPaintedOn)
     AtlasSheets sheets;
     const antwika::map::Map drawnMap;
 
-    sheets.open(viewportRenderer, bothSheets(3), drawnMap, 0);
+    sheets.open(viewportRenderer, getBothSheets(3), drawnMap, 0);
 
     EXPECT_CALL(innerRenderer, createTexture).Times(0);
 
@@ -158,14 +158,14 @@ TEST(AtlasSheetsTest, Refresh_MakesBothSheetsAfreshOncePaintedOn)
     AtlasSheets sheets;
     const antwika::map::Map drawnMap;
 
-    sheets.open(viewportRenderer, bothSheets(3), drawnMap, 0);
+    sheets.open(viewportRenderer, getBothSheets(3), drawnMap, 0);
     sheets.touch();
 
     EXPECT_CALL(innerRenderer, createTexture).Times(4);
 
     sheets.refresh(viewportRenderer, drawnMap, 0, false);
 
-    EXPECT_FALSE(sheets.touched());
+    EXPECT_FALSE(sheets.isTouched());
 }
 
 TEST(AtlasSheetsTest, Refresh_LeavesASheetNoFlipWalksThroughAlone)
@@ -174,9 +174,9 @@ TEST(AtlasSheetsTest, Refresh_LeavesASheetNoFlipWalksThroughAlone)
     handsOutTextures(innerRenderer);
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     AtlasSheets sheets;
-    const auto drawnMap = mapWithFlippingWalls();
+    const auto drawnMap = getMapWithFlippingWalls();
 
-    sheets.open(viewportRenderer, bothSheets(3), drawnMap, 0);
+    sheets.open(viewportRenderer, getBothSheets(3), drawnMap, 0);
 
     EXPECT_CALL(innerRenderer, createTexture).Times(2);
 
@@ -190,8 +190,8 @@ TEST(AtlasSheetsTest, Open_TakesAnyRendererNotJustAViewportOne)
     AtlasSheets sheets;
     const antwika::map::Map drawnMap;
 
-    sheets.open(innerRenderer, bothSheets(3), drawnMap, 0);
+    sheets.open(innerRenderer, getBothSheets(3), drawnMap, 0);
 
-    EXPECT_NE(sheets.texture(Atlas::Wall), nullptr);
-    EXPECT_NE(sheets.texture(Atlas::Floor), nullptr);
+    EXPECT_NE(sheets.getTexture(Atlas::Wall), nullptr);
+    EXPECT_NE(sheets.getTexture(Atlas::Floor), nullptr);
 }

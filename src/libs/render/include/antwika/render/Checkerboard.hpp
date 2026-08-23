@@ -8,7 +8,7 @@
 namespace antwika::render
 {
 
-    [[nodiscard]] gfx::Bitmap checkered(
+    [[nodiscard]] gfx::Bitmap getCheckered(
         gfx::Size size, std::uint32_t check = 1);
 
 }

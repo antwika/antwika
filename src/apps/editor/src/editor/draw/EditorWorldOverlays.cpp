@@ -38,29 +38,29 @@ namespace antwika::editor
     {
         if (!play.playing && overlayStale)
         {
-            gridLines = voxelmap::levelGridLines(
-                document.map.voxels, antwika::voxel::cubeTop(editLevel));
-            topLines = voxelmap::buildableTopOutlines(
-                document.map.voxels, antwika::voxel::cubeTop(editLevel));
+            gridLines = voxelmap::getLevelGridLines(
+                document.map.voxels, antwika::voxel::getCubeTop(editLevel));
+            topLines = voxelmap::getBuildableTopOutlines(
+                document.map.voxels, antwika::voxel::getCubeTop(editLevel));
 
-            const auto satisfiedSeamSet = solver::satisfiedSeams(
-                worldMeshes.faces(),
-                worldMeshes.solved(),
+            const auto satisfiedSeamSet = solver::getSatisfiedSeams(
+                worldMeshes.getFaces(),
+                worldMeshes.getSolved(),
                 document.map.rules,
                 cornerJoining);
 
-            seamsAboveLevel = solver::crossLevelSeams(
-                worldMeshes.faces(),
+            seamsAboveLevel = solver::getCrossLevelSeams(
+                worldMeshes.getFaces(),
                 satisfiedSeamSet,
-                antwika::voxel::cubeTop(editLevel));
-            seamsAtLevel = solver::sameLevelSeams(
-                worldMeshes.faces(),
+                antwika::voxel::getCubeTop(editLevel));
+            seamsAtLevel = solver::getSameLevelSeams(
+                worldMeshes.getFaces(),
                 satisfiedSeamSet,
-                antwika::voxel::cubeTop(editLevel));
+                antwika::voxel::getCubeTop(editLevel));
             overlayStale = false;
         }
 
-        const auto clipMatrix = camera.viewProjection() * modelMatrix;
+        const auto clipMatrix = camera.getViewProjection() * modelMatrix;
 
         {
             const auto ruled = [&](const auto &spans,
@@ -69,12 +69,12 @@ namespace antwika::editor
                 for (const auto &span : spans)
                 {
                     const auto fromPoint =
-                        voxelmap::projectToScreen(
+                        voxelmap::getProjectToScreen(
                             clipMatrix,
                             camera::kCanvasSize,
                             span.fromPosition);
                     const auto toPoint =
-                        voxelmap::projectToScreen(
+                        voxelmap::getProjectToScreen(
                             clipMatrix,
                             camera::kCanvasSize,
                             span.toPosition);
@@ -90,29 +90,29 @@ namespace antwika::editor
             {
                 for (const auto keyCell : document.map.keyPositions)
                 {
-                    if (!play.game->gates().collectedKeyPositions.contains(
+                    if (!play.game->getGates().collectedKeyPositions.contains(
                             antwika::voxel::cubeCornerOf(keyCell)))
                     {
-                        ruled(voxelmap::cubeWireframe(keyCell), kRuleLineColor);
+                        ruled(voxelmap::getCubeWireframe(keyCell), kRuleLineColor);
                     }
                 }
 
                 for (const auto doorCell : document.map.doorPositions)
                 {
                     ruled(
-                        voxelmap::cubeWireframe(doorCell),
+                        voxelmap::getCubeWireframe(doorCell),
                         kCornerSeamLineColor);
                 }
 
                 for (const auto entity :
-                     play.game->world().view<antwika::component::Item>())
+                     play.game->getWorld().view<antwika::component::Item>())
                 {
                     const auto item =
-                        play.game->world().get<antwika::component::Item>(
+                        play.game->getWorld().get<antwika::component::Item>(
                             entity);
 
                     ruled(
-                        voxelmap::cubeWireframe(item.position),
+                        voxelmap::getCubeWireframe(item.position),
                         static_cast<component::ItemKind>(item.kind)
                                 == component::ItemKind::Food
                                  ? kFoodBarColor
@@ -122,24 +122,24 @@ namespace antwika::editor
 
             for (const auto troubleCell : growTroublePositions)
             {
-                ruled(voxelmap::cubeWireframe(troubleCell),
+                ruled(voxelmap::getCubeWireframe(troubleCell),
                 kForbiddenMarkerColor);
             }
 
-            if (play.playing && play.game->pathGoal().has_value())
+            if (play.playing && play.game->getPathGoal().has_value())
             {
                 ruled(
-                    voxelmap::cubeWireframe(*play.game->pathGoal()),
+                    voxelmap::getCubeWireframe(*play.game->getPathGoal()),
                     kPlacementPreviewColor);
             }
 
             if (!play.playing)
             {
-                if (!lightPasses.hidden().empty())
+                if (!lightPasses.getHidden().empty())
                 {
                     ruled(
-                        voxelmap::occluderFootprints(
-                            lightPasses.hidden()),
+                        voxelmap::getOccluderFootprints(
+                            lightPasses.getHidden()),
                         kLevelGridLineColor);
                 }
 
@@ -153,12 +153,12 @@ namespace antwika::editor
                     ruled(topLines, kCursorColor);
                 }
 
-                const auto going = voxelmap::cellUnder(
+                const auto going = voxelmap::getCellUnder(
                     camera,
                     modelMatrix,
                     camera::kCanvasSize,
                     pointer.pointerOnCanvas,
-                    antwika::voxel::cubeTop(editLevel));
+                    antwika::voxel::getCubeTop(editLevel));
 
                 const auto steering =
                     cameraRig.orbiting
@@ -178,60 +178,60 @@ namespace antwika::editor
                             || !stampVoxels.empty()))
                     {
                         for (const auto cube :
-                             stampGhost(*going))
+                             getStampGhost(*going))
                         {
                             ruled(
-                                voxelmap::cubeWireframe(cube),
+                                voxelmap::getCubeWireframe(cube),
                                     kPlacementPreviewColor);
                         }
                     }
                     else if (shapeFromPosition.has_value())
                     {
-                        for (const auto cube : shapedCubes(
+                        for (const auto cube : getShapedCubes(
                                  *shapeFromPosition, *going))
                         {
                             ruled(
-                                voxelmap::cubeWireframe(cube),
+                                voxelmap::getCubeWireframe(cube),
                                     kPlacementPreviewColor);
                         }
                     }
                     else
                     {
-                        ruled(voxelmap::cubeWireframe(*going),
+                        ruled(voxelmap::getCubeWireframe(*going),
                             kPlacementPreviewColor);
                     }
                 }
 
                 for (const auto lamp : document.map.lamps)
                 {
-                    ruled(light::lampGizmoSpans(lamp), lamp.tintColor);
+                    ruled(light::getLampGizmoSpans(lamp), lamp.tintColor);
                 }
 
                 if (document.map.spawnCubePosition.has_value())
                 {
                     ruled(
-                        voxelmap::cubeWireframe(
+                        voxelmap::getCubeWireframe(
                             *document.map.spawnCubePosition),
                         kCornerFilledMarkerColor);
                 }
 
                 if (document.map.exitCubePosition.has_value())
                 {
-                    ruled(voxelmap::cubeWireframe(
+                    ruled(voxelmap::getCubeWireframe(
                             *document.map.exitCubePosition),
                         kForbiddenMarkerColor);
                 }
 
                 for (const auto keyCell : document.map.keyPositions)
                 {
-                    ruled(voxelmap::cubeWireframe(keyCell), kRuleLineColor);
+                    ruled(voxelmap::getCubeWireframe(keyCell), kRuleLineColor);
                 }
 
                 for (
                     const auto doorCell : document.map.doorPositions)
                 {
                     ruled(
-                        voxelmap::cubeWireframe(doorCell),
+                        voxelmap::getCubeWireframe(doorCell),
                         kCornerSeamLineColor);
                 }
 
@@ -239,18 +239,18 @@ namespace antwika::editor
                      document.map.checkpointPositions)
                 {
                     ruled(
-                        voxelmap::cubeWireframe(checkpointCell),
+                        voxelmap::getCubeWireframe(checkpointCell),
                         kRuleLineCrossLevelColor);
                 }
 
                 for (const auto foodCell : document.map.foodPositions)
                 {
-                    ruled(voxelmap::cubeWireframe(foodCell), kFoodBarColor);
+                    ruled(voxelmap::getCubeWireframe(foodCell), kFoodBarColor);
                 }
 
                 for (const auto waterCell : document.map.waterPositions)
                 {
-                    ruled(voxelmap::cubeWireframe(waterCell), kWaterBarColor);
+                    ruled(voxelmap::getCubeWireframe(waterCell), kWaterBarColor);
                 }
 
                 if (settings.tool == map::Tool::Figure
@@ -262,7 +262,7 @@ namespace antwika::editor
                              *figurePicked).patrolPathPositions)
                     {
                         ruled(
-                            voxelmap::cubeWireframe(stop),
+                            voxelmap::getCubeWireframe(stop),
                             kPlacementPreviewColor);
                     }
                 }
@@ -274,7 +274,7 @@ namespace antwika::editor
                          ++index)
                     {
                         ruled(
-                            voxelmap::cubeWireframe(document.map.plates.at(
+                            voxelmap::getCubeWireframe(document.map.plates.at(
                                 index).position),
                             kCursorColor);
 
@@ -284,7 +284,7 @@ namespace antwika::editor
                                  document.map.plates.at(index).togglePositions)
                             {
                                 ruled(
-                                    voxelmap::cubeWireframe(sway),
+                                    voxelmap::getCubeWireframe(sway),
                                     kPlacementPreviewColor);
                             }
                         }
@@ -293,11 +293,11 @@ namespace antwika::editor
             }
         }
 
-        const auto seamFrom = clockSource.currentTime();
+        const auto seamFrom = clockSource.getCurrentTime();
 
         if (settings.showRuleLines && !play.playing)
         {
-            const auto &faces = worldMeshes.faces();
+            const auto &faces = worldMeshes.getFaces();
             const auto seamRuled =
                 [&](const std::vector<solver::FaceSeam> &seams,
                     const gfx::Color ink)
@@ -316,14 +316,14 @@ namespace antwika::editor
                         continue;
                     }
 
-                    const auto herePoint = voxelmap::projectToScreen(
+                    const auto herePoint = voxelmap::getProjectToScreen(
                         clipMatrix,
                         camera::kCanvasSize,
-                        voxelmap::faceMiddle(faces[seam.faceA]));
-                    const auto therePoint = voxelmap::projectToScreen(
+                        voxelmap::getFaceMiddle(faces[seam.faceA]));
+                    const auto therePoint = voxelmap::getProjectToScreen(
                         clipMatrix,
                         camera::kCanvasSize,
-                        voxelmap::faceMiddle(faces[seam.faceB]));
+                        voxelmap::getFaceMiddle(faces[seam.faceB]));
 
                     if (herePoint.has_value()
                         && therePoint.has_value())
@@ -345,7 +345,7 @@ namespace antwika::editor
         meters.seamRate.record(
             std::chrono::duration_cast<
                 std::chrono::nanoseconds>(
-                clockSource.currentTime() - seamFrom));
+                clockSource.getCurrentTime() - seamFrom));
 
         drawHealthBars(clipMatrix);
         drawSightPoints(clipMatrix);
@@ -356,7 +356,7 @@ namespace antwika::editor
         const gfx::Vec3 position,
         const gfx::Color markColor)
     {
-        const auto onCanvas = voxelmap::projectToScreen(
+        const auto onCanvas = voxelmap::getProjectToScreen(
             clipMatrix, camera::kCanvasSize, position);
 
         if (!onCanvas.has_value())
@@ -389,21 +389,21 @@ namespace antwika::editor
         }
 
         const auto stoodPosition =
-            play.world.get<component::Position>(play.game->player());
+            play.world.get<component::Position>(play.game->getPlayer());
 
         const gfx::Vec3 walkerPosition{
             stoodPosition.x, stoodPosition.y, stoodPosition.z};
 
         drawPointMark(
             clipMatrix,
-            antwika::voxel::lineOfSight(walkerPosition),
+            antwika::voxel::getLineOfSight(walkerPosition),
             kSightPointColor);
 
         if (upperSightOn())
         {
             drawPointMark(
                 clipMatrix,
-                antwika::voxel::upperLineOfSight(walkerPosition),
+                antwika::voxel::getUpperLineOfSight(walkerPosition),
                 kSightPointColor);
         }
     }
@@ -424,21 +424,21 @@ namespace antwika::editor
                 kWaterBarColor};
 
         for (const auto entity :
-             play.game->world().view<component::Position, component::Health>())
+             play.game->getWorld().view<component::Position, component::Health>())
         {
-            const auto overhead = voxelmap::projectToScreen(
+            const auto overhead = voxelmap::getProjectToScreen(
                 clipMatrix,
                 camera::kCanvasSize,
                 character::headTopOf(
-                    play.game->world().get<component::Position>(entity)));
+                    play.game->getWorld().get<component::Position>(entity)));
 
             if (!overhead.has_value())
             {
                 continue;
             }
 
-            const auto bars = antwika::render::healthBars(
-                *overhead, play.game->world().get<component::Health>(entity));
+            const auto bars = antwika::render::getHealthBars(
+                *overhead, play.game->getWorld().get<component::Health>(entity));
 
             for (std::size_t index = 0;
                  index < antwika::render::kHealthBarParts;

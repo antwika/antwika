@@ -10,13 +10,13 @@
 #include <antwika/input/PointerHint.hpp>
 #include <antwika/input/Position.hpp>
 
-using antwika::app::asPoint;
+using antwika::app::getAsPoint;
 using antwika::app::hoverFrom;
 using antwika::app::isLeftPress;
 using antwika::app::isLeftRelease;
 using antwika::app::isPressOf;
 using antwika::app::isReleaseOf;
-using antwika::app::leftPress;
+using antwika::app::getLeftPress;
 using antwika::app::pressOf;
 using antwika::app::locates;
 using antwika::app::pointerFrom;
@@ -36,7 +36,7 @@ TEST(PointerReadingTest, AsPoint_ReadsAPositionAsAPoint)
 {
     constexpr Position position{.x = 12, .y = -34};
 
-    EXPECT_EQ(asPoint(position), (Point{.x = 12, .y = -34}));
+    EXPECT_EQ(getAsPoint(position), (Point{.x = 12, .y = -34}));
 }
 
 TEST(PointerReadingTest, Locates_IsTrueForAPositionedEvent)
@@ -145,8 +145,8 @@ TEST(PointerReadingTest, LeftPress_AnswersOnlyTheLeftButtonsPress)
     const InputEvent rightEvent =
         PointerButtonPressed{.button = MouseButton::Right};
 
-    EXPECT_NE(leftPress(leftEvent), nullptr);
-    EXPECT_EQ(leftPress(rightEvent), nullptr);
+    EXPECT_NE(getLeftPress(leftEvent), nullptr);
+    EXPECT_EQ(getLeftPress(rightEvent), nullptr);
 }
 
 TEST(PointerReadingTest, IsLeftPress_SaysWhetherTheLeftButtonWentDown)

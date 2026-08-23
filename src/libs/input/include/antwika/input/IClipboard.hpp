@@ -11,7 +11,7 @@ namespace antwika::input
     public:
         virtual ~IClipboard() = default;
 
-        [[nodiscard]] virtual std::string text() const = 0;
+        [[nodiscard]] virtual std::string getText() const = 0;
 
         virtual void setText(std::string_view text) = 0;
     };

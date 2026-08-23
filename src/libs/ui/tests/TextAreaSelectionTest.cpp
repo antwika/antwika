@@ -26,7 +26,7 @@
 using antwika::gfx::Color;
 using antwika::gfx::Point;
 using antwika::gfx::Size;
-using antwika::ui::support::fillsColored;
+using antwika::ui::support::getFillsColored;
 using antwika::ui::support::textsOf;
 using antwika::ui::Context;
 using antwika::ui::DrawList;
@@ -53,7 +53,7 @@ namespace
     constexpr std::int32_t kAdvance = 6;
     constexpr std::int32_t kLineHeight = 8;
 
-    Theme plainTheme()
+    Theme getPlainTheme()
     {
         return Theme{
             .textColor = kInkColor,
@@ -72,7 +72,7 @@ namespace
         spec.widgetId = kCodeWidget;
         spec.focused = true;
 
-        Context uiContext{kCanvasSize, plainTheme(), pointer, keyboard};
+        Context uiContext{kCanvasSize, getPlainTheme(), pointer, keyboard};
 
         uiContext.textArea(spec);
 
@@ -194,7 +194,7 @@ TEST(TextAreaSelectionTest, TextArea_ASelectionAcrossLinesIsDrawnOnEachOfThem)
 
 TEST(TextAreaSelectionTest, TextArea_AnUnfocusedAreaShowsNoSelection)
 {
-    Context uiContext{kCanvasSize, plainTheme()};
+    Context uiContext{kCanvasSize, getPlainTheme()};
 
     uiContext.textArea(
         TextAreaSpec{.text = "abcdef", .cursor = 4, .anchor = 1});
@@ -549,8 +549,8 @@ TEST(TextAreaSelectionTest, TextArea_APressOutsideTheTextMovesNoCaret)
 {
     const auto frame = frameOf(
         TextAreaSpec{
-            .widthSizing = antwika::ui::fixedSize(30),
-            .heightSizing = antwika::ui::fixedSize(16),
+            .widthSizing = antwika::ui::getFixedSize(30),
+            .heightSizing = antwika::ui::getFixedSize(16),
             .text = "abcdef",
             .cursor = 1},
         Keyboard{},
@@ -578,7 +578,7 @@ TEST(TextAreaSelectionTest, TextArea_APressOnAnUnfocusedAreaMovesNoCaret)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{
             .positionPoint = cellAt(0, 2), .down = true, .pressed = true}};
 
@@ -604,7 +604,7 @@ TEST(TextAreaSelectionTest, TextArea_AnUnnamedAreaStillTypesAndNeverScrolls)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{},
         Keyboard{.keys = {Key::Character}, .typedText = "X"}};
 
@@ -622,7 +622,7 @@ TEST(TextAreaSelectionTest, TextArea_APressAmendsNoOtherWidgetsEdit)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{
             .positionPoint = cellAt(0, 3), .down = true, .pressed = true},
         Keyboard{.keys = {Key::Character}, .typedText = "X"}};
@@ -648,7 +648,7 @@ TEST(TextAreaSelectionTest, TextArea_FinishingTwiceAnswersTheSameWay)
 {
     Context uiContext{
         kCanvasSize,
-        plainTheme(),
+        getPlainTheme(),
         Pointer{
             .positionPoint = cellAt(1, 2), .down = true, .pressed = true}};
 

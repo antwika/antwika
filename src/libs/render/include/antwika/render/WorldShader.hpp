@@ -25,7 +25,7 @@ namespace antwika::render
             gfx::IRenderer &viewportRenderer,
             const gfx::ShaderSource &voxelSource);
 
-        [[nodiscard]] gfx::IShader &program() const noexcept;
+        [[nodiscard]] gfx::IShader &getProgram() const noexcept;
 
         void setLook(
             gfx::IRenderer &viewportRenderer,

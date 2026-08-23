@@ -24,7 +24,7 @@ namespace antwika::map::mapfile
 
     [[nodiscard]] nlohmann::json shapeOf(Fields fields);
 
-    [[nodiscard]] nlohmann::json writtenObject(
+    [[nodiscard]] nlohmann::json getWrittenObject(
         Fields fields, const void *record);
 
     void readObject(
@@ -34,7 +34,7 @@ namespace antwika::map::mapfile
     [[nodiscard]] nlohmann::json written(
         const Fields fields, const Record &record)
     {
-        return writtenObject(fields, &record);
+        return getWrittenObject(fields, &record);
     } // GCOVR_EXCL_LINE
 
     template <typename Record>

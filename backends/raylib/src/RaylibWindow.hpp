@@ -38,15 +38,15 @@ namespace antwika::gfx::raylib
 
         ~RaylibWindow() override;
 
-        [[nodiscard]] WindowId id() const override;
+        [[nodiscard]] WindowId getId() const override;
 
         [[nodiscard]] bool isOpen() const override;
 
-        [[nodiscard]] std::string title() const override;
+        [[nodiscard]] std::string getTitle() const override;
 
-        [[nodiscard]] Size configuredSize() const override;
+        [[nodiscard]] Size getConfiguredSize() const override;
 
-        [[nodiscard]] Size size() const override;
+        [[nodiscard]] Size getSize() const override;
 
         [[nodiscard]] bool isFullscreen() const override;
 

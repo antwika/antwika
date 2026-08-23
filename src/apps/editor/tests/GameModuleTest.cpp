@@ -45,7 +45,7 @@ TEST_F(GameModuleTest, GameModule_MakesAGameToBeReachedThrough)
     World world(logger);
     GameModule module(logger, world, solidVoxels, patrolPositions);
 
-    EXPECT_TRUE(module->world().isAlive(module->eye()));
+    EXPECT_TRUE(module->getWorld().isAlive(module->getEye()));
 }
 
 TEST_F(GameModuleTest, GameModule_IsReadThroughWhereItIsHeldAsConst)
@@ -54,7 +54,7 @@ TEST_F(GameModuleTest, GameModule_IsReadThroughWhereItIsHeldAsConst)
     GameModule module(logger, world, solidVoxels, patrolPositions);
     const auto &constModule = module;
 
-    EXPECT_EQ(constModule->player(), module->player());
+    EXPECT_EQ(constModule->getPlayer(), module->getPlayer());
 }
 
 TEST_F(GameModuleTest, GameModule_ClaimsThePlayForTheImageThatHoldsIt)

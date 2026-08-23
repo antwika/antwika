@@ -14,7 +14,7 @@ namespace antwika::wfc
     public:
         virtual ~IConstraint() = default;
 
-        [[nodiscard]] virtual std::span<const std::size_t> cells() const = 0;
+        [[nodiscard]] virtual std::span<const std::size_t> getCells() const = 0;
 
         virtual bool prune(std::vector<Domain> &waveDomains) const = 0;
     };

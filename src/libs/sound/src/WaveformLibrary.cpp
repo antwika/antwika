@@ -18,7 +18,7 @@ namespace antwika::sound
                 "of frames of the format it names");
         }
 
-        if (waveform.frameCount() == 0)
+        if (waveform.getFrameCount() == 0)
         {
             throw SoundError(
                 "antwika::sound: a waveform holding no frames could never "
@@ -30,21 +30,21 @@ namespace antwika::sound
         return static_cast<WaveformId>(waveforms.size() - 1);
     }
 
-    const Waveform &WaveformLibrary::get(WaveformId idWaveform) const
+    const Waveform &WaveformLibrary::getWaveform(WaveformId idWaveform) const
     {
-        const auto index = static_cast<std::size_t>(rawValue(idWaveform));
+        const auto index = static_cast<std::size_t>(getRawValue(idWaveform));
 
         if (index >= waveforms.size())
         {
             throw SoundError(
                 "antwika::sound: no waveform has id "
-                + std::to_string(rawValue(idWaveform)));
+                + std::to_string(getRawValue(idWaveform)));
         }
 
         return waveforms[index];
     }
 
-    std::size_t WaveformLibrary::size() const noexcept
+    std::size_t WaveformLibrary::getSize() const noexcept
     {
         return waveforms.size();
     }

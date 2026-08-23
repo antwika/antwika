@@ -11,7 +11,7 @@ namespace antwika::pathfinding
 
     namespace
     {
-        [[nodiscard]] std::uint64_t apart(
+        [[nodiscard]] std::uint64_t getApart(
             const GridPos fromPosition, const GridPos toPosition)
         {
             return static_cast<std::uint64_t>(
@@ -20,7 +20,7 @@ namespace antwika::pathfinding
                        std::abs(fromPosition.z - toPosition.z));
         }
 
-        [[nodiscard]] std::vector<GridPos> walkedBack(
+        [[nodiscard]] std::vector<GridPos> getWalkedBack(
             const std::map<GridPos, GridPos> &cameFromPos,
             const GridPos fromPosition,
             const GridPos toPosition)
@@ -38,7 +38,7 @@ namespace antwika::pathfinding
         } // GCOVR_EXCL_LINE
     }
 
-    std::optional<std::vector<GridPos>> pathBetween(
+    std::optional<std::vector<GridPos>> getPathBetween(
         const IWalkGraph &graph,
         const GridPos fromPosition,
         const GridPos toPosition,
@@ -60,7 +60,7 @@ namespace antwika::pathfinding
             open;
 
         costTo[fromPosition] = 0;
-        open.push(Entry{apart(fromPosition, toPosition), fromPosition});
+        open.push(Entry{getApart(fromPosition, toPosition), fromPosition});
 
         std::uint64_t takenSteps = 0;
 
@@ -77,15 +77,15 @@ namespace antwika::pathfinding
 
             if (herePos == toPosition)
             {
-                return walkedBack(cameFromPos, fromPosition, toPosition);
+                return getWalkedBack(cameFromPos, fromPosition, toPosition);
             }
 
-            if (worth > costTo.at(herePos) + apart(herePos, toPosition))
+            if (worth > costTo.at(herePos) + getApart(herePos, toPosition))
             {
                 continue;
             }
 
-            for (const auto nextPos : graph.neighbors(herePos))
+            for (const auto nextPos : graph.getNeighbors(herePos))
             {
                 const auto step = costTo.at(herePos) + 1;
                 const auto foundCost = costTo.find(nextPos);
@@ -98,7 +98,7 @@ namespace antwika::pathfinding
 
                 costTo[nextPos] = step;
                 cameFromPos[nextPos] = herePos;
-                open.push(Entry{step + apart(nextPos, toPosition), nextPos});
+                open.push(Entry{step + getApart(nextPos, toPosition), nextPos});
             }
         }
 

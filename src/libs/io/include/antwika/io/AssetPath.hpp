@@ -6,8 +6,8 @@
 namespace antwika::io
 {
 
-    [[nodiscard]] std::string executableDirectory();
+    [[nodiscard]] std::string getExecutableDirectory();
 
-    [[nodiscard]] std::string assetPath(std::string_view name);
+    [[nodiscard]] std::string getAssetPath(std::string_view name);
 
 }

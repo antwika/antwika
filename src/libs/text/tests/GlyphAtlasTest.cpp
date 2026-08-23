@@ -24,10 +24,10 @@ using antwika::text::forEachGlyphPixel;
 using antwika::text::GlyphBlit;
 using antwika::text::GlyphCells;
 using antwika::text::GlyphCellsCache;
-using antwika::text::glyphPixelColor;
-using antwika::text::glyphAtlasBitmap;
-using antwika::text::glyphAtlasBlits;
-using antwika::text::glyphAtlasCell;
+using antwika::text::getGlyphPixelColor;
+using antwika::text::getGlyphAtlasBitmap;
+using antwika::text::getGlyphAtlasBlits;
+using antwika::text::getGlyphAtlasCell;
 using antwika::gfx::kBytesPerPixel;
 using antwika::gfx::kGlyphCount;
 using antwika::gfx::Point;
@@ -45,7 +45,7 @@ namespace
 
     using PaintRecord = std::map<std::pair<std::int32_t, std::int32_t>, Color>;
 
-    [[nodiscard]] PaintRecord paintedByPixels(
+    [[nodiscard]] PaintRecord getPaintedByPixels(
         std::string_view text, Color inkColor)
     {
         GlyphCellsCache cache;
@@ -65,17 +65,17 @@ namespace
         return paintedCells;
     }
 
-    [[nodiscard]] PaintRecord paintedByAtlas(
+    [[nodiscard]] PaintRecord getPaintedByAtlas(
         std::string_view text, Color inkColor)
     {
         GlyphCellsCache cache;
         const GlyphCells &cells = cache.at(kScale);
-        const Bitmap atlasBitmap = glyphAtlasBitmap(cells);
+        const Bitmap atlasBitmap = getGlyphAtlasBitmap(cells);
 
         PaintRecord paintedCells;
 
         for (const GlyphBlit &blit :
-             glyphAtlasBlits(cells, kOriginPoint, text))
+             getGlyphAtlasBlits(cells, kOriginPoint, text))
         {
             for (std::uint32_t row = 0; row < blit.sourceRect.size.height;
                  ++row)
@@ -128,14 +128,14 @@ TEST(GlyphAtlasTest, GlyphAtlasBitmap_HoldsEveryGlyphInOneRow)
     GlyphCellsCache cache;
     const GlyphCells &cells = cache.at(kScale);
 
-    const auto atlas = glyphAtlasBitmap(cells);
+    const auto atlas = getGlyphAtlasBitmap(cells);
 
     EXPECT_EQ(
         atlas.size,
         (Size{
             .width = static_cast<std::uint32_t>(kGlyphCount)
-                * cells.cellSize().width,
-            .height = cells.cellSize().height}));
+                * cells.getCellSize().width,
+            .height = cells.getCellSize().height}));
     EXPECT_TRUE(atlas.isValid());
 }
 
@@ -143,9 +143,9 @@ TEST(GlyphAtlasTest, GlyphAtlasBitmap_CarriesEveryGlyphsCoverageOverWhite)
 {
     GlyphCellsCache cache;
     const GlyphCells &cells = cache.at(kScale);
-    const Size cellSize = cells.cellSize();
+    const Size cellSize = cells.getCellSize();
 
-    const auto atlas = glyphAtlasBitmap(cells);
+    const auto atlas = getGlyphAtlasBitmap(cells);
 
     std::size_t inkedCount = 0;
 
@@ -185,11 +185,11 @@ TEST(GlyphAtlasTest, GlyphAtlasBitmap_InksTheLastGlyphAsWellAsTheFirst)
 {
     GlyphCellsCache cache;
     const GlyphCells &cells = cache.at(kScale);
-    const Size cellSize = cells.cellSize();
+    const Size cellSize = cells.getCellSize();
 
-    const auto atlas = glyphAtlasBitmap(cells);
+    const auto atlas = getGlyphAtlasBitmap(cells);
 
-    const auto lastCell = glyphAtlasCell(
+    const auto lastCell = getGlyphAtlasCell(
         cells, static_cast<char>(antwika::gfx::kLastGlyph));
 
     ASSERT_TRUE(lastCell.has_value());
@@ -219,13 +219,13 @@ TEST(GlyphAtlasTest, GlyphAtlasCell_PlacesGlyphsAtTheirCodepointOffset)
 {
     GlyphCellsCache cache;
     const GlyphCells &cells = cache.at(kScale);
-    const Size cellSize = cells.cellSize();
+    const Size cellSize = cells.getCellSize();
 
     EXPECT_EQ(
-        glyphAtlasCell(cells, ' '),
+        getGlyphAtlasCell(cells, ' '),
         (Rect{.originPoint = {.x = 0, .y = 0}, .size = cellSize}));
     EXPECT_EQ(
-        glyphAtlasCell(cells, '!'),
+        getGlyphAtlasCell(cells, '!'),
         (Rect{
             .originPoint = {.x = static_cast<std::int32_t>(cellSize.width),
                        .y = 0},
@@ -237,18 +237,18 @@ TEST(GlyphAtlasTest, GlyphAtlasCell_HoldsNoGlyphOutsideThePrintableRange)
     GlyphCellsCache cache;
     const GlyphCells &cells = cache.at(kScale);
 
-    EXPECT_FALSE(glyphAtlasCell(cells, '\n').has_value());
+    EXPECT_FALSE(getGlyphAtlasCell(cells, '\n').has_value());
     EXPECT_FALSE(
-        glyphAtlasCell(cells, static_cast<char>(0x80)).has_value());
+        getGlyphAtlasCell(cells, static_cast<char>(0x80)).has_value());
 }
 
 TEST(GlyphAtlasTest, GlyphAtlasBlits_StepsOneCellPerCharacter)
 {
     GlyphCellsCache cache;
     const GlyphCells &cells = cache.at(kScale);
-    const Size cellSize = cells.cellSize();
+    const Size cellSize = cells.getCellSize();
 
-    const auto blits = glyphAtlasBlits(cells, kOriginPoint, "AB");
+    const auto blits = getGlyphAtlasBlits(cells, kOriginPoint, "AB");
 
     ASSERT_EQ(blits.size(), 2U);
     EXPECT_EQ(blits[0].destinationRect.originPoint, kOriginPoint);
@@ -264,9 +264,9 @@ TEST(GlyphAtlasTest, GlyphAtlasBlits_KeepsTheSpacingOfACharacterItSkips)
 {
     GlyphCellsCache cache;
     const GlyphCells &cells = cache.at(kScale);
-    const Size cellSize = cells.cellSize();
+    const Size cellSize = cells.getCellSize();
 
-    const auto blits = glyphAtlasBlits(cells, kOriginPoint, "\nB");
+    const auto blits = getGlyphAtlasBlits(cells, kOriginPoint, "\nB");
 
     ASSERT_EQ(blits.size(), 1U);
     EXPECT_EQ(
@@ -280,15 +280,15 @@ TEST(GlyphAtlasTest, GlyphAtlasBlits_DrawNothingForAnEmptyLine)
 {
     GlyphCellsCache cache;
 
-    EXPECT_TRUE(glyphAtlasBlits(cache.at(kScale), kOriginPoint, "").empty());
+    EXPECT_TRUE(getGlyphAtlasBlits(cache.at(kScale), kOriginPoint, "").empty());
 }
 
 TEST(GlyphAtlasTest, GlyphAtlas_PaintsWhatThePerPixelPathPainted)
 {
     const auto text = "Fire 42%";
 
-    const auto byPixels = paintedByPixels(text, kInkColor);
-    const auto byAtlas = paintedByAtlas(text, kInkColor);
+    const auto byPixels = getPaintedByPixels(text, kInkColor);
+    const auto byAtlas = getPaintedByAtlas(text, kInkColor);
 
     ASSERT_FALSE(byPixels.empty());
     EXPECT_EQ(byAtlas, byPixels);
@@ -299,8 +299,8 @@ TEST(GlyphAtlasTest, GlyphAtlas_CarriesAFadedInkThroughUnchanged)
     constexpr Color kFadedColor{
         .red = 200, .green = 100, .blue = 50, .alpha = 128};
 
-    const auto byPixels = paintedByPixels("Aj", kFadedColor);
-    const auto byAtlas = paintedByAtlas("Aj", kFadedColor);
+    const auto byPixels = getPaintedByPixels("Aj", kFadedColor);
+    const auto byAtlas = getPaintedByAtlas("Aj", kFadedColor);
 
     ASSERT_FALSE(byPixels.empty());
     EXPECT_EQ(byAtlas, byPixels);
