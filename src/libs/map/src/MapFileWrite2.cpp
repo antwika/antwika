@@ -64,17 +64,8 @@ namespace antwika::map::mapfile
 
         for (const auto &transition : map.transitions)
         {
-            nlohmann::json transitionJson;
-
-            transitionJson[std::string(kFromKey)] =
-                writtenTile(transition.fromTile);
-            transitionJson[std::string(kToKey)] =
-                writtenTile(transition.toTile);
-            transitionJson[std::string(kMaskKey)] =
-                writtenTile(transition.maskTile);
-            transitionJson[std::string(kSlotKey)] =
-                writtenTile(transition.outputTile);
-            transitions.push_back(transitionJson);
+            transitions.push_back(
+                written(kTransitionFields, transition));
         }
 
         document[std::string(kTransitionsKey)] = transitions;

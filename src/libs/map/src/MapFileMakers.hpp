@@ -113,6 +113,18 @@ namespace antwika::map::mapfile
             { memberIn<Member>(record) = colorFrom(json); }};
     }
 
+    template <auto Member>
+    [[nodiscard]] constexpr Field tileField(const std::string_view key)
+    {
+        return Field{
+            .key = key,
+            .shape = &tileSchema,
+            .valueOf = [](const void *record)
+            { return writtenTile(memberOf<Member>(record)); },
+            .setFrom = [](void *record, const nlohmann::json &json)
+            { memberIn<Member>(record) = readTile(json); }};
+    }
+
     template <auto Member, const auto &Names>
     [[nodiscard]] constexpr Field namedField(const std::string_view key)
     {
