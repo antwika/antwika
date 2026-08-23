@@ -26,6 +26,7 @@ uniform vec3 lampAt[mostLamps];
 uniform vec4 lampTint[mostLamps];
 uniform float lampsLit;
 uniform float lampReach[mostLamps];
+uniform float lampBrightness[mostLamps];
 uniform float lampStrength;
 
 uniform float lampShadows[mostLamps];
@@ -40,6 +41,8 @@ uniform float upperSightOn;
 uniform float sightOn;
 
 uniform float walkerAt;
+uniform float walkerLight;
+uniform float walkerLightRange;
 uniform float levelFade;
 
 uniform float nightEdge;
@@ -290,7 +293,7 @@ void main()
 
         float spare = smoothstep(0.0, 1.0, sqrt(reachLeft));
 
-        if (turned <= 0.0 || spare <= 0.0)
+        if (turned <= 0.0 || spare <= 0.0 || lampBrightness[at] <= 0.0)
         {
             continue;
         }
@@ -302,15 +305,20 @@ void main()
                       at,
                       nudgedAway(stood - lampAt[at], outward, turned));
 
-        lamplight +=
-            lampTint[at].rgb * turned * spare * lampStrength * got;
+        lamplight += lampTint[at].rgb * lampBrightness[at] * turned
+                     * spare * lampStrength * got;
     }
+
+    float nearLeft = clamp(
+        1.0 - (distance(stood, fadeFrom) / walkerLightRange), 0.0, 1.0);
+    vec3 nearby =
+        vec3(walkerLight * smoothstep(0.0, 1.0, sqrt(nearLeft)));
 
     float apart = sprite ? 0.0 : abs(stood.y - walkerAt);
     float onLevel = max(1.0 - (apart * levelFade), 0.0);
 
     vec3 shade = skin.rgb * fragColor.rgb * seen * onLevel
-                 * (vec3(lightAmbient) + lamplight);
+                 * (vec3(lightAmbient) + lamplight + nearby);
 
     shade += glowing * seen;
     shade *= left;

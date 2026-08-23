@@ -325,12 +325,14 @@ namespace antwika::game
             !voxel::cubeAbove(
                 meshes.cells(), walkerPosition, light::kSightClearance);
         auto lights = std::vector<light::ActiveLight>{
-            light::ActiveLight{.position = sightPoint}};
+            light::ActiveLight{
+                .position = sightPoint, .brightness = 0.0F}};
 
         if (upperSightOn)
         {
             lights.push_back(
-                light::ActiveLight{.position = upperSightPoint});
+                light::ActiveLight{
+                    .position = upperSightPoint, .brightness = 0.0F});
         }
 
         for (const auto &light : light::activeLights(world, map.lamps))

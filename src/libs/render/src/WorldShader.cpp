@@ -50,6 +50,17 @@ namespace antwika::render
                 "lampReach[7]"};
 
         constexpr std::array<std::string_view, light::kMaxLamps>
+            kLampBrightnessNames{
+                "lampBrightness[0]",
+                "lampBrightness[1]",
+                "lampBrightness[2]",
+                "lampBrightness[3]",
+                "lampBrightness[4]",
+                "lampBrightness[5]",
+                "lampBrightness[6]",
+                "lampBrightness[7]"};
+
+        constexpr std::array<std::string_view, light::kMaxLamps>
             kLampTintNames{
                 "lampTint[0]",
                 "lampTint[1]",
@@ -94,6 +105,8 @@ namespace antwika::render
             static_cast<float>(light::kShadowFaceResolution));
         viewportRenderer.setShaderNumber(
             *voxelShader, "lampBias", light::kLampShadowBias);
+        viewportRenderer.setShaderNumber(
+            *voxelShader, "walkerLightRange", light::kWalkerLightRange);
 
         for (const auto &[face, uniformName] :
              {std::pair{gfx::CubeFace::East, "lampViewEast"},
@@ -181,6 +194,12 @@ namespace antwika::render
             *voxelShader, "walkerAt", shaderInputs.fadeAbove);
         viewportRenderer.setShaderNumber(
             *voxelShader,
+            "walkerLight",
+            shaderInputs.lighting && shaderInputs.playing
+                ? light::kWalkerLight
+                : 0.0F);
+        viewportRenderer.setShaderNumber(
+            *voxelShader,
             "carrying",
             shaderInputs.carrying.has_value()
                 ? static_cast<float>(*shaderInputs.carrying)
@@ -202,6 +221,10 @@ namespace antwika::render
                 *voxelShader,
                 kLampReachNames.at(index),
                 lights.at(index).reach);
+            viewportRenderer.setShaderNumber(
+                *voxelShader,
+                kLampBrightnessNames.at(index),
+                lights.at(index).brightness);
             viewportRenderer.setShaderNumber(
                 *voxelShader,
                 kLampShadowNames.at(index),
