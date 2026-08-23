@@ -975,9 +975,9 @@ def _function_site(
     lead = QUALIFIER_CHAIN.sub("", before)
     spelled = _returned(lead)
 
-    if lead != before:
-        # An out-of-line definition cannot show the static or virtual it was
-        # declared with, so the declaration is the one that answers for it.
+    defined_out_of_line = lead != before
+
+    if defined_out_of_line:
         return None
 
     if re.search(r"\bstatic\b", before):
