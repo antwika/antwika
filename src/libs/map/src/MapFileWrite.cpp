@@ -67,11 +67,7 @@ namespace antwika::map
 
                 for (const auto &layer : layers)
                 {
-                    nlohmann::json layerJson;
-
-                    layerJson[std::string(kNameKey)] = layer.name;
-
-                    arrayJson.push_back(layerJson);
+                    arrayJson.push_back(written(kLayerFields, layer));
                 }
 
                 return arrayJson;

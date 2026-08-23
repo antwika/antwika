@@ -43,19 +43,7 @@ namespace antwika::map::mapfile
 
         for (const auto &flip : map.flipAnimations)
         {
-            auto frames = nlohmann::json::array();
-
-            for (const auto frame : flip.frameTiles)
-            {
-                frames.push_back(writtenTile(frame));
-            }
-
-            nlohmann::json flipJson;
-
-            flipJson[std::string(kTileKey)] =
-                writtenTile(flip.tile);
-            flipJson[std::string(kFramesKey)] = frames;
-            flips.push_back(flipJson);
+            flips.push_back(written(kFlipFields, flip));
         }
 
         document[std::string(kFlipsKey)] = flips;

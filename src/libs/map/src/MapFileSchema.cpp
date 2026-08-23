@@ -118,15 +118,7 @@ namespace antwika::map
 
             [[nodiscard]] nlohmann::json layerSchema()
             {
-                nlohmann::json shape;
-
-                shape["type"] = "object";
-                shape["additionalProperties"] = false;
-                shape["required"] = {std::string(kNameKey)};
-                shape["properties"][std::string(kNameKey)]["type"] =
-                    "string";
-
-                return shape;
+                return shapeOf(kLayerFields);
             } // GCOVR_EXCL_LINE
 
             [[nodiscard]] nlohmann::json cornerSchema()
