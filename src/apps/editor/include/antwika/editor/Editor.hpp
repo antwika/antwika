@@ -75,6 +75,7 @@
 #include "antwika/editor/editor/state/InkPicker.hpp"
 #include "antwika/editor/editor/state/StatusMessage.hpp"
 #include "antwika/editor/editor/FileDialog.hpp"
+#include "antwika/editor/editor/CameraRig.hpp"
 #include "antwika/editor/editor/EditorDocument.hpp"
 #include "antwika/editor/editor/GameModule.hpp"
 #include "antwika/editor/editor/PlaySession.hpp"
@@ -155,16 +156,11 @@ namespace antwika::editor
 
         PlaySession play;
 
-        map::CameraView cameraView;
+        CameraRig cameraRig;
 
-        float viewHeight = 0.0F;
-        bool freeLook = false;
         bool cameraFollows = true;
 
-        bool panning = false;
-        std::optional<gfx::Vec3> panGripPosition;
-        bool orbiting = false;
-        std::optional<input::Position> orbitFromPosition;
+
 
         bool descendHeld = false;
         bool ascendHeld = false;
