@@ -7,7 +7,7 @@
 
 #include <antwika/gfx/Glyphs.hpp>
 #include <antwika/gfx/Rect.hpp>
-#include <antwika/gfx/TextLayout.hpp>
+#include <antwika/text/TextLayout.hpp>
 
 #include "antwika/ui/DrawCommand.hpp"
 #include "antwika/ui/HoverTarget.hpp"
@@ -154,7 +154,7 @@ namespace antwika::ui::detail
                 }
 
                 const auto measuredSize =
-                    antwika::gfx::textSize(node.text, node.textScale);
+                    antwika::text::textSize(node.text, node.textScale);
 
                 if (node.arrangedRect.size.height < measuredSize.height)
                 {

@@ -3,9 +3,9 @@
 #include <cstdint>
 #include <map>
 
-#include "antwika/gfx/GlyphCells.hpp"
+#include "antwika/text/GlyphCells.hpp"
 
-namespace antwika::gfx
+namespace antwika::text
 {
 
     class GlyphCellsCache final

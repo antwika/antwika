@@ -6,7 +6,7 @@
 
 #include "antwika/gfx/Size.hpp"
 
-namespace antwika::gfx
+namespace antwika::text
 {
 
     class GlyphCells final
@@ -14,7 +14,7 @@ namespace antwika::gfx
     public:
         explicit GlyphCells(std::uint32_t scale);
 
-        [[nodiscard]] Size cellSize() const noexcept;
+        [[nodiscard]] gfx::Size cellSize() const noexcept;
 
         [[nodiscard]] std::uint8_t coverageAt(
             char character,
@@ -22,7 +22,7 @@ namespace antwika::gfx
             std::uint32_t row) const noexcept;
 
     private:
-        Size cell;
+        gfx::Size cell;
         std::vector<std::uint8_t> samples;
     };
 

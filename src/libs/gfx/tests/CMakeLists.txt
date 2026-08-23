@@ -5,18 +5,12 @@ add_subdirectory(fakes)
 add_subdirectory(mocks)
 
 add_executable(antwika_gfx_tests
-    AtlasTextTest.cpp
     BitmapTest.cpp
     BlitTest.cpp
     Camera3DTest.cpp
     ColorSpaceTest.cpp
     ColorTest.cpp
     CubeFaceTest.cpp
-    GlyphAtlasTest.cpp
-    GlyphAtlasTexturesTest.cpp
-    GlyphBlitTest.cpp
-    GlyphCellsTest.cpp
-    GlyphMetricsTest.cpp
     IWindowTest.cpp
     Math3DTest.cpp
     MeshDataTest.cpp
@@ -33,8 +27,6 @@ add_executable(antwika_gfx_tests
     ShaderReaderTest.cpp
     ShaderSourceTest.cpp
     SizeTest.cpp
-    TextLayoutTest.cpp
-    TextRasterTest.cpp
     TransformTest.cpp
     ViewportRendererTest.cpp
     ViewportTest.cpp

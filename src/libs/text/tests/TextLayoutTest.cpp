@@ -2,12 +2,12 @@
 
 #include "antwika/gfx/Glyphs.hpp"
 #include "antwika/gfx/Size.hpp"
-#include "antwika/gfx/TextLayout.hpp"
+#include "antwika/text/TextLayout.hpp"
 
 using antwika::gfx::kGlyphAdvance;
 using antwika::gfx::kGlyphLineHeight;
 using antwika::gfx::Size;
-using antwika::gfx::textSize;
+using antwika::text::textSize;
 
 TEST(TextLayoutTest, TextSize_IsOneCellPerCharacter)
 {

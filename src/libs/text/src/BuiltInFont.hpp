@@ -2,7 +2,7 @@
 
 #include <antwika/font/Font.hpp>
 
-namespace antwika::gfx::detail
+namespace antwika::text::detail
 {
 
     [[nodiscard]] const font::Font &builtInFont();

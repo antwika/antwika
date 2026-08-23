@@ -24,6 +24,7 @@ if(ANTWIKA_GFX_BACKEND STREQUAL "raylib")
     target_link_libraries(antwika_gfx_backend
         PUBLIC
             antwika::gfx
+            antwika::text
         PRIVATE
             raylib
     )

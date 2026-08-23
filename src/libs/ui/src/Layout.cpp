@@ -7,7 +7,7 @@
 
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
-#include <antwika/gfx/TextLayout.hpp>
+#include <antwika/text/TextLayout.hpp>
 
 #include "antwika/ui/Alignment.hpp"
 #include "antwika/ui/Axis.hpp"
@@ -121,7 +121,7 @@ namespace antwika::ui::detail
                 if (node.kind == NodeKind::Text)
                 {
                     node.measuredSize =
-                        antwika::gfx::textSize(node.text, node.textScale);
+                        antwika::text::textSize(node.text, node.textScale);
 
                     continue;
                 }

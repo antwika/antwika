@@ -1,31 +1,12 @@
 find_package(glm REQUIRED)
 
-include(AntwikaEmbedBinary)
-
-set(ANTWIKA_GFX_FONT_SOURCE
-    ${CMAKE_CURRENT_BINARY_DIR}/generated/BuiltInFontBytes.cpp
-)
-
-antwika_embed_binary(
-    INPUT ${CMAKE_SOURCE_DIR}/assets/fonts/RobotoMono-Regular.ttf
-    OUTPUT ${ANTWIKA_GFX_FONT_SOURCE}
-    NAMESPACE antwika::gfx::detail
-    SYMBOL kBuiltInFontBytes
-)
-
 add_library(antwika_gfx
-    ${ANTWIKA_GFX_FONT_SOURCE}
-    src/AtlasText.cpp
     src/Bitmap.cpp
     src/Blit.cpp
-    src/BuiltInFont.cpp
     src/Camera3D.cpp
     src/ClipScope.cpp
     src/ColorSpace.cpp
     src/CubeFace.cpp
-    src/GlyphAtlas.cpp
-    src/GlyphAtlasTextures.cpp
-    src/GlyphCells.cpp
     src/MeshData.cpp
     src/NullBackend.cpp
     src/NullMesh.cpp
@@ -37,7 +18,6 @@ add_library(antwika_gfx
     src/ShaderReader.cpp
     src/ShaderSource.cpp
     src/TargetScope.cpp
-    src/TextLayout.cpp
     src/Transform.cpp
     src/Viewport.cpp
     src/ViewportRenderer.cpp
@@ -57,7 +37,6 @@ target_include_directories(antwika_gfx
 
 target_link_libraries(antwika_gfx
     PUBLIC
-        antwika::font
         antwika::geometry
         antwika::log
         glm::glm

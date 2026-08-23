@@ -8,26 +8,26 @@
 #include <vector>
 
 #include <antwika/gfx/Color.hpp>
-#include <antwika/gfx/GlyphCells.hpp>
+#include <antwika/text/GlyphCells.hpp>
 #include <antwika/gfx/Glyphs.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
-#include <antwika/gfx/TextLayout.hpp>
-#include <antwika/gfx/TextRaster.hpp>
-#include <antwika/gfx/GlyphCellsCache.hpp>
+#include <antwika/text/TextLayout.hpp>
+#include <antwika/text/TextRaster.hpp>
+#include <antwika/text/GlyphCellsCache.hpp>
 
 using antwika::gfx::Color;
-using antwika::gfx::forEachGlyphPixel;
-using antwika::gfx::GlyphCells;
-using antwika::gfx::GlyphCellsCache;
-using antwika::gfx::glyphPixelColor;
+using antwika::text::forEachGlyphPixel;
+using antwika::text::GlyphCells;
+using antwika::text::GlyphCellsCache;
+using antwika::text::glyphPixelColor;
 using antwika::gfx::kGlyphAdvance;
 using antwika::gfx::kGlyphLineHeight;
 using antwika::gfx::Point;
 using antwika::gfx::Rect;
 using antwika::gfx::Size;
-using antwika::gfx::textSize;
+using antwika::text::textSize;
 
 namespace
 {

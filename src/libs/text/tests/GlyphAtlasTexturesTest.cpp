@@ -6,20 +6,20 @@
 
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/Color.hpp>
-#include <antwika/gfx/GlyphCells.hpp>
-#include <antwika/gfx/GlyphAtlasTextures.hpp>
+#include <antwika/text/GlyphCells.hpp>
+#include <antwika/text/GlyphAtlasTextures.hpp>
 #include <antwika/gfx/Glyphs.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/gfx/mocks/MockTexture.hpp>
-#include <antwika/gfx/GlyphCellsCache.hpp>
+#include <antwika/text/GlyphCellsCache.hpp>
 
 using antwika::gfx::Bitmap;
 using antwika::gfx::Color;
-using antwika::gfx::GlyphCellsCache;
-using antwika::gfx::GlyphAtlasTextures;
+using antwika::text::GlyphCellsCache;
+using antwika::text::GlyphAtlasTextures;
 using antwika::gfx::kGlyphCount;
 using antwika::gfx::ITexture;
 using antwika::gfx::Point;
