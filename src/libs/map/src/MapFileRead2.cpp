@@ -16,42 +16,8 @@ namespace antwika::map::mapfile
         for (const auto &decorJson :
              documentJson[std::string(kDecorKey)])
         {
-            decor::DecorTile oneTile{
-                .tile = readTile(
-                    decorJson[std::string(kTileKey)])};
-
-            for (const auto &frame :
-                 decorJson[std::string(kFramesKey)])
-            {
-                oneTile.frameTiles.push_back(readTile(frame));
-            }
-
-            for (const auto &base :
-                 decorJson[std::string(kBasesKey)])
-            {
-                oneTile.allowedBaseTiles.push_back(readTile(base));
-            }
-
-            oneTile.frequency =
-                decorJson[std::string(kFrequencyKey)]
-                    .get<std::uint8_t>();
-            oneTile.weight =
-                decorJson[std::string(kWeightKey)]
-                    .get<std::uint8_t>();
-            oneTile.layer =
-                decorJson[std::string(kDecorLayerKey)]
-                    .get<std::size_t>();
-
-            const auto &span = decorJson[std::string(kSpanKey)];
-
-            oneTile.width = span[0].get<std::uint8_t>();
-            oneTile.height = span[1].get<std::uint8_t>();
-
-            for (const auto &member :
-                 decorJson[std::string(kMembersKey)])
-            {
-                oneTile.spanTiles.push_back(readTile(member));
-            }
+            const auto oneTile =
+                read<decor::DecorTile>(kDecorFields, decorJson);
 
             if (oneTile.spanTiles.size()
                     != static_cast<std::size_t>(oneTile.width)

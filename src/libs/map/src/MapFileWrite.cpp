@@ -283,41 +283,7 @@ namespace antwika::map
 
         for (const auto &decorTile : map.decor)
         {
-            auto frames = nlohmann::json::array();
-
-            for (const auto frame : decorTile.frameTiles)
-            {
-                frames.push_back(writtenTile(frame));
-            }
-
-            auto bases = nlohmann::json::array();
-
-            for (const auto base : decorTile.allowedBaseTiles)
-            {
-                bases.push_back(writtenTile(base));
-            }
-
-            auto members = nlohmann::json::array();
-
-            for (const auto member : decorTile.spanTiles)
-            {
-                members.push_back(writtenTile(member));
-            }
-
-            nlohmann::json one;
-
-            one[std::string(kTileKey)] =
-                writtenTile(decorTile.tile);
-            one[std::string(kFramesKey)] = frames;
-            one[std::string(kBasesKey)] = bases;
-            one[std::string(kFrequencyKey)] = decorTile.frequency;
-            one[std::string(kWeightKey)] = decorTile.weight;
-            one[std::string(kDecorLayerKey)] = decorTile.layer;
-            one[std::string(kSpanKey)] = nlohmann::json::array(
-                {decorTile.width, decorTile.height});
-            one[std::string(kMembersKey)] = members;
-
-            decor.push_back(one);
+            decor.push_back(written(kDecorFields, decorTile));
         }
 
         document[std::string(kDecorKey)] = decor;

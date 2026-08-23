@@ -74,6 +74,24 @@ namespace antwika::map::mapfile
         textListField<&Character::components>(kComponentsKey),
         flagField<&Character::player>(kCharacterPlayerKey)};
 
+    inline constexpr std::array<Field, 8> kDecorFields{
+        tileField<&decor::DecorTile::tile>(kTileKey),
+        tileListField<&decor::DecorTile::frameTiles, 1,
+            decor::kMaxDecorFrames>(kFramesKey),
+        uniqueTileListField<&decor::DecorTile::allowedBaseTiles>(
+            kBasesKey),
+        wholeField<&decor::DecorTile::frequency, 0,
+            decor::kFullFrequency>(kFrequencyKey),
+        wholeField<&decor::DecorTile::weight, 0,
+            decor::kFullFrequency>(kWeightKey),
+        wholeField<&decor::DecorTile::layer, 1,
+            static_cast<int>(kMaxLayers) - 1>(kDecorLayerKey),
+        pairField<&decor::DecorTile::width,
+            &decor::DecorTile::height, 1,
+            decor::kMaxDecorSpan>(kSpanKey),
+        tileListField<&decor::DecorTile::spanTiles, 1,
+            decor::kMaxDecorSpan * decor::kMaxDecorSpan>(kMembersKey)};
+
     struct GateRow final
     {
         std::string_view key;
