@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace antwika::gfx::detail
+namespace antwika::text::detail
 {
 
     extern const std::uint8_t kBuiltInFontBytes[];

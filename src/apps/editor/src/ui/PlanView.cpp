@@ -7,7 +7,7 @@
 #include <antwika/editor/ui/EditorLook.hpp>
 #include <antwika/gfx/PointF.hpp>
 #include <antwika/gfx/RectF.hpp>
-#include <antwika/gfx/TextLayout.hpp>
+#include <antwika/text/TextLayout.hpp>
 #include <antwika/ui/TextWrap.hpp>
 
 #include "antwika/editor/plan/PlanFile.hpp"
@@ -359,14 +359,14 @@ namespace antwika::editor
                 ? antwika::ui::wrapColumns(gameTheme(), *room)
                 : 0);
         const auto pad = static_cast<float>(2 * kUiScale);
-        const auto step = gfx::textSize(titleText, kUiScale).height;
+        const auto step = text::textSize(titleText, kUiScale).height;
 
         std::uint32_t widest = 0;
 
         for (const auto line : lines)
         {
             widest = std::max(
-                widest, gfx::textSize(line, kUiScale).width);
+                widest, text::textSize(line, kUiScale).width);
         }
 
         const auto width =

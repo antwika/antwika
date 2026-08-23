@@ -1,18 +1,18 @@
-#include "antwika/gfx/GlyphCells.hpp"
+#include "antwika/text/GlyphCells.hpp"
 
 #include <cstddef>
 #include <cstdint>
 #include <vector>
 
 #include <antwika/font/GlyphAtlas.hpp>
-#include <antwika/gfx/GlyphCellsCache.hpp>
+#include <antwika/text/GlyphCellsCache.hpp>
 
 #include "antwika/gfx/Glyphs.hpp"
 #include "antwika/gfx/Size.hpp"
 
 #include "BuiltInFont.hpp"
 
-namespace antwika::gfx
+namespace antwika::text
 {
 
     namespace
@@ -20,10 +20,10 @@ namespace antwika::gfx
         [[nodiscard]] std::vector<char32_t> coveredCodepoints()
         {
             std::vector<char32_t> codepoints;
-            codepoints.reserve(kGlyphCount);
+            codepoints.reserve(gfx::kGlyphCount);
 
-            for (char32_t codepoint = kFirstGlyph;
-                 codepoint <= kLastGlyph;
+            for (char32_t codepoint = gfx::kFirstGlyph;
+                 codepoint <= gfx::kLastGlyph;
                  ++codepoint)
             {
                 codepoints.push_back(codepoint);
@@ -35,8 +35,8 @@ namespace antwika::gfx
 
     GlyphCells::GlyphCells(std::uint32_t scale)
         : cell{
-              .width = scaledGlyphAdvance(scale),
-              .height = scaledGlyphLineHeight(scale)}
+              .width = gfx::scaledGlyphAdvance(scale),
+              .height = gfx::scaledGlyphLineHeight(scale)}
     {
         if (cell.height == 0)
         {
@@ -46,12 +46,12 @@ namespace antwika::gfx
         const font::GlyphAtlas atlas = font::makeGlyphAtlas(
             detail::builtInFont(), coveredCodepoints(), cell.height);
 
-        samples.assign(kGlyphCount * cell.width * cell.height, 0);
+        samples.assign(gfx::kGlyphCount * cell.width * cell.height, 0);
 
         for (const font::AtlasGlyph &glyph : atlas.glyphs)
         {
             const auto index =
-                static_cast<std::size_t>(glyph.codepoint - kFirstGlyph);
+                static_cast<std::size_t>(glyph.codepoint - gfx::kFirstGlyph);
             const auto originX =
                 static_cast<std::int64_t>(glyph.metrics.bearingX);
             const auto originY = static_cast<std::int64_t>(
@@ -84,7 +84,7 @@ namespace antwika::gfx
         }
     }
 
-    Size GlyphCells::cellSize() const noexcept
+    gfx::Size GlyphCells::cellSize() const noexcept
     {
         return cell;
     }
@@ -97,7 +97,7 @@ namespace antwika::gfx
         const auto codepoint =
             static_cast<char32_t>(static_cast<unsigned char>(character));
 
-        if (codepoint < kFirstGlyph || codepoint > kLastGlyph)
+        if (codepoint < gfx::kFirstGlyph || codepoint > gfx::kLastGlyph)
         {
             return 0;
         }
@@ -108,7 +108,7 @@ namespace antwika::gfx
         }
 
         const auto index =
-            static_cast<std::size_t>(codepoint - kFirstGlyph);
+            static_cast<std::size_t>(codepoint - gfx::kFirstGlyph);
 
         return samples[((index * cell.height) + row) * cell.width
                        + column];

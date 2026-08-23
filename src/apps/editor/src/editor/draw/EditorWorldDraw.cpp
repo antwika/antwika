@@ -11,7 +11,7 @@
 #include <antwika/gfx/RectF.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/time/FrameRate.hpp>
-#include <antwika/gfx/TextLayout.hpp>
+#include <antwika/text/TextLayout.hpp>
 
 #include "antwika/editor/Editor.hpp"
 
@@ -210,7 +210,7 @@ namespace antwika::editor
             viewportRenderer.drawText(
                 {static_cast<float>(camera::kCanvasSize.width)
                      - static_cast<float>(
-                         antwika::gfx::textSize(rateText, 1)
+                         antwika::text::textSize(rateText, 1)
                              .width)
                      - 4.0F,
                  4.0F},
@@ -220,7 +220,7 @@ namespace antwika::editor
             viewportRenderer.drawText(
                 {static_cast<float>(camera::kCanvasSize.width)
                      - static_cast<float>(
-                         antwika::gfx::textSize(workText, 1)
+                         antwika::text::textSize(workText, 1)
                              .width)
                      - 4.0F,
                  16.0F},

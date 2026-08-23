@@ -10,9 +10,9 @@
 #include <antwika/font/Rect.hpp>
 #include <antwika/gfx/RectF.hpp>
 
-#include "antwika/gfx/AtlasText.hpp"
+#include "antwika/text/AtlasText.hpp"
 #include "antwika/gfx/Color.hpp"
-#include "antwika/gfx/GlyphBlit.hpp"
+#include "antwika/text/GlyphBlit.hpp"
 #include "antwika/gfx/Point.hpp"
 #include "antwika/gfx/Size.hpp"
 #include "antwika/gfx/mocks/MockRenderer.hpp"
@@ -22,11 +22,11 @@ using antwika::font::AtlasGlyph;
 using antwika::font::Coverage;
 using antwika::font::FontMetrics;
 using antwika::font::GlyphAtlas;
-using antwika::gfx::atlasTextBlits;
-using antwika::gfx::atlasTextSize;
+using antwika::text::atlasTextBlits;
+using antwika::text::atlasTextSize;
 using antwika::gfx::Color;
-using antwika::gfx::drawAtlasText;
-using antwika::gfx::GlyphBlit;
+using antwika::text::drawAtlasText;
+using antwika::text::GlyphBlit;
 using antwika::gfx::Point;
 using antwika::gfx::Size;
 using antwika::gfx::RectF;

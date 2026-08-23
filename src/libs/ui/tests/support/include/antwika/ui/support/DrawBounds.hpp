@@ -6,7 +6,7 @@
 #include <variant>
 
 #include <antwika/gfx/Size.hpp>
-#include <antwika/gfx/TextLayout.hpp>
+#include <antwika/text/TextLayout.hpp>
 
 #include "antwika/ui/DrawCommand.hpp"
 #include "antwika/ui/DrawList.hpp"
@@ -39,7 +39,7 @@ namespace antwika::ui::support
             }
 
             const auto &text = std::get<DrawText>(command);
-            const auto extent = gfx::textSize(text.text, text.scale);
+            const auto extent = text::textSize(text.text, text.scale);
 
             EXPECT_GE(text.originPoint.x, 0);
             EXPECT_GE(text.originPoint.y, 0);

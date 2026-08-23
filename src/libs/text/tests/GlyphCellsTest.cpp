@@ -2,13 +2,13 @@
 
 #include <cstdint>
 
-#include <antwika/gfx/GlyphCells.hpp>
+#include <antwika/text/GlyphCells.hpp>
 #include <antwika/gfx/Glyphs.hpp>
 #include <antwika/gfx/Size.hpp>
-#include <antwika/gfx/GlyphCellsCache.hpp>
+#include <antwika/text/GlyphCellsCache.hpp>
 
-using antwika::gfx::GlyphCells;
-using antwika::gfx::GlyphCellsCache;
+using antwika::text::GlyphCells;
+using antwika::text::GlyphCellsCache;
 using antwika::gfx::kGlyphAdvance;
 using antwika::gfx::kGlyphLineHeight;
 using antwika::gfx::Size;

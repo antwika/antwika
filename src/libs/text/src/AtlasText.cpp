@@ -1,4 +1,4 @@
-#include "antwika/gfx/AtlasText.hpp"
+#include "antwika/text/AtlasText.hpp"
 
 #include <cstdint>
 #include <string_view>
@@ -10,14 +10,14 @@
 
 #include "antwika/gfx/Blit.hpp"
 #include "antwika/gfx/Color.hpp"
-#include "antwika/gfx/GlyphBlit.hpp"
+#include "antwika/text/GlyphBlit.hpp"
 #include "antwika/gfx/IRenderer.hpp"
 #include "antwika/gfx/ITexture.hpp"
 #include "antwika/gfx/Point.hpp"
 #include "antwika/gfx/Rect.hpp"
 #include "antwika/gfx/Size.hpp"
 
-namespace antwika::gfx
+namespace antwika::text
 {
 
     namespace
@@ -39,10 +39,10 @@ namespace antwika::gfx
             return static_cast<std::uint32_t>(value);
         }
 
-        [[nodiscard]] Rect sourceRectOf(
+        [[nodiscard]] gfx::Rect sourceRectOf(
             const font::AtlasGlyph &glyph) noexcept
         {
-            return Rect{
+            return gfx::Rect{
                 .originPoint =
                     {.x = static_cast<std::int32_t>(glyph.sourceRect.x),
                      .y = static_cast<std::int32_t>(glyph.sourceRect.y)},
@@ -52,12 +52,12 @@ namespace antwika::gfx
         }
     }
 
-    Size atlasTextSize(
+    gfx::Size atlasTextSize(
         const font::GlyphAtlas &atlas, std::string_view text) noexcept
     {
         if (text.empty())
         {
-            return Size{};
+            return gfx::Size{};
         }
 
         std::int64_t width = 0;
@@ -75,17 +75,17 @@ namespace antwika::gfx
             width += glyph->metrics.advance;
         }
 
-        return Size{
+        return gfx::Size{
             .width = clampToPixels(width),
             .height = clampToPixels(atlas.metrics.lineHeight)};
     }
 
     std::vector<GlyphBlit> atlasTextBlits(
         const font::GlyphAtlas &atlas,
-        Point originPoint,
+        gfx::Point originPoint,
         std::string_view text)
     {
-        const Size maskSize{
+        const gfx::Size maskSize{
             .width = atlas.coverage.width,
             .height = atlas.coverage.height};
         const std::int64_t baseline
@@ -104,7 +104,7 @@ namespace antwika::gfx
                 continue;
             }
 
-            const Rect sourceRect = sourceRectOf(*glyph);
+            const gfx::Rect sourceRect = sourceRectOf(*glyph);
             const GlyphBlit blit{
                 .sourceRect = sourceRect,
                 .destinationRect = {
@@ -117,7 +117,7 @@ namespace antwika::gfx
 
             pen += glyph->metrics.advance;
 
-            if (!blitIsInBounds(
+            if (!gfx::blitIsInBounds(
                     maskSize, blit.sourceRect, blit.destinationRect))
             {
                 continue;
@@ -130,17 +130,17 @@ namespace antwika::gfx
     } // GCOVR_EXCL_LINE
 
     void drawAtlasText(
-        IRenderer &renderer,
-        const ITexture &texture,
+        gfx::IRenderer &renderer,
+        const gfx::ITexture &texture,
         const font::GlyphAtlas &atlas,
-        PointF originPoint,
+        gfx::PointF originPoint,
         std::string_view text,
-        Color tintColor)
+        gfx::Color tintColor)
     {
-        for (const GlyphBlit &blit : atlasTextBlits(atlas, Point{}, text))
+        for (const GlyphBlit &blit : atlasTextBlits(atlas, gfx::Point{}, text))
         {
-            const RectF destinationRect{
-                PointF{
+            const gfx::RectF destinationRect{
+                gfx::PointF{
                     originPoint.x
                         + static_cast<float>(
                             blit.destinationRect.originPoint.x),

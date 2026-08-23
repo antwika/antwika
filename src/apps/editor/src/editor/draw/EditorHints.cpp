@@ -14,7 +14,7 @@
 #include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/voxelmap/VoxelPick.hpp>
-#include <antwika/gfx/TextLayout.hpp>
+#include <antwika/text/TextLayout.hpp>
 
 #include "antwika/editor/Editor.hpp"
 
@@ -225,7 +225,7 @@ namespace antwika::editor
         }
 
         const auto pad = static_cast<float>(2 * kUiScale);
-        const auto hintSize = gfx::textSize(hint, kUiScale);
+        const auto hintSize = text::textSize(hint, kUiScale);
         const auto width =
             static_cast<float>(hintSize.width) + (pad * 2.0F);
         const auto height =
@@ -363,7 +363,7 @@ namespace antwika::editor
         }
 
         const auto pad = static_cast<float>(2 * kUiScale);
-        const auto hintSize = gfx::textSize(hint, kUiScale);
+        const auto hintSize = text::textSize(hint, kUiScale);
         const auto width =
             static_cast<float>(hintSize.width) + (pad * 2.0F);
         const auto height =

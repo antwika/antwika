@@ -24,5 +24,6 @@ antwika_add_library(
         src/WidgetRects.cpp
     DEPENDS
         antwika::gfx
+        antwika::text
         antwika::widget
 )

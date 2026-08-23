@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 
-#include "antwika/gfx/GlyphBlit.hpp"
+#include "antwika/text/GlyphBlit.hpp"
 #include "antwika/gfx/Rect.hpp"
 
-using antwika::gfx::GlyphBlit;
+using antwika::text::GlyphBlit;
 using antwika::gfx::Rect;
 
 namespace

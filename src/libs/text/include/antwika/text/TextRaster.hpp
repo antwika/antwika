@@ -5,19 +5,19 @@
 #include <string_view>
 
 #include "antwika/gfx/Color.hpp"
-#include "antwika/gfx/GlyphCells.hpp"
-#include "antwika/gfx/GlyphCellsCache.hpp"
+#include "antwika/text/GlyphCells.hpp"
+#include "antwika/text/GlyphCellsCache.hpp"
 #include "antwika/gfx/Point.hpp"
 #include "antwika/gfx/Rect.hpp"
 #include "antwika/gfx/Size.hpp"
 
-namespace antwika::gfx
+namespace antwika::text
 {
 
-    [[nodiscard]] constexpr Color glyphPixelColor(
-        Color color, std::uint8_t coverage) noexcept
+    [[nodiscard]] constexpr gfx::Color glyphPixelColor(
+        gfx::Color color, std::uint8_t coverage) noexcept
     {
-        return Color{
+        return gfx::Color{
             .red = color.red,
             .green = color.green,
             .blue = color.blue,
@@ -29,10 +29,10 @@ namespace antwika::gfx
     template <typename Visit>
     void forEachGlyphPixel(
         GlyphCellsCache &cache,
-        Point originPoint,
+        gfx::Point originPoint,
         std::string_view text,
         std::uint32_t scale,
-        Color color,
+        gfx::Color color,
         Visit visit)
     {
         if (scale == 0)
@@ -41,7 +41,7 @@ namespace antwika::gfx
         }
 
         const GlyphCells &cells = cache.at(scale);
-        const Size size = cells.cellSize();
+        const gfx::Size size = cells.cellSize();
         const auto step = static_cast<std::int64_t>(size.width);
         const auto top = static_cast<std::int64_t>(originPoint.y);
 
@@ -64,7 +64,7 @@ namespace antwika::gfx
                     }
 
                     visit(
-                        Rect{
+                        gfx::Rect{
                             .originPoint =
                                 {.x = static_cast<std::int32_t>(
                                      left + column),

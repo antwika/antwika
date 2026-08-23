@@ -5,10 +5,10 @@
 
 #include "antwika/gfx/Size.hpp"
 
-namespace antwika::gfx
+namespace antwika::text
 {
 
-    [[nodiscard]] Size textSize(
+    [[nodiscard]] gfx::Size textSize(
         std::string_view text, std::uint32_t scale) noexcept;
 
 }

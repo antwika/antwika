@@ -1,4 +1,4 @@
-#include "antwika/gfx/GlyphAtlas.hpp"
+#include "antwika/text/GlyphAtlas.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -7,14 +7,14 @@
 #include <vector>
 
 #include "antwika/gfx/Bitmap.hpp"
-#include "antwika/gfx/GlyphBlit.hpp"
-#include "antwika/gfx/GlyphCells.hpp"
+#include "antwika/text/GlyphBlit.hpp"
+#include "antwika/text/GlyphCells.hpp"
 #include "antwika/gfx/Glyphs.hpp"
 #include "antwika/gfx/Point.hpp"
 #include "antwika/gfx/Rect.hpp"
 #include "antwika/gfx/Size.hpp"
 
-namespace antwika::gfx
+namespace antwika::text
 {
 
     namespace
@@ -30,33 +30,34 @@ namespace antwika::gfx
         {
             const auto codepoint = codepointOf(character);
 
-            if (codepoint < kFirstGlyph || codepoint > kLastGlyph)
+            if (codepoint < gfx::kFirstGlyph || codepoint > gfx::kLastGlyph)
             {
                 return std::nullopt;
             }
 
-            return static_cast<std::size_t>(codepoint - kFirstGlyph);
+            return static_cast<std::size_t>(codepoint - gfx::kFirstGlyph);
         }
     }
 
-    Bitmap glyphAtlasBitmap(const GlyphCells &cells)
+    gfx::Bitmap glyphAtlasBitmap(const GlyphCells &cells)
     {
-        const Size cellSize = cells.cellSize();
+        const gfx::Size cellSize = cells.cellSize();
 
-        const Size sheetSize{
-            .width = static_cast<std::uint32_t>(kGlyphCount) * cellSize.width,
+        const gfx::Size sheetSize{
+            .width = static_cast<std::uint32_t>(gfx::kGlyphCount)
+                     * cellSize.width,
             .height = cellSize.height};
 
-        Bitmap bitmap{.size = sheetSize, .pixels = {}};
+        gfx::Bitmap bitmap{.size = sheetSize, .pixels = {}};
         bitmap.pixels.assign(
             static_cast<std::size_t>(sheetSize.width) * sheetSize.height
-                * kBytesPerPixel,
+                * gfx::kBytesPerPixel,
             0);
 
-        for (std::size_t index = 0; index < kGlyphCount; ++index)
+        for (std::size_t index = 0; index < gfx::kGlyphCount; ++index)
         {
             const auto character = static_cast<char>(
-                static_cast<unsigned char>(kFirstGlyph + index));
+                static_cast<unsigned char>(gfx::kFirstGlyph + index));
 
             for (std::uint32_t row = 0; row < cellSize.height; ++row)
             {
@@ -66,7 +67,7 @@ namespace antwika::gfx
                     const auto byteIndex =
                         ((static_cast<std::size_t>(row) * sheetSize.width)
                          + (index * cellSize.width) + column)
-                        * kBytesPerPixel;
+                        * gfx::kBytesPerPixel;
 
                     bitmap.pixels[byteIndex] = 255;
                     bitmap.pixels[byteIndex + 1] = 255;
@@ -80,7 +81,7 @@ namespace antwika::gfx
         return bitmap;
     } // GCOVR_EXCL_LINE
 
-    std::optional<Rect> glyphAtlasCell(
+    std::optional<gfx::Rect> glyphAtlasCell(
         const GlyphCells &cells, char character) noexcept
     {
         const auto index = indexOf(character);
@@ -90,9 +91,9 @@ namespace antwika::gfx
             return std::nullopt;
         }
 
-        const Size cellSize = cells.cellSize();
+        const gfx::Size cellSize = cells.cellSize();
 
-        return Rect{
+        return gfx::Rect{
             .originPoint =
                 {.x = static_cast<std::int32_t>(*index * cellSize.width),
                  .y = 0},
@@ -100,9 +101,9 @@ namespace antwika::gfx
     }
 
     std::vector<GlyphBlit> glyphAtlasBlits(
-        const GlyphCells &cells, Point originPoint, std::string_view text)
+        const GlyphCells &cells, gfx::Point originPoint, std::string_view text)
     {
-        const Size cellSize = cells.cellSize();
+        const gfx::Size cellSize = cells.cellSize();
 
         std::vector<GlyphBlit> blits;
         blits.reserve(text.size());

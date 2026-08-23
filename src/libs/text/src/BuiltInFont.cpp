@@ -7,7 +7,7 @@
 
 #include "BuiltInFontBytes.hpp"
 
-namespace antwika::gfx::detail
+namespace antwika::text::detail
 {
 
     const font::Font &builtInFont()

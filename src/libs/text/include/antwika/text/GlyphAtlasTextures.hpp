@@ -6,15 +6,15 @@
 #include <string_view>
 
 #include <antwika/gfx/PointF.hpp>
-#include <antwika/gfx/GlyphCellsCache.hpp>
+#include <antwika/text/GlyphCellsCache.hpp>
 
 #include "antwika/gfx/Color.hpp"
-#include "antwika/gfx/GlyphCells.hpp"
+#include "antwika/text/GlyphCells.hpp"
 #include "antwika/gfx/IRenderer.hpp"
 #include "antwika/gfx/ITexture.hpp"
 #include "antwika/gfx/PointF.hpp"
 
-namespace antwika::gfx
+namespace antwika::text
 {
 
     class GlyphAtlasTextures final
@@ -29,15 +29,15 @@ namespace antwika::gfx
         GlyphAtlasTextures &operator=(GlyphAtlasTextures &&) = delete;
 
         void draw(
-            IRenderer &renderer,
-            PointF originPoint,
+            gfx::IRenderer &renderer,
+            gfx::PointF originPoint,
             std::string_view text,
             std::uint32_t scale,
-            Color color);
+            gfx::Color color);
 
     private:
         GlyphCellsCache cells;
-        std::map<std::uint32_t, std::unique_ptr<ITexture>> atlasTextures;
+        std::map<std::uint32_t, std::unique_ptr<gfx::ITexture>> atlasTextures;
     };
 
 }

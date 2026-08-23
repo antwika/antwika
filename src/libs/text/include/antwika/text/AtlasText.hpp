@@ -6,30 +6,30 @@
 #include <antwika/font/GlyphAtlas.hpp>
 
 #include "antwika/gfx/Color.hpp"
-#include "antwika/gfx/GlyphBlit.hpp"
+#include "antwika/text/GlyphBlit.hpp"
 #include "antwika/gfx/IRenderer.hpp"
 #include "antwika/gfx/ITexture.hpp"
 #include "antwika/gfx/Point.hpp"
 #include "antwika/gfx/PointF.hpp"
 #include "antwika/gfx/Size.hpp"
 
-namespace antwika::gfx
+namespace antwika::text
 {
 
-    [[nodiscard]] Size atlasTextSize(
+    [[nodiscard]] gfx::Size atlasTextSize(
         const font::GlyphAtlas &atlas, std::string_view text) noexcept;
 
     [[nodiscard]] std::vector<GlyphBlit> atlasTextBlits(
         const font::GlyphAtlas &atlas,
-        Point originPoint,
+        gfx::Point originPoint,
         std::string_view text);
 
     void drawAtlasText(
-        IRenderer &renderer,
-        const ITexture &texture,
+        gfx::IRenderer &renderer,
+        const gfx::ITexture &texture,
         const font::GlyphAtlas &atlas,
-        PointF originPoint,
+        gfx::PointF originPoint,
         std::string_view text,
-        Color tintColor);
+        gfx::Color tintColor);
 
 }

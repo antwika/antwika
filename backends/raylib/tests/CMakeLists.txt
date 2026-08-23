@@ -27,6 +27,7 @@ if(ANTWIKA_GFX_BACKEND STREQUAL "raylib")
         PRIVATE
             antwika::gfx
             antwika::gfx::tests::conformance
+            antwika::text
             gtest::gtest
             raylib
     )

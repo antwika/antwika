@@ -6,20 +6,20 @@
 #include <vector>
 
 #include "antwika/gfx/Bitmap.hpp"
-#include "antwika/gfx/GlyphBlit.hpp"
-#include "antwika/gfx/GlyphCells.hpp"
+#include "antwika/text/GlyphBlit.hpp"
+#include "antwika/text/GlyphCells.hpp"
 #include "antwika/gfx/Point.hpp"
 #include "antwika/gfx/Rect.hpp"
 
-namespace antwika::gfx
+namespace antwika::text
 {
 
-    [[nodiscard]] Bitmap glyphAtlasBitmap(const GlyphCells &cells);
+    [[nodiscard]] gfx::Bitmap glyphAtlasBitmap(const GlyphCells &cells);
 
-    [[nodiscard]] std::optional<Rect> glyphAtlasCell(
+    [[nodiscard]] std::optional<gfx::Rect> glyphAtlasCell(
         const GlyphCells &cells, char character) noexcept;
 
     [[nodiscard]] std::vector<GlyphBlit> glyphAtlasBlits(
-        const GlyphCells &cells, Point originPoint, std::string_view text);
+        const GlyphCells &cells, gfx::Point originPoint, std::string_view text);
 
 }

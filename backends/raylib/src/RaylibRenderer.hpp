@@ -15,7 +15,7 @@
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/Camera3D.hpp>
 #include <antwika/gfx/Color.hpp>
-#include <antwika/gfx/GlyphAtlasTextures.hpp>
+#include <antwika/text/GlyphAtlasTextures.hpp>
 #include <antwika/gfx/IMesh.hpp>
 #include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/IShader.hpp>
@@ -174,7 +174,7 @@ namespace antwika::gfx::raylib
 
         std::size_t pushedCount = 0;
 
-        GlyphAtlasTextures glyphAtlases;
+        antwika::text::GlyphAtlasTextures glyphAtlases;
 
         std::vector<RaylibTexture *> liveTextures;
 
