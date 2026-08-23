@@ -9,7 +9,7 @@
 namespace antwika::ui
 {
 
-    void paint(IRenderer &renderer, const DrawList &drawList)
+    void paint(ISurfaceRenderer &renderer, const DrawList &drawList)
     {
         for (const auto &command : drawList)
         {

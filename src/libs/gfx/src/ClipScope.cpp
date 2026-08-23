@@ -1,11 +1,12 @@
 #include "antwika/gfx/ClipScope.hpp"
 
-#include "antwika/gfx/IRenderer.hpp"
+#include "antwika/gfx/ISurfaceRenderer.hpp"
 
 namespace antwika::gfx
 {
 
-    ClipScope::ClipScope(IRenderer &renderer) noexcept : renderer{renderer}
+    ClipScope::ClipScope(ISurfaceRenderer &renderer) noexcept
+        : renderer{renderer}
     {
     }
 

@@ -10,6 +10,7 @@
 #include "antwika/gfx/Bitmap.hpp"
 #include "antwika/gfx/Camera3D.hpp"
 #include "antwika/gfx/ClipScope.hpp"
+#include "antwika/gfx/ISurfaceRenderer.hpp"
 #include "antwika/gfx/Color.hpp"
 #include "antwika/gfx/Rect.hpp"
 #include "antwika/gfx/IMesh.hpp"
@@ -28,39 +29,14 @@
 namespace antwika::gfx
 {
 
-    class IRenderer
+    class IRenderer : public ISurfaceRenderer
     {
     public:
-        virtual ~IRenderer() = default;
-
-        virtual void clear(Color color) = 0;
-
-        virtual void drawRect(RectF rect, Color color) = 0;
-
-        virtual void drawLine(
-            PointF fromPoint, PointF toPoint, Color color) = 0;
-
-        virtual void beginClip(RectF areaRect) = 0;
-
-        virtual void endClip() = 0;
-
-        virtual void drawText(
-            PointF originPoint,
-            std::string_view text,
-            std::uint32_t scale,
-            Color color) = 0;
-
         [[nodiscard]] virtual std::unique_ptr<ITexture> createTexture(
             const Bitmap &bitmap) = 0;
 
         virtual void updateTexture(
             ITexture &texture, const Bitmap &bitmap) = 0;
-
-        virtual void drawTexture(
-            const ITexture &texture,
-            RectF sourceRect,
-            RectF destinationRect,
-            Color tintColor) = 0;
 
         [[nodiscard]] virtual std::unique_ptr<IMesh> createMesh(
             const MeshData &mesh) = 0;
@@ -130,13 +106,6 @@ namespace antwika::gfx
             beginTargetRegion(target, regionRect);
 
             return TargetScope{*this};
-        }
-
-        [[nodiscard]] ClipScope clipScope(const RectF areaRect)
-        {
-            beginClip(areaRect);
-
-            return ClipScope{*this};
         }
 
         virtual void pushTransform(const Mat4 &transform) = 0;

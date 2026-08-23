@@ -3,7 +3,7 @@
 namespace antwika::gfx
 {
 
-    class IRenderer;
+    class ISurfaceRenderer;
 
     class ClipScope final
     {
@@ -17,11 +17,11 @@ namespace antwika::gfx
         ClipScope &operator=(ClipScope &&) = delete;
 
     private:
-        friend class IRenderer;
+        friend class ISurfaceRenderer;
 
-        explicit ClipScope(IRenderer &renderer) noexcept;
+        explicit ClipScope(ISurfaceRenderer &renderer) noexcept;
 
-        IRenderer &renderer;
+        ISurfaceRenderer &renderer;
     };
 
 }
