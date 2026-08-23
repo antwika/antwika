@@ -58,7 +58,7 @@ namespace antwika::editor
                         .widthSizing = antwika::ui::kFitSizing});
 
                 for (std::size_t which = 0;
-                     which < map.paletteColors.size();
+                     which < document.map.paletteColors.size();
                      ++which)
                 {
                     const auto side =
@@ -77,12 +77,12 @@ namespace antwika::editor
                             .widthSizing = side,
                             .heightSizing = side,
                             .backgroundColor =
-                                map.paletteColors.at(which),
+                                document.map.paletteColors.at(which),
                             .padding = 0,
                             .widgetId = tile::swatchWidget(which)});
                 }
 
-                if (map.paletteColors.size() < tile::kMaxInks)
+                if (document.map.paletteColors.size() < tile::kMaxInks)
                 {
                     const auto side =
                         antwika::ui::fixedSize(
@@ -154,7 +154,7 @@ namespace antwika::editor
                             kInkCancelWidget,
                         .widthSizing = antwika::ui::kGrowSizing});
 
-                if (map.paletteColors.size() > 1)
+                if (document.map.paletteColors.size() > 1)
                 {
                     context.button(
                         "Delete",
@@ -235,11 +235,11 @@ namespace antwika::editor
                 }
 
                 for (std::size_t layerIndex = 0;
-                     layerIndex < map.layers.size();
+                     layerIndex < document.map.layers.size();
                      ++layerIndex)
                 {
                     const auto reversedIndex =
-                        map.layers.size() - 1 - layerIndex;
+                        document.map.layers.size() - 1 - layerIndex;
 
                     context.button(
                         map::layerLabel(reversedIndex),

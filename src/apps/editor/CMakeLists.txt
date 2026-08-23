@@ -3,6 +3,7 @@ antwika_add_app(
     SOURCES
         src/editor/CarriedLight.cpp
         src/editor/EditorActions.cpp
+        src/editor/EditorDocument.cpp
         src/editor/EditorFrame.cpp
         src/editor/EditorJourney.cpp
         src/editor/EditorMap.cpp

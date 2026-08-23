@@ -32,11 +32,11 @@ namespace antwika::editor
     void Editor::pressGate(
         const voxel::VoxelPosition position, const input::MouseButton button)
     {
-        auto &gateCells = tool == map::Tool::Key    ? map.keyPositions
-                        : tool == map::Tool::Door  ? map.doorPositions
-                        : tool == map::Tool::Food  ? map.foodPositions
-                        : tool == map::Tool::Water ? map.waterPositions
-                        : map.checkpointPositions;
+        auto &gateCells = tool == map::Tool::Key    ? document.map.keyPositions
+                        : tool == map::Tool::Door  ? document.map.doorPositions
+                        : tool == map::Tool::Food  ? document.map.foodPositions
+                        : tool == map::Tool::Water ? document.map.waterPositions
+                        : document.map.checkpointPositions;
         const auto foundCube = rules::gateCubeContaining(gateCells, position);
 
         if (button == input::MouseButton::Right)
@@ -56,8 +56,8 @@ namespace antwika::editor
 
                     if (gone && tool == map::Tool::Door)
                     {
-                        map.voxels = voxel::withRampsRebuilt(
-                            voxel::withoutBlockAt(map.voxels, one),
+                        document.map.voxels = voxel::withRampsRebuilt(
+                            voxel::withoutBlockAt(document.map.voxels, one),
                             one);
                     }
 
@@ -80,12 +80,12 @@ namespace antwika::editor
         pushUndo();
         gateCells.push_back(position);
 
-        if (!rules::cubeOccupied(map.voxels,
+        if (!rules::cubeOccupied(document.map.voxels,
             antwika::voxel::cubeCornerOf(position))
             || tool == map::Tool::Door)
         {
-            map.voxels = voxel::withRampsRebuilt(
-                voxel::withBlockAt(map.voxels, position), position);
+            document.map.voxels = voxel::withRampsRebuilt(
+                voxel::withBlockAt(document.map.voxels, position), position);
             rebuildWorld();
         }
     }
@@ -107,11 +107,13 @@ namespace antwika::editor
         onSteppedPlates(standsOnPosition);
         onSteppedGates(standsInPosition, standsOnPosition);
 
-        if (map.exitCubePosition.has_value()
+        if (document.map.exitCubePosition.has_value()
             && (antwika::voxel::cubeCornerOf(standsInPosition)
-                    == antwika::voxel::cubeCornerOf(*map.exitCubePosition)
+                    == antwika::voxel::cubeCornerOf(
+                        *document.map.exitCubePosition)
                 || antwika::voxel::cubeCornerOf(standsOnPosition)
-                       == antwika::voxel::cubeCornerOf(*map.exitCubePosition)))
+                       == antwika::voxel::cubeCornerOf(
+                           *document.map.exitCubePosition)))
         {
             takeExit();
         }
@@ -122,12 +124,13 @@ namespace antwika::editor
         const voxel::VoxelPosition standsOnPosition)
     {
         if (game->gates().lockedExitAnnouncedPosition.has_value()
-            && (!map.exitCubePosition.has_value()
+            && (!document.map.exitCubePosition.has_value()
                 || (antwika::voxel::cubeCornerOf(standsInPosition)
-                        != antwika::voxel::cubeCornerOf(*map.exitCubePosition)
+                        != antwika::voxel::cubeCornerOf(
+                            *document.map.exitCubePosition)
                     && antwika::voxel::cubeCornerOf(standsOnPosition)
                            != antwika::voxel::cubeCornerOf(
-                               *map.exitCubePosition))))
+                               *document.map.exitCubePosition))))
         {
             game->gates().lockedExitAnnouncedPosition.reset();
         }
@@ -143,7 +146,8 @@ namespace antwika::editor
     {
         for (const auto gateCell : {standsInPosition, standsOnPosition})
         {
-            const auto foundCube = rules::gateCubeContaining(map.keyPositions,
+            const auto foundCube = rules::gateCubeContaining(
+                document.map.keyPositions,
             gateCell);
 
             if (!foundCube.has_value()
@@ -201,7 +205,7 @@ namespace antwika::editor
         const voxel::VoxelPosition standsOnPosition)
     {
         const auto pad =
-            rules::gateCubeContaining(map.checkpointPositions,
+            rules::gateCubeContaining(document.map.checkpointPositions,
                 standsOnPosition);
 
         if (pad.has_value() && game->gates().checkpointOnPosition != pad)
@@ -222,7 +226,8 @@ namespace antwika::editor
 
     void Editor::onSteppedDoors(const voxel::VoxelPosition standsInPosition)
     {
-        const auto adjacentDoorCell = rules::adjacentDoor(map.doorPositions,
+        const auto adjacentDoorCell = rules::adjacentDoor(
+            document.map.doorPositions,
         standsInPosition);
 
         if (!adjacentDoorCell.has_value())
@@ -249,17 +254,17 @@ namespace antwika::editor
 
         pushUndo();
 
-        const auto openedCells = rules::doorwayCells(map.doorPositions,
+        const auto openedCells = rules::doorwayCells(document.map.doorPositions,
             *adjacentDoorCell);
 
         for (const auto doorCell : openedCells)
         {
-            map.voxels = voxel::withRampsRebuilt(
-                voxel::withoutBlockAt(map.voxels, doorCell), doorCell);
+            document.map.voxels = voxel::withRampsRebuilt(
+                voxel::withoutBlockAt(document.map.voxels, doorCell), doorCell);
         }
 
         std::erase_if(
-            map.doorPositions,
+            document.map.doorPositions,
             [&openedCells](const voxel::VoxelPosition doorCell)
             {
                 return std::find(
@@ -275,7 +280,7 @@ namespace antwika::editor
 
     bool Editor::tryUnlockExit()
     {
-        if (!map.exitLocked)
+        if (!document.map.exitLocked)
         {
             return true;
         }
@@ -288,12 +293,13 @@ namespace antwika::editor
             return true;
         }
 
-        if (map.exitCubePosition.has_value()
+        if (document.map.exitCubePosition.has_value()
             && game->gates().lockedExitAnnouncedPosition
-                   != antwika::voxel::cubeCornerOf(*map.exitCubePosition))
+                   != antwika::voxel::cubeCornerOf(
+                       *document.map.exitCubePosition))
         {
             game->gates().lockedExitAnnouncedPosition =
-                antwika::voxel::cubeCornerOf(*map.exitCubePosition);
+                antwika::voxel::cubeCornerOf(*document.map.exitCubePosition);
             sayCaption(
                 "the exit", "locked - a key would open it");
         }

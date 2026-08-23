@@ -32,7 +32,7 @@ namespace antwika::editor
             .seed = growSeed++,
             .shape = growShape,
             .originPosition = voxel::VoxelPosition{},
-            .hintVoxels = solver::hintsFrom(map.voxels, growShape,
+            .hintVoxels = solver::hintsFrom(document.map.voxels, growShape,
                 voxel::VoxelPosition{})};
 
         const auto result = worldgen::growChunk(shippedRules(), request);
@@ -57,12 +57,12 @@ namespace antwika::editor
 
         pushUndo();
 
-        map.voxels = solver::withChunkSpliced(
-            std::move(map.voxels),
+        document.map.voxels = solver::withChunkSpliced(
+            std::move(document.map.voxels),
             worldgen::chunkBox(request.shape, request.originPosition),
             worldgen::chunkVoxels(result.cubeVoxels));
 
-        dirty = true;
+        document.markDirty();
         rebuildWorld();
 
         showStatus(

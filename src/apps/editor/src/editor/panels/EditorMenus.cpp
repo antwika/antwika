@@ -115,7 +115,7 @@ namespace antwika::editor
             openFileDialog(false);
             break;
         case MenuItem::Quit:
-            if (dirty)
+            if (document.isDirty())
             {
                 dialogs.quitConfirmOpen = true;
             }

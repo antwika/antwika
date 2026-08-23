@@ -14,16 +14,17 @@ namespace antwika::editor
 
         if (button == input::MouseButton::Right)
         {
-            for (std::size_t index = 0; index < map.plates.size();
+            for (std::size_t index = 0; index < document.map.plates.size();
                  ++index)
             {
-                if (antwika::voxel::cubeCornerOf(map.plates.at(index).position)
+                if (antwika::voxel::cubeCornerOf(document.map.plates.at(
+                            index).position)
                     == corner)
                 {
                     pushUndo();
-                    map.plates.erase(
+                    document.map.plates.erase(
                         std::next(
-                            map.plates.begin(),
+                            document.map.plates.begin(),
                             static_cast<std::ptrdiff_t>(index)));
                     platePicked.reset();
 
@@ -34,9 +35,10 @@ namespace antwika::editor
             return;
         }
 
-        for (std::size_t index = 0; index < map.plates.size(); ++index)
+        for (std::size_t index = 0; index < document.map.plates.size(); ++index)
         {
-            if (antwika::voxel::cubeCornerOf(map.plates.at(index).position)
+            if (antwika::voxel::cubeCornerOf(document.map.plates.at(
+                        index).position)
                 == corner)
             {
                 platePicked = index;
@@ -46,10 +48,10 @@ namespace antwika::editor
         }
 
         if (platePicked.has_value()
-            && *platePicked < map.plates.size())
+            && *platePicked < document.map.plates.size())
         {
             auto &sways =
-                map.plates.at(*platePicked).togglePositions;
+                document.map.plates.at(*platePicked).togglePositions;
             const auto foundSway = std::find_if(
                 sways.begin(),
                 sways.end(),
@@ -74,8 +76,8 @@ namespace antwika::editor
         }
 
         pushUndo();
-        map.plates.push_back(map::PressurePlate{.position = position});
-        platePicked = map.plates.size() - 1;
+        document.map.plates.push_back(map::PressurePlate{.position = position});
+        platePicked = document.map.plates.size() - 1;
     }
 
     void Editor::onSteppedPlates(const voxel::VoxelPosition standsOnPosition)
@@ -90,7 +92,7 @@ namespace antwika::editor
 
         lastPlateStoodOnPosition = corner;
 
-        for (const auto &plate : map.plates)
+        for (const auto &plate : document.map.plates)
         {
             if (antwika::voxel::cubeCornerOf(plate.position) != corner)
             {
@@ -105,7 +107,7 @@ namespace antwika::editor
                     antwika::voxel::cubeCornerOf(sway);
                 auto stands = false;
 
-                for (const auto &[position, material] : map.voxels)
+                for (const auto &[position, material] : document.map.voxels)
                 {
                     if (antwika::voxel::cubeCornerOf(position)
                         == swayCorner)
@@ -116,10 +118,10 @@ namespace antwika::editor
                     }
                 }
 
-                map.voxels = voxel::withRampsRebuilt(
+                document.map.voxels = voxel::withRampsRebuilt(
                     stands
-                        ? voxel::withoutBlockAt(map.voxels, swayCorner)
-                        : voxel::withBlockAt(map.voxels, swayCorner),
+                        ? voxel::withoutBlockAt(document.map.voxels, swayCorner)
+                        : voxel::withBlockAt(document.map.voxels, swayCorner),
                     swayCorner);
             }
 

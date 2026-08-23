@@ -26,7 +26,7 @@ namespace antwika::editor
         const auto modelMatrix = worldRotation();
         const auto camera = worldCamera();
 
-        if (decor::hasAnimatedDecor(map.decor)
+        if (decor::hasAnimatedDecor(document.map.decor)
             && tick % decor::kDecorPaceTick == 0)
         {
             rebuildDecorMesh();
@@ -168,11 +168,11 @@ namespace antwika::editor
 
         if (playing && titleScreenUp)
         {
-            const auto slash = mapPath.find_last_of("/\\");
+            const auto slash = document.path().find_last_of("/\\");
             const auto fileName =
                 slash == std::string::npos
-                       ? mapPath
-                       : mapPath.substr(slash + 1);
+                       ? document.path()
+                       : document.path().substr(slash + 1);
 
             viewportRenderer.drawRect(
                 antwika::gfx::RectF(

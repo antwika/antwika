@@ -10,7 +10,7 @@ namespace antwika::editor
     bool Editor::blockedAsTransitionSlot()
     {
         if (!selectedTile.has_value()
-            || transitionOf(map.transitions, *selectedTile)
+            || transitionOf(document.map.transitions, *selectedTile)
                    == nullptr)
         {
             return false;
@@ -28,7 +28,7 @@ namespace antwika::editor
             return false;
         }
 
-        if (transitionOf(map.transitions, tile) != nullptr
+        if (transitionOf(document.map.transitions, tile) != nullptr
             || tile.atlas != transitFromTile->atlas)
         {
             showStatus(
@@ -59,7 +59,8 @@ namespace antwika::editor
             return true;
         }
 
-        const auto slot = tile::firstUnusedTile(map.tilemap, tile.atlas);
+        const auto slot = tile::firstUnusedTile(document.map.tilemap,
+            tile.atlas);
 
         if (!slot.has_value())
         {
@@ -72,7 +73,7 @@ namespace antwika::editor
         }
 
         pushUndo();
-        map.transitions.push_back(
+        document.map.transitions.push_back(
             tile::TransitionTile{
                 .fromTile = *transitFromTile,
                 .toTile = *transitToTile,
@@ -82,25 +83,25 @@ namespace antwika::editor
         transitToTile.reset();
 
         for (std::uint32_t row = 0;
-             row < map.tilemap.rows;
+             row < document.map.tilemap.rows;
              ++row)
         {
             for (std::uint32_t column = 0;
-                 column < map.tilemap.columns;
+                 column < document.map.tilemap.columns;
                  ++column)
             {
                 const auto place = geometry::GridCell{
                     .column = column, .row = row};
 
-                if (map.tilemap
+                if (document.map.tilemap
                         .at(place.column, place.row)
                         .has_value())
                 {
                     continue;
                 }
 
-                tilemap::putTile(map.tilemap, place, *slot);
-                row = map.tilemap.rows;
+                tilemap::putTile(document.map.tilemap, place, *slot);
+                row = document.map.tilemap.rows;
 
                 break;
             }
@@ -123,7 +124,7 @@ namespace antwika::editor
         if (interactions.activatedWidget
                 == tile::kTransitionAddWidget
             && selectedTile.has_value()
-            && map.transitions.size() < tile::kMaxTransitions)
+            && document.map.transitions.size() < tile::kMaxTransitions)
         {
             transitFromTile = selectedTile;
             transitToTile.reset();
@@ -135,12 +136,12 @@ namespace antwika::editor
         if (interactions.activatedWidget
                 == tile::kRemoveTransitionWidget
             && transitionPicked.has_value()
-            && *transitionPicked < map.transitions.size())
+            && *transitionPicked < document.map.transitions.size())
         {
             pushUndo();
-            map.transitions.erase(
+            document.map.transitions.erase(
                 std::next(
-                    map.transitions.begin(),
+                    document.map.transitions.begin(),
                     static_cast<std::ptrdiff_t>(
                         *transitionPicked)));
             transitionPicked.reset();
@@ -150,7 +151,7 @@ namespace antwika::editor
         }
 
         for (std::size_t index = 0;
-             index < map.transitions.size()
+             index < document.map.transitions.size()
              && index < tile::kMaxTransitions;
              ++index)
         {
@@ -187,10 +188,10 @@ namespace antwika::editor
         panelTitle(context, "Transitions");
 
         for (std::size_t index = 0;
-             index < map.transitions.size();
+             index < document.map.transitions.size();
              ++index)
         {
-            const auto &transition = map.transitions.at(index);
+            const auto &transition = document.map.transitions.at(index);
 
             if (transition.fromTile != *selectedTile
                 && transition.toTile != *selectedTile
@@ -222,7 +223,7 @@ namespace antwika::editor
                         kRemoveTransitionWidget});
         }
 
-        if (map.transitions.size() < tile::kMaxTransitions)
+        if (document.map.transitions.size() < tile::kMaxTransitions)
         {
             context.button(
                 transitFromTile.has_value()

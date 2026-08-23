@@ -14,7 +14,7 @@ namespace antwika::editor
 
         logger.log(log::Level::Info, "the exit was reached");
 
-        if (map.exitTarget.empty())
+        if (document.map.exitTarget.empty())
         {
             if (playOnly)
             {
@@ -26,15 +26,15 @@ namespace antwika::editor
             return;
         }
 
-        const auto was = mapPath;
+        const auto was = document.path();
 
-        mapPath = (std::filesystem::path(mapPath).parent_path()
-                   / map.exitTarget)
-                      .string();
+        document.openAt((std::filesystem::path(document.path()).parent_path()
+                   / document.map.exitTarget)
+                      .string());
 
         if (!loadCurrentMap())
         {
-            mapPath = was;
+            document.openAt(was);
 
             return;
         }
@@ -51,7 +51,7 @@ namespace antwika::editor
 
     std::string Editor::progressPath() const
     {
-        return (std::filesystem::path(startMapPath).parent_path()
+        return (std::filesystem::path(document.startPath()).parent_path()
                 / "progress.json")
             .string();
     }
@@ -60,7 +60,7 @@ namespace antwika::editor
     {
         map::saveProgress(
             game->progress(
-                std::filesystem::path(mapPath)
+                std::filesystem::path(document.path())
                     .filename()
                     .string()),
             progressPath());

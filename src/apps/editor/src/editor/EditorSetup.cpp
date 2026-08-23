@@ -44,8 +44,6 @@ namespace antwika::editor
         const bool playOnlyGiven,
         std::string planPathGiven)
         : logger(logger),
-          mapPath(std::move(mapPathGiven)),
-          startMapPath(mapPath),
           playOnly(playOnlyGiven),
           backend(backendGiven),
           inputs(inputsGiven),
@@ -57,25 +55,28 @@ namespace antwika::editor
                       .resizable = true})),
           viewportRenderer(
               window->renderer(), window->size(), camera::kCanvasSize),
-          map{.voxels = voxel::expandCubesToVoxels(voxelmap::demoCells()),
-              .tilemap = tilemap::defaultTilemap()},
           world(logger),
           game(logger, world, worldMeshes.cells(), patrolPositions)
     {
+        document.startFrom(std::move(mapPathGiven));
+        document.map = map::Map{
+            .voxels = voxel::expandCubesToVoxels(voxelmap::demoCells()),
+            .tilemap = tilemap::defaultTilemap()};
+
         worldShader.open(viewportRenderer, map::loadShader("voxel"));
         setBindings(loadChords(chordsPath()));
 
         try
         {
-            map = map::loadMap(mapPath);
+            document.map = map::loadMap(document.path());
 
-            logger.log(log::Level::Info, "Loaded " + mapPath);
+            logger.log(log::Level::Info, "Loaded " + document.path());
         }
         catch (const map::MapFileError &)
         {
             logger.log(
                 log::Level::Info,
-                "No map at " + mapPath
+                "No map at " + document.path()
                     + ", starting from the built-in one");
         }
 
@@ -89,18 +90,20 @@ namespace antwika::editor
         }
 
         editLevel =
-            antwika::voxel::cubeIndexOfLevel(voxelmap::topLevel(map.voxels));
+            antwika::voxel::cubeIndexOfLevel(voxelmap::topLevel(
+                    document.map.voxels));
         rebuildWorld();
 
         atlasSheets.open(
             viewportRenderer,
-            map::loadAtlasPairOrBlank(mapPath, kAppName),
-            map,
+            map::loadAtlasPairOrBlank(document.path(), kAppName),
+            document.map,
             tick);
         characterView.open(
-            viewportRenderer, map::loadCharacterSheet(mapPath, kAppName));
+            viewportRenderer, map::loadCharacterSheet(document.path(),
+                kAppName));
         iconsView.open(
-            viewportRenderer, loadIconSheet(mapPath, kAppName));
+            viewportRenderer, loadIconSheet(document.path(), kAppName));
         sprites.open(viewportRenderer);
         lightPasses.open(viewportRenderer, map::loadShader("shadow"));
         scenePass.open(viewportRenderer, map::loadShader("bloom"));
@@ -110,25 +113,25 @@ namespace antwika::editor
 
         const auto opening = map::CameraView{
             .transform = camera::centeredOn(camera::defaultTransform(),
-                voxelmap::voxelsCenter(map.voxels))};
+                voxelmap::voxelsCenter(document.map.voxels))};
 
-        cameraView = map.camera.value_or(opening);
+        cameraView = document.map.camera.value_or(opening);
         viewHeight =
             camera::orthoHalfHeight(camera::kCanvasSize, cameraView.zoom);
 
-        activeView = map.settings.view;
-        viewBeforePlay = map.settings.view;
-        tool = map.settings.tool;
-        lighting = map.settings.lighting;
-        showRuleLines = map.settings.showRuleLines;
-        paintMode = map.settings.paint;
-        brushKind = map.settings.kind;
-        grid = map.settings.grid;
-        showPlacementGhost = map.settings.showPlacementGhost;
-        lampSight = map.settings.lampSight;
-        cameraFollows = map.settings.cameraFollows;
-        hideAboveLevel = map.settings.hideAboveLevel;
-        cornerJoining = map.settings.cornersJoined
+        activeView = document.map.settings.view;
+        viewBeforePlay = document.map.settings.view;
+        tool = document.map.settings.tool;
+        lighting = document.map.settings.lighting;
+        showRuleLines = document.map.settings.showRuleLines;
+        paintMode = document.map.settings.paint;
+        brushKind = document.map.settings.kind;
+        grid = document.map.settings.grid;
+        showPlacementGhost = document.map.settings.showPlacementGhost;
+        lampSight = document.map.settings.lampSight;
+        cameraFollows = document.map.settings.cameraFollows;
+        hideAboveLevel = document.map.settings.hideAboveLevel;
+        cornerJoining = document.map.settings.cornersJoined
                       ? solver::CornerSeams::Included
                       : solver::CornerSeams::Ignored;
 
@@ -138,10 +141,10 @@ namespace antwika::editor
 
             if (progress.has_value())
             {
-                mapPath = (std::filesystem::path(startMapPath)
+                document.openAt((std::filesystem::path(document.startPath())
                                .parent_path()
                            / progress->map)
-                              .string();
+                              .string());
 
                 if (loadCurrentMap())
                 {
@@ -164,7 +167,7 @@ namespace antwika::editor
                 }
                 else
                 {
-                    mapPath = startMapPath;
+                    document.openAt(document.startPath());
                 }
             }
 
@@ -188,7 +191,7 @@ namespace antwika::editor
 
         const auto closeRequested = changes.closeRequested;
 
-        if (closeRequested && dirty)
+        if (closeRequested && document.isDirty())
         {
             dialogs.quitConfirmOpen = true;
 

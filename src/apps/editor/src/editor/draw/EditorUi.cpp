@@ -531,7 +531,7 @@ namespace antwika::editor
                 fresh ? statusMessageNotice.text : statusText();
 
             context.label(
-                dirty ? "* " + text : text,
+                document.isDirty() ? "* " + text : text,
                 fresh && statusMessageNotice.warns ? kForbiddenMarkerColor
                                                   : kTextColor);
             context.spacer(antwika::ui::kGrowSizing);

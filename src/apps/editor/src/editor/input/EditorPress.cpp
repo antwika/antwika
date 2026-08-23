@@ -217,14 +217,15 @@ namespace antwika::editor
 
                 pushUndo();
 
-                map.lamps =
+                document.map.lamps =
                     downPressed.button == input::MouseButton::Left
                                         ? light::withLampAt(
-                              map.lamps,
+                              document.map.lamps,
                               *cell,
-                              map.paletteColors.at(inkPicker.activeInk))
+                              document.map.paletteColors.at(
+                                  inkPicker.activeInk))
                         : light::withoutLampAt(
-                              map.lamps, *cell);
+                              document.map.lamps, *cell);
                 lightPasses.forget();
 
                 return;
@@ -265,12 +266,12 @@ namespace antwika::editor
 
             pushUndo();
 
-            map.voxels = voxel::withRampsRebuilt(
+            document.map.voxels = voxel::withRampsRebuilt(
                 tool == map::Tool::Eraser
                       ? voxel::withoutBlockAt(
-                          map.voxels, *cell)
+                          document.map.voxels, *cell)
                     : voxel::withBlockAt(
-                          map.voxels,
+                          document.map.voxels,
                           *cell,
                           brushKind,
                           rampFacing),
@@ -307,7 +308,8 @@ namespace antwika::editor
         {
         case ToolPlacement::Lamp:
             pushUndo();
-            map.lamps = light::withoutLampAt(map.lamps, *cell);
+            document.map.lamps = light::withoutLampAt(document.map.lamps,
+                *cell);
             lightPasses.forget();
 
             return;

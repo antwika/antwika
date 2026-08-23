@@ -453,13 +453,13 @@ namespace antwika::editor
             const auto faces =
                 voxelmap::visibleFacesOf(visibleCells());
             const auto solvedTiles =
-                solver::solveTiles(faces, map.rules, cornerJoining);
+                solver::solveTiles(faces, document.map.rules, cornerJoining);
 
             rebuildWorld();
             logger.log(
                 antwika::log::Level::Info,
                 solver::weaveErrorMessage(
-                    faces, map.rules, solvedTiles, cornerJoining));
+                    faces, document.map.rules, solvedTiles, cornerJoining));
         }
 
         auto nextView = activeView;

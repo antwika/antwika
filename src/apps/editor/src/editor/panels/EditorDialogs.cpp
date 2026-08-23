@@ -178,7 +178,7 @@ namespace antwika::editor
             {
                 saveCurrentMap();
 
-                if (!dirty)
+                if (!document.isDirty())
                 {
                     running = false;
                 }
@@ -340,9 +340,9 @@ namespace antwika::editor
             {
                 recolorInk(inkPicker.inkBeforeEditColor);
 
-                if (*inkPicker.editingInk < map.glows.size())
+                if (*inkPicker.editingInk < document.map.glows.size())
                 {
-                    map.glows.at(*inkPicker.editingInk) =
+                    document.map.glows.at(*inkPicker.editingInk) =
                         inkPicker.glowBeforeEdit;
                     atlasSheets.touch();
                 }

@@ -75,6 +75,7 @@
 #include "antwika/editor/editor/state/InkPicker.hpp"
 #include "antwika/editor/editor/state/StatusMessage.hpp"
 #include "antwika/editor/editor/FileDialog.hpp"
+#include "antwika/editor/editor/EditorDocument.hpp"
 #include "antwika/editor/editor/GameModule.hpp"
 #include "antwika/editor/plan/PlanBoard.hpp"
 #include "antwika/editor/plan/PlanFile.hpp"
@@ -119,8 +120,6 @@ namespace antwika::editor
 
     private:
         log::ILogger &logger;
-        std::string mapPath;
-        std::string startMapPath;
         bool playOnly = false;
         bool titleScreenUp = false;
         gfx::IGfxBackend &backend;
@@ -130,7 +129,7 @@ namespace antwika::editor
         render::WorldShader worldShader;
         render::Sprites sprites;
 
-        map::Map map;
+        EditorDocument document;
         solver::CornerSeams cornerJoining = solver::CornerSeams::Ignored;
 
         render::WorldMeshes worldMeshes;
@@ -146,7 +145,6 @@ namespace antwika::editor
         std::vector<solver::FaceSeam> seamsAboveLevel;
         std::vector<solver::FaceSeam> seamsAtLevel;
         std::uint32_t tick = 0;
-        map::EditHistory history;
 
         render::AtlasSheets atlasSheets;
 
@@ -198,7 +196,6 @@ namespace antwika::editor
         input::InputState inputState;
 
         Dialogs dialogs;
-        bool dirty = false;
 
         StatusMessage statusMessageNotice;
 

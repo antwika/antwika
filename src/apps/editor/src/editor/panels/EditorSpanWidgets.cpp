@@ -20,10 +20,10 @@ namespace antwika::editor
             ensureDecor();
 
             const auto *decor = decor::decorOf(
-                map.decor, *selectedTile);
+                document.map.decor, *selectedTile);
 
-            map.decor = withSpanSet(
-                map.decor,
+            document.map.decor = withSpanSet(
+                document.map.decor,
                 *selectedTile,
                 static_cast<std::uint8_t>(
                     std::max(decor->width + acrossStep, 1)),
@@ -67,7 +67,7 @@ namespace antwika::editor
         }
 
         const auto *decor =
-            decor::decorOf(map.decor, *selectedTile);
+            decor::decorOf(document.map.decor, *selectedTile);
 
         for (std::size_t place = 1;
              decor != nullptr && place < decor->spanTiles.size();

@@ -22,23 +22,23 @@ namespace antwika::editor
         const geometry::GridCell toCell)
     {
         const auto source =
-            map.tilemap.at(fromCell.column, fromCell.row);
-        auto target = map.tilemap.at(toCell.column, toCell.row);
+            document.map.tilemap.at(fromCell.column, fromCell.row);
+        auto target = document.map.tilemap.at(toCell.column, toCell.row);
 
         if (!target.has_value())
         {
-            target = tilemap::suggestedTileFor(map.tilemap, toCell);
+            target = tilemap::suggestedTileFor(document.map.tilemap, toCell);
 
             if (target.has_value())
             {
-                tilemap::putTile(map.tilemap, toCell, *target);
+                tilemap::putTile(document.map.tilemap, toCell, *target);
             }
         }
 
         if (!source.has_value() || !target.has_value()
             || source->atlas != target->atlas
             || *source == *target
-            || transitionOf(map.transitions, *target)
+            || transitionOf(document.map.transitions, *target)
                    != nullptr)
         {
             return;
@@ -70,8 +70,8 @@ namespace antwika::editor
                           decor::kFullFrequency)
                     : std::max<int>(weight - 1, 0);
 
-            map.familyGroups = withVariantWeightSet(
-                map.familyGroups,
+            document.map.familyGroups = withVariantWeightSet(
+                document.map.familyGroups,
                 *selectedTile,
                 static_cast<std::uint8_t>(nextIndex));
             lastWheelNudgeTick = tick;
@@ -92,7 +92,7 @@ namespace antwika::editor
             ensureDecor();
 
             const auto *nudgedDecor = decor::decorOf(
-                map.decor, *selectedTile);
+                document.map.decor, *selectedTile);
             const auto nextIndex =
                 rolledScrolled.vertical > 0
                     ? std::min<int>(
@@ -100,8 +100,8 @@ namespace antwika::editor
                           decor::kFullFrequency)
                     : std::max<int>(nudgedDecor->frequency - 1, 0);
 
-            map.decor = withFrequencySet(
-                map.decor,
+            document.map.decor = withFrequencySet(
+                document.map.decor,
                 *selectedTile,
                 static_cast<std::uint8_t>(nextIndex));
             lastWheelNudgeTick = tick;
@@ -123,7 +123,7 @@ namespace antwika::editor
             ensureDecor();
 
             const auto *nudgedDecor = decor::decorOf(
-                map.decor, *selectedTile);
+                document.map.decor, *selectedTile);
             const auto nextIndex =
                 rolledScrolled.vertical > 0
                     ? std::min<int>(
@@ -131,8 +131,8 @@ namespace antwika::editor
                           decor::kFullFrequency)
                     : std::max<int>(nudgedDecor->weight - 1, 0);
 
-            map.decor = withWeightSet(
-                map.decor,
+            document.map.decor = withWeightSet(
+                document.map.decor,
                 *selectedTile,
                 static_cast<std::uint8_t>(nextIndex));
             lastWheelNudgeTick = tick;
@@ -178,8 +178,8 @@ namespace antwika::editor
         {
             pushUndo();
             ensureDecor();
-            map.decor = withFrequencySet(
-                map.decor,
+            document.map.decor = withFrequencySet(
+                document.map.decor,
                 *selectedTile,
                 static_cast<std::uint8_t>(
                     interactions.slidChange->value));
@@ -195,8 +195,8 @@ namespace antwika::editor
         {
             pushUndo();
             ensureDecor();
-            map.decor = withWeightSet(
-                map.decor,
+            document.map.decor = withWeightSet(
+                document.map.decor,
                 *selectedTile,
                 static_cast<std::uint8_t>(
                     interactions.slidChange->value));
@@ -211,8 +211,8 @@ namespace antwika::editor
             && selectedTile.has_value())
         {
             pushUndo();
-            map.familyGroups = withVariantWeightSet(
-                map.familyGroups,
+            document.map.familyGroups = withVariantWeightSet(
+                document.map.familyGroups,
                 *selectedTile,
                 static_cast<std::uint8_t>(
                     interactions.slidChange->value));
@@ -226,9 +226,9 @@ namespace antwika::editor
                    == antwika::editor::kGlowWidget
             && inkPicker.editingInk.has_value())
         {
-            if (*inkPicker.editingInk < map.glows.size())
+            if (*inkPicker.editingInk < document.map.glows.size())
             {
-                map.glows.at(*inkPicker.editingInk) =
+                document.map.glows.at(*inkPicker.editingInk) =
                     static_cast<std::uint8_t>(
                         interactions.slidChange->value);
             }
@@ -243,7 +243,7 @@ namespace antwika::editor
                    == antwika::editor::kAmbientWidget)
         {
             pushUndo();
-            map.ambient = static_cast<std::uint8_t>(
+            document.map.ambient = static_cast<std::uint8_t>(
                 interactions.slidChange->value);
             slidingWidget = antwika::editor::kAmbientWidget;
 
@@ -290,7 +290,7 @@ namespace antwika::editor
                 inkPicker.pickerHsv = *takenColor;
                 recolorInk(colorOf(inkPicker.pickerHsv));
                 inkPicker.hexText = colorToHex(
-                    map.paletteColors.at(*inkPicker.editingInk));
+                    document.map.paletteColors.at(*inkPicker.editingInk));
                 inkPicker.pickerDragging = true;
 
                 return true;
@@ -335,7 +335,7 @@ namespace antwika::editor
         auto consumedKey = false;
 
         for (std::size_t which = 0;
-             which < map.paletteColors.size();
+             which < document.map.paletteColors.size();
              ++which)
         {
             if (interactions.activatedWidget
@@ -351,12 +351,12 @@ namespace antwika::editor
             {
                 inkPicker.editingInk = which;
                 inkPicker.inkBeforeEditColor =
-                    map.paletteColors.at(which);
+                    document.map.paletteColors.at(which);
                 inkPicker.glowBeforeEdit = glowOf(which);
                 inkPicker.pickerHsv = hsvOf(
-                    map.paletteColors.at(which));
+                    document.map.paletteColors.at(which));
                 inkPicker.hexText = colorToHex(
-                    map.paletteColors.at(which));
+                    document.map.paletteColors.at(which));
                 carryInk();
             }
 
@@ -368,24 +368,24 @@ namespace antwika::editor
         if (interactions.activatedWidget
                 == antwika::editor::
                     kAddInkWidget
-            && map.paletteColors.size() < tile::kMaxInks)
+            && document.map.paletteColors.size() < tile::kMaxInks)
         {
             pushUndo();
-            map.paletteColors.push_back(
-                map.paletteColors.at(inkPicker.activeInk));
-            map.glows.push_back(
-                inkPicker.activeInk < map.glows.size()
-                    ? map.glows.at(inkPicker.activeInk)
+            document.map.paletteColors.push_back(
+                document.map.paletteColors.at(inkPicker.activeInk));
+            document.map.glows.push_back(
+                inkPicker.activeInk < document.map.glows.size()
+                    ? document.map.glows.at(inkPicker.activeInk)
                     : 0);
-            inkPicker.activeInk = map.paletteColors.size() - 1;
+            inkPicker.activeInk = document.map.paletteColors.size() - 1;
             inkPicker.editingInk = inkPicker.activeInk;
-            inkPicker.inkBeforeEditColor = map.paletteColors.at(
+            inkPicker.inkBeforeEditColor = document.map.paletteColors.at(
                 inkPicker.activeInk);
             inkPicker.glowBeforeEdit = glowOf(inkPicker.activeInk);
             inkPicker.pickerHsv =
-                hsvOf(map.paletteColors.at(inkPicker.activeInk));
+                hsvOf(document.map.paletteColors.at(inkPicker.activeInk));
             inkPicker.hexText =
-                colorToHex(map.paletteColors.at(inkPicker.activeInk));
+                colorToHex(document.map.paletteColors.at(inkPicker.activeInk));
             carryInk();
             consumedKey = true;
         }
@@ -411,28 +411,28 @@ namespace antwika::editor
                 == antwika::editor::
                     kInkDeleteWidget
             && inkPicker.editingInk.has_value()
-            && map.paletteColors.size() > 1)
+            && document.map.paletteColors.size() > 1)
         {
             pushUndo();
-            map.paletteColors.erase(
+            document.map.paletteColors.erase(
                 std::next(
-                    map.paletteColors.begin(),
+                    document.map.paletteColors.begin(),
                     static_cast<
                         std::ptrdiff_t>(
                         *inkPicker.editingInk)));
 
-            if (*inkPicker.editingInk < map.glows.size())
+            if (*inkPicker.editingInk < document.map.glows.size())
             {
-                map.glows.erase(
+                document.map.glows.erase(
                     std::next(
-                        map.glows.begin(),
+                        document.map.glows.begin(),
                         static_cast<
                             std::ptrdiff_t>(
                             *inkPicker.editingInk)));
             }
             inkPicker.activeInk = std::min(
                 inkPicker.activeInk,
-                map.paletteColors.size() - 1);
+                document.map.paletteColors.size() - 1);
             inkPicker.editingInk.reset();
             consumedKey = true;
         }
@@ -442,7 +442,7 @@ namespace antwika::editor
 
     std::uint8_t Editor::glowOf(const std::size_t ink) const
     {
-        return ink < map.glows.size() ? map.glows.at(ink) : 0;
+        return ink < document.map.glows.size() ? document.map.glows.at(ink) : 0;
     }
 
     void Editor::carryInk()
@@ -451,12 +451,12 @@ namespace antwika::editor
         inkPicker.carriedCharacterInk.clear();
         inkPicker.carriedFigureInk.clear();
 
-        if (!tile::soleInk(map.paletteColors, *inkPicker.editingInk))
+        if (!tile::soleInk(document.map.paletteColors, *inkPicker.editingInk))
         {
             return;
         }
 
-        const auto color = map.paletteColors.at(*inkPicker.editingInk);
+        const auto color = document.map.paletteColors.at(*inkPicker.editingInk);
 
         for (std::size_t sheet = 0;
              sheet < atlasSheets.sheets().size();
@@ -482,7 +482,7 @@ namespace antwika::editor
 
     void Editor::recolorInk(const gfx::Color nextColor)
     {
-        map.paletteColors.at(*inkPicker.editingInk) = nextColor;
+        document.map.paletteColors.at(*inkPicker.editingInk) = nextColor;
 
         for (std::size_t sheet = 0;
              sheet < atlasSheets.sheets().size();
@@ -532,7 +532,7 @@ namespace antwika::editor
         const tilemap::Tile oneTile, const tilemap::Tile otherTile)
     {
         const auto &rules =
-            isDecorLayer() ? map.decorRules : worldMeshes.rules();
+            isDecorLayer() ? document.map.decorRules : worldMeshes.rules();
 
         for (const auto edge : tilemap::kEveryTileEdge)
         {

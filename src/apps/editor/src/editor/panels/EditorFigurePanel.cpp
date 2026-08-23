@@ -47,14 +47,14 @@ namespace antwika::editor
                 }
 
                 for (std::size_t index = 0;
-                     index < map.characters.size();
+                     index < document.map.characters.size();
                      ++index)
                 {
                     context.button(
-                        map.characters.at(index).name.empty()
+                        document.map.characters.at(index).name.empty()
                             ? "Figure "
                                   + std::to_string(index)
-                            : map.characters.at(index).name,
+                            : document.map.characters.at(index).name,
                         antwika::ui::ButtonSpec{
                             .widgetId = figureWidget(index),
                             .widthSizing = antwika::ui::kGrowSizing,
@@ -64,13 +64,13 @@ namespace antwika::editor
                 }
 
                 if (figurePicked.has_value()
-                    && *figurePicked < map.characters.size())
+                    && *figurePicked < document.map.characters.size())
                 {
                     context.textField(
                         antwika::ui::TextFieldSpec{
                             .widgetId = antwika::editor::
                                 kFigureNameWidget,
-                            .text = map.characters
+                            .text = document.map.characters
                                         .at(*figurePicked)
                                         .name,
                             .placeholder = "name",
@@ -82,11 +82,11 @@ namespace antwika::editor
                             .widgetId = antwika::editor::
                                 kFigureLampWidget,
                             .checked = carriesLight(
-                                map.characters.at(
+                                document.map.characters.at(
                                     *figurePicked))});
 
                     for (const auto &line :
-                         map.characters.at(*figurePicked)
+                         document.map.characters.at(*figurePicked)
                              .dialogue)
                     {
                         context.label(line, kGridLineColor);
@@ -130,7 +130,7 @@ namespace antwika::editor
                     antwika::ui::TextFieldSpec{
                         .widgetId = antwika::editor::
                             kExitTargetWidget,
-                        .text = map.exitTarget,
+                        .text = document.map.exitTarget,
                         .placeholder = "Closes the game",
                         .focused = focusedField == FocusedField::ExitTarget});
                 context.checkbox(
@@ -138,7 +138,7 @@ namespace antwika::editor
                     antwika::ui::CheckboxSpec{
                         .widgetId = antwika::editor::
                             kExitLockedWidget,
-                        .checked = map.exitLocked});
+                        .checked = document.map.exitLocked});
             }
 
             if (tool == map::Tool::Lamp && activeView == map::View::World)
@@ -152,12 +152,12 @@ namespace antwika::editor
                 panelTitle(
                     context,
                     "Ambient "
-                        + std::to_string(map.ambient));
+                        + std::to_string(document.map.ambient));
                 context.slider(
                     antwika::ui::SliderSpec{
                         .widgetId = antwika::editor::
                             kAmbientWidget,
-                        .value = map.ambient,
+                        .value = document.map.ambient,
                         .range = 100,
                         .dragging =
                             slidingWidget
@@ -179,14 +179,14 @@ namespace antwika::editor
                 panelTitle(context, "Drawing");
 
                 for (std::size_t index = 0;
-                     index < map.characters.size();
+                     index < document.map.characters.size();
                      ++index)
                 {
                     context.button(
-                        map.characters.at(index).name.empty()
+                        document.map.characters.at(index).name.empty()
                             ? "Figure "
                                   + std::to_string(index)
-                            : map.characters.at(index).name,
+                            : document.map.characters.at(index).name,
                         antwika::ui::ButtonSpec{
                             .widgetId = figureWidget(index),
                             .widthSizing = antwika::ui::kGrowSizing,
@@ -202,7 +202,7 @@ namespace antwika::editor
     {
         auto consumedKey = false;
 
-        for (std::size_t index = 0; index < map.characters.size();
+        for (std::size_t index = 0; index < document.map.characters.size();
              ++index)
         {
             if (interactions.activatedWidget != figureWidget(index))
@@ -227,12 +227,12 @@ namespace antwika::editor
             == antwika::editor::kAddFigureWidget)
         {
             pushUndo();
-            map.characters.push_back(
+            document.map.characters.push_back(
                 map::Character{
                     .name = "Figure "
                             + std::to_string(
-                                map.characters.size())});
-            figurePicked = map.characters.size() - 1;
+                                document.map.characters.size())});
+            figurePicked = document.map.characters.size() - 1;
             figurePlaced = false;
             spawnRoster();
             loadCharacterSkins();
@@ -242,13 +242,13 @@ namespace antwika::editor
         if (interactions.activatedWidget
                 == antwika::editor::kRemoveFigureWidget
             && figurePicked.has_value()
-            && *figurePicked < map.characters.size()
-            && !map.characters.at(*figurePicked).player)
+            && *figurePicked < document.map.characters.size()
+            && !document.map.characters.at(*figurePicked).player)
         {
             pushUndo();
-            map.characters.erase(
+            document.map.characters.erase(
                 std::next(
-                    map.characters.begin(),
+                    document.map.characters.begin(),
                     static_cast<std::ptrdiff_t>(
                         *figurePicked)));
             figurePicked.reset();
@@ -269,10 +269,10 @@ namespace antwika::editor
         if (interactions.activatedWidget
                 == antwika::editor::kFigureLampWidget
             && figurePicked.has_value()
-            && *figurePicked < map.characters.size())
+            && *figurePicked < document.map.characters.size())
         {
             pushUndo();
-            toggleCarriedLight(map.characters.at(*figurePicked));
+            toggleCarriedLight(document.map.characters.at(*figurePicked));
             consumedKey = true;
         }
 
@@ -286,11 +286,11 @@ namespace antwika::editor
         if (interactions.activatedWidget
                 == antwika::editor::kFigureLineAddWidget
             && figurePicked.has_value()
-            && *figurePicked < map.characters.size()
+            && *figurePicked < document.map.characters.size()
             && !pendingFigureLine.empty())
         {
             pushUndo();
-            map.characters.at(*figurePicked)
+            document.map.characters.at(*figurePicked)
                 .dialogue.push_back(pendingFigureLine);
             pendingFigureLine.clear();
             focusedField = FocusedField::Nothing;

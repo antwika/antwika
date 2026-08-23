@@ -9,14 +9,14 @@ namespace antwika::editor
 
     std::uint8_t Editor::variantWeightOf(const tilemap::Tile tile) const
     {
-        const auto *leads = groupLedBy(map.familyGroups, tile);
+        const auto *leads = groupLedBy(document.map.familyGroups, tile);
 
         if (leads != nullptr)
         {
             return leads->weight;
         }
 
-        const auto *family = groupContaining(map.familyGroups, tile);
+        const auto *family = groupContaining(document.map.familyGroups, tile);
 
         for (const auto &member :
              family != nullptr ? family->variants
@@ -34,7 +34,8 @@ namespace antwika::editor
     bool Editor::blockedAsVariant()
     {
         if (isDecorLayer() || !selectedTile.has_value()
-            || groupContaining(map.familyGroups, *selectedTile) == nullptr)
+            || groupContaining(document.map.familyGroups,
+                *selectedTile) == nullptr)
         {
             return false;
         }
@@ -47,15 +48,15 @@ namespace antwika::editor
     void Editor::pickedVariant(const tilemap::Tile tile)
     {
         const auto canonicalTile = *selectedTile;
-        const auto *family = groupContaining(map.familyGroups, tile);
+        const auto *family = groupContaining(document.map.familyGroups, tile);
         const auto mine =
             family != nullptr && family->canonicalTile == canonicalTile;
 
         if (!mine
             && !canBeVariantOf(
-                map.familyGroups,
-                map.rules,
-                map.decor,
+                document.map.familyGroups,
+                document.map.rules,
+                document.map.decor,
                 canonicalTile,
                 tile))
         {
@@ -68,8 +69,8 @@ namespace antwika::editor
         }
 
         pushUndo();
-        map.familyGroups =
-            withVariantToggled(map.familyGroups, canonicalTile, tile);
+        document.map.familyGroups =
+            withVariantToggled(document.map.familyGroups, canonicalTile, tile);
         rebuildWorld();
     }
 
@@ -92,7 +93,8 @@ namespace antwika::editor
                 == decor::kGoToCanonicalWidget
             && selectedTile.has_value())
         {
-            selectedTile = canonicalTileOf(map.familyGroups, *selectedTile);
+            selectedTile = canonicalTileOf(document.map.familyGroups,
+                *selectedTile);
             assignMode.variantPicking = false;
             consumedKey = true;
         }
@@ -109,7 +111,7 @@ namespace antwika::editor
         }
 
         const auto *family =
-            groupContaining(map.familyGroups, *selectedTile);
+            groupContaining(document.map.familyGroups, *selectedTile);
         const auto variantsPanel = context.column(
             antwika::ui::ContainerSpec{
                 .widthSizing = antwika::ui::kGrowSizing,
@@ -136,7 +138,7 @@ namespace antwika::editor
         }
 
         if (family != nullptr
-            || groupLedBy(map.familyGroups, *selectedTile) != nullptr)
+            || groupLedBy(document.map.familyGroups, *selectedTile) != nullptr)
         {
             context.label(
                 "weight "

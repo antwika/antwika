@@ -29,8 +29,8 @@ namespace antwika::editor
         {
             pushUndo();
             ensureDecor();
-            map.decor = decor::withBaseToggled(
-                map.decor, *selectedTile, tile);
+            document.map.decor = decor::withBaseToggled(
+                document.map.decor, *selectedTile, tile);
             rebuildWorld();
 
             return true;
@@ -40,8 +40,9 @@ namespace antwika::editor
         {
             pushUndo();
             ensureDecor();
-            map.decor = withMemberSet(
-                map.decor, *selectedTile, assignMode.memberPicked, tile);
+            document.map.decor = withMemberSet(
+                document.map.decor, *selectedTile, assignMode.memberPicked,
+                tile);
             assignMode.memberAssigning = false;
             rebuildWorld();
 
@@ -49,11 +50,12 @@ namespace antwika::editor
         }
 
         if (assignMode.flipFrameAssigning
-            && animationOf(map.flipAnimations, *selectedTile) != nullptr)
+            && animationOf(document.map.flipAnimations,
+                *selectedTile) != nullptr)
         {
             pushUndo();
-            map.flipAnimations = withAnimationFrameSet(
-                map.flipAnimations,
+            document.map.flipAnimations = withAnimationFrameSet(
+                document.map.flipAnimations,
                 *selectedTile,
                 assignMode.flipFramePicked,
                 tile);
