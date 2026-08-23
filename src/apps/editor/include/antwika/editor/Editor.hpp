@@ -84,7 +84,9 @@
 #include "antwika/editor/ui/IconsView.hpp"
 #include "antwika/editor/ui/MenuBar.hpp"
 #include "antwika/editor/ui/PlanView.hpp"
+#include "antwika/editor/ui/ToolButtonRow.hpp"
 #include "antwika/editor/ui/ToolPanel.hpp"
+#include "antwika/editor/ui/ToolToggles.hpp"
 #include "antwika/rules/Gates.hpp"
 #include "antwika/system/HealthSystem.hpp"
 #include "antwika/system/OrientationSystem.hpp"
@@ -302,6 +304,9 @@ namespace antwika::editor
         void applyStep(map::Snapshot stepSnapshot);
 
         void pressTool(ToolButton whichButton);
+
+        [[nodiscard]] bool toolButtonActive(
+            ToolButton whichButton) const;
         [[nodiscard]] tile::TileRules &activeRules();
         [[nodiscard]] bool isDecorLayer();
         void commitFloatingPatch();

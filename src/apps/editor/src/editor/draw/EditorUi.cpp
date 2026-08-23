@@ -284,30 +284,7 @@ namespace antwika::editor
                         {
                             const auto which =
                                 kEveryToolButton.at(rank);
-                            const auto active =
-                                which == ToolButton::Brush
-                                       ? tool == map::Tool::Brush
-                                       : which == ToolButton::Picker
-                                       ? tool == map::Tool::Picker
-                                       : which == ToolButton::FreeLook
-                                       ? freeLook
-                                       : which == ToolButton::Lighting
-                                       ? lighting
-                                       : which == ToolButton::Lamp
-                                       ? tool == map::Tool::Lamp
-                                       : which == ToolButton::Start
-                                       ? tool == map::Tool::Start
-                                       : which == ToolButton::Exit
-                                       ? tool == map::Tool::Exit
-                                       : which == ToolButton::Stamp
-                                       ? tool == map::Tool::Stamp
-                                       : which == ToolButton::Figure
-                                       ? tool == map::Tool::Figure
-                                       : which == ToolButton::PressurePlate
-                                       ? tool == map::Tool::PressurePlate
-                                       : which == ToolButton::Eraser
-                                       ? tool == map::Tool::Eraser
-                                       : showRuleLines;
+                            const auto active = toolButtonActive(which);
 
                             context.iconButton(
                                 antwika::ui::Icon{
