@@ -531,6 +531,21 @@ void main()
         EXPECT_TRUE(second->isOpen());
     }
 
+    TYPED_TEST_P(GfxBackendConformanceTest, SetSize_ResizesTheWindow)
+    {
+        if (!this->backend->capabilities().resizesWindows)
+        {
+            GTEST_SKIP() << "the backend does not resize windows";
+        }
+
+        const auto window = this->backend->createWindow(this->demoSpec());
+        const Size askedSize{.width = 320, .height = 240};
+
+        window->setSize(askedSize);
+
+        EXPECT_EQ(window->size(), askedSize);
+    }
+
     TYPED_TEST_P(GfxBackendConformanceTest, SetTitle_ReplacesTheTitle)
     {
         const auto window = this->backend->createWindow(this->demoSpec());
@@ -1212,10 +1227,12 @@ void main()
 
         renderer.present();
 
-        if (!middleColor.has_value())
+        if (!this->backend->capabilities().readsPixels)
         {
             GTEST_SKIP() << "the backend reads no pixels back";
         }
+
+        ASSERT_TRUE(middleColor.has_value());
 
         EXPECT_NEAR(middleColor->green, 255, 8);
         EXPECT_NEAR(middleColor->blue, 0, 8);
@@ -1256,10 +1273,12 @@ void main()
 
         renderer.present();
 
-        if (!middleColor.has_value())
+        if (!this->backend->capabilities().readsPixels)
         {
             GTEST_SKIP() << "the backend reads no pixels back";
         }
+
+        ASSERT_TRUE(middleColor.has_value());
 
         EXPECT_NEAR(middleColor->green, 255, 8);
         EXPECT_NEAR(middleColor->red, 0, 8);
@@ -1317,10 +1336,13 @@ void main()
 
         const auto readBitmap = readBack();
 
-        if (!emptyBitmap.has_value() || !readBitmap.has_value())
+        if (!this->backend->capabilities().readsPixels)
         {
             GTEST_SKIP() << "the backend reads no pixels back";
         }
+
+        ASSERT_TRUE(emptyBitmap.has_value());
+        ASSERT_TRUE(readBitmap.has_value());
 
         EXPECT_EQ(emptyBitmap->red, 255);
         EXPECT_LT(readBitmap->red, 250);
@@ -1377,10 +1399,13 @@ void main()
 
         renderer.present();
 
-        if (!middleColor.has_value() || !shiftedColor.has_value())
+        if (!this->backend->capabilities().readsPixels)
         {
             GTEST_SKIP() << "the backend reads no pixels back";
         }
+
+        ASSERT_TRUE(middleColor.has_value());
+        ASSERT_TRUE(shiftedColor.has_value());
 
         EXPECT_NEAR(middleColor->green, 255, 8);
         EXPECT_NEAR(shiftedColor->blue, 255, 8);
@@ -1412,10 +1437,12 @@ void main()
 
         renderer.present();
 
-        if (!middleColor.has_value())
+        if (!this->backend->capabilities().readsPixels)
         {
             GTEST_SKIP() << "the backend reads no pixels back";
         }
+
+        ASSERT_TRUE(middleColor.has_value());
 
         EXPECT_NEAR(middleColor->red, 128, 8);
         EXPECT_NEAR(middleColor->blue, 127, 8);
@@ -1462,10 +1489,12 @@ void main()
 
         renderer.present();
 
-        if (!middleColor.has_value())
+        if (!this->backend->capabilities().readsPixels)
         {
             GTEST_SKIP() << "the backend reads no pixels back";
         }
+
+        ASSERT_TRUE(middleColor.has_value());
 
         EXPECT_NEAR(middleColor->green, 255, 8);
         EXPECT_NEAR(middleColor->red, 0, 8);
@@ -1495,10 +1524,12 @@ void main()
 
         renderer.present();
 
-        if (!middleColor.has_value())
+        if (!this->backend->capabilities().readsPixels)
         {
             GTEST_SKIP() << "the backend reads no pixels back";
         }
+
+        ASSERT_TRUE(middleColor.has_value());
 
         EXPECT_NEAR(middleColor->red, 0, 8);
         EXPECT_NEAR(middleColor->green, 0, 8);
@@ -1533,10 +1564,12 @@ void main()
 
         renderer.present();
 
-        if (!middleColor.has_value())
+        if (!this->backend->capabilities().readsPixels)
         {
             GTEST_SKIP() << "the backend reads no pixels back";
         }
+
+        ASSERT_TRUE(middleColor.has_value());
 
         EXPECT_NEAR(middleColor->red, 200, 8);
     }
@@ -1671,6 +1704,7 @@ void main()
         CreateWindow_ThrowsWhenWidthIsZero,
         CreateWindow_ThrowsWhenHeightIsZero,
         CreateWindow_ReturnsIndependentWindows,
+        SetSize_ResizesTheWindow,
         SetTitle_ReplacesTheTitle,
         Close_ClosesTheWindow,
         Close_IsIdempotent,

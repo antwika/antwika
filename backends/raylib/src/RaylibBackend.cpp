@@ -34,6 +34,12 @@ namespace antwika::gfx::raylib
         return 1;
     }
 
+    GfxCapabilities RaylibBackend::capabilities() const
+    {
+        return GfxCapabilities{
+            .readsPixels = true, .resizesWindows = true};
+    }
+
     std::unique_ptr<IWindow> RaylibBackend::createWindow(
         const WindowSpec &spec)
     {

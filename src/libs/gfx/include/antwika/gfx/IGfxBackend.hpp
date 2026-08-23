@@ -6,6 +6,7 @@
 #include <optional>
 #include <string_view>
 
+#include "antwika/gfx/GfxCapabilities.hpp"
 #include "antwika/gfx/IWindow.hpp"
 #include "antwika/gfx/WindowSpec.hpp"
 #include "antwika/gfx/WindowEvent.hpp"
@@ -24,6 +25,9 @@ namespace antwika::gfx
         [[nodiscard]] virtual std::string_view name() const = 0;
 
         [[nodiscard]] virtual std::size_t maxWindows() const = 0;
+
+        [[nodiscard]] virtual GfxCapabilities capabilities()
+            const = 0;
 
         [[nodiscard]] virtual std::unique_ptr<IWindow> createWindow(
             const WindowSpec &spec) = 0;

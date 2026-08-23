@@ -60,6 +60,11 @@ namespace antwika::gfx::detail
         windowTitle = title;
     }
 
+    void NullWindow::setSize(const Size size)
+    {
+        windowSize = size;
+    }
+
     void NullWindow::setFullscreen(bool fullscreen)
     {
         filling = fullscreen;

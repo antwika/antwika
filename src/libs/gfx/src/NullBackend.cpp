@@ -28,6 +28,12 @@ namespace antwika::gfx
         return kUnlimitedWindows;
     }
 
+    GfxCapabilities NullBackend::capabilities() const
+    {
+        return GfxCapabilities{
+            .readsPixels = false, .resizesWindows = true};
+    }
+
     std::unique_ptr<IWindow> NullBackend::createWindow(const WindowSpec &spec)
     {
         if (spec.size.width == 0 || spec.size.height == 0)
