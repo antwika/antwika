@@ -18,6 +18,7 @@
 
 #include <antwika/map/MapFile.hpp>
 #include <antwika/map/MapFileError.hpp>
+#include <antwika/enums/Enumeration.hpp>
 
 using antwika::tilemap::Atlas;
 using antwika::tilemap::defaultTilemap;
@@ -2381,4 +2382,34 @@ TEST(MapFileTest, PatrolStopsOf_GivesEveryCharacterItsStopsInOrder)
     ASSERT_EQ(stops.at(0).size(), 1U);
     EXPECT_EQ(stops.at(0).at(0).x, 1);
     EXPECT_TRUE(stops.at(1).empty());
+}
+
+TEST(MapFileTest, WriteMap_WritesAMapSavedWithEveryTool)
+{
+    for (const auto tool : antwika::enums::kAll<antwika::map::Tool>)
+    {
+        Map map;
+        map.settings.tool = tool;
+
+        std::ostringstream stream;
+
+        EXPECT_NO_THROW(writeMap(stream, map))
+            << static_cast<int>(tool);
+    }
+}
+
+TEST(MapFileTest, ReadMap_ReadsBackEveryToolItWrote)
+{
+    for (const auto tool : antwika::enums::kAll<antwika::map::Tool>)
+    {
+        Map map;
+        map.settings.tool = tool;
+
+        std::ostringstream writtenText;
+        writeMap(writtenText, map);
+
+        std::istringstream stream(writtenText.str());
+
+        EXPECT_EQ(readMap(stream).settings.tool, tool);
+    }
 }

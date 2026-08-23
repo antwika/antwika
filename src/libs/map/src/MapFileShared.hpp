@@ -23,6 +23,7 @@
 #include <antwika/schema/VersionedDocument.hpp>
 #include <antwika/tile/TilePaint.hpp>
 
+#include <antwika/enums/NameTable.hpp>
 #include <antwika/character/Character.hpp>
 #include <antwika/map/MapFile.hpp>
 #include <antwika/map/MapFileError.hpp>
@@ -83,14 +84,17 @@ namespace antwika::map::mapfile
 
     constexpr std::string_view kFilledKey = "filled";
 
-    constexpr std::array<std::string_view, tilemap::kTileCorners>
-        kCornerNames{
-            "topLeft", "topRight", "bottomLeft", "bottomRight"};
+    constexpr enums::NameTable<voxel::Corner> kCornerNames{
+        {"topLeft", "topRight", "bottomLeft", "bottomRight"}};
+
+    static_assert(kCornerNames.isComplete());
 
     constexpr std::string_view kKindKey = "kind";
 
-    constexpr std::array<std::string_view, 4> kKindNames{
-        "normal", "water", "ramp", "ladder"};
+    constexpr enums::NameTable<voxel::Kind> kKindNames{
+        {"normal", "water", "ramp", "ladder"}};
+
+    static_assert(kKindNames.isComplete());
 
     constexpr std::string_view kTileKindsKey = "tileKinds";
 
@@ -98,8 +102,10 @@ namespace antwika::map::mapfile
 
     constexpr std::string_view kFacingKey = "facing";
 
-    constexpr std::array<std::string_view, 5> kFacingNames{
-        "any", "east", "west", "north", "south"};
+    constexpr enums::NameTable<voxel::Facing> kFacingNames{
+        {"any", "east", "west", "north", "south"}};
+
+    static_assert(kFacingNames.isComplete());
 
     constexpr std::string_view kClimbKey = "climb";
 
@@ -107,15 +113,19 @@ namespace antwika::map::mapfile
 
     constexpr std::string_view kLevelKey = "level";
 
-    constexpr std::array<std::string_view, 3> kLevelNames{
-        "any", "lower", "upper"};
+    constexpr enums::NameTable<voxel::StairHalf> kStairHalfNames{
+        {"any", "lower", "upper"}};
+
+    static_assert(kStairHalfNames.isComplete());
 
     constexpr std::string_view kTilePartsKey = "tileParts";
 
     constexpr std::string_view kPartKey = "part";
 
-    constexpr std::array<std::string_view, 3> kPartNames{
-        "any", "front", "side"};
+    constexpr enums::NameTable<voxel::StairPart> kPartNames{
+        {"any", "front", "side"}};
+
+    static_assert(kPartNames.isComplete());
 
     constexpr std::string_view kSettingsKey = "settings";
 
@@ -142,20 +152,23 @@ namespace antwika::map::mapfile
 
     constexpr std::string_view kViewKey = "view";
 
-    constexpr std::array<std::string_view, 13> kToolNames{
-        "brush",
-        "picker",
-        "lamp",
-        "start",
-        "exit",
-        "stamp",
-        "figure",
-        "plate",
-        "key",
-        "door",
-        "checkpoint",
-        "food",
-        "water"};
+    constexpr enums::NameTable<Tool> kToolNames{
+        {"brush",
+         "picker",
+         "lamp",
+         "start",
+         "exit",
+         "stamp",
+         "figure",
+         "plate",
+         "key",
+         "door",
+         "checkpoint",
+         "food",
+         "water",
+         "eraser"}};
+
+    static_assert(kToolNames.isComplete());
 
     constexpr std::string_view kFiguresKey = "figures";
 
@@ -172,11 +185,15 @@ namespace antwika::map::mapfile
 
     constexpr std::string_view kSwaysKey = "sways";
 
-    constexpr std::array<std::string_view, 6> kDrawingNames{
-        "brush", "line", "fill", "mark", "rect", "circle"};
+    constexpr enums::NameTable<Paint> kDrawingNames{
+        {"brush", "line", "fill", "mark", "rect", "circle"}};
 
-    constexpr std::array<std::string_view, 5> kViewNames{
-        "world", "atlases", "character", "icons", "plan"};
+    static_assert(kDrawingNames.isComplete());
+
+    constexpr enums::NameTable<View> kViewNames{
+        {"world", "atlases", "character", "icons", "plan"}};
+
+    static_assert(kViewNames.isComplete());
 
     constexpr std::string_view kTilesetKey = "tileset";
 
@@ -220,11 +237,15 @@ namespace antwika::map::mapfile
 
     constexpr std::string_view kFlatName = "flat";
 
-    constexpr std::array<std::string_view, 4> kSideNames{
-        "top", "bottom", "left", "right"};
+    constexpr enums::NameTable<voxel::Side> kSideNames{
+        {"top", "bottom", "left", "right"}};
 
-    constexpr std::array<std::string_view, 2> kEdgeNames{
-        "outward", "inward"};
+    static_assert(kSideNames.isComplete());
+
+    constexpr enums::NameTable<voxel::EdgeKind> kEdgeNames{
+        {"outward", "inward"}};
+
+    static_assert(kEdgeNames.isComplete());
 
     constexpr std::string_view kFailed =
         "antwika::map: the map ";
@@ -270,69 +291,69 @@ namespace antwika::map::mapfile
 
     [[nodiscard]] inline std::string_view nameOf(const voxel::Side side)
     {
-        return kSideNames.at(static_cast<std::size_t>(side));
+        return kSideNames.name(side);
     }
 
     [[nodiscard]] inline std::string_view nameOf(const voxel::Corner corner)
     {
-        return kCornerNames.at(static_cast<std::size_t>(corner));
+        return kCornerNames.name(corner);
     }
 
     [[nodiscard]] inline std::string_view nameOf(const voxel::EdgeKind edge)
     {
-        return kEdgeNames.at(static_cast<std::size_t>(edge));
+        return kEdgeNames.name(edge);
     }
 
     [[nodiscard]] inline std::string_view nameOf(const voxel::Kind kind)
     {
-        return kKindNames.at(static_cast<std::size_t>(kind));
+        return kKindNames.name(kind);
     }
 
     [[nodiscard]] inline std::string_view nameOf(const voxel::Facing facing)
     {
-        return kFacingNames.at(static_cast<std::size_t>(facing));
+        return kFacingNames.name(facing);
     }
 
     [[nodiscard]] inline std::string_view nameOf(
         const voxel::StairHalf levelHalf)
     {
-        return kLevelNames.at(static_cast<std::size_t>(levelHalf));
+        return kStairHalfNames.name(levelHalf);
     }
 
     [[nodiscard]] inline std::string_view nameOf(const voxel::StairPart part)
     {
-        return kPartNames.at(static_cast<std::size_t>(part));
+        return kPartNames.name(part);
     }
 
     [[nodiscard]] inline std::string_view nameOf(const Tool tool)
     {
-        return kToolNames.at(static_cast<std::size_t>(tool));
+        return kToolNames.name(tool);
     }
 
     [[nodiscard]] inline std::string_view nameOf(const Paint paint)
     {
-        return kDrawingNames.at(static_cast<std::size_t>(paint));
+        return kDrawingNames.name(paint);
     }
 
     [[nodiscard]] inline std::string_view nameOf(const View view)
     {
-        return kViewNames.at(static_cast<std::size_t>(view));
+        return kViewNames.name(view);
     }
 
-    template <typename Enum, std::size_t Many>
+    template <typename Enum>
     [[nodiscard]] inline Enum enumFromName(
-        const std::array<std::string_view, Many> &names,
-        const std::string &text)
+        const enums::NameTable<Enum> &names, const std::string &text)
     {
-        for (std::size_t index = 0; index < Many; ++index)
+        const auto namedValue = names.from(text);
+
+        if (!namedValue.has_value())
         {
-            if (names.at(index) == text)
-            {
-                return static_cast<Enum>(index);
-            }
+            throw MapFileError(
+                std::string(kFailed) + "names " + text
+                + ", which is not one this build knows");
         }
 
-        return static_cast<Enum>(0);
+        return *namedValue;
     }
 
     [[nodiscard]] inline nlohmann::json writtenTile(const tilemap::Tile tile)

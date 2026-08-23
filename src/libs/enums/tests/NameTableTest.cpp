@@ -33,3 +33,19 @@ TEST(NameTableTest, From_AnswersNothingForANameTheTableLacks)
 {
     EXPECT_FALSE(kColors.from("puce").has_value());
 }
+
+TEST(NameTableTest, IsComplete_HoldsWhenEveryEnumeratorIsNamed)
+{
+    static_assert(kColors.isComplete());
+
+    EXPECT_TRUE(kColors.isComplete());
+}
+
+TEST(NameTableTest, IsComplete_FailsWhenATailEnumeratorIsUnnamed)
+{
+    constexpr NameTable<Color> shortColors{{"red", "green"}};
+
+    static_assert(!shortColors.isComplete());
+
+    EXPECT_FALSE(shortColors.isComplete());
+}
