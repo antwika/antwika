@@ -14,7 +14,7 @@ antwika_add_library(
         antwika::component
         antwika::ecs
         antwika::gfx
-        antwika::input
+        antwika::intent
         antwika::pathfinding
         antwika::rules
         antwika::time

@@ -596,8 +596,8 @@ TEST(WalkerTest, Update_SendsAPlayerTheWayThatIsHeld)
     NiceMock<MockLogger> logger;
     World world(logger);
     GameLoop gameLoop(world);
-    antwika::input::DirectionKeys wasdKeys;
-    antwika::input::DirectionKeys arrowKeys;
+    antwika::intent::DirectionKeys wasdKeys;
+    antwika::intent::DirectionKeys arrowKeys;
     MoveIntentSystem sendingSystem(wasdKeys, arrowKeys);
 
     gameLoop.addSystem(Phase::Sending, sendingSystem);
@@ -626,8 +626,8 @@ TEST(WalkerTest, Update_LeavesACharacterWithNoPlayerTagUnsent)
     NiceMock<MockLogger> logger;
     World world(logger);
     GameLoop gameLoop(world);
-    antwika::input::DirectionKeys wasdKeys;
-    antwika::input::DirectionKeys arrowKeys;
+    antwika::intent::DirectionKeys wasdKeys;
+    antwika::intent::DirectionKeys arrowKeys;
     MoveIntentSystem sendingSystem(wasdKeys, arrowKeys);
 
     gameLoop.addSystem(Phase::Sending, sendingSystem);

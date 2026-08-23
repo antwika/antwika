@@ -10,8 +10,8 @@ namespace antwika::system
 {
 
     MoveIntentSystem::MoveIntentSystem(
-        const input::DirectionKeys &wasdKeys,
-        const input::DirectionKeys &arrowKeys) noexcept
+        const intent::DirectionKeys &wasdKeys,
+        const intent::DirectionKeys &arrowKeys) noexcept
         : wasdKeys(&wasdKeys), arrowKeys(&arrowKeys)
     {
     }

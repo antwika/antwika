@@ -71,12 +71,12 @@ namespace antwika::gameplay
         playerEntity = entity;
     }
 
-    input::DirectionKeys &Game::wasdKeys() noexcept
+    intent::DirectionKeys &Game::wasdKeys() noexcept
     {
         return wasdDirectionKeys;
     }
 
-    input::DirectionKeys &Game::arrowKeys() noexcept
+    intent::DirectionKeys &Game::arrowKeys() noexcept
     {
         return arrowDirectionKeys;
     }

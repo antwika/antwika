@@ -14,7 +14,7 @@ using antwika::ecs::World;
 using antwika::gameplay::Phase;
 using antwika::system::OrientationSystem;
 using antwika::component::Orientation;
-using antwika::input::DirectionKeys;
+using antwika::intent::DirectionKeys;
 using antwika::rules::kTurnRate;
 using antwika::gameplay::GameLoop;
 using antwika::rules::rotatedBy;

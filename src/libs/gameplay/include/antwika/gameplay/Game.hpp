@@ -13,7 +13,7 @@
 #include <antwika/ecs/Entity.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/gfx/Math3D.hpp>
-#include <antwika/input/DirectionKeys.hpp>
+#include <antwika/intent/DirectionKeys.hpp>
 #include <antwika/log/ILogger.hpp>
 #include <antwika/map/PlayerProgress.hpp>
 #include <antwika/time/Tick.hpp>
@@ -59,9 +59,9 @@ namespace antwika::gameplay
 
         void setPlayer(ecs::Entity entity) noexcept override;
 
-        [[nodiscard]] input::DirectionKeys &wasdKeys() noexcept override;
+        [[nodiscard]] intent::DirectionKeys &wasdKeys() noexcept override;
 
-        [[nodiscard]] input::DirectionKeys &arrowKeys() noexcept override;
+        [[nodiscard]] intent::DirectionKeys &arrowKeys() noexcept override;
 
         void setWalkerFrozen(bool frozen) noexcept override;
 
@@ -127,8 +127,8 @@ namespace antwika::gameplay
         system::HealthSystem healthSystem;
         system::ConsumeSystem consumeSystem;
         system::TalkSystem talkSystem;
-        input::DirectionKeys wasdDirectionKeys;
-        input::DirectionKeys arrowDirectionKeys;
+        intent::DirectionKeys wasdDirectionKeys;
+        intent::DirectionKeys arrowDirectionKeys;
         ecs::Entity eyeEntity{};
         ecs::Entity playerEntity{};
         GateState gateState;

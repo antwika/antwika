@@ -1,25 +1,13 @@
 #pragma once
 
+#include <antwika/intent/DirectionKeys.hpp>
+
 #include <antwika/input/Key.hpp>
 
 namespace antwika::input
 {
 
-    struct DirectionKeys final
-    {
-        bool north = false;
-        bool south = false;
-        bool west = false;
-        bool east = false;
-
-        [[nodiscard]] float axisX() const noexcept;
-
-        [[nodiscard]] float axisZ() const noexcept;
-
-        [[nodiscard]] bool operator==(
-            const DirectionKeys &other) const
-            = default;
-    };
+    using antwika::intent::DirectionKeys;
 
     void applyArrowKey(
         DirectionKeys &keys, Key key, bool down) noexcept;
