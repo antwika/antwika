@@ -43,8 +43,7 @@ namespace antwika::map
                     nlohmann::json writtenVoxel;
 
                     writtenVoxel[std::string(kAtKey)] =
-                        nlohmann::json::array(
-                            {position.x, position.y, position.z});
+                        jsonOf(position);
                     writtenVoxel[std::string(kKindKey)] =
                         std::string(nameOf(material.kind));
 
@@ -85,16 +84,9 @@ namespace antwika::map
                     nlohmann::json lampJson;
 
                     lampJson[std::string(kAtKey)] =
-                        nlohmann::json::array(
-                            {lamp.position.x,
-                             lamp.position.y,
-                             lamp.position.z});
+                        jsonOf(lamp.position);
                     lampJson[std::string(kTintKey)] =
-                        nlohmann::json::array(
-                            {lamp.tintColor.red,
-                             lamp.tintColor.green,
-                             lamp.tintColor.blue,
-                             lamp.tintColor.alpha});
+                        jsonOf(lamp.tintColor);
 
                     arrayJson.push_back(lampJson);
                 }
@@ -111,8 +103,7 @@ namespace antwika::map
 
                 nlohmann::json objectJson;
 
-                objectJson[std::string(kAtKey)] = nlohmann::json::array(
-                    {position->x, position->y, position->z});
+                objectJson[std::string(kAtKey)] = jsonOf(*position);
 
                 return objectJson;
             } // GCOVR_EXCL_LINE
@@ -184,12 +175,7 @@ namespace antwika::map
 
         for (const auto color : map.paletteColors)
         {
-            colors.push_back(
-                nlohmann::json::array(
-                    {color.red,
-                     color.green,
-                     color.blue,
-                     color.alpha}));
+            colors.push_back(jsonOf(color));
         }
 
         auto corners = nlohmann::json::array();
