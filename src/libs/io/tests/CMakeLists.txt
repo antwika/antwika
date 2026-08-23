@@ -5,6 +5,7 @@ add_executable(antwika_io_tests
     FileListTest.cpp
     FileNamesTest.cpp
     FileTest.cpp
+    SafeWriteTest.cpp
 )
 
 target_link_libraries(antwika_io_tests

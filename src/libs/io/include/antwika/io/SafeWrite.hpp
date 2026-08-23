@@ -50,6 +50,10 @@ namespace antwika::io
 
         if (errorCode)
         {
+            std::error_code putBackCode;
+            std::filesystem::rename(
+                backupPathFor(path), path, putBackCode);
+
             throw ErrorT(
                 std::string(name) + ": wrote " + text
                 + " but could not move it into place: "
