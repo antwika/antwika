@@ -6,7 +6,7 @@ namespace antwika::render
 {
 
     void CharacterSkins::take(
-        gfx::ViewportRenderer &viewportRenderer,
+        gfx::IRenderer &viewportRenderer,
         std::vector<gfx::Bitmap> takenBitmaps)
     {
         skins = std::move(takenBitmaps);
@@ -25,7 +25,7 @@ namespace antwika::render
     }
 
     void CharacterSkins::lay(
-        gfx::ViewportRenderer &viewportRenderer,
+        gfx::IRenderer &viewportRenderer,
         const std::size_t skinIndex,
         gfx::Bitmap skinBitmap)
     {

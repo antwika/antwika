@@ -12,7 +12,7 @@
 
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/IMesh.hpp>
-#include <antwika/gfx/ViewportRenderer.hpp>
+#include <antwika/gfx/IRenderer.hpp>
 #include <antwika/map/MapFile.hpp>
 #include <antwika/solver/VoxelWeave.hpp>
 #include <antwika/tilemap/Tilemap.hpp>
@@ -28,7 +28,7 @@ namespace antwika::render
     {
     public:
         void rebuild(
-            gfx::ViewportRenderer &viewportRenderer,
+            gfx::IRenderer &viewportRenderer,
             const map::Map &drawnMap,
             voxel::Voxels shownVoxels,
             solver::CornerSeams joiningSeams,
@@ -36,7 +36,7 @@ namespace antwika::render
             std::uint32_t tick);
 
         void rebuildDecor(
-            gfx::ViewportRenderer &viewportRenderer,
+            gfx::IRenderer &viewportRenderer,
             const map::Map &drawnMap,
             std::uint32_t tick);
 

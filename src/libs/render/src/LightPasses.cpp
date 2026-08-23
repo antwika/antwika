@@ -13,7 +13,7 @@ namespace antwika::render
 {
 
     void LightPasses::open(
-        gfx::ViewportRenderer &viewportRenderer,
+        gfx::IRenderer &viewportRenderer,
         const gfx::ShaderSource &shadowSource)
     {
         shadowShader = viewportRenderer.createShader(shadowSource);
@@ -28,7 +28,7 @@ namespace antwika::render
     }
 
     void LightPasses::hide(
-        gfx::ViewportRenderer &viewportRenderer,
+        gfx::IRenderer &viewportRenderer,
         voxel::Voxels behindVoxels,
         const voxel::VoxelPosition aboutPosition)
     {
@@ -63,7 +63,7 @@ namespace antwika::render
     }
 
     void LightPasses::bakeLamps(
-        gfx::ViewportRenderer &viewportRenderer,
+        gfx::IRenderer &viewportRenderer,
         const std::span<const std::unique_ptr<gfx::IMesh>> pileMeshes,
         const std::vector<light::ActiveLight> &lights)
     {

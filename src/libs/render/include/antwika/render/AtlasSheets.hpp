@@ -7,7 +7,7 @@
 
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/ITexture.hpp>
-#include <antwika/gfx/ViewportRenderer.hpp>
+#include <antwika/gfx/IRenderer.hpp>
 #include <antwika/map/MapFile.hpp>
 #include <antwika/tilemap/Tilemap.hpp>
 
@@ -18,7 +18,7 @@ namespace antwika::render
     {
     public:
         void open(
-            gfx::ViewportRenderer &viewportRenderer,
+            gfx::IRenderer &viewportRenderer,
             std::array<gfx::Bitmap, 2> sheetBitmaps,
             const map::Map &drawnMap,
             std::uint32_t tick);
@@ -37,7 +37,7 @@ namespace antwika::render
         [[nodiscard]] bool touched() const noexcept;
 
         void refresh(
-            gfx::ViewportRenderer &viewportRenderer,
+            gfx::IRenderer &viewportRenderer,
             const map::Map &drawnMap,
             std::uint32_t tick,
             bool animating);

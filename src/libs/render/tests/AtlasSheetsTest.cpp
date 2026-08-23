@@ -182,3 +182,16 @@ TEST(AtlasSheetsTest, Refresh_LeavesASheetNoFlipWalksThroughAlone)
 
     sheets.refresh(viewportRenderer, drawnMap, 1, true);
 }
+
+TEST(AtlasSheetsTest, Open_TakesAnyRendererNotJustAViewportOne)
+{
+    NiceMock<MockRenderer> innerRenderer;
+    handsOutTextures(innerRenderer);
+    AtlasSheets sheets;
+    const antwika::map::Map drawnMap;
+
+    sheets.open(innerRenderer, bothSheets(3), drawnMap, 0);
+
+    EXPECT_NE(sheets.texture(Atlas::Wall), nullptr);
+    EXPECT_NE(sheets.texture(Atlas::Floor), nullptr);
+}

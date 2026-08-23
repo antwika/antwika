@@ -73,7 +73,7 @@ namespace antwika::render
     }
 
     void WorldShader::open(
-        gfx::ViewportRenderer &viewportRenderer,
+        gfx::IRenderer &viewportRenderer,
         const gfx::ShaderSource &voxelSource)
     {
         voxelShader = viewportRenderer.createShader(voxelSource);
@@ -117,7 +117,7 @@ namespace antwika::render
     }
 
     void WorldShader::setLook(
-        gfx::ViewportRenderer &viewportRenderer,
+        gfx::IRenderer &viewportRenderer,
         const WorldShaderInputs &shaderInputs,
         const std::vector<light::ActiveLight> &lights,
         const std::span<const light::ActiveLight> bakedLights) const
