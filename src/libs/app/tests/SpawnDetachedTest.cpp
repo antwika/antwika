@@ -58,8 +58,8 @@ TEST(SpawnDetachedTest, SpawnDetached_StartsTheProgramItIsGiven)
     std::filesystem::remove(mark);
 
 #ifdef _WIN32
-    ASSERT_TRUE(spawnDetached(
-        shellProgram(), {"/c", "copy", "/y", "NUL", mark.string()}));
+    ASSERT_TRUE(isSpawnDetached(
+        getShellProgram(), {"/c", "copy", "/y", "NUL", mark.string()}));
 #else
     ASSERT_TRUE(isSpawnDetached(
         "/bin/sh", {"-c", "printf hi > " + mark.string()}));

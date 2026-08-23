@@ -70,10 +70,10 @@ namespace antwika::editor
             return;
         }
 
-        const auto keptTransform = play.game->cameraTransform();
+        const auto keptTransform = play.game->getCameraTransform();
         const auto keptZoom = play.game->zoom();
         const auto target = play.game->cameraTarget();
-        const auto gates = play.game->gates();
+        const auto gates = play.game->getGates();
 
         if (!play.game.reload())
         {
@@ -87,10 +87,10 @@ namespace antwika::editor
             break;
         }
 
-        play.game->cameraTransform() = keptTransform;
+        play.game->getCameraTransform() = keptTransform;
         play.game->zoom() = keptZoom;
         play.game->cameraTarget() = target;
-        play.game->gates() = gates;
+        play.game->getGates() = gates;
 
         logger.log(log::Level::Info, "the game module was reloaded");
         showStatus("the game module was reloaded");

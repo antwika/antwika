@@ -98,11 +98,11 @@ TEST_F(GameModuleTest, Reload_TakesUpTheEyeThatAlreadyStands)
 {
     World world(logger);
     GameModule module(logger, world, solidVoxels, patrolPositions);
-    const auto eye = module->eye();
+    const auto eye = module->getEye();
 
     ASSERT_TRUE(module.reload());
 
-    EXPECT_EQ(module->eye(), eye);
+    EXPECT_EQ(module->getEye(), eye);
     EXPECT_TRUE(world.isAlive(eye));
 }
 #endif

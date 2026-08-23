@@ -143,7 +143,7 @@ namespace antwika::editor
     void GameModule::sweep()
     {
         const auto modulePath = std::filesystem::path(
-                                io::assetPath(std::string(kModuleName)))
+                                io::getAssetPath(std::string(kModuleName)))
                                 .parent_path();
 
         std::error_code errorCode;
@@ -162,9 +162,9 @@ namespace antwika::editor
 
     std::optional<std::string> GameModule::copied()
     {
-        const auto source = io::assetPath(std::string(kModuleName));
+        const auto source = io::getAssetPath(std::string(kModuleName));
         static std::size_t loads = 0;
-        const auto target = io::assetPath(
+        const auto target = io::getAssetPath(
             "libantwika_gameplay_module.loaded-"
             + std::to_string(loads) + ".so");
 
@@ -218,7 +218,7 @@ namespace antwika::editor
         {
             throw std::runtime_error(
                 "the game module would not open: "
-                + io::assetPath(std::string(kModuleName)) + ": "
+                + io::getAssetPath(std::string(kModuleName)) + ": "
                 + why);
         }
     }
@@ -227,7 +227,7 @@ namespace antwika::editor
     {
         std::error_code errorCode;
         const auto writeTime = std::filesystem::last_write_time(
-            io::assetPath(std::string(kModuleName)), errorCode);
+            io::getAssetPath(std::string(kModuleName)), errorCode);
 
         return !errorCode && writeTime != loadedAt;
     }

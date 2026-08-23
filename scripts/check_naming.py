@@ -869,6 +869,7 @@ class Site:
     column: int = 0
     const_qualified: bool = False
     changes_nothing: bool = False
+    abi_symbol: bool = False
 
 
 def _reject(statement: str) -> bool:
@@ -1006,6 +1007,7 @@ def _function_site(
             (const_qualified or not member)
             and _reads_only(statement[open_at + 1:close_at])
         ),
+        abi_symbol=re.match(r"^\s*extern\b", statement) is not None,
     )
 
 
@@ -1356,7 +1358,7 @@ def _asks_a_question(name: str) -> bool:
 
 
 def _function_kind(site: Site) -> str | None:
-    if site.name in REQUIRED_NAMES:
+    if site.name in REQUIRED_NAMES or site.abi_symbol:
         return None
 
     if FACTORY_PREFIXED.match(site.name):
