@@ -302,13 +302,7 @@ namespace antwika::map
 
         for (const auto &lamp : wholeDocument[std::string(kLampsKey)])
         {
-            const auto &place = lamp[std::string(kAtKey)];
-            const auto &tint = lamp[std::string(kTintKey)];
-
-            map.lamps.push_back(
-                light::Lamp{
-                    .position = voxelPositionFrom(place),
-                    .tintColor = colorFrom(tint)});
+            map.lamps.push_back(read<light::Lamp>(kLampFields, lamp));
         }
 
         for (const auto &tileKind :
@@ -420,15 +414,8 @@ namespace antwika::map
         for (const auto &plateJson :
              wholeDocument[std::string(kPlatesKey)])
         {
-            PressurePlate plate;
-            const auto &atJson = plateJson[std::string(kAtKey)];
-
-            plate.position = voxelPositionFrom(atJson);
-
-            plate.togglePositions =
-                readCells(plateJson[std::string(kSwaysKey)]);
-
-            map.plates.push_back(plate);
+            map.plates.push_back(
+                read<PressurePlate>(kPlateFields, plateJson));
         }
 
         map.settings = read<Settings>(

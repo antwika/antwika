@@ -7,6 +7,7 @@
 
 #include "MapFileField.hpp"
 #include "MapFileShared.hpp"
+#include "MapFileShared2.hpp"
 
 namespace antwika::map::mapfile
 {
@@ -54,6 +55,62 @@ namespace antwika::map::mapfile
             { return nlohmann::json(memberOf<Member>(record)); },
             .setFrom = [](void *record, const nlohmann::json &json)
             { memberIn<Member>(record) = json.get<bool>(); }};
+    }
+
+    template <auto Member>
+    [[nodiscard]] constexpr Field cellField(const std::string_view key)
+    {
+        return Field{
+            .key = key,
+            .shape = &cellSchema,
+            .valueOf = [](const void *record)
+            { return jsonOf(memberOf<Member>(record)); },
+            .setFrom = [](void *record, const nlohmann::json &json)
+            { memberIn<Member>(record) = voxelPositionFrom(json); }};
+    }
+
+    [[nodiscard]] inline nlohmann::json cellListShape()
+    {
+        nlohmann::json shape;
+
+        shape["type"] = "array";
+        shape["items"] = cellSchema();
+
+        return shape;
+    } // GCOVR_EXCL_LINE
+
+    template <auto Member>
+    [[nodiscard]] constexpr Field cellListField(
+        const std::string_view key)
+    {
+        return Field{
+            .key = key,
+            .shape = &cellListShape,
+            .valueOf = [](const void *record)
+            {
+                auto arrayJson = nlohmann::json::array();
+
+                for (const auto cell : memberOf<Member>(record))
+                {
+                    arrayJson.push_back(jsonOf(cell));
+                }
+
+                return arrayJson;
+            },
+            .setFrom = [](void *record, const nlohmann::json &json)
+            { memberIn<Member>(record) = readCells(json); }};
+    }
+
+    template <auto Member>
+    [[nodiscard]] constexpr Field tintField(const std::string_view key)
+    {
+        return Field{
+            .key = key,
+            .shape = &colourSchema,
+            .valueOf = [](const void *record)
+            { return jsonOf(memberOf<Member>(record)); },
+            .setFrom = [](void *record, const nlohmann::json &json)
+            { memberIn<Member>(record) = colorFrom(json); }};
     }
 
     template <auto Member, const auto &Names>

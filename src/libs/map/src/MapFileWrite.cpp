@@ -83,14 +83,7 @@ namespace antwika::map
 
                 for (const auto lamp : lamps)
                 {
-                    nlohmann::json lampJson;
-
-                    lampJson[std::string(kAtKey)] =
-                        jsonOf(lamp.position);
-                    lampJson[std::string(kTintKey)] =
-                        jsonOf(lamp.tintColor);
-
-                    arrayJson.push_back(lampJson);
+                    arrayJson.push_back(written(kLampFields, lamp));
                 }
 
                 return arrayJson;
@@ -383,25 +376,7 @@ namespace antwika::map
 
         for (const auto &plate : map.plates)
         {
-            nlohmann::json plateJson;
-
-            plateJson[std::string(kAtKey)] =
-                nlohmann::json::array(
-                    {plate.position.x,
-                     plate.position.y,
-                     plate.position.z});
-
-            auto sways = nlohmann::json::array();
-
-            for (const auto sway : plate.togglePositions)
-            {
-                sways.push_back(
-                    nlohmann::json::array(
-                        {sway.x, sway.y, sway.z}));
-            }
-
-            plateJson[std::string(kSwaysKey)] = sways;
-            plates.push_back(plateJson);
+            plates.push_back(written(kPlateFields, plate));
         }
 
         document[std::string(kPlatesKey)] = plates;

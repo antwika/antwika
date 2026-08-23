@@ -409,22 +409,19 @@ namespace antwika::map::mapfile
         return shape;
     } // GCOVR_EXCL_LINE
 
-    [[nodiscard]] inline nlohmann::json plateSchema()
+    [[nodiscard]] inline nlohmann::json colourSchema()
     {
-        nlohmann::json sways;
-        sways["type"] = "array";
-        sways["items"] = cellSchema();
-
         nlohmann::json shape;
-        shape["type"] = "object";
-        shape["additionalProperties"] = false;
-        shape["required"] = {
-            std::string(kAtKey), std::string(kSwaysKey)};
-        shape["properties"][std::string(kAtKey)] = cellSchema();
-        shape["properties"][std::string(kSwaysKey)] = sways;
+
+        shape["type"] = "array";
+        shape["items"] = wholeSchema(0, 255);
+        shape["minItems"] = kColorComponentCount;
+        shape["maxItems"] = kColorComponentCount;
 
         return shape;
     } // GCOVR_EXCL_LINE
+
+    [[nodiscard]] nlohmann::json plateSchema();
 
     [[nodiscard]] inline nlohmann::json markedCubeSchema()
     {
