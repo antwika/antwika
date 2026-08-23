@@ -2,6 +2,7 @@
 
 #include <utility>
 
+#include "antwika/voxel/KindTraits.hpp"
 #include "antwika/voxel/VoxelDetail.hpp"
 #include "antwika/voxel/VoxelStairs.hpp"
 
@@ -57,7 +58,7 @@ namespace antwika::voxel
                 const auto foundVoxel = standingVoxels.find(besidePosition);
 
                 if (foundVoxel != standingVoxels.end()
-                    && foundVoxel->second.kind != Kind::Ramp)
+                    && !isRamped(foundVoxel->second.kind))
                 {
                     return true;
                 }
@@ -109,7 +110,7 @@ namespace antwika::voxel
                     continue;
                 }
 
-                if (foundVoxel->second.kind != Kind::Ramp
+                if (!isRamped(foundVoxel->second.kind)
                     || foundVoxel->second.facing != Facing::Any)
                 {
                     return false;
@@ -262,7 +263,7 @@ namespace antwika::voxel
     {
         Voxels grownVoxels;
 
-        if (kind != Kind::Ramp)
+        if (!isRamped(kind))
         {
             for (const auto place : cubeCells(cornerPosition))
             {
@@ -313,7 +314,7 @@ namespace antwika::voxel
         {
             updatedVoxels[place] = VoxelMaterial{
                 .kind = material.kind,
-                .facing = kind == Kind::Ramp ? facingOverride
+                .facing = isRamped(kind) ? facingOverride
                                              : Facing::Any};
         }
 
