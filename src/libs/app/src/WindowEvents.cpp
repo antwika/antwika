@@ -8,10 +8,12 @@ namespace antwika::app
 {
 
     using antwika::gfx::CloseRequested;
+    using antwika::gfx::Resized;
 
-    bool closeRequestedOn(IGfxBackend &backend, const WindowId window)
+    WindowChanges windowChanges(
+        IGfxBackend &backend, const WindowId window)
     {
-        bool requested = false;
+        WindowChanges changes;
 
         while (const auto event = backend.pollEvent())
         {
@@ -22,11 +24,22 @@ namespace antwika::app
 
             if (std::holds_alternative<CloseRequested>(event->payload))
             {
-                requested = true;
+                changes.closeRequested = true;
+            }
+
+            if (const auto *resized =
+                    std::get_if<Resized>(&event->payload))
+            {
+                changes.resizedSize = resized->size;
             }
         }
 
-        return requested;
+        return changes;
+    }
+
+    bool closeRequestedOn(IGfxBackend &backend, const WindowId window)
+    {
+        return windowChanges(backend, window).closeRequested;
     }
 
 }

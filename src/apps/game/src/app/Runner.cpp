@@ -31,6 +31,7 @@
 #include <antwika/voxel/VoxelOcclusion.hpp>
 #include <antwika/voxelmap/Voxel.hpp>
 #include <antwika/collision/Collision.hpp>
+#include <antwika/app/WindowEvents.hpp>
 
 #include "antwika/game/app/Actions.hpp"
 
@@ -39,9 +40,6 @@ namespace antwika::game
 
     namespace
     {
-        constexpr gfx::Size kWindowSize{
-            .width = 1280, .height = 720};
-
         constexpr gfx::Color kBackgroundColor{
             .red = 6, .green = 6, .blue = 10, .alpha = 255};
 
@@ -97,7 +95,7 @@ namespace antwika::game
               backend.createWindow(
                   gfx::WindowSpec{
                       .title = "Antwika",
-                      .size = kWindowSize,
+                      .size = app::kDefaultWindowSize,
                       .resizable = true})),
           viewportRenderer(
               window->renderer(), window->size(), camera::kCanvasSize),
@@ -198,14 +196,15 @@ namespace antwika::game
             }
 
             for (std::size_t tickCount = 0;
-                 tickDebt >= kTickPeriod && tickCount < kMaxCatchUpTicks;
+                 tickDebt >= app::kTickPeriod
+                 && tickCount < app::kMaxCatchUpTicks;
                  ++tickCount)
             {
-                tickDebt -= kTickPeriod;
+                tickDebt -= app::kTickPeriod;
                 step();
             }
 
-            if (tickDebt >= kTickPeriod)
+            if (tickDebt >= app::kTickPeriod)
             {
                 tickDebt = std::chrono::nanoseconds{};
             }
@@ -216,24 +215,16 @@ namespace antwika::game
 
     void Runner::pollWindow()
     {
-        while (const auto event = backend.pollEvent())
+        const auto changes = app::windowChanges(backend, window->id());
+
+        if (changes.resizedSize.has_value())
         {
-            if (event->window != window->id())
-            {
-                continue;
-            }
+            viewportRenderer.resize(*changes.resizedSize);
+        }
 
-            if (std::holds_alternative<gfx::CloseRequested>(
-                    event->payload))
-            {
-                running = false;
-            }
-
-            if (const auto *resized =
-                    std::get_if<gfx::Resized>(&event->payload))
-            {
-                viewportRenderer.resize(resized->size);
-            }
+        if (changes.closeRequested)
+        {
+            running = false;
         }
     }
 
