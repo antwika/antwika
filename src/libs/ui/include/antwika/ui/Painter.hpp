@@ -1,14 +1,14 @@
 #pragma once
 
-#include <antwika/gfx/IRenderer.hpp>
+#include <antwika/gfx/ISurfaceRenderer.hpp>
 
 #include "antwika/ui/DrawList.hpp"
 
 namespace antwika::ui
 {
 
-    using antwika::gfx::IRenderer;
+    using antwika::gfx::ISurfaceRenderer;
 
-    void paint(IRenderer &renderer, const DrawList &drawList);
+    void paint(ISurfaceRenderer &renderer, const DrawList &drawList);
 
 }
