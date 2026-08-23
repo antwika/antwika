@@ -37,6 +37,8 @@ namespace antwika::render
         gfx::Vec3 upperSightPoint{};
 
         std::size_t upperSightSlot = 1;
+
+        bool upperSightOn = true;
     };
 
 }

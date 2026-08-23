@@ -343,3 +343,77 @@ TEST(
     EXPECT_FALSE(occludingCells.contains(asidePosition));
 }
 
+TEST(VoxelOcclusionTest, VoxelUnder_TakesTheCellThePointFallsIn)
+{
+    using antwika::voxel::voxelUnder;
+
+    EXPECT_EQ(
+        voxelUnder(glm::vec3{0.5F, 3.5F, -0.5F}),
+        (VoxelPosition{.x = 0, .y = 3, .z = -1}));
+}
+
+namespace
+{
+
+    constexpr float kSightClearance = 0.375F;
+
+}
+
+TEST(VoxelOcclusionTest, CubeAbove_FindsNothingUnderTheOpenSky)
+{
+    using antwika::voxel::cubeAbove;
+
+    EXPECT_FALSE(cubeAbove(groundUnder(), kStanding, kSightClearance));
+}
+
+TEST(VoxelOcclusionTest, CubeAbove_FindsTheCubeOverTheHead)
+{
+    using antwika::voxel::cubeAbove;
+
+    auto filledVoxels = groundUnder();
+
+    filledVoxels[VoxelPosition{.x = 1, .y = 2, .z = 1}] = VoxelMaterial{};
+
+    EXPECT_TRUE(cubeAbove(filledVoxels, kStanding, kSightClearance));
+}
+
+TEST(VoxelOcclusionTest, CubeAbove_FindsNothingWhereTheWaterIs)
+{
+    using antwika::voxel::cubeAbove;
+
+    auto filledVoxels = groundUnder();
+
+    filledVoxels[VoxelPosition{.x = 0, .y = 3, .z = 0}] =
+        VoxelMaterial{.kind = antwika::voxel::Kind::Water};
+
+    EXPECT_FALSE(cubeAbove(filledVoxels, kStanding, kSightClearance));
+}
+
+TEST(VoxelOcclusionTest, CubeAbove_FindsTheCubeTheClearanceReaches)
+{
+    using antwika::voxel::cubeAbove;
+
+    auto filledVoxels = groundUnder();
+
+    filledVoxels[VoxelPosition{.x = 0, .y = 2, .z = 2}] = VoxelMaterial{};
+
+    const glm::vec3 aboutToEnter{0.0F, 0.5F, 1.9F};
+
+    EXPECT_FALSE(cubeAbove(filledVoxels, aboutToEnter, 0.0F));
+    EXPECT_TRUE(cubeAbove(filledVoxels, aboutToEnter, kSightClearance));
+}
+
+TEST(VoxelOcclusionTest, CubeAbove_LeavesTheCubeAClearWalkAwayAlone)
+{
+    using antwika::voxel::cubeAbove;
+
+    auto filledVoxels = groundUnder();
+
+    filledVoxels[VoxelPosition{.x = 0, .y = 2, .z = 2}] = VoxelMaterial{};
+
+    EXPECT_FALSE(
+        cubeAbove(
+            filledVoxels,
+            glm::vec3{0.0F, 0.5F, 1.0F},
+            kSightClearance));
+}

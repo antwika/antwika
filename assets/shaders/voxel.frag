@@ -35,6 +35,7 @@ uniform float sightSlot;
 
 uniform vec3 upperSightPoint;
 uniform float upperSightSlot;
+uniform float upperSightOn;
 
 uniform float sightOn;
 
@@ -257,10 +258,15 @@ void main()
 
     if (sightOn > 0.5 && !sprite)
     {
-        seen = max(
-            sightReaching(int(sightSlot), sightPoint, stood, outward),
-            sightReaching(
-                int(upperSightSlot), upperSightPoint, stood, outward));
+        seen = sightReaching(int(sightSlot), sightPoint, stood, outward);
+
+        if (upperSightOn > 0.5)
+        {
+            seen = max(
+                seen,
+                sightReaching(
+                    int(upperSightSlot), upperSightPoint, stood, outward));
+        }
     }
 
     if (glowOnly > 0.5)
