@@ -100,6 +100,11 @@ namespace antwika::tile
     {
         const auto pixelColor = pixelAt(sheetBitmap, x, y);
 
+        if (pixelColor + gfx::kBytesPerPixel > sheetBitmap.pixels.size())
+        {
+            return false;
+        }
+
         return sheetBitmap.pixels[pixelColor + 3] == 0
                || (sheetBitmap.pixels[pixelColor] == firstColor.red
                    && sheetBitmap.pixels[pixelColor + 1] == firstColor.green
