@@ -21,8 +21,20 @@ namespace antwika::tilemap
     std::optional<Tile> Tilemap::at(
         const std::uint32_t column, const std::uint32_t row) const
     {
-        return tiles[(static_cast<std::size_t>(row) * columns)
-                     + column];
+        if (column >= columns || row >= rows)
+        {
+            return std::nullopt;
+        }
+
+        const auto place =
+            (static_cast<std::size_t>(row) * columns) + column;
+
+        if (place >= tiles.size())
+        {
+            return std::nullopt;
+        }
+
+        return tiles[place];
     }
 
     gfx::Size tileSizeOf(const Atlas atlas)
@@ -130,8 +142,8 @@ namespace antwika::tilemap
                    + place.column;
         };
 
-        std::swap(tilemap.tiles[tileAt(fromCell)],
-            tilemap.tiles[tileAt(toCell)]);
+        std::swap(tilemap.tiles.at(tileAt(fromCell)),
+            tilemap.tiles.at(tileAt(toCell)));
     }
 
     std::optional<geometry::GridCell> cellHoldingTile(

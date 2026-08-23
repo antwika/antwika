@@ -411,3 +411,32 @@ TEST(TilemapTest, BlankAtlas_HoldsNothingButTransparentPixels)
                 [](const std::uint8_t channel) { return channel == 0; }));
     }
 }
+
+TEST(TilemapTest, At_GivesNothingBackBeyondTheLastColumn)
+{
+    const auto tilemap = defaultTilemap();
+
+    EXPECT_FALSE(tilemap.at(tilemap.columns, 0).has_value());
+    EXPECT_FALSE(tilemap.at(tilemap.columns + 100, 0).has_value());
+}
+
+TEST(TilemapTest, At_GivesNothingBackBeyondTheLastRow)
+{
+    const auto tilemap = defaultTilemap();
+
+    EXPECT_FALSE(tilemap.at(0, tilemap.rows).has_value());
+    EXPECT_FALSE(tilemap.at(0, tilemap.rows + 100).has_value());
+}
+
+TEST(TilemapTest, SuggestedTileFor_GivesNothingBackOutsideTheLayout)
+{
+    Tilemap wideTilemap;
+    wideTilemap.columns = 64;
+    wideTilemap.rows = 64;
+    wideTilemap.tiles.resize(static_cast<std::size_t>(64) * 64);
+
+    const auto suggestedTile = suggestedTileFor(
+        wideTilemap, antwika::geometry::GridCell{.column = 40, .row = 40});
+
+    EXPECT_FALSE(suggestedTile.has_value());
+}
