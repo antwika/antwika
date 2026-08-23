@@ -207,56 +207,32 @@ namespace antwika::map
 
         auto kinds = nlohmann::json::array();
 
-        for (const auto &[tile, kind] : map.rules.kinds())
+        for (const auto &row : map.rules.kinds())
         {
-            nlohmann::json kindJson;
-
-            kindJson[std::string(kTileKey)] = writtenTile(tile);
-            kindJson[std::string(kKindKey)] =
-                std::string(nameOf(kind));
-
-            kinds.push_back(kindJson);
+            kinds.push_back(written(kTileKindFields, row));
         }
 
         document[std::string(kCameraKey)] = camera;
         document[std::string(kSettingsKey)] = settings;
         auto facings = nlohmann::json::array();
 
-        for (const auto &[tile, facing] : map.rules.facings())
+        for (const auto &row : map.rules.facings())
         {
-            nlohmann::json facingJson;
-
-            facingJson[std::string(kTileKey)] = writtenTile(tile);
-            facingJson[std::string(kFacingKey)] =
-                std::string(nameOf(facing));
-
-            facings.push_back(facingJson);
+            facings.push_back(written(kTileFacingFields, row));
         }
 
         auto levels = nlohmann::json::array();
 
-        for (const auto &[tile, level] : map.rules.levels())
+        for (const auto &row : map.rules.levels())
         {
-            nlohmann::json levelJson;
-
-            levelJson[std::string(kTileKey)] = writtenTile(tile);
-            levelJson[std::string(kLevelKey)] =
-                std::string(nameOf(level));
-
-            levels.push_back(levelJson);
+            levels.push_back(written(kTileLevelFields, row));
         }
 
         auto parts = nlohmann::json::array();
 
-        for (const auto &[tile, part] : map.rules.parts())
+        for (const auto &row : map.rules.parts())
         {
-            nlohmann::json partJson;
-
-            partJson[std::string(kTileKey)] = writtenTile(tile);
-            partJson[std::string(kPartKey)] =
-                std::string(nameOf(part));
-
-            parts.push_back(partJson);
+            parts.push_back(written(kTilePartFields, row));
         }
 
         document[std::string(kTileKindsKey)] = kinds;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <utility>
 
 #include "MapFileField.hpp"
 #include "MapFileMakers.hpp"
@@ -91,6 +92,30 @@ namespace antwika::map::mapfile
             decor::kMaxDecorSpan>(kSpanKey),
         tileListField<&decor::DecorTile::spanTiles, 1,
             decor::kMaxDecorSpan * decor::kMaxDecorSpan>(kMembersKey)};
+
+    using KindRow = std::pair<tilemap::Tile, voxel::Kind>;
+
+    using FacingRow = std::pair<tilemap::Tile, voxel::Facing>;
+
+    using LevelRow = std::pair<tilemap::Tile, voxel::StairHalf>;
+
+    using PartRow = std::pair<tilemap::Tile, voxel::StairPart>;
+
+    inline constexpr std::array<Field, 2> kTileKindFields{
+        tileField<&KindRow::first>(kTileKey),
+        namedField<&KindRow::second, kKindNames>(kKindKey)};
+
+    inline constexpr std::array<Field, 2> kTileFacingFields{
+        tileField<&FacingRow::first>(kTileKey),
+        namedField<&FacingRow::second, kFacingNames>(kFacingKey)};
+
+    inline constexpr std::array<Field, 2> kTileLevelFields{
+        tileField<&LevelRow::first>(kTileKey),
+        namedField<&LevelRow::second, kStairHalfNames>(kLevelKey)};
+
+    inline constexpr std::array<Field, 2> kTilePartFields{
+        tileField<&PartRow::first>(kTileKey),
+        namedField<&PartRow::second, kPartNames>(kPartKey)};
 
     struct GateRow final
     {
