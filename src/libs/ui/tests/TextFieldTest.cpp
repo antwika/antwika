@@ -7,6 +7,7 @@
 
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/ui/support/DrawListQueries.hpp>
 
 #include "antwika/ui/Context.hpp"
 #include "antwika/ui/DrawCommand.hpp"
@@ -21,6 +22,8 @@
 using antwika::gfx::Color;
 using antwika::gfx::Point;
 using antwika::gfx::Size;
+using antwika::ui::support::fillsColored;
+using antwika::ui::support::textsOf;
 using antwika::ui::Context;
 using antwika::ui::DrawList;
 using antwika::ui::DrawText;
@@ -60,39 +63,6 @@ namespace
             .buttonPadding = 0};
     }
 
-    [[nodiscard]] std::vector<std::string> textsOf(
-        const DrawList &drawList)
-    {
-        std::vector<std::string> texts;
-
-        for (const auto &command : drawList)
-        {
-            if (const auto *text = std::get_if<DrawText>(&command))
-            {
-                texts.push_back(text->text);
-            }
-        }
-
-        return texts;
-    }
-
-    [[nodiscard]] std::vector<FillRect> caretsOf(
-        const DrawList &drawList)
-    {
-        std::vector<FillRect> caretRects;
-
-        for (const auto &command : drawList)
-        {
-            const auto *fill = std::get_if<FillRect>(&command);
-
-            if (fill != nullptr && fill->color == kCaretColor)
-            {
-                caretRects.push_back(*fill);
-            }
-        }
-
-        return caretRects;
-    }
 }
 
 TEST(TextFieldTest, TextField_DrawsItsCharactersOverTheUnfocusedFill)
@@ -140,7 +110,7 @@ TEST(TextFieldTest, TextField_AFocusedFieldTakesTheFocusedFillAndACaret)
     const auto commands = uiContext.build().drawList;
 
     EXPECT_EQ(kFocusedColor, std::get<FillRect>(commands.at(0)).color);
-    ASSERT_EQ(1U, caretsOf(commands).size());
+    ASSERT_EQ(1U, fillsColored(commands, kCaretColor).size());
 }
 
 TEST(TextFieldTest, TextField_TheCaretSitsAfterTheLastCharacterByDefault)
@@ -151,7 +121,7 @@ TEST(TextFieldTest, TextField_TheCaretSitsAfterTheLastCharacterByDefault)
         .text = "ab", .cursor = kCaretAtEnd, .focused = true});
 
     const auto commands = uiContext.build().drawList;
-    const auto carets = caretsOf(commands);
+    const auto carets = fillsColored(commands, kCaretColor);
 
     ASSERT_EQ(1U, carets.size());
 
@@ -172,7 +142,7 @@ TEST(TextFieldTest, TextField_TheCaretSplitsTheTextWhereTheCursorIs)
     ASSERT_EQ(2U, texts.size());
     EXPECT_EQ("a", texts.at(0));
     EXPECT_EQ("bc", texts.at(1));
-    EXPECT_EQ(6, caretsOf(commands).at(0).rect.originPoint.x);
+    EXPECT_EQ(6, fillsColored(commands, kCaretColor).at(0).rect.originPoint.x);
 }
 
 TEST(TextFieldTest, TextField_TheCaretSitsAtTheStartOfAnEmptyFocusedField)
@@ -184,8 +154,8 @@ TEST(TextFieldTest, TextField_TheCaretSitsAtTheStartOfAnEmptyFocusedField)
 
     const auto commands = uiContext.build().drawList;
 
-    ASSERT_EQ(1U, caretsOf(commands).size());
-    EXPECT_EQ(0, caretsOf(commands).at(0).rect.originPoint.x);
+    ASSERT_EQ(1U, fillsColored(commands, kCaretColor).size());
+    EXPECT_EQ(0, fillsColored(commands, kCaretColor).at(0).rect.originPoint.x);
     EXPECT_EQ("name", textsOf(commands).at(0));
 }
 
@@ -418,7 +388,7 @@ TEST(TextFieldTest, TextField_ACaretIsAtLeastOnePixelWideAtAZeroScale)
 
     uiContext.textField(TextFieldSpec{.text = "ab", .focused = true});
 
-    const auto carets = caretsOf(uiContext.build().drawList);
+    const auto carets = fillsColored(uiContext.build().drawList, kCaretColor);
 
     ASSERT_EQ(1U, carets.size());
     EXPECT_EQ(1U, carets.at(0).rect.size.width);
@@ -439,7 +409,7 @@ TEST(TextFieldTest, TextField_TabReachesAFieldAndTheNextFrameTypesIntoIt)
 
     EXPECT_EQ(kNameWidget, firstFrame.interactions.focusedWidget);
     EXPECT_FALSE(firstFrame.interactions.edit.has_value());
-    EXPECT_TRUE(caretsOf(firstFrame.drawList).empty());
+    EXPECT_TRUE(fillsColored(firstFrame.drawList, kCaretColor).empty());
 
     Context secondContext{
         kCanvasSize,
@@ -456,7 +426,7 @@ TEST(TextFieldTest, TextField_TabReachesAFieldAndTheNextFrameTypesIntoIt)
     ASSERT_TRUE(typedFrame.interactions.edit.has_value());
     EXPECT_EQ("abc", typedFrame.interactions.edit->text);
 
-    EXPECT_EQ(1U, caretsOf(typedFrame.drawList).size());
+    EXPECT_EQ(1U, fillsColored(typedFrame.drawList, kCaretColor).size());
     EXPECT_EQ(kFocusedColor,
         std::get<FillRect>(typedFrame.drawList.at(0)).color);
 }

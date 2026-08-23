@@ -10,6 +10,7 @@
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/ui/support/DrawListQueries.hpp>
 
 #include "antwika/ui/Context.hpp"
 #include "antwika/ui/DrawCommand.hpp"
@@ -27,6 +28,8 @@
 using antwika::gfx::Color;
 using antwika::gfx::Point;
 using antwika::gfx::Size;
+using antwika::ui::support::fillsColored;
+using antwika::ui::support::textsOf;
 using antwika::ui::Context;
 using antwika::ui::DrawList;
 using antwika::ui::DrawText;
@@ -81,21 +84,6 @@ namespace
             .selectedIndex = 0};
     }
 
-    [[nodiscard]] std::vector<std::string> textsOf(
-        const DrawList &drawList)
-    {
-        std::vector<std::string> texts;
-
-        for (const auto &command : drawList)
-        {
-            if (const auto *text = std::get_if<DrawText>(&command))
-            {
-                texts.push_back(text->text);
-            }
-        }
-
-        return texts;
-    }
 }
 
 TEST(DropdownTest, Dropdown_ClosedItShowsOnlyWhatIsSelected)
