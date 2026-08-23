@@ -19,17 +19,12 @@ namespace antwika::map::mapfile
 
     void gatesSchemaWiring(nlohmann::json &schema)
     {
-        for (const auto key :
-             {kKeysKey,
-              kDoorsKey,
-              kCheckpointsKey,
-              kFoodKey,
-              kWaterKey})
+        for (const auto &row : kGateRows)
         {
-            schema["required"].push_back(std::string(key));
-            schema["properties"][std::string(key)]["type"] =
+            schema["required"].push_back(std::string(row.key));
+            schema["properties"][std::string(row.key)]["type"] =
                 "array";
-            schema["properties"][std::string(key)]["items"] =
+            schema["properties"][std::string(row.key)]["items"] =
                 cellSchema();
         }
 
