@@ -61,12 +61,12 @@ namespace antwika::app
         const std::string &program,
         const std::vector<std::string> &arguments)
     {
-        auto commandLine = quotedForCommandLine(program);
+        auto commandLine = getQuotedForCommandLine(program);
 
         for (const auto &argument : arguments)
         {
             commandLine.push_back(' ');
-            commandLine.append(quotedForCommandLine(argument));
+            commandLine.append(getQuotedForCommandLine(argument));
         }
 
         STARTUPINFOA startupInfo{};
