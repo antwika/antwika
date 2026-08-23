@@ -23,6 +23,7 @@
 #include <antwika/character/Character.hpp>
 #include <antwika/map/MapFile.hpp>
 #include <antwika/map/MapFileError.hpp>
+#include "MapFileTables.hpp"
 #include "MapFileShared.hpp"
 #include "MapFileShared2.hpp"
 
@@ -110,38 +111,9 @@ namespace antwika::map
                 return shape;
             } // GCOVR_EXCL_LINE
 
-            [[nodiscard]] nlohmann::json colourSchema()
-            {
-                nlohmann::json shape;
-
-                shape["type"] = "array";
-                shape["items"] = wholeSchema(0, 255);
-                shape["minItems"] = kColorComponentCount;
-                shape["maxItems"] = kColorComponentCount;
-
-                return shape;
-            } // GCOVR_EXCL_LINE
-
             [[nodiscard]] nlohmann::json lampSchema()
             {
-                nlohmann::json arraySchema;
-
-                arraySchema["type"] = "array";
-                arraySchema["items"] = wholeSchema(-kMaxCellCoord,
-                    kMaxCellCoord);
-                arraySchema["minItems"] = kAxisCount;
-                arraySchema["maxItems"] = kAxisCount;
-
-                nlohmann::json shape;
-
-                shape["type"] = "object";
-                shape["additionalProperties"] = false;
-                shape["required"] = {
-                    std::string(kAtKey), std::string(kTintKey)};
-                shape["properties"][std::string(kAtKey)] = arraySchema;
-                shape["properties"][std::string(kTintKey)] = colourSchema();
-
-                return shape;
+                return shapeOf(kLampFields);
             } // GCOVR_EXCL_LINE
 
             [[nodiscard]] nlohmann::json layerSchema()

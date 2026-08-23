@@ -24,6 +24,14 @@ namespace antwika::map::mapfile
         flagField<&Settings::hideAboveLevel>(kAboveHiddenKey),
         flagField<&Settings::cornersJoined>(kCornersJoinedKey)};
 
+    inline constexpr std::array<Field, 2> kPlateFields{
+        cellField<&PressurePlate::position>(kAtKey),
+        cellListField<&PressurePlate::togglePositions>(kSwaysKey)};
+
+    inline constexpr std::array<Field, 2> kLampFields{
+        cellField<&light::Lamp::position>(kAtKey),
+        tintField<&light::Lamp::tintColor>(kTintKey)};
+
     struct GateRow final
     {
         std::string_view key;

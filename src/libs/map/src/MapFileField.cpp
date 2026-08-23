@@ -1,5 +1,7 @@
 #include "MapFileField.hpp"
 
+#include "MapFileTables.hpp"
+
 namespace antwika::map::mapfile
 {
 
@@ -33,6 +35,11 @@ namespace antwika::map::mapfile
         }
 
         return objectJson;
+    } // GCOVR_EXCL_LINE
+
+    nlohmann::json plateSchema()
+    {
+        return shapeOf(kPlateFields);
     } // GCOVR_EXCL_LINE
 
     void readObject(
