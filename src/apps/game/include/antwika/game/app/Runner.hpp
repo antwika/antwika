@@ -63,7 +63,8 @@ namespace antwika::game
         void drawSightPoints(
             const gfx::Mat4 &modelMatrix,
             const gfx::Camera3D &camera,
-            gfx::Vec3 walkerPosition);
+            gfx::Vec3 walkerPosition,
+            bool upperSightOn);
 
         [[nodiscard]] gfx::Mat4 worldRotation() const;
 

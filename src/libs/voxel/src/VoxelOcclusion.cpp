@@ -9,6 +9,9 @@
 #include <set>
 #include <vector>
 
+#include "antwika/voxel/KindTraits.hpp"
+#include "antwika/voxel/VoxelCube.hpp"
+
 namespace antwika::voxel
 {
 
@@ -38,6 +41,23 @@ namespace antwika::voxel
             }
 
             return std::nullopt;
+        }
+
+        [[nodiscard]] bool solidCube(
+            const Voxels &filledVoxels, const VoxelPosition cornerPosition)
+        {
+            for (const auto cellPosition : cubeCells(cornerPosition))
+            {
+                const auto foundVoxel = filledVoxels.find(cellPosition);
+
+                if (foundVoxel != filledVoxels.end()
+                    && isSolid(foundVoxel->second.kind))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         [[nodiscard]] std::set<VoxelPosition> shellAbout(
@@ -194,18 +214,51 @@ namespace antwika::voxel
         return standing + glm::vec3{0.0F, kUpperSightRise, 0.0F};
     }
 
+    VoxelPosition voxelUnder(const glm::vec3 point)
+    {
+        return VoxelPosition{
+            .x = static_cast<std::int32_t>(std::floor(point.x / kVoxelSide)),
+            .y = static_cast<std::int32_t>(std::floor(point.y / kVoxelSide)),
+            .z = static_cast<std::int32_t>(std::floor(point.z / kVoxelSide))};
+    }
+
+    bool cubeAbove(
+        const Voxels &filledVoxels,
+        const glm::vec3 standing,
+        const float clearance)
+    {
+        const auto sightPoint = upperLineOfSight(standing);
+        const auto lowCorner =
+            cubeCornerOf(voxelUnder(sightPoint - glm::vec3{clearance}));
+        const auto highCorner =
+            cubeCornerOf(voxelUnder(sightPoint + glm::vec3{clearance}));
+
+        for (auto x = lowCorner.x; x <= highCorner.x; x += kCubeSide)
+        {
+            for (auto y = lowCorner.y; y <= highCorner.y; y += kCubeSide)
+            {
+                for (auto z = lowCorner.z;
+                     z <= highCorner.z;
+                     z += kCubeSide)
+                {
+                    if (solidCube(
+                            filledVoxels,
+                            VoxelPosition{.x = x, .y = y, .z = z}))
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
     Voxels occludingVoxels(
         const Voxels &filledVoxels, const glm::vec3 standing)
     {
         Voxels voxels;
-        const auto sightPoint = lineOfSight(standing);
-        const VoxelPosition columnPosition{
-            .x = static_cast<std::int32_t>(
-                std::floor(sightPoint.x / kVoxelSide)),
-            .y = static_cast<std::int32_t>(
-                std::floor(sightPoint.y / kVoxelSide)),
-            .z = static_cast<std::int32_t>(
-                std::floor(sightPoint.z / kVoxelSide))};
+        const auto columnPosition = voxelUnder(lineOfSight(standing));
         const auto overheadPosition =
             roofOver(filledVoxels, columnPosition, columnPosition.y);
 

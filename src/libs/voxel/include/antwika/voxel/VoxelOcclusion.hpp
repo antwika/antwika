@@ -28,6 +28,11 @@ namespace antwika::voxel
 
     [[nodiscard]] glm::vec3 upperLineOfSight(glm::vec3 standing);
 
+    [[nodiscard]] VoxelPosition voxelUnder(glm::vec3 point);
+
+    [[nodiscard]] bool cubeAbove(
+        const Voxels &filledVoxels, glm::vec3 standing, float clearance);
+
     [[nodiscard]] Voxels occludingVoxels(
         const Voxels &filledVoxels, glm::vec3 standing);
 

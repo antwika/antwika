@@ -415,6 +415,7 @@ namespace antwika::editor
             const input::PointerButtonPressed &downPressed);
         void pressGate(
             voxel::VoxelPosition position, input::MouseButton button);
+        [[nodiscard]] bool upperSightOn();
         [[nodiscard]] std::vector<light::ActiveLight> currentLights();
         void onSteppedGates(
             voxel::VoxelPosition standsInPosition,

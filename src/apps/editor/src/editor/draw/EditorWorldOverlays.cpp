@@ -398,10 +398,14 @@ namespace antwika::editor
             clipMatrix,
             antwika::voxel::lineOfSight(walkerPosition),
             kSightPointColor);
-        drawPointMark(
-            clipMatrix,
-            antwika::voxel::upperLineOfSight(walkerPosition),
-            kSightPointColor);
+
+        if (upperSightOn())
+        {
+            drawPointMark(
+                clipMatrix,
+                antwika::voxel::upperLineOfSight(walkerPosition),
+                kSightPointColor);
+        }
     }
 
     void Editor::drawHealthBars(const gfx::Mat4 &clipMatrix)
