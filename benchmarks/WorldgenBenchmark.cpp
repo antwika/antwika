@@ -14,11 +14,11 @@ namespace
     using antwika::worldgen::ChunkOutcome;
     using antwika::worldgen::ChunkRequest;
     using antwika::worldgen::ChunkShape;
-    using antwika::worldgen::chunkVoxels;
-    using antwika::worldgen::cityRuleset;
+    using antwika::worldgen::getChunkVoxels;
+    using antwika::worldgen::getCityRuleset;
     using antwika::worldgen::CompiledRuleset;
-    using antwika::worldgen::cubeCount;
-    using antwika::worldgen::growChunk;
+    using antwika::worldgen::getCubeCount;
+    using antwika::worldgen::getGrowChunk;
 
     using Clock = std::chrono::steady_clock;
 
@@ -36,11 +36,11 @@ namespace
     {
         const auto began = Clock::now();
         const auto result =
-            growChunk(rules, ChunkRequest{.seed = seed, .shape = shape});
+            getGrowChunk(rules, ChunkRequest{.seed = seed, .shape = shape});
         const double grew = millisSince(began);
 
         const auto laying = Clock::now();
-        const auto voxels = chunkVoxels(result.cubeVoxels);
+        const auto voxels = getChunkVoxels(result.cubeVoxels);
         const double laid = millisSince(laying);
 
         std::printf(
@@ -49,7 +49,7 @@ namespace
             shape.width,
             shape.depth,
             shape.height,
-            cubeCount(shape),
+            getCubeCount(shape),
             static_cast<unsigned long long>(seed),
             result.outcome == ChunkOutcome::Grown ? "grown"
                                                   : "not grown",
@@ -64,10 +64,10 @@ namespace
 int main()
 {
     const auto compiling = Clock::now();
-    const CompiledRuleset rules(cityRuleset());
+    const CompiledRuleset rules(getCityRuleset());
     std::printf(
         "ruleset of %zu pieces compiled in %.2fms\n\n",
-        rules.size(),
+        rules.getSize(),
         millisSince(compiling));
 
     for (const ChunkShape shape :
