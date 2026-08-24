@@ -10,10 +10,10 @@ using antwika::map::Snapshot;
 namespace
 {
 
-    [[nodiscard]] Snapshot getSnapshotHiding(const bool hiding)
+    [[nodiscard]] Snapshot getSnapshotLit(const bool hiding)
     {
         Snapshot stepSnapshot{};
-        stepSnapshot.map.settings.hideAboveLevel = hiding;
+        stepSnapshot.map.settings.lighting = hiding;
 
         return stepSnapshot;
     }
@@ -52,7 +52,7 @@ TEST(EditorDocumentTest, Push_LeavesTheDocumentDirty)
 {
     EditorDocument document;
 
-    document.push(getSnapshotHiding(false));
+    document.push(getSnapshotLit(false));
 
     EXPECT_TRUE(document.isDirty());
 }
@@ -71,43 +71,43 @@ TEST(EditorDocumentTest, Undo_GivesBackTheStepThatWasPushed)
 {
     EditorDocument document;
 
-    const auto keptSnapshot = getSnapshotHiding(true);
+    const auto keptSnapshot = getSnapshotLit(true);
     document.push(keptSnapshot);
 
-    const auto stepSnapshot = document.undo(getSnapshotHiding(false));
+    const auto stepSnapshot = document.undo(getSnapshotLit(false));
 
     ASSERT_TRUE(stepSnapshot.has_value());
-    EXPECT_TRUE(stepSnapshot->map.settings.hideAboveLevel);
+    EXPECT_TRUE(stepSnapshot->map.settings.lighting);
 }
 
 TEST(EditorDocumentTest, Undo_GivesNothingBackWithNoStepToTake)
 {
     EditorDocument document;
 
-    EXPECT_FALSE(document.undo(getSnapshotHiding(false)).has_value());
+    EXPECT_FALSE(document.undo(getSnapshotLit(false)).has_value());
 }
 
 TEST(EditorDocumentTest, Redo_GivesBackWhatAnUndoStepAwayFrom)
 {
     EditorDocument document;
 
-    const auto keptSnapshot = getSnapshotHiding(false);
+    const auto keptSnapshot = getSnapshotLit(false);
     document.push(keptSnapshot);
 
-    (void)document.undo(getSnapshotHiding(true));
+    (void)document.undo(getSnapshotLit(true));
 
     const auto stepSnapshot = document.redo(keptSnapshot);
 
     ASSERT_TRUE(stepSnapshot.has_value());
-    EXPECT_TRUE(stepSnapshot->map.settings.hideAboveLevel);
+    EXPECT_TRUE(stepSnapshot->map.settings.lighting);
 }
 
 TEST(EditorDocumentTest, ForgetHistory_LeavesNothingToUndo)
 {
     EditorDocument document;
 
-    document.push(getSnapshotHiding(false));
+    document.push(getSnapshotLit(false));
     document.forgetHistory();
 
-    EXPECT_FALSE(document.undo(getSnapshotHiding(false)).has_value());
+    EXPECT_FALSE(document.undo(getSnapshotLit(false)).has_value());
 }

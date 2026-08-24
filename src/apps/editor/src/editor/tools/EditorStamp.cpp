@@ -13,19 +13,19 @@ namespace antwika::editor
     {
         if (button == input::MouseButton::Right)
         {
-            stampVoxels.clear();
-            stampFromPosition.reset();
+            worldView.stamp.voxels.clear();
+            worldView.stamp.fromPosition.reset();
 
             return;
         }
 
-        if (!stampVoxels.empty())
+        if (!worldView.stamp.voxels.empty())
         {
             pushUndo();
 
             const auto stampCorner = antwika::voxel::cubeCornerOf(position);
 
-            for (const auto &[offset, material] : stampVoxels)
+            for (const auto &[offset, material] : worldView.stamp.voxels)
             {
                 const voxel::VoxelPosition cornerPosition{
                     .x = stampCorner.x + offset.x,
@@ -46,32 +46,32 @@ namespace antwika::editor
             return;
         }
 
-        stampFromPosition = position;
+        worldView.stamp.fromPosition = position;
     }
 
     void Editor::finishStamp(const input::MouseButton button)
     {
-        if (!stampFromPosition.has_value()
+        if (!worldView.stamp.fromPosition.has_value()
             || button != input::MouseButton::Left)
         {
             return;
         }
 
         const auto position = voxelmap::getCellUnder(
-            worldCamera(),
-            worldRotation(),
+            getWorldCamera(play, cameraRig),
+            getWorldRotation(play),
             camera::kCanvasSize,
             pointer.pointerOnCanvas,
-            antwika::voxel::getCubeTop(editLevel));
+            antwika::voxel::getCubeTop(worldView.worldEdit.editLevel));
 
         if (!position.has_value())
         {
-            stampFromPosition.reset();
+            worldView.stamp.fromPosition.reset();
 
             return;
         }
 
-        const auto a = antwika::voxel::cubeCornerOf(*stampFromPosition);
+        const auto a = antwika::voxel::cubeCornerOf(*worldView.stamp.fromPosition);
         const auto b = antwika::voxel::cubeCornerOf(*position);
         const auto lowX = std::min(a.x, b.x);
         const auto highX = std::max(a.x, b.x);
@@ -94,62 +94,17 @@ namespace antwika::editor
             cubeVoxels.emplace(corner, material);
         }
 
-        stampVoxels.clear();
+        worldView.stamp.voxels.clear();
 
         for (const auto &[corner, sample] : cubeVoxels)
         {
-            stampVoxels[voxel::VoxelPosition{
+            worldView.stamp.voxels[voxel::VoxelPosition{
                 .x = corner.x - lowX,
                 .y = corner.y,
                 .z = corner.z - lowZ}] = sample;
         }
 
-        stampFromPosition.reset();
+        worldView.stamp.fromPosition.reset();
     }
-
-    std::vector<voxel::VoxelPosition> Editor::getStampGhost(
-        const voxel::VoxelPosition position) const
-    {
-        std::vector<voxel::VoxelPosition> positions;
-
-        if (!stampVoxels.empty())
-        {
-            const auto corner = antwika::voxel::cubeCornerOf(position);
-
-            for (const auto &[offset, material] : stampVoxels)
-            {
-                positions.push_back(
-                    voxel::VoxelPosition{
-                        .x = corner.x + offset.x,
-                        .y = offset.y,
-                        .z = corner.z + offset.z});
-            }
-
-            return positions;
-        }
-
-        if (!stampFromPosition.has_value())
-        {
-            return positions;
-        }
-
-        const auto a = antwika::voxel::cubeCornerOf(*stampFromPosition);
-        const auto b = antwika::voxel::cubeCornerOf(position);
-
-        for (auto x = std::min(a.x, b.x);
-             x <= std::max(a.x, b.x);
-             x += voxel::kCubeSide)
-        {
-            for (auto z = std::min(a.z, b.z);
-                 z <= std::max(a.z, b.z);
-                 z += voxel::kCubeSide)
-            {
-                positions.push_back(
-                    voxel::VoxelPosition{.x = x, .y = a.y, .z = z});
-            }
-        }
-
-        return positions;
-    } // GCOVR_EXCL_LINE
 
 }

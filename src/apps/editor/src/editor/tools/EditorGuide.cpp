@@ -30,10 +30,10 @@ namespace antwika::editor
             static_cast<float>(projectToScreen.y)};
         const auto ray = voxelmap::getRayInModelSpace(
             voxelmap::getRayThrough(
-                worldCamera(),
+                getWorldCamera(play, cameraRig),
                 camera::kCanvasSize,
                 point),
-            worldRotation());
+            getWorldRotation(play));
         const auto hit = voxelmap::getRaycastFace(document.map.voxels, ray);
 
         if (!hit.has_value())

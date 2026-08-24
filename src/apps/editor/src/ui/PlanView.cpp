@@ -570,4 +570,59 @@ namespace antwika::editor
         return std::nullopt;
     }
 
+
+    bool PlanView::claims(
+        const map::View shownView, const bool playing) const noexcept
+    {
+        return !playing && shownView == map::View::Plan;
+    }
+
+    std::string PlanView::getStatusText(const ViewContext &) const
+    {
+        return isPicked() ? "drag a card to carry it - write its "
+                            "title and what it means on the right "
+                            "- escape leaves a field"
+                          : "5 plan - click a card to write in it "
+                            "- drag one to carry it between "
+                            "columns - ctrl s keeps the board";
+    }
+
+    void PlanView::draw(
+        const ViewContext &, const ui::Frame &)
+    {
+    }
+
+    bool PlanView::layoutPanel(
+        ui::Context &context, const ViewContext &viewContext)
+    {
+        layout(context, viewContext.workbench.focusedField);
+
+        return true;
+    }
+
+    void PlanView::carryFrame(
+        const ui::Frame &frame, const ViewContext &viewContext)
+    {
+        carryEdits(frame, viewContext.workbench.focusedField);
+    }
+
+    void PlanView::drawOverlay(const ViewContext &viewContext)
+    {
+        drawGhost(
+            viewContext.render.viewportRenderer,
+            viewContext.workbench.pointer.pointerInWindow);
+    }
+
+    bool PlanView::takeWidgets(
+        const ui::Interactions &interactions,
+        const ViewContext &viewContext,
+        std::optional<std::string> &notice)
+    {
+        return consumeWidgets(
+            interactions,
+            viewContext.workbench.pointer.pointerInWindow,
+            viewContext.workbench.focusedField,
+            notice);
+    }
+
 }

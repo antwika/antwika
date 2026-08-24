@@ -89,15 +89,15 @@ namespace antwika::editor
             skinBitmaps.push_back(std::move(skinBitmap));
         }
 
-        characterView.takeSkins(viewportRenderer, std::move(skinBitmaps));
+        characterView.takeSkins(viewportRenderer, rosterSkins, std::move(skinBitmaps));
     }
 
     void Editor::saveCharacterSkins()
     {
-        characterView.keepEdits(viewportRenderer);
+        characterView.keepEdits(viewportRenderer, rosterSkins);
 
         for (std::size_t index = 0;
-             index < characterView.getSkins().size();
+             index < rosterSkins.getSheets().size();
              ++index)
         {
             const auto sheetPath = getCharacterSheetPath(index);
@@ -106,20 +106,20 @@ namespace antwika::editor
             std::filesystem::create_directories(
                 std::filesystem::path(sheetPath).parent_path(), errorCode);
             image::writePngFile(
-                characterView.getSkins().at(index), sheetPath, kAppName);
+                rosterSkins.getSheets().at(index), sheetPath, kAppName);
         }
     }
 
     void Editor::pressFigure(
         const voxel::VoxelPosition position, const input::MouseButton button)
     {
-        if (!figurePicked.has_value()
-            || *figurePicked >= document.map.characters.size())
+        if (!worldView.figureTool.chosenIndex.has_value()
+            || *worldView.figureTool.chosenIndex >= document.map.characters.size())
         {
             return;
         }
 
-        auto &figure = document.map.characters.at(*figurePicked);
+        auto &figure = document.map.characters.at(*worldView.figureTool.chosenIndex);
 
         if (button == input::MouseButton::Right)
         {
@@ -136,15 +136,15 @@ namespace antwika::editor
                 std::next(
                     document.map.characters.begin(),
                     static_cast<std::ptrdiff_t>(
-                        *figurePicked)));
-            figurePicked.reset();
+                        *worldView.figureTool.chosenIndex)));
+            worldView.figureTool.chosenIndex.reset();
             spawnRoster();
             loadCharacterSkins();
 
             return;
         }
 
-        if (!figurePlaced)
+        if (!worldView.figureTool.placed)
         {
             const auto feet =
                 (static_cast<float>(position.y) + 0.5F)
@@ -165,7 +165,7 @@ namespace antwika::editor
                     *groundHeight,
                     static_cast<float>(position.z)
                         * voxel::kVoxelSide}};
-            figurePlaced = true;
+            worldView.figureTool.placed = true;
 
             return;
         }
@@ -174,23 +174,6 @@ namespace antwika::editor
         figure.patrolPathPositions.push_back(
             voxel::VoxelPosition{.x = position.x, .y = position.y,
                 .z = position.z});
-    }
-
-    bool Editor::upperSightOn()
-    {
-        if (!play.playing)
-        {
-            return true;
-        }
-
-        const auto stoodPosition =
-            play.game->getWorld().get<component::Position>(play.game->getPlayer());
-
-        return !antwika::voxel::isCubeAbove(
-            worldMeshes.getCells(),
-            antwika::gfx::Vec3{
-                stoodPosition.x, stoodPosition.y, stoodPosition.z},
-            light::kSightClearance);
     }
 
     std::vector<light::ActiveLight> Editor::currentLights()
@@ -213,7 +196,7 @@ namespace antwika::editor
             light::ActiveLight{
                 .position = sightPoint, .brightness = 0.0F}};
 
-        if (upperSightOn())
+        if (worldView.isUpperSightOn(viewContextNow()))
         {
             lights.push_back(
                 light::ActiveLight{
@@ -307,25 +290,6 @@ namespace antwika::editor
         }
 
         showStatus("playing in a window of its own");
-    }
-
-    void Editor::drawSprite(
-        const gfx::Camera3D &camera,
-        const gfx::Mat4 &modelMatrix,
-        gfx::ITexture *const sheetTexture,
-        const component::Position stoodPosition,
-        const component::AnimationState posedState)
-    {
-        sprites.drawCharacter(
-            viewportRenderer,
-            worldShader.getProgram(),
-            camera,
-            modelMatrix,
-            sheetTexture,
-            stoodPosition,
-            posedState,
-            tick,
-            lightPasses.getLampShadows());
     }
 
     void Editor::interact()

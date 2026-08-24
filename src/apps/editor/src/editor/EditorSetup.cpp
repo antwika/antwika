@@ -25,6 +25,8 @@
 #include <antwika/voxelmap/VoxelPick.hpp>
 #include <antwika/app/WindowEvents.hpp>
 
+#include "antwika/editor/PreferencesFile.hpp"
+
 #include "antwika/editor/Editor.hpp"
 #include "antwika/editor/plan/PlanFileError.hpp"
 
@@ -63,7 +65,7 @@ namespace antwika::editor
             .tilemap = tilemap::getDefaultTilemap()};
 
         worldShader.open(viewportRenderer, map::getLoadShader("voxel"));
-        setBindings(getLoadChords(getChordsPath()));
+        keyBench.takeBindings(getLoadChords(getChordsPath()));
 
         try
         {
@@ -88,7 +90,7 @@ namespace antwika::editor
             logger.log(log::Level::Warning, error.what());
         }
 
-        editLevel =
+        worldView.worldEdit.editLevel =
             antwika::voxel::getCubeIndexOfLevel(voxelmap::getTopLevel(
                     document.map.voxels));
 
@@ -106,7 +108,7 @@ namespace antwika::editor
         lightPasses.open(viewportRenderer, map::getLoadShader("shadow"));
         scenePass.open(viewportRenderer, map::getLoadShader("bloom"));
 
-        takeSettings(document.map.settings);
+        takePreferences(getLoadPreferences(document.getPath()));
 
         rebuildWorld();
 
@@ -158,7 +160,6 @@ namespace antwika::editor
             }
 
             play.playing = true;
-            activeView = map::View::World;
             play.titleScreenUp = true;
             aimPlayCamera();
         }

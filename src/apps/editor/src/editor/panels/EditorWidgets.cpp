@@ -1,5 +1,6 @@
 #include <antwika/decor/Decor.hpp>
 #include <antwika/editor/ui/AtlasView.hpp>
+#include <antwika/editor/ui/LayerWidgets.hpp>
 #include <antwika/editor/ui/MapPicker.hpp>
 #include <antwika/map/Layers.hpp>
 #include <antwika/voxel/VoxelPosition.hpp>
@@ -25,11 +26,11 @@ namespace antwika::editor
             return true;
         }
 
-        if (activeView == map::View::Plan)
+        if (auto *view = viewNow(); view != nullptr)
         {
             std::optional<std::string> notice;
-            const auto took = plan.consumeWidgets(
-                interactions, pointer.pointerInWindow, focusedField, notice);
+            const auto took =
+                view->takeWidgets(interactions, viewContextNow(), notice);
 
             if (notice.has_value())
             {
@@ -84,7 +85,7 @@ namespace antwika::editor
             if (interactions.activatedWidget
                 == getPaintWidget(which))
             {
-                settings.paint = which;
+                preferences.paint = which;
                 consumedKey = true;
             }
         }
@@ -99,19 +100,19 @@ namespace antwika::editor
 
             consumedKey = true;
 
-            if (activeView == map::View::World)
+            if (isWorldShown())
             {
-                settings.kind = kind;
+                preferences.kind = kind;
 
                 continue;
             }
 
-            if (selectedTile.has_value()
+            if (stroke.selectedTile.has_value()
                 && !blockedAsVariant())
             {
                 pushUndo();
-                activeRules().setKind(
-                    *selectedTile, kind);
+                getActiveRules(document.map, chosenLayer).setKind(
+                    *stroke.selectedTile, kind);
                 rebuildWorld();
             }
         }
@@ -127,7 +128,7 @@ namespace antwika::editor
 
             consumedKey = true;
 
-            if (activeView == map::View::World)
+            if (isWorldShown())
             {
                 rampFacing =
                     rampFacing == facing
@@ -138,14 +139,14 @@ namespace antwika::editor
                 continue;
             }
 
-            if (selectedTile.has_value()
+            if (stroke.selectedTile.has_value()
                 && !blockedAsVariant())
             {
                 pushUndo();
-                activeRules().setFacing(
-                    *selectedTile,
-                    activeRules().facingOf(
-                        *selectedTile)
+                getActiveRules(document.map, chosenLayer).setFacing(
+                    *stroke.selectedTile,
+                    getActiveRules(document.map, chosenLayer).facingOf(
+                        *stroke.selectedTile)
                             == facing
                              ? antwika::voxel::
                               Facing::Any
@@ -158,7 +159,7 @@ namespace antwika::editor
         {
             if (interactions.activatedWidget
                     != getLevelWidget(level)
-                || !selectedTile.has_value())
+                || !stroke.selectedTile.has_value())
             {
                 continue;
             }
@@ -171,9 +172,9 @@ namespace antwika::editor
             }
 
             pushUndo();
-            activeRules().setLevel(
-                *selectedTile,
-                activeRules().levelOf(*selectedTile)
+            getActiveRules(document.map, chosenLayer).setLevel(
+                *stroke.selectedTile,
+                getActiveRules(document.map, chosenLayer).levelOf(*stroke.selectedTile)
                         == level
                          ? antwika::voxel::StairHalf::
                           Any
@@ -185,7 +186,7 @@ namespace antwika::editor
         {
             if (interactions.activatedWidget
                     != getPartWidget(part)
-                || !selectedTile.has_value())
+                || !stroke.selectedTile.has_value())
             {
                 continue;
             }
@@ -198,9 +199,9 @@ namespace antwika::editor
             }
 
             pushUndo();
-            activeRules().setPart(
-                *selectedTile,
-                activeRules().partOf(*selectedTile)
+            getActiveRules(document.map, chosenLayer).setPart(
+                *stroke.selectedTile,
+                getActiveRules(document.map, chosenLayer).partOf(*stroke.selectedTile)
                         == part
                          ? antwika::voxel::StairPart::
                           Any
@@ -229,10 +230,10 @@ namespace antwika::editor
              ++index)
         {
             if (interactions.activatedWidget
-                == map::getLayerWidget(index))
+                == getLayerWidget(index))
             {
                 chosenLayer = index;
-                selectedEdges.reset();
+                stroke.selectedEdges.reset();
                 clearAssignModes();
                 consumedKey = true;
             }
@@ -241,8 +242,8 @@ namespace antwika::editor
         if (interactions.activatedWidget
             == antwika::editor::kMirrorWidget)
         {
-            mirrorSelection();
-            commitFloatingPatch();
+            characterView.mirrorSelection(*this);
+            characterView.commitFloatingPatch();
             characterView.mark.selection.reset();
             consumedKey = true;
         }
@@ -251,7 +252,7 @@ namespace antwika::editor
             == decor::
                 kAutoPreviewWidget)
         {
-            previewAuto = !previewAuto;
+            preview.automatic = !preview.automatic;
             consumedKey = true;
         }
 
@@ -259,9 +260,9 @@ namespace antwika::editor
             == decor::
                 kRerollPreviewWidget)
         {
-            previewAuto = false;
-            previewSeed += 1;
-            previewForTile.reset();
+            preview.automatic = false;
+            preview.seed += 1;
+            preview.forTile.reset();
             consumedKey = true;
         }
 
@@ -326,11 +327,11 @@ namespace antwika::editor
 
         if (interactions.activatedWidget
                 == decor::kDecorMoveWidget
-            && isDecorLayer() && selectedTile.has_value())
+            && isDecorLayer(chosenLayer) && stroke.selectedTile.has_value())
         {
             pushUndo();
             document.map.decor = decor::getWithDecorLayerSet(
-                document.map.decor, *selectedTile, chosenLayer);
+                document.map.decor, *stroke.selectedTile, chosenLayer);
             rebuildWorld();
             consumedKey = true;
         }
@@ -355,10 +356,10 @@ namespace antwika::editor
         if (interactions.activatedWidget
                 == decor::
                     kFrameAddWidget
-            && selectedTile.has_value())
+            && stroke.selectedTile.has_value())
         {
             const auto spare =
-                freeTileSlot(selectedTile->atlas);
+                freeTileSlot(stroke.selectedTile->atlas);
 
             consumedKey = true;
 
@@ -374,18 +375,18 @@ namespace antwika::editor
                 pushUndo();
                 ensureDecor();
                 document.map.decor = decor::getWithFrameAdded(
-                    document.map.decor, *selectedTile);
+                    document.map.decor, *stroke.selectedTile);
 
                 const auto *decor =
                     decor::decorOf(
-                        document.map.decor, *selectedTile);
+                        document.map.decor, *stroke.selectedTile);
                 const auto lastIndex =
                     decor->frameTiles.size() - 1;
 
                 copyTilePixels(
                     decor->frameTiles.at(lastIndex - 1), *spare);
                 document.map.decor = decor::getWithFrameSet(
-                    document.map.decor, *selectedTile, lastIndex, *spare);
+                    document.map.decor, *stroke.selectedTile, lastIndex, *spare);
                 clearAssignModes();
                 assignMode.framePicked = lastIndex;
                 atlasSheets.touch();
@@ -479,8 +480,7 @@ namespace antwika::editor
         }
 
         if (interactions.activatedWidget
-            == map::
-                kAddLayerWidget)
+            == kAddLayerWidget)
         {
             pushUndo();
             document.map.layers = map::getWithLayerAdded(
@@ -491,8 +491,7 @@ namespace antwika::editor
         }
 
         if (interactions.activatedWidget
-            == map::
-                kRemoveLayerWidget)
+            == kRemoveLayerWidget)
         {
             pushUndo();
             document.map.layers = map::getWithLayerRemoved(

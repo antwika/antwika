@@ -13,32 +13,14 @@ namespace antwika::editor
 
     void Editor::ensureDecor()
     {
-        if (isDecorLayer() && selectedTile.has_value()
-            && decor::decorOf(document.map.decor, *selectedTile)
+        if (isDecorLayer(chosenLayer) && stroke.selectedTile.has_value()
+            && decor::decorOf(document.map.decor, *stroke.selectedTile)
                    == nullptr)
         {
             document.map.decor = decor::getWithDecorToggled(
-                document.map.decor, *selectedTile, chosenLayer);
+                document.map.decor, *stroke.selectedTile, chosenLayer);
         }
     }
-
-    tilemap::Tile Editor::editedTile()
-    {
-        if (!isDecorLayer() || !selectedTile.has_value()
-            || assignMode.framePicked == 0)
-        {
-            return *selectedTile;
-        }
-
-        const auto *decor =
-            decor::decorOf(document.map.decor, *selectedTile);
-
-        return decor != nullptr
-                       && assignMode.framePicked
-                              < decor->frameTiles.size()
-                   ? decor->frameTiles.at(assignMode.framePicked)
-                   : *selectedTile;
-    } // GCOVR_EXCL_LINE
 
     std::optional<tilemap::Tile> Editor::freeTileSlot(
         const tilemap::Atlas atlas)
@@ -135,21 +117,21 @@ namespace antwika::editor
 
     void Editor::layoutDecorRail(ui::Context &context)
     {
-        if (!selectedTile.has_value() || !isDecorLayer())
+        if (!stroke.selectedTile.has_value() || !isDecorLayer(chosenLayer))
         {
             return;
         }
 
         const auto *decor =
-            decor::decorOf(document.map.decor, *selectedTile);
+            decor::decorOf(document.map.decor, *stroke.selectedTile);
         const auto decorShown =
             decor != nullptr
                    ? *decor
                    : decor::DecorTile{
-                    .tile = *selectedTile,
-                    .frameTiles = {*selectedTile},
+                    .tile = *stroke.selectedTile,
+                    .frameTiles = {*stroke.selectedTile},
                     .layer = chosenLayer,
-                    .spanTiles = {*selectedTile}};
+                    .spanTiles = {*stroke.selectedTile}};
         const auto decorPanel = context.column(
             antwika::ui::ContainerSpec{
                 .widthSizing = antwika::ui::kGrowSizing,

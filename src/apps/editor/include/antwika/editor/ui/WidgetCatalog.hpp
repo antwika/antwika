@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <antwika/editor/ui/LayerWidgets.hpp>
 #include <antwika/widget/WidgetId.hpp>
 #include <antwika/tile/Transitions.hpp>
 #include <antwika/decor/Decor.hpp>
@@ -34,15 +35,15 @@ namespace antwika::editor::widget_catalog
         kInkOkWidget,
         kInkCancelWidget,
         kInkDeleteWidget,
-        map::kAddLayerWidget,
-        map::kRemoveLayerWidget,
+        kAddLayerWidget,
+        kRemoveLayerWidget,
         kMirrorWidget,
         decor::kInkHexWidget,
         decor::kAutoPreviewWidget,
         decor::kPickBaseTilesWidget,
         kPartFrontWidget,
         kPartSideWidget,
-        map::kFirstLayerWidget,
+        kFirstLayerWidget,
         decor::kFrameAddWidget,
         decor::kTilingPanelWidget,
         decor::kFrequencyWidget,
@@ -110,11 +111,11 @@ namespace antwika::editor::widget_catalog
     }
 
     static_assert(
-        isBlockClearOfFixed(map::kFirstLayerWidget, map::kMaxLayers),
+        isBlockClearOfFixed(kFirstLayerWidget, map::kMaxLayers),
         "a fixed widget stands among the layer rows");
 
     static_assert(
-        static_cast<std::uint64_t>(map::kFirstLayerWidget) + map::kMaxLayers
+        static_cast<std::uint64_t>(kFirstLayerWidget) + map::kMaxLayers
             <= static_cast<std::uint64_t>(decor::kFrameAddWidget),
         "the layer rows run into the decor frame block");
 

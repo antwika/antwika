@@ -5,118 +5,61 @@
 #include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/voxelmap/VoxelPick.hpp>
 
+#include "antwika/editor/tools/ShapedCubes.hpp"
 #include "antwika/editor/Editor.hpp"
 
 namespace antwika::editor
 {
 
-    std::vector<voxel::VoxelPosition> Editor::getShapedCubes(
-        const voxel::VoxelPosition fromPosition,
-        const voxel::VoxelPosition toPosition) const
-    {
-        const auto a = antwika::voxel::cubeCornerOf(fromPosition);
-        const auto b = antwika::voxel::cubeCornerOf(toPosition);
-
-        std::vector<voxel::VoxelPosition> positions;
-
-        if (settings.paint == map::Paint::Rect)
-        {
-            for (auto x = std::min(a.x, b.x);
-                 x <= std::max(a.x, b.x);
-                 x += voxel::kCubeSide)
-            {
-                for (auto z = std::min(a.z, b.z);
-                     z <= std::max(a.z, b.z);
-                     z += voxel::kCubeSide)
-                {
-                    positions.push_back(
-                        voxel::VoxelPosition{.x = x, .y = a.y, .z = z});
-                }
-            }
-
-            return positions;
-        }
-
-        const auto deltaX = (b.x - a.x) / voxel::kCubeSide;
-        const auto alongSpan = (b.z - a.z) / voxel::kCubeSide;
-        const auto steps =
-            std::max(std::abs(deltaX), std::abs(alongSpan));
-
-        for (std::int32_t step = 0; step <= steps; ++step)
-        {
-            const auto part =
-                steps == 0
-                       ? 0.0
-                       : static_cast<double>(step)
-                          / static_cast<double>(steps);
-
-            positions.push_back(
-                voxel::VoxelPosition{
-                    .x = a.x
-                         + (static_cast<std::int32_t>(
-                                std::llround(
-                                    part
-                                    * static_cast<double>(
-                                        deltaX)))
-                            * voxel::kCubeSide),
-                    .y = a.y,
-                    .z = a.z
-                         + (static_cast<std::int32_t>(
-                                std::llround(
-                                    part
-                                    * static_cast<double>(
-                                        alongSpan)))
-                            * voxel::kCubeSide)});
-        }
-
-        return positions;
-    } // GCOVR_EXCL_LINE
-
     bool Editor::beginShape(
         const voxel::VoxelPosition position,
         const input::MouseButton button)
     {
-        if (settings.tool != map::Tool::Brush
-            || (settings.paint != map::Paint::Rect
-                && settings.paint != map::Paint::Line))
+        if (preferences.tool != map::Tool::Brush
+            || (preferences.paint != map::Paint::Rect
+                && preferences.paint != map::Paint::Line))
         {
             return false;
         }
 
-        shapeFromPosition = position;
-        dragPaintButton = button;
+        worldView.worldPaint.shapeFromPosition = position;
+        worldView.worldPaint.dragButton = button;
 
         return true;
     }
 
     void Editor::finishShape(const input::MouseButton button)
     {
-        if (!shapeFromPosition.has_value() || !dragPaintButton.has_value()
-            || button != *dragPaintButton)
+        if (!worldView.worldPaint.shapeFromPosition.has_value()
+            || !worldView.worldPaint.dragButton.has_value()
+            || button != *worldView.worldPaint.dragButton)
         {
             return;
         }
 
         const auto position = voxelmap::getCellUnder(
-            worldCamera(),
-            worldRotation(),
+            getWorldCamera(play, cameraRig),
+            getWorldRotation(play),
             camera::kCanvasSize,
             pointer.pointerOnCanvas,
-            antwika::voxel::getCubeTop(editLevel));
+            antwika::voxel::getCubeTop(worldView.worldEdit.editLevel));
 
         if (position.has_value())
         {
             pushUndo();
 
             for (const auto cube :
-                 getShapedCubes(*shapeFromPosition, *position))
+                 getShapedCubes(
+                     *worldView.worldPaint.shapeFromPosition,
+                     *position,
+                     preferences.paint))
             {
                 document.map.voxels = voxel::getWithRampsRebuilt(
-                    dragPaintButton == input::MouseButton::Left
+                    worldView.worldPaint.dragButton == input::MouseButton::Left
                                      ? voxel::withBlockAt(
                               document.map.voxels,
                               cube,
-                              settings.kind,
+                              preferences.kind,
                               rampFacing)
                         : voxel::withoutBlockAt(
                               document.map.voxels, cube),
@@ -126,7 +69,7 @@ namespace antwika::editor
             rebuildWorld();
         }
 
-        shapeFromPosition.reset();
+        worldView.worldPaint.shapeFromPosition.reset();
     }
 
     void Editor::placeStartOrExit(
@@ -134,7 +77,7 @@ namespace antwika::editor
     {
         pushUndo();
 
-        auto &landing = settings.tool == map::Tool::Start
+        auto &landing = preferences.tool == map::Tool::Start
                       ? document.map.spawnCubePosition
                       : document.map.exitCubePosition;
 
@@ -160,7 +103,7 @@ namespace antwika::editor
             if (lamp.position == position)
             {
                 pushUndo();
-                draggedLamp = lamp;
+                worldView.worldPaint.draggedLamp = lamp;
 
                 return true;
             }
@@ -171,25 +114,27 @@ namespace antwika::editor
 
     void Editor::carryLamp()
     {
-        if (!draggedLamp.has_value() || activeView != map::View::World)
+        if (!worldView.worldPaint.draggedLamp.has_value() || !isWorldShown())
         {
             return;
         }
 
         const auto position = voxelmap::getCellUnder(
-            worldCamera(),
-            worldRotation(),
+            getWorldCamera(play, cameraRig),
+            getWorldRotation(play),
             camera::kCanvasSize,
             pointer.pointerOnCanvas,
-            antwika::voxel::getCubeTop(editLevel));
+            antwika::voxel::getCubeTop(worldView.worldEdit.editLevel));
 
-        if (position.has_value() && *position != draggedLamp->position)
+        if (position.has_value() && *position != worldView.worldPaint.draggedLamp->position)
         {
             document.map.lamps = light::withLampAt(
-                light::withoutLampAt(document.map.lamps, draggedLamp->position),
+                light::withoutLampAt(
+                    document.map.lamps,
+                    worldView.worldPaint.draggedLamp->position),
                 *position,
-                draggedLamp->tintColor);
-            draggedLamp->position = *position;
+                worldView.worldPaint.draggedLamp->tintColor);
+            worldView.worldPaint.draggedLamp->position = *position;
             lightPasses.forget();
         }
     }

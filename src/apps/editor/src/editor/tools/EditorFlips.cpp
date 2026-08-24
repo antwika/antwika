@@ -11,7 +11,7 @@ namespace antwika::editor
     {
         return isAnyTileAnimated(document.map.flipAnimations)
                && tick % decor::kDecorPaceTick == 0
-               && !strokeActive;
+               && !stroke.active;
     }
 
     bool Editor::flipWidgets(
@@ -21,12 +21,12 @@ namespace antwika::editor
 
         if (interactions.activatedWidget
                 == decor::kToggleAnimationWidget
-            && selectedTile.has_value())
+            && stroke.selectedTile.has_value())
         {
             pushUndo();
             document.map.flipAnimations =
                 getWithAnimationToggled(document.map.flipAnimations,
-                    *selectedTile);
+                    *stroke.selectedTile);
             assignMode.flipFramePicked = 0;
             assignMode.flipFrameAssigning = false;
             atlasSheets.touch();
@@ -51,15 +51,15 @@ namespace antwika::editor
 
         if (interactions.activatedWidget
                 == decor::kAddFrameWidget
-            && selectedTile.has_value())
+            && stroke.selectedTile.has_value())
         {
             pushUndo();
             document.map.flipAnimations =
                 getWithAnimationFrameAdded(document.map.flipAnimations,
-                    *selectedTile);
+                    *stroke.selectedTile);
 
             const auto *animation =
-                animationOf(document.map.flipAnimations, *selectedTile);
+                animationOf(document.map.flipAnimations, *stroke.selectedTile);
 
             if (animation != nullptr && !animation->frameTiles.empty())
             {
@@ -78,14 +78,8 @@ namespace antwika::editor
 
     void Editor::layoutFlipRail(ui::Context &context)
     {
-        if (activeView != map::View::Atlases || !selectedTile.has_value()
-            || isDecorLayer())
-        {
-            return;
-        }
-
         const auto *animation =
-            animationOf(document.map.flipAnimations, *selectedTile);
+            animationOf(document.map.flipAnimations, *stroke.selectedTile);
         const auto animationPanel = context.column(
             antwika::ui::ContainerSpec{
                 .widthSizing = antwika::ui::kGrowSizing,

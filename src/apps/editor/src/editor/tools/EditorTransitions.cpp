@@ -7,29 +7,15 @@
 namespace antwika::editor
 {
 
-    bool Editor::blockedAsTransitionSlot()
-    {
-        if (!selectedTile.has_value()
-            || transitionOf(document.map.transitions, *selectedTile)
-                   == nullptr)
-        {
-            return false;
-        }
-
-        showStatus("this tile is woven from its materials", true);
-
-        return true;
-    }
-
     bool Editor::pickedTransition(const tilemap::Tile tile)
     {
-        if (!transitFromTile.has_value())
+        if (!transition.fromTile.has_value())
         {
             return false;
         }
 
         if (transitionOf(document.map.transitions, tile) != nullptr
-            || tile.atlas != transitFromTile->atlas)
+            || tile.atlas != transition.fromTile->atlas)
         {
             showStatus(
                 "a material is a plain tile of the same "
@@ -40,9 +26,9 @@ namespace antwika::editor
             return true;
         }
 
-        if (!transitToTile.has_value())
+        if (!transition.toTile.has_value())
         {
-            if (tile == *transitFromTile)
+            if (tile == *transition.fromTile)
             {
                 showStatus(
                     "the other material is another tile",
@@ -52,7 +38,7 @@ namespace antwika::editor
                 return true;
             }
 
-            transitToTile = tile;
+            transition.toTile = tile;
             showStatus(
                 "pick the mask tile", false, 360);
 
@@ -66,8 +52,8 @@ namespace antwika::editor
         {
             showStatus(
                 "no slot of this atlas is free", false, 360);
-            transitFromTile.reset();
-            transitToTile.reset();
+            transition.fromTile.reset();
+            transition.toTile.reset();
 
             return true;
         }
@@ -75,12 +61,12 @@ namespace antwika::editor
         pushUndo();
         document.map.transitions.push_back(
             tile::TransitionTile{
-                .fromTile = *transitFromTile,
-                .toTile = *transitToTile,
+                .fromTile = *transition.fromTile,
+                .toTile = *transition.toTile,
                 .maskTile = tile,
                 .outputTile = *slot});
-        transitFromTile.reset();
-        transitToTile.reset();
+        transition.fromTile.reset();
+        transition.toTile.reset();
 
         for (std::uint32_t row = 0;
              row < document.map.tilemap.rows;
@@ -123,11 +109,11 @@ namespace antwika::editor
 
         if (interactions.activatedWidget
                 == tile::kTransitionAddWidget
-            && selectedTile.has_value()
+            && stroke.selectedTile.has_value()
             && document.map.transitions.size() < tile::kMaxTransitions)
         {
-            transitFromTile = selectedTile;
-            transitToTile.reset();
+            transition.fromTile = stroke.selectedTile;
+            transition.toTile.reset();
             showStatus(
                 "pick the other material", false, 360);
             consumedKey = true;
@@ -135,16 +121,16 @@ namespace antwika::editor
 
         if (interactions.activatedWidget
                 == tile::kRemoveTransitionWidget
-            && transitionPicked.has_value()
-            && *transitionPicked < document.map.transitions.size())
+            && transition.chosenIndex.has_value()
+            && *transition.chosenIndex < document.map.transitions.size())
         {
             pushUndo();
             document.map.transitions.erase(
                 std::next(
                     document.map.transitions.begin(),
                     static_cast<std::ptrdiff_t>(
-                        *transitionPicked)));
-            transitionPicked.reset();
+                        *transition.chosenIndex)));
+            transition.chosenIndex.reset();
             atlasSheets.touch();
             rebuildWorld();
             consumedKey = true;
@@ -161,8 +147,8 @@ namespace antwika::editor
                 continue;
             }
 
-            transitionPicked =
-                transitionPicked == index
+            transition.chosenIndex =
+                transition.chosenIndex == index
                                   ? std::optional<std::size_t>{}
                                   : std::optional{index};
             consumedKey = true;
@@ -173,12 +159,6 @@ namespace antwika::editor
 
     void Editor::layoutTransitionRail(ui::Context &context)
     {
-        if (activeView != map::View::Atlases || !selectedTile.has_value()
-            || isDecorLayer())
-        {
-            return;
-        }
-
         const auto transitionsPanel = context.column(
             antwika::ui::ContainerSpec{
                 .widthSizing = antwika::ui::kGrowSizing,
@@ -191,12 +171,12 @@ namespace antwika::editor
              index < document.map.transitions.size();
              ++index)
         {
-            const auto &transition = document.map.transitions.at(index);
+            const auto &rowTransition = document.map.transitions.at(index);
 
-            if (transition.fromTile != *selectedTile
-                && transition.toTile != *selectedTile
-                && transition.maskTile != *selectedTile
-                && transition.outputTile != *selectedTile)
+            if (rowTransition.fromTile != *stroke.selectedTile
+                && rowTransition.toTile != *stroke.selectedTile
+                && rowTransition.maskTile != *stroke.selectedTile
+                && rowTransition.outputTile != *stroke.selectedTile)
             {
                 continue;
             }
@@ -204,17 +184,17 @@ namespace antwika::editor
             context.button(
                 "slot "
                     + std::to_string(
-                        transition.outputTile.index),
+                        rowTransition.outputTile.index),
                 antwika::ui::ButtonSpec{
                     .widgetId = tile::getTransitionRowWidget(
                         index),
                     .widthSizing = antwika::ui::kGrowSizing,
-                    .fillColor = transitionPicked == index
+                    .fillColor = transition.chosenIndex == index
                                ? kSelectionAccentColor
                                : kGridLineColor});
         }
 
-        if (transitionPicked.has_value())
+        if (transition.chosenIndex.has_value())
         {
             context.button(
                 "x",
@@ -226,8 +206,8 @@ namespace antwika::editor
         if (document.map.transitions.size() < tile::kMaxTransitions)
         {
             context.button(
-                transitFromTile.has_value()
-                    ? (transitToTile.has_value()
+                transition.fromTile.has_value()
+                    ? (transition.toTile.has_value()
                            ? "mask?"
                            : "other?")
                     : "new transition",

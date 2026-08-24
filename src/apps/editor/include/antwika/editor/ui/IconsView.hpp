@@ -9,10 +9,12 @@
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/ViewportRenderer.hpp>
 
+#include "antwika/editor/view/IEditorView.hpp"
+
 namespace antwika::editor
 {
 
-    class IconsView final
+    class IconsView final : public IEditorView
     {
     public:
         void open(
@@ -39,9 +41,25 @@ namespace antwika::editor
             geometry::GridCell pixelCell,
             bool erases);
 
-        void draw(gfx::ViewportRenderer &viewportRenderer) const;
+        void drawSheet(gfx::ViewportRenderer &viewportRenderer) const;
 
         [[nodiscard]] std::size_t getCount() const;
+
+        [[nodiscard]] bool claims(
+            map::View shownView, bool playing) const noexcept override;
+
+        [[nodiscard]] std::string getStatusText(
+            const ViewContext &viewContext) const override;
+
+        void draw(
+            const ViewContext &viewContext,
+            const ui::Frame &frame) override;
+
+        [[nodiscard]] bool consumePress(
+            const ViewContext &viewContext,
+            const input::PointerButtonPressed &downPressed) override;
+
+        void trackPointer(const ViewContext &viewContext) override;
 
     private:
         gfx::Bitmap iconSheet;

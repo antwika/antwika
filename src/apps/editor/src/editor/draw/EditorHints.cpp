@@ -3,6 +3,7 @@
 #include <antwika/decor/Decor.hpp>
 #include <antwika/editor/ui/AtlasView.hpp>
 #include <antwika/editor/ui/EditorLook.hpp>
+#include <antwika/editor/ui/LayerWidgets.hpp>
 #include <antwika/geometry/Grid.hpp>
 #include <antwika/gfx/RectF.hpp>
 #include <antwika/input/Key.hpp>
@@ -85,9 +86,7 @@ namespace antwika::editor
             {voxel::Kind::Water,
              "water - waded through, never stood on"},
             {voxel::Kind::Ramp,
-             "ramp - a flight climbed at half pace"},
-            {voxel::Kind::Ladder,
-             "ladder - climbed straight up and down"}}};
+             "ramp - a flight climbed at half pace"}}};
 
         static_assert(
             enums::tagsInOrder(kKindHints, &HintRow<voxel::Kind>::value));
@@ -270,12 +269,12 @@ namespace antwika::editor
         auto face = std::optional<std::size_t>{};
 
         const auto clear =
-            !play.playing && !dialogs.quitConfirmOpen && !keysOpen
+            !play.playing && !dialogs.quitConfirmOpen && !keyBench.panelShown
             && !dialogs.fileDialog.has_value()
             && !inkPicker.editingInk.has_value()
             && !frame.interactions.pointerOverUi;
 
-        if (clear && activeView == map::View::Atlases)
+        if (clear && viewChoice.activeView == map::View::Atlases)
         {
             const auto cell = cellUnderPointer();
 
@@ -287,14 +286,14 @@ namespace antwika::editor
             }
         }
 
-        if (clear && activeView == map::View::World
-            && settings.tool == map::Tool::Picker)
+        if (clear && isWorldShown()
+            && preferences.tool == map::Tool::Picker)
         {
             face = voxelmap::getFacePicked(
                 visibleCells(),
                 worldMeshes.getFaces(),
-                worldCamera(),
-                worldRotation(),
+                getWorldCamera(play, cameraRig),
+                getWorldRotation(play),
                 camera::kCanvasSize,
                 pointer.pointerOnCanvas);
         }
@@ -489,7 +488,7 @@ namespace antwika::editor
         for (std::size_t layer = 0; layer < document.map.layers.size();
              ++layer)
         {
-            if (whichWidget == map::getLayerWidget(layer))
+            if (whichWidget == getLayerWidget(layer))
             {
                 return "works on this layer";
             }
@@ -510,12 +509,12 @@ namespace antwika::editor
             return "adds another ink to the palette";
         }
 
-        if (whichWidget == map::kAddLayerWidget)
+        if (whichWidget == kAddLayerWidget)
         {
             return "adds a layer over the ones held";
         }
 
-        if (whichWidget == map::kRemoveLayerWidget)
+        if (whichWidget == kRemoveLayerWidget)
         {
             return "takes the chosen layer away";
         }

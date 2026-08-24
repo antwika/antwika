@@ -3,6 +3,7 @@
 #include <set>
 
 #include <antwika/map/Layers.hpp>
+#include <antwika/editor/ui/LayerWidgets.hpp>
 #include "antwika/editor/ui/ToolPanel.hpp"
 
 using antwika::map::getDefaultLayers;
@@ -14,7 +15,7 @@ using antwika::editor::kRailWidget;
 using antwika::map::kMaxLayers;
 using antwika::editor::kStatusBarWidget;
 using antwika::editor::kToolPanelWidget;
-using antwika::map::getLayerWidget;
+using antwika::editor::getLayerWidget;
 
 TEST(LayersTest, DefaultLayers_HoldTheOneEveryMapHas)
 {

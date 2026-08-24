@@ -13,6 +13,7 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/ViewportRenderer.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
+#include <antwika/render/CharacterSkins.hpp>
 #include <antwika/gfx/mocks/MockTexture.hpp>
 
 #include "antwika/editor/ui/CharacterSheetView.hpp"
@@ -63,6 +64,7 @@ TEST(CharacterSheetViewTest, Open_CarriesTheSheetAndItsBackingToPictures)
     handsOutTextures(innerRenderer);
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     CharacterSheetView sheets;
+    antwika::render::CharacterSkins rosterSkins;
 
     sheets.open(viewportRenderer, sheetOf(1));
 
@@ -77,15 +79,16 @@ TEST(CharacterSheetViewTest, TakeSkins_PutsTheOneBeingEditedOnTheBoard)
     handsOutTextures(innerRenderer);
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     CharacterSheetView sheets;
+    antwika::render::CharacterSkins rosterSkins;
 
     sheets.open(viewportRenderer, sheetOf(1));
-    sheets.takeSkins(viewportRenderer, {sheetOf(7), sheetOf(9)});
+    sheets.takeSkins(viewportRenderer, rosterSkins, {sheetOf(7), sheetOf(9)});
 
-    EXPECT_EQ(sheets.getSkins().size(), 2U);
+    EXPECT_EQ(rosterSkins.getSheets().size(), 2U);
     EXPECT_EQ(sheets.getEditing(), 0U);
     EXPECT_EQ(sheets.getSheet().pixels.front(), 7);
-    EXPECT_NE(sheets.getSkinTexture(1), nullptr);
-    EXPECT_EQ(sheets.getSkinTexture(2), nullptr);
+    EXPECT_NE(rosterSkins.getPicture(1), nullptr);
+    EXPECT_EQ(rosterSkins.getPicture(2), nullptr);
 }
 
 TEST(CharacterSheetViewTest, TakeSkins_KeepsToTheRosterWhereItShrank)
@@ -94,11 +97,12 @@ TEST(CharacterSheetViewTest, TakeSkins_KeepsToTheRosterWhereItShrank)
     handsOutTextures(innerRenderer);
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     CharacterSheetView sheets;
+    antwika::render::CharacterSkins rosterSkins;
 
     sheets.open(viewportRenderer, sheetOf(1));
-    sheets.takeSkins(viewportRenderer, {sheetOf(7), sheetOf(9)});
-    sheets.switchTo(viewportRenderer, 1);
-    sheets.takeSkins(viewportRenderer, {sheetOf(3)});
+    sheets.takeSkins(viewportRenderer, rosterSkins, {sheetOf(7), sheetOf(9)});
+    sheets.switchTo(viewportRenderer, rosterSkins, 1);
+    sheets.takeSkins(viewportRenderer, rosterSkins, {sheetOf(3)});
 
     EXPECT_EQ(sheets.getEditing(), 0U);
     EXPECT_EQ(sheets.getSheet().pixels.front(), 3);
@@ -110,15 +114,16 @@ TEST(CharacterSheetViewTest, SwitchTo_PutsWhatWasDrawnBackOnItsSkin)
     handsOutTextures(innerRenderer);
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     CharacterSheetView sheets;
+    antwika::render::CharacterSkins rosterSkins;
 
     sheets.open(viewportRenderer, sheetOf(1));
-    sheets.takeSkins(viewportRenderer, {sheetOf(7), sheetOf(9)});
+    sheets.takeSkins(viewportRenderer, rosterSkins, {sheetOf(7), sheetOf(9)});
     sheets.getSheet().pixels.front() = 42;
-    sheets.switchTo(viewportRenderer, 1);
+    sheets.switchTo(viewportRenderer, rosterSkins, 1);
 
     EXPECT_EQ(sheets.getEditing(), 1U);
     EXPECT_EQ(sheets.getSheet().pixels.front(), 9);
-    EXPECT_EQ(sheets.getSkins().at(0).pixels.front(), 42);
+    EXPECT_EQ(rosterSkins.getSheets().at(0).pixels.front(), 42);
 }
 
 TEST(CharacterSheetViewTest, SwitchTo_LeavesTheBoardAloneWhereThereIsNoSuchSkin)
@@ -127,10 +132,11 @@ TEST(CharacterSheetViewTest, SwitchTo_LeavesTheBoardAloneWhereThereIsNoSuchSkin)
     handsOutTextures(innerRenderer);
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     CharacterSheetView sheets;
+    antwika::render::CharacterSkins rosterSkins;
 
     sheets.open(viewportRenderer, sheetOf(1));
-    sheets.takeSkins(viewportRenderer, {sheetOf(7)});
-    sheets.switchTo(viewportRenderer, 4);
+    sheets.takeSkins(viewportRenderer, rosterSkins, {sheetOf(7)});
+    sheets.switchTo(viewportRenderer, rosterSkins, 4);
 
     EXPECT_EQ(sheets.getEditing(), 0U);
     EXPECT_EQ(sheets.getSheet().pixels.front(), 7);
@@ -142,10 +148,11 @@ TEST(CharacterSheetViewTest, EditFirst_GoesBackToTheHeadOfTheRoster)
     handsOutTextures(innerRenderer);
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     CharacterSheetView sheets;
+    antwika::render::CharacterSkins rosterSkins;
 
     sheets.open(viewportRenderer, sheetOf(1));
-    sheets.takeSkins(viewportRenderer, {sheetOf(7), sheetOf(9)});
-    sheets.switchTo(viewportRenderer, 1);
+    sheets.takeSkins(viewportRenderer, rosterSkins, {sheetOf(7), sheetOf(9)});
+    sheets.switchTo(viewportRenderer, rosterSkins, 1);
     sheets.editFirst();
 
     EXPECT_EQ(sheets.getEditing(), 0U);
@@ -157,17 +164,18 @@ TEST(CharacterSheetViewTest, SkinsAsDrawn_CarryTheUnkeptEditsOfTheBoard)
     handsOutTextures(innerRenderer);
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     CharacterSheetView sheets;
+    antwika::render::CharacterSkins rosterSkins;
 
     sheets.open(viewportRenderer, sheetOf(1));
-    sheets.takeSkins(viewportRenderer, {sheetOf(7), sheetOf(9)});
+    sheets.takeSkins(viewportRenderer, rosterSkins, {sheetOf(7), sheetOf(9)});
     sheets.getSheet().pixels.front() = 42;
 
-    EXPECT_EQ(sheets.getSkinsAsDrawn().at(0).pixels.front(), 42);
-    EXPECT_EQ(sheets.getSkins().at(0).pixels.front(), 7);
+    EXPECT_EQ(sheets.getSkinsAsDrawn(rosterSkins).at(0).pixels.front(), 42);
+    EXPECT_EQ(rosterSkins.getSheets().at(0).pixels.front(), 7);
 
-    sheets.keepEdits(viewportRenderer);
+    sheets.keepEdits(viewportRenderer, rosterSkins);
 
-    EXPECT_EQ(sheets.getSkins().at(0).pixels.front(), 42);
+    EXPECT_EQ(rosterSkins.getSheets().at(0).pixels.front(), 42);
 }
 
 TEST(CharacterSheetViewTest, Repaint_LaysASkinDownOverOneOfTheRoster)
@@ -176,14 +184,15 @@ TEST(CharacterSheetViewTest, Repaint_LaysASkinDownOverOneOfTheRoster)
     handsOutTextures(innerRenderer);
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     CharacterSheetView sheets;
+    antwika::render::CharacterSkins rosterSkins;
 
     sheets.open(viewportRenderer, sheetOf(1));
-    sheets.takeSkins(viewportRenderer, {sheetOf(7), sheetOf(9)});
-    sheets.repaint(viewportRenderer, 1, sheetOf(5));
-    sheets.repaint(viewportRenderer, 9, sheetOf(6));
+    sheets.takeSkins(viewportRenderer, rosterSkins, {sheetOf(7), sheetOf(9)});
+    sheets.repaint(viewportRenderer, rosterSkins, 1, sheetOf(5));
+    sheets.repaint(viewportRenderer, rosterSkins, 9, sheetOf(6));
 
-    EXPECT_EQ(sheets.getSkins().at(1).pixels.front(), 5);
-    EXPECT_EQ(sheets.getSkins().size(), 2U);
+    EXPECT_EQ(rosterSkins.getSheets().at(1).pixels.front(), 5);
+    EXPECT_EQ(rosterSkins.getSheets().size(), 2U);
 }
 
 TEST(CharacterSheetViewTest, Refresh_MakesThePictureAfreshOnlyOnceDrawnOn)
@@ -192,6 +201,7 @@ TEST(CharacterSheetViewTest, Refresh_MakesThePictureAfreshOnlyOnceDrawnOn)
     handsOutTextures(innerRenderer);
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     CharacterSheetView sheets;
+    antwika::render::CharacterSkins rosterSkins;
 
     sheets.open(viewportRenderer, sheetOf(1));
 
@@ -214,6 +224,7 @@ TEST(CharacterSheetViewTest, Draw_DrawsEveryFrameAndTheOneMarkedOut)
     handsOutTextures(innerRenderer);
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     CharacterSheetView sheets;
+    antwika::render::CharacterSkins rosterSkins;
 
     sheets.open(viewportRenderer, sheetOf(1));
     sheets.mark.selectedFrame = 3;
@@ -225,7 +236,7 @@ TEST(CharacterSheetViewTest, Draw_DrawsEveryFrameAndTheOneMarkedOut)
     EXPECT_CALL(innerRenderer, drawRect).Times(::testing::AtLeast(1));
     EXPECT_CALL(innerRenderer, drawText).Times(1);
 
-    sheets.draw(viewportRenderer);
+    sheets.drawSheet(viewportRenderer);
 }
 
 TEST(CharacterSheetViewTest, Draw_LeavesTheBlownUpFrameOutWhereNoneIsMarked)
@@ -234,6 +245,7 @@ TEST(CharacterSheetViewTest, Draw_LeavesTheBlownUpFrameOutWhereNoneIsMarked)
     handsOutTextures(innerRenderer);
     ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
     CharacterSheetView sheets;
+    antwika::render::CharacterSkins rosterSkins;
 
     sheets.open(viewportRenderer, sheetOf(1));
     sheets.mark.selectedFrame.reset();
@@ -241,5 +253,126 @@ TEST(CharacterSheetViewTest, Draw_LeavesTheBlownUpFrameOutWhereNoneIsMarked)
     EXPECT_CALL(innerRenderer, drawRect).Times(0);
     EXPECT_CALL(innerRenderer, drawText).Times(0);
 
-    sheets.draw(viewportRenderer);
+    sheets.drawSheet(viewportRenderer);
 }
+
+namespace
+{
+    class FakeEditSteps final : public antwika::editor::IEditSteps
+    {
+    public:
+        void pushUndo() override
+        {
+            ++steps;
+        }
+
+        std::size_t steps = 0;
+    };
+
+    [[nodiscard]] antwika::character::PixelSelection getPatchSelection()
+    {
+        return antwika::character::PixelSelection{
+            .fromCell = antwika::geometry::GridCell{.column = 0, .row = 0},
+            .toCell = antwika::geometry::GridCell{.column = 2, .row = 2}};
+    }
+}
+
+TEST(CharacterSheetViewTest, CommitFloatingPatch_LeavesTheSheetWithNoPatchHeld)
+{
+    NiceMock<MockRenderer> innerRenderer;
+    handsOutTextures(innerRenderer);
+    ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
+    CharacterSheetView sheets;
+    antwika::render::CharacterSkins rosterSkins;
+
+    sheets.open(viewportRenderer, sheetOf(0));
+    sheets.mark.selection = getPatchSelection();
+    sheets.mark.selectedFrame = 0;
+
+    sheets.commitFloatingPatch();
+
+    EXPECT_FALSE(sheets.mark.floatingPatchBuffer.has_value());
+}
+
+TEST(CharacterSheetViewTest, CommitFloatingPatch_LaysAHeldPatchDown)
+{
+    NiceMock<MockRenderer> innerRenderer;
+    handsOutTextures(innerRenderer);
+    ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
+    CharacterSheetView sheets;
+    antwika::render::CharacterSkins rosterSkins;
+
+    sheets.open(viewportRenderer, sheetOf(0));
+    sheets.mark.selectedFrame = 0;
+    sheets.mark.selection = getPatchSelection();
+    sheets.mark.floatingPatchBuffer = antwika::character::copiedFrom(
+        sheets.getSheet(), 0, 0, getPatchSelection());
+
+    sheets.commitFloatingPatch();
+
+    EXPECT_FALSE(sheets.mark.floatingPatchBuffer.has_value());
+}
+
+TEST(CharacterSheetViewTest, MirrorSelection_MarksAStepWhenItPaintsTheSheet)
+{
+    NiceMock<MockRenderer> innerRenderer;
+    handsOutTextures(innerRenderer);
+    ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
+    CharacterSheetView sheets;
+    antwika::render::CharacterSkins rosterSkins;
+    FakeEditSteps steps;
+
+    sheets.open(viewportRenderer, sheetOf(0));
+    sheets.mark.selectedFrame = 0;
+    sheets.mark.selection = getPatchSelection();
+
+    sheets.mirrorSelection(steps);
+
+    EXPECT_EQ(steps.steps, 1U);
+}
+
+TEST(CharacterSheetViewTest, MirrorSelection_MarksNoStepForAHeldPatch)
+{
+    NiceMock<MockRenderer> innerRenderer;
+    handsOutTextures(innerRenderer);
+    ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
+    CharacterSheetView sheets;
+    antwika::render::CharacterSkins rosterSkins;
+    FakeEditSteps steps;
+
+    sheets.open(viewportRenderer, sheetOf(0));
+    sheets.mark.selectedFrame = 0;
+    sheets.mark.selection = getPatchSelection();
+    sheets.mark.floatingPatchBuffer = antwika::character::copiedFrom(
+        sheets.getSheet(), 0, 0, getPatchSelection());
+
+    sheets.mirrorSelection(steps);
+
+    EXPECT_EQ(steps.steps, 0U);
+    EXPECT_TRUE(sheets.mark.floatingPatchBuffer.has_value());
+}
+
+TEST(CharacterSheetViewTest, MirrorSelection_MarksNoStepWithNothingSelected)
+{
+    NiceMock<MockRenderer> innerRenderer;
+    handsOutTextures(innerRenderer);
+    ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
+    CharacterSheetView sheets;
+    antwika::render::CharacterSkins rosterSkins;
+    FakeEditSteps steps;
+
+    sheets.open(viewportRenderer, sheetOf(0));
+
+    sheets.mirrorSelection(steps);
+
+    EXPECT_EQ(steps.steps, 0U);
+}
+
+TEST(CharacterSheetViewTest, Claims_NamesTheCharacterTab)
+{
+    const CharacterSheetView sheets;
+
+    EXPECT_TRUE(sheets.claims(antwika::map::View::Character, false));
+    EXPECT_FALSE(sheets.claims(antwika::map::View::Character, true));
+}
+

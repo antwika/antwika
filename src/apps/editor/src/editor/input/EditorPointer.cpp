@@ -57,18 +57,6 @@ namespace antwika::editor
             return;
         }
 
-        if (activeView == map::View::Character)
-        {
-            const auto characterCell =
-                characterAt(camera::kCanvasSize, pointer.pointerOnCanvas);
-
-            characterView.mark.hoveredWayRow =
-                characterCell.has_value()
-                    ? std::optional<std::size_t>{
-                          *characterCell / character::kCharacterFrames}
-                    : std::nullopt;
-        }
-
         if (inkPicker.pickerDragging && inkPicker.editingInk.has_value())
         {
             const auto takenColor =
@@ -84,12 +72,13 @@ namespace antwika::editor
             }
         }
 
-        if (strokeActive && selectedTile.has_value())
+        if (stroke.active && stroke.selectedTile.has_value())
         {
-            const auto editedTileValue = editedTile();
+            const auto editedTileValue = getEditedTile(
+                document.map, chosenLayer, stroke, assignMode);
             const auto pixel = tile::pixelAt(
                 editedTileValue,
-                getInspectedTileRect(frameRect(), editedTileValue),
+                getInspectedTileRect(sheetView.getFrameRect(), editedTileValue),
                 pointer.pointerOnCanvas);
 
             if (pixel.has_value())
@@ -97,87 +86,22 @@ namespace antwika::editor
                 tile::paintLine(
                     atlasSheets.sheet(editedTileValue.atlas),
                     editedTileValue,
-                    brushAtCell.value_or(*pixel),
+                    stroke.brushAtCell.value_or(*pixel),
                     *pixel,
-                    strokeErases
+                    stroke.erases
                         ? antwika::gfx::Color{.alpha = 0}
                         : document.map.paletteColors.at(inkPicker.activeInk));
-                brushAtCell = pixel;
+                stroke.brushAtCell = pixel;
                 atlasSheets.touch();
             }
         }
 
-        if ((characterView.mark.selecting || characterView.mark.draggingPatch)
-            && activeView == map::View::Character)
+        if (auto *view = viewNow(); view != nullptr)
         {
-            const auto pixel = character::characterPixelAt(
-                getCharacterCanvasRect(camera::kCanvasSize),
-                pointer.pointerOnCanvas);
-
-            if (pixel.has_value() && characterView.mark.selecting
-                && characterView.mark.selection.has_value())
-            {
-                characterView.mark.selection->toCell = *pixel;
-            }
-
-            if (pixel.has_value() && characterView.mark.draggingPatch
-                && characterView.mark.grabbedMarkSelection.has_value()
-                && characterView.mark.grabbedAtCell.has_value())
-            {
-                characterView.mark.selection = character::getMovedSelection(
-                    *characterView.mark.grabbedMarkSelection,
-                    static_cast<std::int32_t>(
-                        pixel->column)
-                        - static_cast<std::int32_t>(
-                            characterView.mark.grabbedAtCell->column),
-                    static_cast<std::int32_t>(
-                        pixel->row)
-                        - static_cast<std::int32_t>(
-                            characterView.mark.grabbedAtCell->row));
-            }
+            view->trackPointer(viewContextNow());
         }
 
-        if (strokeActive && activeView == map::View::Character
-            && characterView.mark.selectedFrame.has_value())
-        {
-            const auto pixel = character::characterPixelAt(
-                getCharacterCanvasRect(camera::kCanvasSize),
-                pointer.pointerOnCanvas);
-
-            if (pixel.has_value())
-            {
-                character::paintCharacterLine(
-                    characterView.getSheet(),
-                    *characterView.mark.selectedFrame
-                        / character::kCharacterFrames,
-                    *characterView.mark.selectedFrame
-                        % character::kCharacterFrames,
-                    brushAtCell.value_or(*pixel),
-                    *pixel,
-                    character::getCharacterPaletteColor(
-                        document.map.paletteColors,
-                        strokeErases ? character::kTransparentInk
-                                     : inkPicker.activeInk));
-                brushAtCell = pixel;
-                characterView.touch();
-            }
-        }
-
-        if (strokeActive && activeView == map::View::Icons
-            && iconsView.getPickedIndex().has_value())
-        {
-            const auto pixel = antwika::editor::iconPixelAt(
-                antwika::editor::getEditedIconRect(camera::kCanvasSize),
-                pointer.pointerOnCanvas);
-
-            if (pixel.has_value())
-            {
-                iconsView.paint(viewportRenderer, *pixel, strokeErases);
-                brushAtCell = pixel;
-            }
-        }
-
-        if (cameraRig.panning && activeView == map::View::Atlases)
+        if (cameraRig.panning && viewChoice.activeView == map::View::Atlases)
         {
             const auto was =
                 viewportRenderer.getViewport().toCanvas(
@@ -185,10 +109,10 @@ namespace antwika::editor
                         .x = pointer.lastPointerPosition.x,
                         .y = pointer.lastPointerPosition.y});
 
-            gridPanPoint = antwika::gfx::PointF{
-                gridPanPoint.x + pointer.pointerOnCanvas.x
+            sheetView.panPoint = antwika::gfx::PointF{
+                sheetView.panPoint.x + pointer.pointerOnCanvas.x
                     - static_cast<float>(was.x),
-                gridPanPoint.y + pointer.pointerOnCanvas.y
+                sheetView.panPoint.y + pointer.pointerOnCanvas.y
                     - static_cast<float>(was.y)};
             pointer.lastPointerPosition = movedEvent.position;
         }
@@ -197,16 +121,16 @@ namespace antwika::editor
             const auto hit = voxelmap::getPlaneHit(
                 voxelmap::getRayInModelSpace(
                     voxelmap::getRayThrough(
-                        worldCamera(),
+                        getWorldCamera(play, cameraRig),
                         camera::kCanvasSize,
                         pointer.pointerOnCanvas),
-                    worldRotation()),
+                    getWorldRotation(play)),
                 cameraRig.panGripPosition->y);
 
             if (hit.has_value())
             {
                 cameraRig.view.transform.position += antwika::gfx::Vec3{
-                    worldRotation()
+                    getWorldRotation(play)
                     * antwika::gfx::Vec4{
                         *cameraRig.panGripPosition - *hit, 0.0F}};
             }
@@ -231,57 +155,38 @@ namespace antwika::editor
 
         carryLamp();
 
-        if (dragPaintButton.has_value() && !shapeFromPosition.has_value()
-            && activeView == map::View::World)
+        if (worldView.worldPaint.dragButton.has_value()
+            && !worldView.worldPaint.shapeFromPosition.has_value()
+            && isWorldShown())
         {
             const auto cell = voxelmap::getCellUnder(
-                worldCamera(),
-                worldRotation(),
+                getWorldCamera(play, cameraRig),
+                getWorldRotation(play),
                 camera::kCanvasSize,
                 pointer.pointerOnCanvas,
-                antwika::voxel::getCubeTop(editLevel));
+                antwika::voxel::getCubeTop(worldView.worldEdit.editLevel));
 
-            if (cell.has_value() && cell != lastPaintedPosition)
+            if (cell.has_value() && cell != worldView.worldPaint.lastPaintedPosition)
             {
                 document.map.voxels = voxel::getWithRampsRebuilt(
-                    settings.tool == map::Tool::Eraser
+                    preferences.tool == map::Tool::Eraser
                           ? voxel::withoutBlockAt(
                               document.map.voxels, *cell)
                         : voxel::withBlockAt(
                               document.map.voxels,
                               *cell,
-                              settings.kind,
+                              preferences.kind,
                               rampFacing),
                     *cell);
-                lastPaintedPosition = cell;
-                remeshPending = true;
+                worldView.worldPaint.lastPaintedPosition = cell;
+                remesh.pending = true;
             }
         }
 
-        if (cameraRig.orbitFromPosition.has_value()
-            && activeView == map::View::World)
+        if (isWorldShown())
         {
-            if (!cameraRig.orbiting
-                && std::abs(
-                       movedEvent.position.x - cameraRig.orbitFromPosition->x)
-                           + std::abs(
-                               movedEvent.position.y
-                               - cameraRig.orbitFromPosition->y)
-                       > 4)
-            {
-                cameraRig.orbiting = true;
-            }
-
-            if (cameraRig.orbiting)
-            {
-                orbitCamera(
-                    static_cast<float>(
-                        movedEvent.position.x - pointer.lastPointerPosition.x)
-                        * camera::kMouseTurn,
-                    static_cast<float>(
-                        pointer.lastPointerPosition.y - movedEvent.position.y)
-                        * camera::kMouseTurn);
-            }
+            cameraRig.dragOrbit(
+                movedEvent.position, pointer.lastPointerPosition);
         }
 
         if (cameraRig.freeLook)
@@ -313,7 +218,7 @@ namespace antwika::editor
         if (upReleased.button == input::MouseButton::Right
             && cameraRig.orbitFromPosition.has_value())
         {
-            if (!cameraRig.orbiting && activeView == map::View::World
+            if (!cameraRig.orbiting && isWorldShown()
                 && !play.playing)
             {
                 rightTaken(upReleased.position);
@@ -350,50 +255,51 @@ namespace antwika::editor
         }
 
         if (upReleased.button == input::MouseButton::Left
-            || (strokeErases
+            || (stroke.erases
                 && upReleased.button
                        == input::MouseButton::Right))
         {
-            strokeActive = false;
-            strokeErases = false;
+            stroke.active = false;
+            stroke.erases = false;
             inkPicker.pickerDragging = false;
-            brushAtCell.reset();
+            stroke.brushAtCell.reset();
         }
 
         finishShape(upReleased.button);
         finishStamp(upReleased.button);
 
-        if (draggedLamp.has_value()
+        if (worldView.worldPaint.draggedLamp.has_value()
             && upReleased.button == input::MouseButton::Left)
         {
-            draggedLamp.reset();
+            worldView.worldPaint.draggedLamp.reset();
         }
 
-        if (dragPaintButton.has_value()
-            && upReleased.button == *dragPaintButton)
+        if (worldView.worldPaint.dragButton.has_value()
+            && upReleased.button == *worldView.worldPaint.dragButton)
         {
-            dragPaintButton.reset();
-            lastPaintedPosition.reset();
+            worldView.worldPaint.dragButton.reset();
+            worldView.worldPaint.lastPaintedPosition.reset();
         }
 
         if (upReleased.button == input::MouseButton::Left
-            && lineFromCell.has_value()
-            && selectedTile.has_value())
+            && stroke.lineFromCell.has_value()
+            && stroke.selectedTile.has_value())
         {
             const auto projectToScreen =
                 viewportRenderer.getViewport().toCanvas(
                     antwika::gfx::Point{
                         .x = upReleased.position.x,
                         .y = upReleased.position.y});
-            const auto editedTileValue = editedTile();
+            const auto editedTileValue = getEditedTile(
+                document.map, chosenLayer, stroke, assignMode);
             const auto pixel = tile::pixelAt(
                 editedTileValue,
-                getInspectedTileRect(frameRect(), editedTileValue),
+                getInspectedTileRect(sheetView.getFrameRect(), editedTileValue),
                 antwika::gfx::PointF{
                     static_cast<float>(projectToScreen.x),
                     static_cast<float>(projectToScreen.y)});
 
-            if (pixel.has_value() && !blockedAsTransitionSlot())
+            if (pixel.has_value() && !atlasView.blockedAsTransitionSlot(viewContextNow()))
             {
                 auto &sheet =
                     atlasSheets.sheet(editedTileValue.atlas);
@@ -402,22 +308,22 @@ namespace antwika::editor
 
                 pushUndo();
 
-                if (settings.paint == map::Paint::Rect)
+                if (preferences.paint == map::Paint::Rect)
                 {
                     tile::paintPixels(
                         sheet,
                         editedTileValue,
                         tile::getRectPixels(
-                            *lineFromCell, *pixel),
+                            *stroke.lineFromCell, *pixel),
                         ink);
                 }
-                else if (settings.paint == map::Paint::Circle)
+                else if (preferences.paint == map::Paint::Circle)
                 {
                     tile::paintPixels(
                         sheet,
                         editedTileValue,
                         tile::getCirclePixels(
-                            *lineFromCell, *pixel),
+                            *stroke.lineFromCell, *pixel),
                         ink);
                 }
                 else
@@ -425,7 +331,7 @@ namespace antwika::editor
                     tile::paintLine(
                         sheet,
                         editedTileValue,
-                        *lineFromCell,
+                        *stroke.lineFromCell,
                         *pixel,
                         ink);
                 }
@@ -433,37 +339,37 @@ namespace antwika::editor
                 atlasSheets.touch();
             }
 
-            lineFromCell.reset();
+            stroke.lineFromCell.reset();
         }
 
         if (upReleased.button == input::MouseButton::Left
-            && activeView == map::View::World)
+            && isWorldShown())
         {
-            if (doubleClickAtPoint.has_value())
+            if (stroke.doubleClickAtPoint.has_value())
             {
                 const auto pickedFace = voxelmap::getTilePicked(
                     visibleCells(),
                     worldMeshes.getFaces(),
                     worldMeshes.getDrawnAs(),
-                    worldCamera(),
-                    worldRotation(),
+                    getWorldCamera(play, cameraRig),
+                    getWorldRotation(play),
                     camera::kCanvasSize,
-                    *doubleClickAtPoint);
+                    *stroke.doubleClickAtPoint);
 
                 if (pickedFace.has_value())
                 {
-                    selectedTile = pickedFace;
-                    selectedEdges.reset();
-                    dragFromCell.reset();
-                    dragFromPoint.reset();
-                    activeView = map::View::Atlases;
+                    stroke.selectedTile = pickedFace;
+                    stroke.selectedEdges.reset();
+                    stroke.dragFromCell.reset();
+                    stroke.dragFromPoint.reset();
+                    viewChoice.activeView = map::View::Atlases;
                 }
 
-                doubleClickAtPoint.reset();
+                stroke.doubleClickAtPoint.reset();
             }
         }
         else if (upReleased.button == input::MouseButton::Left
-                 && activeView == map::View::Atlases)
+                 && viewChoice.activeView == map::View::Atlases)
         {
             const auto projectToScreen =
                 viewportRenderer.getViewport().toCanvas(
@@ -475,13 +381,13 @@ namespace antwika::editor
                 static_cast<float>(projectToScreen.y)};
             const auto gesture = gestureFrom(
                 document.map.tilemap,
-                frameRect(),
-                gridRect(),
-                sheetClipRect(),
-                dragFromPoint,
+                sheetView.getFrameRect(),
+                sheetView.getGridRect(document.map.tilemap),
+                sheetView.getClipRect(),
+                stroke.dragFromPoint,
                 releasedAtPoint,
-                selectedTile.has_value(),
-                selectedEdges);
+                stroke.selectedTile.has_value(),
+                stroke.selectedEdges);
 
             switch (gesture.action)
             {
@@ -530,7 +436,7 @@ namespace antwika::editor
 
                 if (tile.has_value())
                 {
-                    selectedTile = tile;
+                    stroke.selectedTile = tile;
                 }
 
                 break;
@@ -544,15 +450,15 @@ namespace antwika::editor
                     && !blockedAsVariant())
                 {
                     const auto forbidden =
-                        !selectionAllows(*tile);
+                        !stroke.allows(getActiveRules(document.map, chosenLayer), *tile);
 
                     pushUndo();
 
                     for (const auto edge :
-                         edgesIn(*selectedEdges))
+                         edgesIn(*stroke.selectedEdges))
                     {
-                        activeRules().setAllows(
-                            *selectedTile,
+                        getActiveRules(document.map, chosenLayer).setAllows(
+                            *stroke.selectedTile,
                             edge,
                             *tile,
                             forbidden);
@@ -570,12 +476,12 @@ namespace antwika::editor
                     break;
                 }
 
-                const auto cornerState = activeRules().getCorner(
-                    *selectedTile, gesture.corner);
+                const auto cornerState = getActiveRules(document.map, chosenLayer).getCorner(
+                    *stroke.selectedTile, gesture.corner);
 
                 pushUndo();
-                activeRules().setCorner(
-                    *selectedTile,
+                getActiveRules(document.map, chosenLayer).setCorner(
+                    *stroke.selectedTile,
                     gesture.corner,
                     !cornerState.has_value()
                         ? std::optional{true}
@@ -584,8 +490,8 @@ namespace antwika::editor
                 break;
             }
             case PointerAction::PixelSelection:
-                selectedEdges =
-                    selectedEdges == gesture.selection
+                stroke.selectedEdges =
+                    stroke.selectedEdges == gesture.selection
                                    ? std::nullopt
                                    : std::optional{gesture.selection};
                 break;
@@ -593,8 +499,8 @@ namespace antwika::editor
                 break;
             }
 
-            dragFromCell.reset();
-            dragFromPoint.reset();
+            stroke.dragFromCell.reset();
+            stroke.dragFromPoint.reset();
         }
 
         return;

@@ -158,7 +158,7 @@ TEST(IconsViewTest, Draw_DrawsEveryIconAndTheOneTakenUp)
         .Times(::testing::AtLeast(
             static_cast<int>(kIconCellSize.width * kIconCellSize.height)));
 
-    icons.draw(viewportRenderer);
+    icons.drawSheet(viewportRenderer);
 }
 
 TEST(IconsViewTest, Draw_LeavesTheBlownUpIconOutWhereNoneIsTakenUp)
@@ -173,5 +173,5 @@ TEST(IconsViewTest, Draw_LeavesTheBlownUpIconOutWhereNoneIsTakenUp)
 
     EXPECT_CALL(innerRenderer, drawRect).Times(0);
 
-    icons.draw(viewportRenderer);
+    icons.drawSheet(viewportRenderer);
 }
