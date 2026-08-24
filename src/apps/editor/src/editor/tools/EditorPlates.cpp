@@ -26,7 +26,7 @@ namespace antwika::editor
                         std::next(
                             document.map.plates.begin(),
                             static_cast<std::ptrdiff_t>(index)));
-                    platePicked.reset();
+                    worldView.plateTool.chosenIndex.reset();
 
                     return;
                 }
@@ -41,17 +41,17 @@ namespace antwika::editor
                         index).position)
                 == corner)
             {
-                platePicked = index;
+                worldView.plateTool.chosenIndex = index;
 
                 return;
             }
         }
 
-        if (platePicked.has_value()
-            && *platePicked < document.map.plates.size())
+        if (worldView.plateTool.chosenIndex.has_value()
+            && *worldView.plateTool.chosenIndex < document.map.plates.size())
         {
             auto &sways =
-                document.map.plates.at(*platePicked).togglePositions;
+                document.map.plates.at(*worldView.plateTool.chosenIndex).togglePositions;
             const auto foundSway = std::find_if(
                 sways.begin(),
                 sways.end(),
@@ -77,20 +77,20 @@ namespace antwika::editor
 
         pushUndo();
         document.map.plates.push_back(map::PressurePlate{.position = position});
-        platePicked = document.map.plates.size() - 1;
+        worldView.plateTool.chosenIndex = document.map.plates.size() - 1;
     }
 
     void Editor::onSteppedPlates(const voxel::VoxelPosition standsOnPosition)
     {
         const auto corner = antwika::voxel::cubeCornerOf(standsOnPosition);
 
-        if (lastPlateStoodOnPosition.has_value(
-            ) && *lastPlateStoodOnPosition == corner)
+        if (worldView.plateTool.lastStoodOnPosition.has_value(
+            ) && *worldView.plateTool.lastStoodOnPosition == corner)
         {
             return;
         }
 
-        lastPlateStoodOnPosition = corner;
+        worldView.plateTool.lastStoodOnPosition = corner;
 
         for (const auto &plate : document.map.plates)
         {

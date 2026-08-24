@@ -25,7 +25,7 @@ namespace antwika::editor
 
             if (downPressed.button == input::MouseButton::Middle)
             {
-                turningPlayer = activeView == map::View::World;
+                turningPlayer = true;
                 pointer.lastPointerPosition = downPressed.position;
             }
 
@@ -108,7 +108,7 @@ namespace antwika::editor
         }
 
         if (dialogs.fileDialog.has_value() || dialogs.quitConfirmOpen
-            || keysOpen)
+            || keyBench.panelShown)
         {
             return;
         }
@@ -119,7 +119,7 @@ namespace antwika::editor
             pointer.lastPointerPosition = downPressed.position;
             cameraRig.panGripPosition.reset();
 
-            if (activeView == map::View::World && !play.playing)
+            if (isWorldShown() && !play.playing)
             {
                 const auto projectToScreen =
                     viewportRenderer.getViewport().toCanvas(
@@ -130,16 +130,16 @@ namespace antwika::editor
                 cameraRig.panGripPosition = voxelmap::getPlaneHit(
                     voxelmap::getRayInModelSpace(
                         voxelmap::getRayThrough(
-                            worldCamera(),
+                            getWorldCamera(play, cameraRig),
                             camera::kCanvasSize,
                             antwika::gfx::PointF{
                                 static_cast<float>(
                                     projectToScreen.x),
                                 static_cast<float>(
                                     projectToScreen.y)}),
-                        worldRotation()),
+                        getWorldRotation(play)),
                     static_cast<float>(
-                        antwika::voxel::getCubeTop(editLevel)));
+                        antwika::voxel::getCubeTop(worldView.worldEdit.editLevel)));
             }
         }
 
@@ -148,7 +148,7 @@ namespace antwika::editor
             return;
         }
 
-        if (activeView == map::View::World
+        if (isWorldShown()
             && downPressed.button == input::MouseButton::Right)
         {
             cameraRig.orbitFromPosition = downPressed.position;
@@ -157,7 +157,7 @@ namespace antwika::editor
             return;
         }
 
-        if (activeView == map::View::World
+        if (isWorldShown()
             && downPressed.button == input::MouseButton::Left)
         {
             const auto projectToScreen =
@@ -171,42 +171,42 @@ namespace antwika::editor
 
             if (downPressed.button == input::MouseButton::Left
                 && (getHeldModifiers().shift
-                    || settings.tool == map::Tool::Picker))
+                    || preferences.tool == map::Tool::Picker))
             {
                 const auto pickedFace = voxelmap::getTilePicked(
                     visibleCells(),
                     worldMeshes.getFaces(),
                     worldMeshes.getDrawnAs(),
-                    worldCamera(),
-                    worldRotation(),
+                    getWorldCamera(play, cameraRig),
+                    getWorldRotation(play),
                     camera::kCanvasSize,
                     point);
 
                 if (pickedFace.has_value())
                 {
-                    selectedTile = pickedFace;
-                    selectedEdges.reset();
-                    dragFromCell.reset();
-                    dragFromPoint.reset();
-                    activeView = map::View::Atlases;
+                    stroke.selectedTile = pickedFace;
+                    stroke.selectedEdges.reset();
+                    stroke.dragFromCell.reset();
+                    stroke.dragFromPoint.reset();
+                    viewChoice.activeView = map::View::Atlases;
                 }
 
                 return;
             }
 
             const auto cell = voxelmap::getCellUnder(
-                worldCamera(),
-                worldRotation(),
+                getWorldCamera(play, cameraRig),
+                getWorldRotation(play),
                 camera::kCanvasSize,
                 point,
-                antwika::voxel::getCubeTop(editLevel));
+                antwika::voxel::getCubeTop(worldView.worldEdit.editLevel));
 
             if (!cell.has_value())
             {
                 return;
             }
 
-            switch (placementOf(settings.tool))
+            switch (placementOf(preferences.tool))
             {
             case ToolPlacement::Lamp:
                 if (downPressed.button == input::MouseButton::Left
@@ -267,17 +267,17 @@ namespace antwika::editor
             pushUndo();
 
             document.map.voxels = voxel::getWithRampsRebuilt(
-                settings.tool == map::Tool::Eraser
+                preferences.tool == map::Tool::Eraser
                       ? voxel::withoutBlockAt(
                           document.map.voxels, *cell)
                     : voxel::withBlockAt(
                           document.map.voxels,
                           *cell,
-                          settings.kind,
+                          preferences.kind,
                           rampFacing),
                 *cell);
-            dragPaintButton = downPressed.button;
-            lastPaintedPosition = cell;
+            worldView.worldPaint.dragButton = downPressed.button;
+            worldView.worldPaint.lastPaintedPosition = cell;
             rebuildWorld();
 
             return;
@@ -291,20 +291,20 @@ namespace antwika::editor
         const auto projectToScreen = viewportRenderer.getViewport().toCanvas(
             antwika::gfx::Point{.x = position.x, .y = position.y});
         const auto cell = voxelmap::getCellUnder(
-            worldCamera(),
-            worldRotation(),
+            getWorldCamera(play, cameraRig),
+            getWorldRotation(play),
             camera::kCanvasSize,
             antwika::gfx::PointF{
                 static_cast<float>(projectToScreen.x),
                 static_cast<float>(projectToScreen.y)},
-            antwika::voxel::getCubeTop(editLevel));
+            antwika::voxel::getCubeTop(worldView.worldEdit.editLevel));
 
         if (!cell.has_value())
         {
             return;
         }
 
-        switch (placementOf(settings.tool))
+        switch (placementOf(preferences.tool))
         {
         case ToolPlacement::Lamp:
             pushUndo();

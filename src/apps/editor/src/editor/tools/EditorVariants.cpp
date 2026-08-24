@@ -33,9 +33,9 @@ namespace antwika::editor
 
     bool Editor::blockedAsVariant()
     {
-        if (isDecorLayer() || !selectedTile.has_value()
+        if (isDecorLayer(chosenLayer) || !stroke.selectedTile.has_value()
             || getGroupContaining(document.map.familyGroups,
-                *selectedTile) == nullptr)
+                *stroke.selectedTile) == nullptr)
         {
             return false;
         }
@@ -47,7 +47,7 @@ namespace antwika::editor
 
     void Editor::pickedVariant(const tilemap::Tile tile)
     {
-        const auto canonicalTile = *selectedTile;
+        const auto canonicalTile = *stroke.selectedTile;
         const auto *family = getGroupContaining(document.map.familyGroups, tile);
         const auto mine =
             family != nullptr && family->canonicalTile == canonicalTile;
@@ -91,10 +91,10 @@ namespace antwika::editor
 
         if (interactions.activatedWidget
                 == decor::kGoToCanonicalWidget
-            && selectedTile.has_value())
+            && stroke.selectedTile.has_value())
         {
-            selectedTile = canonicalTileOf(document.map.familyGroups,
-                *selectedTile);
+            stroke.selectedTile = canonicalTileOf(document.map.familyGroups,
+                *stroke.selectedTile);
             assignMode.variantPicking = false;
             consumedKey = true;
         }
@@ -104,14 +104,8 @@ namespace antwika::editor
 
     void Editor::layoutVariantRail(ui::Context &context)
     {
-        if (activeView != map::View::Atlases || !selectedTile.has_value()
-            || isDecorLayer())
-        {
-            return;
-        }
-
         const auto *family =
-            getGroupContaining(document.map.familyGroups, *selectedTile);
+            getGroupContaining(document.map.familyGroups, *stroke.selectedTile);
         const auto variantsPanel = context.column(
             antwika::ui::ContainerSpec{
                 .widthSizing = antwika::ui::kGrowSizing,
@@ -138,17 +132,17 @@ namespace antwika::editor
         }
 
         if (family != nullptr
-            || getGroupLedBy(document.map.familyGroups, *selectedTile) != nullptr)
+            || getGroupLedBy(document.map.familyGroups, *stroke.selectedTile) != nullptr)
         {
             context.label(
                 "weight "
                     + std::to_string(
-                        variantWeightOf(*selectedTile)),
+                        variantWeightOf(*stroke.selectedTile)),
                 kTextColor);
             context.slider(
                 antwika::ui::SliderSpec{
                     .widgetId = decor::kVariantWeightWidget,
-                    .value = variantWeightOf(*selectedTile),
+                    .value = variantWeightOf(*stroke.selectedTile),
                     .range = decor::kFullFrequency,
                     .dragging =
                         slidingWidget

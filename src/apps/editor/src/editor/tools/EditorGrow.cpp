@@ -29,21 +29,21 @@ namespace antwika::editor
     void Editor::growChunk()
     {
         const worldgen::ChunkRequest request{
-            .seed = growSeed++,
-            .shape = growShape,
+            .seed = worldView.grow.seed++,
+            .shape = worldView.grow.shape,
             .originPosition = voxel::VoxelPosition{},
-            .hintVoxels = solver::hintsFrom(document.map.voxels, growShape,
+            .hintVoxels = solver::hintsFrom(document.map.voxels, worldView.grow.shape,
                 voxel::VoxelPosition{})};
 
         const auto result = worldgen::getGrowChunk(getShippedRules(), request);
 
-        growTroublePositions.clear();
+        worldView.grow.troublePositions.clear();
 
         if (result.outcome != worldgen::ChunkOutcome::Grown)
         {
             for (const voxel::VoxelPosition cube : result.culpritPositions)
             {
-                growTroublePositions.push_back(
+                worldView.grow.troublePositions.push_back(
                     voxel::VoxelPosition{
                         .x = cube.x * voxel::kCubeSide,
                         .y = cube.y * voxel::kCubeSide,

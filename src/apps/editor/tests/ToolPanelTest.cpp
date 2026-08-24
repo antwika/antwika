@@ -77,7 +77,7 @@ namespace
             check(iconOf(which));
         }
 
-        EXPECT_EQ(lefts.size(), 33U);
+        EXPECT_EQ(lefts.size(), 32U);
     }
 
     TEST(ToolPanelTest, IconOf_LaysTheCellsInOneRunWithNoGaps)
@@ -148,7 +148,7 @@ namespace
             EXPECT_TRUE(seenWidgets.insert(getLevelWidget(which)).second);
         }
 
-        EXPECT_EQ(seenWidgets.size(), 33U);
+        EXPECT_EQ(seenWidgets.size(), 32U);
         EXPECT_FALSE(seenWidgets.contains(antwika::widget::kNoWidget));
         EXPECT_FALSE(
             seenWidgets.contains(antwika::editor::kToolPanelWidget));

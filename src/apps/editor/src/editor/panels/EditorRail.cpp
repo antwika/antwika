@@ -2,6 +2,7 @@
 #include <antwika/decor/Decor.hpp>
 #include <antwika/editor/ui/AtlasView.hpp>
 #include <antwika/editor/ui/EditorLook.hpp>
+#include <antwika/editor/ui/LayerWidgets.hpp>
 #include <antwika/light/PointLight.hpp>
 #include <antwika/map/Layers.hpp>
 #include <antwika/tilemap/Tilemap.hpp>
@@ -15,20 +16,20 @@ namespace antwika::editor
     void Editor::layoutSidebar(ui::Context &context)
     {
         const auto showPalette =
-            activeView == map::View::Atlases
-            || activeView == map::View::Character
-            || (activeView == map::View::World
-                && settings.tool == map::Tool::Lamp);
-        const auto showLayers = activeView == map::View::Atlases;
+            viewChoice.activeView == map::View::Atlases
+            || viewChoice.activeView == map::View::Character
+            || (isWorldShown()
+                && preferences.tool == map::Tool::Lamp);
+        const auto showLayers = viewChoice.activeView == map::View::Atlases;
         const auto showExitPanel =
-            settings.tool == map::Tool::Exit && activeView == map::View::World;
+            preferences.tool == map::Tool::Exit && isWorldShown();
         const auto showFigures =
-            settings.tool == map::Tool::Figure
-            && activeView == map::View::World;
+            preferences.tool == map::Tool::Figure
+            && isWorldShown();
 
         if (showPalette || showLayers || showExitPanel || showFigures)
         {
-            if (activeView != map::View::Atlases)
+            if (viewChoice.activeView != map::View::Atlases)
             {
                 context.spacer(antwika::ui::kGrowSizing);
             }
@@ -169,7 +170,7 @@ namespace antwika::editor
 
             layoutFigureChooser(context);
 
-            if (activeView == map::View::Character)
+            if (viewChoice.activeView == map::View::Character)
             {
                 const auto walking = context.column(
                     antwika::ui::ContainerSpec{
@@ -227,13 +228,11 @@ namespace antwika::editor
                     context.button(
                         "+",
                         antwika::ui::ButtonSpec{
-                            .widgetId = map::
-                                kAddLayerWidget});
+                            .widgetId = kAddLayerWidget});
                     context.button(
                         "x",
                         antwika::ui::ButtonSpec{
-                            .widgetId = map::
-                                kRemoveLayerWidget});
+                            .widgetId = kRemoveLayerWidget});
                 }
 
                 for (std::size_t layerIndex = 0;
@@ -246,7 +245,7 @@ namespace antwika::editor
                     context.button(
                         map::getLayerLabel(reversedIndex),
                         antwika::ui::ButtonSpec{
-                            .widgetId = map::getLayerWidget(reversedIndex),
+                            .widgetId = getLayerWidget(reversedIndex),
                             .widthSizing = antwika::ui::kGrowSizing,
                             .fillColor = reversedIndex == chosenLayer
                                        ? kSelectionAccentColor
@@ -259,11 +258,15 @@ namespace antwika::editor
                 layoutDecorRail(context);
             }
 
-            layoutVariantRail(context);
-            layoutFlipRail(context);
-            layoutTransitionRail(context);
+            if (showLayers && stroke.selectedTile.has_value()
+                && !isDecorLayer(chosenLayer))
+            {
+                layoutVariantRail(context);
+                layoutFlipRail(context);
+                layoutTransitionRail(context);
+            }
 
-            if (showLayers && selectedTile.has_value())
+            if (showLayers && stroke.selectedTile.has_value())
             {
                 const auto tilePanel = context.column(
                     antwika::ui::ContainerSpec{
@@ -295,10 +298,10 @@ namespace antwika::editor
                         antwika::ui::CheckboxSpec{
                             .widgetId = decor::
                                 kAutoPreviewWidget,
-                            .checked = previewAuto});
+                            .checked = preview.automatic});
                 }
 
-                if (previewTiles.has_value())
+                if (preview.tiles.has_value())
                 {
                     for (std::size_t row = 0; row < 3;
                          ++row)
@@ -313,7 +316,7 @@ namespace antwika::editor
                              ++column)
                         {
                             const auto previewTile =
-                                previewTiles->at(
+                                preview.tiles->at(
                                     (row * 3) + column);
 
                             if (!previewTile.has_value())

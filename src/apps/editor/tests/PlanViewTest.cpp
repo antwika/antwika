@@ -47,17 +47,12 @@ namespace
             .string();
     }
 
-    [[nodiscard]] PlanView getEmptyBoard(const std::string &name)
+    void openEmptyBoard(PlanView &view, const std::string &name)
     {
         const auto path = getBoardPath(name);
 
         std::filesystem::remove(path);
-
-        PlanView view;
-
         view.open(path);
-
-        return view;
     }
 
     [[nodiscard]] Interactions getPressOn(
@@ -78,7 +73,8 @@ namespace
 
 TEST(PlanViewTest, Open_ReadsAnEmptyBoardWhereThePathHoldsNone)
 {
-    const auto view = getEmptyBoard("open");
+    PlanView view;
+    openEmptyBoard(view, "open");
 
     for (const auto which : antwika::editor::kEveryColumn)
     {
@@ -92,7 +88,8 @@ TEST(PlanViewTest, Open_ReadsAnEmptyBoardWhereThePathHoldsNone)
 
 TEST(PlanViewTest, HandleWidgets_AddsACardAndPicksItToBeWrittenIn)
 {
-    auto view = getEmptyBoard("add");
+    PlanView view;
+    openEmptyBoard(view, "add");
     auto focusedField = FocusedField::Nothing;
     std::optional<std::string> notice;
 
@@ -111,7 +108,8 @@ TEST(PlanViewTest, HandleWidgets_AddsACardAndPicksItToBeWrittenIn)
 
 TEST(PlanViewTest, HandleWidgets_LeavesAPressOnNothingOfItsOwnAlone)
 {
-    auto view = getEmptyBoard("stranger");
+    PlanView view;
+    openEmptyBoard(view, "stranger");
     auto focusedField = FocusedField::Nothing;
     std::optional<std::string> notice;
 
@@ -125,7 +123,8 @@ TEST(PlanViewTest, HandleWidgets_LeavesAPressOnNothingOfItsOwnAlone)
 
 TEST(PlanViewTest, HandleWidgets_TakesUpACardOfTheBoard)
 {
-    auto view = getEmptyBoard("pick");
+    PlanView view;
+    openEmptyBoard(view, "pick");
     auto focusedField = FocusedField::Nothing;
     std::optional<std::string> notice;
 
@@ -143,7 +142,8 @@ TEST(PlanViewTest, HandleWidgets_TakesUpACardOfTheBoard)
 
 TEST(PlanViewTest, HandleWidgets_LeavesACardThatIsNotThereAlone)
 {
-    auto view = getEmptyBoard("missing");
+    PlanView view;
+    openEmptyBoard(view, "missing");
     auto focusedField = FocusedField::Nothing;
     std::optional<std::string> notice;
 
@@ -156,7 +156,8 @@ TEST(PlanViewTest, HandleWidgets_LeavesACardThatIsNotThereAlone)
 
 TEST(PlanViewTest, HandleWidgets_FocusesTheTitleAndTheBodyOfAPickedCard)
 {
-    auto view = getEmptyBoard("focus");
+    PlanView view;
+    openEmptyBoard(view, "focus");
     auto focusedField = FocusedField::Nothing;
     std::optional<std::string> notice;
 
@@ -174,7 +175,8 @@ TEST(PlanViewTest, HandleWidgets_FocusesTheTitleAndTheBodyOfAPickedCard)
 
 TEST(PlanViewTest, HandleWidgets_DeletesThePickedCard)
 {
-    auto view = getEmptyBoard("delete");
+    PlanView view;
+    openEmptyBoard(view, "delete");
     auto focusedField = FocusedField::Nothing;
     std::optional<std::string> notice;
 
@@ -190,7 +192,8 @@ TEST(PlanViewTest, HandleWidgets_DeletesThePickedCard)
 
 TEST(PlanViewTest, CarryEdits_WritesWhatWasTypedIntoThePickedCard)
 {
-    auto view = getEmptyBoard("edits");
+    PlanView view;
+    openEmptyBoard(view, "edits");
     auto focusedField = FocusedField::Nothing;
     std::optional<std::string> notice;
 
@@ -214,7 +217,8 @@ TEST(PlanViewTest, CarryEdits_WritesWhatWasTypedIntoThePickedCard)
 
 TEST(PlanViewTest, CarryEdits_LeavesTheBoardAloneWithNoCardPicked)
 {
-    auto view = getEmptyBoard("noedits");
+    PlanView view;
+    openEmptyBoard(view, "noedits");
     auto focusedField = FocusedField::Nothing;
     Frame typedFrame;
 
@@ -227,7 +231,8 @@ TEST(PlanViewTest, CarryEdits_LeavesTheBoardAloneWithNoCardPicked)
 
 TEST(PlanViewTest, DraggedTo_TellsACarryFromAClick)
 {
-    auto view = getEmptyBoard("drag");
+    PlanView view;
+    openEmptyBoard(view, "drag");
     auto focusedField = FocusedField::Nothing;
     std::optional<std::string> notice;
 
@@ -252,7 +257,8 @@ TEST(PlanViewTest, DraggedTo_TellsACarryFromAClick)
 
 TEST(PlanViewTest, LetGo_LeavesTheCardWhereItWasWithNowhereToLandIt)
 {
-    auto view = getEmptyBoard("letgo");
+    PlanView view;
+    openEmptyBoard(view, "letgo");
     auto focusedField = FocusedField::Nothing;
     std::optional<std::string> notice;
 
@@ -274,7 +280,8 @@ TEST(PlanViewTest, LetGo_LeavesTheCardWhereItWasWithNowhereToLandIt)
 
 TEST(PlanViewTest, EndDrag_LetsGoOfWhateverWasBeingCarried)
 {
-    auto view = getEmptyBoard("enddrag");
+    PlanView view;
+    openEmptyBoard(view, "enddrag");
 
     view.carry(
         PlanDrag{
@@ -294,7 +301,8 @@ TEST(PlanViewTest, EndDrag_LetsGoOfWhateverWasBeingCarried)
 
 TEST(PlanViewTest, Layout_LaysEveryColumnOutAndSaysHowWideTheyCame)
 {
-    auto view = getEmptyBoard("layout");
+    PlanView view;
+    openEmptyBoard(view, "layout");
     auto focusedField = FocusedField::Nothing;
     std::optional<std::string> notice;
 
@@ -314,7 +322,8 @@ TEST(PlanViewTest, Layout_LaysEveryColumnOutAndSaysHowWideTheyCame)
 
 TEST(PlanViewTest, Save_WritesTheBoardBackAndOnlyWhereItChanged)
 {
-    auto view = getEmptyBoard("save");
+    PlanView view;
+    openEmptyBoard(view, "save");
     auto focusedField = FocusedField::Nothing;
     std::optional<std::string> notice;
 

@@ -2,6 +2,7 @@ antwika_add_app_tests(
     APP editor
     TESTS
         AtlasViewTest.cpp
+        CameraRigTest.cpp
         CharacterSheetViewTest.cpp
         CharacterTest.cpp
         ColorPickerTest.cpp
@@ -11,14 +12,20 @@ antwika_add_app_tests(
         GameModuleTest.cpp
         IconSheetTest.cpp
         IconsViewTest.cpp
+        KeyBenchTest.cpp
+        LayerEditTest.cpp
         LayersTest.cpp
         MapPickerTest.cpp
         MenuBarTest.cpp
         PlanBoardTest.cpp
         PlanFileTest.cpp
         PlanViewTest.cpp
+        ShapedCubesTest.cpp
+        SheetStrokeTest.cpp
+        SheetViewTest.cpp
         TilemapViewTest.cpp
         ToolPanelTest.cpp
+        ViewPaintTest.cpp
     LIBS
         antwika::animation
         antwika::app

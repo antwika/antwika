@@ -34,14 +34,21 @@ namespace antwika::editor
         drawColorPicker();
 
         viewportRenderer.fillLetterbox(gfx::Color{});
-        antwika::ui::paint(viewportRenderer.nativeRenderer(), frame.drawList);
-        if (activeView == map::View::Plan)
+
+        if (!play.playing)
         {
-            plan.drawGhost(viewportRenderer, pointer.pointerInWindow);
+            antwika::ui::paint(
+                viewportRenderer.nativeRenderer(), frame.drawList);
+
+            if (auto *view = viewNow(); view != nullptr)
+            {
+                view->drawOverlay(viewContextNow());
+            }
+
+            drawToolHint(frame);
+            drawCanvasHint();
         }
 
-        drawToolHint(frame);
-        drawCanvasHint();
         viewportRenderer.present();
 
         recordFrameWork(startedAt);
@@ -60,8 +67,8 @@ namespace antwika::editor
                 .extendsSelection = getHeldModifiers().shift},
             pressed ? antwika::ui::Keyboard{}
                     : antwika::ui::Keyboard{
-                          .keys = keysNow,
-                          .typedText = typedThisFrame},
+                          .keys = keyBench.keysNow,
+                          .typedText = keyBench.typedThisFrame},
             dialogs.fileDialog.has_value() && dialogs.fileDialog->isSaveMode
                 ? antwika::editor::kPickerNameWidget
             : inkPicker.editingInk.has_value()
@@ -140,7 +147,7 @@ namespace antwika::editor
                     antwika::ui::ButtonSpec{
                         .widgetId = getTabWidget(tab),
                         .state =
-                            tab == activeView
+                            tab == viewChoice.activeView
                                  ? std::optional{
                                       antwika::ui::
                                           ButtonState::
@@ -242,17 +249,15 @@ namespace antwika::editor
 
             context.spacer(antwika::ui::kGrowSizing);
         }
-        else if (activeView == map::View::Plan)
-        {
-            plan.layout(context, focusedField);
-        }
-        else
+        else if (
+            auto *view = viewNow();
+            view == nullptr || !view->layoutPanel(context, viewContextNow()))
         {
             const auto rowWidget = context.row(
                 antwika::ui::ContainerSpec{
                     .widthSizing = antwika::ui::kGrowSizing,
                     .heightSizing = antwika::ui::kGrowSizing,
-                    .padding = activeView == map::View::Atlases
+                    .padding = viewChoice.activeView == map::View::Atlases
                              ? kUiScale * 2
                              : 0,
                     .gap = kUiScale * 2});
@@ -267,7 +272,7 @@ namespace antwika::editor
 
                 panelTitle(context, "Tools");
 
-                if (activeView == map::View::World)
+                if (isWorldShown())
                 {
                     for (std::size_t rowStart = 0;
                          rowStart < kEveryToolButton.size();
@@ -302,7 +307,7 @@ namespace antwika::editor
                         }
                     }
 
-                    if (settings.tool == map::Tool::Brush)
+                    if (preferences.tool == map::Tool::Brush)
                     {
                         context.spacer(
                             antwika::ui::getFixedSize(
@@ -321,7 +326,7 @@ namespace antwika::editor
                                 antwika::ui::ButtonSpec{
                                     .widgetId = getPaintWidget(which),
                                     .state =
-                                        which == settings.paint
+                                        which == preferences.paint
                                                ? std::optional{
                                                   antwika::ui::
                                                       ButtonState::
@@ -334,15 +339,10 @@ namespace antwika::editor
                 {
                     for (const auto which : kEveryPaint)
                     {
-                        if (which == map::Paint::Select
-                            && activeView != map::View::Character)
-                        {
-                            continue;
-                        }
+                        const auto *shownView = viewNow();
 
-                        if ((which == map::Paint::Rect
-                             || which == map::Paint::Circle)
-                            && activeView != map::View::Atlases)
+                        if (shownView == nullptr
+                            || !shownView->offersPaint(which))
                         {
                             continue;
                         }
@@ -355,7 +355,7 @@ namespace antwika::editor
                             antwika::ui::ButtonSpec{
                                 .widgetId = getPaintWidget(which),
                                 .state =
-                                    which == settings.paint
+                                    which == preferences.paint
                                            ? std::optional{
                                               antwika::ui::
                                                   ButtonState::
@@ -363,7 +363,7 @@ namespace antwika::editor
                                         : std::nullopt});
                     }
 
-                    if (activeView == map::View::Character
+                    if (viewChoice.activeView == map::View::Character
                         && characterView.mark.selection.has_value())
                     {
                         context.iconButton(
@@ -378,8 +378,8 @@ namespace antwika::editor
                     }
                 }
 
-                const auto marking = activeView == map::View::World
-                                     || activeView == map::View::Atlases;
+                const auto marking = isWorldShown()
+                                     || viewChoice.activeView == map::View::Atlases;
 
                 if (marking)
                 {
@@ -394,11 +394,11 @@ namespace antwika::editor
                     for (const auto kind : voxel::kEveryKind)
                     {
                         const auto active =
-                            activeView == map::View::World
-                                        ? kind == settings.kind
-                                        : selectedTile.has_value()
-                                      && activeRules().kindOf(
-                                             *selectedTile)
+                            isWorldShown()
+                                        ? kind == preferences.kind
+                                        : stroke.selectedTile.has_value()
+                                      && getActiveRules(document.map, chosenLayer).kindOf(
+                                             *stroke.selectedTile)
                                              == kind;
 
                         context.iconButton(
@@ -426,11 +426,11 @@ namespace antwika::editor
                     for (const auto facing : kMarkedFacings)
                     {
                         const auto active =
-                            activeView == map::View::World
+                            isWorldShown()
                                         ? facing == rampFacing
-                                        : selectedTile.has_value()
-                                      && activeRules().facingOf(
-                                             *selectedTile)
+                                        : stroke.selectedTile.has_value()
+                                      && getActiveRules(document.map, chosenLayer).facingOf(
+                                             *stroke.selectedTile)
                                              == facing;
 
                         context.iconButton(
@@ -449,7 +449,7 @@ namespace antwika::editor
                     }
                 }
 
-                if (activeView == map::View::Atlases)
+                if (viewChoice.activeView == map::View::Atlases)
                 {
                     const auto parts = context.row(
                         antwika::ui::ContainerSpec{
@@ -458,9 +458,9 @@ namespace antwika::editor
                     for (const auto part : kMarkedParts)
                     {
                         const auto active =
-                            selectedTile.has_value()
-                            && activeRules().partOf(
-                                   *selectedTile)
+                            stroke.selectedTile.has_value()
+                            && getActiveRules(document.map, chosenLayer).partOf(
+                                   *stroke.selectedTile)
                                    == part;
 
                         context.button(
@@ -476,7 +476,7 @@ namespace antwika::editor
                 }
             }
 
-            if (activeView == map::View::Atlases)
+            if (viewChoice.activeView == map::View::Atlases)
             {
                 {
                     const auto middle = context.column(
@@ -536,7 +536,7 @@ namespace antwika::editor
                                                   : kTextColor);
             context.spacer(antwika::ui::kGrowSizing);
 
-            if (activeView == map::View::World && !play.playing
+            if (isWorldShown() && !play.playing
                 && pointer.hoveredPosition.has_value())
             {
                 context.label(
@@ -547,11 +547,11 @@ namespace antwika::editor
                     kGridLineColor);
             }
 
-            if (selectedTile.has_value()
-                && (activeView == map::View::Atlases
-                    || activeView == map::View::World))
+            if (stroke.selectedTile.has_value()
+                && (viewChoice.activeView == map::View::Atlases
+                    || isWorldShown()))
             {
-                const auto drawnTile = editedTile();
+                const auto drawnTile = getEditedTile(document.map, chosenLayer, stroke, assignMode);
                 const auto index = static_cast<std::int32_t>(drawnTile.index);
 
                 context.label(
@@ -612,8 +612,8 @@ namespace antwika::editor
                      * share});
         };
 
-        sheetRect = roomOf(antwika::editor::kSheetPanelWidget);
-        canvasRect = roomOf(antwika::editor::kDrawPanelWidget);
+        sheetView.sheetRect = roomOf(antwika::editor::kSheetPanelWidget);
+        sheetView.canvasRect = roomOf(antwika::editor::kDrawPanelWidget);
 
         return frame;
     }

@@ -10,10 +10,10 @@ namespace antwika::editor
     void Editor::layoutWorldRail(ui::Context &context)
     {
         const auto showExitPanel =
-            settings.tool == map::Tool::Exit && activeView == map::View::World;
+            preferences.tool == map::Tool::Exit && isWorldShown();
         const auto showFigures =
-            settings.tool == map::Tool::Figure
-            && activeView == map::View::World;
+            preferences.tool == map::Tool::Figure
+            && isWorldShown();
 
             if (showFigures)
             {
@@ -58,20 +58,20 @@ namespace antwika::editor
                         antwika::ui::ButtonSpec{
                             .widgetId = getFigureWidget(index),
                             .widthSizing = antwika::ui::kGrowSizing,
-                            .fillColor = figurePicked == index
+                            .fillColor = worldView.figureTool.chosenIndex == index
                                        ? kSelectionAccentColor
                                        : kGridLineColor});
                 }
 
-                if (figurePicked.has_value()
-                    && *figurePicked < document.map.characters.size())
+                if (worldView.figureTool.chosenIndex.has_value()
+                    && *worldView.figureTool.chosenIndex < document.map.characters.size())
                 {
                     context.textField(
                         antwika::ui::TextFieldSpec{
                             .widgetId = antwika::editor::
                                 kFigureNameWidget,
                             .text = document.map.characters
-                                        .at(*figurePicked)
+                                        .at(*worldView.figureTool.chosenIndex)
                                         .name,
                             .placeholder = "name",
                             .focused = focusedField
@@ -83,10 +83,10 @@ namespace antwika::editor
                                 kFigureLampWidget,
                             .checked = carriesLight(
                                 document.map.characters.at(
-                                    *figurePicked))});
+                                    *worldView.figureTool.chosenIndex))});
 
                     for (const auto &line :
-                         document.map.characters.at(*figurePicked)
+                         document.map.characters.at(*worldView.figureTool.chosenIndex)
                              .dialogue)
                     {
                         context.label(line, kGridLineColor);
@@ -102,7 +102,7 @@ namespace antwika::editor
                             antwika::ui::TextFieldSpec{
                                 .widgetId = antwika::editor::
                                     kFigureLineWidget,
-                                .text = pendingFigureLine,
+                                .text = worldView.figureTool.pendingLine,
                                 .placeholder =
                                     "a line to say",
                                 .focused =
@@ -141,8 +141,8 @@ namespace antwika::editor
                         .checked = document.map.exitLocked});
             }
 
-            if (settings.tool == map::Tool::Lamp
-                && activeView == map::View::World)
+            if (preferences.tool == map::Tool::Lamp
+                && isWorldShown())
             {
                 const auto ambientPanel = context.column(
                     antwika::ui::ContainerSpec{
@@ -169,7 +169,7 @@ namespace antwika::editor
 
     void Editor::layoutFigureChooser(ui::Context &context)
     {
-            if (activeView == map::View::Character)
+            if (viewChoice.activeView == map::View::Character)
             {
                 const auto figureChooserPanel = context.column(
                     antwika::ui::ContainerSpec{
@@ -213,15 +213,15 @@ namespace antwika::editor
 
             consumedKey = true;
 
-            if (activeView == map::View::Character)
+            if (viewChoice.activeView == map::View::Character)
             {
-                characterView.switchTo(viewportRenderer, index);
+                characterView.switchTo(viewportRenderer, rosterSkins, index);
 
                 continue;
             }
 
-            figurePicked = index;
-            figurePlaced = false;
+            worldView.figureTool.chosenIndex = index;
+            worldView.figureTool.placed = false;
         }
 
         if (interactions.activatedWidget
@@ -233,8 +233,8 @@ namespace antwika::editor
                     .name = "Figure "
                             + std::to_string(
                                 document.map.characters.size())});
-            figurePicked = document.map.characters.size() - 1;
-            figurePlaced = false;
+            worldView.figureTool.chosenIndex = document.map.characters.size() - 1;
+            worldView.figureTool.placed = false;
             spawnRoster();
             loadCharacterSkins();
             consumedKey = true;
@@ -242,17 +242,17 @@ namespace antwika::editor
 
         if (interactions.activatedWidget
                 == antwika::editor::kRemoveFigureWidget
-            && figurePicked.has_value()
-            && *figurePicked < document.map.characters.size()
-            && !document.map.characters.at(*figurePicked).player)
+            && worldView.figureTool.chosenIndex.has_value()
+            && *worldView.figureTool.chosenIndex < document.map.characters.size()
+            && !document.map.characters.at(*worldView.figureTool.chosenIndex).player)
         {
             pushUndo();
             document.map.characters.erase(
                 std::next(
                     document.map.characters.begin(),
                     static_cast<std::ptrdiff_t>(
-                        *figurePicked)));
-            figurePicked.reset();
+                        *worldView.figureTool.chosenIndex)));
+            worldView.figureTool.chosenIndex.reset();
             spawnRoster();
             loadCharacterSkins();
             consumedKey = true;
@@ -260,7 +260,7 @@ namespace antwika::editor
 
         if (interactions.activatedWidget
                 == antwika::editor::kFigureNameWidget
-            && figurePicked.has_value())
+            && worldView.figureTool.chosenIndex.has_value())
         {
             pushUndo();
             focusedField = FocusedField::FigureName;
@@ -269,11 +269,11 @@ namespace antwika::editor
 
         if (interactions.activatedWidget
                 == antwika::editor::kFigureLampWidget
-            && figurePicked.has_value()
-            && *figurePicked < document.map.characters.size())
+            && worldView.figureTool.chosenIndex.has_value()
+            && *worldView.figureTool.chosenIndex < document.map.characters.size())
         {
             pushUndo();
-            toggleCarriedLight(document.map.characters.at(*figurePicked));
+            toggleCarriedLight(document.map.characters.at(*worldView.figureTool.chosenIndex));
             consumedKey = true;
         }
 
@@ -286,14 +286,14 @@ namespace antwika::editor
 
         if (interactions.activatedWidget
                 == antwika::editor::kFigureLineAddWidget
-            && figurePicked.has_value()
-            && *figurePicked < document.map.characters.size()
-            && !pendingFigureLine.empty())
+            && worldView.figureTool.chosenIndex.has_value()
+            && *worldView.figureTool.chosenIndex < document.map.characters.size()
+            && !worldView.figureTool.pendingLine.empty())
         {
             pushUndo();
-            document.map.characters.at(*figurePicked)
-                .dialogue.push_back(pendingFigureLine);
-            pendingFigureLine.clear();
+            document.map.characters.at(*worldView.figureTool.chosenIndex)
+                .dialogue.push_back(worldView.figureTool.pendingLine);
+            worldView.figureTool.pendingLine.clear();
             focusedField = FocusedField::Nothing;
             consumedKey = true;
         }

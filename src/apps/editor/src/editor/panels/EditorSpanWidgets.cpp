@@ -8,7 +8,7 @@ namespace antwika::editor
     bool Editor::spanWidgets(
         const ui::Interactions &interactions)
     {
-        if (!selectedTile.has_value() || !isDecorLayer())
+        if (!stroke.selectedTile.has_value() || !isDecorLayer(chosenLayer))
         {
             return false;
         }
@@ -20,11 +20,11 @@ namespace antwika::editor
             ensureDecor();
 
             const auto *decor = decor::decorOf(
-                document.map.decor, *selectedTile);
+                document.map.decor, *stroke.selectedTile);
 
             document.map.decor = getWithSpanSet(
                 document.map.decor,
-                *selectedTile,
+                *stroke.selectedTile,
                 static_cast<std::uint8_t>(
                     std::max(decor->width + acrossStep, 1)),
                 static_cast<std::uint8_t>(
@@ -67,7 +67,7 @@ namespace antwika::editor
         }
 
         const auto *decor =
-            decor::decorOf(document.map.decor, *selectedTile);
+            decor::decorOf(document.map.decor, *stroke.selectedTile);
 
         for (std::size_t place = 1;
              decor != nullptr && place < decor->spanTiles.size();

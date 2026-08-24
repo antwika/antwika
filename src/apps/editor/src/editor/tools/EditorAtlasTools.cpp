@@ -55,14 +55,14 @@ namespace antwika::editor
         if (rolledScrolled.vertical != 0
             && pointer.hoveredWidget
                    == decor::kVariantWeightWidget
-            && selectedTile.has_value())
+            && stroke.selectedTile.has_value())
         {
-            if (tick >= lastWheelNudgeTick + 60)
+            if (tick >= remesh.lastWheelNudgeTick + 60)
             {
                 pushUndo();
             }
 
-            const auto weight = variantWeightOf(*selectedTile);
+            const auto weight = variantWeightOf(*stroke.selectedTile);
             const auto nextIndex =
                 rolledScrolled.vertical > 0
                     ? std::min<int>(
@@ -72,19 +72,19 @@ namespace antwika::editor
 
             document.map.familyGroups = getWithVariantWeightSet(
                 document.map.familyGroups,
-                *selectedTile,
+                *stroke.selectedTile,
                 static_cast<std::uint8_t>(nextIndex));
-            lastWheelNudgeTick = tick;
-            remeshAfterNudge = true;
+            remesh.lastWheelNudgeTick = tick;
+            remesh.afterNudge = true;
 
             return;
         }
 
         if (rolledScrolled.vertical != 0
             && pointer.hoveredWidget == decor::kFrequencyWidget
-            && isDecorLayer() && selectedTile.has_value())
+            && isDecorLayer(chosenLayer) && stroke.selectedTile.has_value())
         {
-            if (tick >= lastWheelNudgeTick + 60)
+            if (tick >= remesh.lastWheelNudgeTick + 60)
             {
                 pushUndo();
             }
@@ -92,7 +92,7 @@ namespace antwika::editor
             ensureDecor();
 
             const auto *nudgedDecor = decor::decorOf(
-                document.map.decor, *selectedTile);
+                document.map.decor, *stroke.selectedTile);
             const auto nextIndex =
                 rolledScrolled.vertical > 0
                     ? std::min<int>(
@@ -102,10 +102,10 @@ namespace antwika::editor
 
             document.map.decor = getWithFrequencySet(
                 document.map.decor,
-                *selectedTile,
+                *stroke.selectedTile,
                 static_cast<std::uint8_t>(nextIndex));
-            lastWheelNudgeTick = tick;
-            remeshAfterNudge = true;
+            remesh.lastWheelNudgeTick = tick;
+            remesh.afterNudge = true;
 
             return;
         }
@@ -113,9 +113,9 @@ namespace antwika::editor
         if (rolledScrolled.vertical != 0
             && pointer.hoveredWidget
                    == decor::kDecorWeightWidget
-            && isDecorLayer() && selectedTile.has_value())
+            && isDecorLayer(chosenLayer) && stroke.selectedTile.has_value())
         {
-            if (tick >= lastWheelNudgeTick + 60)
+            if (tick >= remesh.lastWheelNudgeTick + 60)
             {
                 pushUndo();
             }
@@ -123,7 +123,7 @@ namespace antwika::editor
             ensureDecor();
 
             const auto *nudgedDecor = decor::decorOf(
-                document.map.decor, *selectedTile);
+                document.map.decor, *stroke.selectedTile);
             const auto nextIndex =
                 rolledScrolled.vertical > 0
                     ? std::min<int>(
@@ -133,19 +133,19 @@ namespace antwika::editor
 
             document.map.decor = getWithWeightSet(
                 document.map.decor,
-                *selectedTile,
+                *stroke.selectedTile,
                 static_cast<std::uint8_t>(nextIndex));
-            lastWheelNudgeTick = tick;
-            remeshAfterNudge = true;
+            remesh.lastWheelNudgeTick = tick;
+            remesh.afterNudge = true;
 
             return;
         }
 
         if (rolledScrolled.vertical != 0
-            && activeView == map::View::Atlases)
+            && viewChoice.activeView == map::View::Atlases)
         {
-            gridZoom = std::clamp(
-                gridZoom
+            sheetView.zoom = std::clamp(
+                sheetView.zoom
                     * (rolledScrolled.vertical > 0
                            ? kGridZoomStep
                            : 1.0F / kGridZoomStep),
@@ -175,13 +175,13 @@ namespace antwika::editor
         if (interactions.slidChange.has_value()
             && interactions.slidChange->sliderWidget
                    == decor::kFrequencyWidget
-            && selectedTile.has_value())
+            && stroke.selectedTile.has_value())
         {
             pushUndo();
             ensureDecor();
             document.map.decor = getWithFrequencySet(
                 document.map.decor,
-                *selectedTile,
+                *stroke.selectedTile,
                 static_cast<std::uint8_t>(
                     interactions.slidChange->value));
             slidingWidget = decor::kFrequencyWidget;
@@ -192,13 +192,13 @@ namespace antwika::editor
         if (interactions.slidChange.has_value()
             && interactions.slidChange->sliderWidget
                    == decor::kDecorWeightWidget
-            && selectedTile.has_value())
+            && stroke.selectedTile.has_value())
         {
             pushUndo();
             ensureDecor();
             document.map.decor = getWithWeightSet(
                 document.map.decor,
-                *selectedTile,
+                *stroke.selectedTile,
                 static_cast<std::uint8_t>(
                     interactions.slidChange->value));
             slidingWidget = decor::kDecorWeightWidget;
@@ -209,12 +209,12 @@ namespace antwika::editor
         if (interactions.slidChange.has_value()
             && interactions.slidChange->sliderWidget
                    == decor::kVariantWeightWidget
-            && selectedTile.has_value())
+            && stroke.selectedTile.has_value())
         {
             pushUndo();
             document.map.familyGroups = getWithVariantWeightSet(
                 document.map.familyGroups,
-                *selectedTile,
+                *stroke.selectedTile,
                 static_cast<std::uint8_t>(
                     interactions.slidChange->value));
             slidingWidget = decor::kVariantWeightWidget;
@@ -474,7 +474,7 @@ namespace antwika::editor
 
         inkPicker.carriedCharacterInk =
             tile::getPaintedWith(characterView.getSheet(), color);
-        for (const auto &skin : characterView.getSkins())
+        for (const auto &skin : rosterSkins.getSheets())
         {
             inkPicker.carriedFigureInk.push_back(
                 tile::getPaintedWith(skin, color));
@@ -510,7 +510,7 @@ namespace antwika::editor
 
         for (std::size_t figure = 0;
              figure < inkPicker.carriedFigureInk.size()
-             && figure < characterView.getSkins().size();
+             && figure < rosterSkins.getSheets().size();
              ++figure)
         {
             if (inkPicker.carriedFigureInk.at(figure).empty())
@@ -518,34 +518,15 @@ namespace antwika::editor
                 continue;
             }
 
-            auto paintedSkin = characterView.getSkins().at(figure);
+            auto paintedSkin = rosterSkins.getSheets().at(figure);
 
             tile::repaintAt(
                 paintedSkin,
                 inkPicker.carriedFigureInk.at(figure),
                 nextColor);
             characterView.repaint(
-                viewportRenderer, figure, std::move(paintedSkin));
+                viewportRenderer, rosterSkins, figure, std::move(paintedSkin));
         }
-    }
-
-    bool Editor::mayAdjoin(
-        const tilemap::Tile oneTile, const tilemap::Tile otherTile)
-    {
-        const auto &rules =
-            isDecorLayer() ? document.map.decorRules : worldMeshes.getRules();
-
-        for (const auto edge : tilemap::kEveryTileEdge)
-        {
-            if (decor::tilesCompatible(rules, oneTile, edge, otherTile)
-                && decor::tilesCompatible(rules, otherTile, voxel::getFacing(edge),
-                    oneTile))
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
 }

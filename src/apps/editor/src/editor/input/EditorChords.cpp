@@ -35,12 +35,6 @@ namespace
 namespace antwika::editor
 {
 
-    void Editor::setBindings(KeyBindings keyBindings)
-    {
-        bindings = std::move(keyBindings);
-        actions = actionMapFrom(bindings);
-    }
-
     input::KeyModifiers Editor::getHeldModifiers() const noexcept
     {
         return inputState.getKeyboard().getModifiers();
@@ -49,19 +43,19 @@ namespace antwika::editor
     bool Editor::matchesChord(
         const Action action, const input::Key key) const
     {
-        return actions.matches(getActionKey(action), key, getHeldModifiers());
+        return keyBench.matchesChord(action, key, getHeldModifiers());
     }
 
     bool Editor::matchesChordWithShift(
         const Action action, const input::Key key) const
     {
-        return actions.matches(
-            getShiftedAction(action), key, getHeldModifiers());
+        return keyBench.matchesChordWithShift(
+            action, key, getHeldModifiers());
     }
 
     void Editor::applyRunKey(const input::Key key, const bool down)
     {
-        if (actions.matches(getHeldAction(Action::Run), key, getHeldModifiers()))
+        if (keyBench.matchesHeld(Action::Run, key, getHeldModifiers()))
         {
             play.game->setRunning(down);
         }
@@ -71,7 +65,7 @@ namespace antwika::editor
     {
         const auto matches = [this, key](const Action act)
         {
-            return actions.matches(getHeldAction(act), key, getHeldModifiers());
+            return keyBench.matchesHeld(act, key, getHeldModifiers());
         };
 
         if (matches(Action::WalkNorth))
@@ -117,7 +111,7 @@ namespace antwika::editor
 
     bool Editor::consumeBindingsKey(const input::KeyPressed &pressedKey)
     {
-        if (!keysOpen)
+        if (!keyBench.panelShown)
         {
             return false;
         }
@@ -127,25 +121,25 @@ namespace antwika::editor
             return true;
         }
 
-        if (rebindingAction.has_value())
+        if (keyBench.rebindingAction.has_value())
         {
             if (pressedKey.key == input::Key::Escape)
             {
-                rebindingAction.reset();
+                keyBench.rebindingAction.reset();
 
                 return true;
             }
 
-            auto keyBindings = bindings;
+            auto keyBindings = keyBench.getBindings();
 
-            keyBindings[*rebindingAction] = Chord{
+            keyBindings[*keyBench.rebindingAction] = Chord{
                 .key = pressedKey.key,
                 .ctrl = getHeldModifiers().control,
                 .shift = getHeldModifiers().shift,
                 .alt = getHeldModifiers().alt};
-            setBindings(std::move(keyBindings));
-            rebindingAction.reset();
-            saveChords(bindings, getChordsPath());
+            keyBench.takeBindings(std::move(keyBindings));
+            keyBench.rebindingAction.reset();
+            saveChords(keyBench.getBindings(), getChordsPath());
             showStatus("bound", false, 120);
 
             return true;
@@ -153,7 +147,7 @@ namespace antwika::editor
 
         if (pressedKey.key == input::Key::Escape)
         {
-            keysOpen = false;
+            keyBench.panelShown = false;
         }
 
         return true;

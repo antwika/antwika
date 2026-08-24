@@ -78,7 +78,7 @@ namespace antwika::editor
 
             context.spacer(antwika::ui::kGrowSizing);
         }
-        if (keysOpen)
+        if (keyBench.panelShown)
         {
             const auto asking = context.row(
                 antwika::ui::ContainerSpec{
@@ -98,7 +98,7 @@ namespace antwika::editor
 
                 panelTitle(
                     context,
-                    rebindingAction.has_value()
+                    keyBench.rebindingAction.has_value()
                         ? "Press the keys for it - escape "
                           "lets it be"
                         : "Keys - press a row, then the keys");
@@ -130,16 +130,16 @@ namespace antwika::editor
                             context.button(
                                 std::string(getActionLabel(act))
                                     + " - "
-                                    + (rebindingAction == act
+                                    + (keyBench.rebindingAction == act
                                                         ? "..."
                                                         : getChordName(
-                                               bindings.at(
+                                               keyBench.getBindings().at(
                                                    act))),
                                 antwika::ui::ButtonSpec{
                                     .widgetId = getKeyRowWidget(index),
                                     .widthSizing =
                                         antwika::ui::kGrowSizing,
-                                    .fillColor = rebindingAction == act
+                                    .fillColor = keyBench.rebindingAction == act
                                                ? kSelectionAccentColor
                                                : kGridLineColor});
                         }
@@ -165,7 +165,7 @@ namespace antwika::editor
             context.spacer(antwika::ui::kGrowSizing);
         }
 
-        return dialogs.quitConfirmOpen || keysOpen;
+        return dialogs.quitConfirmOpen || keyBench.panelShown;
     }
 
     bool Editor::consumeModalWidgets(
@@ -199,7 +199,7 @@ namespace antwika::editor
             return true;
         }
 
-        if (keysOpen)
+        if (keyBench.panelShown)
         {
             const auto actionList = getAllActions();
 
@@ -207,23 +207,23 @@ namespace antwika::editor
             {
                 if (interactions.activatedWidget == getKeyRowWidget(index))
                 {
-                    rebindingAction = actionList.at(index);
+                    keyBench.rebindingAction = actionList.at(index);
                 }
             }
 
             if (interactions.activatedWidget
                 == antwika::editor::kKeysDoneWidget)
             {
-                keysOpen = false;
-                rebindingAction.reset();
+                keyBench.panelShown = false;
+                keyBench.rebindingAction.reset();
             }
 
             if (interactions.activatedWidget
                 == antwika::editor::kKeysResetWidget)
             {
-                setBindings(getDefaultChords());
-                rebindingAction.reset();
-                saveChords(bindings, getChordsPath());
+                keyBench.takeBindings(getDefaultChords());
+                keyBench.rebindingAction.reset();
+                saveChords(keyBench.getBindings(), getChordsPath());
             }
 
             return true;
@@ -289,14 +289,14 @@ namespace antwika::editor
 
             if (!typedText.empty())
             {
-                typedThisFrame += typedText;
-                keysNow.push_back(
+                keyBench.typedThisFrame += typedText;
+                keyBench.keysNow.push_back(
                     antwika::ui::Key::Character);
             }
 
             if (pressedKey.key == input::Key::Backspace)
             {
-                keysNow.push_back(
+                keyBench.keysNow.push_back(
                     antwika::ui::Key::Backspace);
             }
 
@@ -320,14 +320,14 @@ namespace antwika::editor
 
             if (!typedText.empty())
             {
-                typedThisFrame += typedText;
-                keysNow.push_back(
+                keyBench.typedThisFrame += typedText;
+                keyBench.keysNow.push_back(
                     antwika::ui::Key::Character);
             }
 
             if (pressedKey.key == input::Key::Backspace)
             {
-                keysNow.push_back(
+                keyBench.keysNow.push_back(
                     antwika::ui::Key::Backspace);
             }
 
@@ -364,8 +364,8 @@ namespace antwika::editor
 
             if (!typedText.empty())
             {
-                typedThisFrame += typedText;
-                keysNow.push_back(
+                keyBench.typedThisFrame += typedText;
+                keyBench.keysNow.push_back(
                     antwika::ui::Key::Character);
             }
 
@@ -373,28 +373,28 @@ namespace antwika::editor
 
             if (moving.has_value())
             {
-                keysNow.push_back(*moving);
+                keyBench.keysNow.push_back(*moving);
             }
 
             if (keyModifiers.control && pressedKey.key == input::Key::A)
             {
-                keysNow.push_back(antwika::ui::Key::SelectAll);
+                keyBench.keysNow.push_back(antwika::ui::Key::SelectAll);
             }
 
             if (keyModifiers.control && pressedKey.key == input::Key::C)
             {
-                keysNow.push_back(antwika::ui::Key::Copy);
+                keyBench.keysNow.push_back(antwika::ui::Key::Copy);
             }
 
             if (keyModifiers.control && pressedKey.key == input::Key::X)
             {
-                keysNow.push_back(antwika::ui::Key::Cut);
+                keyBench.keysNow.push_back(antwika::ui::Key::Cut);
             }
 
             if (pressedKey.key == input::Key::Enter
                 && focusedField == FocusedField::PlanBody)
             {
-                keysNow.push_back(antwika::ui::Key::Activate);
+                keyBench.keysNow.push_back(antwika::ui::Key::Activate);
 
                 return true;
             }

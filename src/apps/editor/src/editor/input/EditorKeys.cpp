@@ -111,22 +111,24 @@ namespace antwika::editor
 
     void Editor::setView(const map::View nextView)
     {
-        if (nextView != activeView)
+        if (nextView != viewChoice.activeView)
         {
-            dragFromCell.reset();
-            dragFromPoint.reset();
-            doubleClickAtPoint.reset();
+            stroke.dragFromCell.reset();
+            stroke.dragFromPoint.reset();
+            stroke.doubleClickAtPoint.reset();
             plan.endDrag();
-            commitFloatingPatch();
+            characterView.commitFloatingPatch();
             characterView.mark.selection.reset();
         }
 
-        activeView = nextView;
+        viewChoice.activeView = nextView;
 
-        if (activeView != map::View::Character
-            && settings.paint == map::Paint::Select)
+        if (const auto *shownView = viewNow();
+            preferences.paint == map::Paint::Select
+            && (shownView == nullptr
+                || !shownView->offersPaint(map::Paint::Select)))
         {
-            settings.paint = map::Paint::Brush;
+            preferences.paint = map::Paint::Brush;
         }
     }
 
@@ -137,12 +139,12 @@ namespace antwika::editor
 
         if (releasedEvent.key == input::Key::Q)
         {
-            descendHeld = false;
+            worldView.worldEdit.descendHeld = false;
         }
 
         if (releasedEvent.key == input::Key::E)
         {
-            ascendHeld = false;
+            worldView.worldEdit.ascendHeld = false;
         }
     }
 
@@ -174,9 +176,8 @@ namespace antwika::editor
 
                 play.playing = false;
                 turningPlayer = false;
-                activeView = viewBeforePlay;
 
-                if (settings.hideAboveLevel)
+                if (preferences.hideAboveLevel)
                 {
                     rebuildWorld();
                 }
@@ -247,21 +248,21 @@ namespace antwika::editor
         if (matchesChord(Action::Cancel, pressedKey.key))
         {
             dialogs.openMenu.reset();
-            commitFloatingPatch();
+            characterView.commitFloatingPatch();
             characterView.mark.selection.reset();
-            lineFromCell.reset();
-            shapeFromPosition.reset();
-            dragPaintButton.reset();
-            stampVoxels.clear();
-            stampFromPosition.reset();
+            stroke.lineFromCell.reset();
+            worldView.worldPaint.shapeFromPosition.reset();
+            worldView.worldPaint.dragButton.reset();
+            worldView.stamp.voxels.clear();
+            worldView.stamp.fromPosition.reset();
         }
 
         if (matchesChord(Action::LevelUp, pressedKey.key))
         {
-            editLevel += 1;
-            overlayStale = true;
+            worldView.worldEdit.editLevel += 1;
+            worldView.overlays.stale = true;
 
-            if (settings.hideAboveLevel)
+            if (preferences.hideAboveLevel)
             {
                 rebuildWorld();
             }
@@ -269,16 +270,16 @@ namespace antwika::editor
 
         if (matchesChord(Action::LevelDown, pressedKey.key))
         {
-            editLevel -= 1;
-            overlayStale = true;
+            worldView.worldEdit.editLevel -= 1;
+            worldView.overlays.stale = true;
 
-            if (settings.hideAboveLevel)
+            if (preferences.hideAboveLevel)
             {
                 rebuildWorld();
             }
         }
 
-        if (!pressedKey.repeat && activeView == map::View::World)
+        if (!pressedKey.repeat && isWorldShown())
         {
             for (const auto &row : kToolKeyRows)
             {
@@ -292,40 +293,28 @@ namespace antwika::editor
             {
                 if (matchesChord(row.action, pressedKey.key))
                 {
-                    settings.kind = row.kind;
+                    preferences.kind = row.kind;
                 }
             }
         }
 
-        if (!pressedKey.repeat
-            && (activeView == map::View::Atlases
-                || activeView == map::View::Character))
+        if (const auto *shownView = viewNow();
+            !pressedKey.repeat && shownView != nullptr
+            && shownView->takesPaintKeys())
         {
             for (const auto &[act, paint] : kPaintKeyRows)
             {
-                if (!matchesChord(act, pressedKey.key))
+                if (!matchesChord(act, pressedKey.key)
+                    || !shownView->offersPaint(paint))
                 {
                     continue;
                 }
 
-                if (paint == map::Paint::Select
-                    && activeView != map::View::Character)
-                {
-                    continue;
-                }
-
-                if ((paint == map::Paint::Rect
-                     || paint == map::Paint::Circle)
-                    && activeView != map::View::Atlases)
-                {
-                    continue;
-                }
-
-                settings.paint = paint;
+                preferences.paint = paint;
             }
         }
 
-        if (!pressedKey.repeat && activeView == map::View::Atlases)
+        if (!pressedKey.repeat && viewChoice.activeView == map::View::Atlases)
         {
             for (const auto &[act, kind] :
                  {std::pair{Action::KindStone, voxel::Kind::Normal},
@@ -333,11 +322,11 @@ namespace antwika::editor
                   std::pair{Action::KindRamp, voxel::Kind::Ramp}})
             {
                 if (matchesChordWithShift(act, pressedKey.key)
-                    && selectedTile.has_value()
+                    && stroke.selectedTile.has_value()
                     && !blockedAsVariant())
                 {
                     pushUndo();
-                    activeRules().setKind(*selectedTile, kind);
+                    getActiveRules(document.map, chosenLayer).setKind(*stroke.selectedTile, kind);
                     rebuildWorld();
                 }
             }
@@ -353,80 +342,9 @@ namespace antwika::editor
             }
         }
 
-        if (!pressedKey.repeat && activeView == map::View::Character
-            && characterView.mark.selection.has_value()
-            && characterView.mark.selectedFrame.has_value())
+        if (auto *view = viewNow(); view != nullptr)
         {
-            const auto way = *characterView.mark.selectedFrame
-                             / character::kCharacterFrames;
-            const auto frame =
-                *characterView.mark.selectedFrame % character::kCharacterFrames;
-
-            if (matchesChord(Action::Copy, pressedKey.key))
-            {
-                characterView.mark.clipboardBuffer =
-                    characterView.mark.floatingPatchBuffer.has_value()
-                          ? *characterView.mark.floatingPatchBuffer
-                          : character::copiedFrom(
-                                characterView.getSheet(),
-                                way,
-                                frame,
-                                *characterView.mark.selection);
-            }
-
-            if (matchesChord(Action::Cut, pressedKey.key))
-            {
-                characterView.mark.clipboardBuffer =
-                    characterView.mark.floatingPatchBuffer.has_value()
-                          ? *characterView.mark.floatingPatchBuffer
-                          : character::cutFrom(
-                                characterView.getSheet(),
-                                way,
-                                frame,
-                                *characterView.mark.selection);
-                characterView.mark.floatingPatchBuffer.reset();
-                characterView.touch();
-            }
-
-            if (matchesChord(Action::Paste, pressedKey.key)
-                && !characterView.mark.clipboardBuffer.pixelColors.empty())
-            {
-                commitFloatingPatch();
-                pushUndo();
-                character::pasteInto(
-                    characterView.getSheet(),
-                    way,
-                    frame,
-                    character::getSelectionOrigin(*characterView.mark.selection),
-                    characterView.mark.clipboardBuffer);
-                characterView.touch();
-            }
-
-            if (matchesChord(Action::Delete, pressedKey.key))
-            {
-                if (characterView.mark.floatingPatchBuffer.has_value())
-                {
-                    characterView.mark.floatingPatchBuffer.reset();
-                }
-                else
-                {
-                    pushUndo();
-                    (void)character::cutFrom(
-                        characterView.getSheet(),
-                        way,
-                        frame,
-                        *characterView.mark.selection);
-                }
-
-                characterView.mark.selection.reset();
-                characterView.touch();
-            }
-        }
-
-        if (fresh(Action::Mirror)
-            && activeView == map::View::Character)
-        {
-            mirrorSelection();
+            static_cast<void>(view->consumeKey(viewContextNow(), pressedKey));
         }
 
         if (fresh(Action::Undo))
@@ -441,8 +359,8 @@ namespace antwika::editor
 
         if (fresh(Action::Corners))
         {
-            cornerJoining =
-                cornerJoining
+            worldView.worldEdit.cornerJoining =
+                worldView.worldEdit.cornerJoining
                         == solver::CornerSeams::Included
                          ? solver::CornerSeams::Ignored
                          : solver::CornerSeams::Included;
@@ -453,16 +371,16 @@ namespace antwika::editor
             const auto faces =
                 voxelmap::visibleFacesOf(visibleCells());
             const auto solvedTiles =
-                solver::getSolveTiles(faces, document.map.rules, cornerJoining);
+                solver::getSolveTiles(faces, document.map.rules, worldView.worldEdit.cornerJoining);
 
             rebuildWorld();
             logger.log(
                 antwika::log::Level::Info,
                 solver::getWeaveErrorMessage(
-                    faces, document.map.rules, solvedTiles, cornerJoining));
+                    faces, document.map.rules, solvedTiles, worldView.worldEdit.cornerJoining));
         }
 
-        auto nextView = activeView;
+        auto nextView = viewChoice.activeView;
 
         for (const auto &row : kViewKeyRows)
         {
@@ -474,12 +392,12 @@ namespace antwika::editor
 
         if (matchesChord(Action::ViewNext, pressedKey.key))
         {
-            nextView = getViewAfter(activeView);
+            nextView = getViewAfter(viewChoice.activeView);
         }
 
         if (matchesChord(Action::ViewBack, pressedKey.key))
         {
-            nextView = getViewBefore(activeView);
+            nextView = getViewBefore(viewChoice.activeView);
         }
 
         setView(nextView);
@@ -502,13 +420,11 @@ namespace antwika::editor
                 matchesChord(Action::PlayHere, pressedKey.key);
 
             play.playing = true;
-            viewBeforePlay = activeView;
-            activeView = map::View::World;
             dialogs.openMenu.reset();
             dialogs.fileDialog.reset();
             inkPicker.editingInk.reset();
 
-            if (settings.hideAboveLevel)
+            if (preferences.hideAboveLevel)
             {
                 rebuildWorld();
             }
@@ -544,12 +460,12 @@ namespace antwika::editor
 
         if (pressedKey.key == input::Key::Q)
         {
-            descendHeld = true;
+            worldView.worldEdit.descendHeld = true;
         }
 
         if (pressedKey.key == input::Key::E)
         {
-            ascendHeld = true;
+            worldView.worldEdit.ascendHeld = true;
         }
     }
 

@@ -17,11 +17,11 @@ namespace antwika::editor
     {
         return antwika::editor::isToolButtonActive(
             whichButton,
-            settings.tool,
+            preferences.tool,
             ToolToggles{
                 .freeLook = cameraRig.freeLook,
-                .lighting = settings.lighting,
-                .showRuleLines = settings.showRuleLines});
+                .lighting = document.map.settings.lighting,
+                .showRuleLines = preferences.showRuleLines});
     }
 
     void Editor::pressTool(const ToolButton whichButton)
@@ -31,21 +31,21 @@ namespace antwika::editor
 
         if (chosenTool.has_value())
         {
-            settings.tool = *chosenTool;
+            preferences.tool = *chosenTool;
 
             return;
         }
 
         if (whichButton == ToolButton::Lighting)
         {
-            settings.lighting = !settings.lighting;
+            document.map.settings.lighting = !document.map.settings.lighting;
 
             return;
         }
 
         if (whichButton == ToolButton::RuleLines)
         {
-            settings.showRuleLines = !settings.showRuleLines;
+            preferences.showRuleLines = !preferences.showRuleLines;
 
             return;
         }
@@ -71,39 +71,39 @@ namespace antwika::editor
             FlagRow{
                 MenuItem::Grid,
                 [](Editor &editor) -> bool &
-                { return editor.settings.grid; }},
+                { return editor.preferences.grid; }},
             FlagRow{
                 MenuItem::Marker,
                 [](Editor &editor) -> bool &
-                { return editor.settings.showPlacementGhost; }},
+                { return editor.preferences.showPlacementGhost; }},
             FlagRow{
                 MenuItem::RuleLines,
                 [](Editor &editor) -> bool &
-                { return editor.settings.showRuleLines; }},
+                { return editor.preferences.showRuleLines; }},
             FlagRow{
                 MenuItem::Lighting,
                 [](Editor &editor) -> bool &
-                { return editor.settings.lighting; }},
+                { return editor.document.map.settings.lighting; }},
             FlagRow{
                 MenuItem::Sight,
                 [](Editor &editor) -> bool &
-                { return editor.settings.lampSight; }},
+                { return editor.preferences.lampSight; }},
             FlagRow{
                 MenuItem::LowerSight,
                 [](Editor &editor) -> bool &
-                { return editor.lowerSight; }},
+                { return editor.worldView.worldEdit.lowerSight; }},
             FlagRow{
                 MenuItem::LowerLight,
                 [](Editor &editor) -> bool &
-                { return editor.lowerLight; }},
+                { return editor.worldView.worldEdit.lowerLight; }},
             FlagRow{
                 MenuItem::Follow,
                 [](Editor &editor) -> bool &
-                { return editor.settings.cameraFollows; }},
+                { return editor.preferences.cameraFollows; }},
             FlagRow{
                 MenuItem::AboveHidden,
                 [](Editor &editor) -> bool &
-                { return editor.settings.hideAboveLevel; }}};
+                { return editor.preferences.hideAboveLevel; }}};
 
         const auto foundRow =
             std::ranges::find(kFlagRows, item, &FlagRow::item);
@@ -154,7 +154,7 @@ namespace antwika::editor
             }
             break;
         case MenuItem::Keys:
-            keysOpen = true;
+            keyBench.panelShown = true;
             break;
         case MenuItem::Undo:
             undo();
@@ -169,8 +169,8 @@ namespace antwika::editor
             pressTool(ToolButton::FreeLook);
             break;
         case MenuItem::Corners:
-            cornerJoining =
-                cornerJoining == solver::CornerSeams::Included
+            worldView.worldEdit.cornerJoining =
+                worldView.worldEdit.cornerJoining == solver::CornerSeams::Included
                     ? solver::CornerSeams::Ignored
                     : solver::CornerSeams::Included;
             rebuildWorld();
@@ -202,7 +202,7 @@ namespace antwika::editor
         }
 
         return item == MenuItem::Corners
-               && cornerJoining == solver::CornerSeams::Included;
+               && worldView.worldEdit.cornerJoining == solver::CornerSeams::Included;
     }
 
 }

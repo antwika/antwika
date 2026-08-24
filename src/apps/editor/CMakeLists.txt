@@ -1,6 +1,7 @@
 antwika_add_app(
     NAME editor
     SOURCES
+        src/editor/CameraRig.cpp
         src/editor/CarriedLight.cpp
         src/editor/EditorActions.cpp
         src/editor/EditorDocument.cpp
@@ -9,15 +10,13 @@ antwika_add_app(
         src/editor/EditorMap.cpp
         src/editor/EditorSetup.cpp
         src/editor/GameModule.cpp
+        src/editor/LayerEdit.cpp
         src/editor/PlayComponents.cpp
         src/editor/PlaySession.cpp
-        src/editor/draw/EditorAtlasesDraw.cpp
-        src/editor/draw/EditorCharacterDraw.cpp
+        src/editor/PreferencesFile.cpp
+        src/editor/WorldCamera.cpp
         src/editor/draw/EditorHints.cpp
-        src/editor/draw/EditorIconsDraw.cpp
         src/editor/draw/EditorUi.cpp
-        src/editor/draw/EditorWorldDraw.cpp
-        src/editor/draw/EditorWorldOverlays.cpp
         src/editor/input/EditorChords.cpp
         src/editor/input/EditorKeys.cpp
         src/editor/input/EditorPointer.cpp
@@ -27,11 +26,13 @@ antwika_add_app(
         src/editor/panels/EditorDialogs.cpp
         src/editor/panels/EditorFigurePanel.cpp
         src/editor/panels/EditorMenus.cpp
-        src/editor/panels/EditorPlanPanel.cpp
         src/editor/panels/EditorRail.cpp
         src/editor/panels/EditorSpanPanel.cpp
         src/editor/panels/EditorSpanWidgets.cpp
         src/editor/panels/EditorWidgets.cpp
+        src/editor/state/KeyBench.cpp
+        src/editor/state/SheetStroke.cpp
+        src/editor/state/SheetView.cpp
         src/editor/tools/EditorAssign.cpp
         src/editor/tools/EditorAtlasTools.cpp
         src/editor/tools/EditorFigures.cpp
@@ -44,9 +45,12 @@ antwika_add_app(
         src/editor/tools/EditorTransitions.cpp
         src/editor/tools/EditorVariants.cpp
         src/editor/tools/EditorWorldTools.cpp
+        src/editor/tools/ShapedCubes.cpp
+        src/editor/view/WorldSprites.cpp
         src/main.cpp
         src/plan/PlanBoard.cpp
         src/plan/PlanFile.cpp
+        src/ui/AtlasSheetsView.cpp
         src/ui/AtlasView.cpp
         src/ui/CharacterSheetView.cpp
         src/ui/CharacterView.cpp
@@ -55,11 +59,13 @@ antwika_add_app(
         src/ui/EditorBindingsFile.cpp
         src/ui/IconSheet.cpp
         src/ui/IconsView.cpp
+        src/ui/LayerWidgets.cpp
         src/ui/MapPicker.cpp
         src/ui/MenuBar.cpp
         src/ui/PlanView.cpp
         src/ui/TilemapView.cpp
         src/ui/ToolPanel.cpp
+        src/ui/WorldView.cpp
     LIBS
         antwika::animation
         antwika::app

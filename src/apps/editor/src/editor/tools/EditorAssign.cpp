@@ -8,7 +8,7 @@ namespace antwika::editor
 
     bool Editor::consumeAssignClick(const tilemap::Tile tile)
     {
-        if (!selectedTile.has_value())
+        if (!stroke.selectedTile.has_value())
         {
             return false;
         }
@@ -18,30 +18,30 @@ namespace antwika::editor
             return true;
         }
 
-        if (assignMode.variantPicking && !isDecorLayer())
+        if (assignMode.variantPicking && !isDecorLayer(chosenLayer))
         {
             pickedVariant(tile);
 
             return true;
         }
 
-        if (assignMode.basePicking && isDecorLayer())
+        if (assignMode.basePicking && isDecorLayer(chosenLayer))
         {
             pushUndo();
             ensureDecor();
             document.map.decor = decor::getWithBaseToggled(
-                document.map.decor, *selectedTile, tile);
+                document.map.decor, *stroke.selectedTile, tile);
             rebuildWorld();
 
             return true;
         }
 
-        if (assignMode.memberAssigning && isDecorLayer())
+        if (assignMode.memberAssigning && isDecorLayer(chosenLayer))
         {
             pushUndo();
             ensureDecor();
             document.map.decor = getWithMemberSet(
-                document.map.decor, *selectedTile, assignMode.memberPicked,
+                document.map.decor, *stroke.selectedTile, assignMode.memberPicked,
                 tile);
             assignMode.memberAssigning = false;
             rebuildWorld();
@@ -51,12 +51,12 @@ namespace antwika::editor
 
         if (assignMode.flipFrameAssigning
             && animationOf(document.map.flipAnimations,
-                *selectedTile) != nullptr)
+                *stroke.selectedTile) != nullptr)
         {
             pushUndo();
             document.map.flipAnimations = getWithAnimationFrameSet(
                 document.map.flipAnimations,
-                *selectedTile,
+                *stroke.selectedTile,
                 assignMode.flipFramePicked,
                 tile);
             assignMode.flipFrameAssigning = false;

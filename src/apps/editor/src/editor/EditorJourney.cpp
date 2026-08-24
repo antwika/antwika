@@ -40,7 +40,6 @@ namespace antwika::editor
         }
 
         play.playing = true;
-        activeView = map::View::World;
         aimPlayCamera();
 
         if (playOnly)

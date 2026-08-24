@@ -9,6 +9,7 @@
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/PointF.hpp>
 #include <antwika/gfx/RectF.hpp>
+#include <antwika/input/MouseButton.hpp>
 
 #include <antwika/render/Checkerboard.hpp>
 #include "antwika/editor/ui/EditorLook.hpp"
@@ -81,7 +82,8 @@ namespace antwika::editor
         iconsUnsaved = true;
     }
 
-    void IconsView::draw(gfx::ViewportRenderer &viewportRenderer) const
+    void IconsView::drawSheet(
+        gfx::ViewportRenderer &viewportRenderer) const
     {
         const auto count =
             antwika::editor::getIconCount(iconSheet.size);
@@ -155,6 +157,104 @@ namespace antwika::editor
     std::size_t IconsView::getCount() const
     {
         return getIconCount(iconSheet.size);
+    }
+
+
+    bool IconsView::claims(
+        const map::View shownView, const bool playing) const noexcept
+    {
+        return !playing && shownView == map::View::Icons;
+    }
+
+    std::string IconsView::getStatusText(const ViewContext &) const
+    {
+        return "4 icons - click an icon to take it up - "
+               "lmb paints - rmb rubs out - saved with "
+               "the map";
+    }
+
+    void IconsView::draw(
+        const ViewContext &viewContext, const ui::Frame &)
+    {
+        drawSheet(viewContext.render.viewportRenderer);
+    }
+
+    bool IconsView::consumePress(
+        const ViewContext &viewContext,
+        const input::PointerButtonPressed &downPressed)
+    {
+        if (downPressed.button != input::MouseButton::Left
+            && downPressed.button != input::MouseButton::Right)
+        {
+            return false;
+        }
+
+        const auto projectToScreen =
+            viewContext.render.viewportRenderer.getViewport().toCanvas(
+                gfx::Point{
+                    .x = downPressed.position.x,
+                    .y = downPressed.position.y});
+
+        viewContext.workbench.pointer.pointerOnCanvas = gfx::PointF{
+            static_cast<float>(projectToScreen.x),
+            static_cast<float>(projectToScreen.y)};
+
+        const auto count = getCount();
+        const auto chosenCell = iconCellAt(
+            camera::kCanvasSize, count, viewContext.workbench.pointer.pointerOnCanvas);
+
+        if (chosenCell.has_value())
+        {
+            pick(
+                downPressed.button == input::MouseButton::Right
+                    ? std::nullopt
+                    : std::optional{*chosenCell});
+
+            return true;
+        }
+
+        if (!iconPicked.has_value() || *iconPicked >= count)
+        {
+            return true;
+        }
+
+        const auto pixel = iconPixelAt(
+            getEditedIconRect(camera::kCanvasSize),
+            viewContext.workbench.pointer.pointerOnCanvas);
+
+        if (!pixel.has_value())
+        {
+            return true;
+        }
+
+        viewContext.workbench.stroke.erases =
+            downPressed.button == input::MouseButton::Right;
+        paint(viewContext.render.viewportRenderer, *pixel, viewContext.workbench.stroke.erases);
+        viewContext.document.markDirty();
+        viewContext.workbench.stroke.brushAtCell = pixel;
+        viewContext.workbench.stroke.active = true;
+
+        return true;
+    }
+
+    void IconsView::trackPointer(const ViewContext &viewContext)
+    {
+        if (!viewContext.workbench.stroke.active || !iconPicked.has_value())
+        {
+            return;
+        }
+
+        const auto pixel = iconPixelAt(
+            getEditedIconRect(camera::kCanvasSize),
+            viewContext.workbench.pointer.pointerOnCanvas);
+
+        if (!pixel.has_value())
+        {
+            return;
+        }
+
+        paint(viewContext.render.viewportRenderer, *pixel, viewContext.workbench.stroke.erases);
+        viewContext.workbench.stroke.brushAtCell = pixel;
     }
 
 }

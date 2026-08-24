@@ -16,13 +16,38 @@
 #include "antwika/editor/editor/state/FocusedField.hpp"
 #include "antwika/editor/editor/state/PlanDrag.hpp"
 #include "antwika/editor/plan/PlanBoard.hpp"
+#include "antwika/editor/view/IEditorView.hpp"
 
 namespace antwika::editor
 {
 
-    class PlanView final
+    class PlanView final : public IEditorView
     {
     public:
+        [[nodiscard]] bool claims(
+            map::View shownView, bool playing) const noexcept override;
+
+        [[nodiscard]] std::string getStatusText(
+            const ViewContext &viewContext) const override;
+
+        void draw(
+            const ViewContext &viewContext,
+            const ui::Frame &frame) override;
+
+        [[nodiscard]] bool layoutPanel(
+            ui::Context &context, const ViewContext &viewContext) override;
+
+        void carryFrame(
+            const ui::Frame &frame,
+            const ViewContext &viewContext) override;
+
+        void drawOverlay(const ViewContext &viewContext) override;
+
+        [[nodiscard]] bool takeWidgets(
+            const ui::Interactions &interactions,
+            const ViewContext &viewContext,
+            std::optional<std::string> &notice) override;
+
         void open(std::string path);
 
         [[nodiscard]] const Board &getBoard() const noexcept;
