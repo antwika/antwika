@@ -183,8 +183,8 @@ namespace antwika::gameplay
             }
         };
 
-        lay(laidMap.foodPositions, component::ItemKind::Food);
-        lay(laidMap.waterPositions, component::ItemKind::Water);
+        lay(laidMap.markers.positionsOf(antwika::map::Marker::Food), component::ItemKind::Food);
+        lay(laidMap.markers.positionsOf(antwika::map::Marker::Water), component::ItemKind::Water);
     }
 
 }

@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include <cstdint>
 #include <optional>
-#include <set>
+#include <unordered_set>
 #include <vector>
 
 #include "antwika/voxel/KindTraits.hpp"
@@ -17,6 +17,9 @@ namespace antwika::voxel
 
     namespace
     {
+        using PositionSet =
+            std::unordered_set<VoxelPosition, VoxelPositionHash>;
+
 
         [[nodiscard]] std::optional<VoxelPosition> getRoofOver(
             const Voxels &filledVoxels,
@@ -60,7 +63,7 @@ namespace antwika::voxel
             return false;
         }
 
-        [[nodiscard]] std::set<VoxelPosition> getShellAbout(
+        [[nodiscard]] PositionSet getShellAbout(
             const Voxels &filledVoxels,
             const VoxelPosition columnPosition,
             const std::int32_t lowest,
@@ -85,7 +88,7 @@ namespace antwika::voxel
                        && foundVoxel->second.kind != Kind::Water;
             };
 
-            std::set<VoxelPosition> shellPositions;
+            PositionSet shellPositions;
             const VoxelPosition fromPosition{
                 .x = columnPosition.x, .y = lowest, .z = columnPosition.z};
 
@@ -94,7 +97,7 @@ namespace antwika::voxel
                 return shellPositions;
             }
 
-            std::set<VoxelPosition> airPositions{fromPosition};
+            PositionSet airPositions{fromPosition};
             std::vector<VoxelPosition> askingPositions{fromPosition};
 
             while (!askingPositions.empty())
@@ -135,6 +138,49 @@ namespace antwika::voxel
             return shellPositions;
         } // GCOVR_EXCL_LINE
 
+        void takeWithin(
+            const Voxels &filledVoxels,
+            const VoxelPosition columnPosition,
+            const std::int32_t lowest,
+            const std::int32_t levelCount,
+            const PositionSet &shellPositions,
+            Voxels &voxels)
+        {
+            const auto arm =
+                static_cast<std::int32_t>(kOcclusionMaskWidth) / 2;
+
+            for (auto x = columnPosition.x - arm; x <= columnPosition.x + arm;
+                 ++x)
+            {
+                for (auto y = lowest; y < lowest + levelCount; ++y)
+                {
+                    for (auto z = columnPosition.z - arm;
+                         z <= columnPosition.z + arm;
+                         ++z)
+                    {
+                        if (voxels.size() >= kMaxOccludedVoxels)
+                        {
+                            return;
+                        }
+
+                        const VoxelPosition standingPosition{
+                            .x = x, .y = y, .z = z};
+                        const auto foundVoxel =
+                            filledVoxels.find(standingPosition);
+
+                        if (foundVoxel == filledVoxels.end()
+                            || foundVoxel->second.kind == Kind::Water
+                            || shellPositions.contains(standingPosition))
+                        {
+                            continue;
+                        }
+
+                        voxels[standingPosition] = foundVoxel->second;
+                    }
+                }
+            }
+        }
+
         void liftWhatIsNotTheRoom(
             const Voxels &filledVoxels,
             const VoxelPosition columnPosition,
@@ -150,28 +196,13 @@ namespace antwika::voxel
                 return;
             }
 
-            const auto arm =
-                static_cast<std::int32_t>(kOcclusionMaskWidth) / 2;
-
-            for (const auto &[besidePosition, material] : filledVoxels)
-            {
-                if (voxels.size() >= kMaxOccludedVoxels)
-                {
-                    break;
-                }
-
-                if (besidePosition.y < lowest
-                    || besidePosition.y >= roofLevel
-                    || material.kind == Kind::Water
-                    || std::abs(besidePosition.x - columnPosition.x) > arm
-                    || std::abs(besidePosition.z - columnPosition.z) > arm
-                    || shellPositions.contains(besidePosition))
-                {
-                    continue;
-                }
-
-                voxels[besidePosition] = material;
-            }
+            takeWithin(
+                filledVoxels,
+                columnPosition,
+                lowest,
+                roofLevel - lowest,
+                shellPositions,
+                voxels);
         }
 
         void liftTheRoof(
@@ -180,26 +211,13 @@ namespace antwika::voxel
             const std::int32_t roofLevel,
             Voxels &voxels)
         {
-            const auto arm =
-                static_cast<std::int32_t>(kOcclusionMaskWidth) / 2;
-
-            for (const auto &[overheadPosition, material] : filledVoxels)
-            {
-                if (voxels.size() >= kMaxOccludedVoxels)
-                {
-                    break;
-                }
-
-                if (overheadPosition.y < roofLevel
-                    || material.kind == Kind::Water
-                    || std::abs(overheadPosition.x - columnPosition.x) > arm
-                    || std::abs(overheadPosition.z - columnPosition.z) > arm)
-                {
-                    continue;
-                }
-
-                voxels[overheadPosition] = material;
-            }
+            takeWithin(
+                filledVoxels,
+                columnPosition,
+                roofLevel,
+                static_cast<std::int32_t>(kOcclusionMaskLevels),
+                {},
+                voxels);
         }
 
     }

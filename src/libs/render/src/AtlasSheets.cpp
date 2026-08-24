@@ -1,5 +1,6 @@
 #include "antwika/render/AtlasSheets.hpp"
 
+#include <memory>
 #include <span>
 #include <utility>
 
@@ -94,6 +95,21 @@ namespace antwika::render
 
             return bitmap;
         }
+
+        void put(
+            gfx::IRenderer &viewportRenderer,
+            std::unique_ptr<gfx::ITexture> &texture,
+            const gfx::Bitmap &bitmap)
+        {
+            if (texture && texture->getSize() == bitmap.size)
+            {
+                viewportRenderer.updateTexture(*texture, bitmap);
+
+                return;
+            }
+
+            texture = viewportRenderer.createTexture(bitmap);
+        }
     }
 
     void AtlasSheets::open(
@@ -150,10 +166,14 @@ namespace antwika::render
         const std::uint32_t tick,
         const bool animating)
     {
-        if (!dirty && !animating)
+        const auto frame = tick / decor::kDecorPaceTick;
+
+        if (!dirty && (!animating || frame == paintedFrame))
         {
             return;
         }
+
+        paintedFrame = frame;
 
         for (const auto atlas :
              {tilemap::Atlas::Wall, tilemap::Atlas::Floor})
@@ -172,12 +192,16 @@ namespace antwika::render
                 drawnMap.transitions,
                 drawnMap.paletteColors);
 
-            paintedTextures.at(atlasIndex) =
-                viewportRenderer.createTexture(
-                    getEncodeGlow(compositedAtlasSheet, drawnMap));
-            keyedOutTextures.at(atlasIndex) = viewportRenderer.createTexture(
-                getEncodeGlow(getWithColorKeyed(compositedAtlasSheet, drawnMap),
-                drawnMap));
+            put(
+                viewportRenderer,
+                paintedTextures.at(atlasIndex),
+                getEncodeGlow(compositedAtlasSheet, drawnMap));
+            put(
+                viewportRenderer,
+                keyedOutTextures.at(atlasIndex),
+                getEncodeGlow(
+                    getWithColorKeyed(compositedAtlasSheet, drawnMap),
+                    drawnMap));
         }
 
         dirty = false;

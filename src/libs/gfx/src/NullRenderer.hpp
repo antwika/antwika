@@ -61,6 +61,8 @@ namespace antwika::gfx::detail
         void updateTexture(
             ITexture &texture, const Bitmap &bitmap) override;
 
+        void updateMesh(IMesh &mesh, const MeshData &data) override;
+
         void drawTexture(
             const ITexture &texture,
             RectF sourceRect,

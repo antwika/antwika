@@ -27,29 +27,6 @@ namespace antwika::collision
                    - 1;
         }
 
-        constexpr float kHeightSlack = 0.001F;
-
-        [[nodiscard]] constexpr bool isNearlyAtLeast(
-            const float height, const float bound) noexcept
-        {
-            return height >= bound - kHeightSlack;
-        }
-
-        [[nodiscard]] constexpr bool isNearlyAtMost(
-            const float height, const float bound) noexcept
-        {
-            return height <= bound + kHeightSlack;
-        }
-
-        [[nodiscard]] constexpr bool isNearlyWithin(
-            const float height,
-            const float lowBound,
-            const float highBound) noexcept
-        {
-            return isNearlyAtLeast(height, lowBound)
-                   && isNearlyAtMost(height, highBound);
-        }
-
         [[nodiscard]] float topOf(const std::int32_t y)
         {
             return (static_cast<float>(y) + 1.0F) * voxel::kVoxelSide;
@@ -98,38 +75,6 @@ namespace antwika::collision
                         .z = position.z};
                 })
                 .value_or(position);
-        }
-
-        [[nodiscard]] std::optional<std::pair<
-            std::int32_t,
-            std::int32_t>>
-        getLadderRungs(
-            const voxel::Voxels &filledVoxels,
-            const std::int32_t x,
-            const std::int32_t z)
-        {
-            std::optional<std::int32_t> lowLevel;
-            std::optional<std::int32_t> highLevel;
-
-            for (const auto &[position, material] : filledVoxels)
-            {
-                if (position.x != x || position.z != z
-                    || !voxel::isClimbable(material.kind))
-                {
-                    continue;
-                }
-
-                lowLevel = std::min(lowLevel.value_or(position.y), position.y);
-                highLevel =
-                    std::max(highLevel.value_or(position.y), position.y);
-            }
-
-            if (!lowLevel.has_value())
-            {
-                return std::nullopt;
-            }
-
-            return std::pair{*lowLevel, *highLevel};
         }
 
         [[nodiscard]] float getDistanceBetween(
@@ -199,8 +144,7 @@ namespace antwika::collision
                 .z = z};
             const auto foundVoxel = filledVoxels.find(groundPosition);
 
-            if (foundVoxel == filledVoxels.end()
-                || voxel::isClimbable(foundVoxel->second.kind))
+            if (foundVoxel == filledVoxels.end())
             {
                 continue;
             }
@@ -380,76 +324,11 @@ namespace antwika::collision
         return bestPosition;
     }
 
-    namespace
-    {
-        [[nodiscard]] std::optional<component::Position> getClimbedOnLadder(
-            const voxel::Voxels &filledVoxels,
-            const component::Position position,
-            const component::Velocity velocity)
-        {
-            const auto rungs = getLadderRungs(
-                filledVoxels, columnOf(position.x), columnOf(position.z));
-
-            if (!rungs.has_value())
-            {
-                return std::nullopt;
-            }
-
-            const auto foot = topOf(rungs->first) - voxel::kVoxelSide;
-            const auto head = topOf(rungs->second);
-
-            if (!isNearlyWithin(position.y, foot, head))
-            {
-                return std::nullopt;
-            }
-
-            const auto pace =
-                kWalkSpeed * velocity.speedMultiplier * kRampSpeedFactor;
-            auto liftedPosition = position;
-
-            liftedPosition.y = std::clamp(
-                position.y + (-velocity.velocityZ * pace), foot, head);
-
-            if (velocity.velocityX != 0.0F)
-            {
-                liftedPosition = getMovedBy(
-                    filledVoxels,
-                    liftedPosition,
-                    velocity.velocityX * pace,
-                    0.0F);
-            }
-
-            const auto leavingTop = isNearlyAtLeast(liftedPosition.y, head)
-                                    && velocity.velocityZ < 0.0F;
-            const auto leavingFoot = isNearlyAtMost(liftedPosition.y, foot)
-                                     && velocity.velocityZ > 0.0F;
-
-            if (leavingTop || leavingFoot)
-            {
-                liftedPosition = getMovedBy(
-                    filledVoxels,
-                    liftedPosition,
-                    0.0F,
-                    velocity.velocityZ * pace);
-            }
-
-            return liftedPosition;
-        }
-    }
-
     component::Position getMovedWithCollision(
         const voxel::Voxels &filledVoxels,
         const component::Position position,
         const component::Velocity velocity)
     {
-        const auto climbedPosition =
-            getClimbedOnLadder(filledVoxels, position, velocity);
-
-        if (climbedPosition.has_value())
-        {
-            return *climbedPosition;
-        }
-
         const auto walkSpeed = std::sqrt(
             (velocity.velocityX * velocity.velocityX)
             + (velocity.velocityZ * velocity.velocityZ));

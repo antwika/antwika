@@ -72,6 +72,11 @@ namespace antwika::gfx::detail
         logger.log(Level::Trace, "gfx.null: update texture");
     }
 
+    void NullRenderer::updateMesh(IMesh &, const MeshData &)
+    {
+        logger.log(Level::Trace, "gfx.null: update mesh");
+    }
+
     void NullRenderer::drawTexture(
         const ITexture &, RectF, RectF, Color)
     {

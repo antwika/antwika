@@ -12,6 +12,7 @@
 #include <antwika/component/RosterIndex.hpp>
 #include <antwika/gfx/Camera3D.hpp>
 #include <antwika/gfx/Color.hpp>
+#include <antwika/gfx/MeshBox.hpp>
 #include <antwika/gfx/MeshMaterial.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/RectF.hpp>
@@ -406,12 +407,19 @@ namespace antwika::game
                 .shader = &worldShader.getProgram()};
         };
 
+        const auto clipMatrix = camera.getViewProjection() * modelMatrix;
+
         const auto pile = [&]
         {
             for (const auto &piece : meshes.getSolid())
             {
+                if (gfx::isBoxOutside(piece.box, clipMatrix))
+                {
+                    continue;
+                }
+
                 viewportRenderer.drawMesh(
-                    *piece,
+                    *piece.mesh,
                     modelMatrix,
                     camera,
                     material(false));
@@ -425,7 +433,12 @@ namespace antwika::game
 
             for (const auto &piece : meshes.getWater())
             {
-                viewportRenderer.drawMesh(*piece,
+                if (gfx::isBoxOutside(piece.box, clipMatrix))
+                {
+                    continue;
+                }
+
+                viewportRenderer.drawMesh(*piece.mesh,
                     modelMatrix,
                     camera,
                     material(false));

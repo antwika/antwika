@@ -19,7 +19,6 @@ namespace antwika::worldgen::detail
             voxel::Facing::North,
             voxel::Facing::South};
 
-        constexpr std::uint64_t kLadderWeight = 3;
         constexpr std::uint64_t kStairWeight = 5;
         constexpr std::uint64_t kAcrossWeight = 2;
 
@@ -311,35 +310,6 @@ namespace antwika::worldgen::detail
                 return true;
             }
 
-            void addLadder(
-                std::vector<Move> &moves,
-                const voxel::VoxelPosition positions) const
-            {
-                const auto raisedCell = getRaisedPosition(positions, 1);
-
-                if (!stands(raisedCell) || !isUntrodden(raisedCell))
-                {
-                    return;
-                }
-
-                if (!wears(positions, Role::Climb)
-                    || !wears(raisedCell, Role::Perch))
-                {
-                    return;
-                }
-
-                Move madeMove{.toPosition = raisedCell,
-                    .weight = kLadderWeight};
-                madeMove.stairSteps[madeMove.pinCount++] = StairStep{
-                    .position = cellOf(shape, positions),
-                    .wantedCells = rules.getWearing(Role::Climb)};
-                madeMove.stairSteps[madeMove.pinCount++] = StairStep{
-                    .position = cellOf(shape, raisedCell),
-                    .wantedCells = rules.getWearing(Role::Perch)};
-
-                moves.push_back(madeMove);
-            }
-
             void addStair(
                 std::vector<Move> &moves,
                 const voxel::VoxelPosition position,
@@ -425,8 +395,6 @@ namespace antwika::worldgen::detail
                 const voxel::VoxelPosition position) const
             {
                 std::vector<Move> moves;
-
-                addLadder(moves, position);
 
                 for (const voxel::Facing facing : kWaysAbout)
                 {

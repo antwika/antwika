@@ -13,6 +13,7 @@ add_executable(antwika_gfx_tests
     CubeFaceTest.cpp
     IWindowTest.cpp
     Math3DTest.cpp
+    MeshBoxTest.cpp
     MeshDataTest.cpp
     MeshMaterialTest.cpp
     NullBackendConformanceTest.cpp

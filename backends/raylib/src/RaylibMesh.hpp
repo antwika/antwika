@@ -33,6 +33,8 @@ namespace antwika::gfx::raylib
 
         [[nodiscard]] const ::Mesh &getRawHandle() const noexcept;
 
+        [[nodiscard]] ::Mesh &writableHandle() noexcept;
+
         [[nodiscard]] bool isLoaded() const noexcept;
 
         void untrackRenderer() noexcept;

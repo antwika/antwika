@@ -42,6 +42,8 @@ namespace antwika::gfx
         [[nodiscard]] virtual std::unique_ptr<IMesh> createMesh(
             const MeshData &mesh) = 0;
 
+        virtual void updateMesh(IMesh &mesh, const MeshData &data) = 0;
+
         [[nodiscard]] virtual std::unique_ptr<IShader> createShader(
             const ShaderSource &source) = 0;
 

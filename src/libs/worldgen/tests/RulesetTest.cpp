@@ -45,7 +45,7 @@ namespace
                      Socket::Floats,
                      Socket::OpenSide,
                      Socket::OpenSide},
-                .roles = maskOf(Role::Climb)},
+                .roles = maskOf(Role::Perch)},
             Prototype{
                 .name = "air room",
                 .air = true,

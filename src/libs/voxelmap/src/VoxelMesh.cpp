@@ -4,7 +4,10 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <optional>
+#include <utility>
+#include <vector>
 
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/RectF.hpp>
@@ -269,6 +272,77 @@ namespace antwika::voxelmap
         }
 
         return mesh;
+    } // GCOVR_EXCL_LINE
+
+
+    voxel::VoxelPosition getMeshRegionOf(
+        const voxel::VoxelPosition position, const std::int32_t regionSide)
+    {
+        const auto slotOf = [regionSide](const std::int32_t place)
+        {
+            const auto offset = place % regionSide;
+
+            return (place - (offset < 0 ? offset + regionSide : offset))
+                   / regionSide;
+        };
+
+        return voxel::VoxelPosition{
+            .x = slotOf(position.x),
+            .y = slotOf(position.y),
+            .z = slotOf(position.z)};
+    }
+
+    std::vector<gfx::MeshData> getVoxelMeshPieces(
+        const voxel::Voxels &voxels,
+        const std::span<const FaceRef> faces,
+        const std::span<const tilemap::Tile> wovenTiles,
+        const Pass pass,
+        const std::int32_t regionSide)
+    {
+        std::map<voxel::VoxelPosition, std::vector<std::size_t>>
+            facesByRegion;
+
+        for (std::size_t index = 0;
+             index < faces.size() && index < wovenTiles.size();
+             ++index)
+        {
+            facesByRegion[getMeshRegionOf(
+                              faces[index].cell.position, regionSide)]
+                .push_back(index);
+        }
+
+        std::vector<gfx::MeshData> pieceMeshes;
+
+        for (const auto &[region, indexes] : facesByRegion)
+        {
+            std::vector<FaceRef> regionFaces;
+            std::vector<tilemap::Tile> regionTiles;
+
+            regionFaces.reserve(indexes.size());
+            regionTiles.reserve(indexes.size());
+
+            for (const auto index : indexes)
+            {
+                regionFaces.push_back(faces[index]);
+                regionTiles.push_back(wovenTiles[index]);
+            }
+
+            const auto regionMesh =
+                getVoxelMesh(voxels, regionFaces, regionTiles, pass);
+
+            if (regionMesh.vertices.empty())
+            {
+                continue;
+            }
+
+            for (auto &piece :
+                 gfx::getSplitMesh(regionMesh, kMeshPieceVertices))
+            {
+                pieceMeshes.push_back(std::move(piece));
+            }
+        }
+
+        return pieceMeshes;
     } // GCOVR_EXCL_LINE
 
 }

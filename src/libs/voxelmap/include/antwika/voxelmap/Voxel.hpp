@@ -106,6 +106,18 @@ namespace antwika::voxelmap
 
     inline constexpr std::size_t kMeshPieceVertices = 60000;
 
+    inline constexpr std::int32_t kMeshRegionSide = 16;
+
+    [[nodiscard]] voxel::VoxelPosition getMeshRegionOf(
+        voxel::VoxelPosition position, std::int32_t regionSide);
+
+    [[nodiscard]] std::vector<gfx::MeshData> getVoxelMeshPieces(
+        const voxel::Voxels &voxels,
+        std::span<const FaceRef> faces,
+        std::span<const tilemap::Tile> wovenTiles,
+        Pass pass,
+        std::int32_t regionSide = kMeshRegionSide);
+
     [[nodiscard]] gfx::Mat4 getModelRotation(
         float yawRadians, float pitchRadians);
 

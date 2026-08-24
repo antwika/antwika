@@ -93,9 +93,22 @@ namespace antwika::gfx::raylib
     {
         auto *mine = dynamic_cast<RaylibTexture *>(&texture);
 
-        if (mine == nullptr || !mine->isOwnedBy(*this)
-            || !mine->isLoaded() || !bitmap.isValid()
-            || mine->getSize() != bitmap.size || !attached)
+        if (mine == nullptr || !mine->isOwnedBy(*this) || !mine->isLoaded())
+        {
+            sayRefused("a texture this renderer does not hold was updated");
+
+            return;
+        }
+
+        if (!bitmap.isValid() || mine->getSize() != bitmap.size)
+        {
+            sayRefused("a texture was updated from a picture of "
+                       "another size");
+
+            return;
+        }
+
+        if (!attached)
         {
             return;
         }
@@ -185,6 +198,84 @@ namespace antwika::gfx::raylib
         }
 
         return std::make_unique<RaylibMesh>(*this, nativeMesh);
+    }
+
+    void RaylibRenderer::updateMesh(IMesh &mesh, const MeshData &data)
+    {
+        auto *mine = dynamic_cast<RaylibMesh *>(&mesh);
+
+        if (mine == nullptr || !mine->isOwnedBy(*this) || !mine->isLoaded())
+        {
+            sayRefused("a mesh this renderer does not hold was updated");
+
+            return;
+        }
+
+        if (!data.isComplete()
+            || mine->getVertexCount() != data.vertices.size()
+            || mine->getTriangleCount() != data.getTriangleCount())
+        {
+            sayRefused(
+                "a mesh was updated from geometry of another shape");
+
+            return;
+        }
+
+        if (!attached)
+        {
+            return;
+        }
+
+        auto &nativeMesh = mine->writableHandle();
+        const auto vertexCount = data.vertices.size();
+
+        for (std::size_t vertex = 0; vertex < vertexCount; ++vertex)
+        {
+            const Vertex3D &sourceVertex = data.vertices[vertex];
+
+            nativeMesh.vertices[(vertex * 3) + 0] = sourceVertex.position.x;
+            nativeMesh.vertices[(vertex * 3) + 1] = sourceVertex.position.y;
+            nativeMesh.vertices[(vertex * 3) + 2] = sourceVertex.position.z;
+
+            nativeMesh.normals[(vertex * 3) + 0] = sourceVertex.normal.x;
+            nativeMesh.normals[(vertex * 3) + 1] = sourceVertex.normal.y;
+            nativeMesh.normals[(vertex * 3) + 2] = sourceVertex.normal.z;
+
+            nativeMesh.texcoords[(vertex * 2) + 0] =
+                sourceVertex.texCoordinate.x;
+            nativeMesh.texcoords[(vertex * 2) + 1] =
+                sourceVertex.texCoordinate.y;
+
+            nativeMesh.colors[(vertex * 4) + 0] = sourceVertex.color.red;
+            nativeMesh.colors[(vertex * 4) + 1] = sourceVertex.color.green;
+            nativeMesh.colors[(vertex * 4) + 2] = sourceVertex.color.blue;
+            nativeMesh.colors[(vertex * 4) + 3] = sourceVertex.color.alpha;
+        }
+
+        UpdateMeshBuffer(
+            nativeMesh,
+            0,
+            nativeMesh.vertices,
+            static_cast<int>(vertexCount * 3 * sizeof(float)),
+            0);
+        UpdateMeshBuffer(
+            nativeMesh,
+            1,
+            nativeMesh.texcoords,
+            static_cast<int>(vertexCount * 2 * sizeof(float)),
+            0);
+        UpdateMeshBuffer(
+            nativeMesh,
+            2,
+            nativeMesh.normals,
+            static_cast<int>(vertexCount * 3 * sizeof(float)),
+            0);
+        UpdateMeshBuffer(
+            nativeMesh,
+            3,
+            nativeMesh.colors,
+            static_cast<int>(vertexCount * 4 * sizeof(unsigned char)),
+            0);
     }
 
     std::unique_ptr<IShader> RaylibRenderer::createShader(
@@ -307,6 +398,12 @@ namespace antwika::gfx::raylib
         if (mine == nullptr || !mine->isOwnedBy(*this)
             || !mine->isLoaded())
         {
+            if (texture != nullptr)
+            {
+                sayRefused(
+                    "a texture this renderer does not hold was bound");
+            }
+
             return nullptr;
         }
 

@@ -11,7 +11,6 @@ namespace antwika::voxel
         }
 
         return neighbourKind == Kind::Normal
-               || neighbourKind == Kind::Ladder
                || selfKind == Kind::Water;
     }
 

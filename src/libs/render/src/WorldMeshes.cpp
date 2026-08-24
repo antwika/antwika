@@ -1,9 +1,12 @@
 #include "antwika/render/WorldMeshes.hpp"
 
+#include <algorithm>
+#include <ranges>
 #include <utility>
 
 #include <antwika/decor/Decor.hpp>
 #include <antwika/decor/Variants.hpp>
+#include <antwika/gfx/MeshBox.hpp>
 #include <antwika/gfx/MeshData.hpp>
 #include <antwika/map/MapAssets.hpp>
 #include <antwika/tile/Transitions.hpp>
@@ -11,47 +14,74 @@
 namespace antwika::render
 {
 
+    namespace
+    {
+        [[nodiscard]] bool isSameFace(
+            const voxelmap::FaceRef &oneFace,
+            const voxelmap::FaceRef &otherFace)
+        {
+            return oneFace.cell.position == otherFace.cell.position
+                   && oneFace.cell.material == otherFace.cell.material
+                   && oneFace.side == otherFace.side
+                   && oneFace.climbPosition == otherFace.climbPosition
+                   && oneFace.levelHalf == otherFace.levelHalf;
+        }
+
+        [[nodiscard]] bool isSameWeave(
+            const std::vector<voxelmap::FaceRef> &oneFaces,
+            const std::vector<voxelmap::FaceRef> &otherFaces)
+        {
+            return std::ranges::equal(oneFaces, otherFaces, isSameFace);
+        }
+    }
+
     void WorldMeshes::rebuild(
         gfx::IRenderer &viewportRenderer,
         const map::Map &drawnMap,
-        voxel::Voxels shownVoxels,
+        const voxel::Voxels &shownVoxels,
         const solver::CornerSeams joiningSeams,
         const std::array<gfx::Bitmap, 2> &sheetBitmaps,
         const std::uint32_t tick)
     {
-        auto viewedMap = drawnMap;
-
-        viewedMap.voxels = shownVoxels;
-        effectiveRules = tile::getRulesWithTransitions(
+        auto wovenRules = tile::getRulesWithTransitions(
             drawnMap.rules,
             drawnMap.transitions,
             sheetBitmaps.at(0),
             sheetBitmaps.at(1),
             drawnMap.paletteColors);
-        viewedMap.rules = effectiveRules;
-        solvedTiles =
-            map::faceTilesFor(viewedMap, joiningSeams, faceTileCache);
-        visibleFaces = voxelmap::visibleFacesOf(shownVoxels);
+        auto shownFaces = voxelmap::visibleFacesOf(shownVoxels);
+        const auto sameWeave = !solvedTiles.empty()
+                               && joiningSeams == solvedSeams
+                               && wovenRules == effectiveRules
+                               && isSameWeave(shownFaces, visibleFaces);
+
+        visibleFaces = std::move(shownFaces);
+        effectiveRules = std::move(wovenRules);
+        solvedSeams = joiningSeams;
+
+        if (!sameWeave)
+        {
+            auto woven = map::faceTilesFor(
+                visibleFaces, effectiveRules, joiningSeams, faceTileCache);
+
+            solvedTiles = std::move(woven.tiles);
+            weaveSolve = std::move(woven.solve);
+        }
         finalFaceTiles = decor::getWithVariantsApplied(
             visibleFaces, solvedTiles, drawnMap.familyGroups, 0);
 
         const auto meshFor = [this, &viewportRenderer, &shownVoxels](
                                  const voxelmap::Pass pass)
         {
-            const auto mesh = voxelmap::getVoxelMesh(
-                shownVoxels, visibleFaces, finalFaceTiles, pass);
+            std::vector<MeshPiece> pieceMeshes;
 
-            std::vector<std::unique_ptr<gfx::IMesh>> pieceMeshes;
-
-            if (mesh.vertices.empty())
+            for (const auto &piece : voxelmap::getVoxelMeshPieces(
+                     shownVoxels, visibleFaces, finalFaceTiles, pass))
             {
-                return pieceMeshes;
-            }
-
-            for (const auto &piece :
-                 gfx::getSplitMesh(mesh, voxelmap::kMeshPieceVertices))
-            {
-                pieceMeshes.push_back(viewportRenderer.createMesh(piece));
+                pieceMeshes.push_back(
+                    MeshPiece{
+                        .mesh = viewportRenderer.createMesh(piece),
+                        .box = gfx::getMeshBox(piece)});
             }
 
             return pieceMeshes;
@@ -66,8 +96,7 @@ namespace antwika::render
             drawnMap.decorRules,
             0);
         rebuildDecor(viewportRenderer, drawnMap, tick);
-        solidVoxels = voxel::Voxels(
-            drawnMap.voxels.begin(), drawnMap.voxels.end());
+        solidVoxels = drawnMap.voxels;
     }
 
     void WorldMeshes::rebuildDecor(
@@ -100,19 +129,31 @@ namespace antwika::render
             }
         }
 
-        decorMesh = mergedData.vertices.empty()
-                  ? nullptr
-                  : viewportRenderer.createMesh(mergedData);
+        if (mergedData.vertices.empty())
+        {
+            decorMesh = nullptr;
+
+            return;
+        }
+
+        if (decorMesh
+            && decorMesh->getVertexCount() == mergedData.vertices.size()
+            && decorMesh->getTriangleCount() == mergedData.getTriangleCount())
+        {
+            viewportRenderer.updateMesh(*decorMesh, mergedData);
+
+            return;
+        }
+
+        decorMesh = viewportRenderer.createMesh(mergedData);
     }
 
-    std::span<const std::unique_ptr<gfx::IMesh>> WorldMeshes::getSolid()
-        const noexcept
+    std::span<const MeshPiece> WorldMeshes::getSolid() const noexcept
     {
         return solidMesh;
     }
 
-    std::span<const std::unique_ptr<gfx::IMesh>> WorldMeshes::getWater()
-        const noexcept
+    std::span<const MeshPiece> WorldMeshes::getWater() const noexcept
     {
         return waterMesh;
     }
@@ -144,6 +185,11 @@ namespace antwika::render
         const noexcept
     {
         return finalFaceTiles;
+    }
+
+    const solver::TileSolve &WorldMeshes::getWeaveSolve() const noexcept
+    {
+        return weaveSolve;
     }
 
     const tile::TileRules &WorldMeshes::getRules() const noexcept

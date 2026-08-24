@@ -24,13 +24,10 @@ namespace antwika::worldgen
         NeedsRoot,
         NeedsLanding,
         NeedsApproach,
-        NeedsOpen,
-        NeedsBack,
         Sky,
         Carries,
         Terrace,
         StairHead,
-        Rung,
         WaterTop,
         Floats,
         Stands,
@@ -38,7 +35,6 @@ namespace antwika::worldgen
         Hangs,
         Rooted,
         Climbs,
-        Grips,
         Submerged,
     };
 

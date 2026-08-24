@@ -21,6 +21,8 @@
 #include <antwika/voxel/Voxels.hpp>
 #include <antwika/voxelmap/Voxel.hpp>
 
+#include "antwika/render/MeshPiece.hpp"
+
 namespace antwika::render
 {
 
@@ -30,7 +32,7 @@ namespace antwika::render
         void rebuild(
             gfx::IRenderer &viewportRenderer,
             const map::Map &drawnMap,
-            voxel::Voxels shownVoxels,
+            const voxel::Voxels &shownVoxels,
             solver::CornerSeams joiningSeams,
             const std::array<gfx::Bitmap, 2> &sheetBitmaps,
             std::uint32_t tick);
@@ -40,11 +42,9 @@ namespace antwika::render
             const map::Map &drawnMap,
             std::uint32_t tick);
 
-        [[nodiscard]] std::span<const std::unique_ptr<gfx::IMesh>>
-        getSolid() const noexcept;
+        [[nodiscard]] std::span<const MeshPiece> getSolid() const noexcept;
 
-        [[nodiscard]] std::span<const std::unique_ptr<gfx::IMesh>>
-        getWater() const noexcept;
+        [[nodiscard]] std::span<const MeshPiece> getWater() const noexcept;
 
         [[nodiscard]] const gfx::IMesh *getDecor() const noexcept;
 
@@ -60,6 +60,9 @@ namespace antwika::render
         [[nodiscard]] const std::vector<tilemap::Tile> &getDrawnAs()
             const noexcept;
 
+        [[nodiscard]] const solver::TileSolve &getWeaveSolve()
+            const noexcept;
+
         [[nodiscard]] const tile::TileRules &getRules() const noexcept;
 
         [[nodiscard]] const std::vector<
@@ -72,11 +75,13 @@ namespace antwika::render
         std::vector<tilemap::Tile> finalFaceTiles;
         std::vector<voxelmap::FaceRef> visibleFaces;
         tile::TileRules effectiveRules;
+        solver::TileSolve weaveSolve{};
+        solver::CornerSeams solvedSeams{};
         std::vector<
             std::pair<std::size_t, std::map<std::size_t, tilemap::Tile>>>
             decorByFace;
-        std::vector<std::unique_ptr<gfx::IMesh>> solidMesh;
-        std::vector<std::unique_ptr<gfx::IMesh>> waterMesh;
+        std::vector<MeshPiece> solidMesh;
+        std::vector<MeshPiece> waterMesh;
         std::unique_ptr<gfx::IMesh> decorMesh;
         voxel::Voxels solidVoxels;
     };

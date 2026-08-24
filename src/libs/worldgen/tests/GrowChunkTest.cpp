@@ -142,7 +142,8 @@ TEST(GrowChunkTest, Grow_StandsAStairTheWayTheArtistPaintedIt)
 
     ASSERT_EQ(result.outcome, ChunkOutcome::Grown);
 
-    const auto *foundCell = getFoundMaterial(result, hintVoxels.begin()->first);
+    const auto *foundCell = getFoundMaterial(
+        result, VoxelPosition{.x = 2, .y = 5, .z = 2});
 
     ASSERT_NE(foundCell, nullptr);
     EXPECT_EQ(foundCell->kind, Kind::Ramp);
@@ -369,7 +370,6 @@ TEST(GrowChunkTest, Grow_NamesABlockNoDistrictCanBeStackedInto)
             .roles = static_cast<std::uint8_t>(
                 maskOf(Role::Room)
                 | maskOf(Role::Perch)
-                | maskOf(Role::Climb)
                 | maskOf(Role::Step))},
         Prototype{
             .name = "stone",

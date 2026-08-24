@@ -6,11 +6,15 @@
 #include <array>
 #include <cmath>
 #include <functional>
+#include <memory>
 #include <map>
 #include <set>
 #include <string>
+#include <set>
 #include <string_view>
+#include <tuple>
 #include <utility>
+#include <vector>
 
 #include <antwika/wfc/AdjacencyConstraint.hpp>
 #include <antwika/wfc/CompatibilityTable.hpp>
@@ -87,6 +91,28 @@ namespace antwika::solver
         std::vector<wfc::Domain> waveDomains;
         std::size_t skippedFaceCount = 0;
         std::size_t settledCount = 0;
+        std::map<tilemap::Tile, std::vector<std::pair<voxel::Corner, bool>>>
+            cornersByTile;
+
+        using WantKey = std::tuple<
+            DomainKey, voxel::VoxelPosition, std::size_t, voxel::StairHalf>;
+
+        std::map<WantKey, std::set<tilemap::Tile>> tilesByWant;
+
+        const auto cornersFor = [&rules, &cornersByTile](
+                                    const tilemap::Tile tile)
+            -> const std::vector<std::pair<voxel::Corner, bool>> &
+        {
+            const auto foundCorners = cornersByTile.find(tile);
+
+            if (foundCorners != cornersByTile.end())
+            {
+                return foundCorners->second;
+            }
+
+            return cornersByTile.emplace(tile, rules.cornersOf(tile))
+                .first->second;
+        };
 
         for (std::size_t which = 0; which < faces.size(); ++which)
         {
@@ -101,7 +127,24 @@ namespace antwika::solver
             }
 
             const auto &offeredTiles = tilesByDomain.at(wantedKey);
-            const auto mine = tilesFor(rules, offeredTiles, faces[which]);
+            const WantKey wantKey{
+                wantedKey,
+                faces[which].climbPosition,
+                faces[which].side,
+                faces[which].levelHalf};
+            auto foundWanted = tilesByWant.find(wantKey);
+
+            if (foundWanted == tilesByWant.end())
+            {
+                foundWanted =
+                    tilesByWant
+                        .emplace(
+                            wantKey,
+                            tilesFor(rules, offeredTiles, faces[which]))
+                        .first;
+            }
+
+            const auto &mine = foundWanted->second;
 
             if (mine.empty())
             {
@@ -116,19 +159,18 @@ namespace antwika::solver
                 continue;
             }
 
-            wfc::Domain domain(kTileDomainSize);
             const auto edges = edgesOf(standing, faces, faces[which]);
             const auto beyondCorners =
                 getCornersBeyond(standing, faces, faces[which]);
 
-            for (std::size_t value = 0; value < kTileDomainSize;
-                 ++value)
-            {
-                const auto tile = getTileFromIndex(value);
+            std::vector<std::size_t> keptValues;
 
-                if (tile.atlas != atlas || !mine.contains(tile))
+            keptValues.reserve(mine.size());
+
+            for (const auto tile : mine)
+            {
+                if (tile.atlas != atlas)
                 {
-                    domain.remove(value);
                     continue;
                 }
 
@@ -144,29 +186,40 @@ namespace antwika::solver
                     }
                 }
 
-                for (const auto &[corner, cornerFilled] :
-                     rules.cornersOf(tile))
+                if (!anyBarred)
                 {
-                    if (beyondCorners.at(corner) != cornerFilled)
+                    for (const auto &[corner, cornerFilled] :
+                         cornersFor(tile))
                     {
-                        anyBarred = true;
-                        break;
+                        if (beyondCorners.at(corner) != cornerFilled)
+                        {
+                            anyBarred = true;
+                            break;
+                        }
                     }
                 }
 
-                if (anyBarred)
+                if (!anyBarred)
                 {
-                    domain.remove(value);
+                    keptValues.push_back(getTileToIndex(tile));
                 }
             }
 
-            if (domain.isEmpty())
+            if (keptValues.empty())
             {
                 return TileSolve{
                     .troubleFailure = SolveFailure::EmptyDomain,
                     .unsatisfiedAtlas = atlas,
                     .skippedFaceCount = skippedFaceCount,
                     .conflictFaces = {faces[which]}};
+            }
+
+            auto domain = wfc::Domain::createSingleton(
+                keptValues.front(), kTileDomainSize);
+
+            for (const auto value : keptValues)
+            {
+                domain.add(value);
             }
 
             cellOf[which] = waveDomains.size();
@@ -188,6 +241,35 @@ namespace antwika::solver
                 .skippedFaceCount = skippedFaceCount};
         }
 
+        std::vector<wfc::Domain> distinctDomains;
+        std::vector<std::size_t> domainIdOf;
+
+        for (const auto &one : waveDomains)
+        {
+            std::size_t sameId = 0;
+
+            while (sameId < distinctDomains.size()
+                   && !(distinctDomains[sameId] == one))
+            {
+                ++sameId;
+            }
+
+            if (sameId == distinctDomains.size())
+            {
+                distinctDomains.push_back(one);
+            }
+
+            domainIdOf.push_back(sameId);
+        }
+
+        using TableKey = std::tuple<
+            tilemap::TileEdge,
+            tilemap::TileEdge,
+            std::size_t,
+            std::size_t>;
+
+        std::map<TableKey, std::shared_ptr<const wfc::CompatibilityTable>>
+            tablesByKey;
         std::vector<wfc::AdjacencyConstraint> adjacencies;
 
         for (const auto &seam : getFaceAdjacency(faces, corners))
@@ -198,39 +280,52 @@ namespace antwika::solver
                 continue;
             }
 
-            wfc::CompatibilityTable table(kTileDomainSize);
-            auto anyPair = false;
+            const TableKey tableKey{
+                seam.edgeA,
+                seam.edgeB,
+                domainIdOf[cellOf[seam.faceA]],
+                domainIdOf[cellOf[seam.faceB]]};
+            auto foundTable = tablesByKey.find(tableKey);
 
-            for (const auto one : waveDomains[cellOf[seam.faceA]])
+            if (foundTable == tablesByKey.end())
             {
-                for (const auto other : waveDomains[cellOf[seam.faceB]])
+                auto madeTable =
+                    std::make_shared<wfc::CompatibilityTable>(
+                        kTileDomainSize);
+                auto anyPair = false;
+
+                for (const auto one : waveDomains[cellOf[seam.faceA]])
                 {
-                    const auto both = edgesCompatible(
-                        rules,
-                        getTileFromIndex(one),
-                        seam.edgeA,
-                        getTileFromIndex(other),
-                        seam.edgeB);
+                    for (const auto other : waveDomains[cellOf[seam.faceB]])
+                    {
+                        const auto both = edgesCompatible(
+                            rules,
+                            getTileFromIndex(one),
+                            seam.edgeA,
+                            getTileFromIndex(other),
+                            seam.edgeB);
 
-                    table.set(one, other, both);
-                    anyPair = anyPair || both;
+                        madeTable->set(one, other, both);
+                        anyPair = anyPair || both;
+                    }
                 }
-            }
 
-            if (!anyPair)
-            {
-                return TileSolve{
-                    .troubleFailure = SolveFailure::IncompatibleEdge,
-                    .unsatisfiedEdge = seam.edgeA,
-                    .skippedFaceCount = skippedFaceCount,
-                    .conflictFaces = {
-                        faces[seam.faceA], faces[seam.faceB]}};
+                if (!anyPair)
+                {
+                    return TileSolve{
+                        .troubleFailure = SolveFailure::IncompatibleEdge,
+                        .unsatisfiedEdge = seam.edgeA,
+                        .skippedFaceCount = skippedFaceCount,
+                        .conflictFaces = {
+                            faces[seam.faceA], faces[seam.faceB]}};
+                }
+
+                foundTable =
+                    tablesByKey.emplace(tableKey, std::move(madeTable)).first;
             }
 
             adjacencies.emplace_back(
-                cellOf[seam.faceA],
-                cellOf[seam.faceB],
-                std::move(table));
+                cellOf[seam.faceA], cellOf[seam.faceB], foundTable->second);
         }
 
         std::vector<std::pair<std::size_t, std::size_t>> countedPairs;

@@ -113,34 +113,6 @@ namespace antwika::worldgen
             return madePrototype;
         }
 
-        [[nodiscard]] Prototype getLadder(
-            const char *name,
-            const Facing facing,
-            const Face openFace,
-            const Face backFace)
-        {
-            Prototype madePrototype{
-                .name = name,
-                .kind = Kind::Ladder,
-                .facing = facing,
-                .air = false,
-                .sockets =
-                    {Socket::Facade,
-                     Socket::Facade,
-                     Socket::Rung,
-                     Socket::Grips,
-                     Socket::Facade,
-                     Socket::Facade},
-                .roles = rolesOf({Role::Perch, Role::Climb})};
-
-            madePrototype.sockets[static_cast<std::size_t>(openFace)] =
-                Socket::NeedsOpen;
-            madePrototype.sockets[static_cast<std::size_t>(backFace)] =
-                Socket::NeedsBack;
-
-            return madePrototype;
-        }
-
         [[nodiscard]] District getQuarter(
             const char *name,
             const std::uint8_t untilShare,
@@ -225,10 +197,6 @@ namespace antwika::worldgen
                 Face::South,
                 Face::North,
                 Socket::StairSideSouth),
-            getLadder("ladder east", Facing::East, Face::East, Face::West),
-            getLadder("ladder west", Facing::West, Face::West, Face::East),
-            getLadder("ladder north", Facing::North, Face::North, Face::South),
-            getLadder("ladder south", Facing::South, Face::South, Face::North),
             getBlock(
                 "cistern",
                 Socket::WaterSide,
@@ -252,11 +220,7 @@ namespace antwika::worldgen
                  {CityPiece::StairEast, 1},
                  {CityPiece::StairWest, 1},
                  {CityPiece::StairNorth, 1},
-                 {CityPiece::StairSouth, 1},
-                 {CityPiece::LadderEast, 1},
-                 {CityPiece::LadderWest, 1},
-                 {CityPiece::LadderNorth, 1},
-                 {CityPiece::LadderSouth, 1}}),
+                 {CityPiece::StairSouth, 1}}),
             getQuarter(
                 "undercroft",
                 16,
@@ -269,11 +233,7 @@ namespace antwika::worldgen
                  {CityPiece::StairEast, 2},
                  {CityPiece::StairWest, 2},
                  {CityPiece::StairNorth, 2},
-                 {CityPiece::StairSouth, 2},
-                 {CityPiece::LadderEast, 3},
-                 {CityPiece::LadderWest, 3},
-                 {CityPiece::LadderNorth, 3},
-                 {CityPiece::LadderSouth, 3}}),
+                 {CityPiece::StairSouth, 2}}),
             getQuarter(
                 "slums",
                 40,
@@ -289,11 +249,7 @@ namespace antwika::worldgen
                  {CityPiece::StairEast, 4},
                  {CityPiece::StairWest, 4},
                  {CityPiece::StairNorth, 4},
-                 {CityPiece::StairSouth, 4},
-                 {CityPiece::LadderEast, 4},
-                 {CityPiece::LadderWest, 4},
-                 {CityPiece::LadderNorth, 4},
-                 {CityPiece::LadderSouth, 4}}),
+                 {CityPiece::StairSouth, 4}}),
             getQuarter(
                 "middling",
                 68,
@@ -309,11 +265,7 @@ namespace antwika::worldgen
                  {CityPiece::StairEast, 5},
                  {CityPiece::StairWest, 5},
                  {CityPiece::StairNorth, 5},
-                 {CityPiece::StairSouth, 5},
-                 {CityPiece::LadderEast, 2},
-                 {CityPiece::LadderWest, 2},
-                 {CityPiece::LadderNorth, 2},
-                 {CityPiece::LadderSouth, 2}}),
+                 {CityPiece::StairSouth, 5}}),
             getQuarter(
                 "heights",
                 90,
@@ -328,11 +280,7 @@ namespace antwika::worldgen
                  {CityPiece::StairEast, 3},
                  {CityPiece::StairWest, 3},
                  {CityPiece::StairNorth, 3},
-                 {CityPiece::StairSouth, 3},
-                 {CityPiece::LadderEast, 1},
-                 {CityPiece::LadderWest, 1},
-                 {CityPiece::LadderNorth, 1},
-                 {CityPiece::LadderSouth, 1}}),
+                 {CityPiece::StairSouth, 3}}),
             getQuarter(
                 "sky",
                 100,

@@ -68,6 +68,8 @@ namespace antwika::gfx
         [[nodiscard]] std::unique_ptr<ITexture> createTexture(
             const Bitmap &bitmap) override;
 
+        void updateMesh(IMesh &mesh, const MeshData &data) override;
+
         void updateTexture(
             ITexture &texture, const Bitmap &bitmap) override;
 

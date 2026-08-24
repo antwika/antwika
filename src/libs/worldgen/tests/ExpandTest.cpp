@@ -60,11 +60,11 @@ TEST(ExpandTest, ChunkVoxels_KeepsTheFacingOnlyOnARamp)
         EXPECT_EQ(material.facing, Facing::North);
     }
 
-    const auto ladder = getChunkVoxels(
-        voxelsOf({VoxelCell{.material = {.kind = Kind::Ladder,
+    const auto plain = getChunkVoxels(
+        voxelsOf({VoxelCell{.material = {.kind = Kind::Normal,
             .facing = Facing::North}}}));
 
-    for (const auto &[position, material] : ladder)
+    for (const auto &[position, material] : plain)
     {
         EXPECT_EQ(material.facing, Facing::Any);
     }

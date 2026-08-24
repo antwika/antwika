@@ -27,7 +27,7 @@ TEST(VoxelStairsTest, InferredRampDirection_RisesTowardsWhatStandsBesideIt)
             .material = {.kind = Kind::Ramp}},
         VoxelCell{.position = {.x = 0, .y = 0, .z = 1},
             .material = {.kind = Kind::Normal}}});
-    const auto climb = getInferredRampDirection(voxels, voxels.begin()->first);
+    const auto climb = getInferredRampDirection(voxels, VoxelPosition{});
 
     EXPECT_EQ(climb.x, 0);
     EXPECT_EQ(climb.y, 0);
@@ -50,8 +50,8 @@ TEST(
             .material = {.kind = Kind::Normal}},
         VoxelCell{.position = {.x = 1, .y = 1, .z = 0},
             .material = {.kind = Kind::Ramp}}});
-    const auto climb = getInferredRampDirection(voxels,
-        std::prev(voxels.end())->first);
+    const auto climb = getInferredRampDirection(
+        voxels, VoxelPosition{.x = 1, .y = 1, .z = 0});
 
     EXPECT_EQ(climb.x, 1);
     EXPECT_EQ(climb.z, 0);
@@ -359,9 +359,9 @@ TEST(VoxelStairsTest, StairHalfOf_StandsAStepOnAnotherAtTheUpperLevel)
         VoxelCell{.position = {.x = 0, .y = 1, .z = 0},
             .material = {.kind = Kind::Ramp}}});
 
-    EXPECT_EQ(stairHalfOf(voxels, voxels.begin()->first), StairHalf::Lower);
-    EXPECT_EQ(stairHalfOf(voxels, std::next(voxels.begin())->first),
-        StairHalf::Upper);
+    EXPECT_EQ(stairHalfOf(voxels, VoxelPosition{}), StairHalf::Lower);
+    EXPECT_EQ(
+        stairHalfOf(voxels, VoxelPosition{.y = 1}), StairHalf::Upper);
 }
 
 
@@ -373,7 +373,7 @@ TEST(VoxelStairsTest, StairHalfOf_StandsAVoxelThatIsNoStepAtNoLevel)
 
     const auto voxels = voxelsOf({VoxelCell{}});
 
-    EXPECT_EQ(stairHalfOf(voxels, voxels.begin()->first), StairHalf::Any);
+    EXPECT_EQ(stairHalfOf(voxels, VoxelPosition{}), StairHalf::Any);
 }
 
 
@@ -395,7 +395,7 @@ TEST(VoxelStairsTest, InferredRampDirection_TakesTheWayAVoxelWasTold)
                 .material = {.kind = Kind::Normal}}});
 
         EXPECT_EQ(
-            getInferredRampDirection(voxels, voxels.begin()->first),
+            getInferredRampDirection(voxels, VoxelPosition{}),
             stepVectorFor(told));
     }
 }
@@ -414,8 +414,8 @@ TEST(VoxelStairsTest, InferredRampDirection_ReckonsAVoxelToldNothing)
             .material = {.kind = Kind::Normal}}});
 
     EXPECT_EQ(
-        getInferredRampDirection(voxels,
-            voxels.begin()->first), VoxelPosition{.x = 1});
+        getInferredRampDirection(voxels, VoxelPosition{}),
+        VoxelPosition{.x = 1});
 }
 
 
@@ -432,7 +432,7 @@ TEST(VoxelStairsTest, InferredRampDirection_HoldsAToldWayWithNothingBesideIt)
             .material = {.kind = Kind::Ramp, .facing = Facing::North}}});
 
     EXPECT_EQ(
-        getInferredRampDirection(voxels, voxels.begin()->first),
+        getInferredRampDirection(voxels, VoxelPosition{}),
         stepVectorFor(Facing::North));
 }
 

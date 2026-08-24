@@ -25,10 +25,6 @@ namespace antwika::worldgen
         StairWest,
         StairNorth,
         StairSouth,
-        LadderEast,
-        LadderWest,
-        LadderNorth,
-        LadderSouth,
         Cistern,
     };
 

@@ -653,11 +653,11 @@ namespace
         }
     }
 
-    TEST(DecorTest, SolveDecor_DressesALadderWallItsBasesAllow)
+    TEST(DecorTest, SolveDecor_DressesAWaterWallItsBasesAllow)
     {
         const auto voxels = antwika::voxel::voxelsOf({
             antwika::voxel::VoxelCell{
-                .material = {.kind = antwika::voxel::Kind::Ladder}}});
+                .material = {.kind = antwika::voxel::Kind::Water}}});
         const auto faces = visibleFacesOf(voxels);
         const auto drawnTiles = getFacedWith(faces, kBrickTile, kOneTile);
         auto decor = getWithDecorToggled({}, kMossTile);
