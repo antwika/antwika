@@ -18,6 +18,7 @@
 #include <antwika/text/GlyphAtlasTextures.hpp>
 #include <antwika/gfx/IMesh.hpp>
 #include <antwika/gfx/IRenderer.hpp>
+#include <antwika/log/ILogger.hpp>
 #include <antwika/gfx/IShader.hpp>
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/Math3D.hpp>
@@ -30,6 +31,8 @@
 namespace antwika::gfx::raylib
 {
 
+    using antwika::log::ILogger;
+
     class RaylibMaterial;
     class RaylibMesh;
     class RaylibRenderTarget;
@@ -39,7 +42,7 @@ namespace antwika::gfx::raylib
     class RaylibRenderer final : public IRenderer
     {
     public:
-        RaylibRenderer();
+        explicit RaylibRenderer(ILogger &logger);
 
         RaylibRenderer(const RaylibRenderer &) = delete;
         RaylibRenderer(RaylibRenderer &&) = delete;
@@ -67,6 +70,8 @@ namespace antwika::gfx::raylib
 
         [[nodiscard]] std::unique_ptr<ITexture> createTexture(
             const Bitmap &bitmap) override;
+
+        void updateMesh(IMesh &mesh, const MeshData &data) override;
 
         void updateTexture(
             ITexture &texture, const Bitmap &bitmap) override;
@@ -148,9 +153,12 @@ namespace antwika::gfx::raylib
         void untrackTarget(const RaylibRenderTarget &target) noexcept;
 
     private:
+        ILogger &logger;
         void ensureDrawing();
 
         std::vector<RectF> clipRects;
+
+        void sayRefused(std::string_view what) const;
 
         [[nodiscard]] const ::Texture2D *ownTextureOf(
             const ITexture *texture) const noexcept;

@@ -65,20 +65,13 @@ namespace antwika::map
 
         void mapV9ToV10(nlohmann::json &document)
         {
-            const Settings openingSettings;
-
             nlohmann::json settings;
 
-            settings[std::string(kLightingKey)] =
-                openingSettings.lighting;
-            settings[std::string(kTiesKey)] =
-                openingSettings.showRuleLines;
-            settings[std::string(kToolKey)] =
-                std::string(nameOf(openingSettings.tool));
-            settings[std::string(kDrawingKey)] =
-                std::string(nameOf(openingSettings.paint));
-            settings[std::string(kViewKey)] =
-                std::string(nameOf(openingSettings.view));
+            settings[std::string(kLightingKey)] = true;
+            settings[std::string(kTiesKey)] = true;
+            settings[std::string(kToolKey)] = "brush";
+            settings[std::string(kDrawingKey)] = "brush";
+            settings[std::string(kViewKey)] = "world";
 
             document[std::string(kSettingsKey)] = settings;
         }

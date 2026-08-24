@@ -14,7 +14,7 @@ namespace antwika::map::mapfile
     {
         std::string_view key;
 
-        std::vector<voxel::VoxelPosition> Map::*cells;
+        Marker marker;
     };
 
 }

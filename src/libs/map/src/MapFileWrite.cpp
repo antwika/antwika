@@ -40,19 +40,19 @@ namespace antwika::map
             {
                 auto arrayJson = nlohmann::json::array();
 
-                for (const auto &[position, material] : voxels)
+                for (const auto &cell : voxel::getSortedCells(voxels))
                 {
                     nlohmann::json writtenVoxel;
 
                     writtenVoxel[std::string(kAtKey)] =
-                        jsonOf(position);
+                        jsonOf(cell.position);
                     writtenVoxel[std::string(kKindKey)] =
-                        std::string(nameOf(material.kind));
+                        std::string(nameOf(cell.material.kind));
 
-                    if (material.facing != voxel::Facing::Any)
+                    if (cell.material.facing != voxel::Facing::Any)
                     {
                         writtenVoxel[std::string(kClimbKey)] =
-                            std::string(nameOf(material.facing));
+                            std::string(nameOf(cell.material.facing));
                     }
 
                     arrayJson.push_back(writtenVoxel);

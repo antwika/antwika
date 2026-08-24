@@ -36,7 +36,7 @@ namespace antwika::map
 
     inline constexpr std::string_view kMapMagic = "antwika.map";
 
-    inline constexpr std::uint32_t kMapVersion = 45;
+    inline constexpr std::uint32_t kMapVersion = 47;
 
     inline constexpr std::int32_t kMaxCellCoord = 1 << 20;
 
