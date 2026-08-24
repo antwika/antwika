@@ -14,6 +14,7 @@
 #include <antwika/io/SafeWrite.hpp>
 #include <antwika/light/PointLight.hpp>
 #include <antwika/map/Layers.hpp>
+#include <antwika/map/Marker.hpp>
 #include <antwika/map/Settings.hpp>
 #include <antwika/tilemap/Tilemap.hpp>
 #include <antwika/tile/TilePaint.hpp>
@@ -53,15 +54,7 @@ namespace antwika::map
 
         bool exitLocked = false;
 
-        std::vector<voxel::VoxelPosition> keyPositions{};
-
-        std::vector<voxel::VoxelPosition> doorPositions{};
-
-        std::vector<voxel::VoxelPosition> checkpointPositions{};
-
-        std::vector<voxel::VoxelPosition> foodPositions{};
-
-        std::vector<voxel::VoxelPosition> waterPositions{};
+        Markers markers{};
 
         std::optional<CameraView> camera{};
 

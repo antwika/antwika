@@ -7,7 +7,7 @@ antwika_add_library(
         src/MapAssets.cpp
         src/MapFile.cpp
         src/MapFileField.cpp
-    src/MapFileMigrations.cpp
+        src/MapFileMigrations.cpp
         src/MapFileMigrations2.cpp
         src/MapFileMigrations3.cpp
         src/MapFileMigrations4.cpp
@@ -16,21 +16,21 @@ antwika_add_library(
         src/MapFileSchema2.cpp
         src/MapFileWrite.cpp
         src/MapFileWrite2.cpp
+        src/Marker.cpp
         src/PlayerProgress.cpp
     DEPENDS
         antwika::camera
-        antwika::enums
         antwika::character
         antwika::decor
-        antwika::schema
+        antwika::enums
         antwika::gfx
         antwika::image
         antwika::io
         antwika::light
+        antwika::schema
         antwika::solver
-        antwika::tilemap
         antwika::tile
-        antwika::widget
+        antwika::tilemap
         antwika::voxel
         antwika::voxelmap
         nlohmann_json::nlohmann_json

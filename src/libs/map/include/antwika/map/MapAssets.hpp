@@ -1,7 +1,6 @@
 #pragma once
 
 #include <array>
-
 #include <map>
 #include <string>
 #include <string_view>
@@ -12,10 +11,10 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/tilemap/AtlasLayout.hpp>
 #include <antwika/tilemap/Tilemap.hpp>
-#include <antwika/voxelmap/Voxel.hpp>
-#include <antwika/solver/VoxelWeave.hpp>
-
 #include <antwika/map/MapFile.hpp>
+#include <antwika/map/WovenTiles.hpp>
+#include <antwika/solver/VoxelWeave.hpp>
+#include <antwika/voxelmap/Voxel.hpp>
 
 namespace antwika::map
 {
@@ -24,8 +23,9 @@ namespace antwika::map
         const std::vector<voxelmap::FaceRef> &faces,
         const tile::TileRules &rules);
 
-    [[nodiscard]] std::vector<tilemap::Tile> faceTilesFor(
-        const Map &map,
+    [[nodiscard]] WovenTiles faceTilesFor(
+        const std::vector<voxelmap::FaceRef> &faces,
+        const tile::TileRules &rules,
         solver::CornerSeams corners,
         std::map<voxelmap::FaceRef, tilemap::Tile> &tileCache);
 

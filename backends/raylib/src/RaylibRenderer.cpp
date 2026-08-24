@@ -6,10 +6,13 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/GfxError.hpp>
+#include <antwika/log/Level.hpp>
 
 #include "RaylibFrame.hpp"
 #include "RaylibMaterial.hpp"
@@ -37,7 +40,17 @@ namespace antwika::gfx::raylib
         using HeldImage = std::unique_ptr<::Image, ImageCloser>;
     }
 
-    RaylibRenderer::RaylibRenderer() = default;
+    RaylibRenderer::RaylibRenderer(ILogger &loggerGiven)
+        : logger(loggerGiven)
+    {
+    }
+
+    void RaylibRenderer::sayRefused(const std::string_view what) const
+    {
+        logger.log(
+            antwika::log::Level::Warning,
+            std::string("gfx.raylib: ") + std::string(what));
+    }
 
     RaylibRenderer::~RaylibRenderer()
     {

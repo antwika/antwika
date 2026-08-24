@@ -44,7 +44,7 @@ namespace antwika::map::mapfile
         {
             auto arrayJson = nlohmann::json::array();
 
-            for (const auto cell : map.*(row.cells))
+            for (const auto cell : map.markers.positionsOf(row.marker))
             {
                 arrayJson.push_back(jsonOf(cell));
             }

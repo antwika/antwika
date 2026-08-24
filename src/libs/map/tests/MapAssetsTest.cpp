@@ -201,15 +201,19 @@ namespace
 
     TEST(MapAssetsTest, FaceTilesFor_GivesOneTilePerVisibleFace)
     {
-        Map map;
-
-        map.voxels = getDemoCells();
+        const auto faces = visibleFacesOf(getDemoCells());
 
         std::map<antwika::voxelmap::FaceRef, Tile> tileCache;
-        const auto tiles = faceTilesFor(
-            map, antwika::solver::CornerSeams::Included, tileCache);
+        const auto woven = faceTilesFor(
+            faces,
+            antwika::tile::TileRules{},
+            antwika::solver::CornerSeams::Included,
+            tileCache);
 
-        EXPECT_EQ(tiles.size(), visibleFacesOf(map.voxels).size());
+        EXPECT_EQ(woven.tiles.size(), faces.size());
+        EXPECT_EQ(
+            woven.solve.troubleFailure,
+            antwika::solver::SolveFailure::EmptyDomain);
     }
 
 }

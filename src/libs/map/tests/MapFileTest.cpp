@@ -889,29 +889,24 @@ TEST(MapFileTest, WriteMap_KeepsHowTheEditorWasLeftStanding)
     Map map{.tilemap = getDefaultTilemap()};
 
     map.settings = antwika::map::Settings{
-        .lighting = false,
-        .showRuleLines = false,
-        .tool = antwika::map::Tool::Picker,
-        .paint = antwika::map::Paint::Fill,
-        .view = antwika::map::View::Atlases};
+        .lighting = false, .cornersJoined = true};
 
     const auto loadedMap = getReadText(getSerializeMap(map));
 
     EXPECT_EQ(loadedMap.settings, map.settings);
 }
 
-TEST(MapFileTest, WriteMap_NamesTheToolsRatherThanNumbersThem)
+TEST(MapFileTest, WriteMap_KeepsNoneOfTheWorkbenchTheArtistSetUp)
 {
     Map map{.tilemap = getDefaultTilemap()};
 
-    map.settings.paint = antwika::map::Paint::Line;
-
     const auto document = nlohmann::json::parse(getSerializeMap(map));
 
-    EXPECT_EQ(document["settings"]["drawing"], "line");
-    EXPECT_EQ(document["settings"]["view"], "world");
-    EXPECT_EQ(document["settings"]["tool"], "brush");
     EXPECT_TRUE(document["settings"]["lighting"].get<bool>());
+    EXPECT_FALSE(document["settings"].contains("tool"));
+    EXPECT_FALSE(document["settings"].contains("drawing"));
+    EXPECT_FALSE(document["settings"].contains("view"));
+    EXPECT_FALSE(document["settings"].contains("kind"));
 }
 
 TEST(MapFileTest, ReadMap_GivesAMapKeptBeforeSettingsTheOpeningOnes)
@@ -946,22 +941,20 @@ TEST(MapFileTest, WriteMap_KeepsWhatEachVoxelIsMadeOf)
             .material = {.kind = antwika::voxel::Kind::Water}},
         antwika::voxel::VoxelCell{.position = {.x = 1, .y = 0, .z = 0},
             .material = {.kind = antwika::voxel::Kind::Ramp}}});
-    map.settings.kind = antwika::voxel::Kind::Ramp;
 
     const auto loadedMap = getReadText(getSerializeMap(map));
 
     ASSERT_EQ(loadedMap.voxels.size(), 2U);
     EXPECT_EQ(
-        loadedMap.voxels.begin()->second.kind, antwika::voxel::Kind::Water);
+        loadedMap.voxels.at(antwika::voxel::VoxelPosition{}).kind,
+        antwika::voxel::Kind::Water);
     EXPECT_EQ(
-        std::next(loadedMap.voxels.begin())->second.kind,
+        loadedMap.voxels.at(antwika::voxel::VoxelPosition{.x = 1}).kind,
         antwika::voxel::Kind::Ramp);
-    EXPECT_EQ(loadedMap.settings.kind, antwika::voxel::Kind::Ramp);
 
     const auto document = nlohmann::json::parse(getSerializeMap(map));
 
     EXPECT_EQ(document["voxels"][0]["kind"], "water");
-    EXPECT_EQ(document["settings"]["kind"], "ramp");
 }
 
 TEST(MapFileTest, ReadMap_MakesEveryVoxelKeptBeforeTheKindsASolidOne)
@@ -980,10 +973,11 @@ TEST(MapFileTest, ReadMap_MakesEveryVoxelKeptBeforeTheKindsASolidOne)
     const auto loadedMap = getReadText(document.dump());
 
     ASSERT_EQ(loadedMap.voxels.size(), 1U);
-    EXPECT_EQ(loadedMap.voxels.begin()->first.x, 3);
     EXPECT_EQ(
-        loadedMap.voxels.begin()->second.kind, antwika::voxel::Kind::Normal);
-    EXPECT_EQ(loadedMap.settings.kind, antwika::voxel::Kind::Normal);
+        loadedMap.voxels
+            .at(antwika::voxel::VoxelPosition{.x = 3, .y = 2, .z = 1})
+            .kind,
+        antwika::voxel::Kind::Normal);
 }
 
 TEST(MapFileTest, ReadMap_RefusesAKindItDoesNotKnow)
@@ -1259,7 +1253,10 @@ TEST(MapFileTest, WriteMap_KeepsWhichWayARampWasToldToClimb)
 
     ASSERT_EQ(loadedMap.voxels.size(), 1U);
     EXPECT_EQ(
-        loadedMap.voxels.begin()->second.facing, antwika::voxel::Facing::North);
+        loadedMap.voxels
+            .at(antwika::voxel::VoxelPosition{.x = 1, .y = 0, .z = 2})
+            .facing,
+        antwika::voxel::Facing::North);
 
     const auto document = nlohmann::json::parse(getSerializeMap(map));
 
@@ -1281,7 +1278,8 @@ TEST(MapFileTest, WriteMap_SaysNothingOfARampToldNothing)
     const auto loadedMap = getReadText(getSerializeMap(map));
 
     ASSERT_EQ(loadedMap.voxels.size(), 1U);
-    EXPECT_EQ(loadedMap.voxels.begin()->second.facing,
+    EXPECT_EQ(
+        loadedMap.voxels.at(antwika::voxel::VoxelPosition{}).facing,
         antwika::voxel::Facing::Any);
 }
 
@@ -1805,18 +1803,27 @@ TEST(MapFileTest, WriteMap_CarriesTheGatesItHolds)
 {
     auto map = getDemoMap();
 
-    map.keyPositions = {VoxelPosition{.x = 1, .y = 0, .z = 2}};
-    map.doorPositions = {
-        VoxelPosition{.x = 3, .y = 0, .z = 2},
-        VoxelPosition{.x = 3, .y = 1, .z = 2}};
-    map.checkpointPositions = {VoxelPosition{.x = 5, .y = 0, .z = 5}};
+    std::int32_t apart = 1;
+
+    for (const auto marker : antwika::map::kEveryMarker)
+    {
+        map.markers.positionsOf(marker) = {
+            VoxelPosition{.x = apart, .y = 0, .z = 2},
+            VoxelPosition{.x = apart, .y = 1, .z = 2}};
+        apart += 2;
+    }
+
     map.exitLocked = true;
 
     const auto reloadedMap = getReadText(getSerializeMap(map));
 
-    EXPECT_EQ(reloadedMap.keyPositions, map.keyPositions);
-    EXPECT_EQ(reloadedMap.doorPositions, map.doorPositions);
-    EXPECT_EQ(reloadedMap.checkpointPositions, map.checkpointPositions);
+    for (const auto marker : antwika::map::kEveryMarker)
+    {
+        EXPECT_EQ(
+            reloadedMap.markers.positionsOf(marker), map.markers.positionsOf(marker))
+            << static_cast<int>(marker);
+    }
+
     EXPECT_TRUE(reloadedMap.exitLocked);
 }
 
@@ -1833,9 +1840,9 @@ TEST(MapFileTest, ReadMap_LeavesAMapDrawnBeforeGatesBare)
 
     const auto reloadedMap = getReadText(document.dump());
 
-    EXPECT_TRUE(reloadedMap.keyPositions.empty());
-    EXPECT_TRUE(reloadedMap.doorPositions.empty());
-    EXPECT_TRUE(reloadedMap.checkpointPositions.empty());
+    EXPECT_TRUE(reloadedMap.markers.positionsOf(antwika::map::Marker::Key).empty());
+    EXPECT_TRUE(reloadedMap.markers.positionsOf(antwika::map::Marker::Door).empty());
+    EXPECT_TRUE(reloadedMap.markers.positionsOf(antwika::map::Marker::Checkpoint).empty());
     EXPECT_FALSE(reloadedMap.exitLocked);
 }
 
@@ -1843,15 +1850,19 @@ TEST(MapFileTest, WriteMap_CarriesTheItemsItHolds)
 {
     auto map = getDemoMap();
 
-    map.foodPositions = {VoxelPosition{.x = 1, .y = 0, .z = 2}};
-    map.waterPositions = {
+    map.markers.positionsOf(antwika::map::Marker::Food) = {VoxelPosition{.x = 1, .y = 0, .z = 2}};
+    map.markers.positionsOf(antwika::map::Marker::Water) = {
         VoxelPosition{.x = 3, .y = 0, .z = 2},
         VoxelPosition{.x = 3, .y = 1, .z = 2}};
 
     const auto reloadedMap = getReadText(getSerializeMap(map));
 
-    EXPECT_EQ(reloadedMap.foodPositions, map.foodPositions);
-    EXPECT_EQ(reloadedMap.waterPositions, map.waterPositions);
+    EXPECT_EQ(
+        reloadedMap.markers.positionsOf(antwika::map::Marker::Food),
+        map.markers.positionsOf(antwika::map::Marker::Food));
+    EXPECT_EQ(
+        reloadedMap.markers.positionsOf(antwika::map::Marker::Water),
+        map.markers.positionsOf(antwika::map::Marker::Water));
 }
 
 TEST(MapFileTest, ReadMap_LeavesAMapDrawnBeforeItemsBare)
@@ -1863,8 +1874,8 @@ TEST(MapFileTest, ReadMap_LeavesAMapDrawnBeforeItemsBare)
 
     const auto reloadedMap = getReadText(document.dump());
 
-    EXPECT_TRUE(reloadedMap.foodPositions.empty());
-    EXPECT_TRUE(reloadedMap.waterPositions.empty());
+    EXPECT_TRUE(reloadedMap.markers.positionsOf(antwika::map::Marker::Food).empty());
+    EXPECT_TRUE(reloadedMap.markers.positionsOf(antwika::map::Marker::Water).empty());
 }
 
 TEST(MapFileTest, ReadMap_RefusesAnItemBeyondTheLattice)
@@ -1880,15 +1891,13 @@ TEST(MapFileTest, ReadMap_RefusesAnItemBeyondTheLattice)
         antwika::map::MapFileError);
 }
 
-TEST(MapFileTest, WriteMap_CarriesTheChosenGateTool)
+TEST(MapFileTest, WriteMap_CarriesWhetherTheCornersAreJoined)
 {
     auto map = getDemoMap();
 
-    map.settings.tool = antwika::map::Tool::Checkpoint;
+    map.settings.cornersJoined = true;
 
-    EXPECT_EQ(
-        getReadText(getSerializeMap(map)).settings.tool,
-        antwika::map::Tool::Checkpoint);
+    EXPECT_TRUE(getReadText(getSerializeMap(map)).settings.cornersJoined);
 }
 
 TEST(MapFileTest, ReadMap_RefusesAKeyBeyondTheLattice)
@@ -2384,32 +2393,24 @@ TEST(MapFileTest, PatrolStopsOf_GivesEveryCharacterItsStopsInOrder)
     EXPECT_TRUE(stops.at(1).empty());
 }
 
-TEST(MapFileTest, WriteMap_WritesAMapSavedWithEveryTool)
+TEST(MapFileTest, WriteMap_ReadsBackEveryWorldSettingItWrote)
 {
-    for (const auto tool : antwika::enums::kAll<antwika::map::Tool>)
+    for (const auto lighting : {false, true})
     {
-        Map map;
-        map.settings.tool = tool;
+        for (const auto joined : {false, true})
+        {
+            Map map;
+            map.settings.lighting = lighting;
+            map.settings.cornersJoined = joined;
 
-        std::ostringstream stream;
+            std::ostringstream writtenText;
+            writeMap(writtenText, map);
 
-        EXPECT_NO_THROW(writeMap(stream, map))
-            << static_cast<int>(tool);
-    }
-}
+            std::istringstream stream(writtenText.str());
+            const auto loadedMap = readMap(stream);
 
-TEST(MapFileTest, ReadMap_ReadsBackEveryToolItWrote)
-{
-    for (const auto tool : antwika::enums::kAll<antwika::map::Tool>)
-    {
-        Map map;
-        map.settings.tool = tool;
-
-        std::ostringstream writtenText;
-        writeMap(writtenText, map);
-
-        std::istringstream stream(writtenText.str());
-
-        EXPECT_EQ(readMap(stream).settings.tool, tool);
+            EXPECT_EQ(loadedMap.settings.lighting, lighting);
+            EXPECT_EQ(loadedMap.settings.cornersJoined, joined);
+        }
     }
 }

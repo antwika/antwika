@@ -180,6 +180,83 @@ namespace antwika::map
             document.erase(std::string(kWalkerKey));
         }
 
+        void mapV46ToV47(nlohmann::json &document)
+        {
+            constexpr std::array<std::string_view, 10> kBenchKeys{
+                kToolKey,
+                kDrawingKey,
+                kViewKey,
+                kKindKey,
+                kTiesKey,
+                kGridKey,
+                kMarkerKey,
+                kSightKey,
+                kFollowingKey,
+                kAboveHiddenKey};
+
+            const auto settings = document.find(std::string(kSettingsKey));
+
+            if (settings == document.end() || !settings->is_object())
+            {
+                return;
+            }
+
+            for (const auto key : kBenchKeys)
+            {
+                settings->erase(std::string(key));
+            }
+        }
+
+        void mapV45ToV46(nlohmann::json &document)
+        {
+            constexpr std::string_view kLadderName = "ladder";
+
+            const auto isLadder = [](const nlohmann::json &row)
+            {
+                const auto namedKind = row.find(std::string(kKindKey));
+
+                return namedKind != row.end() && namedKind->is_string()
+                       && namedKind->get<std::string>() == kLadderName;
+            };
+
+            const auto withoutLadders =
+                [&isLadder](const nlohmann::json &rows)
+            {
+                auto keptRows = nlohmann::json::array();
+
+                for (const auto &row : rows)
+                {
+                    if (!isLadder(row))
+                    {
+                        keptRows.push_back(row);
+                    }
+                }
+
+                return keptRows;
+            };
+
+            for (const auto key : {kVoxelsKey, kTileKindsKey})
+            {
+                const auto foundRows = document.find(std::string(key));
+
+                if (foundRows == document.end() || !foundRows->is_array())
+                {
+                    continue;
+                }
+
+                *foundRows = withoutLadders(*foundRows);
+            }
+
+            const auto foundSettings =
+                document.find(std::string(kSettingsKey));
+
+            if (foundSettings != document.end() && foundSettings->is_object()
+                && isLadder(*foundSettings))
+            {
+                (*foundSettings)[std::string(kKindKey)] = "normal";
+            }
+        }
+
         void mapV44ToV45(nlohmann::json &document)
         {
             constexpr std::array<
@@ -405,6 +482,20 @@ namespace antwika::map
                 "antwika::map: every component a figure "
                 "names now lives in antwika::component",
                 mapV44ToV45));
+            migrations.push_back(schema::getMigration(
+                45,
+                46,
+                "antwika::map: a voxel is no longer climbed, "
+                "so the ladders a map stood and the rules "
+                "written for them are gone",
+                mapV45ToV46));
+            migrations.push_back(schema::getMigration(
+                46,
+                47,
+                "antwika::map: the tool, the view and the rest "
+                "of the workbench belong to whoever edits the "
+                "map, not to the map, and are kept beside it",
+                mapV46ToV47));
         }
     }
 

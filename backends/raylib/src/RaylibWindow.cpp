@@ -31,6 +31,7 @@ namespace antwika::gfx::raylib
         const WindowSpec &spec)
         : logger(logger),
           backend(&backend),
+          raylibRenderer(logger),
           windowId(idWindow),
           windowTitle(spec.title),
           requestedSize(spec.size)

@@ -5,8 +5,6 @@
 #include <string_view>
 #include <vector>
 
-#include <antwika/widget/WidgetId.hpp>
-
 namespace antwika::map
 {
 
@@ -15,12 +13,6 @@ namespace antwika::map
     inline constexpr std::size_t kBaseLayer = 0;
 
     inline constexpr std::size_t kMaxLayers = 16;
-
-    inline constexpr widget::WidgetId kFirstLayerWidget{208};
-
-    inline constexpr widget::WidgetId kAddLayerWidget{201};
-
-    inline constexpr widget::WidgetId kRemoveLayerWidget{202};
 
     struct Layer final
     {
@@ -39,7 +31,5 @@ namespace antwika::map
 
     [[nodiscard]] std::vector<Layer> getWithLayerRemoved(
         const std::vector<Layer> &layers, std::size_t layerIndex);
-
-    [[nodiscard]] widget::WidgetId getLayerWidget(std::size_t layerIndex);
 
 }

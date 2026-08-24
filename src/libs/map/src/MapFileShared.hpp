@@ -105,7 +105,7 @@ namespace antwika::map::mapfile
     constexpr std::string_view kKindKey = "kind";
 
     inline constexpr enums::NameTable<voxel::Kind> kKindNames{
-        {"normal", "water", "ramp", "ladder"}};
+        {"normal", "water", "ramp"}};
 
     static_assert(kKindNames.isComplete());
 

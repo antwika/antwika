@@ -74,13 +74,13 @@ namespace antwika::map
         return tiles;
     } // GCOVR_EXCL_LINE
 
-    std::vector<tilemap::Tile> faceTilesFor(
-        const Map &map,
+    WovenTiles faceTilesFor(
+        const std::vector<voxelmap::FaceRef> &faces,
+        const tile::TileRules &rules,
         const solver::CornerSeams corners,
         std::map<voxelmap::FaceRef, tilemap::Tile> &tileCache)
     {
-        const auto faces = voxelmap::visibleFacesOf(map.voxels);
-        const auto solvedTiles = solver::getSolveTiles(faces, map.rules, corners);
+        auto solvedTiles = solver::getSolveTiles(faces, rules, corners);
 
         if (solvedTiles.tiles.has_value())
         {
@@ -91,10 +91,11 @@ namespace antwika::map
                 tileCache.emplace(faces[index], (*solvedTiles.tiles)[index]);
             }
 
-            return *solvedTiles.tiles;
+            return WovenTiles{
+                .tiles = *solvedTiles.tiles, .solve = std::move(solvedTiles)};
         }
 
-        const auto fallbackTileList = getFallbackTiles(faces, map.rules);
+        const auto fallbackTileList = getFallbackTiles(faces, rules);
 
         std::vector<tilemap::Tile> tiles;
 
@@ -109,7 +110,8 @@ namespace antwika::map
                      : was->second);
         }
 
-        return tiles;
+        return WovenTiles{
+            .tiles = std::move(tiles), .solve = std::move(solvedTiles)};
     } // GCOVR_EXCL_LINE
 
     gfx::Bitmap getLoadAtlas(
