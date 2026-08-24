@@ -14,7 +14,6 @@ namespace antwika::worldgen
         Room,
         Perch,
         Bear,
-        Climb,
         Step,
         Land,
     };

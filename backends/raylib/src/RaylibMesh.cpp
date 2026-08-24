@@ -50,6 +50,11 @@ namespace antwika::gfx::raylib
         return mesh;
     }
 
+    ::Mesh &RaylibMesh::writableHandle() noexcept
+    {
+        return mesh;
+    }
+
     bool RaylibMesh::isLoaded() const noexcept
     {
         return loaded;

@@ -5,6 +5,7 @@ add_executable(antwika_render_tests
     HealthBarsTest.cpp
     LightPassesTest.cpp
     ScenePassTest.cpp
+    WorldMeshesTest.cpp
 )
 
 target_link_libraries(antwika_render_tests

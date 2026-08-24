@@ -12,6 +12,7 @@
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/decor/Decor.hpp>
 #include <antwika/gfx/ViewportRenderer.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/gfx/mocks/MockTexture.hpp>
@@ -180,7 +181,27 @@ TEST(AtlasSheetsTest, Refresh_LeavesASheetNoFlipWalksThroughAlone)
 
     EXPECT_CALL(innerRenderer, createTexture).Times(2);
 
-    sheets.refresh(viewportRenderer, drawnMap, 1, true);
+    sheets.refresh(
+        viewportRenderer, drawnMap, antwika::decor::kDecorPaceTick, true);
+}
+
+TEST(AtlasSheetsTest, Refresh_PaintsAFlipOnceForEveryTickItRestsOn)
+{
+    NiceMock<MockRenderer> innerRenderer;
+    handsOutTextures(innerRenderer);
+    ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
+    AtlasSheets sheets;
+    const auto drawnMap = getMapWithFlippingWalls();
+
+    sheets.open(viewportRenderer, getBothSheets(3), drawnMap, 0);
+
+    EXPECT_CALL(innerRenderer, createTexture).Times(0);
+
+    for (std::uint32_t tick = 1; tick < antwika::decor::kDecorPaceTick;
+         ++tick)
+    {
+        sheets.refresh(viewportRenderer, drawnMap, tick, true);
+    }
 }
 
 TEST(AtlasSheetsTest, Open_TakesAnyRendererNotJustAViewportOne)

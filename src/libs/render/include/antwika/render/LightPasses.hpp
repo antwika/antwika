@@ -17,6 +17,8 @@
 #include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxel/Voxels.hpp>
 
+#include "antwika/render/MeshPiece.hpp"
+
 namespace antwika::render
 {
 
@@ -39,7 +41,7 @@ namespace antwika::render
 
         void bakeLamps(
             gfx::IRenderer &viewportRenderer,
-            std::span<const std::unique_ptr<gfx::IMesh>> pileMeshes,
+            std::span<const MeshPiece> pileMeshes,
             const std::vector<light::ActiveLight> &lights);
 
 

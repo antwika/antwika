@@ -59,12 +59,7 @@ namespace antwika::worldgen
             Pair{Socket::NeedsRoot, Socket::LandingSide},
             Pair{Socket::NeedsRoot, Socket::Buried},
             Pair{Socket::NeedsLanding, Socket::LandingSide},
-            Pair{Socket::NeedsApproach, Socket::RoomSide},
-            Pair{Socket::NeedsOpen, Socket::OpenSide},
-            Pair{Socket::NeedsOpen, Socket::RoomSide},
-            Pair{Socket::NeedsBack, Socket::Facade},
-            Pair{Socket::NeedsBack, Socket::LandingSide},
-            Pair{Socket::NeedsBack, Socket::Buried}};
+            Pair{Socket::NeedsApproach, Socket::RoomSide}};
 
         constexpr std::array kUprightPairs{
             Pair{Socket::Sky, Socket::Floats},
@@ -72,27 +67,20 @@ namespace antwika::worldgen
             Pair{Socket::Carries, Socket::Rests},
             Pair{Socket::Carries, Socket::Stands},
             Pair{Socket::Carries, Socket::Climbs},
-            Pair{Socket::Carries, Socket::Grips},
             Pair{Socket::Carries, Socket::Submerged},
             Pair{Socket::Carries, Socket::Rooted},
             Pair{Socket::Terrace, Socket::Stands},
             Pair{Socket::Terrace, Socket::Climbs},
-            Pair{Socket::Terrace, Socket::Grips},
             Pair{Socket::StairHead, Socket::Stands},
-            Pair{Socket::Rung, Socket::Grips},
-            Pair{Socket::Rung, Socket::Stands},
             Pair{Socket::WaterTop, Socket::Submerged},
             Pair{Socket::WaterTop, Socket::Stands},
             Pair{Socket::WaterTop, Socket::Rests},
-            Pair{Socket::WaterTop, Socket::Climbs},
-            Pair{Socket::WaterTop, Socket::Grips}};
+            Pair{Socket::WaterTop, Socket::Climbs}};
 
         constexpr std::array kDemands{
             Socket::NeedsRoot,
             Socket::NeedsLanding,
-            Socket::NeedsApproach,
-            Socket::NeedsOpen,
-            Socket::NeedsBack};
+            Socket::NeedsApproach};
 
         [[nodiscard]] Face getOpposing(const Face face)
         {

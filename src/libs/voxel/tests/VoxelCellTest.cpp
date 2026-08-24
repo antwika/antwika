@@ -38,7 +38,7 @@ TEST(VoxelCellTest, Ordering_TakesThePlaceBeforeTheMaterial)
     EXPECT_LT(
         (VoxelCell{
             .position = {.x = 0},
-            .material = {.kind = Kind::Ladder}}),
+            .material = {.kind = Kind::Water}}),
         (VoxelCell{
             .position = {.x = 1},
             .material = {.kind = Kind::Normal}}));

@@ -7,6 +7,7 @@ add_library(antwika_gfx
     src/ClipScope.cpp
     src/ColorSpace.cpp
     src/CubeFace.cpp
+    src/MeshBox.cpp
     src/MeshData.cpp
     src/NullBackend.cpp
     src/NullMesh.cpp

@@ -59,8 +59,7 @@ namespace antwika::worldgen::fakes
 
             const auto foundCell = stoodMaterials.find(gridPosition);
 
-            return foundCell == stoodMaterials.end()
-                   || foundCell->second.kind == Kind::Ladder;
+            return foundCell == stoodMaterials.end();
         }
 
         [[nodiscard]] bool bears(const GridPos gridPosition) const
@@ -76,17 +75,11 @@ namespace antwika::worldgen::fakes
         {
             std::vector<GridPos> foundPoses;
 
-            if (isLaddered(fromPos) && isRoomy(getCellAbove(fromPos)))
-            {
-                foundPoses.push_back(getCellAbove(fromPos));
-            }
-
             for (const Facing facing : kEveryWayAboutFacings)
             {
                 const auto besidePos = getSteppedCell(fromPos, facing, 1);
 
-                if (isRoomy(besidePos)
-                    && (bears(getCellBelow(besidePos)) || isLaddered(besidePos)))
+                if (isRoomy(besidePos) && bears(getCellBelow(besidePos)))
                 {
                     foundPoses.push_back(besidePos);
                 }
@@ -130,14 +123,6 @@ namespace antwika::worldgen::fakes
     private:
         ChunkShape shape;
         std::map<GridPos, VoxelMaterial> stoodMaterials{};
-
-        [[nodiscard]] bool isLaddered(const GridPos gridPosition) const
-        {
-            const auto foundPoses = stoodMaterials.find(gridPosition);
-
-            return foundPoses != stoodMaterials.end()
-                   && foundPoses->second.kind == Kind::Ladder;
-        }
 
         [[nodiscard]] bool climbs(
             const GridPos gridPosition, const Facing facing) const

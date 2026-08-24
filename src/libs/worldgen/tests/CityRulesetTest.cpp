@@ -63,8 +63,8 @@ TEST(CityRulesetTest, CityRuleset_PutsTheSlumsBelowTheTerraces)
         slums.desire[indexOf(CityPiece::AirOpen)],
         heights.desire[indexOf(CityPiece::AirOpen)]);
     EXPECT_GT(
-        slums.desire[indexOf(CityPiece::LadderEast)],
-        heights.desire[indexOf(CityPiece::LadderEast)]);
+        slums.desire[indexOf(CityPiece::StairEast)],
+        heights.desire[indexOf(CityPiece::StairEast)]);
 }
 
 TEST(CityRulesetTest, CityRuleset_WantsMostlyRockAtTheFootOfTheCity)
@@ -106,7 +106,6 @@ TEST(CityRulesetTest, CityRuleset_HoldsAPieceForEveryRole)
     EXPECT_FALSE(compiledRuleset.getWearing(Role::Room).empty());
     EXPECT_FALSE(compiledRuleset.getWearing(Role::Perch).empty());
     EXPECT_FALSE(compiledRuleset.getWearing(Role::Bear).empty());
-    EXPECT_FALSE(compiledRuleset.getWearing(Role::Climb).empty());
     EXPECT_FALSE(compiledRuleset.getWearing(Role::Step).empty());
     EXPECT_FALSE(compiledRuleset.getWearing(Role::Land).empty());
 }
@@ -133,7 +132,6 @@ TEST(CityRulesetTest, CityRuleset_MatchesEveryPaintedCubeToSomePiece)
 
     EXPECT_FALSE(compiledRuleset.getMatching(Kind::Normal, Facing::Any).empty());
     EXPECT_FALSE(compiledRuleset.getMatching(Kind::Water, Facing::Any).empty());
-    EXPECT_EQ(compiledRuleset.getMatching(Kind::Ladder, Facing::Any).size(), 4U);
     EXPECT_EQ(compiledRuleset.getMatching(Kind::Ramp, Facing::Any).size(), 4U);
     EXPECT_EQ(compiledRuleset.getMatching(Kind::Ramp, Facing::East).size(), 1U);
 }
@@ -157,10 +155,6 @@ TEST(CityRulesetTest, CityRuleset_ListsItsPiecesAsTheEnumNamesThem)
             {CityPiece::StairWest, "stair west"},
             {CityPiece::StairNorth, "stair north"},
             {CityPiece::StairSouth, "stair south"},
-            {CityPiece::LadderEast, "ladder east"},
-            {CityPiece::LadderWest, "ladder west"},
-            {CityPiece::LadderNorth, "ladder north"},
-            {CityPiece::LadderSouth, "ladder south"},
             {CityPiece::Cistern, "cistern"}}};
 
     const auto ruleset = getCityRuleset();

@@ -138,6 +138,11 @@ namespace antwika::gfx
         }
     }
 
+    void ViewportRenderer::updateMesh(IMesh &mesh, const MeshData &data)
+    {
+        innerRenderer.updateMesh(mesh, data);
+    }
+
     void ViewportRenderer::updateTexture(
         ITexture &texture, const Bitmap &bitmap)
     {

@@ -11,6 +11,7 @@
 #include <antwika/gfx/IShader.hpp>
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/Math3D.hpp>
+#include <antwika/gfx/MeshBox.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/ViewportRenderer.hpp>
 #include <antwika/gfx/fakes/FakeBareTarget.hpp>
@@ -24,6 +25,8 @@
 #include "antwika/render/LightPasses.hpp"
 
 using antwika::render::LightPasses;
+using antwika::render::MeshPiece;
+using antwika::gfx::MeshBox;
 using antwika::voxel::Voxels;
 using antwika::gfx::IMesh;
 using antwika::gfx::IRenderTarget;
@@ -86,13 +89,23 @@ namespace
                 });
     }
 
-    [[nodiscard]] std::vector<std::unique_ptr<IMesh>> getOnePiece()
+    [[nodiscard]] std::vector<MeshPiece> getPieceInBox(const MeshBox box)
     {
-        std::vector<std::unique_ptr<IMesh>> meshes;
+        std::vector<MeshPiece> meshes;
 
-        meshes.push_back(std::make_unique<NiceMock<MockMesh>>());
+        meshes.push_back(
+            MeshPiece{
+                .mesh = std::make_unique<NiceMock<MockMesh>>(), .box = box});
 
         return meshes;
+    }
+
+    [[nodiscard]] std::vector<MeshPiece> getOnePiece()
+    {
+        return getPieceInBox(
+            MeshBox{
+                .lowPosition = Vec3{-8.0F, -8.0F, -8.0F},
+                .highPosition = Vec3{8.0F, 8.0F, 8.0F}});
     }
 }
 
@@ -204,6 +217,47 @@ TEST(LightPassesTest, Forget_BakesTheLampsAfreshThoughNoneHasMoved)
     passes.forget();
 
     EXPECT_CALL(innerRenderer, drawMesh).Times(kFacesOfALamp);
+
+    passes.bakeLamps(viewportRenderer, pile, activeLights);
+}
+
+TEST(LightPassesTest, BakeLamps_LeavesOutAPiecePastTheLampsReach)
+{
+    NiceMock<MockRenderer> innerRenderer;
+    handsOutResources(innerRenderer);
+    ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
+    LightPasses passes;
+    const auto span = antwika::light::kLampFarPlane * 4.0F;
+    const auto pile = getPieceInBox(
+        MeshBox{
+            .lowPosition = Vec3{span, span, span},
+            .highPosition = Vec3{span + 1.0F, span + 1.0F, span + 1.0F}});
+    const std::vector<ActiveLight> activeLights{
+        ActiveLight{.position = Vec3{}}};
+
+    passes.open(viewportRenderer, ShaderSource{});
+
+    EXPECT_CALL(innerRenderer, drawMesh).Times(0);
+
+    passes.bakeLamps(viewportRenderer, pile, activeLights);
+}
+
+TEST(LightPassesTest, BakeLamps_LeavesOutAPieceTheBakeLooksAwayFrom)
+{
+    NiceMock<MockRenderer> innerRenderer;
+    handsOutResources(innerRenderer);
+    ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
+    LightPasses passes;
+    const auto pile = getPieceInBox(
+        MeshBox{
+            .lowPosition = Vec3{10.0F, -1.0F, -1.0F},
+            .highPosition = Vec3{12.0F, 1.0F, 1.0F}});
+    const std::vector<ActiveLight> activeLights{
+        ActiveLight{.position = Vec3{}}};
+
+    passes.open(viewportRenderer, ShaderSource{});
+
+    EXPECT_CALL(innerRenderer, drawMesh).Times(kFacesOfALamp - 1);
 
     passes.bakeLamps(viewportRenderer, pile, activeLights);
 }

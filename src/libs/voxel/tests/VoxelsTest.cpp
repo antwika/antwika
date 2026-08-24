@@ -8,6 +8,7 @@ using antwika::voxel::Facing;
 using antwika::voxel::Kind;
 using antwika::voxel::VoxelMaterial;
 using antwika::voxel::VoxelPosition;
+using antwika::voxel::getSortedCells;
 using antwika::voxel::Voxels;
 
 TEST(VoxelsTest, Voxels_StandsOneMaterialInEachPlace)
@@ -44,12 +45,51 @@ TEST(VoxelsTest, Voxels_KeepsTheMaterialOfThePlaceItIsAskedFor)
         (VoxelMaterial{.kind = Kind::Ramp, .facing = Facing::East}));
 }
 
-TEST(VoxelsTest, Voxels_LaysItsPlacesOutLowestFirst)
+TEST(VoxelsTest, SortedCells_LaysThePlacesOutLowestFirst)
 {
     Voxels voxels;
 
     voxels[VoxelPosition{.x = 2}] = VoxelMaterial{};
+    voxels[VoxelPosition{.x = 1, .z = 1}] = VoxelMaterial{};
     voxels[VoxelPosition{.x = 1}] = VoxelMaterial{};
 
-    EXPECT_EQ(voxels.begin()->first, (VoxelPosition{.x = 1}));
+    const auto cells = getSortedCells(voxels);
+
+    ASSERT_EQ(cells.size(), 3U);
+    EXPECT_EQ(cells[0].position, (VoxelPosition{.x = 1}));
+    EXPECT_EQ(cells[1].position, (VoxelPosition{.x = 1, .z = 1}));
+    EXPECT_EQ(cells[2].position, (VoxelPosition{.x = 2}));
+}
+
+TEST(VoxelsTest, SortedCells_HandsBackNothingForAWorldWithNoCells)
+{
+    EXPECT_TRUE(getSortedCells(Voxels{}).empty());
+}
+
+TEST(VoxelsTest, SortedCells_CarriesTheMaterialEachPlaceHolds)
+{
+    Voxels voxels;
+
+    voxels[VoxelPosition{.x = 1}] =
+        VoxelMaterial{.kind = Kind::Ramp, .facing = Facing::East};
+
+    const auto cells = getSortedCells(voxels);
+
+    ASSERT_EQ(cells.size(), 1U);
+    EXPECT_EQ(cells[0].material.kind, Kind::Ramp);
+    EXPECT_EQ(cells[0].material.facing, Facing::East);
+}
+
+TEST(VoxelsTest, PositionHash_PartsPlacesThatDifferInOneStep)
+{
+    const antwika::voxel::VoxelPositionHash hashOf;
+
+    EXPECT_NE(hashOf(VoxelPosition{}), hashOf(VoxelPosition{.x = 1}));
+    EXPECT_NE(hashOf(VoxelPosition{}), hashOf(VoxelPosition{.y = 1}));
+    EXPECT_NE(hashOf(VoxelPosition{}), hashOf(VoxelPosition{.z = 1}));
+    EXPECT_NE(
+        hashOf(VoxelPosition{.x = 1}), hashOf(VoxelPosition{.z = 1}));
+    EXPECT_EQ(
+        hashOf(VoxelPosition{.x = 3, .y = -2, .z = 7}),
+        hashOf(VoxelPosition{.x = 3, .y = -2, .z = 7}));
 }

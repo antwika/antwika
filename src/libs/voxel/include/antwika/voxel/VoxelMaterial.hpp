@@ -14,12 +14,11 @@ namespace antwika::voxel
         Normal,
         Water,
         Ramp,
-        Ladder,
     };
 
     [[nodiscard]] constexpr Kind getLastEnumerator(Kind) noexcept
     {
-        return Kind::Ladder;
+        return Kind::Ramp;
     }
 
     enum class Facing : std::uint8_t

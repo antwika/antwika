@@ -29,7 +29,7 @@ namespace antwika::voxelmap
     {
         std::vector<FaceRef> faces;
 
-        for (const auto &[position, material] : voxels)
+        for (const auto &[position, material] : voxel::getSortedCells(voxels))
         {
             const auto climb = voxel::isRamped(material.kind)
                              ? voxel::getInferredRampDirection(voxels, position)

@@ -87,6 +87,8 @@ void RaylibRenderer::drawRect(RectF rect, Color color)
 
         if (mine == nullptr || !mine->isOwnedBy(*this) || !mine->isLoaded())
         {
+            sayRefused("a texture this renderer does not hold was drawn");
+
             return;
         }
 
@@ -154,6 +156,8 @@ void RaylibRenderer::drawRect(RectF rect, Color color)
 
         if (mine == nullptr)
         {
+            sayRefused("a shader this renderer does not hold was set");
+
             return;
         }
 
@@ -195,6 +199,8 @@ void RaylibRenderer::drawRect(RectF rect, Color color)
 
         if (mine == nullptr)
         {
+            sayRefused("a shader this renderer does not hold was set");
+
             return;
         }
 
@@ -367,6 +373,8 @@ void RaylibRenderer::drawRect(RectF rect, Color color)
 
         if (mine == nullptr || !mine->isOwnedBy(*this) || !mine->isLoaded())
         {
+            sayRefused("a mesh this renderer does not hold was drawn");
+
             return;
         }
 

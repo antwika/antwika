@@ -58,6 +58,13 @@ namespace antwika::gfx::mocks
             updateTexture,
             (ITexture & texture, const Bitmap &bitmap),
             (override));
+
+        MOCK_METHOD(
+            void,
+            updateMesh,
+            (antwika::gfx::IMesh & mesh,
+                const antwika::gfx::MeshData &data),
+            (override));
         MOCK_METHOD(
             void,
             drawTexture,

@@ -1,16 +1,40 @@
 #include "antwika/render/LightPasses.hpp"
 
+#include <algorithm>
 #include <utility>
 
 #include <antwika/gfx/Camera3D.hpp>
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/CubeFace.hpp>
+#include <antwika/gfx/MeshBox.hpp>
 #include <antwika/gfx/Math3D.hpp>
 #include <antwika/gfx/MeshMaterial.hpp>
 #include <antwika/voxelmap/Voxel.hpp>
 
 namespace antwika::render
 {
+
+    namespace
+    {
+        [[nodiscard]] bool isPieceUnseen(
+            const MeshPiece &piece,
+            const gfx::Vec3 standingPosition,
+            const gfx::CubeFace face)
+        {
+            if (gfx::isBoxBeyond(
+                    piece.box, standingPosition, light::kLampFarPlane))
+            {
+                return true;
+            }
+
+            const auto way = gfx::directionOf(face);
+            const auto farthest = std::max(
+                glm::dot(way, piece.box.lowPosition),
+                glm::dot(way, piece.box.highPosition));
+
+            return farthest <= glm::dot(way, standingPosition);
+        }
+    }
 
     void LightPasses::open(
         gfx::IRenderer &viewportRenderer,
@@ -64,7 +88,7 @@ namespace antwika::render
 
     void LightPasses::bakeLamps(
         gfx::IRenderer &viewportRenderer,
-        const std::span<const std::unique_ptr<gfx::IMesh>> pileMeshes,
+        const std::span<const MeshPiece> pileMeshes,
         const std::vector<light::ActiveLight> &lights)
     {
         if (stale)
@@ -94,8 +118,13 @@ namespace antwika::render
 
                 for (const auto &piece : pileMeshes)
                 {
+                    if (isPieceUnseen(piece, standing, face))
+                    {
+                        continue;
+                    }
+
                     viewportRenderer.drawMesh(
-                        *piece,
+                        *piece.mesh,
                         gfx::getIdentityMatrix(),
                         light::getShadowCamera(standing, face),
                         gfx::MeshMaterial{

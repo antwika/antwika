@@ -40,13 +40,12 @@ namespace antwika::worldgen
 
     [[nodiscard]] bool matesUpright(Socket topSocket, Socket bottomSocket);
 
-    inline constexpr std::size_t kEveryRoleCount = 6;
+    inline constexpr std::size_t kEveryRoleCount = 5;
 
     inline constexpr std::array<Role, kEveryRoleCount> kEveryRole{
         Role::Room,
         Role::Perch,
         Role::Bear,
-        Role::Climb,
         Role::Step,
         Role::Land};
 

@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/ITexture.hpp>
@@ -54,6 +55,7 @@ namespace antwika::render
     private:
         std::array<gfx::Bitmap, 2> bitmaps;
         bool dirty = false;
+        std::optional<std::uint32_t> paintedFrame;
         std::array<std::unique_ptr<gfx::ITexture>, 2> paintedTextures;
         std::array<std::unique_ptr<gfx::ITexture>, 2> keyedOutTextures;
         std::array<std::unique_ptr<gfx::ITexture>, 2> checkerTextures;
