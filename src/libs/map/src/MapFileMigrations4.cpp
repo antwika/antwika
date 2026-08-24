@@ -211,7 +211,7 @@ namespace antwika::map
         {
             constexpr std::string_view kLadderName = "ladder";
 
-            const auto isLadder = [](const nlohmann::json &row)
+            const auto isLadder = [kLadderName](const nlohmann::json &row)
             {
                 const auto namedKind = row.find(std::string(kKindKey));
 
