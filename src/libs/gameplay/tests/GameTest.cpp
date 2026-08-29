@@ -395,3 +395,23 @@ TEST_F(GameTest, Run_ReadsNoPadWhileTheSimulationIsPaused)
         game.getWorld().has<antwika::component::ExitReport>(
             game.getPlayer()));
 }
+
+TEST_F(GameTest, Game_TakesTheEyeTheWorldAlreadyStands)
+{
+    const Game secondGame{logger, world, laidMap, solids, patrolPositions};
+
+    EXPECT_EQ(secondGame.getEye(), game.getEye());
+}
+
+TEST_F(GameTest, SetOrientation_ShowsTheTurnOnceTheWorldHasCommitted)
+{
+    world.set<Orientation>(game.getEye(), Orientation{.yaw = 0.5F});
+
+    EXPECT_FLOAT_EQ(world.get<Orientation>(game.getEye()).yaw, 0.0F);
+
+    {
+        const OpenPhase phase(world);
+    }
+
+    EXPECT_FLOAT_EQ(world.get<Orientation>(game.getEye()).yaw, 0.5F);
+}
