@@ -12,7 +12,6 @@
 
 #include "antwika/editor/editor/EditorDocument.hpp"
 #include "antwika/editor/editor/state/Caption.hpp"
-#include "antwika/editor/view/IEditSteps.hpp"
 
 namespace antwika::editor
 {
@@ -22,7 +21,6 @@ namespace antwika::editor
     public:
         SimulationSteps(
             EditorDocument &document,
-            IEditSteps &editSteps,
             const std::uint32_t &tick) noexcept;
 
         Caption caption;
@@ -51,8 +49,6 @@ namespace antwika::editor
 
     private:
         EditorDocument &document;
-
-        IEditSteps &editSteps;
 
         const std::uint32_t &tick;
     };

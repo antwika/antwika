@@ -212,7 +212,7 @@ namespace antwika::editor
 
         ViewChoice viewChoice;
 
-        SimulationSteps simulation{document, *this, tick};
+        SimulationSteps simulation{document, tick};
 
         InkPanel inkPanel{
             document,

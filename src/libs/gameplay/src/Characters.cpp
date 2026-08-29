@@ -226,50 +226,85 @@ namespace antwika::gameplay
     namespace
     {
 
-        [[nodiscard]] std::vector<component::Pad> getMappedPads(
-            const map::Map &laidMap)
+        /**
+         * @brief Hands every cube the map marks, and what it marks it as,
+         * to whoever lays them.
+         */
+        template <typename Take>
+        void forEachMappedPad(const map::Map &laidMap, const Take &take)
         {
-            std::vector<component::Pad> pads;
-
             if (laidMap.spawnCubePosition.has_value())
             {
-                pads.push_back(
-                    component::Pad{
-                        .position = *laidMap.spawnCubePosition,
-                        .kind = static_cast<std::uint8_t>(
-                            component::PadKind::Start)});
+                take(
+                    *laidMap.spawnCubePosition,
+                    component::PadKind::Start);
             }
 
             if (laidMap.exitCubePosition.has_value())
             {
-                pads.push_back(
-                    component::Pad{
-                        .position = *laidMap.exitCubePosition,
-                        .kind = static_cast<std::uint8_t>(
-                            component::PadKind::Exit)});
+                take(*laidMap.exitCubePosition, component::PadKind::Exit);
             }
 
             for (const auto position :
                  laidMap.markers.positionsOf(map::Marker::Checkpoint))
             {
-                pads.push_back(
-                    component::Pad{
-                        .position = position,
-                        .kind = static_cast<std::uint8_t>(
-                            component::PadKind::Checkpoint)});
+                take(position, component::PadKind::Checkpoint);
             }
+        }
+
+        [[nodiscard]] std::size_t getMappedPadCount(
+            const map::Map &laidMap)
+        {
+            return laidMap.markers.positionsOf(map::Marker::Checkpoint)
+                       .size()
+                   + (laidMap.spawnCubePosition.has_value() ? 1U : 0U)
+                   + (laidMap.exitCubePosition.has_value() ? 1U : 0U);
+        }
+
+        [[nodiscard]] std::vector<component::Pad> getMappedPads(
+            const map::Map &laidMap)
+        {
+            std::vector<component::Pad> pads(getMappedPadCount(laidMap));
+            std::size_t place = 0;
+
+            forEachMappedPad(
+                laidMap,
+                [&pads, &place](
+                    const voxel::VoxelPosition position,
+                    const component::PadKind kind)
+                {
+                    pads.at(place) = component::Pad{
+                        .position = position,
+                        .kind = static_cast<std::uint8_t>(kind)};
+                    ++place;
+                });
 
             return pads;
         } // GCOVR_EXCL_LINE
 
+        [[nodiscard]] std::size_t getStoodPadCount(const ecs::World &world)
+        {
+            std::size_t count = 0;
+
+            for ([[maybe_unused]] const auto entity :
+                 world.view<component::Pad>())
+            {
+                ++count;
+            }
+
+            return count;
+        }
+
         [[nodiscard]] std::vector<component::Pad> getStoodPads(
             const ecs::World &world)
         {
-            std::vector<component::Pad> pads;
+            std::vector<component::Pad> pads(getStoodPadCount(world));
+            std::size_t place = 0;
 
             for (const auto entity : world.view<component::Pad>())
             {
-                pads.push_back(world.get<component::Pad>(entity));
+                pads.at(place) = world.get<component::Pad>(entity);
+                ++place;
             }
 
             return pads;
@@ -330,35 +365,20 @@ namespace antwika::gameplay
 
     void spawnPads(ecs::World &world, const map::Map &laidMap)
     {
-        const auto lay =
+        forEachMappedPad(
+            laidMap,
             [&world](
                 const voxel::VoxelPosition position,
                 const component::PadKind kind)
-        {
-            const auto entity = world.create();
+            {
+                const auto entity = world.create();
 
-            world.add<component::Pad>(
-                entity,
-                component::Pad{
-                    .position = position,
-                    .kind = static_cast<std::uint8_t>(kind)});
-        };
-
-        if (laidMap.spawnCubePosition.has_value())
-        {
-            lay(*laidMap.spawnCubePosition, component::PadKind::Start);
-        }
-
-        if (laidMap.exitCubePosition.has_value())
-        {
-            lay(*laidMap.exitCubePosition, component::PadKind::Exit);
-        }
-
-        for (const auto position :
-             laidMap.markers.positionsOf(map::Marker::Checkpoint))
-        {
-            lay(position, component::PadKind::Checkpoint);
-        }
+                world.add<component::Pad>(
+                    entity,
+                    component::Pad{
+                        .position = position,
+                        .kind = static_cast<std::uint8_t>(kind)});
+            });
     }
 
 }

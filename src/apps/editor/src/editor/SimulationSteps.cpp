@@ -22,9 +22,8 @@ namespace antwika::editor
 
     SimulationSteps::SimulationSteps(
         EditorDocument &document,
-        IEditSteps &editSteps,
         const std::uint32_t &tick) noexcept
-        : document(document), editSteps(editSteps), tick(tick)
+        : document(document), tick(tick)
     {
     }
 
