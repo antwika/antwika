@@ -9,23 +9,38 @@
 
 #include "antwika/editor/Editor.hpp"
 
+#include "antwika/editor/ui/WidgetIds.hpp"
+
 namespace antwika::editor
 {
 
-    widget::WidgetId Editor::getWidgetForField(const FocusedField focusedField)
+    widget::WidgetId Editor::getWidgetForField(
+        const FocusedField focusedField) const
     {
         switch (focusedField)
         {
         case FocusedField::ExitTarget:
             return antwika::editor::kExitTargetWidget;
-        case FocusedField::FigureName:
-            return antwika::editor::kFigureNameWidget;
-        case FocusedField::FigureLine:
-            return antwika::editor::kFigureLineWidget;
+        case FocusedField::CharacterName:
+            return antwika::editor::kCharacterNameWidget;
+        case FocusedField::CharacterLine:
+            return antwika::editor::kCharacterLineWidget;
         case FocusedField::PlanTitle:
             return antwika::editor::kPlanTitleWidget;
         case FocusedField::PlanBody:
             return antwika::editor::kPlanBodyWidget;
+        case FocusedField::ComponentValue:
+            return worldView.getCharacterTool()
+                .getEditingValueWidget()
+                .value_or(antwika::widget::kNoWidget);
+        case FocusedField::MarkerAxis:
+            return markerPick.editingAxis.has_value()
+                       ? getMarkerFieldWidget(*markerPick.editingAxis)
+                       : antwika::widget::kNoWidget;
+        case FocusedField::EntityAxis:
+            return entityPick.editingAxis.has_value()
+                       ? getEntityFieldWidget(*entityPick.editingAxis)
+                       : antwika::widget::kNoWidget;
         case FocusedField::Nothing:
             break;
         }
@@ -282,7 +297,7 @@ namespace antwika::editor
 
     bool Editor::consumeTextInput(const input::KeyPressed &pressedKey)
     {
-        if (dialogs.fileDialog.has_value())
+        if (fileChooser.fileDialog.has_value())
         {
             const auto typedText = antwika::input::getCharTypedBy(
                 pressedKey.key, getHeldModifiers().shift);
@@ -307,13 +322,13 @@ namespace antwika::editor
 
             if (pressedKey.key == input::Key::Escape)
             {
-                cancelFileDialog();
+                fileChooser.cancel();
             }
 
             return true;
         }
 
-        if (inkPicker.editingInk.has_value())
+        if (inkPanel.inkPicker.editingInk.has_value())
         {
             const auto typedText = antwika::input::getCharTypedBy(
                 pressedKey.key, getHeldModifiers().shift);
@@ -333,21 +348,21 @@ namespace antwika::editor
 
             if (pressedKey.key == input::Key::Enter)
             {
-                inkPicker.editingInk.reset();
+                inkPanel.inkPicker.editingInk.reset();
             }
 
             if (pressedKey.key == input::Key::Escape)
             {
-                recolorInk(inkPicker.inkBeforeEditColor);
+                inkPanel.recolorInk(inkPanel.inkPicker.inkBeforeEditColor);
 
-                if (*inkPicker.editingInk < document.map.glows.size())
+                if (*inkPanel.inkPicker.editingInk < document.map.glows.size())
                 {
-                    document.map.glows.at(*inkPicker.editingInk) =
-                        inkPicker.glowBeforeEdit;
+                    document.map.glows.at(*inkPanel.inkPicker.editingInk) =
+                        inkPanel.inkPicker.glowBeforeEdit;
                     atlasSheets.touch();
                 }
 
-                inkPicker.editingInk.reset();
+                inkPanel.inkPicker.editingInk.reset();
             }
 
             return true;
@@ -402,6 +417,36 @@ namespace antwika::editor
             if (pressedKey.key == input::Key::Enter
                 || pressedKey.key == input::Key::Escape)
             {
+                if (focusedField == FocusedField::ComponentValue
+                    && pressedKey.key == input::Key::Enter)
+                {
+                    commitComponentEdit();
+                }
+                else if (focusedField == FocusedField::ComponentValue)
+                {
+                    worldView.characterTool().endValueEdit();
+                }
+                else if (focusedField == FocusedField::MarkerAxis
+                         && pressedKey.key == input::Key::Enter)
+                {
+                    commitMarkerEdit();
+                }
+                else if (focusedField == FocusedField::MarkerAxis)
+                {
+                    markerPick.editingAxis.reset();
+                    markerPick.pendingAxisText.clear();
+                }
+                else if (focusedField == FocusedField::EntityAxis
+                         && pressedKey.key == input::Key::Enter)
+                {
+                    commitEntityEdit();
+                }
+                else if (focusedField == FocusedField::EntityAxis)
+                {
+                    entityPick.editingAxis.reset();
+                    entityPick.pendingAxisText.clear();
+                }
+
                 focusedField = FocusedField::Nothing;
             }
 

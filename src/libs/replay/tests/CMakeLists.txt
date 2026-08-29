@@ -14,6 +14,7 @@ add_executable(antwika_replay_tests
     ReplaySourceTest.cpp
     ReplayVersioningTest.cpp
     ReplayWriterReaderTest.cpp
+    TickEventSourceConformanceTest.cpp
 )
 
 target_include_directories(antwika_replay_tests
@@ -26,6 +27,7 @@ target_link_libraries(antwika_replay_tests
         antwika::replay
         antwika::replay::tests::fakes
         antwika::engine
+        antwika::event::tests::conformance
         antwika::log::tests::mocks
         antwika::testing
         gtest::gtest

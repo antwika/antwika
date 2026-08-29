@@ -4,6 +4,7 @@
 #include <array>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -64,7 +65,7 @@ void RaylibRenderer::drawRect(RectF rect, Color color)
     void RaylibRenderer::drawText(
         PointF originPoint,
         std::string_view text,
-        std::uint32_t scale,
+        TextScale scale,
         Color color)
     {
         ensureDrawing();
@@ -83,12 +84,11 @@ void RaylibRenderer::drawRect(RectF rect, Color color)
         RectF destinationRect,
         Color tintColor)
     {
-        const auto *mine = dynamic_cast<const RaylibTexture *>(&texture);
+        const auto *mine = ownResourceOf<const RaylibTexture>(
+            &texture, "a texture this renderer does not hold was drawn");
 
-        if (mine == nullptr || !mine->isOwnedBy(*this) || !mine->isLoaded())
+        if (mine == nullptr)
         {
-            sayRefused("a texture this renderer does not hold was drawn");
-
             return;
         }
 
@@ -126,9 +126,7 @@ void RaylibRenderer::drawRect(RectF rect, Color color)
     }
 
     int RaylibRenderer::uniformLocationOf(
-        const IShader &shader,
-        const ::Shader &nativeShader,
-        const std::string_view name)
+        const RaylibShader &shader, const std::string_view name)
     {
         auto &knownLocations = uniformLocations[&shader];
         const auto foundEntry = knownLocations.find(name);
@@ -139,7 +137,8 @@ void RaylibRenderer::drawRect(RectF rect, Color color)
         }
 
         const std::string uniformName(name);
-        const auto where = GetShaderLocation(nativeShader, uniformName.c_str());
+        const auto where = GetShaderLocation(
+            shader.getRawHandle(), uniformName.c_str());
 
         knownLocations.emplace(uniformName, where);
 
@@ -152,23 +151,22 @@ void RaylibRenderer::drawRect(RectF rect, Color color)
         const void *value,
         const int kind)
     {
-        const auto *mine = ownShaderOf(&shader);
+        const auto *mine = ownResourceOf<const RaylibShader>(
+            &shader, "a shader this renderer does not hold was set");
 
         if (mine == nullptr)
         {
-            sayRefused("a shader this renderer does not hold was set");
-
             return;
         }
 
-        const auto where = uniformLocationOf(shader, *mine, name);
+        const auto where = uniformLocationOf(*mine, name);
 
         if (where < 0)
         {
             return;
         }
 
-        SetShaderValue(*mine, where, value, kind);
+        SetShaderValue(mine->getRawHandle(), where, value, kind);
     }
 
     void RaylibRenderer::setShaderNumber(
@@ -195,23 +193,23 @@ void RaylibRenderer::drawRect(RectF rect, Color color)
         const std::string_view name,
         const Mat4 &matrix)
     {
-        const auto *mine = ownShaderOf(&shader);
+        const auto *mine = ownResourceOf<const RaylibShader>(
+            &shader, "a shader this renderer does not hold was set");
 
         if (mine == nullptr)
         {
-            sayRefused("a shader this renderer does not hold was set");
-
             return;
         }
 
-        const auto where = uniformLocationOf(shader, *mine, name);
+        const auto where = uniformLocationOf(*mine, name);
 
         if (where < 0)
         {
             return;
         }
 
-        SetShaderValueMatrix(*mine, where, toRaylib(matrix));
+        SetShaderValueMatrix(
+            mine->getRawHandle(), where, toRaylib(matrix));
     }
 
     void RaylibRenderer::setShaderColor(
@@ -247,12 +245,12 @@ void RaylibRenderer::drawRect(RectF rect, Color color)
         }
     }
 
-    void RaylibRenderer::beginTarget(IRenderTarget &target)
+    void RaylibRenderer::beginTarget(
+        IRenderTarget &target, const std::optional<Rect> regionRect)
     {
-        auto *mine = dynamic_cast<RaylibRenderTarget *>(&target);
+        auto *mine = ownResourceOf<RaylibRenderTarget>(&target, {});
 
-        if (mine == nullptr || !mine->isOwnedBy(*this)
-            || inTarget != nullptr)
+        if (mine == nullptr || inTarget != nullptr)
         {
             return;
         }
@@ -265,51 +263,34 @@ void RaylibRenderer::drawRect(RectF rect, Color color)
         }
 
         rlDrawRenderBatchActive();
-
-        inTarget = mine;
-
-        rlEnableFramebuffer(mine->getFrameBuffer());
-        rlViewport(
-            0,
-            0,
-            static_cast<int>(mine->getSize().width),
-            static_cast<int>(mine->getSize().height));
-        rlSetFramebufferWidth(static_cast<int>(mine->getSize().width));
-        rlSetFramebufferHeight(static_cast<int>(mine->getSize().height));
-        setOrthoProjection(mine->getSize());
-    }
-
-    void RaylibRenderer::beginTargetRegion(
-        IRenderTarget &target, const Rect regionRect)
-    {
-        auto *mine = dynamic_cast<RaylibRenderTarget *>(&target);
-
-        if (mine == nullptr || !mine->isOwnedBy(*this)
-            || inTarget != nullptr)
-        {
-            return;
-        }
-
-        ensureDrawing();
-
-        if (!drawing)
-        {
-            return;
-        }
-
-        rlDrawRenderBatchActive();
+        rlDisableScissorTest();
 
         inTarget = mine;
 
         rlEnableFramebuffer(mine->getFrameBuffer());
 
-        inRegionRect = regionRect;
+        const Size drawnSize =
+            regionRect.has_value() ? regionRect->size : mine->getSize();
 
-        rlSetFramebufferWidth(static_cast<int>(regionRect.size.width));
-        rlSetFramebufferHeight(static_cast<int>(regionRect.size.height));
+        rlSetFramebufferWidth(static_cast<int>(drawnSize.width));
+        rlSetFramebufferHeight(static_cast<int>(drawnSize.height));
 
-        applyRegionViewport();
-        setOrthoProjection(regionRect.size);
+        if (regionRect.has_value())
+        {
+            inRegionRect = regionRect;
+
+            applyRegionViewport();
+        }
+        else
+        {
+            rlViewport(
+                0,
+                0,
+                static_cast<int>(drawnSize.width),
+                static_cast<int>(drawnSize.height));
+        }
+
+        setOrthoProjection(drawnSize);
     }
 
     void RaylibRenderer::applyRegionViewport()
@@ -361,6 +342,7 @@ void RaylibRenderer::drawRect(RectF rect, Color color)
             Size{
                 .width = static_cast<std::uint32_t>(width),
                 .height = static_cast<std::uint32_t>(height)});
+        applyClipScissor();
     }
 
     void RaylibRenderer::drawMesh(
@@ -369,12 +351,11 @@ void RaylibRenderer::drawRect(RectF rect, Color color)
         const Camera3D &camera,
         const MeshMaterial &surfaceMaterial)
     {
-        const auto *mine = dynamic_cast<const RaylibMesh *>(&mesh);
+        const auto *mine = ownResourceOf<const RaylibMesh>(
+            &mesh, "a mesh this renderer does not hold was drawn");
 
-        if (mine == nullptr || !mine->isOwnedBy(*this) || !mine->isLoaded())
+        if (mine == nullptr)
         {
-            sayRefused("a mesh this renderer does not hold was drawn");
-
             return;
         }
 

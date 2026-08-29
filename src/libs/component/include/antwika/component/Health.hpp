@@ -22,6 +22,9 @@ namespace antwika::component
         std::uint16_t food = kFullHealth;
 
         std::uint16_t water = kFullHealth;
+
+        [[nodiscard]] bool operator==(
+            const Health &other) const = default;
     };
 
 }

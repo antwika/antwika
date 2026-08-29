@@ -20,6 +20,7 @@
 #include "antwika/app/FramePresentation.hpp"
 
 using antwika::event::Event;
+using antwika::event::EventName;
 using antwika::event::TickEvent;
 using antwika::gfx::Color;
 using antwika::gfx::IRenderer;
@@ -89,7 +90,7 @@ TEST(FramePresentationTest, DrawsOn_IsFalseForAnythingButTheTick)
     NiceMock<MockWindow> window;
     ON_CALL(window, isOpen()).WillByDefault(Return(true));
 
-    const TickEvent event{.event = Event{.name = "game.something"}};
+    const TickEvent event{.event = Event{.name = EventName{"game.something"}}};
 
     EXPECT_FALSE(antwika::app::shouldDraw(event, window));
 }

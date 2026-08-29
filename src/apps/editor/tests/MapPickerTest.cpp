@@ -6,7 +6,10 @@
 
 #include "antwika/editor/ui/MapPicker.hpp"
 
+#include "antwika/editor/ui/WidgetIds.hpp"
+
 using antwika::editor::kMaxPicked;
+using antwika::editor::kMaxPickedRows;
 using antwika::editor::getEnsureMapExtension;
 using antwika::editor::getFilterMapNames;
 using antwika::editor::getMapRowWidget;
@@ -73,5 +76,20 @@ TEST(MapPickerTest, MapRowWidget_GivesEveryListedNameOneOfItsOwn)
     EXPECT_FALSE(seenWidgets.contains(antwika::editor::kPickerNameWidget));
     EXPECT_FALSE(seenWidgets.contains(antwika::editor::kPickerConfirmWidget));
     EXPECT_FALSE(seenWidgets.contains(antwika::editor::kPickerCancelWidget));
-    EXPECT_FALSE(seenWidgets.contains(antwika::editor::kPickerOverwriteWidget));
+    EXPECT_FALSE(
+        seenWidgets.contains(antwika::editor::kPickerParentFolderWidget));
+}
+
+TEST(MapPickerTest, MapRowWidget_KeepsMapRowsApartFromAFullFolderList)
+{
+    std::set<antwika::widget::WidgetId> seenWidgets;
+
+    for (std::size_t index = 0; index < kMaxPickedRows; ++index)
+    {
+        EXPECT_TRUE(seenWidgets.insert(getMapRowWidget(index)).second);
+    }
+
+    EXPECT_NE(getMapRowWidget(kMaxPicked), getMapRowWidget(0));
+    EXPECT_FALSE(
+        seenWidgets.contains(antwika::editor::kFirstCharacterWidget));
 }

@@ -65,16 +65,16 @@ namespace
     TEST(EditorBindingsTest, ActionMapFrom_RefusesAModifierOnAPlainChord)
     {
         KeyBindings keyBindings;
-        keyBindings[Action::ToolBrush] = Chord{.key = Key::B};
+        keyBindings[Action::ToolPicker] = Chord{.key = Key::B};
 
         const auto actions = actionMapFrom(keyBindings);
 
         EXPECT_TRUE(
             actions.matches(
-                getActionKey(Action::ToolBrush), Key::B, KeyModifiers{}));
+                getActionKey(Action::ToolPicker), Key::B, KeyModifiers{}));
         EXPECT_FALSE(
             actions.matches(
-                getActionKey(Action::ToolBrush),
+                getActionKey(Action::ToolPicker),
                 Key::B,
                 KeyModifiers{.control = true}));
     }

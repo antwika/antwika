@@ -33,6 +33,13 @@ namespace antwika::sound
                 + std::to_string(wave.channels) + " channels");
         }
 
+        if (wave.channels > kStereoCount)
+        {
+            throw SoundError(
+                "antwika::sound: a mixer pans stereo only, and cannot run "
+                "with " + std::to_string(wave.channels) + " channels");
+        }
+
         if (spec.maxVoices == 0)
         {
             throw SoundError(

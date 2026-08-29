@@ -4,7 +4,6 @@
 #include <cstdint>
 
 #include <antwika/enums/Enumeration.hpp>
-#include <antwika/map/Settings.hpp>
 
 namespace antwika::editor
 {
@@ -14,16 +13,16 @@ namespace antwika::editor
         Shape,
         Lamp,
         Stamp,
-        Figure,
-        Plate,
-        Gate,
+        Character,
+        Marker,
         StartOrExit,
+        Select,
     };
 
     [[nodiscard]] constexpr ToolPlacement getLastEnumerator(
         ToolPlacement) noexcept
     {
-        return ToolPlacement::StartOrExit;
+        return ToolPlacement::Select;
     }
 
 }

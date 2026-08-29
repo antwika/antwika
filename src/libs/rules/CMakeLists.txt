@@ -1,9 +1,9 @@
 antwika_add_library(
     NAME rules
     SOURCES
-        src/Gates.cpp
         src/Health.cpp
         src/Items.cpp
+        src/MarkerCubes.cpp
         src/Orientation.cpp
     DEPENDS
         antwika::component

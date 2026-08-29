@@ -2,8 +2,10 @@
 
 #include <array>
 #include <vector>
+
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/widget/WidgetId.hpp>
+
 #include "antwika/editor/plan/Card.hpp"
 
 namespace antwika::editor

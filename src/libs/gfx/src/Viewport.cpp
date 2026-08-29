@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <numeric>
+
 #include <antwika/gfx/RectF.hpp>
 #include <antwika/gfx/PointF.hpp>
 
@@ -79,6 +80,26 @@ namespace antwika::gfx
         return Point{
             .x = getScaleBy(point.x - offsetPoint.x, denominator, numerator),
             .y = getScaleBy(point.y - offsetPoint.y, denominator, numerator)};
+    }
+
+    PointF Viewport::toCanvas(const PointF point) const noexcept
+    {
+        const auto share = static_cast<float>(denominator)
+                           / static_cast<float>(numerator);
+
+        return antwika::gfx::PointF{
+            (point.x - static_cast<float>(offsetPoint.x)) * share,
+            (point.y - static_cast<float>(offsetPoint.y)) * share};
+    }
+
+    RectF Viewport::toCanvas(const RectF rect) const noexcept
+    {
+        const auto share = static_cast<float>(denominator)
+                           / static_cast<float>(numerator);
+
+        return antwika::gfx::RectF{
+            toCanvas(rect.originPoint),
+            SizeF{rect.size.width * share, rect.size.height * share}};
     }
 
     std::uint32_t Viewport::toWindowScale(

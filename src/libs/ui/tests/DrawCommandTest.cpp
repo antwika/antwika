@@ -24,7 +24,7 @@ namespace
     const DrawText kText{
         .originPoint = {.x = 5, .y = 6},
         .text = "ab",
-        .scale = 2,
+        .scale = {.multiplier = 2},
         .color = kInkColor};
 }
 
@@ -58,7 +58,7 @@ TEST(DrawCommandTest, DrawTextEquality_IsTrueForTheSameFields)
     const DrawText sameText{
         .originPoint = {.x = 5, .y = 6},
         .text = "ab",
-        .scale = 2,
+        .scale = {.multiplier = 2},
         .color = kInkColor};
 
     EXPECT_EQ(kText, sameText);
@@ -69,7 +69,7 @@ TEST(DrawCommandTest, DrawTextEquality_IsFalseWhenTheOriginDiffers)
     const DrawText otherText{
         .originPoint = {.x = 9, .y = 6},
         .text = "ab",
-        .scale = 2,
+        .scale = {.multiplier = 2},
         .color = kInkColor};
 
     EXPECT_NE(kText, otherText);
@@ -80,7 +80,7 @@ TEST(DrawCommandTest, DrawTextEquality_IsFalseWhenTheTextDiffers)
     const DrawText otherText{
         .originPoint = {.x = 5, .y = 6},
         .text = "cd",
-        .scale = 2,
+        .scale = {.multiplier = 2},
         .color = kInkColor};
 
     EXPECT_NE(kText, otherText);
@@ -91,7 +91,7 @@ TEST(DrawCommandTest, DrawTextEquality_IsFalseWhenTheScaleDiffers)
     const DrawText otherText{
         .originPoint = {.x = 5, .y = 6},
         .text = "ab",
-        .scale = 3,
+        .scale = {.multiplier = 3},
         .color = kInkColor};
 
     EXPECT_NE(kText, otherText);
@@ -102,7 +102,7 @@ TEST(DrawCommandTest, DrawTextEquality_IsFalseWhenTheColorDiffers)
     const DrawText otherText{
         .originPoint = {.x = 5, .y = 6},
         .text = "ab",
-        .scale = 2,
+        .scale = {.multiplier = 2},
         .color = kPanelColor};
 
     EXPECT_NE(kText, otherText);

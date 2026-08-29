@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include "antwika/ui/EdgeChange.hpp"
 #include "antwika/ui/Interactions.hpp"
 #include "antwika/ui/OptionChoice.hpp"
 #include "antwika/ui/SliderChange.hpp"
@@ -136,6 +137,21 @@ TEST(InteractionsTest, OperatorEquals_DiffersOnWhereASliderLanded)
     leftInteractions.slidChange = antwika::ui::SliderChange{
         .sliderWidget = kWidget,
         .value = 3};
+
+    EXPECT_EQ(leftInteractions, rightInteractions);
+}
+
+TEST(InteractionsTest, OperatorEquals_DiffersOnWhereAPanelEdgeLanded)
+{
+    Interactions leftInteractions;
+    Interactions rightInteractions;
+    rightInteractions.edge =
+        antwika::ui::EdgeChange{.edgeWidget = kWidget, .extent = 90};
+
+    EXPECT_NE(leftInteractions, rightInteractions);
+
+    leftInteractions.edge =
+        antwika::ui::EdgeChange{.edgeWidget = kWidget, .extent = 90};
 
     EXPECT_EQ(leftInteractions, rightInteractions);
 }

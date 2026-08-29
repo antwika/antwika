@@ -6,7 +6,7 @@
 #include <antwika/component/DialogueLine.hpp>
 #include <antwika/component/Player.hpp>
 #include <antwika/component/Position.hpp>
-#include <antwika/component/RosterIndex.hpp>
+#include <antwika/component/CharacterIndex.hpp>
 #include <antwika/component/Speaker.hpp>
 #include <antwika/component/TalkIntent.hpp>
 #include <antwika/ecs/OpenPhase.hpp>
@@ -18,7 +18,7 @@
 using antwika::component::DialogueLine;
 using antwika::component::Player;
 using antwika::component::Position;
-using antwika::component::RosterIndex;
+using antwika::component::CharacterIndex;
 using antwika::component::Speaker;
 using antwika::component::TalkIntent;
 using antwika::ecs::Entity;
@@ -39,11 +39,12 @@ namespace
         NiceMock<MockLogger> logger{};
         World world{logger};
         GameLoop gameLoop{world};
-        TalkSystem system{};
+        antwika::system::SimulationState simulationState{};
+        TalkSystem system{simulationState};
 
-        explicit TalkHarness(const std::size_t rosterCount = 4)
+        explicit TalkHarness(const std::size_t characterCount = 4)
         {
-            system.setRosterCount(rosterCount);
+            simulationState.characterCount = characterCount;
             gameLoop.addSystem(Phase::Walking, system);
         }
 
@@ -62,7 +63,7 @@ namespace
         }
 
         [[nodiscard]] Entity figure(
-            const float x, const std::uint32_t rosterIndex)
+            const float x, const std::uint32_t characterIndex)
         {
             const auto entity = world.create();
 
@@ -70,8 +71,8 @@ namespace
                 const OpenPhase phase(world);
 
                 world.add<Position>(entity, Position{.x = x});
-                world.add<RosterIndex>(
-                    entity, RosterIndex{.index = rosterIndex});
+                world.add<CharacterIndex>(
+                    entity, CharacterIndex{.index = characterIndex});
                 world.add<Speaker>(entity, Speaker{});
             }
 
@@ -110,7 +111,7 @@ TEST(TalkTest, Update_WritesTheLineTheFigureStoodOn)
     harness.gameLoop.run(0);
 
     ASSERT_TRUE(harness.world.has<DialogueLine>(walker));
-    EXPECT_EQ(harness.world.get<DialogueLine>(walker).rosterIndex, 3U);
+    EXPECT_EQ(harness.world.get<DialogueLine>(walker).characterIndex, 3U);
     EXPECT_EQ(harness.world.get<DialogueLine>(walker).lineIndex, 0U);
 }
 

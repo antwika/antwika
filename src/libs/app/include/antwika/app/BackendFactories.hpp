@@ -3,10 +3,12 @@
 #include <functional>
 #include <memory>
 #include <ostream>
+
 #include <antwika/gfx/IGfxBackend.hpp>
 #include <antwika/input/IInputBackend.hpp>
 #include <antwika/log/ILogger.hpp>
 #include <antwika/log/Level.hpp>
+
 #include "antwika/app/ConsoleLogging.hpp"
 #include "antwika/app/WindowedSession.hpp"
 

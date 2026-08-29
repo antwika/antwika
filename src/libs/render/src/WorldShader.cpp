@@ -1,10 +1,13 @@
 #include "antwika/render/WorldShader.hpp"
 
+#include <glm/geometric.hpp>
+
 #include <array>
+#include <cstddef>
 #include <span>
 #include <string_view>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include <antwika/gfx/CubeFace.hpp>
 #include <antwika/light/PointLight.hpp>
@@ -27,60 +30,63 @@ namespace antwika::render
                        : livePoint;
         }
 
-        constexpr std::array<std::string_view,
-            light::kMaxLamps> kLampAtNames{
-            "lampAt[0]",
-            "lampAt[1]",
-            "lampAt[2]",
-            "lampAt[3]",
-            "lampAt[4]",
-            "lampAt[5]",
-            "lampAt[6]",
-            "lampAt[7]"};
+        template <std::size_t kLength>
+        struct SlotUniformNames final
+        {
+            static_assert(light::kMaxLamps <= 10);
 
-        constexpr std::array<std::string_view, light::kMaxLamps>
-            kLampReachNames{
-                "lampReach[0]",
-                "lampReach[1]",
-                "lampReach[2]",
-                "lampReach[3]",
-                "lampReach[4]",
-                "lampReach[5]",
-                "lampReach[6]",
-                "lampReach[7]"};
+            std::array<std::array<char, kLength + 2>, light::kMaxLamps>
+                characters{};
 
-        constexpr std::array<std::string_view, light::kMaxLamps>
-            kLampBrightnessNames{
-                "lampBrightness[0]",
-                "lampBrightness[1]",
-                "lampBrightness[2]",
-                "lampBrightness[3]",
-                "lampBrightness[4]",
-                "lampBrightness[5]",
-                "lampBrightness[6]",
-                "lampBrightness[7]"};
+            std::array<std::string_view, light::kMaxLamps> names{};
 
-        constexpr std::array<std::string_view, light::kMaxLamps>
-            kLampTintNames{
-                "lampTint[0]",
-                "lampTint[1]",
-                "lampTint[2]",
-                "lampTint[3]",
-                "lampTint[4]",
-                "lampTint[5]",
-                "lampTint[6]",
-                "lampTint[7]"};
+            explicit constexpr SlotUniformNames(
+                const char (&prefix)[kLength])
+            {
+                for (std::size_t slot = 0;
+                     slot < light::kMaxLamps;
+                     ++slot)
+                {
+                    auto &name = characters.at(slot);
 
-        constexpr std::array<std::string_view, light::kMaxLamps>
-            kLampShadowNames{
-                "lampShadows[0]",
-                "lampShadows[1]",
-                "lampShadows[2]",
-                "lampShadows[3]",
-                "lampShadows[4]",
-                "lampShadows[5]",
-                "lampShadows[6]",
-                "lampShadows[7]"};
+                    for (std::size_t index = 0;
+                         index + 1 < kLength;
+                         ++index)
+                    {
+                        name.at(index) = prefix[index];
+                    }
+
+                    name.at(kLength - 1) = '[';
+                    name.at(kLength) =
+                        static_cast<char>('0' + slot);
+                    name.at(kLength + 1) = ']';
+                    names.at(slot) =
+                        std::string_view{name.data(), name.size()};
+                }
+            }
+        };
+
+        constexpr SlotUniformNames kLampAtNames{"lampAt"};
+
+        constexpr SlotUniformNames kLampReachNames{"lampReach"};
+
+        constexpr SlotUniformNames kLampBrightnessNames{"lampBrightness"};
+
+        constexpr SlotUniformNames kLampTintNames{"lampTint"};
+
+        constexpr SlotUniformNames kLampShadowNames{"lampShadows"};
+
+        constexpr gfx::Vec3 kAheadWayVector{0.0F, 0.0F, -1.0F};
+
+        [[nodiscard]] gfx::Vec3 getViewWayVector(
+            const gfx::Vec3 viewPosition, const gfx::Vec3 viewTargetPoint)
+        {
+            const auto spanVector = viewTargetPoint - viewPosition;
+
+            return glm::length(spanVector) > 0.0001F
+                       ? glm::normalize(spanVector)
+                       : kAheadWayVector;
+        }
     }
 
     void WorldShader::open(
@@ -104,9 +110,19 @@ namespace antwika::render
             "lampFaceSide",
             static_cast<float>(light::kShadowFaceResolution));
         viewportRenderer.setShaderNumber(
+            *voxelShader,
+            "lampSlots",
+            static_cast<float>(light::kMaxLamps));
+        viewportRenderer.setShaderNumber(
+            *voxelShader,
+            "lampFaces",
+            static_cast<float>(gfx::kCubeFaces));
+        viewportRenderer.setShaderNumber(
             *voxelShader, "lampBias", light::kLampShadowBias);
         viewportRenderer.setShaderNumber(
             *voxelShader, "walkerLightRange", light::kWalkerLightRange);
+        viewportRenderer.setShaderNumber(*voxelShader, "fogNear", kFogNear);
+        viewportRenderer.setShaderNumber(*voxelShader, "fogFar", kFogFar);
 
         for (const auto &[face, uniformName] :
              {std::pair{gfx::CubeFace::East, "lampViewEast"},
@@ -198,6 +214,19 @@ namespace antwika::render
             shaderInputs.lighting && shaderInputs.playing
                 ? light::kWalkerLight
                 : 0.0F);
+        viewportRenderer.setShaderVector(
+            *voxelShader, "fogFrom", shaderInputs.viewTargetPoint);
+        viewportRenderer.setShaderVector(
+            *voxelShader,
+            "fogWay",
+            getViewWayVector(
+                shaderInputs.viewPosition, shaderInputs.viewTargetPoint));
+        viewportRenderer.setShaderColor(
+            *voxelShader, "fogTint", shaderInputs.backdropColor);
+        viewportRenderer.setShaderNumber(
+            *voxelShader,
+            "fogStrength",
+            shaderInputs.playing ? kFogStrength : 0.0F);
         viewportRenderer.setShaderNumber(
             *voxelShader,
             "carrying",
@@ -209,25 +238,25 @@ namespace antwika::render
         {
             viewportRenderer.setShaderVector(
                 *voxelShader,
-                kLampAtNames.at(index),
+                kLampAtNames.names.at(index),
                 lights.at(index).castsShadows && index < bakedLights.size()
                     ? bakedLights[index].position
                     : lights.at(index).position);
             viewportRenderer.setShaderColor(
                 *voxelShader,
-                kLampTintNames.at(index),
+                kLampTintNames.names.at(index),
                 lights.at(index).tintColor);
             viewportRenderer.setShaderNumber(
                 *voxelShader,
-                kLampReachNames.at(index),
+                kLampReachNames.names.at(index),
                 lights.at(index).reach);
             viewportRenderer.setShaderNumber(
                 *voxelShader,
-                kLampBrightnessNames.at(index),
+                kLampBrightnessNames.names.at(index),
                 lights.at(index).brightness);
             viewportRenderer.setShaderNumber(
                 *voxelShader,
-                kLampShadowNames.at(index),
+                kLampShadowNames.names.at(index),
                 lights.at(index).castsShadows ? 1.0F : 0.0F);
         }
     }

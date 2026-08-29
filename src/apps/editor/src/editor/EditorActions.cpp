@@ -115,13 +115,15 @@ namespace antwika::editor
 
     void Editor::drawColorPicker()
     {
-        if (!inkPicker.editingInk.has_value())
+        if (!inkPanel.inkPicker.editingInk.has_value())
         {
             return;
         }
 
+        const auto railWidth = getRailWidthOnCanvas();
+
         viewportRenderer.drawRect(
-            getPickerPlace(camera::kCanvasSize),
+            getPickerPlace(camera::kCanvasSize, railWidth),
             kGridLineColor);
 
         for (std::size_t cursorY = 0; cursorY < kPickerBands;
@@ -132,12 +134,13 @@ namespace antwika::editor
                  ++column)
             {
                 viewportRenderer.drawRect(
-                    getBandPlace(camera::kCanvasSize, column, cursorY),
-                    colorOf(getBandHsv(inkPicker.pickerHsv, column, cursorY)));
+                    getBandPlace(
+                        camera::kCanvasSize, railWidth, column, cursorY),
+                    colorOf(getBandHsv(inkPanel.inkPicker.pickerHsv, column, cursorY)));
             }
 
             viewportRenderer.drawRect(
-                getHueBandPlace(camera::kCanvasSize, cursorY),
+                getHueBandPlace(camera::kCanvasSize, railWidth, cursorY),
                 colorOf(
                     Hsv{
                         .hue = getHueBand(cursorY),
@@ -147,7 +150,8 @@ namespace antwika::editor
 
         const auto mark = getFieldCursorPos(
             camera::kCanvasSize,
-            inkPicker.pickerHsv);
+            railWidth,
+            inkPanel.inkPicker.pickerHsv);
 
         viewportRenderer.drawLine(
             {mark.x - kCursorArmLength, mark.y},
@@ -158,10 +162,11 @@ namespace antwika::editor
             {mark.x, mark.y + kCursorArmLength},
             kTextColor);
 
-        const auto strip = getHuePlace(camera::kCanvasSize);
+        const auto strip = getHuePlace(camera::kCanvasSize, railWidth);
         const auto cursorY = getHueCursorPos(
             camera::kCanvasSize,
-            inkPicker.pickerHsv);
+            railWidth,
+            inkPanel.inkPicker.pickerHsv);
 
         viewportRenderer.drawLine(
             {strip.originPoint.x - kCursorArmLength, cursorY},
@@ -170,7 +175,8 @@ namespace antwika::editor
             kTextColor);
 
         for (const auto bar :
-             getOutlineRects(getPickerPlace(camera::kCanvasSize), kBorderThick))
+             getOutlineRects(
+                 getPickerPlace(camera::kCanvasSize, railWidth), kBorderThick))
         {
             viewportRenderer.drawRect(bar, kTextColor);
         }
@@ -182,7 +188,7 @@ namespace antwika::editor
             .document = document,
             .play = play,
             .cameraRig = cameraRig,
-            .caption = caption,
+            .caption = simulation.caption,
             .meters = meters,
             .clockSource = clockSource,
             .workbench =
@@ -191,12 +197,15 @@ namespace antwika::editor
                     .stroke = stroke,
                     .sheetView = sheetView,
                     .pointer = pointer,
-                    .inkPicker = inkPicker,
+                    .inkPicker = inkPanel.inkPicker,
                     .keyBench = keyBench,
                     .focusedField = focusedField,
                     .chosenLayer = chosenLayer,
                     .assignMode = assignMode,
-                    .transition = transition},
+                    .transition = transition,
+                    .remesh = remesh,
+                    .gizmos = gizmos,
+                    .entityPick = entityPick},
             .render =
                 WorldRender{
                     .viewportRenderer = viewportRenderer,
@@ -206,7 +215,7 @@ namespace antwika::editor
                     .sprites = sprites,
                     .scenePass = scenePass,
                     .lightPasses = lightPasses,
-                    .rosterSkins = rosterSkins},
+                    .characterSkins = characterSkins},
             .editSteps = *this,
             .notices = *this,
             .shownView = viewChoice.activeView,
@@ -219,6 +228,7 @@ namespace antwika::editor
         for (IEditorView *view :
              std::initializer_list<IEditorView *>{
                  &iconsView,
+                 &gizmoView,
                  &plan,
                  &characterView,
                  &atlasView,
@@ -238,6 +248,11 @@ namespace antwika::editor
         return worldView.claims(viewChoice.activeView, play.playing);
     }
 
+    bool Editor::isWorldPanelShown() const noexcept
+    {
+        return isWorldShown() && !play.playing;
+    }
+
     std::string Editor::statusText()
     {
         const auto hint = hintFor(pointer.hoveredWidget);
@@ -247,7 +262,7 @@ namespace antwika::editor
             return std::string(hint);
         }
 
-        if (inkPicker.editingInk.has_value())
+        if (inkPanel.inkPicker.editingInk.has_value())
         {
             return "drag in the picker to mix a "
                    "colour - ok keeps it, cancel "

@@ -4,6 +4,8 @@
 
 #include <antwika/enums/Enumeration.hpp>
 
+#include "antwika/editor/ui/WidgetIds.hpp"
+
 namespace antwika::editor
 {
 
@@ -138,15 +140,16 @@ namespace antwika::editor
         const widget::WidgetId whichWidget)
     {
         const auto idValue = static_cast<std::uint64_t>(whichWidget);
+        const auto firstValue =
+            static_cast<std::uint64_t>(kFirstPlanCardWidget);
         const auto span = kEveryColumn.size() * kMaxCardsPerColumn;
 
-        if (idValue < kFirstPlanCardWidget
-            || idValue >= kFirstPlanCardWidget + span)
+        if (idValue < firstValue || idValue >= firstValue + span)
         {
             return std::nullopt;
         }
 
-        const auto rank = idValue - kFirstPlanCardWidget;
+        const auto rank = idValue - firstValue;
 
         return std::pair{
             kEveryColumn.at(rank / kMaxCardsPerColumn),

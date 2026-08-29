@@ -2,9 +2,11 @@
 
 #include <cstddef>
 #include <cstdint>
+
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
+
 #include "FocusRing.hpp"
 #include "NodeKind.hpp"
 #include "StateColors.hpp"

@@ -25,6 +25,7 @@ namespace antwika::gfx::detail
         Size extent;
         NullRenderTargetTexture colorTexture;
         NullRenderTargetTexture depthTexture;
+        bool keepsColor;
         bool keepsDepth;
     };
 

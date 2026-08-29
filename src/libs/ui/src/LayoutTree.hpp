@@ -4,9 +4,11 @@
 #include <vector>
 
 #include "Area.hpp"
+#include "PanelEdge.hpp"
 #include "Splitter.hpp"
 #include "Node.hpp"
 #include "ScrollBar.hpp"
+#include "ScrollPane.hpp"
 
 namespace antwika::ui::detail
 {
@@ -42,6 +44,16 @@ namespace antwika::ui::detail
 
         [[nodiscard]] const std::vector<Splitter> &getBars() const noexcept;
 
+        void addEdge(PanelEdge panelEdge);
+
+        [[nodiscard]] const std::vector<PanelEdge> &getEdges()
+            const noexcept;
+
+        void addPane(ScrollPane pane);
+
+        [[nodiscard]] const std::vector<ScrollPane> &getPanes()
+            const noexcept;
+
     private:
         std::size_t append(Node valueNode);
 
@@ -49,6 +61,8 @@ namespace antwika::ui::detail
         std::vector<Area> areaList;
         std::vector<ScrollBar> scrollBars;
         std::vector<Splitter> splitters;
+        std::vector<PanelEdge> panelEdges;
+        std::vector<ScrollPane> scrollPanes;
         std::size_t openNode = 0;
     };
 

@@ -2,26 +2,15 @@
 
 #include <antwika/component/TurnIntent.hpp>
 #include <antwika/component/Orientation.hpp>
-#include <antwika/ecs/OpenPhase.hpp>
-#include <antwika/log/mocks/MockLogger.hpp>
+#include <antwika/component/DirectionKeys.hpp>
 #include <antwika/rules/Orientation.hpp>
 
-#include "antwika/system/OrientationSystem.hpp"
-#include "antwika/gameplay/GameLoop.hpp"
-
-using antwika::ecs::OpenPhase;
-using antwika::ecs::World;
-using antwika::gameplay::Phase;
-using antwika::system::OrientationSystem;
 using antwika::component::Orientation;
-using antwika::intent::DirectionKeys;
+using antwika::component::DirectionKeys;
 using antwika::rules::kTurnRate;
-using antwika::gameplay::GameLoop;
 using antwika::rules::getRotatedBy;
 using antwika::rules::getTurnedBy;
 using antwika::rules::kMaxPitch;
-using antwika::log::mocks::MockLogger;
-using ::testing::NiceMock;
 
 namespace
 {
@@ -61,33 +50,6 @@ TEST(OrientationTest, RotatedBy_LeavesAnOrientationHeldBothWaysWhereItWas)
 
     EXPECT_NEAR(orientation.yaw, 0.5F, kTolerance);
     EXPECT_NEAR(orientation.pitch, 0.25F, kTolerance);
-}
-
-TEST(OrientationTest, Update_TurnsEveryOrientationOfTheWorld)
-{
-    NiceMock<MockLogger> logger;
-    World world(logger);
-    GameLoop gameLoop(world);
-    DirectionKeys lookKeys;
-    OrientationSystem orientationSystem(lookKeys);
-
-    gameLoop.addSystem(Phase::Orienting, orientationSystem);
-
-    const auto entity = gameLoop.getWorld().create();
-
-    {
-        const OpenPhase phase(gameLoop.getWorld());
-
-        gameLoop.getWorld().add<Orientation>(entity, Orientation{});
-    }
-
-    lookKeys.east = true;
-    gameLoop.run(0);
-
-    EXPECT_NEAR(
-        gameLoop.getWorld().get<Orientation>(entity).yaw,
-        kTurnRate,
-        kTolerance);
 }
 
 TEST(OrientationTest, TurnedBy_CarriesAnOrientationRoundAndTipsIt)

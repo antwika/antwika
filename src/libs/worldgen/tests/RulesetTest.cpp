@@ -133,7 +133,7 @@ TEST(RulesetTest, FaultsIn_NamesAFaceNoPrototypeMayStandAgainst)
 
     ASSERT_EQ(problems.size(), 1U);
     EXPECT_EQ(problems.front().fault, RulesetFault::FaceMeetsNothing);
-    EXPECT_EQ(problems.front().prototypeIndex, 2U);
+    EXPECT_EQ(problems.front().subjectIndex, 2U);
     EXPECT_EQ(problems.front().face, Face::East);
 }
 

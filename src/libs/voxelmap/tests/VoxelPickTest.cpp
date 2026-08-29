@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <numbers>
 #include <vector>
 
@@ -278,7 +280,7 @@ TEST(VoxelPickTest, FacePicked_NamesTheFaceThePileIsPointedAt)
     ASSERT_TRUE(which.has_value());
     ASSERT_TRUE(pickedFace.has_value());
     ASSERT_LT(*which, faces.size());
-    EXPECT_EQ(faces.at(*which), *pickedFace);
+    EXPECT_TRUE(faces.at(*which).refersToSameFace(*pickedFace));
 }
 
 TEST(VoxelPickTest, FacePicked_NamesNothingClearOfThePile)
@@ -332,7 +334,7 @@ TEST(VoxelPickTest, TilePicked_TellsOneFaceFromAnotherAmongTheDrawn)
 
     for (std::size_t which = 0; which < faces.size(); ++which)
     {
-        drawnTiles[which] = faces[which] == *face
+        drawnTiles[which] = faces[which].refersToSameFace(*face)
                           ? antwika::tilemap::Tile{
                                  .atlas = Atlas::Floor, .index = 7}
                                         : antwika::tilemap::Tile{
@@ -408,7 +410,7 @@ TEST(VoxelPickTest, ProjectToScreen_PutsAFaceWhereItsOwnPixelPicksIt)
             getRayThrough(camera, kCanvasSize, *where), getUnturnedMatrix()));
 
     ASSERT_TRUE(secondFace.has_value());
-    EXPECT_EQ(*secondFace, *face);
+    EXPECT_TRUE(secondFace->refersToSameFace(*face));
 }
 
 TEST(VoxelPickTest, IsFrontFacing_TellsTheNearSideFromTheFar)
@@ -589,6 +591,41 @@ TEST(VoxelPickTest, CubeWireframe_TakesEveryCellOfACubeToTheOneCube)
     }
 }
 
+TEST(VoxelPickTest, CubeGizmoSpans_CrossAtTheCubeMiddle)
+{
+    const auto middle =
+        antwika::voxelmap::getCubeMiddle(VoxelPosition{});
+    const auto spans =
+        antwika::voxelmap::getCubeGizmoSpans(VoxelPosition{});
+
+    EXPECT_EQ(spans.size(), 3U);
+
+    for (const auto &span : spans)
+    {
+        const auto midpoint =
+            (span.fromPosition + span.toPosition) * 0.5F;
+
+        EXPECT_NEAR(glm::length(midpoint - middle), 0.0F, 1e-4F);
+        EXPECT_NEAR(
+            glm::length(span.toPosition - span.fromPosition),
+            2.0F * antwika::voxelmap::kCubeGizmoArm,
+            1e-4F);
+    }
+}
+
+TEST(VoxelPickTest, CubeGizmoSpans_TakesEveryCellOfACubeToTheOneCross)
+{
+    const auto spans =
+        antwika::voxelmap::getCubeGizmoSpans(VoxelPosition{});
+
+    for (const auto cell :
+         antwika::voxel::getCubeCells(
+             antwika::voxel::cubeCornerOf(VoxelPosition{})))
+    {
+        EXPECT_EQ(antwika::voxelmap::getCubeGizmoSpans(cell), spans);
+    }
+}
+
 TEST(VoxelPickTest, CubeWireframe_RunsACubeSideAlongEveryEdge)
 {
     const auto cells =
@@ -649,6 +686,88 @@ TEST(VoxelPickTest, CellAtLevel_StandsACubeOnTheGridItIsRuledOn)
     EXPECT_NEAR(lowest, gridLines.front().fromPosition.y, 1e-5F);
 }
 
+TEST(VoxelPickTest, PlaneHit_MeetsThePlaneALineRunsDownTo)
+{
+    using antwika::voxelmap::getPlaneHit;
+
+    const Ray downRay{
+        .fromPosition = Vec3{1.0F, 5.0F, 2.0F},
+        .direction = Vec3{0.0F, -1.0F, 0.0F}};
+    const auto hitPoint = getPlaneHit(downRay, 2.0F);
+
+    ASSERT_TRUE(hitPoint.has_value());
+    EXPECT_FLOAT_EQ(hitPoint->x, 1.0F);
+    EXPECT_FLOAT_EQ(hitPoint->y, 2.0F);
+    EXPECT_FLOAT_EQ(hitPoint->z, 2.0F);
+}
+
+TEST(VoxelPickTest, PlaneHit_MissesAPlaneALineRunsAlong)
+{
+    using antwika::voxelmap::getPlaneHit;
+
+    const Ray acrossRay{
+        .fromPosition = Vec3{0.0F, 5.0F, 0.0F},
+        .direction = Vec3{1.0F, 0.0F, 0.0F}};
+
+    EXPECT_FALSE(getPlaneHit(acrossRay, 2.0F).has_value());
+}
+
+TEST(VoxelPickTest, PlaneHit_MissesAPlaneBehindWhereItStarts)
+{
+    using antwika::voxelmap::getPlaneHit;
+
+    const Ray upRay{
+        .fromPosition = Vec3{0.0F, 5.0F, 0.0F},
+        .direction = Vec3{0.0F, 1.0F, 0.0F}};
+
+    EXPECT_FALSE(getPlaneHit(upRay, 2.0F).has_value());
+}
+
+TEST(VoxelPickTest, PlaneHit_MissesAPlaneALineOnlyGrazesAlong)
+{
+    using antwika::voxelmap::getPlaneHit;
+
+    const Ray grazingRay{
+        .fromPosition = Vec3{0.0F, 5.0F, 0.0F},
+        .direction = Vec3{1.0F, -0.00005F, 0.0F}};
+
+    EXPECT_FALSE(getPlaneHit(grazingRay, 2.0F).has_value());
+}
+
+TEST(VoxelPickTest, PlaneHit_TakesTheVeryPointItStartsOn)
+{
+    using antwika::voxelmap::getPlaneHit;
+
+    const Ray downRay{
+        .fromPosition = Vec3{0.0F, 2.0F, 0.0F},
+        .direction = Vec3{0.0F, -1.0F, 0.0F}};
+    const auto hitPoint = getPlaneHit(downRay, 2.0F);
+
+    ASSERT_TRUE(hitPoint.has_value());
+    EXPECT_FLOAT_EQ(hitPoint->y, 2.0F);
+}
+
+TEST(VoxelPickTest, CellAtLevel_MissesALevelALineOnlyGrazesAlong)
+{
+    const Ray grazingRay{
+        .fromPosition = Vec3{0.25F, 5.0F, 0.25F},
+        .direction = Vec3{1.0F, -0.00005F, 0.0F}};
+
+    EXPECT_FALSE(
+        antwika::voxelmap::getCellAtLevel(grazingRay, 0).has_value());
+}
+
+TEST(VoxelPickTest, CellAtLevel_TakesTheCellItStartsLevelWith)
+{
+    const Ray downRay{
+        .fromPosition = Vec3{0.25F, -0.5F, 0.25F},
+        .direction = Vec3{0.0F, -1.0F, 0.0F}};
+    const auto pickedCell = antwika::voxelmap::getCellAtLevel(downRay, 0);
+
+    ASSERT_TRUE(pickedCell.has_value());
+    EXPECT_EQ(*pickedCell, VoxelPosition{});
+}
+
 TEST(VoxelPickTest, OcclusionMask_MarksAPlaceAtItsOwnLevelsBit)
 {
     using antwika::voxelmap::getOcclusionMask;
@@ -674,6 +793,65 @@ TEST(VoxelPickTest, OcclusionMask_MarksAPlaceAtItsOwnLevelsBit)
         mask.pixels[faceAt(VoxelPosition{.x = 1, .z = 0})], 1U);
     EXPECT_EQ(
         mask.pixels[faceAt(VoxelPosition{.x = 2, .z = 0})], 0U);
+}
+
+TEST(VoxelPickTest, OcclusionMask_HoldsEveryVoxelTheGatherTakes)
+{
+    using antwika::voxel::getLineOfSight;
+    using antwika::voxel::getVoxelUnder;
+    using antwika::voxelmap::getOccludingVoxels;
+    using antwika::voxelmap::getOcclusionMask;
+    using antwika::voxelmap::getOcclusionMaskOrigin;
+    using antwika::voxelmap::kOcclusionMaskWidth;
+
+    Voxels filledVoxels;
+
+    for (std::int32_t x = -20; x <= 20; ++x)
+    {
+        for (std::int32_t z = -20; z <= 20; ++z)
+        {
+            filledVoxels[VoxelPosition{.x = x, .y = 0, .z = z}] =
+                VoxelMaterial{};
+            filledVoxels[VoxelPosition{.x = x, .y = 3, .z = z}] =
+                VoxelMaterial{};
+        }
+    }
+
+    const Vec3 standingPoint{0.0F, 0.5F, 0.0F};
+    const auto occludingCells =
+        getOccludingVoxels(filledVoxels, standingPoint);
+    const auto originPosition = getOcclusionMaskOrigin(
+        getVoxelUnder(getLineOfSight(standingPoint)));
+    const auto mask = getOcclusionMask(occludingCells, originPosition);
+
+    ASSERT_FALSE(occludingCells.empty());
+
+    for (const auto &[position, material] : occludingCells)
+    {
+        const auto acrossOffset = position.x - originPosition.x;
+        const auto alongOffset = position.z - originPosition.z;
+
+        ASSERT_GE(acrossOffset, 0);
+        ASSERT_LT(
+            acrossOffset,
+            static_cast<std::int32_t>(kOcclusionMaskWidth));
+        ASSERT_GE(alongOffset, 0);
+        ASSERT_LT(
+            alongOffset,
+            static_cast<std::int32_t>(kOcclusionMaskWidth));
+
+        const auto cellIndex =
+            ((static_cast<std::size_t>(alongOffset)
+              * kOcclusionMaskWidth)
+             + static_cast<std::size_t>(acrossOffset))
+            * antwika::gfx::kBytesPerPixel;
+        const auto level = static_cast<std::size_t>(position.y);
+
+        EXPECT_NE(
+            mask.pixels[cellIndex + (level / 8)]
+                & static_cast<std::uint8_t>(1U << (level % 8)),
+            0);
+    }
 }
 
 TEST(VoxelPickTest, OcclusionMask_LeavesOutWhatFallsOffTheSquare)

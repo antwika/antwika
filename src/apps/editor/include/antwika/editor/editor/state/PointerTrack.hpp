@@ -25,11 +25,15 @@ namespace antwika::editor
 
         widget::WidgetId hoveredWidget = widget::kNoWidget;
 
+        std::int32_t wheelSteps = 0;
+
         std::optional<voxel::VoxelPosition> hoveredPosition;
 
         ui::HoverTrack hoverTracker;
 
         ui::ClickTrack clickTracker;
+
+        widget::WidgetId heldEdgeWidget = widget::kNoWidget;
 
         widget::WidgetId lastPickedWidget = widget::kNoWidget;
 

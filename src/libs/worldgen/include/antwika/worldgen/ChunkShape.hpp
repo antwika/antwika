@@ -2,9 +2,11 @@
 
 #include <cstddef>
 #include <cstdint>
+
 #include <antwika/rng/IRng.hpp>
 #include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/wfc/CompatibilityTable.hpp>
+
 #include "antwika/worldgen/VoxelBox.hpp"
 
 namespace antwika::worldgen

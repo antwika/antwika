@@ -134,6 +134,51 @@ namespace antwika::tile
                 = default;
         };
 
+        template <typename Tag, Tag kFallback>
+        struct TagByTile final
+        {
+            [[nodiscard]] Tag tagOf(const tilemap::Tile tile) const
+            {
+                const auto foundEntry = tagByTile.find(tile);
+
+                return foundEntry == tagByTile.end() ? kFallback
+                                   : foundEntry->second;
+            }
+
+            void set(const tilemap::Tile tile, const Tag tag)
+            {
+                if (tag == kFallback)
+                {
+                    tagByTile.erase(tile);
+
+                    return;
+                }
+
+                tagByTile[tile] = tag;
+            }
+
+            [[nodiscard]] std::vector<std::pair<tilemap::Tile, Tag>>
+            getRows() const
+            {
+                return {tagByTile.begin(), tagByTile.end()};
+            } // GCOVR_EXCL_LINE
+
+            std::map<tilemap::Tile, Tag> tagByTile{};
+
+            [[nodiscard]] bool operator==(const TagByTile &other) const
+                = default;
+        };
+
+        using KindByTile = TagByTile<voxel::Kind, voxel::Kind::Normal>;
+
+        using FacingByTile = TagByTile<voxel::Facing, voxel::Facing::Any>;
+
+        using HalfByTile =
+            TagByTile<voxel::StairHalf, voxel::StairHalf::Any>;
+
+        using PartByTile =
+            TagByTile<voxel::StairPart, voxel::StairPart::Any>;
+
         void set(
             tilemap::Tile tile,
             tilemap::TileEdge edge,
@@ -144,13 +189,13 @@ namespace antwika::tile
 
         std::map<std::pair<tilemap::Tile, voxel::Corner>, bool> byCorner{};
 
-        std::map<tilemap::Tile, voxel::Kind> byKind{};
+        KindByTile byKind{};
 
-        std::map<tilemap::Tile, voxel::Facing> byFacing{};
+        FacingByTile byFacing{};
 
-        std::map<tilemap::Tile, voxel::StairHalf> halfByLevel{};
+        HalfByTile halfByLevel{};
 
-        std::map<tilemap::Tile, voxel::StairPart> byPart{};
+        PartByTile byPart{};
     };
 
 }

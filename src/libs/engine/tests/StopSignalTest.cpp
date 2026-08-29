@@ -7,6 +7,7 @@
 
 using antwika::engine::StopSignal;
 using antwika::event::Event;
+using antwika::event::EventName;
 using antwika::event::TickEvent;
 
 TEST(StopSignalTest, Stopped_IsFalseBeforeAnyEventIsHandled)
@@ -21,9 +22,9 @@ TEST(StopSignalTest, Stopped_StaysFalseForUnrelatedEvents)
     StopSignal stopSignal;
 
     stopSignal.handle(
-        TickEvent{.tick = 0, .event = Event{.name = "engine.tick"}});
+        TickEvent{.tick = 0, .event = Event{.name = EventName{"engine.tick"}}});
     stopSignal.handle(
-        TickEvent{.tick = 1, .event = Event{.name = "game.score_increment"}});
+        TickEvent{.tick = 1, .event = Event{.name = EventName{"game.score_increment"}}});
 
     EXPECT_FALSE(stopSignal.isStopped());
 }
@@ -47,7 +48,7 @@ TEST(StopSignalTest, Stopped_StaysTrueAfterFurtherEventsAreHandled)
         .tick = 2,
         .event = Event{.name = antwika::engine::events::kStop}});
     stopSignal.handle(
-        TickEvent{.tick = 3, .event = Event{.name = "engine.tick"}});
+        TickEvent{.tick = 3, .event = Event{.name = EventName{"engine.tick"}}});
 
     EXPECT_TRUE(stopSignal.isStopped());
 }

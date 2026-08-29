@@ -3,6 +3,8 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "antwika/editor/ui/WidgetIds.hpp"
+
 namespace antwika::editor
 {
 
@@ -10,16 +12,6 @@ namespace antwika::editor
     {
         [[maybe_unused]] constexpr float kToolStride =
             kToolButtonSide + kToolButtonGap;
-
-        constexpr std::uint64_t kFirstToolWidget = 424;
-
-        constexpr std::uint64_t kFirstPaintWidget = 96;
-
-        constexpr std::uint64_t kFirstKindWidget = 112;
-
-        constexpr std::uint64_t kFirstFacingWidget = 128;
-
-        constexpr std::uint64_t kFirstLevelWidget = 144;
 
         [[maybe_unused]] constexpr std::array kBrushMark{
             Stroke{{0.20F, 0.84F}, {0.46F, 0.48F}},
@@ -198,7 +190,7 @@ namespace antwika::editor
             Stroke{{0.50F, 0.78F}, {0.28F, 0.54F}},
             Stroke{{0.50F, 0.78F}, {0.72F, 0.54F}}};
 
-        [[nodiscard]] std::size_t rankOf(const map::Paint whichPaint)
+        [[nodiscard]] std::size_t rankOf(const Paint whichPaint)
         {
             for (std::size_t rank = 0; rank < kEveryPaint.size();
                  ++rank)
@@ -235,7 +227,7 @@ namespace antwika::editor
         return iconAt(rankOf(whichButton));
     }
 
-    gfx::Rect iconOf(const map::Paint whichPaint)
+    gfx::Rect iconOf(const Paint whichPaint)
     {
         return iconAt(kEveryToolButton.size() + rankOf(whichPaint));
     }
@@ -272,23 +264,17 @@ namespace antwika::editor
 
     widget::WidgetId getKindWidget(const voxel::Kind whichKind)
     {
-        return widget::WidgetId{
-            kFirstKindWidget
-            + static_cast<std::uint64_t>(rankOf(whichKind))};
+        return getWidgetAfter(kFirstKindWidget, rankOf(whichKind));
     }
 
     widget::WidgetId getFacingWidget(const voxel::Facing whichFacing)
     {
-        return widget::WidgetId{
-            kFirstFacingWidget
-            + static_cast<std::uint64_t>(rankOf(whichFacing))};
+        return getWidgetAfter(kFirstFacingWidget, rankOf(whichFacing));
     }
 
     widget::WidgetId getLevelWidget(const voxel::StairHalf whichHalf)
     {
-        return widget::WidgetId{
-            kFirstLevelWidget
-            + static_cast<std::uint64_t>(rankOf(whichHalf))};
+        return getWidgetAfter(kFirstLevelWidget, rankOf(whichHalf));
     }
 
     widget::WidgetId getPartWidget(const voxel::StairPart whichPart)
@@ -297,24 +283,19 @@ namespace antwika::editor
                           : kPartFrontWidget;
     }
 
-    widget::WidgetId getFigureWidget(const std::size_t figureIndex)
+    widget::WidgetId getCharacterWidget(const std::size_t characterIndex)
     {
-        return widget::WidgetId{
-            282 + static_cast<std::uint64_t>(figureIndex)};
+        return getWidgetAfter(kFirstCharacterWidget, characterIndex);
     }
 
     widget::WidgetId getToolWidget(const ToolButton whichButton)
     {
-        return widget::WidgetId{
-            kFirstToolWidget + static_cast<std::uint64_t>(
-                                   rankOf(whichButton))};
+        return getWidgetAfter(kFirstToolWidget, rankOf(whichButton));
     }
 
-    widget::WidgetId getPaintWidget(const map::Paint whichPaint)
+    widget::WidgetId getPaintWidget(const Paint whichPaint)
     {
-        return widget::WidgetId{
-            kFirstPaintWidget + static_cast<std::uint64_t>(
-                                    rankOf(whichPaint))};
+        return getWidgetAfter(kFirstPaintWidget, rankOf(whichPaint));
     }
 
     std::optional<voxel::Kind> kindFor(
@@ -338,7 +319,7 @@ namespace antwika::editor
         return std::nullopt;
     }
 
-    std::optional<map::Paint> paintFor(
+    std::optional<Paint> paintFor(
         const input::Key key, const bool ctrlHeld)
     {
         if (ctrlHeld)
@@ -348,55 +329,22 @@ namespace antwika::editor
 
         if (key == input::Key::B)
         {
-            return map::Paint::Brush;
+            return Paint::Brush;
         }
 
         if (key == input::Key::L)
         {
-            return map::Paint::Line;
+            return Paint::Line;
         }
 
         if (key == input::Key::F)
         {
-            return map::Paint::Fill;
+            return Paint::Fill;
         }
 
         if (key == input::Key::M)
         {
-            return map::Paint::Select;
-        }
-
-        return std::nullopt;
-    }
-
-    std::optional<ToolButton> toolFor(
-        const input::Key key,
-        const bool shiftHeld,
-        const bool ctrlHeld)
-    {
-        if (key == input::Key::B && !ctrlHeld)
-        {
-            return ToolButton::Brush;
-        }
-
-        if (key == input::Key::I && !ctrlHeld)
-        {
-            return ToolButton::Picker;
-        }
-
-        if (key == input::Key::F && shiftHeld && !ctrlHeld)
-        {
-            return ToolButton::FreeLook;
-        }
-
-        if (key == input::Key::L && !ctrlHeld)
-        {
-            return ToolButton::Lighting;
-        }
-
-        if (key == input::Key::T && !ctrlHeld)
-        {
-            return ToolButton::RuleLines;
+            return Paint::Select;
         }
 
         return std::nullopt;

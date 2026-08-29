@@ -195,7 +195,9 @@ TEST(LayoutDegenerateTest, Measure_OfTextAtZeroScaleIsNothing)
     LayoutTree tree{getContainer(Axis::Column, kGrowSizing, kFitSizing)};
 
     const auto label = tree.add(Node{
-        .kind = NodeKind::Text, .text = "ab", .textScale = 0});
+        .kind = NodeKind::Text,
+        .text = "ab",
+        .textScale = {.multiplier = 0}});
 
     layout(tree, Size{.width = 100, .height = 100});
 

@@ -1,6 +1,7 @@
 #include "antwika/rules/Orientation.hpp"
 
 #include <algorithm>
+
 #include <antwika/component/Orientation.hpp>
 
 namespace antwika::rules

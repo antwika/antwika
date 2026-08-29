@@ -9,7 +9,7 @@
 #include <span>
 #include <string_view>
 
-#include "antwika/editor/ui/WidgetCatalog.hpp"
+#include "antwika/editor/ui/WidgetIds.hpp"
 
 namespace antwika::editor
 {
@@ -20,13 +20,17 @@ namespace antwika::editor
             MenuItem::New,
             MenuItem::Save,
             MenuItem::Load,
-            MenuItem::Settings,
+            MenuItem::Keys,
             MenuItem::Quit};
 
         constexpr std::array kEditItems{
             MenuItem::Undo, MenuItem::Redo, MenuItem::Grow};
 
+        constexpr std::array kGameItems{
+            MenuItem::GameLighting, MenuItem::Corners};
+
         constexpr std::array kViewItems{
+            MenuItem::EditorLighting,
             MenuItem::FreeLook,
             MenuItem::Follow,
             MenuItem::Sight,
@@ -37,14 +41,13 @@ namespace antwika::editor
             MenuItem::RuleLines,
             MenuItem::AboveHidden};
 
-        constexpr std::array kSettingsItems{
-            MenuItem::Lighting,
-            MenuItem::Corners,
-            MenuItem::Keys};
+        static_assert(kFileItems.size() <= kMaxItemsPerMenu);
 
-        constexpr std::uint64_t kWidgetsPerMenu = 16;
+        static_assert(kEditItems.size() <= kMaxItemsPerMenu);
 
-        constexpr std::uint64_t kFirstItemWidget = 16;
+        static_assert(kGameItems.size() <= kMaxItemsPerMenu);
+
+        static_assert(kViewItems.size() <= kMaxItemsPerMenu);
 
         struct MenuItemRow final
         {
@@ -58,22 +61,22 @@ namespace antwika::editor
             {MenuItem::New, "New", false},
             {MenuItem::Save, "Save", false},
             {MenuItem::Load, "Load", false},
-            {MenuItem::Settings, "Settings", false},
+            {MenuItem::Keys, "Keys", false},
             {MenuItem::Quit, "Quit", false},
             {MenuItem::Undo, "Undo", false},
             {MenuItem::Redo, "Redo", false},
             {MenuItem::Grow, "Grow a block", false},
-            {MenuItem::Keys, "Keys", false},
+            {MenuItem::GameLighting, "Lighting", true},
+            {MenuItem::Corners, "Corners joined", true},
             {MenuItem::FreeLook, "Free look camera", true},
             {MenuItem::Grid, "Grid", true},
             {MenuItem::Marker, "Placement marker", true},
             {MenuItem::RuleLines, "Rule lines", true},
-            {MenuItem::Lighting, "Lighting", true},
+            {MenuItem::EditorLighting, "Lighting", true},
             {MenuItem::Sight, "Line of sight", true},
             {MenuItem::LowerSight, "Lower line-of-sight", true},
             {MenuItem::LowerLight, "Player lower point-light", true},
             {MenuItem::Follow, "Camera follows", true},
-            {MenuItem::Corners, "Corners joined", true},
             {MenuItem::AboveHidden, "Hide above level", true}}};
 
         static_assert(enums::tagsInOrder(kMenuItemRows, &MenuItemRow::item));
@@ -97,45 +100,23 @@ namespace antwika::editor
 
         constexpr auto kEditNames = namesOfItems(kEditItems);
 
-        constexpr auto kViewNames = namesOfItems(kViewItems);
+        constexpr auto kGameNames = namesOfItems(kGameItems);
 
-        constexpr auto kSettingsNames = namesOfItems(kSettingsItems);
+        constexpr auto kViewNames = namesOfItems(kViewItems);
 
         struct MenuRow final
         {
             Menu menu;
             std::string_view name;
-            widget::WidgetId widget;
-            widget::WidgetId firstItemWidget;
             std::span<const MenuItem> items;
             std::span<const std::string_view> names;
         };
 
         constexpr std::array<MenuRow, enums::kCount<Menu>> kMenuRows{{
-            {Menu::File,
-             "File",
-             widget::WidgetId{1},
-             widget::WidgetId{kFirstItemWidget},
-             kFileItems,
-             kFileNames},
-            {Menu::Edit,
-             "Edit",
-             widget::WidgetId{4},
-             widget::WidgetId{8},
-             kEditItems,
-             kEditNames},
-            {Menu::View,
-             "View",
-             widget::WidgetId{2},
-             widget::WidgetId{kFirstItemWidget + kWidgetsPerMenu},
-             kViewItems,
-             kViewNames},
-            {Menu::Settings,
-             "Settings",
-             widget::WidgetId{3},
-             widget::WidgetId{kFirstItemWidget + (2 * kWidgetsPerMenu)},
-             kSettingsItems,
-             kSettingsNames}}};
+            {Menu::File, "File", kFileItems, kFileNames},
+            {Menu::Edit, "Edit", kEditItems, kEditNames},
+            {Menu::Game, "Game", kGameItems, kGameNames},
+            {Menu::View, "View", kViewItems, kViewNames}}};
 
         static_assert(enums::tagsInOrder(kMenuRows, &MenuRow::menu));
     }
@@ -162,12 +143,15 @@ namespace antwika::editor
 
     widget::WidgetId getMenuWidget(const Menu menu)
     {
-        return enums::lookup(kMenuRows, menu).widget;
+        return getWidgetAfter(
+            kFirstMenuWidget, static_cast<std::uint64_t>(menu));
     }
 
     widget::WidgetId getFirstItemWidget(const Menu menu)
     {
-        return enums::lookup(kMenuRows, menu).firstItemWidget;
+        return getWidgetAfter(
+            kFirstMenuItemWidget,
+            static_cast<std::uint64_t>(menu) * kMaxItemsPerMenu);
     }
 
     std::span<const std::string_view> itemNamesOf(const Menu menu)

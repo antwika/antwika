@@ -8,10 +8,12 @@
 
 #include <antwika/ecs/ISystem.hpp>
 #include <antwika/ecs/World.hpp>
-#include <antwika/gfx/Math3D.hpp>
+#include <antwika/geometry/Math3D.hpp>
 #include <antwika/time/Tick.hpp>
 #include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxel/Voxels.hpp>
+
+#include "antwika/system/SimulationState.hpp"
 
 namespace antwika::system
 {
@@ -21,12 +23,9 @@ namespace antwika::system
     public:
         PatrolSystem(
             const voxel::Voxels &solidVoxels,
-            const std::vector<std::vector<voxel::VoxelPosition>> &stopPositions)
-            noexcept;
-
-        void setFrozen(bool frozen) noexcept;
-
-        void setSpeaking(std::optional<std::uint32_t> entityId) noexcept;
+            const std::vector<std::vector<voxel::VoxelPosition>>
+                &stopPositions,
+            const SimulationState &simulation) noexcept;
 
         void forget() noexcept;
 
@@ -35,9 +34,8 @@ namespace antwika::system
     private:
         const voxel::Voxels *solidVoxels;
         const std::vector<std::vector<voxel::VoxelPosition>> *stopPositions;
-        std::map<ecs::Entity, std::vector<gfx::Vec3>> routePositions;
-        bool frozen = false;
-        std::optional<std::uint32_t> speaking;
+        const SimulationState *simulation;
+        std::map<ecs::Entity, std::vector<geometry::Vec3>> routePositions;
     };
 
 }

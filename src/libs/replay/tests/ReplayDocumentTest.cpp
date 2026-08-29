@@ -5,6 +5,7 @@
 #include "antwika/replay/ReplayDocument.hpp"
 
 using antwika::event::Event;
+using antwika::event::EventName;
 using antwika::event::TickEvent;
 using antwika::geometry::Size;
 using antwika::replay::ReplayDocument;
@@ -18,7 +19,7 @@ namespace
                 {
                     TickEvent{
                         .tick = 0,
-                        .event = Event{.name = "game.score_increment"},
+                        .event = Event{.name = EventName{"game.score_increment"}},
                     },
                 },
             .canvasSize = Size{.width = 1024, .height = 640},

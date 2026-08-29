@@ -5,7 +5,7 @@
 #include <variant>
 #include <vector>
 
-#include <antwika/engine/Events.hpp>
+#include <antwika/event/EngineEvents.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 
@@ -27,7 +27,7 @@ namespace antwika::input::fakes
     public:
         void handle(const TickEvent &event) override
         {
-            if (event.event.name == antwika::engine::events::kTick)
+            if (event.event.name == antwika::event::kTick)
             {
                 state.beginTick();
                 return;

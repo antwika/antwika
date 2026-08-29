@@ -40,7 +40,7 @@ namespace antwika::render
             gfx::Vec3 position) const;
 
     private:
-        std::unique_ptr<gfx::IMesh> figureMesh;
+        std::unique_ptr<gfx::IMesh> characterMesh;
         std::unique_ptr<gfx::IMesh> shadowBlobMesh;
     };
 

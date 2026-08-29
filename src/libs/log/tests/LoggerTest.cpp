@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 
 #include <antwika/time/fakes/FakeClock.hpp>
+
 #include "antwika/log/mocks/MockFormatter.hpp"
 #include "antwika/log/mocks/MockLogPolicy.hpp"
 #include "antwika/log/mocks/MockAppender.hpp"

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-#include <string>
+#include <string_view>
 
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
@@ -18,7 +18,7 @@ namespace antwika::replay::fakes
         void handle(const TickEvent &event) override
         {
             fold(event.tick);
-            fold(event.event.name);
+            fold(event.event.name.getText());
             fold(event.event.payload);
         }
 
@@ -36,7 +36,7 @@ namespace antwika::replay::fakes
             }
         }
 
-        void fold(const std::string &value)
+        void fold(std::string_view value)
         {
             for (unsigned char byte : value)
             {

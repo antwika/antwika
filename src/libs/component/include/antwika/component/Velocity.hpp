@@ -9,6 +9,9 @@ namespace antwika::component
         float velocityZ = 0.0F;
 
         float speedMultiplier = 1.0F;
+
+        [[nodiscard]] bool operator==(
+            const Velocity &other) const = default;
     };
 
 }

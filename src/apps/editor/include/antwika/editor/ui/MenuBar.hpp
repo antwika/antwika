@@ -18,13 +18,13 @@ namespace antwika::editor
     {
         File,
         Edit,
+        Game,
         View,
-        Settings,
     };
 
     [[nodiscard]] constexpr Menu getLastEnumerator(Menu) noexcept
     {
-        return Menu::Settings;
+        return Menu::View;
     }
 
     enum class MenuItem : std::uint8_t
@@ -32,24 +32,25 @@ namespace antwika::editor
         New,
         Save,
         Load,
-        Settings,
+        Keys,
         Quit,
         Undo,
         Redo,
 
         Grow,
 
-        Keys,
+        GameLighting,
+        Corners,
+
         FreeLook,
         Grid,
         Marker,
         RuleLines,
-        Lighting,
+        EditorLighting,
         Sight,
         LowerSight,
         LowerLight,
         Follow,
-        Corners,
 
         AboveHidden,
     };
@@ -59,8 +60,8 @@ namespace antwika::editor
         return MenuItem::AboveHidden;
     }
 
-    inline constexpr std::array<Menu, 3> kBarMenus{
-        Menu::File, Menu::Edit, Menu::View};
+    inline constexpr std::array<Menu, enums::kCount<Menu>> kEveryMenu =
+        enums::kAll<Menu>;
 
     [[nodiscard]] std::string_view getMenuName(Menu menu);
 

@@ -2,7 +2,7 @@
 
 #include <variant>
 
-#include <antwika/engine/Events.hpp>
+#include <antwika/event/EngineEvents.hpp>
 #include <antwika/event/ITickEventSource.hpp>
 
 #include "antwika/input/InputEvent.hpp"
@@ -10,7 +10,7 @@
 namespace antwika::input
 {
 
-    using antwika::engine::events::kStop;
+    using antwika::event::kStop;
     using antwika::event::ITickEventSource;
 
     StopOnKeySource::StopOnKeySource(

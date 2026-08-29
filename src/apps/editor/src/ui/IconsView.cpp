@@ -12,11 +12,29 @@
 #include <antwika/input/MouseButton.hpp>
 
 #include <antwika/render/Checkerboard.hpp>
+
 #include "antwika/editor/ui/EditorLook.hpp"
 #include "antwika/editor/ui/IconSheet.hpp"
 
 namespace antwika::editor
 {
+
+    namespace
+    {
+        [[nodiscard]] gfx::RectF getSheetRect(
+            const ViewContext &viewContext)
+        {
+            return viewContext.workbench.sheetView.sheetRect.value_or(
+                getIconSheetBounds(camera::kCanvasSize));
+        }
+
+        [[nodiscard]] gfx::RectF getDrawRect(
+            const ViewContext &viewContext)
+        {
+            return viewContext.workbench.sheetView.canvasRect.value_or(
+                getIconDrawBounds(camera::kCanvasSize));
+        }
+    }
 
     void IconsView::open(
         gfx::ViewportRenderer &viewportRenderer,
@@ -83,45 +101,54 @@ namespace antwika::editor
     }
 
     void IconsView::drawSheet(
-        gfx::ViewportRenderer &viewportRenderer) const
+        gfx::ViewportRenderer &viewportRenderer,
+        const gfx::RectF sheetRect,
+        const gfx::RectF drawRect) const
     {
         const auto count =
             antwika::editor::getIconCount(iconSheet.size);
 
-        for (std::size_t index = 0; index < count; ++index)
+        viewportRenderer.drawRect(sheetRect, kPanelColor);
+        viewportRenderer.drawRect(drawRect, kPanelColor);
+
         {
-            const auto iconChosen = iconPicked == index;
-            const auto place = antwika::editor::getIconCellRect(
-                camera::kCanvasSize, count, index);
+            const auto sheetScope = viewportRenderer.clipScope(sheetRect);
 
-            viewportRenderer.drawTexture(
-                *iconCheckerTexture,
-                antwika::gfx::RectF(
-                    {0.0F, 0.0F},
-                    {static_cast<float>(
-                         antwika::editor::kIconCellSize.width),
-                     static_cast<float>(
-                         antwika::editor::kIconCellSize.height)}),
-                place,
-                kWhiteColor);
-            viewportRenderer.drawTexture(
-                *iconsTexture,
-                antwika::editor::getIconSource(index),
-                place,
-                iconChosen ? kWhiteColor : kDisabledTintColor);
+            for (std::size_t index = 0; index < count; ++index)
+            {
+                const auto iconChosen = iconPicked == index;
+                const auto place = antwika::editor::getIconCellRect(
+                    sheetRect, count, index);
 
-            drawOutline(
-                viewportRenderer,
-                place,
-                iconChosen ? kSelectionAccentColor : kGridLineColor);
+                viewportRenderer.drawTexture(
+                    *iconCheckerTexture,
+                    antwika::gfx::RectF(
+                        {0.0F, 0.0F},
+                        {static_cast<float>(
+                             antwika::editor::kIconCellSize.width),
+                         static_cast<float>(
+                             antwika::editor::kIconCellSize.height)}),
+                    place,
+                    kWhiteColor);
+                viewportRenderer.drawTexture(
+                    *iconsTexture,
+                    antwika::editor::getIconSource(index),
+                    place,
+                    iconChosen ? kWhiteColor : kDisabledTintColor);
+
+                drawOutline(
+                    viewportRenderer,
+                    place,
+                    iconChosen ? kSelectionAccentColor : kGridLineColor);
+            }
         }
 
         if (iconPicked.has_value() && *iconPicked < count)
         {
+            const auto drawScope = viewportRenderer.clipScope(drawRect);
             const auto drawnAt =
-                antwika::editor::getEditedIconRect(camera::kCanvasSize);
+                antwika::editor::getEditedIconRect(drawRect);
 
-            viewportRenderer.drawRect(drawnAt, kPanelColor);
             viewportRenderer.drawTexture(
                 *iconCheckerTexture,
                 antwika::gfx::RectF(
@@ -161,9 +188,9 @@ namespace antwika::editor
 
 
     bool IconsView::claims(
-        const map::View shownView, const bool playing) const noexcept
+        const View shownView, const bool playing) const noexcept
     {
-        return !playing && shownView == map::View::Icons;
+        return !playing && shownView == View::Icons;
     }
 
     std::string IconsView::getStatusText(const ViewContext &) const
@@ -176,7 +203,10 @@ namespace antwika::editor
     void IconsView::draw(
         const ViewContext &viewContext, const ui::Frame &)
     {
-        drawSheet(viewContext.render.viewportRenderer);
+        drawSheet(
+            viewContext.render.viewportRenderer,
+            getSheetRect(viewContext),
+            getDrawRect(viewContext));
     }
 
     bool IconsView::consumePress(
@@ -201,7 +231,9 @@ namespace antwika::editor
 
         const auto count = getCount();
         const auto chosenCell = iconCellAt(
-            camera::kCanvasSize, count, viewContext.workbench.pointer.pointerOnCanvas);
+            getSheetRect(viewContext),
+            count,
+            viewContext.workbench.pointer.pointerOnCanvas);
 
         if (chosenCell.has_value())
         {
@@ -219,7 +251,7 @@ namespace antwika::editor
         }
 
         const auto pixel = iconPixelAt(
-            getEditedIconRect(camera::kCanvasSize),
+            getEditedIconRect(getDrawRect(viewContext)),
             viewContext.workbench.pointer.pointerOnCanvas);
 
         if (!pixel.has_value())
@@ -245,7 +277,7 @@ namespace antwika::editor
         }
 
         const auto pixel = iconPixelAt(
-            getEditedIconRect(camera::kCanvasSize),
+            getEditedIconRect(getDrawRect(viewContext)),
             viewContext.workbench.pointer.pointerOnCanvas);
 
         if (!pixel.has_value())

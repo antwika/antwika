@@ -196,108 +196,68 @@ namespace antwika::tile
 
     voxel::Kind TileRules::kindOf(const tilemap::Tile tile) const
     {
-        const auto foundEntry = byKind.find(tile);
-
-        return foundEntry == byKind.end(
-            ) ? voxel::Kind::Normal : foundEntry->second;
+        return byKind.tagOf(tile);
     }
 
     void TileRules::setKind(const tilemap::Tile tile, const voxel::Kind kind)
     {
-        if (kind == voxel::Kind::Normal)
-        {
-            byKind.erase(tile);
-
-            return;
-        }
-
-        byKind[tile] = kind;
+        byKind.set(tile, kind);
     }
 
     std::vector<std::pair<tilemap::Tile, voxel::Kind>> TileRules::getKinds() const
     {
-        return {byKind.begin(), byKind.end()};
+        return byKind.getRows();
     } // GCOVR_EXCL_LINE
 
     voxel::Facing TileRules::facingOf(const tilemap::Tile tile) const
     {
-        const auto foundEntry = byFacing.find(tile);
-
-        return foundEntry == byFacing.end(
-            ) ? voxel::Facing::Any : foundEntry->second;
+        return byFacing.tagOf(tile);
     }
 
     void TileRules::setFacing(
         const tilemap::Tile tile, const voxel::Facing facing)
     {
-        if (facing == voxel::Facing::Any)
-        {
-            byFacing.erase(tile);
-
-            return;
-        }
-
-        byFacing[tile] = facing;
+        byFacing.set(tile, facing);
     }
 
     voxel::StairHalf TileRules::levelOf(const tilemap::Tile tile) const
     {
-        const auto foundEntry = halfByLevel.find(tile);
-
-        return foundEntry == halfByLevel.end() ? voxel::StairHalf::Any
-                           : foundEntry->second;
+        return halfByLevel.tagOf(tile);
     }
 
     void TileRules::setLevel(
         const tilemap::Tile tile, const voxel::StairHalf levelHalf)
     {
-        if (levelHalf == voxel::StairHalf::Any)
-        {
-            halfByLevel.erase(tile);
-
-            return;
-        }
-
-        halfByLevel[tile] = levelHalf;
+        halfByLevel.set(tile, levelHalf);
     }
 
     std::vector<std::pair<tilemap::Tile, voxel::StairHalf>>
     TileRules::getLevels() const
     {
-        return {halfByLevel.begin(), halfByLevel.end()};
+        return halfByLevel.getRows();
     } // GCOVR_EXCL_LINE
 
     voxel::StairPart TileRules::partOf(const tilemap::Tile tile) const
     {
-        const auto foundEntry = byPart.find(tile);
-
-        return foundEntry == byPart.end() ? voxel::StairPart::Any
-                           : foundEntry->second;
+        return byPart.tagOf(tile);
     }
 
     void TileRules::setPart(
         const tilemap::Tile tile, const voxel::StairPart part)
     {
-        if (part == voxel::StairPart::Any)
-        {
-            byPart.erase(tile);
-
-            return;
-        }
-
-        byPart[tile] = part;
+        byPart.set(tile, part);
     }
 
     std::vector<std::pair<tilemap::Tile, voxel::StairPart>>
     TileRules::getParts() const
     {
-        return {byPart.begin(), byPart.end()};
+        return byPart.getRows();
     } // GCOVR_EXCL_LINE
 
     std::vector<std::pair<tilemap::Tile, voxel::Facing>>
     TileRules::getFacings() const
     {
-        return {byFacing.begin(), byFacing.end()};
+        return byFacing.getRows();
     } // GCOVR_EXCL_LINE
 
     std::vector<TileRule> TileRules::getAllRules() const

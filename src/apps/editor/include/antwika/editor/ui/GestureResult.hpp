@@ -5,11 +5,11 @@
 #include <antwika/gfx/RectF.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/input/Key.hpp>
-#include <antwika/map/Settings.hpp>
 #include <antwika/tilemap/TileEdges.hpp>
 #include <antwika/tilemap/Tilemap.hpp>
 #include <antwika/widget/WidgetId.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
+
 #include "antwika/editor/ui/EdgeSelection.hpp"
 #include "antwika/editor/ui/PointerAction.hpp"
 

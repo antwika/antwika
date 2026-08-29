@@ -16,6 +16,7 @@
 using antwika::schema::getDocumentVersion;
 using antwika::schema::SchemaVersionError;
 using antwika::event::Event;
+using antwika::event::EventName;
 using antwika::event::TickEvent;
 using antwika::replay::kReplayDocumentVersion;
 using antwika::replay::kTickEventSchemaVersion;
@@ -27,7 +28,7 @@ namespace
 {
     std::vector<TickEvent> getOneEvent()
     {
-        return {TickEvent{.tick = 3, .event = Event{"a.b", "{}"}}};
+        return {TickEvent{.tick = 3, .event = Event{.name = EventName{"a.b"}, .payload = "{}"}}};
     }
 
     std::string getReplayText(const std::string &versionMember)

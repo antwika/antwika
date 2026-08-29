@@ -3,12 +3,14 @@
 #include <cstddef>
 #include <optional>
 #include <vector>
+
 #include <antwika/tilemap/AtlasLayout.hpp>
 #include <antwika/tilemap/TileEdges.hpp>
 #include <antwika/tilemap/Tilemap.hpp>
 #include <antwika/tile/TileRules.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/voxelmap/Voxel.hpp>
+
 #include "antwika/solver/SolveFailure.hpp"
 
 namespace antwika::solver

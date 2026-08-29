@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string_view>
 
 #include <antwika/gfx/PointF.hpp>
@@ -52,7 +53,7 @@ namespace antwika::gfx::detail
         void drawText(
             PointF originPoint,
             std::string_view text,
-            std::uint32_t scale,
+            TextScale scale,
             Color color) override;
 
         [[nodiscard]] std::unique_ptr<ITexture> createTexture(
@@ -88,10 +89,11 @@ namespace antwika::gfx::detail
         [[nodiscard]] std::unique_ptr<IRenderTarget> createRenderTarget(
             const RenderTargetSpec &spec) override;
 
-        void beginTarget(IRenderTarget &target) override;
+        using IRenderer::beginTarget;
 
-        void beginTargetRegion(
-            IRenderTarget &target, Rect regionRect) override;
+        void beginTarget(
+            IRenderTarget &target,
+            std::optional<Rect> regionRect) override;
 
         void endTarget() override;
 

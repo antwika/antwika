@@ -1,6 +1,9 @@
 #include "antwika/render/CharacterSkins.hpp"
 
+#include <cstddef>
 #include <utility>
+
+#include "antwika/render/TextureUpload.hpp"
 
 namespace antwika::render
 {
@@ -10,11 +13,15 @@ namespace antwika::render
         std::vector<gfx::Bitmap> takenBitmaps)
     {
         skins = std::move(takenBitmaps);
-        pictureTextures.clear();
+        pictureTextures.resize(skins.size());
 
-        for (const auto &skin : skins)
+        for (std::size_t skinIndex = 0; skinIndex < skins.size();
+             ++skinIndex)
         {
-            pictureTextures.push_back(viewportRenderer.createTexture(skin));
+            layBitmapIntoTexture(
+                viewportRenderer,
+                pictureTextures.at(skinIndex),
+                skins.at(skinIndex));
         }
     }
 
@@ -35,8 +42,10 @@ namespace antwika::render
         }
 
         skins.at(skinIndex) = std::move(skinBitmap);
-        pictureTextures.at(skinIndex) =
-            viewportRenderer.createTexture(skins.at(skinIndex));
+        layBitmapIntoTexture(
+            viewportRenderer,
+            pictureTextures.at(skinIndex),
+            skins.at(skinIndex));
     }
 
     gfx::ITexture *CharacterSkins::getPicture(

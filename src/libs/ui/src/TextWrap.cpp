@@ -62,8 +62,8 @@ namespace antwika::ui
         const auto inner =
             std::uint64_t{width} > sides ? width - sides : 0;
         const auto advance = antwika::gfx::getScaledGlyphAdvance(
-            antwika::gfx::getEncodeTextScale(
-                theme.face, theme.textScale));
+            antwika::gfx::TextScale{
+                .face = theme.face, .multiplier = theme.textScale});
 
         return advance > 0 ? inner / advance : 0;
     }

@@ -6,6 +6,7 @@
 #include <antwika/tile/TileRules.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/voxelmap/Voxel.hpp>
+
 #include "antwika/solver/SolveFailure.hpp"
 
 namespace antwika::solver

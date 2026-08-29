@@ -6,6 +6,7 @@
 #include <ostream>
 #include <string>
 #include <vector>
+
 #include <antwika/camera/FlyCamera.hpp>
 #include <antwika/decor/Decor.hpp>
 #include <antwika/decor/TileAnimation.hpp>
@@ -21,9 +22,9 @@
 #include <antwika/tile/TileRules.hpp>
 #include <antwika/tile/Transitions.hpp>
 #include <antwika/voxelmap/Voxel.hpp>
+
 #include "antwika/map/mapfile/CameraView.hpp"
 #include "antwika/map/mapfile/Character.hpp"
-#include "antwika/map/mapfile/PressurePlate.hpp"
 
 namespace antwika::map
 {
@@ -52,8 +53,6 @@ namespace antwika::map
 
         std::string exitTarget{};
 
-        bool exitLocked = false;
-
         Markers markers{};
 
         std::optional<CameraView> camera{};
@@ -71,8 +70,6 @@ namespace antwika::map
         std::vector<Layer> layers = getDefaultLayers();
 
         std::vector<Character> characters{};
-
-        std::vector<PressurePlate> plates{};
 
         Settings settings{};
 

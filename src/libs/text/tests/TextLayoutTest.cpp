@@ -7,19 +7,20 @@
 using antwika::gfx::kGlyphAdvance;
 using antwika::gfx::kGlyphLineHeight;
 using antwika::gfx::Size;
+using antwika::gfx::TextScale;
 using antwika::text::getTextSize;
 
 TEST(TextLayoutTest, TextSize_IsOneCellPerCharacter)
 {
     EXPECT_EQ(
-        getTextSize("As", 1),
+        getTextSize("As", TextScale{.multiplier = 1}),
         (Size{.width = 2 * kGlyphAdvance, .height = kGlyphLineHeight}));
 }
 
 TEST(TextLayoutTest, TextSize_GrowsWithTheScale)
 {
     EXPECT_EQ(
-        getTextSize("As", 3),
+        getTextSize("As", TextScale{.multiplier = 3}),
         (Size{
             .width = 2 * kGlyphAdvance * 3,
             .height = kGlyphLineHeight * 3}));
@@ -27,10 +28,10 @@ TEST(TextLayoutTest, TextSize_GrowsWithTheScale)
 
 TEST(TextLayoutTest, TextSize_IsZeroForEmptyText)
 {
-    EXPECT_EQ(getTextSize("", 4), Size{});
+    EXPECT_EQ(getTextSize("", TextScale{.multiplier = 4}), Size{});
 }
 
 TEST(TextLayoutTest, TextSize_IsZeroAtAZeroScale)
 {
-    EXPECT_EQ(getTextSize("As", 0), Size{});
+    EXPECT_EQ(getTextSize("As", TextScale{.multiplier = 0}), Size{});
 }

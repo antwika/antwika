@@ -13,6 +13,7 @@
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/input/Events.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/InputPipeline.hpp>
@@ -206,8 +207,12 @@ TEST(HoverRecordingTest, Recording_HoldsNoneOfTheMotionTheHoverFollowed)
 
     ASSERT_EQ(2U, hovering.recordedEvents.size());
 
-    EXPECT_EQ("input.pointer_move", hovering.recordedEvents.at(0).event.name);
-    EXPECT_EQ("input.pointer_down", hovering.recordedEvents.at(1).event.name);
+    EXPECT_EQ(
+        antwika::input::events::kPointerMove,
+        hovering.recordedEvents.at(0).event.name);
+    EXPECT_EQ(
+        antwika::input::events::kPointerDown,
+        hovering.recordedEvents.at(1).event.name);
     EXPECT_EQ(Tick{6}, hovering.recordedEvents.at(0).tick);
     EXPECT_EQ(Tick{6}, hovering.recordedEvents.at(1).tick);
 }

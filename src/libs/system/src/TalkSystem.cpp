@@ -3,16 +3,16 @@
 #include <antwika/component/DialogueLine.hpp>
 #include <antwika/component/Player.hpp>
 #include <antwika/component/Position.hpp>
-#include <antwika/component/RosterIndex.hpp>
+#include <antwika/component/CharacterIndex.hpp>
 #include <antwika/component/Speaker.hpp>
 #include <antwika/component/TalkIntent.hpp>
 
 namespace antwika::system
 {
 
-    void TalkSystem::setRosterCount(const std::size_t value) noexcept
+    TalkSystem::TalkSystem(const SimulationState &simulation) noexcept
+        : simulation(&simulation)
     {
-        rosterCount = value;
     }
 
     void TalkSystem::update(ecs::World &world, const time::Tick)
@@ -24,7 +24,7 @@ namespace antwika::system
                 world.get<component::Position>(talker);
 
             for (const auto entity :
-                 world.view<component::Position, component::RosterIndex,
+                 world.view<component::Position, component::CharacterIndex,
                      component::Speaker>())
             {
                 if (world.has<component::Player>(entity))
@@ -32,10 +32,10 @@ namespace antwika::system
                     continue;
                 }
 
-                const auto rosterIndex =
-                    world.get<component::RosterIndex>(entity).index;
+                const auto characterIndex =
+                    world.get<component::CharacterIndex>(entity).index;
 
-                if (rosterIndex >= rosterCount)
+                if (characterIndex >= simulation->characterCount)
                 {
                     continue;
                 }
@@ -59,7 +59,7 @@ namespace antwika::system
                 world.add<component::DialogueLine>(
                     talker,
                     component::DialogueLine{
-                        .rosterIndex = rosterIndex,
+                        .characterIndex = characterIndex,
                         .lineIndex = speaker.nextLineIndex});
 
                 break;

@@ -73,6 +73,14 @@ jobs:
         shell: bash
         run: python3 scripts/check_naming.py
 
+      - name: Test check-include-order script
+        shell: bash
+        run: python3 scripts/tests/test_check_include_order.py
+
+      - name: Check include order
+        shell: bash
+        run: python3 scripts/check_include_order.py
+
       - name: Test coverage badge script
         shell: bash
         run: python3 scripts/tests/test_generate_coverage_badge.py

@@ -31,6 +31,9 @@ namespace antwika::editor
         LevelUp,
         LevelDown,
         Corners,
+        FreeLook,
+        EditorLighting,
+        RuleLines,
         WeaveLog,
         Cancel,
         ViewWorld,
@@ -38,19 +41,16 @@ namespace antwika::editor
         ViewCharacter,
         ViewIcons,
         ViewPlan,
+        ViewGizmos,
         ViewNext,
         ViewBack,
-        ToolBrush,
+        ToolSelect,
         ToolPicker,
-        ToolFreeLook,
-        ToolLighting,
         ToolLamp,
-        ToolRuleLines,
         ToolStart,
         ToolExit,
         ToolStamp,
-        ToolFigure,
-        ToolPlate,
+        ToolCharacter,
         KindStone,
         KindWater,
         KindRamp,
@@ -129,9 +129,5 @@ namespace antwika::editor
     [[nodiscard]] KeyBindings getLoadChords(const std::string &path);
 
     [[nodiscard]] widget::WidgetId getKeyRowWidget(std::size_t rowIndex);
-
-    inline constexpr widget::WidgetId kKeysDoneWidget{380};
-
-    inline constexpr widget::WidgetId kKeysResetWidget{381};
 
 }

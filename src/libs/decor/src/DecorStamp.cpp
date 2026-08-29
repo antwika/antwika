@@ -9,6 +9,7 @@
 #include <antwika/tilemap/TileEdges.hpp>
 
 #include <antwika/decor/Decor.hpp>
+
 #include "DecorDetail.hpp"
 
 namespace antwika::decor::decordetail

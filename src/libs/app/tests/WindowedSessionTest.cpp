@@ -35,6 +35,7 @@ using antwika::app::ConsoleLogging;
 using antwika::app::WindowedSession;
 using antwika::app::WindowedSessionSpec;
 using antwika::event::Event;
+using antwika::event::EventName;
 using antwika::event::TickEvent;
 using antwika::gfx::CloseRequested;
 using antwika::gfx::Size;
@@ -200,7 +201,7 @@ TEST(WindowedSessionTest, Describe_ReadsTheDeviceWithNoReplay)
 TEST(WindowedSessionTest, Describe_ReadsNoDeviceWithAReplay)
 {
     Fixture fixture;
-    const Event scriptedEvent{.name = "test.scripted", .payload = "{}"};
+    const Event scriptedEvent{.name = EventName{"test.scripted"}, .payload = "{}"};
     FakeInputBackend input({InputEvent{KeyPressed{.key = Key::A}}});
 
     auto spec = getSessionSpec();
@@ -219,7 +220,7 @@ TEST(WindowedSessionTest, Describe_ReadsNoDeviceWithAReplay)
 TEST(WindowedSessionTest, Describe_SeedsFromTheDemoRecording)
 {
     Fixture fixture;
-    const Event scriptedEvent{.name = "test.demo", .payload = "{}"};
+    const Event scriptedEvent{.name = EventName{"test.demo"}, .payload = "{}"};
     FakeInputBackend input;
 
     auto spec = getSessionSpec();

@@ -5,7 +5,7 @@
 #include "antwika/editor/editor/EditorDocument.hpp"
 
 using antwika::editor::EditorDocument;
-using antwika::map::Snapshot;
+using antwika::editor::Snapshot;
 
 namespace
 {
@@ -39,6 +39,29 @@ TEST(EditorDocumentTest, OpenAt_LeavesTheStartingPathWhereItWas)
 
     EXPECT_EQ(document.getPath(), "assets/maps/second.json");
     EXPECT_EQ(document.getStartPath(), "assets/maps/first.json");
+}
+
+TEST(EditorDocumentTest, GetSiblingPath_NamesAFileBesideTheOpenMap)
+{
+    EditorDocument document;
+
+    document.startFrom("assets/maps/first.json");
+    document.openAt("assets/towns/second.json");
+
+    EXPECT_EQ(
+        document.getSiblingPath("exit.json"), "assets/towns/exit.json");
+}
+
+TEST(EditorDocumentTest, GetStartSiblingPath_NamesAFileBesideTheStartingMap)
+{
+    EditorDocument document;
+
+    document.startFrom("assets/maps/first.json");
+    document.openAt("assets/towns/second.json");
+
+    EXPECT_EQ(
+        document.getStartSiblingPath("progress.json"),
+        "assets/maps/progress.json");
 }
 
 TEST(EditorDocumentTest, IsDirty_ReadsFalseOnADocumentNobodyHasTouched)

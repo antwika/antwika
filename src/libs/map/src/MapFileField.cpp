@@ -37,11 +37,6 @@ namespace antwika::map::mapfile
         return objectJson;
     } // GCOVR_EXCL_LINE
 
-    nlohmann::json getPlateSchema()
-    {
-        return shapeOf(kPlateFields);
-    } // GCOVR_EXCL_LINE
-
     nlohmann::json getTransitionSchema()
     {
         return shapeOf(kTransitionFields);

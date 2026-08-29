@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <stdexcept>
 #include <vector>
 
 #include <antwika/gfx/MeshBox.hpp>
@@ -117,4 +118,16 @@ TEST(VoxelMeshPiecesTest, VoxelMeshPieces_LeavesNothingForAWorldWithNoCubes)
 {
     EXPECT_TRUE(
         getVoxelMeshPieces(Voxels{}, {}, {}, Pass::Solid).empty());
+}
+
+TEST(VoxelMeshPiecesTest, VoxelMeshPieces_ThrowsWhereTilesAndFacesDisagree)
+{
+    const auto voxels = getColumnsApart(1);
+    const auto faces = visibleFacesOf(voxels);
+    const std::vector<antwika::tilemap::Tile> fewTiles(faces.size() - 1);
+
+    EXPECT_THROW(
+        static_cast<void>(
+            getVoxelMeshPieces(voxels, faces, fewTiles, Pass::Solid)),
+        std::invalid_argument);
 }

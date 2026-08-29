@@ -6,9 +6,6 @@
 #include <antwika/gfx/Math3D.hpp>
 #include <antwika/gfx/Size.hpp>
 
-#include <antwika/voxel/VoxelCube.hpp>
-#include <antwika/tilemap/TileEdges.hpp>
-
 namespace antwika::camera
 {
 
@@ -52,6 +49,9 @@ namespace antwika::camera
     [[nodiscard]] CameraTransform getResetToIsometric(CameraTransform transform);
 
     [[nodiscard]] CameraTransform getSnappedPitch(CameraTransform transform);
+
+    [[nodiscard]] CameraTransform getAimedAt(
+        CameraTransform transform, gfx::Vec3 position);
 
     [[nodiscard]] CameraTransform getCenteredOn(
         CameraTransform transform, gfx::Vec3 position);

@@ -1,15 +1,16 @@
 #include "antwika/editor/editor/GameModule.hpp"
 
+#include <atomic>
+#include <cstddef>
 #include <filesystem>
 #include <optional>
 #include <stdexcept>
-#include <type_traits>
 #include <string>
 
 #include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/io/AssetPath.hpp>
 
-#include "antwika/editor/editor/PlayComponents.hpp"
+#include "antwika/gameplay/ComponentNames.hpp"
 #include "antwika/gameplay/SeamStamp.hpp"
 #include "antwika/gameplay/Module.hpp"
 
@@ -26,21 +27,35 @@ namespace antwika::editor
         constexpr std::string_view kModuleName =
             "libantwika_gameplay_module.so";
 #endif
+
+        [[nodiscard]] gameplay::IGame *heldGameOf(
+            gameplay::IGame *const madeGame)
+        {
+            if (madeGame == nullptr)
+            {
+                // GCOVR_EXCL_START
+                throw std::runtime_error(
+                    "the game module holds no game");
+                // GCOVR_EXCL_STOP
+            }
+
+            return madeGame;
+        }
     }
 
     GameModule::GameModule(
         log::ILogger &logger,
         ecs::World &world,
+        const map::Map &laidMap,
         const voxel::Voxels &solidVoxels,
         const std::vector<std::vector<voxel::VoxelPosition>> &patrolPositions)
-#ifdef ANTWIKA_GAME_SHARED
         : logger(&logger),
           world(&world),
+          laidMap(&laidMap),
           solidVoxels(&solidVoxels),
           patrolPositions(&patrolPositions)
-#endif
     {
-        claimPlayComponents(world);
+        gameplay::claimModuleComponents(world);
 
 #ifdef ANTWIKA_GAME_SHARED
         open();
@@ -49,17 +64,7 @@ namespace antwika::editor
         takeDown = &antwikaGameDestroy;
 #endif
 
-        try
-        {
-            madeGame =
-                setUp(&logger, &world, &solidVoxels, &patrolPositions);
-        }
-        catch (...)
-        {
-            letGo();
-
-            throw;
-        }
+        createGame();
     }
 
     GameModule::~GameModule()
@@ -91,53 +96,61 @@ namespace antwika::editor
 #endif
     }
 
+    void GameModule::createGame()
+    {
+        try
+        {
+            madeGame = setUp(
+                logger, world, laidMap, solidVoxels, patrolPositions);
+        }
+        catch (...)
+        {
+            letGo();
+
+            throw;
+        }
+    }
+
 #ifdef ANTWIKA_GAME_SHARED
-    void *GameModule::opened(
-        const std::string &path,
-        std::string &why,
-        gameplay::IGame *(**setUp)(
-            log::ILogger *,
-            ecs::World *,
-            const voxel::Voxels *,
-            const std::vector<std::vector<voxel::VoxelPosition>> *),
-        void (**takeDown)(gameplay::IGame *))
+    GameModule::OpenedModule GameModule::openedModuleAt(const std::string &path)
     {
         auto *const library = dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
 
         if (library == nullptr)
         {
-            why = dlerror();
-
-            return nullptr;
+            return OpenedModule{.entry = std::nullopt, .why = dlerror()};
         }
 
-        *setUp = reinterpret_cast<std::remove_reference_t<
-            decltype(*setUp)>>(dlsym(library, "antwikaGameCreate"));
-        *takeDown = reinterpret_cast<std::remove_reference_t<
-            decltype(*takeDown)>>(
-            dlsym(library, "antwikaGameDestroy"));
+        ModuleEntry entry{
+            .library = library,
+            .setUp = reinterpret_cast<GameSetUp>(
+                dlsym(library, "antwikaGameCreate")),
+            .takeDown = reinterpret_cast<GameTakeDown>(
+                dlsym(library, "antwikaGameDestroy"))};
 
         auto *const stampOf = reinterpret_cast<decltype(&antwikaGameStamp)>(
             dlsym(library, "antwikaGameStamp"));
 
-        if (*setUp == nullptr || *takeDown == nullptr
+        if (entry.setUp == nullptr || entry.takeDown == nullptr
             || stampOf == nullptr)
         {
             dlclose(library);
-            why = "it holds no entry points";
 
-            return nullptr;
+            return OpenedModule{
+                .entry = std::nullopt,
+                .why = "it holds no entry points"};
         }
 
         if (stampOf() != gameplay::kSeamStamp)
         {
             dlclose(library);
-            why = "it was built against other headers than this app";
 
-            return nullptr;
+            return OpenedModule{
+                .entry = std::nullopt,
+                .why = "it was built against other headers than this app"};
         }
 
-        return library;
+        return OpenedModule{.entry = entry, .why = {}};
     }
 
     void GameModule::sweep()
@@ -162,11 +175,12 @@ namespace antwika::editor
 
     std::optional<std::string> GameModule::copied()
     {
+        static std::atomic<std::size_t> loadCount{0};
+
         const auto source = io::getAssetPath(std::string(kModuleName));
-        static std::size_t loads = 0;
         const auto target = io::getAssetPath(
             "libantwika_gameplay_module.loaded-"
-            + std::to_string(loads) + ".so");
+            + std::to_string(loadCount.fetch_add(1)) + ".so");
 
         std::error_code errorCode;
         loadedAt = std::filesystem::last_write_time(source, errorCode);
@@ -187,8 +201,6 @@ namespace antwika::editor
             return std::nullopt;
         }
 
-        ++loads;
-
         return target;
     }
 
@@ -197,14 +209,19 @@ namespace antwika::editor
         sweep();
 
         const auto path = copied();
-        std::string why = "the module is not beside the app";
+        auto openedModule = OpenedModule{
+            .entry = std::nullopt,
+            .why = "the module is not beside the app"};
 
         if (path.has_value())
         {
-            library = opened(*path, why, &setUp, &takeDown);
+            openedModule = openedModuleAt(*path);
 
-            if (library != nullptr)
+            if (openedModule.entry.has_value())
             {
+                library = openedModule.entry->library;
+                setUp = openedModule.entry->setUp;
+                takeDown = openedModule.entry->takeDown;
                 openedPath = *path;
             }
             else
@@ -219,7 +236,7 @@ namespace antwika::editor
             throw std::runtime_error(
                 "the game module would not open: "
                 + io::getAssetPath(std::string(kModuleName)) + ": "
-                + why);
+                + openedModule.why);
         }
     }
 
@@ -241,17 +258,13 @@ namespace antwika::editor
             return false;
         }
 
-        decltype(setUp) freshSetUp = nullptr;
-        decltype(takeDown) freshTakeDown = nullptr;
-        std::string why;
-        auto *const fresh =
-            opened(*path, why, &freshSetUp, &freshTakeDown);
+        const auto freshModule = openedModuleAt(*path);
 
-        if (fresh == nullptr)
+        if (!freshModule.entry.has_value())
         {
             logger->log(
                 log::Level::Warning,
-                "the game module was left as it was: " + why);
+                "the game module was left as it was: " + freshModule.why);
 
             std::error_code errorCode;
             std::filesystem::remove(*path, errorCode);
@@ -263,29 +276,39 @@ namespace antwika::editor
         madeGame = nullptr;
 
         dlclose(library);
-        library = nullptr;
 
         std::error_code errorCode;
         std::filesystem::remove(openedPath, errorCode);
 
-        library = fresh;
+        library = freshModule.entry->library;
         openedPath = *path;
-        setUp = freshSetUp;
-        takeDown = freshTakeDown;
-        madeGame = setUp(logger, world, solidVoxels, patrolPositions);
+        setUp = freshModule.entry->setUp;
+        takeDown = freshModule.entry->takeDown;
+
+        createGame();
 
         return true;
     }
 #endif
 
-    gameplay::IGame *GameModule::operator->() noexcept
+    gameplay::IGame *GameModule::operator->()
     {
-        return madeGame;
+        return heldGameOf(madeGame);
     }
 
-    const gameplay::IGame *GameModule::operator->() const noexcept
+    const gameplay::IGame *GameModule::operator->() const
     {
-        return madeGame;
+        return heldGameOf(madeGame);
+    }
+
+    gameplay::IGame &GameModule::operator*()
+    {
+        return *heldGameOf(madeGame);
+    }
+
+    const gameplay::IGame &GameModule::operator*() const
+    {
+        return *heldGameOf(madeGame);
     }
 
 }

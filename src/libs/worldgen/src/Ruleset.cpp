@@ -212,7 +212,7 @@ namespace antwika::worldgen
                 problems.push_back(
                     RulesetProblem{
                         .fault = RulesetFault::RampWithoutFacing,
-                        .prototypeIndex = index});
+                        .subjectIndex = index});
             }
 
             for (const Face face : kEveryFace)
@@ -222,7 +222,7 @@ namespace antwika::worldgen
                     problems.push_back(
                         RulesetProblem{
                             .fault = RulesetFault::FaceMeetsNothing,
-                            .prototypeIndex = index,
+                            .subjectIndex = index,
                             .face = face});
                 }
             }
@@ -238,7 +238,7 @@ namespace antwika::worldgen
                 problems.push_back(
                     RulesetProblem{
                         .fault = RulesetFault::RoleWornByNoPrototype,
-                        .prototypeIndex = static_cast<std::size_t>(role)});
+                        .subjectIndex = static_cast<std::size_t>(role)});
             }
         }
 
@@ -249,28 +249,28 @@ namespace antwika::worldgen
             return problems;
         }
 
-        std::uint8_t reachedRoles = 0;
+        std::uint8_t previousUntilShare = 0;
         for (std::size_t index = 0; index < ruleset.districts.size(); ++index)
         {
             const District &district = ruleset.districts[index];
 
-            if (district.untilShare <= reachedRoles
+            if (district.untilShare <= previousUntilShare
                 || (index + 1 == ruleset.districts.size()
                     && district.untilShare != 100))
             {
                 problems.push_back(
                     RulesetProblem{
                         .fault = RulesetFault::DistrictsDoNotRise,
-                        .prototypeIndex = index});
+                        .subjectIndex = index});
             }
-            reachedRoles = district.untilShare;
+            previousUntilShare = district.untilShare;
 
             if (district.desire.size() != ruleset.prototypes.size())
             {
                 problems.push_back(
                     RulesetProblem{
                         .fault = RulesetFault::DistrictMissizes,
-                        .prototypeIndex = index});
+                        .subjectIndex = index});
                 continue;
             }
 
@@ -282,7 +282,7 @@ namespace antwika::worldgen
                 problems.push_back(
                     RulesetProblem{
                         .fault = RulesetFault::DistrictAllowsNothing,
-                        .prototypeIndex = index});
+                        .subjectIndex = index});
             }
         }
 

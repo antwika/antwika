@@ -1,9 +1,11 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <memory>
+#include <vector>
 
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/IMesh.hpp>
@@ -14,7 +16,9 @@
 #include <antwika/solver/VoxelWeave.hpp>
 #include <antwika/tilemap/AtlasLayout.hpp>
 #include <antwika/voxel/VoxelCell.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxel/Voxels.hpp>
+#include <antwika/voxelmap/Voxel.hpp>
 
 #include "antwika/render/WorldMeshes.hpp"
 
@@ -28,6 +32,8 @@ using antwika::render::WorldMeshes;
 using antwika::solver::CornerSeams;
 using antwika::voxel::VoxelCell;
 using antwika::voxel::voxelsOf;
+using antwika::voxelmap::FaceRef;
+using ::testing::AtLeast;
 using ::testing::NiceMock;
 
 namespace
@@ -149,4 +155,117 @@ TEST(WorldMeshesTest, Rebuild_SolvesAfreshForCubesThatHaveChanged)
     EXPECT_NE(meshes.getFaces().size(), faceCount);
     EXPECT_EQ(meshes.getDrawnAs().size(), meshes.getFaces().size());
     EXPECT_EQ(meshes.getCells().size(), 2U);
+}
+
+TEST(WorldMeshesTest, Rebuild_KeepsTheMeshesItLaidForTheSameCubes)
+{
+    NiceMock<MockRenderer> renderer;
+    handsOutMeshes(renderer);
+    WorldMeshes meshes;
+    Map drawnMap;
+
+    drawnMap.voxels = voxelsOf({VoxelCell{}});
+
+    meshes.rebuild(
+        renderer,
+        drawnMap,
+        drawnMap.voxels,
+        CornerSeams::Ignored,
+        getBothSheets(),
+        0);
+
+    const auto solidCount = meshes.getSolid().size();
+
+    EXPECT_CALL(renderer, createMesh).Times(0);
+
+    meshes.rebuild(
+        renderer,
+        drawnMap,
+        drawnMap.voxels,
+        CornerSeams::Ignored,
+        getBothSheets(),
+        0);
+
+    EXPECT_EQ(meshes.getSolid().size(), solidCount);
+}
+
+TEST(WorldMeshesTest, Rebuild_LaysFreshMeshesForCubesThatHaveChanged)
+{
+    NiceMock<MockRenderer> renderer;
+    handsOutMeshes(renderer);
+    WorldMeshes meshes;
+    Map drawnMap;
+
+    drawnMap.voxels = voxelsOf({VoxelCell{}});
+
+    meshes.rebuild(
+        renderer,
+        drawnMap,
+        drawnMap.voxels,
+        CornerSeams::Ignored,
+        getBothSheets(),
+        0);
+
+    drawnMap.voxels = voxelsOf(
+        {VoxelCell{}, VoxelCell{.position = {.x = 1}}});
+
+    EXPECT_CALL(renderer, createMesh).Times(AtLeast(1));
+
+    meshes.rebuild(
+        renderer,
+        drawnMap,
+        drawnMap.voxels,
+        CornerSeams::Ignored,
+        getBothSheets(),
+        0);
+}
+
+TEST(WorldMeshesTest, Rebuild_LaysFreshMeshesWhenACellChangeLeavesTheFacesAlike)
+{
+    NiceMock<MockRenderer> renderer;
+    handsOutMeshes(renderer);
+    WorldMeshes meshes;
+    Map drawnMap;
+
+    drawnMap.voxels = voxelsOf(
+        {VoxelCell{
+             .material =
+                 {.kind = antwika::voxel::Kind::Ramp,
+                  .facing = antwika::voxel::Facing::East}},
+         VoxelCell{
+             .position = {.y = 1},
+             .material = {.kind = antwika::voxel::Kind::Water}},
+         VoxelCell{.position = {.y = 2}},
+         VoxelCell{.position = {.x = 1, .y = 1}},
+         VoxelCell{.position = {.x = -1, .y = 1}},
+         VoxelCell{.position = {.y = 1, .z = 1}},
+         VoxelCell{.position = {.y = 1, .z = -1}}});
+
+    meshes.rebuild(
+        renderer,
+        drawnMap,
+        drawnMap.voxels,
+        CornerSeams::Ignored,
+        getBothSheets(),
+        0);
+
+    const std::vector<FaceRef> laidFaces = meshes.getFaces();
+    const auto laidTiles = meshes.getDrawnAs();
+
+    drawnMap.voxels.erase(antwika::voxel::VoxelPosition{.y = 1});
+
+    EXPECT_CALL(renderer, createMesh).Times(AtLeast(1));
+
+    meshes.rebuild(
+        renderer,
+        drawnMap,
+        drawnMap.voxels,
+        CornerSeams::Ignored,
+        getBothSheets(),
+        0);
+
+    EXPECT_TRUE(
+        std::ranges::equal(
+            meshes.getFaces(), laidFaces, &FaceRef::isIdenticalTo));
+    EXPECT_EQ(meshes.getDrawnAs(), laidTiles);
 }

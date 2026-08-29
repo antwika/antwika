@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include <map>
 #include <memory>
 #include <string_view>
@@ -9,6 +8,7 @@
 #include <antwika/text/GlyphCellsCache.hpp>
 
 #include "antwika/gfx/Color.hpp"
+#include "antwika/gfx/Glyphs.hpp"
 #include "antwika/text/GlyphCells.hpp"
 #include "antwika/gfx/IRenderer.hpp"
 #include "antwika/gfx/ITexture.hpp"
@@ -32,12 +32,13 @@ namespace antwika::text
             gfx::IRenderer &renderer,
             gfx::PointF originPoint,
             std::string_view text,
-            std::uint32_t scale,
+            gfx::TextScale scale,
             gfx::Color color);
 
     private:
         GlyphCellsCache cells;
-        std::map<std::uint32_t, std::unique_ptr<gfx::ITexture>> atlasTextures;
+        std::map<gfx::TextScale, std::unique_ptr<gfx::ITexture>>
+            atlasTextures;
     };
 
 }

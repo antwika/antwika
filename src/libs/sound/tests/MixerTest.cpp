@@ -57,6 +57,29 @@ TEST(MixerTest, Ctor_RefusesAFormatThatIsNotOne)
         SoundError);
 }
 
+TEST(MixerTest, Ctor_RefusesMoreChannelsThanItsStereoPanServes)
+{
+    const WaveformLibrary library;
+
+    EXPECT_THROW(
+        Mixer(
+            library,
+            MixerSpec{.format = WaveFormat{.rate = 48000, .channels = 3}}),
+        SoundError);
+}
+
+TEST(MixerTest, Ctor_TakesAMonoFormatAndAStereoOne)
+{
+    const WaveformLibrary library;
+
+    EXPECT_NO_THROW(
+        Mixer(
+            library,
+            MixerSpec{.format = WaveFormat{.rate = 48000, .channels = 1}}));
+    EXPECT_NO_THROW(
+        Mixer(library, MixerSpec{.format = kStereo48Format}));
+}
+
 TEST(MixerTest, Ctor_RefusesAMixerWithNoVoices)
 {
     const WaveformLibrary library;

@@ -7,10 +7,10 @@ using antwika::engine::events::kTick;
 
 TEST(EventsTest, KTick_IsTheNameRecordedReplaysHold)
 {
-    EXPECT_STREQ(kTick, "engine.tick");
+    EXPECT_EQ(kTick.getText(), "engine.tick");
 }
 
 TEST(EventsTest, KStop_IsTheNameRecordedReplaysHold)
 {
-    EXPECT_STREQ(kStop, "engine.stop");
+    EXPECT_EQ(kStop.getText(), "engine.stop");
 }

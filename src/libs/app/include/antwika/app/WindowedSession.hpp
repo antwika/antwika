@@ -3,6 +3,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+
 #include <antwika/event/ITickEventSource.hpp>
 #include <antwika/gfx/IGfxBackend.hpp>
 #include <antwika/gfx/IWindow.hpp>
@@ -13,6 +14,7 @@
 #include <antwika/log/ILogger.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/replay/ReplaySource.hpp>
+
 #include "antwika/app/WindowInputSource.hpp"
 #include "antwika/app/WindowPointerMapping.hpp"
 #include "antwika/app/WindowedSessionSpec.hpp"

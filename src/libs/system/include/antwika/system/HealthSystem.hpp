@@ -2,8 +2,9 @@
 
 #include <antwika/ecs/ISystem.hpp>
 #include <antwika/ecs/World.hpp>
-#include <antwika/rules/Health.hpp>
 #include <antwika/time/Tick.hpp>
+
+#include "antwika/system/SimulationState.hpp"
 
 namespace antwika::system
 {
@@ -11,14 +12,12 @@ namespace antwika::system
     class HealthSystem final : public ecs::ISystem
     {
     public:
-        void setFrozen(bool frozen) noexcept;
+        explicit HealthSystem(const SimulationState &simulation) noexcept;
 
         void update(ecs::World &world, time::Tick tick) override;
 
     private:
-        std::vector<ecs::Entity> taken;
-
-        bool frozen = false;
+        const SimulationState *simulation;
     };
 
 }

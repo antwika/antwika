@@ -1,12 +1,8 @@
 #include "antwika/voxel/VoxelOcclusion.hpp"
 
-#include <glm/geometric.hpp>
-
+#include <array>
 #include <cmath>
-#include <cstdlib>
 #include <cstdint>
-#include <optional>
-#include <unordered_set>
 #include <vector>
 
 #include "antwika/voxel/KindTraits.hpp"
@@ -17,33 +13,38 @@ namespace antwika::voxel
 
     namespace
     {
-        using PositionSet =
-            std::unordered_set<VoxelPosition, VoxelPositionHash>;
+        constexpr std::array<VoxelPosition, 6> kLiftedColumnPositions{
+            VoxelPosition{.y = kCubeSide},
+            VoxelPosition{.y = kCubeSide, .z = kCubeSide},
+            VoxelPosition{.x = -kCubeSide, .y = kCubeSide, .z = kCubeSide},
+            VoxelPosition{.x = kCubeSide, .y = kCubeSide, .z = kCubeSide},
+            VoxelPosition{.y = kCubeSide, .z = 2 * kCubeSide},
+            VoxelPosition{.y = 2 * kCubeSide, .z = 3 * kCubeSide}};
 
+        constexpr std::array<VoxelPosition, 2> kAcrossColumnPositions{
+            VoxelPosition{.x = -kCubeSide, .y = kCubeSide},
+            VoxelPosition{.x = kCubeSide, .y = kCubeSide}};
 
-        [[nodiscard]] std::optional<VoxelPosition> getRoofOver(
-            const Voxels &filledVoxels,
-            const VoxelPosition columnPosition,
-            const std::int32_t lowest)
+        constexpr std::array<VoxelPosition, 5> kSpreadWayPositions{
+            VoxelPosition{.x = 1},
+            VoxelPosition{.x = -1},
+            VoxelPosition{.y = 1},
+            VoxelPosition{.z = 1},
+            VoxelPosition{.z = -1}};
+
+        [[nodiscard]] bool isWithinMaskWindow(
+            const VoxelPosition columnPosition, const VoxelPosition position)
         {
-            for (std::int32_t level = lowest;
-                 level < lowest + kRoofSearchLevels;
-                 ++level)
-            {
-                const VoxelPosition overheadPosition{
-                    .x = columnPosition.x,
-                    .y = level,
-                    .z = columnPosition.z};
-                const auto foundVoxel = filledVoxels.find(overheadPosition);
+            const auto arm =
+                static_cast<std::int32_t>(kOcclusionMaskWidth) / 2;
+            const auto acrossOffset = position.x - columnPosition.x;
+            const auto alongOffset = position.z - columnPosition.z;
 
-                if (foundVoxel != filledVoxels.end()
-                    && foundVoxel->second.kind != Kind::Water)
-                {
-                    return overheadPosition;
-                }
-            }
-
-            return std::nullopt;
+            return acrossOffset >= -arm && acrossOffset < arm
+                   && alongOffset >= -arm && alongOffset < arm
+                   && position.y >= 0
+                   && position.y
+                          < static_cast<std::int32_t>(kOcclusionMaskLevels);
         }
 
         [[nodiscard]] bool isSolidCube(
@@ -61,163 +62,6 @@ namespace antwika::voxel
             }
 
             return false;
-        }
-
-        [[nodiscard]] PositionSet getShellAbout(
-            const Voxels &filledVoxels,
-            const VoxelPosition columnPosition,
-            const std::int32_t lowest,
-            const std::int32_t roofLevel)
-        {
-            const auto arm =
-                static_cast<std::int32_t>(kOcclusionMaskWidth) / 2;
-
-            const auto withinWindow = [columnPosition, lowest, roofLevel](
-                                          const VoxelPosition position)
-            {
-                return position.y >= lowest && position.y < roofLevel
-                       && std::abs(position.x - columnPosition.x) <= arm
-                       && std::abs(position.z - columnPosition.z) <= arm;
-            };
-
-            const auto standsIn = [&filledVoxels](const VoxelPosition position)
-            {
-                const auto foundVoxel = filledVoxels.find(position);
-
-                return foundVoxel != filledVoxels.end()
-                       && foundVoxel->second.kind != Kind::Water;
-            };
-
-            PositionSet shellPositions;
-            const VoxelPosition fromPosition{
-                .x = columnPosition.x, .y = lowest, .z = columnPosition.z};
-
-            if (!withinWindow(fromPosition) || standsIn(fromPosition))
-            {
-                return shellPositions;
-            }
-
-            PositionSet airPositions{fromPosition};
-            std::vector<VoxelPosition> askingPositions{fromPosition};
-
-            while (!askingPositions.empty())
-            {
-                const auto nextPosition = askingPositions.back();
-
-                askingPositions.pop_back();
-
-                for (const auto way :
-                     {VoxelPosition{.x = 1}, VoxelPosition{.x = -1},
-                      VoxelPosition{.y = 1}, VoxelPosition{.y = -1},
-                      VoxelPosition{.z = 1}, VoxelPosition{.z = -1}})
-                {
-                    const VoxelPosition besidePosition{
-                        .x = nextPosition.x + way.x,
-                        .y = nextPosition.y + way.y,
-                        .z = nextPosition.z + way.z};
-
-                    if (!withinWindow(besidePosition))
-                    {
-                        continue;
-                    }
-
-                    if (standsIn(besidePosition))
-                    {
-                        shellPositions.insert(besidePosition);
-
-                        continue;
-                    }
-
-                    if (airPositions.insert(besidePosition).second)
-                    {
-                        askingPositions.push_back(besidePosition);
-                    }
-                }
-            }
-
-            return shellPositions;
-        } // GCOVR_EXCL_LINE
-
-        void takeWithin(
-            const Voxels &filledVoxels,
-            const VoxelPosition columnPosition,
-            const std::int32_t lowest,
-            const std::int32_t levelCount,
-            const PositionSet &shellPositions,
-            Voxels &voxels)
-        {
-            const auto arm =
-                static_cast<std::int32_t>(kOcclusionMaskWidth) / 2;
-
-            for (auto x = columnPosition.x - arm; x <= columnPosition.x + arm;
-                 ++x)
-            {
-                for (auto y = lowest; y < lowest + levelCount; ++y)
-                {
-                    for (auto z = columnPosition.z - arm;
-                         z <= columnPosition.z + arm;
-                         ++z)
-                    {
-                        if (voxels.size() >= kMaxOccludedVoxels)
-                        {
-                            return;
-                        }
-
-                        const VoxelPosition standingPosition{
-                            .x = x, .y = y, .z = z};
-                        const auto foundVoxel =
-                            filledVoxels.find(standingPosition);
-
-                        if (foundVoxel == filledVoxels.end()
-                            || foundVoxel->second.kind == Kind::Water
-                            || shellPositions.contains(standingPosition))
-                        {
-                            continue;
-                        }
-
-                        voxels[standingPosition] = foundVoxel->second;
-                    }
-                }
-            }
-        }
-
-        void liftWhatIsNotTheRoom(
-            const Voxels &filledVoxels,
-            const VoxelPosition columnPosition,
-            const std::int32_t lowest,
-            const std::int32_t roofLevel,
-            Voxels &voxels)
-        {
-            const auto shellPositions =
-                getShellAbout(filledVoxels, columnPosition, lowest, roofLevel);
-
-            if (shellPositions.empty())
-            {
-                return;
-            }
-
-            takeWithin(
-                filledVoxels,
-                columnPosition,
-                lowest,
-                roofLevel - lowest,
-                shellPositions,
-                voxels);
-        }
-
-        void liftTheRoof(
-            const Voxels &filledVoxels,
-            const VoxelPosition columnPosition,
-            const std::int32_t roofLevel,
-            Voxels &voxels)
-        {
-            takeWithin(
-                filledVoxels,
-                columnPosition,
-                roofLevel,
-                static_cast<std::int32_t>(kOcclusionMaskLevels),
-                {},
-                voxels);
         }
 
     }
@@ -275,24 +119,103 @@ namespace antwika::voxel
     Voxels getOccludingVoxels(
         const Voxels &filledVoxels, const glm::vec3 standing)
     {
-        Voxels voxels;
-        const auto columnPosition = getVoxelUnder(getLineOfSight(standing));
-        const auto overheadPosition =
-            getRoofOver(filledVoxels, columnPosition, columnPosition.y);
+        const auto standingPosition = getVoxelUnder(standing);
+        const auto cornerPosition = cubeCornerOf(standingPosition);
+        const auto lowestLiftedLevel = cornerPosition.y + kCubeSide;
 
-        if (!overheadPosition.has_value())
+        Voxels voxels;
+        std::vector<VoxelPosition> askingPositions;
+
+        const auto lift =
+            [&filledVoxels,
+             &voxels,
+             &askingPositions,
+             standingPosition,
+             lowestLiftedLevel](const VoxelPosition position)
         {
-            return voxels;
+            if (voxels.size() >= kMaxOccludedVoxels
+                || position.y < lowestLiftedLevel
+                || !isWithinMaskWindow(standingPosition, position)
+                || voxels.contains(position))
+            {
+                return;
+            }
+
+            const auto foundVoxel = filledVoxels.find(position);
+
+            if (foundVoxel == filledVoxels.end()
+                || foundVoxel->second.kind == Kind::Water)
+            {
+                return;
+            }
+
+            voxels[position] = foundVoxel->second;
+            askingPositions.push_back(position);
+        };
+
+        const auto liftColumn =
+            [&lift, cornerPosition](const VoxelPosition columnStep)
+        {
+            for (std::int32_t acrossStep = 0;
+                 acrossStep < kCubeSide;
+                 ++acrossStep)
+            {
+                for (std::int32_t alongStep = 0;
+                     alongStep < kCubeSide;
+                     ++alongStep)
+                {
+                    for (auto level = cornerPosition.y + columnStep.y;
+                         level < static_cast<std::int32_t>(
+                             kOcclusionMaskLevels);
+                         ++level)
+                    {
+                        lift(
+                            VoxelPosition{
+                                .x = cornerPosition.x + columnStep.x
+                                     + acrossStep,
+                                .y = level,
+                                .z = cornerPosition.z + columnStep.z
+                                     + alongStep});
+                    }
+                }
+            }
+        };
+
+        for (const auto columnStep : kLiftedColumnPositions)
+        {
+            liftColumn(columnStep);
         }
 
-        liftTheRoof(
-            filledVoxels, columnPosition, overheadPosition->y, voxels);
-        liftWhatIsNotTheRoom(
-            filledVoxels,
-            columnPosition,
-            columnPosition.y,
-            overheadPosition->y,
-            voxels);
+        for (const auto columnStep : kAcrossColumnPositions)
+        {
+            const VoxelPosition besideCornerPosition{
+                .x = cornerPosition.x + columnStep.x,
+                .y = cornerPosition.y,
+                .z = cornerPosition.z + columnStep.z};
+
+            if (isSolidCube(filledVoxels, besideCornerPosition))
+            {
+                continue;
+            }
+
+            liftColumn(columnStep);
+        }
+
+        while (!askingPositions.empty())
+        {
+            const auto nextPosition = askingPositions.back();
+
+            askingPositions.pop_back();
+
+            for (const auto way : kSpreadWayPositions)
+            {
+                lift(
+                    VoxelPosition{
+                        .x = nextPosition.x + way.x,
+                        .y = nextPosition.y + way.y,
+                        .z = nextPosition.z + way.z});
+            }
+        }
 
         return voxels;
     } // GCOVR_EXCL_LINE

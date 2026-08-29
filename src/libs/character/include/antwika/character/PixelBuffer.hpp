@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+
 #include <antwika/geometry/Grid.hpp>
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/Color.hpp>

@@ -5,6 +5,9 @@
 #include <string>
 #include <string_view>
 
+#include <antwika/loadout/LoadoutError.hpp>
+#include <antwika/loadout/ComponentValuesJson.hpp>
+
 #include "MapFileField.hpp"
 #include "MapFileShared.hpp"
 #include "MapFileShared2.hpp"
@@ -539,6 +542,35 @@ namespace antwika::map::mapfile
             {
                 memberIn<Member>(record) =
                     enumFromName(Names, json.get<std::string>());
+            }};
+    }
+
+    template <auto Member>
+    [[nodiscard]] constexpr Field componentValuesField(
+        const std::string_view key)
+    {
+        return Field{
+            .key = key,
+            .shape = &loadout::getComponentValuesShape,
+            .valueOf = [](const void *record)
+            {
+                return loadout::getWrittenComponentValues(
+                    memberOf<Member>(record));
+            },
+            .setFrom = [](void *record, const nlohmann::json &json)
+            {
+                try
+                {
+                    memberIn<Member>(record) =
+                        loadout::getReadComponentValues(json);
+                }
+                catch (const loadout::LoadoutError &error)
+                {
+                    throw MapFileError(
+                        "antwika::map: a figure carries a tuning "
+                        "that does not read: "
+                        + std::string(error.what()));
+                }
             }};
     }
 

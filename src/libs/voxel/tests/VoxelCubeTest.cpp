@@ -114,6 +114,44 @@ namespace antwika::voxel
                 (VoxelPosition{.x = -2, .y = -2, .z = -4}));
         }
 
+        TEST(VoxelCubeTest, CubeIndexOf_CountsInWholeCubesFromTheOrigin)
+        {
+            EXPECT_EQ(
+                cubeIndexOf(VoxelPosition{.x = 4, .y = 2, .z = 1}),
+                (VoxelPosition{.x = 2, .y = 1, .z = 0}));
+        }
+
+        TEST(VoxelCubeTest, CubeIndexOf_CountsDownBelowTheOrigin)
+        {
+            EXPECT_EQ(
+                cubeIndexOf(VoxelPosition{.x = -1, .y = -2, .z = -3}),
+                (VoxelPosition{.x = -1, .y = -1, .z = -2}));
+        }
+
+        TEST(VoxelCubeTest, CubeCornerAt_TakesBackWhatCubeIndexOfGave)
+        {
+            for (std::int32_t step = -6; step < 8; ++step)
+            {
+                const VoxelPosition cornerPosition{
+                    .x = step * kCubeSide,
+                    .y = step * kCubeSide,
+                    .z = step * kCubeSide};
+
+                EXPECT_EQ(
+                    cubeCornerAt(cubeIndexOf(cornerPosition)),
+                    cornerPosition);
+            }
+        }
+
+        TEST(VoxelCubeTest, CubeCornerAt_LandsOnTheCornerCubeCornerOfNames)
+        {
+            const VoxelPosition somePosition{.x = 5, .y = -3, .z = 2};
+
+            EXPECT_EQ(
+                cubeCornerAt(cubeIndexOf(somePosition)),
+                cubeCornerOf(somePosition));
+        }
+
         TEST(VoxelCubeTest, CubeCornerOf_LeavesNoVoxelBetweenNeighbouringCubes)
         {
             const auto hereCells =

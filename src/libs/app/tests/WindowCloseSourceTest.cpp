@@ -18,6 +18,7 @@
 
 using antwika::app::WindowCloseSource;
 using antwika::event::Event;
+using antwika::event::EventName;
 using antwika::event::TickEvent;
 using antwika::gfx::CloseRequested;
 using antwika::gfx::Resized;
@@ -35,7 +36,7 @@ namespace
     constexpr WindowId kOurWindow{1};
     constexpr WindowId kSomeoneElsesWindow{99};
 
-    constexpr const char *kScripted = "app.something";
+    const EventName kScripted{"app.something"};
 
     [[nodiscard]] std::vector<TickEvent> getOneEventAtTickZero()
     {

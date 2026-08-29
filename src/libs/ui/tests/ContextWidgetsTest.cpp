@@ -8,6 +8,7 @@
 #include <antwika/gfx/mocks/MockTexture.hpp>
 #include <antwika/gfx/Size.hpp>
 
+#include "antwika/ui/Alignment.hpp"
 #include "antwika/ui/ButtonState.hpp"
 #include "antwika/ui/Context.hpp"
 #include "antwika/ui/Icon.hpp"
@@ -108,9 +109,53 @@ TEST(ContextWidgetsTest, Button_DrawsAFilledBoxAroundItsLabel)
         (DrawText{
             .originPoint = {.x = 0, .y = 0},
             .text = "ab",
-            .scale = 1,
+            .scale = {.multiplier = 1},
             .color = kButtonInkColor}),
         std::get<DrawText>(commands.at(1)));
+}
+
+TEST(ContextWidgetsTest, Button_CentresItsLabelInAWiderBoxByDefault)
+{
+    Context uiContext{kCanvasSize, getPlainTheme()};
+
+    uiContext.button("ab", {.widthSizing = getFixedSize(10 * kGlyph)});
+
+    const auto commands = uiContext.build().drawList;
+
+    ASSERT_EQ(2U, commands.size());
+    EXPECT_EQ(
+        4 * kGlyph, std::get<DrawText>(commands.at(1)).originPoint.x);
+}
+
+TEST(ContextWidgetsTest, Button_StandsItsLabelAtTheLeftWhenAskedTo)
+{
+    Context uiContext{kCanvasSize, getPlainTheme()};
+
+    uiContext.button(
+        "ab",
+        {.widthSizing = getFixedSize(10 * kGlyph),
+         .labelAlignment = antwika::ui::Alignment::Start});
+
+    const auto commands = uiContext.build().drawList;
+
+    ASSERT_EQ(2U, commands.size());
+    EXPECT_EQ(0, std::get<DrawText>(commands.at(1)).originPoint.x);
+}
+
+TEST(ContextWidgetsTest, Button_StandsItsLabelAtTheRightWhenAskedTo)
+{
+    Context uiContext{kCanvasSize, getPlainTheme()};
+
+    uiContext.button(
+        "ab",
+        {.widthSizing = getFixedSize(10 * kGlyph),
+         .labelAlignment = antwika::ui::Alignment::End});
+
+    const auto commands = uiContext.build().drawList;
+
+    ASSERT_EQ(2U, commands.size());
+    EXPECT_EQ(
+        8 * kGlyph, std::get<DrawText>(commands.at(1)).originPoint.x);
 }
 
 TEST(ContextWidgetsTest, Button_BreaksItsNameOverLinesToFitAWidth)

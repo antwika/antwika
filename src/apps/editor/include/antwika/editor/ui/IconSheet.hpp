@@ -33,15 +33,19 @@ namespace antwika::editor
 
     [[nodiscard]] gfx::Rect getIconSource(std::size_t iconIndex);
 
+    [[nodiscard]] gfx::RectF getIconSheetBounds(gfx::Size canvasSize);
+
+    [[nodiscard]] gfx::RectF getIconDrawBounds(gfx::Size canvasSize);
+
     [[nodiscard]] gfx::RectF getIconCellRect(
-        gfx::Size canvasSize, std::size_t count, std::size_t iconIndex);
+        gfx::RectF sheetRect, std::size_t count, std::size_t iconIndex);
 
     [[nodiscard]] std::optional<std::size_t> iconCellAt(
-        gfx::Size canvasSize,
+        gfx::RectF sheetRect,
         std::size_t count,
         gfx::PointF point);
 
-    [[nodiscard]] gfx::RectF getEditedIconRect(gfx::Size canvasSize);
+    [[nodiscard]] gfx::RectF getEditedIconRect(gfx::RectF drawRect);
 
     [[nodiscard]] gfx::RectF getIconPixelRect(
         gfx::RectF roomRect, geometry::GridCell pixelCell);

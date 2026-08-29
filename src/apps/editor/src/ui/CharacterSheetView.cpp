@@ -12,17 +12,60 @@
 #include <antwika/gfx/RectF.hpp>
 
 #include <antwika/render/Checkerboard.hpp>
+
+#include "antwika/editor/editor/state/PanelSizes.hpp"
 #include "antwika/editor/ui/CharacterView.hpp"
 #include "antwika/editor/ui/EditorLook.hpp"
 
 namespace antwika::editor
 {
 
+    namespace
+    {
+        struct FrameCoords final
+        {
+            std::size_t way;
+
+            std::size_t frame;
+        };
+
+        [[nodiscard]] FrameCoords frameCoordsOf(
+            const std::size_t selectedFrame) noexcept
+        {
+            return FrameCoords{
+                .way = selectedFrame / character::kCharacterFrames,
+                .frame = selectedFrame % character::kCharacterFrames};
+        }
+
+        [[nodiscard]] float railWidthOf(const ViewContext &viewContext)
+        {
+            return getRailWidthOnCanvas(
+                viewContext.workbench.preferences.panelSizes,
+                viewContext.render.viewportRenderer.getWindowSize(),
+                camera::kCanvasSize);
+        }
+
+        [[nodiscard]] gfx::RectF getSheetRect(
+            const ViewContext &viewContext)
+        {
+            return viewContext.workbench.sheetView.sheetRect.value_or(
+                getCharacterSheetBounds(camera::kCanvasSize));
+        }
+
+        [[nodiscard]] gfx::RectF getDrawRect(
+            const ViewContext &viewContext)
+        {
+            return viewContext.workbench.sheetView.canvasRect.value_or(
+                getCharacterDrawBounds(
+                    camera::kCanvasSize, railWidthOf(viewContext)));
+        }
+    }
+
     void CharacterSheetView::open(
         gfx::ViewportRenderer &viewportRenderer, gfx::Bitmap sheetBitmap)
     {
-        editedSheet = std::move(sheetBitmap);
-        sheetTexture = viewportRenderer.createTexture(editedSheet);
+        editedBitmap = std::move(sheetBitmap);
+        sheetTexture = viewportRenderer.createTexture(editedBitmap);
         sheetDirty = false;
 
         if (!sheetCheckerTexture)
@@ -34,24 +77,24 @@ namespace antwika::editor
 
     void CharacterSheetView::takeSkins(
         gfx::ViewportRenderer &viewportRenderer,
-        render::CharacterSkins &rosterSkins,
+        render::CharacterSkins &characterSkins,
         std::vector<gfx::Bitmap> skinBitmaps)
     {
-        rosterSkins.take(viewportRenderer, std::move(skinBitmaps));
-        editingAt = std::min(editingAt, rosterSkins.getSize() - 1);
-        editedSheet = rosterSkins.getSheets().at(editingAt);
+        characterSkins.take(viewportRenderer, std::move(skinBitmaps));
+        editingAt = std::min(editingAt, characterSkins.getSize() - 1);
+        editedBitmap = characterSkins.getSheets().at(editingAt);
         sheetDirty = true;
     }
 
     
     std::vector<gfx::Bitmap> CharacterSheetView::getSkinsAsDrawn(
-        const render::CharacterSkins &rosterSkins) const
+        const render::CharacterSkins &characterSkins) const
     {
-        auto sheets = rosterSkins.getSheets();
+        auto sheets = characterSkins.getSheets();
 
         if (editingAt < sheets.size())
         {
-            sheets.at(editingAt) = editedSheet;
+            sheets.at(editingAt) = editedBitmap;
         }
 
         return sheets;
@@ -59,9 +102,9 @@ namespace antwika::editor
 
     void CharacterSheetView::keepEdits(
         gfx::ViewportRenderer &viewportRenderer,
-        render::CharacterSkins &rosterSkins)
+        render::CharacterSkins &characterSkins)
     {
-        rosterSkins.lay(viewportRenderer, editingAt, editedSheet);
+        characterSkins.lay(viewportRenderer, editingAt, editedBitmap);
     }
 
     std::size_t CharacterSheetView::getEditing() const noexcept
@@ -76,37 +119,37 @@ namespace antwika::editor
 
     void CharacterSheetView::switchTo(
         gfx::ViewportRenderer &viewportRenderer,
-        render::CharacterSkins &rosterSkins,
+        render::CharacterSkins &characterSkins,
         const std::size_t skinIndex)
     {
-        if (editingAt == skinIndex || skinIndex >= rosterSkins.getSize())
+        if (editingAt == skinIndex || skinIndex >= characterSkins.getSize())
         {
             return;
         }
 
-        rosterSkins.lay(viewportRenderer, editingAt, editedSheet);
+        characterSkins.lay(viewportRenderer, editingAt, editedBitmap);
         editingAt = skinIndex;
-        editedSheet = rosterSkins.getSheets().at(skinIndex);
+        editedBitmap = characterSkins.getSheets().at(skinIndex);
         sheetDirty = true;
     }
 
     void CharacterSheetView::repaint(
         gfx::ViewportRenderer &viewportRenderer,
-        render::CharacterSkins &rosterSkins,
+        render::CharacterSkins &characterSkins,
         const std::size_t skinIndex,
         gfx::Bitmap skinBitmap)
     {
-        rosterSkins.lay(viewportRenderer, skinIndex, std::move(skinBitmap));
+        characterSkins.lay(viewportRenderer, skinIndex, std::move(skinBitmap));
     }
 
     gfx::Bitmap &CharacterSheetView::getSheet() noexcept
     {
-        return editedSheet;
+        return editedBitmap;
     }
 
     const gfx::Bitmap &CharacterSheetView::getSheet() const noexcept
     {
-        return editedSheet;
+        return editedBitmap;
     }
 
     void CharacterSheetView::touch() noexcept
@@ -121,7 +164,7 @@ namespace antwika::editor
             return;
         }
 
-        sheetTexture = viewportRenderer.createTexture(editedSheet);
+        sheetTexture = viewportRenderer.createTexture(editedBitmap);
         sheetDirty = false;
     }
 
@@ -137,54 +180,65 @@ namespace antwika::editor
     }
 
     void CharacterSheetView::drawSheet(
-        gfx::ViewportRenderer &viewportRenderer) const
+        gfx::ViewportRenderer &viewportRenderer,
+        const gfx::RectF sheetRect,
+        const gfx::RectF drawRect) const
     {
-        for (std::size_t way = 0; way < character::kCharacterWays;
-             ++way)
+        viewportRenderer.drawRect(sheetRect, kPanelColor);
+        viewportRenderer.drawRect(drawRect, kPanelColor);
+
         {
-            for (std::size_t frame = 0;
-                 frame < character::kCharacterFrames;
-                 ++frame)
+            const auto sheetScope = viewportRenderer.clipScope(sheetRect);
+
+            for (std::size_t way = 0; way < character::kCharacterWays;
+                 ++way)
             {
-                const auto chosenFrame =
-                    mark.selectedFrame
-                    == (way * character::kCharacterFrames) + frame;
+                for (std::size_t frame = 0;
+                     frame < character::kCharacterFrames;
+                     ++frame)
+                {
+                    const auto chosenFrame =
+                        mark.selectedFrame
+                        == (way * character::kCharacterFrames) + frame;
 
-                const auto place =
-                    getCharacterPlace(camera::kCanvasSize, way, frame);
+                    const auto place =
+                        getCharacterPlace(sheetRect, way, frame);
 
-                viewportRenderer.drawTexture(
-                    *sheetCheckerTexture,
-                    antwika::gfx::RectF(
-                        {0.0F, 0.0F},
-                        {static_cast<float>(
-                             character::
-                                 kCharacterCellSize.width),
-                         static_cast<float>(
-                             character::
-                                 kCharacterCellSize
-                                     .height)}),
-                    place,
-                    kWhiteColor);
-                viewportRenderer.drawTexture(
-                    *sheetTexture,
-                    character::getCharacterSource(way, frame),
-                    place,
-                    chosenFrame ? kWhiteColor : kDisabledTintColor);
+                    viewportRenderer.drawTexture(
+                        *sheetCheckerTexture,
+                        antwika::gfx::RectF(
+                            {0.0F, 0.0F},
+                            {static_cast<float>(
+                                 character::
+                                     kCharacterCellSize.width),
+                             static_cast<float>(
+                                 character::
+                                     kCharacterCellSize
+                                         .height)}),
+                        place,
+                        kWhiteColor);
+                    viewportRenderer.drawTexture(
+                        *sheetTexture,
+                        character::getCharacterSource(way, frame),
+                        place,
+                        chosenFrame ? kWhiteColor : kDisabledTintColor);
 
-                drawOutline(
-                    viewportRenderer,
-                    place,
-                    chosenFrame ? kSelectionAccentColor : kGridLineColor);
+                    drawOutline(
+                        viewportRenderer,
+                        place,
+                        chosenFrame ? kSelectionAccentColor
+                                    : kGridLineColor);
+                }
             }
         }
 
         const auto drawnAt =
-            getCharacterCanvasRect(camera::kCanvasSize);
+            getCharacterCanvasRect(drawRect);
 
         if (mark.selectedFrame.has_value())
         {
-            viewportRenderer.drawRect(drawnAt, kPanelColor);
+            const auto drawScope = viewportRenderer.clipScope(drawRect);
+
             viewportRenderer.drawTexture(
                 *sheetCheckerTexture,
                 antwika::gfx::RectF(
@@ -209,15 +263,15 @@ namespace antwika::editor
                 {
                     const antwika::geometry::GridCell pixelCell{
                         column, row};
+                    const auto coords =
+                        frameCoordsOf(*mark.selectedFrame);
 
                     viewportRenderer.drawRect(
                         character::getCharacterPixelPlace(drawnAt, pixelCell),
                         character::getCharacterPixelColor(
-                            editedSheet,
-                            *mark.selectedFrame
-                                / character::kCharacterFrames,
-                            *mark.selectedFrame
-                                % character::kCharacterFrames,
+                            editedBitmap,
+                            coords.way,
+                            coords.frame,
                             pixelCell));
                 }
             }
@@ -266,18 +320,17 @@ namespace antwika::editor
                         + 4.0F},
                 std::string(
                     character::getDirectionName(
-                        *mark.selectedFrame
-                            / character::kCharacterFrames)),
-                1,
+                        frameCoordsOf(*mark.selectedFrame).way)),
+                antwika::gfx::TextScale{.multiplier = 1},
                 kTextColor);
         }
     }
 
 
     bool CharacterSheetView::claims(
-        const map::View shownView, const bool playing) const noexcept
+        const View shownView, const bool playing) const noexcept
     {
-        return !playing && shownView == map::View::Character;
+        return !playing && shownView == View::Character;
     }
 
     std::string CharacterSheetView::getStatusText(const ViewContext &) const
@@ -295,7 +348,10 @@ namespace antwika::editor
     void CharacterSheetView::draw(
         const ViewContext &viewContext, const ui::Frame &)
     {
-        drawSheet(viewContext.render.viewportRenderer);
+        drawSheet(
+            viewContext.render.viewportRenderer,
+            getSheetRect(viewContext),
+            getDrawRect(viewContext));
     }
 
 
@@ -308,10 +364,12 @@ namespace antwika::editor
             return;
         }
 
+        const auto coords = frameCoordsOf(*mark.selectedFrame);
+
         character::pasteInto(
             getSheet(),
-            *mark.selectedFrame / character::kCharacterFrames,
-            *mark.selectedFrame % character::kCharacterFrames,
+            coords.way,
+            coords.frame,
             character::getSelectionOrigin(*mark.selection),
             *mark.floatingPatchBuffer);
 
@@ -327,10 +385,7 @@ namespace antwika::editor
             return;
         }
 
-        const auto way = *mark.selectedFrame
-                         / character::kCharacterFrames;
-        const auto frame = *mark.selectedFrame
-                           % character::kCharacterFrames;
+        const auto coords = frameCoordsOf(*mark.selectedFrame);
 
         if (mark.floatingPatchBuffer.has_value())
         {
@@ -344,14 +399,14 @@ namespace antwika::editor
         editSteps.pushUndo();
         character::pasteInto(
             getSheet(),
-            way,
-            frame,
+            coords.way,
+            coords.frame,
             character::getSelectionOrigin(*mark.selection),
             character::getMirroredHorizontally(
                 character::copiedFrom(
                     getSheet(),
-                    way,
-                    frame,
+                    coords.way,
+                    coords.frame,
                     *mark.selection)));
         touch();
     }
@@ -378,7 +433,9 @@ namespace antwika::editor
             static_cast<float>(projectToScreen.y)};
 
         const auto chosenCell =
-            characterAt(camera::kCanvasSize, viewContext.workbench.pointer.pointerOnCanvas);
+            characterAt(
+                getSheetRect(viewContext),
+                viewContext.workbench.pointer.pointerOnCanvas);
 
         if (chosenCell.has_value())
         {
@@ -404,7 +461,7 @@ namespace antwika::editor
         }
 
         const auto pixel = character::characterPixelAt(
-            getCharacterCanvasRect(camera::kCanvasSize),
+            getCharacterCanvasRect(getDrawRect(viewContext)),
             viewContext.workbench.pointer.pointerOnCanvas);
 
         if (!pixel.has_value())
@@ -423,7 +480,7 @@ namespace antwika::editor
 
         if (downPressed.button == input::MouseButton::Left
             && (viewContext.heldModifiers.shift
-                || viewContext.workbench.preferences.paint == map::Paint::Select))
+                || viewContext.workbench.preferences.paint == Paint::Select))
         {
             if (mark.selection.has_value()
                 && character::isSelectionContains(
@@ -436,13 +493,14 @@ namespace antwika::editor
 
                 if (!mark.floatingPatchBuffer.has_value())
                 {
+                    const auto coords =
+                        frameCoordsOf(*mark.selectedFrame);
+
                     mark.floatingPatchBuffer =
                         character::cutFrom(
                             getSheet(),
-                            *mark.selectedFrame
-                                / character::kCharacterFrames,
-                            *mark.selectedFrame
-                                % character::kCharacterFrames,
+                            coords.way,
+                            coords.frame,
                             *mark.selection);
                     touch();
                 }
@@ -462,6 +520,16 @@ namespace antwika::editor
         mark.selection.reset();
         viewContext.workbench.stroke.erases =
             downPressed.button == input::MouseButton::Right;
+
+        if (!viewContext.workbench.stroke.erases
+            && shapePixelsOf(viewContext.workbench.preferences.paint)
+                   != nullptr)
+        {
+            viewContext.workbench.stroke.lineFromCell = pixel;
+
+            return true;
+        }
+
         viewContext.editSteps.pushUndo();
 
         const auto color = character::getCharacterPaletteColor(
@@ -470,35 +538,13 @@ namespace antwika::editor
                 ? character::kTransparentInk
                 : viewContext.workbench.inkPicker.activeInk);
 
-        if (viewContext.workbench.preferences.paint == map::Paint::Fill
-            && !viewContext.workbench.stroke.erases)
-        {
-            character::paintCharacterFill(
-                getSheet(),
-                *mark.selectedFrame
-                    / character::kCharacterFrames,
-                *mark.selectedFrame
-                    % character::kCharacterFrames,
-                *pixel,
-                color);
-        }
-        else
-        {
-            character::paintCharacter(
-                getSheet(),
-                *mark.selectedFrame
-                    / character::kCharacterFrames,
-                *mark.selectedFrame
-                    % character::kCharacterFrames,
-                *pixel,
-                color);
-            viewContext.workbench.stroke.brushAtCell = pixel;
-            viewContext.workbench.stroke.active = true;
-        }
-
-        touch();
-
-        return true;
+        beginStroke(
+            viewContext.workbench.stroke.erases
+                ? Paint::Brush
+                : viewContext.workbench.preferences.paint,
+            *pixel,
+            viewContext.workbench.stroke,
+            createPaintSurface(color));
 
         return true;
     }
@@ -506,23 +552,22 @@ namespace antwika::editor
 
     void CharacterSheetView::trackPointer(const ViewContext &viewContext)
     {
-        if (true)
-        {
-            const auto characterCell =
-                characterAt(camera::kCanvasSize, viewContext.workbench.pointer.pointerOnCanvas);
+        const auto characterCell =
+            characterAt(
+                getSheetRect(viewContext),
+                viewContext.workbench.pointer.pointerOnCanvas);
 
-            mark.hoveredWayRow =
-                characterCell.has_value()
-                    ? std::optional<std::size_t>{
-                          *characterCell / character::kCharacterFrames}
-                    : std::nullopt;
-        }
+        mark.hoveredWayRow =
+            characterCell.has_value()
+                ? std::optional<std::size_t>{
+                      *characterCell / character::kCharacterFrames}
+                : std::nullopt;
 
 
         if (mark.selecting || mark.draggingPatch)
         {
             const auto pixel = character::characterPixelAt(
-                getCharacterCanvasRect(camera::kCanvasSize),
+                getCharacterCanvasRect(getDrawRect(viewContext)),
                 viewContext.workbench.pointer.pointerOnCanvas);
 
             if (pixel.has_value() && mark.selecting
@@ -553,27 +598,119 @@ namespace antwika::editor
             && mark.selectedFrame.has_value())
         {
             const auto pixel = character::characterPixelAt(
-                getCharacterCanvasRect(camera::kCanvasSize),
+                getCharacterCanvasRect(getDrawRect(viewContext)),
                 viewContext.workbench.pointer.pointerOnCanvas);
 
             if (pixel.has_value())
             {
-                character::paintCharacterLine(
-                    getSheet(),
-                    *mark.selectedFrame
-                        / character::kCharacterFrames,
-                    *mark.selectedFrame
-                        % character::kCharacterFrames,
-                    viewContext.workbench.stroke.brushAtCell.value_or(*pixel),
+                dragStroke(
                     *pixel,
-                    character::getCharacterPaletteColor(
+                    viewContext.workbench.stroke,
+                    createPaintSurface(character::getCharacterPaletteColor(
                         viewContext.document.map.paletteColors,
-                        viewContext.workbench.stroke.erases ? character::kTransparentInk
-                                     : viewContext.workbench.inkPicker.activeInk));
-                viewContext.workbench.stroke.brushAtCell = pixel;
-                touch();
+                        viewContext.workbench.stroke.erases
+                            ? character::kTransparentInk
+                            : viewContext.workbench.inkPicker.activeInk)));
             }
         }
+    }
+
+    bool CharacterSheetView::consumeRelease(
+        const ViewContext &viewContext,
+        const input::PointerButtonReleased &upReleased)
+    {
+        if (upReleased.button != input::MouseButton::Left)
+        {
+            return false;
+        }
+
+        finishShapedStroke(viewContext, upReleased);
+
+        mark.selecting = false;
+        mark.draggingPatch = false;
+        mark.grabbedMarkSelection.reset();
+        mark.grabbedAtCell.reset();
+
+        return true;
+    }
+
+    void CharacterSheetView::finishShapedStroke(
+        const ViewContext &viewContext,
+        const input::PointerButtonReleased &upReleased)
+    {
+        auto &stroke = viewContext.workbench.stroke;
+
+        if (!mark.selectedFrame.has_value())
+        {
+            stroke.lineFromCell.reset();
+
+            return;
+        }
+
+        const auto projectToScreen =
+            viewContext.render.viewportRenderer.getViewport().toCanvas(
+                gfx::Point{
+                    .x = upReleased.position.x,
+                    .y = upReleased.position.y});
+        const auto pixel = character::characterPixelAt(
+            getCharacterCanvasRect(getDrawRect(viewContext)),
+            gfx::PointF{
+                static_cast<float>(projectToScreen.x),
+                static_cast<float>(projectToScreen.y)});
+
+        if (pixel.has_value())
+        {
+            endShapedStroke(
+                viewContext.workbench.preferences.paint,
+                *pixel,
+                stroke,
+                createPaintSurface(
+                    character::getCharacterPaletteColor(
+                        viewContext.document.map.paletteColors,
+                        viewContext.workbench.inkPicker.activeInk)),
+                viewContext.editSteps);
+        }
+
+        stroke.lineFromCell.reset();
+    }
+
+    PaintSurface CharacterSheetView::createPaintSurface(const gfx::Color color)
+    {
+        const auto coords = frameCoordsOf(*mark.selectedFrame);
+
+        return PaintSurface{
+            .paintCells =
+                [this, coords, color](
+                    const std::span<const geometry::GridCell> cells)
+            {
+                for (const auto cell : cells)
+                {
+                    character::paintCharacter(
+                        getSheet(), coords.way, coords.frame, cell, color);
+                }
+            },
+            .paintFill =
+                [this, coords, color](const geometry::GridCell cell)
+            {
+                character::paintCharacterFill(
+                    getSheet(), coords.way, coords.frame, cell, color);
+            },
+            .touch = [this] { touch(); }};
+    }
+
+    SheetMark &CharacterSheetView::getMark() noexcept
+    {
+        return mark;
+    }
+
+    const SheetMark &CharacterSheetView::getMark() const noexcept
+    {
+        return mark;
+    }
+
+    void CharacterSheetView::dropSelection() noexcept
+    {
+        mark.selection.reset();
     }
 
 
@@ -606,10 +743,7 @@ namespace antwika::editor
             return false;
         }
 
-        const auto way = *mark.selectedFrame
-                         / character::kCharacterFrames;
-        const auto frame =
-            *mark.selectedFrame % character::kCharacterFrames;
+        const auto coords = frameCoordsOf(*mark.selectedFrame);
 
         if (isChordMatched(viewContext, pressedKey, Action::Copy))
         {
@@ -618,9 +752,11 @@ namespace antwika::editor
                       ? *mark.floatingPatchBuffer
                       : character::copiedFrom(
                             getSheet(),
-                            way,
-                            frame,
+                            coords.way,
+                            coords.frame,
                             *mark.selection);
+
+            return true;
         }
 
         if (isChordMatched(viewContext, pressedKey, Action::Cut))
@@ -630,11 +766,13 @@ namespace antwika::editor
                       ? *mark.floatingPatchBuffer
                       : character::cutFrom(
                             getSheet(),
-                            way,
-                            frame,
+                            coords.way,
+                            coords.frame,
                             *mark.selection);
             mark.floatingPatchBuffer.reset();
             touch();
+
+            return true;
         }
 
         if (isChordMatched(viewContext, pressedKey, Action::Paste)
@@ -644,11 +782,13 @@ namespace antwika::editor
             viewContext.editSteps.pushUndo();
             character::pasteInto(
                 getSheet(),
-                way,
-                frame,
+                coords.way,
+                coords.frame,
                 character::getSelectionOrigin(*mark.selection),
                 mark.clipboardBuffer);
             touch();
+
+            return true;
         }
 
         if (isChordMatched(viewContext, pressedKey, Action::Delete))
@@ -662,13 +802,15 @@ namespace antwika::editor
                 viewContext.editSteps.pushUndo();
                 (void)character::cutFrom(
                     getSheet(),
-                    way,
-                    frame,
+                    coords.way,
+                    coords.frame,
                     *mark.selection);
             }
 
             mark.selection.reset();
             touch();
+
+            return true;
         }
 
         return false;
@@ -681,9 +823,9 @@ namespace antwika::editor
     }
 
     bool CharacterSheetView::offersPaint(
-        const map::Paint paint) const noexcept
+        const Paint paint) const noexcept
     {
-        return paint == map::Paint::Select || IEditorView::offersPaint(paint);
+        return paint == Paint::Select || IEditorView::offersPaint(paint);
     }
 
 }

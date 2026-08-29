@@ -9,6 +9,7 @@ if(ANTWIKA_GFX_BACKEND STREQUAL "raylib")
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/RaylibRenderer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/RaylibRendererDraw.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/RaylibRendererResources.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/../src/RaylibResource.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/RaylibShader.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/RaylibTexture.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/RaylibWindow.cpp

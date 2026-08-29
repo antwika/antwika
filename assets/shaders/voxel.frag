@@ -20,7 +20,12 @@ uniform vec3 spriteFrom;
 uniform vec3 spriteSpan;
 
 const int mostLamps = 8;
-const int cubeFaces = 6;
+
+// The shadow-atlas shape arrives as uniforms so the layout math
+// tracks light::kMaxLamps and gfx::kCubeFaces; the array size
+// above must stay a compile-time constant.
+uniform float lampSlots;
+uniform float lampFaces;
 
 uniform vec3 lampAt[mostLamps];
 uniform vec4 lampTint[mostLamps];
@@ -53,6 +58,23 @@ uniform float carrying;
 
 uniform float glowOnly;
 
+uniform vec3 fogFrom;
+uniform vec3 fogWay;
+uniform vec4 fogTint;
+uniform float fogNear;
+uniform float fogFar;
+uniform float fogStrength;
+
+// Depth is measured along the way the camera looks, from the plane
+// through what it aims at, so the fog reads as distance behind the
+// walker rather than as distance from the middle of the screen.
+float foggedAt(vec3 drawnAt)
+{
+    float behind = dot(drawnAt - fogFrom, fogWay);
+
+    return fogStrength * smoothstep(fogNear, fogFar, behind);
+}
+
 uniform sampler2D texture2;
 uniform vec3 hidingCorner;
 uniform float hidingSpan;
@@ -73,7 +95,10 @@ bool hiddenAt(vec3 stood, vec3 outward)
     vec4 written = texture(
         texture2, (onMask + vec2(0.5)) / hidingSpan);
     int level = int(cell.y);
-    float byte = written[level / 8] * 255.0;
+
+    // Round before extracting: the UNORM8 read can land just
+    // below the stored byte and floor would then drop a bit.
+    float byte = floor((written[level / 8] * 255.0) + 0.5);
 
     float bit = float(level - ((level / 8) * 8));
 
@@ -131,8 +156,7 @@ vec3 nudgedAway(vec3 held, vec3 outward, float turned)
 
 float lampWrote(vec2 faceTexel, vec2 corner, float mine)
 {
-    vec2 sheet = lampFaceSide
-                 * vec2(float(cubeFaces), float(mostLamps));
+    vec2 sheet = lampFaceSide * vec2(lampFaces, lampSlots);
 
     return mine - lampBias
                    > texture(texture3, (corner + faceTexel) / sheet)
@@ -164,7 +188,7 @@ float lampReaching(int lamp, vec3 held)
     onFace = clamp(onFace, edge, vec2(1.0) - edge);
 
     vec2 corner =
-        vec2(float(way), float(mostLamps - lamp - 1)) * lampFaceSide;
+        vec2(float(way), lampSlots - float(lamp) - 1.0) * lampFaceSide;
 
     float mine = landed.z * 0.5 + 0.5;
     vec2 texel = onFace * lampFaceSide;
@@ -322,6 +346,7 @@ void main()
 
     shade += glowing * seen;
     shade *= left;
+    shade = mix(shade, fogTint.rgb, foggedAt(fragPosition));
 
     float veil = sprite ? skin.a : 1.0;
 

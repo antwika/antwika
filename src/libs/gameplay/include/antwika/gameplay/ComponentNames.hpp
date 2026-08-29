@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include <span>
 #include <string>
 #include <string_view>
@@ -8,19 +7,17 @@
 
 #include <antwika/ecs/Entity.hpp>
 #include <antwika/ecs/World.hpp>
-#include <antwika/map/MapFile.hpp>
+
+#include "antwika/gameplay/SpawnContext.hpp"
 
 namespace antwika::gameplay
 {
 
-    struct SpawnContext final
-    {
-        map::Placement placement{};
-
-        std::uint32_t index = 0;
-    };
-
     [[nodiscard]] std::span<const std::string_view> getComponentNames();
+
+    [[nodiscard]] std::span<const std::string_view> getPlayerComponentNames();
+
+    [[nodiscard]] std::span<const std::string_view> getCharacterComponentNames();
 
     [[nodiscard]] bool isComponentNamed(std::string_view name);
 
@@ -30,6 +27,6 @@ namespace antwika::gameplay
         const SpawnContext &spawnContext,
         std::span<const std::string> names);
 
-    void claimNamedComponents(ecs::World &world);
+    void claimModuleComponents(ecs::World &world);
 
 }

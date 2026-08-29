@@ -67,6 +67,16 @@ namespace antwika::ecs
         return entityManager->isAlive(entity);
     }
 
+    std::vector<Entity> World::getLiveEntities() const
+    {
+        return entityManager->getLiveEntities();
+    }
+
+    ILogger &World::getLogger() const noexcept
+    {
+        return entityManager->getLogger();
+    }
+
     void World::commit()
     {
         std::vector<Entity> destroyingEntities;
@@ -110,13 +120,7 @@ namespace antwika::ecs
             growSlots();
         }
 
-        const auto slotMask = keys.size() - 1;
-        auto slotIndex = static_cast<std::size_t>(key) & slotMask;
-
-        while (keys[slotIndex] != 0)
-        {
-            slotIndex = (slotIndex + 1) & slotMask;
-        }
+        const auto slotIndex = probedSlotFor(keys, keys.size() - 1, key);
 
         keys[slotIndex] = key;
         filledSlots.push_back(slotIndex);
@@ -139,13 +143,8 @@ namespace antwika::ecs
 
         for (const auto index : filledSlots)
         {
-            auto slotIndex =
-                static_cast<std::size_t>(keys[index]) & grownMask;
-
-            while (grownKeys[slotIndex] != 0)
-            {
-                slotIndex = (slotIndex + 1) & grownMask;
-            }
+            const auto slotIndex =
+                probedSlotFor(grownKeys, grownMask, keys[index]);
 
             grownKeys[slotIndex] = keys[index];
             grownPools[slotIndex] = std::move(pools[index]);

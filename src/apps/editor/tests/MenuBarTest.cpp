@@ -7,6 +7,8 @@
 #include "antwika/editor/ui/EditorLook.hpp"
 #include "antwika/editor/ui/MenuBar.hpp"
 
+#include "antwika/editor/ui/WidgetIds.hpp"
+
 namespace
 {
 
@@ -16,15 +18,12 @@ namespace
     using antwika::editor::itemNamesOf;
     using antwika::editor::itemsOf;
     using antwika::editor::getFirstItemWidget;
-    using antwika::editor::kBarMenus;
     using antwika::editor::kMaxMenuLines;
+    using antwika::editor::kEveryMenu;
     using antwika::editor::Menu;
     using antwika::editor::MenuItem;
     using antwika::editor::getMenuName;
     using antwika::editor::getMenuWidget;
-
-    constexpr std::array kEveryMenu{
-        Menu::File, Menu::Edit, Menu::View, Menu::Settings};
 
     TEST(MenuBarTest, ItemsOf_NamesEveryLineOnceAndOnlyOnce)
     {
@@ -58,6 +57,43 @@ namespace
         EXPECT_NE(
             std::ranges::find(edit, MenuItem::Grow), edit.end());
         EXPECT_FALSE(isToggle(MenuItem::Grow));
+    }
+
+    TEST(MenuBarTest, ItemsOf_KeepsTheGameSettingsApartFromTheEditorsOwn)
+    {
+        const auto game = itemsOf(Menu::Game);
+        const auto view = itemsOf(Menu::View);
+
+        EXPECT_NE(
+            std::ranges::find(game, MenuItem::GameLighting), game.end());
+        EXPECT_NE(
+            std::ranges::find(game, MenuItem::Corners), game.end());
+        EXPECT_EQ(
+            std::ranges::find(game, MenuItem::EditorLighting), game.end());
+
+        EXPECT_NE(
+            std::ranges::find(view, MenuItem::EditorLighting), view.end());
+        EXPECT_EQ(
+            std::ranges::find(view, MenuItem::GameLighting), view.end());
+
+        for (const auto item : view)
+        {
+            EXPECT_TRUE(isToggle(item));
+        }
+    }
+
+    TEST(MenuBarTest, ItemsOf_HangsBothLightingLinesOffTheSameName)
+    {
+        EXPECT_EQ(
+            getItemName(MenuItem::GameLighting),
+            getItemName(MenuItem::EditorLighting));
+    }
+
+    TEST(MenuBarTest, EveryMenu_StandsOnTheBar)
+    {
+        EXPECT_EQ(kEveryMenu.size(), 4U);
+        EXPECT_EQ(getMenuName(Menu::Game), "Game");
+        EXPECT_EQ(getMenuName(Menu::View), "View");
     }
 
     TEST(MenuBarTest, ItemNamesOf_NamesTheLinesInTheOrderTheyLie)
@@ -129,12 +165,13 @@ namespace
         EXPECT_TRUE(isToggle(MenuItem::Marker));
         EXPECT_TRUE(isToggle(MenuItem::RuleLines));
         EXPECT_TRUE(isToggle(MenuItem::FreeLook));
-        EXPECT_TRUE(isToggle(MenuItem::Lighting));
+        EXPECT_TRUE(isToggle(MenuItem::GameLighting));
+        EXPECT_TRUE(isToggle(MenuItem::EditorLighting));
         EXPECT_TRUE(isToggle(MenuItem::Corners));
         EXPECT_FALSE(isToggle(MenuItem::New));
         EXPECT_FALSE(isToggle(MenuItem::Save));
         EXPECT_FALSE(isToggle(MenuItem::Load));
-        EXPECT_FALSE(isToggle(MenuItem::Settings));
+        EXPECT_FALSE(isToggle(MenuItem::Keys));
         EXPECT_FALSE(isToggle(MenuItem::Quit));
     }
 

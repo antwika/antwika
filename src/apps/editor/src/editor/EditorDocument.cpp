@@ -1,5 +1,7 @@
 #include "antwika/editor/editor/EditorDocument.hpp"
 
+#include <filesystem>
+
 namespace antwika::editor
 {
 
@@ -11,6 +13,21 @@ namespace antwika::editor
     const std::string &EditorDocument::getStartPath() const noexcept
     {
         return startMapPath;
+    }
+
+    std::string EditorDocument::getSiblingPath(
+        const std::string &siblingName) const
+    {
+        return (std::filesystem::path(mapPath).parent_path() / siblingName)
+            .string();
+    }
+
+    std::string EditorDocument::getStartSiblingPath(
+        const std::string &siblingName) const
+    {
+        return (std::filesystem::path(startMapPath).parent_path()
+                / siblingName)
+            .string();
     }
 
     void EditorDocument::openAt(std::string openedPath)
@@ -39,7 +56,7 @@ namespace antwika::editor
         dirty = false;
     }
 
-    void EditorDocument::push(antwika::map::Snapshot stepSnapshot)
+    void EditorDocument::push(antwika::editor::Snapshot stepSnapshot)
     {
         history.push(std::move(stepSnapshot));
         dirty = true;
@@ -50,14 +67,19 @@ namespace antwika::editor
         history.clear();
     }
 
-    std::optional<antwika::map::Snapshot> EditorDocument::undo(
-        antwika::map::Snapshot stoodSnapshot)
+    std::size_t EditorDocument::getUndoCount() const noexcept
+    {
+        return history.getUndoCount();
+    }
+
+    std::optional<antwika::editor::Snapshot> EditorDocument::undo(
+        antwika::editor::Snapshot stoodSnapshot)
     {
         return history.undo(std::move(stoodSnapshot));
     }
 
-    std::optional<antwika::map::Snapshot> EditorDocument::redo(
-        antwika::map::Snapshot stoodSnapshot)
+    std::optional<antwika::editor::Snapshot> EditorDocument::redo(
+        antwika::editor::Snapshot stoodSnapshot)
     {
         return history.redo(std::move(stoodSnapshot));
     }

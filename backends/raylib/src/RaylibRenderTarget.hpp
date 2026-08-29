@@ -9,6 +9,7 @@
 #include <antwika/gfx/RenderTargetSpec.hpp>
 #include <antwika/gfx/Size.hpp>
 
+#include "RaylibResource.hpp"
 #include "RaylibTexture.hpp"
 
 namespace antwika::gfx::raylib
@@ -16,18 +17,13 @@ namespace antwika::gfx::raylib
 
     class RaylibRenderer;
 
-    class RaylibRenderTarget final : public IRenderTarget
+    class RaylibRenderTarget final
+        : public IRenderTarget,
+          public RaylibResource
     {
     public:
         RaylibRenderTarget(
             RaylibRenderer &ownerRenderer, const RenderTargetSpec &spec);
-
-        RaylibRenderTarget(const RaylibRenderTarget &) = delete;
-        RaylibRenderTarget(RaylibRenderTarget &&) = delete;
-
-        RaylibRenderTarget &operator=(const RaylibRenderTarget &)
-            = delete;
-        RaylibRenderTarget &operator=(RaylibRenderTarget &&) = delete;
 
         ~RaylibRenderTarget() override;
 
@@ -39,22 +35,15 @@ namespace antwika::gfx::raylib
 
         [[nodiscard]] unsigned int getFrameBuffer() const noexcept;
 
-        [[nodiscard]] bool isOwnedBy(
-            const RaylibRenderer &candidateRenderer) const noexcept;
-
-        void unload() noexcept;
-
-        void untrackRenderer() noexcept;
-
     private:
-        RaylibRenderer *owner;
+        void unloadHandle() noexcept override;
+
         Size targetSize;
         unsigned int fbo = 0;
         unsigned int colorId = 0;
         unsigned int depthId = 0;
         std::unique_ptr<RaylibTexture> colorTexture;
         std::unique_ptr<RaylibTexture> depthTexture;
-        bool loaded = true;
     };
 
 }

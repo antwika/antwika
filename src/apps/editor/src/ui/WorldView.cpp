@@ -1,12 +1,20 @@
 #include "antwika/editor/ui/WorldView.hpp"
 
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <optional>
+#include <string_view>
+#include <utility>
+
 #include <antwika/component/AnimationState.hpp>
 #include <antwika/component/Health.hpp>
 #include <antwika/component/Item.hpp>
 #include <antwika/component/Position.hpp>
-#include <antwika/component/RosterIndex.hpp>
+#include <antwika/component/CharacterIndex.hpp>
 #include <antwika/decor/Decor.hpp>
 #include <antwika/editor/ui/EditorLook.hpp>
+#include <antwika/enums/Enumeration.hpp>
 #include <antwika/gfx/Camera3D.hpp>
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Math3D.hpp>
@@ -14,6 +22,7 @@
 #include <antwika/gfx/MeshMaterial.hpp>
 #include <antwika/gfx/RectF.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/gfx/Viewport.hpp>
 #include <antwika/input/DirectionKeys.hpp>
 #include <antwika/light/PointLight.hpp>
 #include <antwika/render/HealthBars.hpp>
@@ -22,35 +31,149 @@
 #include <antwika/time/FrameRate.hpp>
 #include <antwika/ui/Painter.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
+#include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxelmap/VoxelPick.hpp>
 
 #include "antwika/editor/WorldCamera.hpp"
 #include "antwika/editor/tools/ShapedCubes.hpp"
+#include "antwika/editor/ui/GizmoSheet.hpp"
+#include "antwika/editor/ui/IconSheet.hpp"
+#include "antwika/editor/ui/WidgetIds.hpp"
 #include "antwika/editor/view/WorldSprites.hpp"
-
-namespace
-{
-
-    constexpr antwika::gfx::Color kSightPointColor{
-        .red = 255, .green = 64, .blue = 64, .alpha = 255};
-
-    constexpr float kSightPointSide = 3.0F;
-
-    constexpr antwika::gfx::Color kOriginPointColor{
-        .red = 255, .green = 255, .blue = 255, .alpha = 255};
-
-}
 
 namespace antwika::editor
 {
 
-    bool WorldView::claims(
-        const map::View shownView, const bool playing) const noexcept
+    namespace
     {
-        return playing || shownView == map::View::World;
+
+        /**
+         * @brief The canvas the world is drawn on, which is the world
+         * panel while the editor is up and the whole canvas otherwise.
+         */
+        [[nodiscard]] gfx::RectF getWorldClipRect(
+            const gfx::Viewport viewport, const ui::Frame &frame)
+        {
+            const auto panelRect =
+                frame.rects.getWidgetRect(kWorldPanelWidget);
+
+            if (!panelRect.has_value())
+            {
+                return gfx::RectF(
+                    {0.0F, 0.0F},
+                    {static_cast<float>(camera::kCanvasSize.width),
+                     static_cast<float>(camera::kCanvasSize.height)});
+            }
+
+            return viewport.toCanvas(
+                gfx::RectF(
+                    {static_cast<float>(panelRect->originPoint.x),
+                     static_cast<float>(panelRect->originPoint.y)},
+                    {static_cast<float>(panelRect->size.width),
+                     static_cast<float>(panelRect->size.height)}));
+        }
+
+        struct ToolStatusRow final
+        {
+            Tool tool;
+            std::string_view status;
+        };
+
+        constexpr std::array<ToolStatusRow, enums::kCount<Tool>>
+            kToolStatuses{{
+            {Tool::Select,
+             "1 world - lmb picks an entity - drag moves it - "
+             "rmb lets go"},
+            {Tool::Brush,
+             "1 world - lmb adds - rmb takes - f5 plays"},
+            {Tool::Picker,
+             "1 world - lmb picks a tile - rmb takes"},
+            {Tool::Lamp,
+             "1 world - lmb sets a lamp of the ink chosen - rmb takes"},
+            {Tool::Start,
+             "1 world - lmb sets the start cube - rmb takes it"},
+            {Tool::Exit,
+             "1 world - lmb sets the exit cube - rmb takes it"},
+            {Tool::Stamp,
+             "1 world - drag copies cubes - lmb sets them down - rmb "
+             "drops them"},
+            {Tool::Character,
+             "1 world - lmb stands the chosen character here, again "
+             "adds a stop - rmb takes it away"},
+            {Tool::Checkpoint,
+             "1 world - lmb picks a tile - rmb takes"},
+            {Tool::Food,
+             "1 world - lmb lays food to pick up - rmb takes it"},
+            {Tool::Water,
+             "1 world - lmb lays water to pick up - rmb takes it"},
+            {Tool::Eraser,
+             "1 world - lmb clears cubes - drag sweeps them away"}}};
+
+        static_assert(
+            enums::tagsInOrder(kToolStatuses, &ToolStatusRow::tool));
+
+        /**
+         * @brief How wide a gizmo icon stands in the world, in voxels.
+         */
+        constexpr float kGizmoIconVoxels = 1.0F;
+
+        /**
+         * @brief How long a world span reads on the canvas about a point.
+         * The three world axes fall onto the canvas' two, so their squared
+         * canvas lengths add up to twice the span's own, whichever way the
+         * camera faces.
+         */
+        [[nodiscard]] std::optional<float> getCanvasSpan(
+            const gfx::Mat4 &clipMatrix,
+            const gfx::Vec3 middlePoint,
+            const float worldSpan)
+        {
+            const auto point = voxelmap::getProjectToScreen(
+                clipMatrix, camera::kCanvasSize, middlePoint);
+
+            if (!point.has_value())
+            {
+                return std::nullopt;
+            }
+
+            const std::array<gfx::Vec3, 3> axisOffsets{
+                gfx::Vec3{worldSpan, 0.0F, 0.0F},
+                gfx::Vec3{0.0F, worldSpan, 0.0F},
+                gfx::Vec3{0.0F, 0.0F, worldSpan}};
+
+            auto squaredSum = 0.0F;
+
+            for (const auto axisOffset : axisOffsets)
+            {
+                const auto alongPoint = voxelmap::getProjectToScreen(
+                    clipMatrix,
+                    camera::kCanvasSize,
+                    middlePoint + axisOffset);
+
+                if (!alongPoint.has_value())
+                {
+                    return std::nullopt;
+                }
+
+                const auto acrossCanvas = alongPoint->x - point->x;
+                const auto downCanvas = alongPoint->y - point->y;
+
+                squaredSum += (acrossCanvas * acrossCanvas)
+                              + (downCanvas * downCanvas);
+            }
+
+            return std::sqrt(squaredSum / 2.0F);
+        }
+
     }
 
-    bool WorldView::offersPaint(const map::Paint) const noexcept
+    bool WorldView::claims(
+        const View shownView, const bool playing) const noexcept
+    {
+        return playing || shownView == View::World;
+    }
+
+    bool WorldView::offersPaint(const Paint) const noexcept
     {
         return false;
     }
@@ -58,48 +181,17 @@ namespace antwika::editor
     std::string WorldView::getStatusText(
         const ViewContext &viewContext) const
     {
-        return std::string(
-                   viewContext.workbench.preferences.tool == map::Tool::Brush
-                         ? "1 world - lmb adds - rmb takes - "
-                         "f5 plays"
-                   : viewContext.workbench.preferences.tool == map::Tool::Lamp
-                       ? "1 world - lmb sets a lamp of the "
-                         "ink chosen - rmb takes"
-                   : viewContext.workbench.preferences.tool == map::Tool::Start
-                       ? "1 world - lmb sets the start cube "
-                         "- rmb takes it"
-                   : viewContext.workbench.preferences.tool == map::Tool::Exit
-                       ? "1 world - lmb sets the exit cube "
-                         "- rmb takes it"
-                   : viewContext.workbench.preferences.tool == map::Tool::Stamp
-                       ? "1 world - drag copies cubes - lmb "
-                         "sets them down - rmb drops them"
-                   : viewContext.workbench.preferences.tool == map::Tool::Figure
-                       ? "1 world - lmb stands the chosen "
-                         "figure here, again adds a stop - "
-                         "rmb takes it away"
-                   : viewContext.workbench.preferences.tool == map::Tool::PressurePlate
-                       ? "1 world - lmb sets the plate, then "
-                         "picks the cubes it sways - rmb "
-                         "takes it"
-                   : viewContext.workbench.preferences.tool == map::Tool::Food
-                       ? "1 world - lmb lays food to pick up "
-                         "- rmb takes it"
-                   : viewContext.workbench.preferences.tool == map::Tool::Water
-                       ? "1 world - lmb lays water to pick up "
-                         "- rmb takes it"
-                   : viewContext.workbench.preferences.tool == map::Tool::Eraser
-                       ? "1 world - lmb clears cubes - drag "
-                         "sweeps them away"
-                       : "1 world - lmb picks a tile - rmb "
-                         "takes")
+        const auto &statusRow = enums::lookup(
+            kToolStatuses, viewContext.workbench.preferences.tool);
+
+        return std::string(statusRow.status)
                + " - wheel zooms - g - c "
                + std::string(
-                   worldEdit.cornerJoining
+                   worldEditState.getCornerJoining()
                            == solver::CornerSeams::Included
                             ? "on"
                             : "off")
-               + " - level " + std::to_string(worldEdit.editLevel);
+               + " - level " + std::to_string(worldEditState.getEditLevel());
     }
 
 
@@ -117,7 +209,7 @@ namespace antwika::editor
         auto &worldShader = viewContext.render.worldShader;
         auto &scenePass = viewContext.render.scenePass;
         auto &sprites = viewContext.render.sprites;
-        auto &rosterSkins = viewContext.render.rosterSkins;
+        auto &characterSkins = viewContext.render.characterSkins;
         auto &clockSource = viewContext.clockSource;
         auto &meters = viewContext.meters;
         const auto tick = viewContext.tick;
@@ -133,6 +225,8 @@ namespace antwika::editor
         }
 
         const auto clipMatrix = camera.getViewProjection() * modelMatrix;
+        const auto worldScope = viewportRenderer.clipScope(
+            getWorldClipRect(viewportRenderer.getViewport(), frame));
 
         const auto pile = [&]
         {
@@ -228,14 +322,14 @@ namespace antwika::editor
                              .view<
                                  component::Position,
                                  component::AnimationState,
-                                 component::RosterIndex>())
+                                 component::CharacterIndex>())
                     {
                         const auto index =
                             play.game->getWorld()
-                                .get<component::RosterIndex>(entity)
+                                .get<component::CharacterIndex>(entity)
                                 .index;
 
-                        if (index >= rosterSkins.getSheets().size())
+                        if (index >= characterSkins.getSheets().size())
                         {
                             continue;
                         }
@@ -245,7 +339,7 @@ namespace antwika::editor
                             tick,
                             camera,
                             modelMatrix,
-                            rosterSkins.getPicture(index),
+                            characterSkins.getPicture(index),
                             play.game->getWorld().get<component::Position>(
                                 entity),
                             play.game->getWorld()
@@ -277,7 +371,7 @@ namespace antwika::editor
                             (tick - caption.start)
                                 / antwika::editor::
                                     kCaptionCharTicks)),
-                1.0F,
+                gfx::TextScale{.multiplier = 1},
                 kTextColor);
         }
 
@@ -299,13 +393,13 @@ namespace antwika::editor
                 {camera::kCanvasSize.width / 2.0F - 60.0F,
                  camera::kCanvasSize.height / 2.0F - 12.0F},
                 fileName,
-                1.0F,
+                gfx::TextScale{.multiplier = 1},
                 kTextColor);
             viewportRenderer.drawText(
                 {camera::kCanvasSize.width / 2.0F - 60.0F,
                  camera::kCanvasSize.height / 2.0F + 4.0F},
                 "press any key",
-                1.0F,
+                gfx::TextScale{.multiplier = 1},
                 kGridLineColor);
         }
 
@@ -325,22 +419,24 @@ namespace antwika::editor
             viewportRenderer.drawText(
                 {static_cast<float>(camera::kCanvasSize.width)
                      - static_cast<float>(
-                         antwika::text::getTextSize(rateText, 1)
+                         antwika::text::getTextSize(
+                             rateText, gfx::TextScale{.multiplier = 1})
                              .width)
                      - 4.0F,
                  4.0F},
                 rateText,
-                1,
+                gfx::TextScale{.multiplier = 1},
                 kTextColor);
             viewportRenderer.drawText(
                 {static_cast<float>(camera::kCanvasSize.width)
                      - static_cast<float>(
-                         antwika::text::getTextSize(workText, 1)
+                         antwika::text::getTextSize(
+                             workText, gfx::TextScale{.multiplier = 1})
                              .width)
                      - 4.0F,
                  16.0F},
                 workText,
-                1,
+                gfx::TextScale{.multiplier = 1},
                 kGridLineColor);
         }
 
@@ -436,24 +532,24 @@ namespace antwika::editor
         if (!play.playing && overlays.stale)
         {
             overlays.gridLines = voxelmap::getLevelGridLines(
-                document.map.voxels, antwika::voxel::getCubeTop(worldEdit.editLevel));
+                document.map.voxels, antwika::voxel::getCubeTop(worldEditState.getEditLevel()));
             overlays.topLines = voxelmap::getBuildableTopOutlines(
-                document.map.voxels, antwika::voxel::getCubeTop(worldEdit.editLevel));
+                document.map.voxels, antwika::voxel::getCubeTop(worldEditState.getEditLevel()));
 
             const auto satisfiedSeamSet = solver::getSatisfiedSeams(
                 worldMeshes.getFaces(),
                 worldMeshes.getSolvedTiles(),
                 document.map.rules,
-                worldEdit.cornerJoining);
+                worldEditState.getCornerJoining());
 
             overlays.seamsAboveLevel = solver::getCrossLevelSeams(
                 worldMeshes.getFaces(),
                 satisfiedSeamSet,
-                antwika::voxel::getCubeTop(worldEdit.editLevel));
+                antwika::voxel::getCubeTop(worldEditState.getEditLevel()));
             overlays.seamsAtLevel = solver::getSameLevelSeams(
                 worldMeshes.getFaces(),
                 satisfiedSeamSet,
-                antwika::voxel::getCubeTop(worldEdit.editLevel));
+                antwika::voxel::getCubeTop(worldEditState.getEditLevel()));
             overlays.stale = false;
         }
 
@@ -483,44 +579,76 @@ namespace antwika::editor
                 }
             };
 
+            const auto &gizmos = viewContext.workbench.gizmos;
+            const auto markedAt = [&](const gfx::Vec3 middlePoint,
+                                      const GizmoKind kind)
+            {
+                const auto slot = enums::index(kind);
+
+                if (gizmos.texture == nullptr
+                    || !isGizmoDrawn(gizmos.sheetBitmap, slot))
+                {
+                    return false;
+                }
+
+                const auto point = voxelmap::getProjectToScreen(
+                    clipMatrix, camera::kCanvasSize, middlePoint);
+
+                if (!point.has_value())
+                {
+                    return false;
+                }
+
+                const auto iconSide = getCanvasSpan(
+                    clipMatrix,
+                    middlePoint,
+                    kGizmoIconVoxels * voxel::kVoxelSide);
+
+                if (!iconSide.has_value())
+                {
+                    return false;
+                }
+
+                viewportRenderer.drawTexture(
+                    *gizmos.texture,
+                    getIconSource(slot),
+                    antwika::gfx::RectF(
+                        {point->x - (*iconSide / 2.0F),
+                         point->y - (*iconSide / 2.0F)},
+                        {*iconSide, *iconSide}),
+                    kWhiteColor);
+
+                return true;
+            };
+
+            const auto marked = [&markedAt](
+                                    const voxel::VoxelPosition gizmoCell,
+                                    const GizmoKind kind)
+            {
+                return markedAt(voxelmap::getCubeMiddle(gizmoCell), kind);
+            };
+
             if (play.playing)
             {
-                for (const auto keyCell : document.map.markers.positionsOf(map::Marker::Key))
-                {
-                    if (!play.game->getGates().collectedKeyPositions.contains(
-                            antwika::voxel::cubeCornerOf(keyCell)))
-                    {
-                        ruled(voxelmap::getCubeWireframe(keyCell), kRuleLineColor);
-                    }
-                }
-
-                for (const auto doorCell : document.map.markers.positionsOf(map::Marker::Door))
-                {
-                    ruled(
-                        voxelmap::getCubeWireframe(doorCell),
-                        kCornerSeamLineColor);
-                }
-
                 for (const auto entity :
                      play.game->getWorld().view<antwika::component::Item>())
                 {
                     const auto item =
                         play.game->getWorld().get<antwika::component::Item>(
                             entity);
-
-                    ruled(
-                        voxelmap::getCubeWireframe(item.position),
+                    const auto itemGizmo =
                         static_cast<component::ItemKind>(item.kind)
                                 == component::ItemKind::Food
-                                 ? kFoodBarColor
-                                 : kWaterBarColor);
-                }
-            }
+                            ? GizmoKind::Food
+                            : GizmoKind::Water;
 
-            for (const auto troubleCell : grow.troublePositions)
-            {
-                ruled(voxelmap::getCubeWireframe(troubleCell),
-                kForbiddenMarkerColor);
+                    if (!marked(item.position, itemGizmo))
+                    {
+                        ruled(
+                            voxelmap::getCubeGizmoSpans(item.position),
+                            kWhiteColor);
+                    }
+                }
             }
 
             if (play.playing && play.game->getPathGoal().has_value())
@@ -532,6 +660,13 @@ namespace antwika::editor
 
             if (!play.playing)
             {
+                for (const auto troubleCell : grow.troublePositions)
+                {
+                    ruled(
+                        voxelmap::getCubeWireframe(troubleCell),
+                        kForbiddenMarkerColor);
+                }
+
                 if (!lightPasses.getHiddenVoxels().empty())
                 {
                     ruled(
@@ -555,22 +690,21 @@ namespace antwika::editor
                     modelMatrix,
                     camera::kCanvasSize,
                     pointer.pointerOnCanvas,
-                    antwika::voxel::getCubeTop(worldEdit.editLevel));
+                    antwika::voxel::getCubeTop(worldEditState.getEditLevel()));
 
                 const auto steering =
                     cameraRig.orbiting
                     || (cameraRig.panning
                         && cameraRig.panGripPosition.has_value())
-                    || play.game->wasdKeys() != input::DirectionKeys{}
-                    || play.game->arrowKeys() != input::DirectionKeys{}
-                    || worldEdit.descendHeld
-                    || worldEdit.ascendHeld;
+                    || play.wasdKeys != input::DirectionKeys{}
+                    || play.arrowKeys != input::DirectionKeys{}
+                    || worldEditState.isRiseHeld();
 
                 if (going.has_value() && !cameraRig.freeLook
                     && preferences.showPlacementGhost && !steering
                     && !frame.interactions.pointerOverUi)
                 {
-                    if (preferences.tool == map::Tool::Stamp
+                    if (preferences.tool == Tool::Stamp
                         && (stamp.fromPosition.has_value()
                             || !stamp.voxels.empty()))
                     {
@@ -601,92 +735,87 @@ namespace antwika::editor
                     }
                 }
 
-                for (const auto lamp : document.map.lamps)
-                {
-                    ruled(light::getLampGizmoSpans(lamp), lamp.tintColor);
-                }
-
-                if (document.map.spawnCubePosition.has_value())
+                if (preferences.tool == Tool::Select
+                    && viewContext.workbench.entityPick.kind.has_value())
                 {
                     ruled(
                         voxelmap::getCubeWireframe(
-                            *document.map.spawnCubePosition),
-                        kCornerFilledMarkerColor);
+                            viewContext.workbench.entityPick.position),
+                        kSelectionAccentColor);
                 }
 
-                if (document.map.exitCubePosition.has_value())
+                for (const auto lamp : document.map.lamps)
                 {
-                    ruled(voxelmap::getCubeWireframe(
-                            *document.map.exitCubePosition),
-                        kForbiddenMarkerColor);
+                    if (!markedAt(
+                            light::getLampPosition(lamp), GizmoKind::Lamp))
+                    {
+                        ruled(light::getLampGizmoSpans(lamp), kWhiteColor);
+                    }
                 }
 
-                for (const auto keyCell : document.map.markers.positionsOf(map::Marker::Key))
-                {
-                    ruled(voxelmap::getCubeWireframe(keyCell), kRuleLineColor);
-                }
-
-                for (
-                    const auto doorCell : document.map.markers.positionsOf(map::Marker::Door))
+                if (document.map.spawnCubePosition.has_value()
+                    && !marked(
+                        *document.map.spawnCubePosition, GizmoKind::Spawn))
                 {
                     ruled(
-                        voxelmap::getCubeWireframe(doorCell),
-                        kCornerSeamLineColor);
+                        voxelmap::getCubeGizmoSpans(
+                            *document.map.spawnCubePosition),
+                        kWhiteColor);
+                }
+
+                if (document.map.exitCubePosition.has_value()
+                    && !marked(
+                        *document.map.exitCubePosition, GizmoKind::Exit))
+                {
+                    ruled(
+                        voxelmap::getCubeGizmoSpans(
+                            *document.map.exitCubePosition),
+                        kWhiteColor);
                 }
 
                 for (const auto checkpointCell :
                      document.map.markers.positionsOf(map::Marker::Checkpoint))
                 {
-                    ruled(
-                        voxelmap::getCubeWireframe(checkpointCell),
-                        kRuleLineCrossLevelColor);
+                    if (!marked(checkpointCell, GizmoKind::Checkpoint))
+                    {
+                        ruled(
+                            voxelmap::getCubeGizmoSpans(checkpointCell),
+                            kWhiteColor);
+                    }
                 }
 
                 for (const auto foodCell : document.map.markers.positionsOf(map::Marker::Food))
                 {
-                    ruled(voxelmap::getCubeWireframe(foodCell), kFoodBarColor);
+                    if (!marked(foodCell, GizmoKind::Food))
+                    {
+                        ruled(
+                            voxelmap::getCubeGizmoSpans(foodCell),
+                            kWhiteColor);
+                    }
                 }
 
                 for (const auto waterCell : document.map.markers.positionsOf(map::Marker::Water))
                 {
-                    ruled(voxelmap::getCubeWireframe(waterCell), kWaterBarColor);
+                    if (!marked(waterCell, GizmoKind::Water))
+                    {
+                        ruled(
+                            voxelmap::getCubeGizmoSpans(waterCell),
+                            kWhiteColor);
+                    }
                 }
 
-                if (preferences.tool == map::Tool::Figure
-                    && figureTool.chosenIndex.has_value()
-                    && *figureTool.chosenIndex < document.map.characters.size())
+                if (const auto chosenCharacter = characterToolState.getChosenCharacter(
+                        document.map.characters.size());
+                    preferences.tool == Tool::Character
+                    && chosenCharacter.has_value())
                 {
                     for (const auto stop :
                          document.map.characters.at(
-                             *figureTool.chosenIndex).patrolPathPositions)
+                             *chosenCharacter).patrolPathPositions)
                     {
                         ruled(
                             voxelmap::getCubeWireframe(stop),
                             kPlacementPreviewColor);
-                    }
-                }
-
-                if (preferences.tool == map::Tool::PressurePlate)
-                {
-                    for (std::size_t index = 0;
-                         index < document.map.plates.size();
-                         ++index)
-                    {
-                        ruled(
-                            voxelmap::getCubeWireframe(document.map.plates.at(
-                                index).position),
-                            kCursorColor);
-
-                        if (plateTool.chosenIndex == index)
-                        {
-                            for (const auto sway :
-                                 document.map.plates.at(index).togglePositions)
-                            {
-                                ruled(
-                                    voxelmap::getCubeWireframe(sway),
-                                    kPlacementPreviewColor);
-                            }
-                        }
                     }
                 }
             }
@@ -747,68 +876,6 @@ namespace antwika::editor
                 clockSource.getCurrentTime() - seamFrom));
 
         drawHealthBars(viewContext, clipMatrix);
-        drawSightPoints(viewContext, clipMatrix);
-    }
-
-    void WorldView::drawPointMark(
-        const ViewContext &viewContext,
-        const gfx::Mat4 &clipMatrix,
-        const gfx::Vec3 position,
-        const gfx::Color markColor)
-    {
-        auto &viewportRenderer = viewContext.render.viewportRenderer;
-
-        const auto onCanvas = voxelmap::getProjectToScreen(
-            clipMatrix, camera::kCanvasSize, position);
-
-        if (!onCanvas.has_value())
-        {
-            return;
-        }
-
-        viewportRenderer.drawRect(
-            gfx::RectF{
-                gfx::PointF{
-                    onCanvas->x - (kSightPointSide / 2.0F),
-                    onCanvas->y - (kSightPointSide / 2.0F)},
-                gfx::SizeF{kSightPointSide, kSightPointSide}},
-            markColor);
-    }
-
-    void WorldView::drawSightPoints(
-        const ViewContext &viewContext,
-        const gfx::Mat4 &clipMatrix)
-    {
-        auto &play = viewContext.play;
-
-        drawPointMark(viewContext, clipMatrix, gfx::Vec3{0.0F, 0.0F, 0.0F}, kOriginPointColor);
-
-        if (!play.playing)
-        {
-            return;
-        }
-
-        if (!worldEdit.lowerSight)
-        {
-            return;
-        }
-
-        const auto stoodPosition =
-            play.world.get<component::Position>(play.game->getPlayer());
-
-        const gfx::Vec3 walkerPosition{
-            stoodPosition.x, stoodPosition.y, stoodPosition.z};
-
-        drawPointMark(viewContext, clipMatrix,
-            antwika::voxel::getLineOfSight(walkerPosition),
-            kSightPointColor);
-
-        if (isUpperSightOn(viewContext))
-        {
-            drawPointMark(viewContext, clipMatrix,
-                antwika::voxel::getUpperLineOfSight(walkerPosition),
-                kSightPointColor);
-        }
     }
 
     void WorldView::drawHealthBars(
@@ -855,6 +922,332 @@ namespace antwika::editor
                 viewportRenderer.drawRect(bars.at(index), kBarColors.at(index));
             }
         }
+    }
+
+    void WorldView::trackPointer(const ViewContext &viewContext)
+    {
+        carryLamp(viewContext);
+
+        auto &pointer = viewContext.workbench.pointer;
+        auto &preferences = viewContext.workbench.preferences;
+        auto &drawnMap = viewContext.document.map;
+
+        if (worldPaint.dragButton.has_value()
+            && !worldPaint.shapeFromPosition.has_value())
+        {
+            const auto cell = voxelmap::getCellUnder(
+                getWorldCamera(viewContext.play, viewContext.cameraRig),
+                getWorldRotation(viewContext.play),
+                camera::kCanvasSize,
+                pointer.pointerOnCanvas,
+                antwika::voxel::getCubeTop(worldEditState.getEditLevel()));
+
+            if (cell.has_value() && cell != worldPaint.lastPaintedPosition)
+            {
+                drawnMap.voxels = voxel::getWithRampsRebuilt(
+                    preferences.tool == Tool::Eraser
+                          ? voxel::withoutBlockAt(
+                              drawnMap.voxels, *cell)
+                        : voxel::withBlockAt(
+                              drawnMap.voxels,
+                              *cell,
+                              preferences.kind,
+                              voxel::Facing::Any),
+                    *cell);
+                worldPaint.lastPaintedPosition = cell;
+                viewContext.workbench.remesh.pending = true;
+            }
+        }
+    }
+
+    void WorldView::carryLamp(const ViewContext &viewContext)
+    {
+        if (!worldPaint.draggedLamp.has_value())
+        {
+            return;
+        }
+
+        auto &drawnMap = viewContext.document.map;
+        const auto position = voxelmap::getCellUnder(
+            getWorldCamera(viewContext.play, viewContext.cameraRig),
+            getWorldRotation(viewContext.play),
+            camera::kCanvasSize,
+            viewContext.workbench.pointer.pointerOnCanvas,
+            antwika::voxel::getCubeTop(worldEditState.getEditLevel()));
+
+        const auto cornerPosition = position.has_value()
+                                        ? antwika::voxel::cubeCornerOf(
+                                              *position)
+                                        : voxel::VoxelPosition{};
+
+        if (position.has_value()
+            && cornerPosition != worldPaint.draggedLamp->position)
+        {
+            drawnMap.lamps = light::withLampAt(
+                light::withoutLampAt(
+                    drawnMap.lamps,
+                    worldPaint.draggedLamp->position),
+                cornerPosition,
+                worldPaint.draggedLamp->tintColor);
+            worldPaint.draggedLamp->position = cornerPosition;
+            viewContext.render.lightPasses.forget();
+        }
+    }
+
+    bool WorldView::beginShape(
+        const ViewContext &viewContext,
+        const voxel::VoxelPosition position,
+        const input::MouseButton button)
+    {
+        auto &preferences = viewContext.workbench.preferences;
+
+        if (preferences.tool != Tool::Brush
+            || (preferences.paint != Paint::Rect
+                && preferences.paint != Paint::Line))
+        {
+            return false;
+        }
+
+        worldPaint.shapeFromPosition = position;
+        worldPaint.dragButton = button;
+
+        return true;
+    }
+
+    void WorldView::finishShape(
+        const ViewContext &viewContext, const input::MouseButton button)
+    {
+        if (!worldPaint.shapeFromPosition.has_value()
+            || !worldPaint.dragButton.has_value()
+            || button != *worldPaint.dragButton)
+        {
+            return;
+        }
+
+        auto &preferences = viewContext.workbench.preferences;
+        auto &drawnMap = viewContext.document.map;
+        const auto position = voxelmap::getCellUnder(
+            getWorldCamera(viewContext.play, viewContext.cameraRig),
+            getWorldRotation(viewContext.play),
+            camera::kCanvasSize,
+            viewContext.workbench.pointer.pointerOnCanvas,
+            antwika::voxel::getCubeTop(worldEditState.getEditLevel()));
+
+        if (position.has_value())
+        {
+            viewContext.editSteps.pushUndo();
+
+            for (const auto cube :
+                 getShapedCubes(
+                     *worldPaint.shapeFromPosition,
+                     *position,
+                     preferences.paint))
+            {
+                drawnMap.voxels = voxel::getWithRampsRebuilt(
+                    worldPaint.dragButton == input::MouseButton::Left
+                                     ? voxel::withBlockAt(
+                              drawnMap.voxels,
+                              cube,
+                              preferences.kind,
+                              voxel::Facing::Any)
+                        : voxel::withoutBlockAt(
+                              drawnMap.voxels, cube),
+                    cube);
+            }
+
+            viewContext.editSteps.rebuildWorld();
+        }
+
+        worldPaint.shapeFromPosition.reset();
+    }
+
+    void WorldView::pressStamp(
+        const ViewContext &viewContext,
+        const voxel::VoxelPosition position,
+        const input::MouseButton button)
+    {
+        auto &drawnMap = viewContext.document.map;
+
+        if (button == input::MouseButton::Right)
+        {
+            stamp.voxels.clear();
+            stamp.fromPosition.reset();
+
+            return;
+        }
+
+        if (!stamp.voxels.empty())
+        {
+            viewContext.editSteps.pushUndo();
+
+            const auto stampCorner = antwika::voxel::cubeCornerOf(position);
+
+            for (const auto &[offset, material] : stamp.voxels)
+            {
+                const voxel::VoxelPosition cornerPosition{
+                    .x = stampCorner.x + offset.x,
+                    .y = offset.y,
+                    .z = stampCorner.z + offset.z};
+
+                drawnMap.voxels = voxel::getWithRampsRebuilt(
+                    voxel::withBlockAt(
+                        drawnMap.voxels,
+                        cornerPosition,
+                        material.kind,
+                        material.facing),
+                    cornerPosition);
+            }
+
+            viewContext.editSteps.rebuildWorld();
+
+            return;
+        }
+
+        stamp.fromPosition = position;
+    }
+
+    void WorldView::finishStamp(
+        const ViewContext &viewContext, const input::MouseButton button)
+    {
+        if (!stamp.fromPosition.has_value()
+            || button != input::MouseButton::Left)
+        {
+            return;
+        }
+
+        const auto position = voxelmap::getCellUnder(
+            getWorldCamera(viewContext.play, viewContext.cameraRig),
+            getWorldRotation(viewContext.play),
+            camera::kCanvasSize,
+            viewContext.workbench.pointer.pointerOnCanvas,
+            antwika::voxel::getCubeTop(worldEditState.getEditLevel()));
+
+        if (!position.has_value())
+        {
+            stamp.fromPosition.reset();
+
+            return;
+        }
+
+        const auto a = antwika::voxel::cubeCornerOf(*stamp.fromPosition);
+        const auto b = antwika::voxel::cubeCornerOf(*position);
+        const auto lowX = std::min(a.x, b.x);
+        const auto highX = std::max(a.x, b.x);
+        const auto lowZ = std::min(a.z, b.z);
+        const auto highZ = std::max(a.z, b.z);
+
+        voxel::Voxels cubeVoxels;
+
+        for (const auto &[cubePosition, material] : viewContext.document.map.voxels)
+        {
+            const auto corner =
+                antwika::voxel::cubeCornerOf(cubePosition);
+
+            if (corner.x < lowX || corner.x > highX
+                || corner.z < lowZ || corner.z > highZ)
+            {
+                continue;
+            }
+
+            cubeVoxels.emplace(corner, material);
+        }
+
+        stamp.voxels.clear();
+
+        for (const auto &[corner, sample] : cubeVoxels)
+        {
+            stamp.voxels[voxel::VoxelPosition{
+                .x = corner.x - lowX,
+                .y = corner.y,
+                .z = corner.z - lowZ}] = sample;
+        }
+
+        stamp.fromPosition.reset();
+    }
+
+    bool WorldView::beginLampCarry(
+        const ViewContext &viewContext, const voxel::VoxelPosition position)
+    {
+        for (const auto &lamp : viewContext.document.map.lamps)
+        {
+            if (lamp.position == position)
+            {
+                viewContext.editSteps.pushUndo();
+                worldPaint.draggedLamp = lamp;
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    void WorldView::beginPaintDrag(
+        const voxel::VoxelPosition position,
+        const input::MouseButton button) noexcept
+    {
+        worldPaint.dragButton = button;
+        worldPaint.lastPaintedPosition = position;
+    }
+
+    void WorldView::endPaintDrag(const input::MouseButton button) noexcept
+    {
+        if (worldPaint.draggedLamp.has_value()
+            && button == input::MouseButton::Left)
+        {
+            worldPaint.draggedLamp.reset();
+        }
+
+        if (worldPaint.dragButton.has_value()
+            && button == *worldPaint.dragButton)
+        {
+            worldPaint.dragButton.reset();
+            worldPaint.lastPaintedPosition.reset();
+        }
+    }
+
+    void WorldView::endDrags() noexcept
+    {
+        worldPaint.shapeFromPosition.reset();
+        worldPaint.dragButton.reset();
+        stamp.voxels.clear();
+        stamp.fromPosition.reset();
+    }
+
+    void WorldView::markOverlaysStale() noexcept
+    {
+        overlays.stale = true;
+    }
+
+    std::uint64_t WorldView::takeGrowSeed() noexcept
+    {
+        return grow.seed++;
+    }
+
+    void WorldView::setGrowTrouble(
+        std::vector<voxel::VoxelPosition> troublePositions)
+    {
+        grow.troublePositions = std::move(troublePositions);
+    }
+
+    void WorldView::clearGrowTrouble() noexcept
+    {
+        grow.troublePositions.clear();
+    }
+
+    WorldEdit &WorldView::worldEdit() noexcept
+    {
+        return worldEditState;
+    }
+
+    CharacterTool &WorldView::characterTool() noexcept
+    {
+        return characterToolState;
+    }
+
+    const CharacterTool &WorldView::getCharacterTool() const noexcept
+    {
+        return characterToolState;
     }
 
 }

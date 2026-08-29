@@ -48,7 +48,33 @@ namespace antwika::editor
                    - kCellGap;
         }
 
-        [[nodiscard]] gfx::RectF drawnAt(const gfx::Size canvasSize)
+        [[nodiscard]] std::size_t getBankCount()
+        {
+            return character::kCharacterWays / kBankWays;
+        }
+
+        [[nodiscard]] float getGridWide()
+        {
+            return (static_cast<float>(getBankCount()) * getBankWide())
+                   + (static_cast<float>(getBankCount() - 1) * kBankGap);
+        }
+
+        [[nodiscard]] float getGridTall()
+        {
+            return (static_cast<float>(kBankWays)
+                    * (getCellTall() + kCellGap))
+                   - kCellGap;
+        }
+
+        [[nodiscard]] float getSheetScale(const gfx::RectF sheetRect)
+        {
+            return std::min(
+                sheetRect.size.width / getGridWide(),
+                sheetRect.size.height / getGridTall());
+        }
+
+        [[nodiscard]] gfx::RectF drawnAt(
+            const gfx::Size canvasSize, const float railWidth)
         {
             const auto width = static_cast<float>(
                                   character::kCharacterCellSize.width)
@@ -60,40 +86,66 @@ namespace antwika::editor
             return gfx::RectF(
                 gfx::PointF{
                     static_cast<float>(canvasSize.width) - width
-                        - kSheetMargin - kRightPanelWidth,
+                        - kSheetMargin - railWidth,
                     kSheetMargin},
                 gfx::SizeF{width, height});
         }
     }
 
+    gfx::RectF getCharacterSheetBounds(const gfx::Size canvasSize)
+    {
+        return gfx::RectF(
+            gfx::PointF{kSheetLeft, 0.0F},
+            gfx::SizeF{
+                getGridWide(), static_cast<float>(canvasSize.height)});
+    }
+
+    gfx::RectF getCharacterDrawBounds(
+        const gfx::Size canvasSize, const float railWidth)
+    {
+        return drawnAt(canvasSize, railWidth);
+    }
+
     gfx::RectF getCharacterPlace(
-        const gfx::Size canvasSize,
+        const gfx::RectF sheetRect,
         const std::size_t direction,
         const std::size_t frame)
     {
-        const auto height =
-            ((getCellTall() + kCellGap)
-             * static_cast<float>(kBankWays))
-            - kCellGap;
+        const auto scale = getSheetScale(sheetRect);
+        const auto cellWide = getCellWide() * scale;
+        const auto cellTall = getCellTall() * scale;
+        const auto cellGap = kCellGap * scale;
+        const auto bankGap = kBankGap * scale;
+        const auto bankWide =
+            (static_cast<float>(character::kCharacterFrames)
+             * (cellWide + cellGap))
+            - cellGap;
+        const auto gridWide =
+            (static_cast<float>(getBankCount()) * bankWide)
+            + (static_cast<float>(getBankCount() - 1) * bankGap);
+        const auto gridTall =
+            (static_cast<float>(kBankWays) * (cellTall + cellGap))
+            - cellGap;
+        const auto left =
+            sheetRect.originPoint.x
+            + ((sheetRect.size.width - gridWide) / 2.0F);
         const auto top =
-            (static_cast<float>(canvasSize.height) - height) / 2.0F;
+            sheetRect.originPoint.y
+            + ((sheetRect.size.height - gridTall) / 2.0F);
         const auto bank = direction / kBankWays;
 
         return gfx::RectF(
             gfx::PointF{
-                kSheetLeft
-                    + (static_cast<float>(bank)
-                       * (getBankWide() + kBankGap))
-                    + (static_cast<float>(frame)
-                       * (getCellWide() + kCellGap)),
+                left + (static_cast<float>(bank) * (bankWide + bankGap))
+                    + (static_cast<float>(frame) * (cellWide + cellGap)),
                 top
                     + (static_cast<float>(direction % kBankWays)
-                       * (getCellTall() + kCellGap))},
-            gfx::SizeF{getCellWide(), getCellTall()});
+                       * (cellTall + cellGap))},
+            gfx::SizeF{cellWide, cellTall});
     }
 
     std::optional<std::size_t> characterAt(
-        const gfx::Size canvasSize, const gfx::PointF point)
+        const gfx::RectF sheetRect, const gfx::PointF point)
     {
         for (std::size_t direction = 0;
              direction < character::kCharacterWays;
@@ -103,7 +155,7 @@ namespace antwika::editor
                  ++frame)
             {
                 const auto where =
-                    getCharacterPlace(canvasSize, direction, frame);
+                    getCharacterPlace(sheetRect, direction, frame);
 
                 if (point.x >= where.originPoint.x
                     && point.y >= where.originPoint.y
@@ -120,9 +172,24 @@ namespace antwika::editor
         return std::nullopt;
     }
 
-    gfx::RectF getCharacterCanvasRect(const gfx::Size canvasSize)
+    gfx::RectF getCharacterCanvasRect(const gfx::RectF drawRect)
     {
-        return drawnAt(canvasSize);
+        const auto cellWide =
+            static_cast<float>(character::kCharacterCellSize.width);
+        const auto cellTall =
+            static_cast<float>(character::kCharacterCellSize.height);
+        const auto roomTall = std::max(
+            drawRect.size.height - kPaneMargin, 0.0F);
+        const auto scale = std::min(
+            drawRect.size.width / cellWide, roomTall / cellTall);
+        const auto width = cellWide * scale;
+        const auto height = cellTall * scale;
+
+        return gfx::RectF(
+            gfx::PointF{
+                drawRect.originPoint.x + drawRect.size.width - width,
+                drawRect.originPoint.y + kPaneMargin},
+            gfx::SizeF{width, height});
     }
 
 }

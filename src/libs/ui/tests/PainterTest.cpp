@@ -18,6 +18,7 @@ using antwika::gfx::Point;
 using antwika::gfx::PointF;
 using antwika::gfx::Rect;
 using antwika::gfx::RectF;
+using antwika::gfx::TextScale;
 using antwika::gfx::mocks::MockRenderer;
 using antwika::ui::DrawList;
 using antwika::ui::DrawText;
@@ -54,14 +55,18 @@ TEST(PainterTest, Paint_DrawsTextWithItsOwnScaleAndColor)
     NiceMock<MockRenderer> renderer;
 
     EXPECT_CALL(
-        renderer, drawText(PointF{3.0F, 4.0F}, "ab", 2, kInkColor));
+        renderer, drawText(
+            PointF{3.0F, 4.0F},
+            "ab",
+            TextScale{.multiplier = 2},
+            kInkColor));
 
     paint(
         renderer,
         DrawList{DrawText{
             .originPoint = {.x = 3, .y = 4},
             .text = "ab",
-            .scale = 2,
+            .scale = {.multiplier = 2},
             .color = kInkColor}});
 }
 
@@ -72,7 +77,11 @@ TEST(PainterTest, Paint_DrawsCommandsInTheOrderTheyAreGiven)
 
     EXPECT_CALL(renderer, drawRect(RectF{kBoxRect}, kPanelColor));
     EXPECT_CALL(
-        renderer, drawText(PointF{3.0F, 4.0F}, "ab", 1, kInkColor));
+        renderer, drawText(
+            PointF{3.0F, 4.0F},
+            "ab",
+            TextScale{.multiplier = 1},
+            kInkColor));
     EXPECT_CALL(renderer, drawRect(RectF{kBoxRect}, kInkColor));
 
     paint(
@@ -82,7 +91,7 @@ TEST(PainterTest, Paint_DrawsCommandsInTheOrderTheyAreGiven)
             DrawText{
                 .originPoint = {.x = 3, .y = 4},
                 .text = "ab",
-                .scale = 1,
+                .scale = {.multiplier = 1},
                 .color = kInkColor},
             FillRect{.rect = kBoxRect, .color = kInkColor}});
 }
@@ -119,7 +128,7 @@ TEST(PainterTest, Paint_NeverClearsAndNeverPresents)
             DrawText{
                 .originPoint = {.x = 3, .y = 4},
                 .text = "ab",
-                .scale = 1,
+                .scale = {.multiplier = 1},
                 .color = kInkColor}});
 }
 

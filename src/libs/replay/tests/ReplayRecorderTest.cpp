@@ -15,6 +15,7 @@
 #include "antwika/replay/ReplayRecorder.hpp"
 
 using antwika::event::Event;
+using antwika::event::EventName;
 using antwika::event::TickEvent;
 using antwika::geometry::Size;
 using antwika::replay::ReplayFormatError;
@@ -71,7 +72,7 @@ namespace
     {
         return TickEvent{
             .tick = tick,
-            .event = Event{.name = std::string(name), .payload = "1"}};
+            .event = Event{.name = EventName{name}, .payload = "1"}};
     }
 }
 

@@ -30,9 +30,7 @@ namespace
     using antwika::decor::getWithDecorToggled;
     using antwika::decor::getWithFrameAdded;
     using antwika::decor::getWithFrameSet;
-    using antwika::decor::getFrameWidget;
     using antwika::decor::hasAnimatedDecor;
-    using antwika::decor::getMemberWidget;
 
     constexpr Tile kOneTile{.atlas = Atlas::Floor, .index = 1};
     constexpr Tile kOtherTile{.atlas = Atlas::Floor, .index = 2};
@@ -765,26 +763,6 @@ namespace
                 .frameTiles = {kOtherTile, kOneTile}}};
 
         EXPECT_TRUE(hasAnimatedDecor(decor));
-    }
-
-    TEST(DecorTest, FrameWidget_TellsOneFrameFromTheNext)
-    {
-        EXPECT_NE(getFrameWidget(0), getFrameWidget(1));
-        EXPECT_EQ(
-            static_cast<std::uint64_t>(getFrameWidget(3))
-                - static_cast<std::uint64_t>(getFrameWidget(0)),
-            3U);
-        EXPECT_NE(getFrameWidget(0), antwika::decor::kFrameAddWidget);
-    }
-
-    TEST(DecorTest, MemberWidget_TellsOneMemberFromTheNext)
-    {
-        EXPECT_NE(getMemberWidget(0), getMemberWidget(1));
-        EXPECT_EQ(
-            static_cast<std::uint64_t>(getMemberWidget(2))
-                - static_cast<std::uint64_t>(getMemberWidget(0)),
-            2U);
-        EXPECT_NE(getMemberWidget(0), getFrameWidget(0));
     }
 
 }

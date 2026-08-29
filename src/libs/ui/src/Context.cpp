@@ -177,8 +177,9 @@ namespace antwika::ui
             .widthSizing = kFitSizing,
             .heightSizing = kFitSizing,
             .text = std::string{text}, // GCOVR_EXCL_LINE
-            .textScale = antwika::gfx::getEncodeTextScale(
-                themeValue.face, themeValue.textScale),
+            .textScale = antwika::gfx::TextScale{
+                .face = themeValue.face,
+                .multiplier = themeValue.textScale},
             .textColor = color});
     }
 
@@ -222,9 +223,17 @@ namespace antwika::ui
         }
         else
         {
-            spacer(kGrowSizing);
+            if (spec.labelAlignment != Alignment::Start)
+            {
+                spacer(kGrowSizing);
+            }
+
             label(text, themeValue.buttonTextColor);
-            spacer(kGrowSizing);
+
+            if (spec.labelAlignment != Alignment::End)
+            {
+                spacer(kGrowSizing);
+            }
         }
 
         closeContainer();
@@ -383,8 +392,16 @@ namespace antwika::ui
             .overlayRects = occludersOf(*tree)};
     }
 
-    void Context::closeContainer() noexcept
+    void Context::closeContainer()
     {
+        if (!openScrolls.empty()
+            && tree->getOpenIndex() == openScrolls.back().viewport)
+        {
+            finishScrollColumn();
+
+            return;
+        }
+
         tree->close();
     }
 

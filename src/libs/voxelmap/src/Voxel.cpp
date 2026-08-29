@@ -16,6 +16,7 @@
 
 #include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/tilemap/TileEdges.hpp>
+#include <antwika/voxelmap/VoxelBounds.hpp>
 
 #include "VoxelDetail.hpp"
 
@@ -33,29 +34,43 @@ namespace antwika::voxelmap
 
         [[nodiscard]] gfx::Vec3 middleOf(const voxel::Voxels &voxels)
         {
-            if (voxels.empty())
-            {
-                return gfx::Vec3{0.0F, 0.0F, 0.0F};
-            }
-
-            auto lowest = voxels.begin()->first;
-            auto highest = voxels.begin()->first;
-
-            for (const auto &[position, material] : voxels)
-            {
-                lowest.x = std::min(lowest.x, position.x);
-                lowest.y = std::min(lowest.y, position.y);
-                lowest.z = std::min(lowest.z, position.z);
-                highest.x = std::max(highest.x, position.x);
-                highest.y = std::max(highest.y, position.y);
-                highest.z = std::max(highest.z, position.z);
-            }
+            const auto bounds = boundsOf(voxels);
 
             return gfx::Vec3{
-                static_cast<float>(lowest.x + highest.x) / 2.0F,
-                static_cast<float>(lowest.y + highest.y) / 2.0F,
-                static_cast<float>(lowest.z + highest.z) / 2.0F};
+                static_cast<float>(
+                    bounds.lowestPosition.x + bounds.highestPosition.x)
+                    / 2.0F,
+                static_cast<float>(
+                    bounds.lowestPosition.y + bounds.highestPosition.y)
+                    / 2.0F,
+                static_cast<float>(
+                    bounds.lowestPosition.z + bounds.highestPosition.z)
+                    / 2.0F};
         }
+    }
+
+    VoxelBounds boundsOf(const voxel::Voxels &voxels)
+    {
+        if (voxels.empty())
+        {
+            return VoxelBounds{};
+        }
+
+        auto lowest = voxels.begin()->first;
+        auto highest = voxels.begin()->first;
+
+        for (const auto &[position, material] : voxels)
+        {
+            lowest.x = std::min(lowest.x, position.x);
+            lowest.y = std::min(lowest.y, position.y);
+            lowest.z = std::min(lowest.z, position.z);
+            highest.x = std::max(highest.x, position.x);
+            highest.y = std::max(highest.y, position.y);
+            highest.z = std::max(highest.z, position.z);
+        }
+
+        return VoxelBounds{
+            .lowestPosition = lowest, .highestPosition = highest};
     }
 
     std::int32_t levelOf(const voxel::VoxelPosition position)
@@ -65,36 +80,12 @@ namespace antwika::voxelmap
 
     std::int32_t getTopLevel(const voxel::Voxels &voxels)
     {
-        if (voxels.empty())
-        {
-            return 0;
-        }
-
-        auto highest = levelOf(voxels.begin()->first);
-
-        for (const auto &[position, material] : voxels)
-        {
-            highest = std::max(highest, levelOf(position));
-        }
-
-        return highest;
+        return boundsOf(voxels).highestPosition.y;
     }
 
     std::int32_t getBottomLevel(const voxel::Voxels &voxels)
     {
-        if (voxels.empty())
-        {
-            return 0;
-        }
-
-        auto lowest = levelOf(voxels.begin()->first);
-
-        for (const auto &[position, material] : voxels)
-        {
-            lowest = std::min(lowest, levelOf(position));
-        }
-
-        return lowest;
+        return boundsOf(voxels).lowestPosition.y;
     }
 
     std::vector<tilemap::Tile> getDefaultTiles(

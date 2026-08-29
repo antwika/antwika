@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <optional>
+
 #include <antwika/character/CharacterMarks.hpp>
 #include <antwika/geometry/Grid.hpp>
 #include <antwika/gfx/Bitmap.hpp>

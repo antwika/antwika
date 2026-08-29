@@ -28,7 +28,7 @@ namespace antwika::editor
 
         render::LightPasses &lightPasses;
 
-        render::CharacterSkins &rosterSkins;
+        render::CharacterSkins &characterSkins;
     };
 
 }

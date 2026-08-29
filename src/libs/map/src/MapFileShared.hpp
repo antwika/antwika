@@ -7,24 +7,27 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <exception>
 #include <memory>
 #include <set>
 #include <span>
 #include <sstream>
 #include <utility>
+#include <vector>
 
 #include <antwika/tilemap/AtlasLayout.hpp>
 #include <antwika/io/File.hpp>
 #include <antwika/schema/JsonSchemas.hpp>
 #include <antwika/schema/IMigration.hpp>
 #include <antwika/schema/MigrationChain.hpp>
+#include <antwika/schema/MigrationRow.hpp>
 #include <antwika/schema/SchemaVersion.hpp>
+#include <antwika/schema/Step.hpp>
 #include <antwika/schema/VersionedDocument.hpp>
 #include <antwika/tile/TilePaint.hpp>
 
 #include <antwika/enums/NameTable.hpp>
-#include <antwika/character/Character.hpp>
 #include <antwika/map/MapFile.hpp>
 #include <antwika/map/MapFileError.hpp>
 #include <antwika/voxel/VoxelStairs.hpp>
@@ -69,6 +72,8 @@ namespace antwika::map::mapfile
     constexpr std::string_view kWalkerKey = "walker";
 
     constexpr std::string_view kWayKey = "way";
+
+    constexpr int kWayCount = 8;
 
     constexpr std::string_view kAtKey = "at";
 
@@ -165,24 +170,6 @@ namespace antwika::map::mapfile
 
     constexpr std::string_view kViewKey = "view";
 
-    inline constexpr enums::NameTable<Tool> kToolNames{
-        {"brush",
-         "picker",
-         "lamp",
-         "start",
-         "exit",
-         "stamp",
-         "figure",
-         "plate",
-         "key",
-         "door",
-         "checkpoint",
-         "food",
-         "water",
-         "eraser"}};
-
-    static_assert(kToolNames.isComplete());
-
     constexpr std::string_view kFiguresKey = "figures";
 
     constexpr std::string_view kCharactersKey =
@@ -197,16 +184,6 @@ namespace antwika::map::mapfile
     constexpr std::string_view kPlatesKey = "plates";
 
     constexpr std::string_view kSwaysKey = "sways";
-
-    inline constexpr enums::NameTable<Paint> kDrawingNames{
-        {"brush", "line", "fill", "mark", "rect", "circle"}};
-
-    static_assert(kDrawingNames.isComplete());
-
-    inline constexpr enums::NameTable<View> kViewNames{
-        {"world", "atlases", "character", "icons", "plan"}};
-
-    static_assert(kViewNames.isComplete());
 
     constexpr std::string_view kTilesetKey = "tileset";
 
@@ -338,21 +315,6 @@ namespace antwika::map::mapfile
         return kPartNames.getName(part);
     }
 
-    [[nodiscard]] inline std::string_view nameOf(const Tool tool)
-    {
-        return kToolNames.getName(tool);
-    }
-
-    [[nodiscard]] inline std::string_view nameOf(const Paint paint)
-    {
-        return kDrawingNames.getName(paint);
-    }
-
-    [[nodiscard]] inline std::string_view nameOf(const View view)
-    {
-        return kViewNames.getName(view);
-    }
-
     template <typename Enum>
     [[nodiscard]] inline Enum enumFromName(
         const enums::NameTable<Enum> &names, const std::string &text)
@@ -421,8 +383,6 @@ namespace antwika::map::mapfile
         return shape;
     } // GCOVR_EXCL_LINE
 
-    [[nodiscard]] nlohmann::json getPlateSchema();
-
     [[nodiscard]] nlohmann::json getMarkedCubeSchema();
 
     [[nodiscard]] inline nlohmann::json jsonOf(
@@ -461,10 +421,20 @@ namespace antwika::map::mapfile
 
     [[nodiscard]] schema::MigrationChain getMapMigrations();
 
-    void earlyMapMigrations(schema::MigrationList &migrations);
+    using schema::createEmptyArrays;
+    using schema::MigrationRow;
+    using schema::pushMigrations;
 
-    void lateMapMigrations(schema::MigrationList &migrations);
+    void mapMigrationsV1To12(schema::MigrationList &migrations);
 
-    void newestMapMigrations(schema::MigrationList &migrations);
+    void mapMigrationsV12To22(schema::MigrationList &migrations);
+
+    void mapMigrationsV22To30(schema::MigrationList &migrations);
+
+    void mapMigrationsV30To47(schema::MigrationList &migrations);
+
+    void mapMigrationsV47To48(schema::MigrationList &migrations);
+
+    void mapMigrationsV48To51(schema::MigrationList &migrations);
 
 }

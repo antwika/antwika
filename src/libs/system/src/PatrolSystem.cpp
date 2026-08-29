@@ -4,7 +4,7 @@
 
 #include <antwika/component/Patrol.hpp>
 #include <antwika/component/Position.hpp>
-#include <antwika/component/RosterIndex.hpp>
+#include <antwika/component/CharacterIndex.hpp>
 #include <antwika/component/Velocity.hpp>
 #include <antwika/pathfinding/Path.hpp>
 #include <antwika/collision/Collision.hpp>
@@ -15,21 +15,12 @@ namespace antwika::system
 
     PatrolSystem::PatrolSystem(
         const voxel::Voxels &solidVoxels,
-        const std::vector<std::vector<voxel::VoxelPosition>> &stopPositions)
-        noexcept
-        : solidVoxels(&solidVoxels), stopPositions(&stopPositions)
+        const std::vector<std::vector<voxel::VoxelPosition>> &stopPositions,
+        const SimulationState &simulation) noexcept
+        : solidVoxels(&solidVoxels),
+          stopPositions(&stopPositions),
+          simulation(&simulation)
     {
-    }
-
-    void PatrolSystem::setFrozen(const bool value) noexcept
-    {
-        frozen = value;
-    }
-
-    void PatrolSystem::setSpeaking(
-        const std::optional<std::uint32_t> entityId) noexcept
-    {
-        speaking = entityId;
     }
 
     void PatrolSystem::forget() noexcept
@@ -44,14 +35,15 @@ namespace antwika::system
                  component::Position,
                  component::Velocity,
                  component::Patrol,
-                 component::RosterIndex>())
+                 component::CharacterIndex>())
         {
-            const auto rosterIndex =
-            world.get<component::RosterIndex>(entity).index;
+            const auto characterIndex =
+            world.get<component::CharacterIndex>(entity).index;
             const auto stoppedWalking =
-                frozen || speaking == rosterIndex
-                || rosterIndex >= stopPositions->size()
-                || stopPositions->at(rosterIndex).empty();
+                simulation->simulationPaused
+                || simulation->speaking == characterIndex
+                || characterIndex >= stopPositions->size()
+                || stopPositions->at(characterIndex).empty();
 
             if (stoppedWalking)
             {
@@ -60,7 +52,7 @@ namespace antwika::system
                 continue;
             }
 
-            const auto &stopRound = stopPositions->at(rosterIndex);
+            const auto &stopRound = stopPositions->at(characterIndex);
             auto patrolState = world.get<component::Patrol>(entity);
             auto &route = routePositions[entity];
 
@@ -124,7 +116,7 @@ namespace antwika::system
                 for (const auto &stop : *walk)
                 {
                     route.push_back(
-                        gfx::Vec3{
+                        geometry::Vec3{
                             static_cast<float>(stop.x),
                             0.0F,
                             static_cast<float>(stop.z)});

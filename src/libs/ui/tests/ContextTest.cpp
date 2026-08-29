@@ -73,12 +73,12 @@ TEST(ContextTest, Column_StacksItsChildrenDownwards)
             DrawText{
                 .originPoint = {.x = 0, .y = 0},
                 .text = "ab",
-                .scale = 1,
+                .scale = {.multiplier = 1},
                 .color = kInkColor},
             DrawText{
                 .originPoint = {.x = 0, .y = 8},
                 .text = "cd",
-                .scale = 1,
+                .scale = {.multiplier = 1},
                 .color = kInkColor}}),
         uiContext.build().drawList);
 }
@@ -98,7 +98,7 @@ TEST(ContextTest, Context_PutsTheThemeGapBetweenChildren)
         (DrawText{
             .originPoint = {.x = 0, .y = 13},
             .text = "cd",
-            .scale = 1,
+            .scale = {.multiplier = 1},
             .color = kInkColor}),
         std::get<DrawText>(commands.at(1)));
 }
@@ -122,7 +122,7 @@ TEST(ContextTest, Context_PrefersAGapAskedForOverTheThemes)
         (DrawText{
             .originPoint = {.x = 0, .y = 11},
             .text = "cd",
-            .scale = 1,
+            .scale = {.multiplier = 1},
             .color = kInkColor}),
         std::get<DrawText>(commands.at(1)));
 }
@@ -139,7 +139,7 @@ TEST(ContextTest, Build_GivesTheSameAnswerTwice)
         (DrawList{DrawText{
             .originPoint = {.x = 0, .y = 0},
             .text = "ab",
-            .scale = 1,
+            .scale = {.multiplier = 1},
             .color = kInkColor}}),
         first);
     EXPECT_EQ(first, uiContext.build().drawList);

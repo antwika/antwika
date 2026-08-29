@@ -4,6 +4,8 @@
 
 #include "antwika/editor/Editor.hpp"
 
+#include "antwika/editor/ui/WidgetIds.hpp"
+
 namespace antwika::editor
 {
 
@@ -74,34 +76,6 @@ namespace antwika::editor
         rebuildWorld();
     }
 
-    bool Editor::variantWidgets(
-        const ui::Interactions &interactions)
-    {
-        auto consumedKey = false;
-
-        if (interactions.activatedWidget
-            == decor::kVariantChoiceWidget)
-        {
-            const auto was = assignMode.variantPicking;
-
-            clearAssignModes();
-            assignMode.variantPicking = !was;
-            consumedKey = true;
-        }
-
-        if (interactions.activatedWidget
-                == decor::kGoToCanonicalWidget
-            && stroke.selectedTile.has_value())
-        {
-            stroke.selectedTile = canonicalTileOf(document.map.familyGroups,
-                *stroke.selectedTile);
-            assignMode.variantPicking = false;
-            consumedKey = true;
-        }
-
-        return consumedKey;
-    }
-
     void Editor::layoutVariantRail(ui::Context &context)
     {
         const auto *family =
@@ -119,7 +93,7 @@ namespace antwika::editor
             context.button(
                 "variant of",
                 antwika::ui::ButtonSpec{
-                    .widgetId = decor::kGoToCanonicalWidget,
+                    .widgetId = kGoToCanonicalWidget,
                     .widthSizing = antwika::ui::kGrowSizing});
         }
         else
@@ -127,7 +101,7 @@ namespace antwika::editor
             context.checkbox(
                 "pick variants",
                 antwika::ui::CheckboxSpec{
-                    .widgetId = decor::kVariantChoiceWidget,
+                    .widgetId = kVariantChoiceWidget,
                     .checked = assignMode.variantPicking});
         }
 
@@ -141,13 +115,12 @@ namespace antwika::editor
                 kTextColor);
             context.slider(
                 antwika::ui::SliderSpec{
-                    .widgetId = decor::kVariantWeightWidget,
+                    .widgetId = kVariantWeightWidget,
                     .value = variantWeightOf(*stroke.selectedTile),
                     .range = decor::kFullFrequency,
                     .dragging =
                         slidingWidget
-                        == decor::
-                            kVariantWeightWidget});
+                        == kVariantWeightWidget});
         }
     }
 

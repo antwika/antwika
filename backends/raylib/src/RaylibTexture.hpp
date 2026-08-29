@@ -5,12 +5,14 @@
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/Size.hpp>
 
+#include "RaylibResource.hpp"
+
 namespace antwika::gfx::raylib
 {
 
     class RaylibRenderer;
 
-    class RaylibTexture final : public ITexture
+    class RaylibTexture final : public ITexture, public RaylibResource
     {
     public:
         RaylibTexture(
@@ -19,32 +21,17 @@ namespace antwika::gfx::raylib
             Size size,
             bool owns = true);
 
-        RaylibTexture(const RaylibTexture &) = delete;
-        RaylibTexture(RaylibTexture &&) = delete;
-
-        RaylibTexture &operator=(const RaylibTexture &) = delete;
-        RaylibTexture &operator=(RaylibTexture &&) = delete;
-
         ~RaylibTexture() override;
 
         [[nodiscard]] Size getSize() const override;
 
-        [[nodiscard]] bool isOwnedBy(
-            const RaylibRenderer &candidateRenderer) const noexcept;
-
         [[nodiscard]] const ::Texture2D &getRawHandle() const noexcept;
 
-        [[nodiscard]] bool isLoaded() const noexcept;
-
-        [[nodiscard]] bool isOwned() const noexcept;
-
-        void untrackRenderer() noexcept;
-
     private:
-        RaylibRenderer *owner;
+        void unloadHandle() noexcept override;
+
         ::Texture2D texture;
         Size textureSize;
-        bool loaded = true;
         bool owned = true;
     };
 

@@ -1,8 +1,378 @@
 {
-  "line_covered": 13964,
-  "line_total": 20907,
-  "function_covered": 2653,
-  "function_total": 3246,
-  "branch_covered": 10810,
-  "branch_total": 17897
+  "line_covered": 18499,
+  "line_total": 22807,
+  "function_covered": 4319,
+  "function_total": 4604,
+  "branch_covered": 13550,
+  "branch_total": 18483,
+  "libraries": {
+    "backends/raylib": {
+      "line_covered": 832,
+      "line_total": 1072,
+      "function_covered": 138,
+      "function_total": 157,
+      "branch_covered": 381,
+      "branch_total": 571
+    },
+    "src/apps/editor": {
+      "line_covered": 4256,
+      "line_total": 7680,
+      "function_covered": 558,
+      "function_total": 740,
+      "branch_covered": 2811,
+      "branch_total": 6355
+    },
+    "src/apps/game": {
+      "line_covered": 14,
+      "line_total": 277,
+      "function_covered": 1,
+      "function_total": 23,
+      "branch_covered": 22,
+      "branch_total": 226
+    },
+    "src/libs/animation": {
+      "line_covered": 82,
+      "line_total": 82,
+      "function_covered": 16,
+      "function_total": 16,
+      "branch_covered": 59,
+      "branch_total": 59
+    },
+    "src/libs/app": {
+      "line_covered": 419,
+      "line_total": 425,
+      "function_covered": 74,
+      "function_total": 74,
+      "branch_covered": 268,
+      "branch_total": 272
+    },
+    "src/libs/assets": {
+      "line_covered": 74,
+      "line_total": 88,
+      "function_covered": 9,
+      "function_total": 10,
+      "branch_covered": 77,
+      "branch_total": 88
+    },
+    "src/libs/camera": {
+      "line_covered": 73,
+      "line_total": 84,
+      "function_covered": 15,
+      "function_total": 16,
+      "branch_covered": 21,
+      "branch_total": 28
+    },
+    "src/libs/character": {
+      "line_covered": 268,
+      "line_total": 271,
+      "function_covered": 33,
+      "function_total": 33,
+      "branch_covered": 109,
+      "branch_total": 118
+    },
+    "src/libs/cli": {
+      "line_covered": 62,
+      "line_total": 62,
+      "function_covered": 9,
+      "function_total": 9,
+      "branch_covered": 53,
+      "branch_total": 53
+    },
+    "src/libs/collision": {
+      "line_covered": 183,
+      "line_total": 185,
+      "function_covered": 24,
+      "function_total": 24,
+      "branch_covered": 100,
+      "branch_total": 108
+    },
+    "src/libs/component": {
+      "line_covered": 43,
+      "line_total": 43,
+      "function_covered": 14,
+      "function_total": 14,
+      "branch_covered": 59,
+      "branch_total": 62
+    },
+    "src/libs/decor": {
+      "line_covered": 690,
+      "line_total": 711,
+      "function_covered": 67,
+      "function_total": 67,
+      "branch_covered": 560,
+      "branch_total": 651
+    },
+    "src/libs/ecs": {
+      "line_covered": 395,
+      "line_total": 407,
+      "function_covered": 1254,
+      "function_total": 1261,
+      "branch_covered": 204,
+      "branch_total": 223
+    },
+    "src/libs/engine": {
+      "line_covered": 33,
+      "line_total": 33,
+      "function_covered": 8,
+      "function_total": 8,
+      "branch_covered": 15,
+      "branch_total": 15
+    },
+    "src/libs/enums": {
+      "line_covered": 30,
+      "line_total": 30,
+      "function_covered": 70,
+      "function_total": 81,
+      "branch_covered": 19,
+      "branch_total": 19
+    },
+    "src/libs/event": {
+      "line_covered": 82,
+      "line_total": 84,
+      "function_covered": 23,
+      "function_total": 24,
+      "branch_covered": 40,
+      "branch_total": 43
+    },
+    "src/libs/font": {
+      "line_covered": 271,
+      "line_total": 271,
+      "function_covered": 46,
+      "function_total": 46,
+      "branch_covered": 171,
+      "branch_total": 171
+    },
+    "src/libs/gameplay": {
+      "line_covered": 298,
+      "line_total": 327,
+      "function_covered": 86,
+      "function_total": 92,
+      "branch_covered": 152,
+      "branch_total": 185
+    },
+    "src/libs/geometry": {
+      "line_covered": 112,
+      "line_total": 112,
+      "function_covered": 24,
+      "function_total": 24,
+      "branch_covered": 72,
+      "branch_total": 72
+    },
+    "src/libs/gfx": {
+      "line_covered": 813,
+      "line_total": 847,
+      "function_covered": 175,
+      "function_total": 185,
+      "branch_covered": 358,
+      "branch_total": 377
+    },
+    "src/libs/image": {
+      "line_covered": 66,
+      "line_total": 66,
+      "function_covered": 10,
+      "function_total": 10,
+      "branch_covered": 39,
+      "branch_total": 39
+    },
+    "src/libs/input": {
+      "line_covered": 634,
+      "line_total": 634,
+      "function_covered": 144,
+      "function_total": 144,
+      "branch_covered": 425,
+      "branch_total": 428
+    },
+    "src/libs/io": {
+      "line_covered": 156,
+      "line_total": 160,
+      "function_covered": 39,
+      "function_total": 39,
+      "branch_covered": 130,
+      "branch_total": 142
+    },
+    "src/libs/light": {
+      "line_covered": 109,
+      "line_total": 111,
+      "function_covered": 21,
+      "function_total": 21,
+      "branch_covered": 72,
+      "branch_total": 81
+    },
+    "src/libs/loadout": {
+      "line_covered": 243,
+      "line_total": 248,
+      "function_covered": 156,
+      "function_total": 156,
+      "branch_covered": 410,
+      "branch_total": 434
+    },
+    "src/libs/log": {
+      "line_covered": 4,
+      "line_total": 4,
+      "function_covered": 4,
+      "function_total": 4,
+      "branch_covered": 0,
+      "branch_total": 0
+    },
+    "src/libs/map": {
+      "line_covered": 1437,
+      "line_total": 1517,
+      "function_covered": 405,
+      "function_total": 422,
+      "branch_covered": 1854,
+      "branch_total": 2202
+    },
+    "src/libs/pathfinding": {
+      "line_covered": 45,
+      "line_total": 45,
+      "function_covered": 6,
+      "function_total": 6,
+      "branch_covered": 60,
+      "branch_total": 60
+    },
+    "src/libs/render": {
+      "line_covered": 521,
+      "line_total": 552,
+      "function_covered": 57,
+      "function_total": 60,
+      "branch_covered": 309,
+      "branch_total": 357
+    },
+    "src/libs/replay": {
+      "line_covered": 288,
+      "line_total": 288,
+      "function_covered": 44,
+      "function_total": 44,
+      "branch_covered": 263,
+      "branch_total": 263
+    },
+    "src/libs/rng": {
+      "line_covered": 14,
+      "line_total": 14,
+      "function_covered": 5,
+      "function_total": 5,
+      "branch_covered": 0,
+      "branch_total": 0
+    },
+    "src/libs/rules": {
+      "line_covered": 98,
+      "line_total": 99,
+      "function_covered": 19,
+      "function_total": 19,
+      "branch_covered": 60,
+      "branch_total": 61
+    },
+    "src/libs/schema": {
+      "line_covered": 198,
+      "line_total": 198,
+      "function_covered": 38,
+      "function_total": 38,
+      "branch_covered": 156,
+      "branch_total": 156
+    },
+    "src/libs/solver": {
+      "line_covered": 502,
+      "line_total": 549,
+      "function_covered": 53,
+      "function_total": 54,
+      "branch_covered": 493,
+      "branch_total": 623
+    },
+    "src/libs/sound": {
+      "line_covered": 304,
+      "line_total": 304,
+      "function_covered": 55,
+      "function_total": 55,
+      "branch_covered": 207,
+      "branch_total": 207
+    },
+    "src/libs/system": {
+      "line_covered": 233,
+      "line_total": 233,
+      "function_covered": 20,
+      "function_total": 20,
+      "branch_covered": 157,
+      "branch_total": 161
+    },
+    "src/libs/testing": {
+      "line_covered": 53,
+      "line_total": 58,
+      "function_covered": 14,
+      "function_total": 14,
+      "branch_covered": 25,
+      "branch_total": 33
+    },
+    "src/libs/text": {
+      "line_covered": 225,
+      "line_total": 225,
+      "function_covered": 24,
+      "function_total": 24,
+      "branch_covered": 114,
+      "branch_total": 114
+    },
+    "src/libs/tile": {
+      "line_covered": 538,
+      "line_total": 567,
+      "function_covered": 86,
+      "function_total": 87,
+      "branch_covered": 363,
+      "branch_total": 426
+    },
+    "src/libs/tilemap": {
+      "line_covered": 113,
+      "line_total": 114,
+      "function_covered": 19,
+      "function_total": 19,
+      "branch_covered": 59,
+      "branch_total": 64
+    },
+    "src/libs/time": {
+      "line_covered": 2,
+      "line_total": 2,
+      "function_covered": 2,
+      "function_total": 2,
+      "branch_covered": 0,
+      "branch_total": 0
+    },
+    "src/libs/ui": {
+      "line_covered": 1597,
+      "line_total": 1602,
+      "function_covered": 187,
+      "function_total": 188,
+      "branch_covered": 1102,
+      "branch_total": 1123
+    },
+    "src/libs/voxel": {
+      "line_covered": 496,
+      "line_total": 504,
+      "function_covered": 73,
+      "function_total": 74,
+      "branch_covered": 441,
+      "branch_total": 471
+    },
+    "src/libs/voxelmap": {
+      "line_covered": 516,
+      "line_total": 534,
+      "function_covered": 58,
+      "function_total": 59,
+      "branch_covered": 345,
+      "branch_total": 378
+    },
+    "src/libs/wfc": {
+      "line_covered": 321,
+      "line_total": 321,
+      "function_covered": 49,
+      "function_total": 49,
+      "branch_covered": 259,
+      "branch_total": 259
+    },
+    "src/libs/worldgen": {
+      "line_covered": 756,
+      "line_total": 767,
+      "function_covered": 87,
+      "function_total": 87,
+      "branch_covered": 656,
+      "branch_total": 705
+    }
+  }
 }

@@ -16,6 +16,7 @@ add_executable(antwika_ui_tests
     DoubleClickTest.cpp
     DrawCommandTest.cpp
     DropdownTest.cpp
+    EdgeTest.cpp
     FieldValueTest.cpp
     HoverHintTest.cpp
     HoverTest.cpp
@@ -28,6 +29,7 @@ add_executable(antwika_ui_tests
     ResolveFocusTest.cpp
     ResolveHitTest.cpp
     ResolveTest.cpp
+    ScrollColumnTest.cpp
     SizingTest.cpp
     SliderTest.cpp
     SplitTest.cpp

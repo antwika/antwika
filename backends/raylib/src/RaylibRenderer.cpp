@@ -16,19 +16,14 @@
 
 #include "RaylibFrame.hpp"
 #include "RaylibMaterial.hpp"
-#include "RaylibMesh.hpp"
-#include "RaylibRenderTarget.hpp"
 #include "RaylibRendererDetail.hpp"
-#include "RaylibShader.hpp"
-#include "RaylibTexture.hpp"
+#include "RaylibResource.hpp"
 
 namespace antwika::gfx::raylib
 {
 
     namespace
     {
-        constexpr std::size_t kMaxTransformDepth = 32;
-
         struct ImageCloser final
         {
             void operator()(::Image *image) const noexcept
@@ -120,17 +115,23 @@ namespace antwika::gfx::raylib
         }
 
         EndScissorMode();
+        applyClipScissor();
+    }
 
-        if (!clipRects.empty())
+    void RaylibRenderer::applyClipScissor()
+    {
+        if (!drawing || clipRects.empty())
         {
-            const auto &clip = clipRects.back();
-
-            BeginScissorMode(
-                static_cast<int>(clip.originPoint.x),
-                static_cast<int>(clip.originPoint.y),
-                static_cast<int>(clip.size.width),
-                static_cast<int>(clip.size.height));
+            return;
         }
+
+        const auto &clip = clipRects.back();
+
+        BeginScissorMode(
+            static_cast<int>(clip.originPoint.x),
+            static_cast<int>(clip.originPoint.y),
+            static_cast<int>(clip.size.width),
+            static_cast<int>(clip.size.height));
     }
 
     void RaylibRenderer::pushTransform(const Mat4 &transform)
@@ -239,41 +240,13 @@ namespace antwika::gfx::raylib
             return;
         }
 
-        for (RaylibRenderTarget *target : liveTargets)
+        for (RaylibResource *resource : liveResources)
         {
-            target->unload();
-            target->untrackRenderer();
+            resource->unload();
+            resource->untrackRenderer();
         }
 
-        liveTargets.clear();
-
-        for (RaylibTexture *texture : liveTextures)
-        {
-            if (texture->isOwned())
-            {
-                UnloadTexture(texture->getRawHandle());
-            }
-
-            texture->untrackRenderer();
-        }
-
-        liveTextures.clear();
-
-        for (RaylibMesh *mesh : liveMeshes)
-        {
-            UnloadMesh(mesh->getRawHandle());
-            mesh->untrackRenderer();
-        }
-
-        liveMeshes.clear();
-
-        for (RaylibShader *shader : liveShaders)
-        {
-            UnloadShader(shader->getRawHandle());
-            shader->untrackRenderer();
-        }
-
-        liveShaders.clear();
+        liveResources.clear();
         uniformLocations.clear();
 
         material.reset();

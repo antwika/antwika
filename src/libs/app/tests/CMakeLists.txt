@@ -16,6 +16,7 @@ add_executable(antwika_app_tests
     RunRecordedTest.cpp
     SpawnDetachedTest.cpp
     TickDebtTest.cpp
+    TickEventSourceConformanceTest.cpp
     TickLimitSourceTest.cpp
     WavFileTest.cpp
     WindowCloseSourceTest.cpp
@@ -29,6 +30,9 @@ target_link_libraries(antwika_app_tests
     PRIVATE
         antwika::app
         antwika::app::tests::fakes
+        antwika::event::tests::conformance
+        antwika::event::tests::fakes
+        antwika::gfx
         antwika::gfx::tests::mocks
         antwika::input::tests::fakes
         antwika::log::tests::mocks

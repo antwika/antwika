@@ -1,18 +1,28 @@
 #pragma once
 
+#include <antwika/event/EventName.hpp>
+#include <antwika/event/EventNameSeeds.hpp>
+
 namespace antwika::input::events
 {
 
-    inline constexpr const char *kKeyDown = "input.key_down";
+    inline constexpr antwika::event::EventName kKeyDown =
+        antwika::event::EventName::getSeeded(antwika::event::kKeyDownText);
 
-    inline constexpr const char *kKeyUp = "input.key_up";
+    inline constexpr antwika::event::EventName kKeyUp =
+        antwika::event::EventName::getSeeded(antwika::event::kKeyUpText);
 
-    inline constexpr const char *kPointerMove = "input.pointer_move";
+    inline constexpr antwika::event::EventName kPointerMove =
+        antwika::event::EventName::getSeeded(antwika::event::kPointerMoveText);
 
-    inline constexpr const char *kPointerDown = "input.pointer_down";
+    inline constexpr antwika::event::EventName kPointerDown =
+        antwika::event::EventName::getSeeded(antwika::event::kPointerDownText);
 
-    inline constexpr const char *kPointerUp = "input.pointer_up";
+    inline constexpr antwika::event::EventName kPointerUp =
+        antwika::event::EventName::getSeeded(antwika::event::kPointerUpText);
 
-    inline constexpr const char *kPointerScroll = "input.pointer_scroll";
+    inline constexpr antwika::event::EventName kPointerScroll =
+        antwika::event::EventName::getSeeded(
+            antwika::event::kPointerScrollText);
 
 }

@@ -2,6 +2,7 @@
 
 #include <antwika/component/Inventory.hpp>
 #include <antwika/component/Item.hpp>
+
 #include "antwika/rules/Items.hpp"
 
 using antwika::component::Inventory;

@@ -4,6 +4,8 @@
 
 #include "antwika/editor/Editor.hpp"
 
+#include "antwika/editor/ui/WidgetIds.hpp"
+
 namespace antwika::editor
 {
 
@@ -12,68 +14,6 @@ namespace antwika::editor
         return isAnyTileAnimated(document.map.flipAnimations)
                && tick % decor::kDecorPaceTick == 0
                && !stroke.active;
-    }
-
-    bool Editor::flipWidgets(
-        const ui::Interactions &interactions)
-    {
-        auto consumedKey = false;
-
-        if (interactions.activatedWidget
-                == decor::kToggleAnimationWidget
-            && stroke.selectedTile.has_value())
-        {
-            pushUndo();
-            document.map.flipAnimations =
-                getWithAnimationToggled(document.map.flipAnimations,
-                    *stroke.selectedTile);
-            assignMode.flipFramePicked = 0;
-            assignMode.flipFrameAssigning = false;
-            atlasSheets.touch();
-            consumedKey = true;
-        }
-
-        for (std::size_t frame = 0;
-             frame < decor::kMaxDecorFrames;
-             ++frame)
-        {
-            if (interactions.activatedWidget
-                != decor::getFlipFrameWidget(frame))
-            {
-                continue;
-            }
-
-            clearAssignModes();
-            assignMode.flipFramePicked = frame;
-            assignMode.flipFrameAssigning = frame > 0;
-            consumedKey = true;
-        }
-
-        if (interactions.activatedWidget
-                == decor::kAddFrameWidget
-            && stroke.selectedTile.has_value())
-        {
-            pushUndo();
-            document.map.flipAnimations =
-                getWithAnimationFrameAdded(document.map.flipAnimations,
-                    *stroke.selectedTile);
-
-            const auto *animation =
-                animationOf(document.map.flipAnimations, *stroke.selectedTile);
-
-            if (animation != nullptr && !animation->frameTiles.empty())
-            {
-                assignMode.flipFramePicked =
-                    animation->frameTiles.size() - 1;
-                assignMode.flipFrameAssigning =
-                    assignMode.flipFramePicked > 0;
-            }
-
-            atlasSheets.touch();
-            consumedKey = true;
-        }
-
-        return consumedKey;
     }
 
     void Editor::layoutFlipRail(ui::Context &context)
@@ -90,7 +30,7 @@ namespace antwika::editor
         context.checkbox(
             "animated",
             antwika::ui::CheckboxSpec{
-                .widgetId = decor::kToggleAnimationWidget,
+                .widgetId = kToggleAnimationWidget,
                 .checked = animation != nullptr});
 
         if (animation == nullptr)
@@ -110,7 +50,7 @@ namespace antwika::editor
                 context.button(
                     std::to_string(frame + 1),
                     antwika::ui::ButtonSpec{
-                        .widgetId = decor::getFlipFrameWidget(
+                        .widgetId = getFlipFrameWidget(
                             frame),
                         .fillColor = frame == assignMode.flipFramePicked
                                    ? kSelectionAccentColor
@@ -123,8 +63,7 @@ namespace antwika::editor
                 context.button(
                     "+",
                     antwika::ui::ButtonSpec{
-                        .widgetId = decor::
-                            kAddFrameWidget});
+                        .widgetId = kAddFrameWidget});
             }
         }
 

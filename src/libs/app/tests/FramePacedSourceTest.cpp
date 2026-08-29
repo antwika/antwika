@@ -35,6 +35,7 @@ namespace antwika::app
         using antwika::app::fakes::FakeTimedPass;
         using antwika::app::fakes::PacingStep;
         using antwika::event::Event;
+using antwika::event::EventName;
         using antwika::event::TickEvent;
         using antwika::replay::ReplaySource;
         using antwika::time::fakes::FakeClock;
@@ -49,8 +50,8 @@ namespace antwika::app
         [[nodiscard]] std::vector<TickEvent> getScriptedSource()
         {
             return {
-                TickEvent{.tick = 0, .event = Event{.name = "one"}},
-                TickEvent{.tick = 1, .event = Event{.name = "two"}}};
+                TickEvent{.tick = 0, .event = Event{.name = EventName{"one"}}},
+                TickEvent{.tick = 1, .event = Event{.name = EventName{"two"}}}};
         }
 
     }
@@ -89,7 +90,7 @@ namespace antwika::app
         const auto events = pacedSource.eventsFor(0);
 
         ASSERT_EQ(events.size(), 1U);
-        EXPECT_EQ(events[0].name, "one");
+        EXPECT_EQ(events[0].name, EventName{"one"});
     }
 
     TEST(FramePacedSourceTest, EventsFor_NeitherWaitsNorDrawsExtraByDefault)

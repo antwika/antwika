@@ -4,6 +4,7 @@ antwika_add_app_tests(
         ActionsTest.cpp
     LIBS
         antwika::app
+        antwika::assets
         antwika::camera
         antwika::character
         antwika::ecs

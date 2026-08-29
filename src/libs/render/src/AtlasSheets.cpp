@@ -11,6 +11,7 @@
 #include <antwika/tile/Transitions.hpp>
 
 #include "antwika/render/Checkerboard.hpp"
+#include "antwika/render/TextureUpload.hpp"
 
 namespace antwika::render
 {
@@ -95,21 +96,6 @@ namespace antwika::render
 
             return bitmap;
         }
-
-        void put(
-            gfx::IRenderer &viewportRenderer,
-            std::unique_ptr<gfx::ITexture> &texture,
-            const gfx::Bitmap &bitmap)
-        {
-            if (texture && texture->getSize() == bitmap.size)
-            {
-                viewportRenderer.updateTexture(*texture, bitmap);
-
-                return;
-            }
-
-            texture = viewportRenderer.createTexture(bitmap);
-        }
     }
 
     void AtlasSheets::open(
@@ -192,11 +178,11 @@ namespace antwika::render
                 drawnMap.transitions,
                 drawnMap.paletteColors);
 
-            put(
+            layBitmapIntoTexture(
                 viewportRenderer,
                 paintedTextures.at(atlasIndex),
                 getEncodeGlow(compositedAtlasSheet, drawnMap));
-            put(
+            layBitmapIntoTexture(
                 viewportRenderer,
                 keyedOutTextures.at(atlasIndex),
                 getEncodeGlow(

@@ -52,13 +52,14 @@ namespace antwika::editor
                 return;
             }
 
+            if (beginEdgeDrag(interactions))
+            {
+                return;
+            }
+
             if (interactions.chosenChoice.has_value())
             {
-                for (const auto menu :
-                     {antwika::editor::Menu::File,
-                 antwika::editor::Menu::Edit,
-                      antwika::editor::Menu::View,
-                      antwika::editor::Menu::Settings})
+                for (const auto menu : antwika::editor::kEveryMenu)
                 {
                     if (interactions.chosenChoice->dropdownWidget
                         != getMenuWidget(menu))
@@ -73,16 +74,7 @@ namespace antwika::editor
 
                     if (item.has_value())
                     {
-                        dialogs.openMenu =
-                            *item
-                                    == antwika::editor::
-                                        MenuItem::
-                                            Settings
-                                ? std::optional{
-                                      antwika::editor::
-                                          Menu::
-                                              Settings}
-                                : std::nullopt;
+                        dialogs.openMenu.reset();
                         onMenuItem(*item);
                     }
                 }
@@ -107,7 +99,7 @@ namespace antwika::editor
             dialogs.openMenu.reset();
         }
 
-        if (dialogs.fileDialog.has_value() || dialogs.quitConfirmOpen
+        if (fileChooser.fileDialog.has_value() || dialogs.quitConfirmOpen
             || keyBench.panelShown)
         {
             return;
@@ -139,11 +131,12 @@ namespace antwika::editor
                                     projectToScreen.y)}),
                         getWorldRotation(play)),
                     static_cast<float>(
-                        antwika::voxel::getCubeTop(worldView.worldEdit.editLevel)));
+                        antwika::voxel::getCubeTop(worldView.worldEdit().getEditLevel())));
             }
         }
 
-        if (consumePickerPress(downPressed))
+        if (inkPanel.consumePickerPress(
+                downPressed, pointer, getRailWidthOnCanvas()))
         {
             return;
         }
@@ -171,7 +164,7 @@ namespace antwika::editor
 
             if (downPressed.button == input::MouseButton::Left
                 && (getHeldModifiers().shift
-                    || preferences.tool == map::Tool::Picker))
+                    || preferences.tool == Tool::Picker))
             {
                 const auto pickedFace = voxelmap::getTilePicked(
                     visibleCells(),
@@ -188,7 +181,7 @@ namespace antwika::editor
                     stroke.selectedEdges.reset();
                     stroke.dragFromCell.reset();
                     stroke.dragFromPoint.reset();
-                    viewChoice.activeView = map::View::Atlases;
+                    viewChoice.activeView = View::Atlases;
                 }
 
                 return;
@@ -199,7 +192,7 @@ namespace antwika::editor
                 getWorldRotation(play),
                 camera::kCanvasSize,
                 point,
-                antwika::voxel::getCubeTop(worldView.worldEdit.editLevel));
+                antwika::voxel::getCubeTop(worldView.worldEdit().getEditLevel()));
 
             if (!cell.has_value())
             {
@@ -210,7 +203,7 @@ namespace antwika::editor
             {
             case ToolPlacement::Lamp:
                 if (downPressed.button == input::MouseButton::Left
-                    && beginLampCarry(*cell))
+                    && worldView.beginLampCarry(viewContextNow(), *cell))
                 {
                     return;
                 }
@@ -223,7 +216,7 @@ namespace antwika::editor
                               document.map.lamps,
                               *cell,
                               document.map.paletteColors.at(
-                                  inkPicker.activeInk))
+                                  inkPanel.inkPicker.activeInk))
                         : light::withoutLampAt(
                               document.map.lamps, *cell);
                 lightPasses.forget();
@@ -231,22 +224,18 @@ namespace antwika::editor
                 return;
 
             case ToolPlacement::Stamp:
-                pressStamp(*cell, downPressed.button);
+                worldView.pressStamp(
+                    viewContextNow(), *cell, downPressed.button);
 
                 return;
 
-            case ToolPlacement::Figure:
-                pressFigure(*cell, downPressed.button);
+            case ToolPlacement::Character:
+                pressCharacter(*cell, downPressed.button);
 
                 return;
 
-            case ToolPlacement::Plate:
-                pressPlate(*cell, downPressed.button);
-
-                return;
-
-            case ToolPlacement::Gate:
-                pressGate(*cell, downPressed.button);
+            case ToolPlacement::Marker:
+                pressMarker(*cell, downPressed.button);
 
                 return;
 
@@ -255,11 +244,17 @@ namespace antwika::editor
 
                 return;
 
+            case ToolPlacement::Select:
+                pressSelect(*cell, downPressed.button);
+
+                return;
+
             case ToolPlacement::Shape:
                 break;
             }
 
-            if (beginShape(*cell, downPressed.button))
+            if (worldView.beginShape(
+                    viewContextNow(), *cell, downPressed.button))
             {
                 return;
             }
@@ -267,17 +262,16 @@ namespace antwika::editor
             pushUndo();
 
             document.map.voxels = voxel::getWithRampsRebuilt(
-                preferences.tool == map::Tool::Eraser
+                preferences.tool == Tool::Eraser
                       ? voxel::withoutBlockAt(
                           document.map.voxels, *cell)
                     : voxel::withBlockAt(
                           document.map.voxels,
                           *cell,
                           preferences.kind,
-                          rampFacing),
+                          voxel::Facing::Any),
                 *cell);
-            worldView.worldPaint.dragButton = downPressed.button;
-            worldView.worldPaint.lastPaintedPosition = cell;
+            worldView.beginPaintDrag(*cell, downPressed.button);
             rebuildWorld();
 
             return;
@@ -297,7 +291,7 @@ namespace antwika::editor
             antwika::gfx::PointF{
                 static_cast<float>(projectToScreen.x),
                 static_cast<float>(projectToScreen.y)},
-            antwika::voxel::getCubeTop(worldView.worldEdit.editLevel));
+            antwika::voxel::getCubeTop(worldView.worldEdit().getEditLevel()));
 
         if (!cell.has_value())
         {
@@ -315,27 +309,28 @@ namespace antwika::editor
             return;
 
         case ToolPlacement::Stamp:
-            pressStamp(*cell, input::MouseButton::Right);
+            worldView.pressStamp(
+                viewContextNow(), *cell, input::MouseButton::Right);
 
             return;
 
-        case ToolPlacement::Figure:
-            pressFigure(*cell, input::MouseButton::Right);
+        case ToolPlacement::Character:
+            pressCharacter(*cell, input::MouseButton::Right);
 
             return;
 
-        case ToolPlacement::Plate:
-            pressPlate(*cell, input::MouseButton::Right);
-
-            return;
-
-        case ToolPlacement::Gate:
-            pressGate(*cell, input::MouseButton::Right);
+        case ToolPlacement::Marker:
+            pressMarker(*cell, input::MouseButton::Right);
 
             return;
 
         case ToolPlacement::StartOrExit:
             placeStartOrExit(*cell, input::MouseButton::Right);
+
+            return;
+
+        case ToolPlacement::Select:
+            pressSelect(*cell, input::MouseButton::Right);
 
             return;
 

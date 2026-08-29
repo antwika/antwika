@@ -455,6 +455,24 @@ void main()
         EXPECT_GT(window->getSize().height, 0u);
     }
 
+    TYPED_TEST_P(GfxBackendConformanceTest,
+                 CreateWindow_AcceptsAFrameBudget)
+    {
+        auto spec = this->getDemoSpec();
+
+        spec.targetFps = 62;
+
+        const auto window = this->backend->createWindow(spec);
+
+        ASSERT_NE(window, nullptr);
+        EXPECT_TRUE(window->isOpen());
+
+        auto &renderer = this->rendererOf(*window);
+
+        renderer.clear(Color{.red = 8, .green = 8, .blue = 8});
+        renderer.present();
+    }
+
     TYPED_TEST_P(GfxBackendConformanceTest, SetFullscreen_LeavesTheWindowUsable)
     {
         const auto window =
@@ -588,7 +606,10 @@ void main()
                     .size = {.width = 3, .height = 4}},
                 Color{.red = 255});
             renderer.drawText(
-                Point{.x = 8, .y = 8}, "Antwika 123", 2, Color{.green = 255});
+                Point{.x = 8, .y = 8},
+                "Antwika 123",
+                TextScale{.multiplier = 2},
+                Color{.green = 255});
             renderer.drawLine(
                 Point{.x = 4, .y = 4},
                 Point{.x = 40, .y = 22},
@@ -614,7 +635,9 @@ void main()
                 Point{.x = 32, .y = 32},
                 Color{.green = 255, .alpha = 128});
             renderer.drawText(
-                Point{.x = 2, .y = 2}, "faint", 1,
+                Point{.x = 2, .y = 2},
+                "faint",
+                TextScale{.multiplier = 1},
                 Color{.red = 255, .alpha = 1});
             renderer.drawRect(
                 Rect{
@@ -657,11 +680,25 @@ void main()
         auto &renderer = window->renderer();
 
         EXPECT_NO_THROW({
-            renderer.drawText(Point{}, "", 2, Color{.red = 255});
-            renderer.drawText(Point{}, "As", 0, Color{.red = 255});
-            renderer.drawText(Point{}, "\n\t\x7f", 2, Color{.red = 255});
             renderer.drawText(
-                Point{.x = -50, .y = -50}, "off canvas", 3,
+                Point{},
+                "",
+                TextScale{.multiplier = 2},
+                Color{.red = 255});
+            renderer.drawText(
+                Point{},
+                "As",
+                TextScale{.multiplier = 0},
+                Color{.red = 255});
+            renderer.drawText(
+                Point{},
+                "\n\t\x7f",
+                TextScale{.multiplier = 2},
+                Color{.red = 255});
+            renderer.drawText(
+                Point{.x = -50, .y = -50},
+                "off canvas",
+                TextScale{.multiplier = 3},
                 Color{.red = 255});
             renderer.present();
         });
@@ -1065,7 +1102,10 @@ void main()
                     .size = {.width = 16, .height = 16}},
                 Color{.green = 255});
             renderer.drawText(
-                Point{.x = 8, .y = 8}, "over", 1, Color{.blue = 255});
+                Point{.x = 8, .y = 8},
+                "over",
+                TextScale{.multiplier = 1},
+                Color{.blue = 255});
             renderer.present();
         });
     }
@@ -1186,6 +1226,27 @@ void main()
     }
 
     TYPED_TEST_P(GfxBackendConformanceTest,
+                 CreateRenderTarget_ForgoesColorForADepthOnlyTarget)
+    {
+        const auto window = this->backend->createWindow(this->getDemoSpec());
+        auto &renderer = this->rendererOf(*window);
+
+        const Size wantedSize{.width = 64, .height = 32};
+
+        const auto depthOnlyTarget = renderer.createRenderTarget(
+            RenderTargetSpec{.size = wantedSize, .depthOnly = true});
+
+        EXPECT_EQ(depthOnlyTarget->getColor(), nullptr);
+        ASSERT_NE(depthOnlyTarget->getDepth(), nullptr);
+        EXPECT_EQ(
+            depthOnlyTarget->getDepth()->getSize().width,
+            wantedSize.width);
+        EXPECT_EQ(
+            depthOnlyTarget->getDepth()->getSize().height,
+            wantedSize.height);
+    }
+
+    TYPED_TEST_P(GfxBackendConformanceTest,
                  CreateRenderTarget_ThrowsOnAnEmptySize)
     {
         const auto window = this->backend->createWindow(this->getDemoSpec());
@@ -1215,6 +1276,115 @@ void main()
         renderer.clear(Color{.red = 0, .green = 255, .blue = 0});
         renderer.endTarget();
 
+        renderer.clear(Color{.red = 0, .green = 0, .blue = 255});
+        renderer.drawMesh(
+            *mesh,
+            getIdentityMatrix(),
+            this->getDemoCamera(),
+            MeshMaterial{
+                .texture = target->getColor(), .shader = shader.get()});
+
+        const auto middleColor = this->middleOf(renderer);
+
+        renderer.present();
+
+        if (!this->backend->getCapabilities().readsPixels)
+        {
+            GTEST_SKIP() << "the backend reads no pixels back";
+        }
+
+        ASSERT_TRUE(middleColor.has_value());
+
+        EXPECT_NEAR(middleColor->green, 255, 8);
+        EXPECT_NEAR(middleColor->blue, 0, 8);
+    }
+
+    TYPED_TEST_P(GfxBackendConformanceTest,
+                 BeginClip_CutsWhatIsDrawnToTheAreaItNames)
+    {
+        const auto window = this->backend->createWindow(this->getDemoSpec());
+        auto &renderer = this->rendererOf(*window);
+
+        renderer.clear(Color{.red = 0, .green = 0, .blue = 255});
+        renderer.beginClip(RectF({0.0F, 0.0F}, {8.0F, 8.0F}));
+        renderer.drawRect(
+            RectF({0.0F, 0.0F}, {640.0F, 480.0F}),
+            Color{.red = 0, .green = 255, .blue = 0});
+        renderer.endClip();
+
+        const auto middleColor = this->middleOf(renderer);
+
+        renderer.present();
+
+        if (!this->backend->getCapabilities().readsPixels)
+        {
+            GTEST_SKIP() << "the backend reads no pixels back";
+        }
+
+        ASSERT_TRUE(middleColor.has_value());
+
+        EXPECT_NEAR(middleColor->blue, 255, 8);
+        EXPECT_NEAR(middleColor->green, 0, 8);
+    }
+
+    TYPED_TEST_P(GfxBackendConformanceTest,
+                 EndTarget_LeavesTheClipAroundItStillCutting)
+    {
+        const auto window = this->backend->createWindow(this->getDemoSpec());
+        auto &renderer = this->rendererOf(*window);
+
+        const auto target = renderer.createRenderTarget(
+            RenderTargetSpec{.size = Size{.width = 32, .height = 32}});
+
+        renderer.clear(Color{.red = 0, .green = 0, .blue = 255});
+        renderer.beginClip(RectF({0.0F, 0.0F}, {8.0F, 8.0F}));
+
+        {
+            const auto scope = renderer.targetScope(*target);
+
+            renderer.clear(Color{.red = 255, .green = 0, .blue = 0});
+        }
+
+        renderer.drawRect(
+            RectF({0.0F, 0.0F}, {640.0F, 480.0F}),
+            Color{.red = 0, .green = 255, .blue = 0});
+        renderer.endClip();
+
+        const auto middleColor = this->middleOf(renderer);
+
+        renderer.present();
+
+        if (!this->backend->getCapabilities().readsPixels)
+        {
+            GTEST_SKIP() << "the backend reads no pixels back";
+        }
+
+        ASSERT_TRUE(middleColor.has_value());
+
+        EXPECT_NEAR(middleColor->blue, 255, 8);
+        EXPECT_NEAR(middleColor->green, 0, 8);
+    }
+
+    TYPED_TEST_P(GfxBackendConformanceTest,
+                 BeginTarget_DrawsWholeWhileAClipStandsAroundIt)
+    {
+        const auto window = this->backend->createWindow(this->getDemoSpec());
+        auto &renderer = this->rendererOf(*window);
+
+        const auto target = renderer.createRenderTarget(
+            RenderTargetSpec{.size = Size{.width = 32, .height = 32}});
+        const auto mesh = renderer.createMesh(this->getFlatMesh());
+        const auto shader = renderer.createShader(this->getDemoShader());
+
+        renderer.beginClip(RectF({0.0F, 0.0F}, {8.0F, 8.0F}));
+
+        {
+            const auto scope = renderer.targetScope(*target);
+
+            renderer.clear(Color{.red = 0, .green = 255, .blue = 0});
+        }
+
+        renderer.endClip();
         renderer.clear(Color{.red = 0, .green = 0, .blue = 255});
         renderer.drawMesh(
             *mesh,
@@ -1346,6 +1516,55 @@ void main()
 
         EXPECT_EQ(emptyBitmap->red, 255);
         EXPECT_LT(readBitmap->red, 250);
+    }
+
+    TYPED_TEST_P(GfxBackendConformanceTest,
+                 BeginTarget_BakesDepthIntoADepthOnlyTarget)
+    {
+        const auto window = this->backend->createWindow(this->getDemoSpec());
+        auto &renderer = this->rendererOf(*window);
+
+        const auto target = renderer.createRenderTarget(
+            RenderTargetSpec{
+                .size = Size{.width = 64, .height = 64},
+                .depthOnly = true});
+
+        ASSERT_NE(target->getDepth(), nullptr);
+
+        const auto mesh = renderer.createMesh(this->getFlatMesh());
+        const auto plain = renderer.createShader(this->getDemoShader());
+        const auto showing = renderer.createShader(this->getDepthShader());
+
+        renderer.beginTarget(*target);
+        renderer.clear(Color{.red = 0, .green = 0, .blue = 0});
+        renderer.drawMesh(
+            *mesh,
+            getIdentityMatrix(),
+            this->getDemoCamera(),
+            MeshMaterial{.shader = plain.get()});
+        renderer.endTarget();
+
+        renderer.clear(Color{.red = 0, .green = 0, .blue = 0});
+        renderer.drawMesh(
+            *mesh,
+            getIdentityMatrix(),
+            this->getDemoCamera(),
+            MeshMaterial{
+                .texture = target->getDepth(),
+                .shader = showing.get()});
+
+        const auto middleColor = this->middleOf(renderer);
+
+        renderer.present();
+
+        if (!this->backend->getCapabilities().readsPixels)
+        {
+            GTEST_SKIP() << "the backend reads no pixels back";
+        }
+
+        ASSERT_TRUE(middleColor.has_value());
+
+        EXPECT_LT(middleColor->red, 250);
     }
 
     TYPED_TEST_P(GfxBackendConformanceTest,
@@ -1683,6 +1902,65 @@ void main()
         EXPECT_THROW(renderer.popTransform(), GfxError);
     }
 
+    TYPED_TEST_P(
+        GfxBackendConformanceTest, PushTransform_ThrowsWhenTheStackIsFull)
+    {
+        const auto window = this->backend->createWindow(this->getDemoSpec());
+        auto &renderer = this->rendererOf(*window);
+
+        for (std::size_t depth = 0; depth < kMaxTransformDepth; ++depth)
+        {
+            renderer.pushTransform(getIdentityMatrix());
+        }
+
+        EXPECT_THROW(
+            renderer.pushTransform(getIdentityMatrix()), GfxError);
+
+        for (std::size_t depth = 0; depth < kMaxTransformDepth; ++depth)
+        {
+            renderer.popTransform();
+        }
+
+        renderer.present();
+    }
+
+    TYPED_TEST_P(
+        GfxBackendConformanceTest, UpdateTexture_RefusesABitmapOfAnotherSize)
+    {
+        const auto window = this->backend->createWindow(this->getDemoSpec());
+        auto &renderer = this->rendererOf(*window);
+
+        const auto texture = renderer.createTexture(this->getDemoBitmap());
+
+        constexpr std::uint32_t kGrownSide = 8;
+
+        const Bitmap grownBitmap{
+            .size = {.width = kGrownSide, .height = kGrownSide},
+            .pixels = std::vector<std::uint8_t>(
+                kGrownSide * kGrownSide * kBytesPerPixel, 64)};
+
+        EXPECT_NO_THROW(renderer.updateTexture(*texture, grownBitmap));
+        EXPECT_EQ(texture->getSize(), this->getDemoBitmap().size);
+
+        renderer.present();
+    }
+
+    TYPED_TEST_P(
+        GfxBackendConformanceTest, UpdateTexture_AcceptsAMatchingBitmap)
+    {
+        const auto window = this->backend->createWindow(this->getDemoSpec());
+        auto &renderer = this->rendererOf(*window);
+
+        const auto texture = renderer.createTexture(this->getDemoBitmap());
+
+        EXPECT_NO_THROW(
+            renderer.updateTexture(
+                *texture,
+                this->bitmapOf(Color{.red = 255, .alpha = 255})));
+
+        renderer.present();
+    }
+
     REGISTER_TYPED_TEST_SUITE_P(
         GfxBackendConformanceTest,
         Name_IsNotEmpty,
@@ -1698,6 +1976,7 @@ void main()
         ConfiguredSize_IsPerWindow,
         CreateWindow_AcceptsAResizableWindow,
         CreateWindow_AcceptsAFullscreenWindow,
+        CreateWindow_AcceptsAFrameBudget,
         SetFullscreen_LeavesTheWindowUsable,
         SetFullscreen_IsHarmlessOnceClosed,
         Size_StaysNonZeroAfterClosing,
@@ -1714,6 +1993,8 @@ void main()
         DrawText_AcceptsAwkwardText,
         CreateTexture_ReportsTheBitmapSize,
         CreateTexture_ThrowsOnAnIncompleteBitmap,
+        UpdateTexture_RefusesABitmapOfAnotherSize,
+        UpdateTexture_AcceptsAMatchingBitmap,
         DrawTexture_AcceptsAFrameWithoutThrowing,
         DrawTexture_AcceptsAnUndrawableBlit,
         DrawTexture_AcceptsATextureFromAnotherRenderer,
@@ -1729,9 +2010,14 @@ void main()
         CreateShader_ThrowsOnAMissingStage,
         DrawMesh_AcceptsAFullMaterial,
         CreateRenderTarget_KeepsDepthOnlyWhenAskedTo,
+        CreateRenderTarget_ForgoesColorForADepthOnlyTarget,
         CreateRenderTarget_ThrowsOnAnEmptySize,
         BeginTarget_KeepsWhatWasDrawnIntoIt,
         BeginTarget_KeepsDepthAsATextureAPassMaySample,
+        BeginTarget_BakesDepthIntoADepthOnlyTarget,
+        BeginClip_CutsWhatIsDrawnToTheAreaItNames,
+        EndTarget_LeavesTheClipAroundItStillCutting,
+        BeginTarget_DrawsWholeWhileAClipStandsAroundIt,
         BeginTargetRegion_LeavesTheRestOfTheTargetAsItStood,
         RenderTarget_MayOutliveItsWindow,
         SetShaderMatrix_MovesWhatTheShaderDraws,
@@ -1747,6 +2033,7 @@ void main()
         ReadPixels_ComesBackComplete,
         PushTransform_AcceptsAFrameDrawnUnderIt,
         PushTransform_Nests,
+        PushTransform_ThrowsWhenTheStackIsFull,
         PopTransform_ThrowsWhenNothingIsPushed,
         Mesh_MayOutliveItsWindow,
         PollEvent_DrainsToAnEmptyQueue,

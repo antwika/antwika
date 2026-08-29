@@ -40,6 +40,7 @@ using antwika::gfx::PointF;
 using antwika::gfx::Rect;
 using antwika::gfx::RectF;
 using antwika::gfx::Size;
+using antwika::gfx::TextScale;
 using antwika::gfx::Viewport;
 using antwika::gfx::ViewportRenderer;
 using antwika::gfx::mocks::MockRenderer;
@@ -214,10 +215,14 @@ TEST(ViewportRendererTest, DrawText_ScalesTheOriginAndTheGlyphScale)
         innerRenderer, drawText(
             PointF{70.0F, 20.0F},
             "hi",
-            std::uint32_t{4},
+            TextScale{.multiplier = 4},
             kInkColor));
 
-    viewportRenderer.drawText(Point{.x = 10, .y = 10}, "hi", 2, kInkColor);
+    viewportRenderer.drawText(
+        Point{.x = 10, .y = 10},
+        "hi",
+        TextScale{.multiplier = 2},
+        kInkColor);
 }
 
 TEST(ViewportRendererTest, DrawText_AnchorsEachGlyphOnANonWholeScale)
@@ -230,16 +235,20 @@ TEST(ViewportRendererTest, DrawText_AnchorsEachGlyphOnANonWholeScale)
         innerRenderer, drawText(
             PointF{15.0F, 15.0F},
             "h",
-            std::uint32_t{1},
+            TextScale{.multiplier = 1},
             kInkColor));
     EXPECT_CALL(
         innerRenderer, drawText(
             PointF{24.0F, 15.0F},
             "i",
-            std::uint32_t{1},
+            TextScale{.multiplier = 1},
             kInkColor));
 
-    viewportRenderer.drawText(Point{.x = 10, .y = 10}, "hi", 1, kInkColor);
+    viewportRenderer.drawText(
+        Point{.x = 10, .y = 10},
+        "hi",
+        TextScale{.multiplier = 1},
+        kInkColor);
 }
 
 TEST(ViewportRendererTest, DrawTexture_ScalesTheDestinationAndNotTheSource)
@@ -589,11 +598,15 @@ TEST(ViewportRendererTest, EveryCall_IsUntouchedWhenTheSizesAgree)
         innerRenderer, drawText(
             PointF{3.0F, 4.0F},
             "x",
-            std::uint32_t{2},
+            TextScale{.multiplier = 2},
             kInkColor));
 
     viewportRenderer.drawRect(rect, kInkColor);
-    viewportRenderer.drawText(Point{.x = 3, .y = 4}, "x", 2, kInkColor);
+    viewportRenderer.drawText(
+        Point{.x = 3, .y = 4},
+        "x",
+        TextScale{.multiplier = 2},
+        kInkColor);
 }
 
 TEST(ViewportRendererTest, PushTransform_ReachesTheWrappedRenderer)

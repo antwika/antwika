@@ -30,6 +30,8 @@ namespace antwika::voxelmap
 
     inline constexpr std::size_t kVoxelFaceCount = 6;
 
+    inline constexpr std::size_t kTopSide = 4;
+
     [[nodiscard]] gfx::Vec3 getFaceNormal(std::size_t side);
 
     [[nodiscard]] voxel::StairPart stairPartOf(
@@ -55,10 +57,19 @@ namespace antwika::voxelmap
 
         voxel::StairHalf levelHalf = voxel::StairHalf::Any;
 
-        [[nodiscard]] bool operator==(const FaceRef &other) const
+        bool operator==(const FaceRef &other) const = delete;
+
+        [[nodiscard]] bool refersToSameFace(const FaceRef &otherFace) const
         {
-            return cell.position == other.cell.position
-                   && side == other.side;
+            return cell.position == otherFace.cell.position
+                   && side == otherFace.side;
+        }
+
+        [[nodiscard]] bool isIdenticalTo(const FaceRef &otherFace) const
+        {
+            return cell == otherFace.cell && side == otherFace.side
+                   && climbPosition == otherFace.climbPosition
+                   && levelHalf == otherFace.levelHalf;
         }
 
         [[nodiscard]] std::strong_ordering operator<=>(

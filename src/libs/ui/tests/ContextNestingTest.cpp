@@ -71,7 +71,7 @@ TEST(ContextNestingTest, Nesting_DrawsARowInsideAColumnInsideAPanel)
             DrawText{
                 .originPoint = {.x = 0, .y = 0},
                 .text = "ab",
-                .scale = 1,
+                .scale = {.multiplier = 1},
                 .color = kInkColor}}),
         uiContext.build().drawList);
 }
@@ -97,7 +97,7 @@ TEST(ContextNestingTest, Nesting_LetsAFittingContainerSizeItself)
             DrawText{
                 .originPoint = {.x = 3, .y = 3},
                 .text = "ab",
-                .scale = 1,
+                .scale = {.multiplier = 1},
                 .color = kInkColor}}),
         uiContext.build().drawList);
 }
@@ -131,12 +131,12 @@ TEST(ContextNestingTest, Nesting_PutsSiblingColumnsSideBySide)
             DrawText{
                 .originPoint = {.x = 0, .y = 0},
                 .text = "ab",
-                .scale = 1,
+                .scale = {.multiplier = 1},
                 .color = kInkColor},
             DrawText{
                 .originPoint = {.x = 12, .y = 0},
                 .text = "cd",
-                .scale = 1,
+                .scale = {.multiplier = 1},
                 .color = kInkColor}}),
         uiContext.build().drawList);
 }

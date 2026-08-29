@@ -4,12 +4,14 @@
 #include <numbers>
 #include <vector>
 
+#include <antwika/voxel/VoxelCube.hpp>
+
 namespace antwika::light
 {
 
     gfx::Vec3 getLampPosition(const Lamp lamp)
     {
-        return voxelmap::getCellMiddle(lamp.position);
+        return voxelmap::getCubeMiddle(lamp.position);
     }
 
     gfx::Size getShadowAtlasSize()
@@ -72,9 +74,11 @@ namespace antwika::light
     {
         std::vector<Lamp> keptLamps;
 
+        const auto cornerPosition = voxel::cubeCornerOf(position);
+
         for (const auto lamp : lamps)
         {
-            if (!(lamp.position == position))
+            if (!(voxel::cubeCornerOf(lamp.position) == cornerPosition))
             {
                 keptLamps.push_back(lamp);
             }
@@ -95,8 +99,9 @@ namespace antwika::light
             return lamps;
         }
 
-        updatedLamps.push_back(Lamp{.position = position,
-            .tintColor = tintColor});
+        updatedLamps.push_back(
+            Lamp{.position = voxel::cubeCornerOf(position),
+                 .tintColor = tintColor});
 
         return updatedLamps;
     } // GCOVR_EXCL_LINE

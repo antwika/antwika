@@ -1,9 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <array>
-#include <cstddef>
-#include <cstdint>
-
 #include <antwika/component/Health.hpp>
 #include <antwika/component/Inventory.hpp>
 #include <antwika/component/Item.hpp>
@@ -14,7 +10,6 @@
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/rules/Health.hpp>
 #include <antwika/rules/Items.hpp>
-#include <antwika/collision/Collision.hpp>
 
 #include "antwika/gameplay/GameLoop.hpp"
 #include "antwika/system/HealthSystem.hpp"
@@ -26,15 +21,11 @@ using antwika::gameplay::GameLoop;
 using antwika::component::Health;
 using antwika::system::HealthSystem;
 using antwika::component::Inventory;
-using antwika::component::Item;
 using antwika::component::ItemKind;
 using antwika::gameplay::Phase;
 using antwika::component::Player;
 using antwika::component::Position;
 using antwika::component::Vitals;
-using antwika::voxel::VoxelCell;
-using antwika::voxel::VoxelPosition;
-using antwika::voxel::voxelsOf;
 using antwika::rules::getAutoConsumed;
 using antwika::rules::getConsumedVitals;
 using antwika::rules::isDepleted;
@@ -179,17 +170,13 @@ namespace
         EXPECT_TRUE(isDepleted(Health{.food = kFullHealth, .water = 0}));
     }
 
-
-
-
-
-
     struct HealthHarness final
     {
         NiceMock<MockLogger> logger{};
         World world{logger};
         GameLoop gameLoop{world};
-        HealthSystem system{};
+        antwika::system::SimulationState simulationState{};
+        HealthSystem system{simulationState};
 
         HealthHarness()
         {
@@ -215,142 +202,19 @@ namespace
             return entity;
         }
 
-        [[nodiscard]] Entity lay(
-            const VoxelPosition position, const ItemKind kind)
-        {
-            auto &world = gameLoop.getWorld();
-            const auto entity = world.create();
-
-            {
-                const OpenPhase phase(world);
-
-                world.add<Item>(
-                    entity,
-                    Item{
-                        .position = position,
-                        .kind = static_cast<std::uint8_t>(kind)});
-            }
-
-            return entity;
-        }
-
         void step(const antwika::time::Tick tick)
         {
             gameLoop.run(tick);
         }
     };
 
-    TEST(HealthTest, Update_PicksUpAnItemTheCharacterStandsIn)
-    {
-        HealthHarness harness;
-        const auto walker =
-            harness.walker(Position{.x = 0.0F, .y = 0.0F, .z = 0.0F});
-        const auto item =
-            harness.lay(VoxelPosition{.x = 0, .y = 1, .z = 0}, ItemKind::Food);
-
-        harness.step(1);
-
-        EXPECT_FALSE(harness.gameLoop.getWorld().isAlive(item));
-        EXPECT_EQ(
-            getInventoryCount(
-                harness.gameLoop.getWorld().get<Inventory>(walker),
-                ItemKind::Food),
-            1U);
-    }
-
-    TEST(HealthTest, Update_PicksUpAnItemTheCharacterStandsOn)
-    {
-        HealthHarness harness;
-        const auto walker =
-            harness.walker(Position{.x = 0.0F, .y = 0.0F, .z = 0.0F});
-        const auto item = harness.lay(
-            VoxelPosition{.x = 0, .y = 0, .z = 0}, ItemKind::Water);
-
-        harness.step(1);
-
-        EXPECT_FALSE(harness.gameLoop.getWorld().isAlive(item));
-        EXPECT_EQ(
-            getInventoryCount(
-                harness.gameLoop.getWorld().get<Inventory>(walker),
-                ItemKind::Water),
-            1U);
-    }
-
-    TEST(HealthTest, Update_LeavesAnItemOfAnotherCubeWhereItLies)
-    {
-        HealthHarness harness;
-        const auto walker =
-            harness.walker(Position{.x = 0.0F, .y = 0.0F, .z = 0.0F});
-        const auto item = harness.lay(
-            VoxelPosition{.x = 40, .y = 1, .z = 40}, ItemKind::Food);
-
-        harness.step(1);
-
-        EXPECT_TRUE(harness.gameLoop.getWorld().isAlive(item));
-        EXPECT_EQ(
-            getInventoryCount(
-                harness.gameLoop.getWorld().get<Inventory>(walker),
-                ItemKind::Food),
-            0U);
-    }
-
-    TEST(HealthTest, Update_LetsOnlyOneCharacterPickUpTheSameItem)
-    {
-        HealthHarness harness;
-        const auto first =
-            harness.walker(Position{.x = 0.0F, .y = 0.0F, .z = 0.0F});
-        const auto second =
-            harness.walker(Position{.x = 0.0F, .y = 0.0F, .z = 0.0F});
-
-        (void)harness.lay(
-            VoxelPosition{.x = 0, .y = 1, .z = 0}, ItemKind::Food);
-
-        harness.step(1);
-
-        auto &world = harness.gameLoop.getWorld();
-
-        EXPECT_EQ(
-            getInventoryCount(
-                world.get<Inventory>(first), ItemKind::Food)
-                + getInventoryCount(
-                    world.get<Inventory>(second), ItemKind::Food),
-            1U);
-    }
-
-    TEST(HealthTest, Update_LeavesAnItemWhereTheInventoryIsFull)
-    {
-        HealthHarness harness;
-        Inventory fullInventory{};
-
-        for (std::size_t index = 0;
-             index < antwika::component::kInventorySlots;
-             ++index)
-        {
-            fullInventory = *getInventoryWith(fullInventory, ItemKind::Water);
-        }
-
-        (void)harness.walker(
-            Position{.x = 0.0F, .y = 0.0F, .z = 0.0F},
-            Health{},
-            fullInventory);
-
-        const auto item = harness.lay(
-            VoxelPosition{.x = 0, .y = 1, .z = 0}, ItemKind::Food);
-
-        harness.step(1);
-
-        EXPECT_TRUE(harness.gameLoop.getWorld().isAlive(item));
-    }
-
-    TEST(HealthTest, Update_FeedsAnNpcFromWhatItPicksUpTheSameFrame)
+    TEST(HealthTest, Update_FeedsAHungryNpcFromItsBag)
     {
         HealthHarness harness;
         const auto walker = harness.walker(
             Position{.x = 0.0F, .y = 0.0F, .z = 0.0F},
-            Health{.food = 1, .water = kFullHealth});
-
-        (void)harness.lay(
-            VoxelPosition{.x = 0, .y = 1, .z = 0}, ItemKind::Food);
+            Health{.food = 1, .water = kFullHealth},
+            getCarrying(ItemKind::Food));
 
         harness.step(1);
 
@@ -421,21 +285,17 @@ namespace
         EXPECT_FALSE(harness.gameLoop.getWorld().isAlive(walker));
     }
 
-    TEST(HealthTest, Update_ChangesNothingWhileFrozen)
+    TEST(HealthTest, Update_ChangesNothingWhilePaused)
     {
         HealthHarness harness;
         const auto walker =
             harness.walker(Position{.x = 0.0F, .y = 0.0F, .z = 0.0F});
-        const auto item = harness.lay(
-            VoxelPosition{.x = 0, .y = 1, .z = 0}, ItemKind::Food);
 
-        harness.system.setFrozen(true);
+        harness.simulationState.simulationPaused = true;
         harness.step(kHungerTicks);
 
-        auto &world = harness.gameLoop.getWorld();
-
-        EXPECT_TRUE(world.isAlive(item));
-        EXPECT_EQ(world.get<Health>(walker).food, kFullHealth);
+        EXPECT_EQ(
+            harness.gameLoop.getWorld().get<Health>(walker).food, kFullHealth);
     }
 
     TEST(HealthTest, Update_PassesOverACharacterWithNoInventory)

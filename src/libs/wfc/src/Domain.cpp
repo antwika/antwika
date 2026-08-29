@@ -85,13 +85,19 @@ namespace antwika::wfc
     {
         if (value >= bits.size())
         {
-            return;
+            throw WfcError(
+                "Domain: restrictTo() needs a value inside the alphabet");
         }
-        for (std::size_t i = 0; i < bits.size(); ++i)
+
+        const bool hasValue = contains(value);
+        std::fill(bits.begin(), bits.end(), false);
+        setCount = 0;
+
+        if (hasValue)
         {
-            bits[i] = (i == value);
+            bits[value] = true;
+            setCount = 1;
         }
-        setCount = 1;
     }
 
     std::size_t Domain::getAlphabetSize() const

@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <set>
+#include <utility>
 #include <vector>
 
 #include <antwika/gfx/CubeFace.hpp>
@@ -75,10 +76,16 @@ namespace
                 });
         ON_CALL(innerRenderer, createTexture(::testing::_))
             .WillByDefault(
-                []([[maybe_unused]] const antwika::gfx::Bitmap &bitmap)
+                [](const antwika::gfx::Bitmap &bitmap)
                 {
+                    auto maskTexture =
+                        std::make_unique<NiceMock<MockTexture>>();
+
+                    ON_CALL(*maskTexture, getSize)
+                        .WillByDefault(::testing::Return(bitmap.size));
+
                     return std::unique_ptr<ITexture>{
-                        std::make_unique<NiceMock<MockTexture>>()};
+                        std::move(maskTexture)};
                 });
         ON_CALL(innerRenderer, createMesh(::testing::_))
             .WillByDefault(
@@ -107,6 +114,22 @@ namespace
                 .lowPosition = Vec3{-8.0F, -8.0F, -8.0F},
                 .highPosition = Vec3{8.0F, 8.0F, 8.0F}});
     }
+
+    void recordsTargetSpecs(
+        NiceMock<MockRenderer> &innerRenderer,
+        std::vector<antwika::gfx::RenderTargetSpec> &targetSpecs)
+    {
+        ON_CALL(innerRenderer, createRenderTarget(::testing::_))
+            .WillByDefault(
+                [&targetSpecs](
+                    const antwika::gfx::RenderTargetSpec &spec)
+                {
+                    targetSpecs.push_back(spec);
+
+                    return std::unique_ptr<IRenderTarget>{
+                        std::make_unique<FakeBareTarget>()};
+                });
+    }
 }
 
 TEST(LightPassesTest, Open_TakesUpTheShadowPassAndTheAtlasItBakesInto)
@@ -120,6 +143,65 @@ TEST(LightPassesTest, Open_TakesUpTheShadowPassAndTheAtlasItBakesInto)
     EXPECT_CALL(innerRenderer, createRenderTarget).Times(1);
 
     passes.open(viewportRenderer, ShaderSource{});
+}
+
+TEST(LightPassesTest, Open_AsksForNoMoreThanAPlaceholderAtlas)
+{
+    NiceMock<MockRenderer> innerRenderer;
+    handsOutResources(innerRenderer);
+    std::vector<antwika::gfx::RenderTargetSpec> targetSpecs;
+    recordsTargetSpecs(innerRenderer, targetSpecs);
+    ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
+    LightPasses passes;
+
+    passes.open(viewportRenderer, ShaderSource{});
+
+    ASSERT_EQ(targetSpecs.size(), 1U);
+    EXPECT_EQ(targetSpecs.front().size, (Size{.width = 1, .height = 1}));
+    EXPECT_TRUE(targetSpecs.front().depthOnly);
+}
+
+TEST(LightPassesTest, BakeLamps_GrowsTheAtlasToFullSizeForTheFirstLamp)
+{
+    NiceMock<MockRenderer> innerRenderer;
+    handsOutResources(innerRenderer);
+    std::vector<antwika::gfx::RenderTargetSpec> targetSpecs;
+    recordsTargetSpecs(innerRenderer, targetSpecs);
+    ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
+    LightPasses passes;
+    const auto pile = getOnePiece();
+    const std::vector<ActiveLight> activeLights{
+        ActiveLight{.position = Vec3{1.0F, 2.0F, 3.0F}}};
+
+    passes.open(viewportRenderer, ShaderSource{});
+    passes.bakeLamps(viewportRenderer, pile, activeLights);
+
+    ASSERT_EQ(targetSpecs.size(), 2U);
+    EXPECT_EQ(targetSpecs.back().size, antwika::light::getShadowAtlasSize());
+    EXPECT_TRUE(targetSpecs.back().depthOnly);
+}
+
+TEST(LightPassesTest, BakeLamps_KeepsTheGrownAtlasAcrossLaterBakes)
+{
+    NiceMock<MockRenderer> innerRenderer;
+    handsOutResources(innerRenderer);
+    std::vector<antwika::gfx::RenderTargetSpec> targetSpecs;
+    recordsTargetSpecs(innerRenderer, targetSpecs);
+    ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
+    LightPasses passes;
+    const auto pile = getOnePiece();
+
+    passes.open(viewportRenderer, ShaderSource{});
+    passes.bakeLamps(
+        viewportRenderer,
+        pile,
+        {ActiveLight{.position = Vec3{1.0F, 2.0F, 3.0F}}});
+    passes.bakeLamps(
+        viewportRenderer,
+        pile,
+        {ActiveLight{.position = Vec3{100.0F, 2.0F, 3.0F}}});
+
+    EXPECT_EQ(targetSpecs.size(), 2U);
 }
 
 TEST(LightPassesTest, Hide_DrawsTheMaskOnceForTheSameCubesAndPlace)

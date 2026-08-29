@@ -33,7 +33,7 @@ namespace antwika::text
         } // GCOVR_EXCL_LINE
     }
 
-    GlyphCells::GlyphCells(std::uint32_t scale)
+    GlyphCells::GlyphCells(gfx::TextScale scale)
         : cell{
               .width = gfx::getScaledGlyphAdvance(scale),
               .height = gfx::getScaledGlyphLineHeight(scale)}
@@ -114,7 +114,7 @@ namespace antwika::text
                        + column];
     }
 
-    const GlyphCells &GlyphCellsCache::at(std::uint32_t scale)
+    const GlyphCells &GlyphCellsCache::at(gfx::TextScale scale)
     {
         const auto foundCells = cells.find(scale);
 

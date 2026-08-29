@@ -56,46 +56,6 @@ namespace antwika::editor
     [[nodiscard]] std::size_t getDropIndex(
         std::span<const gfx::Rect> cardRects, std::int32_t pointerY);
 
-    inline constexpr widget::WidgetId kPlanDetailWidget{410};
-
-    inline constexpr widget::WidgetId kPlanTitleWidget{411};
-
-    inline constexpr widget::WidgetId kPlanBodyWidget{412};
-
-    inline constexpr widget::WidgetId kPlanDeleteWidget{413};
-
-    inline constexpr std::uint64_t kFirstPlanAddWidget = 416;
-
-    inline constexpr std::uint64_t kFirstPlanColumnWidget = 420;
-
-    inline constexpr std::uint64_t kFirstPlanCardWidget = 512;
-
-    [[nodiscard]] constexpr widget::WidgetId getPlanColumnWidget(
-        const Column whichColumn) noexcept
-    {
-        return widget::WidgetId{
-            kFirstPlanColumnWidget
-            + static_cast<std::uint64_t>(whichColumn)};
-    }
-
-    [[nodiscard]] constexpr widget::WidgetId getPlanAddWidget(
-        const Column whichColumn) noexcept
-    {
-        return widget::WidgetId{
-            kFirstPlanAddWidget
-            + static_cast<std::uint64_t>(whichColumn)};
-    }
-
-    [[nodiscard]] constexpr widget::WidgetId getPlanCardWidget(
-        const Column whichColumn, const std::size_t cardIndex) noexcept
-    {
-        return widget::WidgetId{
-            kFirstPlanCardWidget
-            + (static_cast<std::uint64_t>(whichColumn)
-               * kMaxCardsPerColumn)
-            + cardIndex};
-    }
-
     [[nodiscard]] std::optional<std::pair<Column, std::size_t>>
     getCardOfWidget(widget::WidgetId whichWidget);
 

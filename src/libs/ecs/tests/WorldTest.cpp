@@ -1102,3 +1102,44 @@ TEST(WorldTest, ForgetComponents_LetsTypesBeTakenUpAfreshAfterAGrowth)
     EXPECT_EQ(world.get<Padding<0>>(entity).value, 9);
     EXPECT_FALSE(world.has<Padding<1>>(entity));
 }
+
+TEST(WorldTest, LiveEntities_ListsWhatWasCreatedInTheOrderItWasCreated)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto first = world.create();
+    const auto second = world.create();
+
+    EXPECT_EQ(world.getLiveEntities(), std::vector<Entity>({first, second}));
+}
+
+TEST(WorldTest, LiveEntities_ReachAnEntityThatCarriesNoComponentAtAll)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto bare = world.create();
+
+    ASSERT_EQ(world.view<Position>().getSize(), 0U);
+
+    EXPECT_EQ(world.getLiveEntities(), std::vector<Entity>({bare}));
+}
+
+TEST(WorldTest, LiveEntities_HoldADestroyedEntityUntilThePhaseCloses)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto going = world.create();
+    const auto staying = world.create();
+
+    {
+        const OpenPhase phase(world);
+
+        world.destroy(going);
+
+        EXPECT_EQ(
+            world.getLiveEntities(),
+            std::vector<Entity>({going, staying}));
+    }
+
+    EXPECT_EQ(world.getLiveEntities(), std::vector<Entity>({staying}));
+}

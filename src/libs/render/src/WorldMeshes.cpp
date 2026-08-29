@@ -8,7 +8,7 @@
 #include <antwika/decor/Variants.hpp>
 #include <antwika/gfx/MeshBox.hpp>
 #include <antwika/gfx/MeshData.hpp>
-#include <antwika/map/MapAssets.hpp>
+#include <antwika/assets/MapAssets.hpp>
 #include <antwika/tile/Transitions.hpp>
 
 namespace antwika::render
@@ -16,22 +16,12 @@ namespace antwika::render
 
     namespace
     {
-        [[nodiscard]] bool isSameFace(
-            const voxelmap::FaceRef &oneFace,
-            const voxelmap::FaceRef &otherFace)
-        {
-            return oneFace.cell.position == otherFace.cell.position
-                   && oneFace.cell.material == otherFace.cell.material
-                   && oneFace.side == otherFace.side
-                   && oneFace.climbPosition == otherFace.climbPosition
-                   && oneFace.levelHalf == otherFace.levelHalf;
-        }
-
         [[nodiscard]] bool isSameWeave(
             const std::vector<voxelmap::FaceRef> &oneFaces,
             const std::vector<voxelmap::FaceRef> &otherFaces)
         {
-            return std::ranges::equal(oneFaces, otherFaces, isSameFace);
+            return std::ranges::equal(
+                oneFaces, otherFaces, &voxelmap::FaceRef::isIdenticalTo);
         }
     }
 
@@ -61,14 +51,20 @@ namespace antwika::render
 
         if (!sameWeave)
         {
-            auto woven = map::faceTilesFor(
+            auto woven = assets::faceTilesFor(
                 visibleFaces, effectiveRules, joiningSeams, faceTileCache);
 
             solvedTiles = std::move(woven.tiles);
             weaveSolve = std::move(woven.solve);
         }
-        finalFaceTiles = decor::getWithVariantsApplied(
+
+        auto appliedTiles = decor::getWithVariantsApplied(
             visibleFaces, solvedTiles, drawnMap.familyGroups, 0);
+        const auto sameCells = shownVoxels == meshedVoxels;
+        const auto sameLook = sameWeave && sameCells
+                              && appliedTiles == finalFaceTiles;
+
+        finalFaceTiles = std::move(appliedTiles);
 
         const auto meshFor = [this, &viewportRenderer, &shownVoxels](
                                  const voxelmap::Pass pass)
@@ -87,8 +83,16 @@ namespace antwika::render
             return pieceMeshes;
         };
 
-        solidMesh = meshFor(voxelmap::Pass::Solid);
-        waterMesh = meshFor(voxelmap::Pass::Water);
+        if (!sameLook)
+        {
+            solidMesh = meshFor(voxelmap::Pass::Solid);
+            waterMesh = meshFor(voxelmap::Pass::Water);
+        }
+
+        if (!sameCells)
+        {
+            meshedVoxels = shownVoxels;
+        }
         decorByFace = decor::getSolveDecorLayers(
             visibleFaces,
             solvedTiles,

@@ -17,6 +17,26 @@ namespace antwika::camera
         constexpr float kFarPlane = 64.0F;
 
         constexpr float kNearPlane = -kFarPlane;
+
+        struct ViewBasis final
+        {
+            gfx::Vec3 aheadDirection;
+            gfx::Vec3 rightDirection;
+            gfx::Vec3 overheadDirection;
+        };
+
+        [[nodiscard]] ViewBasis basisOf(const CameraTransform &transform)
+        {
+            const auto ahead = getForward(transform);
+            const auto right = glm::normalize(
+                glm::cross(ahead, gfx::Vec3{0.0F, 1.0F, 0.0F}));
+            const auto overhead = glm::normalize(glm::cross(right, ahead));
+
+            return ViewBasis{
+                .aheadDirection = ahead,
+                .rightDirection = right,
+                .overheadDirection = overhead};
+        }
     }
 
     float getIsometricPitch()
@@ -65,12 +85,19 @@ namespace antwika::camera
         return transform;
     }
 
+    CameraTransform getAimedAt(
+        CameraTransform transform, const gfx::Vec3 position)
+    {
+        transform.position = position;
+
+        return transform;
+    }
+
     CameraTransform getCenteredOn(
         CameraTransform transform, const gfx::Vec3 position)
     {
-        transform.position = getDefaultTransform().position + position;
-
-        return transform;
+        return getAimedAt(
+            transform, getDefaultTransform().position + position);
     }
 
     gfx::Vec3 getForward(const CameraTransform &transform)
@@ -105,13 +132,11 @@ namespace antwika::camera
         const float upDistance,
         const float step)
     {
-        const auto ahead = getForward(transform);
-        const auto right = glm::normalize(
-            glm::cross(ahead, gfx::Vec3{0.0F, 1.0F, 0.0F}));
-        const auto overhead = glm::cross(right, ahead);
+        const auto basis = basisOf(transform);
 
         transform.position += (
-            (right * acrossDistance) + (overhead * upDistance)) * step;
+            (basis.rightDirection * acrossDistance)
+            + (basis.overheadDirection * upDistance)) * step;
 
         return transform;
     }
@@ -187,14 +212,10 @@ namespace antwika::camera
         const float rise,
         const float step)
     {
-        const auto forwardDirection = getForward(transform);
-        const auto right = glm::normalize(
-            glm::cross(forwardDirection, gfx::Vec3{0.0F, 1.0F, 0.0F}));
-        const auto overhead =
-            glm::normalize(glm::cross(right, forwardDirection));
-        const auto askedVector = (forwardDirection * ahead)
-                           + (right * acrossDistance)
-                           + (overhead * rise);
+        const auto basis = basisOf(transform);
+        const auto askedVector = (basis.aheadDirection * ahead)
+                           + (basis.rightDirection * acrossDistance)
+                           + (basis.overheadDirection * rise);
         const auto askedLength = glm::length(askedVector);
 
         if (askedLength < 0.0001F)

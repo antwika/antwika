@@ -3,10 +3,11 @@ find_package(GTest REQUIRED)
 add_subdirectory(fakes)
 
 add_executable(antwika_gameplay_tests
+    CharactersTest.cpp
     ComponentNamesTest.cpp
     GameLoopTest.cpp
     GameTest.cpp
-    RosterTest.cpp
+    PadReportsTest.cpp
 )
 
 target_link_libraries(antwika_gameplay_tests

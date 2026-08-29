@@ -94,7 +94,7 @@ TEST_F(EditorTest, Editor_OpensAMapWhoseTilesTransitionIntoOneAnother)
     });
 }
 
-TEST_F(EditorTest, Editor_StandsTheRosterOnTheWorldItJustBuilt)
+TEST_F(EditorTest, Editor_StandsTheCharactersOnTheWorldItJustBuilt)
 {
     const ScratchDirectory scratch("editor-spawn");
     const auto mapPath = scratch.pathIn("spawn.json");

@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <array>
 #include <functional>
 #include <map>
 #include <optional>
@@ -13,6 +12,7 @@
 #include <antwika/wfc/SolverLimits.hpp>
 
 #include <antwika/decor/Decor.hpp>
+#include <antwika/voxel/FacingTraits.hpp>
 
 #include "DecorDetail.hpp"
 
@@ -54,16 +54,11 @@ namespace antwika::decor
                 getHashMix(mixedSeed | 1U) % kFullFrequency);
         }
 
-        constexpr std::array<voxel::VoxelPosition, 4> kWallTangentPositions{
-            voxel::VoxelPosition{.x = 1},
-            voxel::VoxelPosition{.x = -1},
-            voxel::VoxelPosition{.z = -1},
-            voxel::VoxelPosition{.z = 1}};
-
         voxel::VoxelPosition getWallTangent(const std::size_t side)
         {
-            return kWallTangentPositions.at(
-                side % kWallTangentPositions.size());
+            return voxel::stepOf(
+                voxel::kCardinalFacings.at(
+                    side % voxel::kCardinalFacings.size()));
         }
 
         std::vector<std::size_t> getShuffledValues(
@@ -119,6 +114,314 @@ namespace antwika::decor
             return tilesCompatible(rules, oneTile, nearEdge, otherTile)
                    && tilesCompatible(rules, otherTile, farFacing, oneTile);
         }
+    }
+
+    namespace
+    {
+        struct DecorPlacement final
+        {
+            std::size_t face = 0;
+
+            voxel::VoxelPosition position{};
+
+            std::size_t side = 0;
+        };
+
+        struct DecorWeaveState final
+        {
+            const std::vector<voxelmap::FaceRef> &faces;
+            const std::span<const tilemap::Tile> drawnTiles;
+            const std::span<const DecorTile> decor;
+            const tile::TileRules &decorRules;
+            std::uint32_t seed;
+            std::size_t blank;
+
+            std::map<std::size_t, tilemap::Tile> stampedTiles{};
+            std::vector<std::size_t> order{};
+            std::vector<std::size_t> placeOf{};
+            std::vector<DecorPlacement> decorPlacements{};
+            std::map<std::pair<std::int32_t, std::int32_t>, std::size_t>
+                byGround{};
+            std::map<std::pair<std::size_t, voxel::VoxelPosition>,
+                std::size_t>
+                byWall{};
+            std::vector<wfc::Domain> waveDomains{};
+            std::vector<std::optional<std::size_t>> preferences{};
+            std::vector<wfc::AdjacencyConstraint> adjacencies{};
+        };
+
+        void layShuffledOrder(DecorWeaveState &weave)
+        {
+            weave.order =
+                getShuffledValues(weave.decor.size(), weave.seed);
+            weave.placeOf.assign(weave.decor.size(), weave.blank);
+
+            for (std::size_t place = 0; place < weave.order.size(); ++place)
+            {
+                weave.placeOf[weave.order[place]] = place;
+            }
+        }
+
+        [[nodiscard]] std::size_t likedTileFor(
+            const std::vector<std::pair<std::size_t, std::uint32_t>>
+                &offeredTiles,
+            const voxel::VoxelPosition position,
+            const std::size_t side,
+            const std::uint32_t seed)
+        {
+            auto total = std::uint32_t{0};
+
+            for (const auto &[which, weight] : offeredTiles)
+            {
+                total += weight;
+            }
+
+            const auto evenly = total == 0;
+
+            if (evenly)
+            {
+                total = static_cast<std::uint32_t>(
+                    offeredTiles.size());
+            }
+
+            auto rollValue = choiceRollFor(position, side, seed) % total;
+            auto likedTile = offeredTiles.front().first;
+
+            for (const auto &[which, weight] : offeredTiles)
+            {
+                const auto share =
+                    evenly ? std::uint32_t{1} : weight;
+
+                if (rollValue < share)
+                {
+                    likedTile = which;
+                    break;
+                }
+
+                rollValue -= share;
+            }
+
+            return likedTile;
+        }
+
+        void layPlacements(DecorWeaveState &weave)
+        {
+            for (std::size_t index = 0; index < weave.faces.size(); ++index)
+            {
+                const auto looking = gfx::Vec3(
+                    voxelmap::getFaceNormal(weave.faces[index].side)).y;
+                const auto upward = looking > 0.0F;
+
+                if (looking < 0.0F || weave.stampedTiles.contains(index))
+                {
+                    continue;
+                }
+
+                wfc::Domain mayDomain(weave.decor.size() + 1);
+                std::vector<std::pair<std::size_t, std::uint32_t>>
+                    offeredTiles;
+
+                for (std::size_t which = 0; which < weave.decor.size();
+                     ++which)
+                {
+                    const auto &record = weave.decor[which];
+                    const auto fits =
+                        std::find(
+                            record.allowedBaseTiles.begin(),
+                            record.allowedBaseTiles.end(),
+                            weave.drawnTiles[index])
+                        != record.allowedBaseTiles.end();
+
+                    if (fits && !isDecorSpanned(record)
+                        && record.tile.atlas
+                               == weave.drawnTiles[index].atlas
+                        && frequencyRollFor(
+                               weave.faces[index].cell.position,
+                               which,
+                               weave.seed,
+                               upward ? 0U
+                                      : static_cast<std::uint32_t>(
+                                            weave.faces[index].side + 1))
+                               < record.frequency)
+                    {
+                        offeredTiles.emplace_back(which, record.weight);
+                    }
+                    else
+                    {
+                        mayDomain.remove(weave.order[which]);
+                    }
+                }
+
+                if (offeredTiles.empty())
+                {
+                    continue;
+                }
+
+                const auto likedTile = likedTileFor(
+                    offeredTiles,
+                    weave.faces[index].cell.position,
+                    weave.faces[index].side,
+                    weave.seed);
+
+                weave.preferences.push_back(weave.order[likedTile]);
+
+                if (upward)
+                {
+                    weave.byGround.emplace(
+                        std::pair{
+                            weave.faces[index].cell.position.x,
+                            weave.faces[index].cell.position.z},
+                        weave.decorPlacements.size());
+                }
+                else
+                {
+                    weave.byWall.emplace(
+                        std::pair{
+                            weave.faces[index].side,
+                            weave.faces[index].cell.position},
+                        weave.decorPlacements.size());
+                }
+
+                weave.decorPlacements.push_back(
+                    DecorPlacement{
+                        .face = index,
+                        .position = weave.faces[index].cell.position,
+                        .side = weave.faces[index].side});
+                weave.waveDomains.push_back(mayDomain);
+            }
+        }
+
+        [[nodiscard]] const wfc::CompatibilityTable &seamTableFor(
+            const wfc::CompatibilityTable &interiorTable,
+            const wfc::CompatibilityTable &boundaryTable,
+            const voxel::VoxelPosition minePosition,
+            const voxel::VoxelPosition otherPosition,
+            std::int32_t voxel::VoxelPosition::*axis)
+        {
+            const auto sameCube = voxel::cubeCornerOf(minePosition).*axis
+                               == voxel::cubeCornerOf(otherPosition).*axis;
+
+            return sameCube ? interiorTable : boundaryTable;
+        }
+
+        void layAdjacencies(DecorWeaveState &weave, const SeamTables &tables)
+        {
+            for (std::size_t index = 0;
+                 index < weave.decorPlacements.size();
+                 ++index)
+            {
+                const auto &mine = weave.decorPlacements[index].position;
+
+                if (weave.decorPlacements[index].side != voxelmap::kTopSide)
+                {
+                    const auto way =
+                        getWallTangent(weave.decorPlacements[index].side);
+                    const auto sideways = voxel::VoxelPosition{
+                        .x = mine.x + way.x,
+                        .y = mine.y,
+                        .z = mine.z + way.z};
+                    const auto underPosition = voxel::VoxelPosition{
+                        .x = mine.x, .y = mine.y - 1, .z = mine.z};
+                    const auto acrossWall = weave.byWall.find(
+                        std::pair{
+                            weave.decorPlacements[index].side, sideways});
+                    const auto belowWall = weave.byWall.find(
+                        std::pair{
+                            weave.decorPlacements[index].side,
+                            underPosition});
+
+                    if (acrossWall != weave.byWall.end())
+                    {
+                        weave.adjacencies.emplace_back(
+                            index,
+                            acrossWall->second,
+                            seamTableFor(
+                                tables.horizontalInteriorTable,
+                                tables.horizontalBoundaryTable,
+                                mine,
+                                sideways,
+                                way.x != 0 ? &voxel::VoxelPosition::x
+                                           : &voxel::VoxelPosition::z));
+                    }
+
+                    if (belowWall != weave.byWall.end())
+                    {
+                        weave.adjacencies.emplace_back(
+                            index,
+                            belowWall->second,
+                            seamTableFor(
+                                tables.verticalInteriorTable,
+                                tables.verticalBoundaryTable,
+                                mine,
+                                underPosition,
+                                &voxel::VoxelPosition::y));
+                    }
+
+                    continue;
+                }
+
+                const auto east = weave.byGround.find(
+                    std::pair{mine.x + 1, mine.z});
+                const auto south = weave.byGround.find(
+                    std::pair{mine.x, mine.z + 1});
+
+                if (east != weave.byGround.end()
+                    && weave.decorPlacements[east->second].position.y
+                           == mine.y)
+                {
+                    weave.adjacencies.emplace_back(
+                        index,
+                        east->second,
+                        seamTableFor(
+                            tables.horizontalInteriorTable,
+                            tables.horizontalBoundaryTable,
+                            mine,
+                            weave.decorPlacements[east->second].position,
+                            &voxel::VoxelPosition::x));
+                }
+
+                if (south != weave.byGround.end()
+                    && weave.decorPlacements[south->second].position.y
+                           == mine.y)
+                {
+                    weave.adjacencies.emplace_back(
+                        index,
+                        south->second,
+                        seamTableFor(
+                            tables.verticalInteriorTable,
+                            tables.verticalBoundaryTable,
+                            mine,
+                            weave.decorPlacements[south->second].position,
+                            &voxel::VoxelPosition::z));
+                }
+            }
+        }
+
+        [[nodiscard]] std::map<std::size_t, tilemap::Tile> getDecoratedStamps(
+            const DecorWeaveState &weave,
+            const std::vector<std::size_t> &assignment)
+        {
+            auto updatedStamps = weave.stampedTiles;
+
+            for (std::size_t index = 0;
+                 index < weave.decorPlacements.size();
+                 ++index)
+            {
+                const auto value = assignment[index];
+                const auto which = value < weave.blank
+                                 ? weave.placeOf[value]
+                                 : weave.blank;
+
+                if (which != weave.blank)
+                {
+                    updatedStamps.emplace(
+                        weave.decorPlacements[index].face,
+                        weave.decor[which].tile);
+                }
+            }
+
+            return updatedStamps;
+        } // GCOVR_EXCL_LINE
     }
 
     std::vector<std::pair<std::size_t, std::map<std::size_t, tilemap::Tile>>>
@@ -182,311 +485,68 @@ namespace antwika::decor
             return {};
         }
 
-        const auto stampedTiles =
+        DecorWeaveState weave{
+            .faces = faces,
+            .drawnTiles = drawnTiles,
+            .decor = decor,
+            .decorRules = decorRules,
+            .seed = seed,
+            .blank = decor.size()};
+
+        weave.stampedTiles =
             getPlaceSpannedDecor(faces, drawnTiles, decor, seed);
-        const auto blank = decor.size();
-        const auto order = getShuffledValues(decor.size(), seed);
 
-        struct DecorPlacement final
+        layShuffledOrder(weave);
+        layPlacements(weave);
+
+        if (weave.decorPlacements.empty())
         {
-            std::size_t face = 0;
-            voxel::VoxelPosition position{};
-            std::size_t side = 0;
-        };
-
-        std::vector<DecorPlacement> decorPlacements;
-        std::map<std::pair<std::int32_t, std::int32_t>, std::size_t>
-            byGround;
-        std::map<std::pair<std::size_t, voxel::VoxelPosition>, std::size_t>
-            byWall;
-        std::vector<wfc::Domain> waveDomains;
-        std::vector<std::optional<std::size_t>> preferences;
-
-        for (std::size_t index = 0; index < faces.size(); ++index)
-        {
-            const auto looking =
-                gfx::Vec3(voxelmap::getFaceNormal(faces[index].side)).y;
-            const auto upward = looking > 0.0F;
-
-            if (looking < 0.0F || stampedTiles.contains(index))
-            {
-                continue;
-            }
-
-            wfc::Domain mayDomain(decor.size() + 1);
-            std::vector<std::pair<std::size_t, std::uint32_t>>
-                offeredTiles;
-
-            for (std::size_t which = 0; which < decor.size(); ++which)
-            {
-                const auto &record = decor[which];
-                const auto fits =
-                    std::find(
-                        record.allowedBaseTiles.begin(),
-                        record.allowedBaseTiles.end(),
-                        drawnTiles[index])
-                    != record.allowedBaseTiles.end();
-
-                if (fits && !isDecorSpanned(record)
-                    && record.tile.atlas == drawnTiles[index].atlas
-                    && frequencyRollFor(
-                           faces[index].cell.position,
-                           which,
-                           seed,
-                           upward ? 0U
-                                  : static_cast<std::uint32_t>(
-                                        faces[index].side + 1))
-                           < record.frequency)
-                {
-                    offeredTiles.emplace_back(which, record.weight);
-                }
-                else
-                {
-                    mayDomain.remove(order[which]);
-                }
-            }
-
-            if (offeredTiles.empty())
-            {
-                continue;
-            }
-
-            auto total = std::uint32_t{0};
-
-            for (const auto &[which, weight] : offeredTiles)
-            {
-                total += weight;
-            }
-
-            const auto evenly = total == 0;
-
-            if (evenly)
-            {
-                total = static_cast<std::uint32_t>(
-                    offeredTiles.size());
-            }
-
-            auto rollValue = choiceRollFor(
-                              faces[index].cell.position,
-                              faces[index].side,
-                              seed)
-                          % total;
-            auto likedTile = offeredTiles.front().first;
-
-            for (const auto &[which, weight] : offeredTiles)
-            {
-                const auto share =
-                    evenly ? std::uint32_t{1} : weight;
-
-                if (rollValue < share)
-                {
-                    likedTile = which;
-                    break;
-                }
-
-                rollValue -= share;
-            }
-
-            preferences.push_back(order[likedTile]);
-
-            if (upward)
-            {
-                byGround.emplace(
-                    std::pair{
-                        faces[index].cell.position.x,
-                        faces[index].cell.position.z},
-                    decorPlacements.size());
-            }
-            else
-            {
-                byWall.emplace(
-                    std::pair{
-                        faces[index].side,
-                        faces[index].cell.position},
-                    decorPlacements.size());
-            }
-
-            decorPlacements.push_back(
-                DecorPlacement{
-                    .face = index,
-                    .position = faces[index].cell.position,
-                    .side = faces[index].side});
-            waveDomains.push_back(mayDomain);
+            return weave.stampedTiles;
         }
 
-        if (decorPlacements.empty())
-        {
-            return stampedTiles;
-        }
-
-        const auto meets = [&decor, &decorRules, blank, &order](
+        const auto meets = [&weave](
                                const std::size_t one,
                                const voxel::Side side,
                                const voxel::EdgeKind kind,
                                const std::size_t other)
         {
-            if (one == blank || other == blank)
+            if (one == weave.blank || other == weave.blank)
             {
                 return true;
             }
 
-            std::size_t oneAt = blank;
-            std::size_t otherAt = blank;
-
-            for (std::size_t index = 0; index < order.size(); ++index)
-            {
-                if (order[index] == one)
-                {
-                    oneAt = index;
-                }
-
-                if (order[index] == other)
-                {
-                    otherAt = index;
-                }
-            }
-
             return isSeamCompatible(
-                             decorRules,
-                             decor[oneAt].tile,
-                             side,
-                             kind,
-                             decor[otherAt].tile);
+                weave.decorRules,
+                weave.decor[weave.placeOf[one]].tile,
+                side,
+                kind,
+                weave.decor[weave.placeOf[other]].tile);
         };
 
         const auto tables =
             seamTables(decor.size() + 1, meets);
 
-        std::vector<wfc::AdjacencyConstraint> adjacencies;
-
-        for (std::size_t index = 0; index < decorPlacements.size(); ++index)
-        {
-            const auto &mine = decorPlacements[index].position;
-
-            if (decorPlacements[index].side != 4)
-            {
-                const auto way = getWallTangent(decorPlacements[index].side);
-                const auto sideways = voxel::VoxelPosition{
-                    .x = mine.x + way.x,
-                    .y = mine.y,
-                    .z = mine.z + way.z};
-                const auto underPosition = voxel::VoxelPosition{
-                    .x = mine.x, .y = mine.y - 1, .z = mine.z};
-                const auto acrossWall = byWall.find(
-                    std::pair{decorPlacements[index].side, sideways});
-                const auto belowWall = byWall.find(
-                    std::pair{decorPlacements[index].side, underPosition});
-
-                if (acrossWall != byWall.end())
-                {
-                    const auto sameCube =
-                        way.x != 0
-                               ? voxel::cubeCornerOf(mine).x
-                                  == voxel::cubeCornerOf(sideways).x
-                                   : voxel::cubeCornerOf(mine).z
-                                  == voxel::cubeCornerOf(sideways).z;
-
-                    adjacencies.emplace_back(
-                        index,
-                        acrossWall->second,
-                        sameCube ? tables.horizontalInteriorTable
-                               : tables.horizontalBoundaryTable);
-                }
-
-                if (belowWall != byWall.end())
-                {
-                    const auto cubeOffset =
-                        voxel::cubeCornerOf(mine).y
-                        == voxel::cubeCornerOf(underPosition).y;
-
-                    adjacencies.emplace_back(
-                        index,
-                        belowWall->second,
-                        cubeOffset ? tables.verticalInteriorTable
-                               : tables.verticalBoundaryTable);
-                }
-
-                continue;
-            }
-
-            const auto east = byGround.find(
-                std::pair{mine.x + 1, mine.z});
-            const auto south = byGround.find(
-                std::pair{mine.x, mine.z + 1});
-
-            if (east != byGround.end()
-                && decorPlacements[east->second].position.y == mine.y)
-            {
-                const auto cubeOffset =
-                    voxel::cubeCornerOf(mine).x
-                    == voxel::cubeCornerOf(
-                        decorPlacements[east->second].position).x;
-
-                adjacencies.emplace_back(
-                    index,
-                    east->second,
-                    cubeOffset ? tables.horizontalInteriorTable
-                           : tables.horizontalBoundaryTable);
-            }
-
-            if (south != byGround.end()
-                && decorPlacements[south->second].position.y == mine.y)
-            {
-                const auto cubeOffset =
-                    voxel::cubeCornerOf(mine).z
-                    == voxel::cubeCornerOf(
-                        decorPlacements[south->second].position).z;
-
-                adjacencies.emplace_back(
-                    index,
-                    south->second,
-                    cubeOffset ? tables.verticalInteriorTable
-                           : tables.verticalBoundaryTable);
-            }
-        }
+        layAdjacencies(weave, tables);
 
         std::vector<std::reference_wrapper<const wfc::IConstraint>>
-            constraints(adjacencies.begin(), adjacencies.end());
+            constraints(
+                weave.adjacencies.begin(), weave.adjacencies.end());
 
         const auto solution =
             wfc::Solver(
-                std::move(waveDomains),
+                std::move(weave.waveDomains),
                 std::move(constraints),
                 {},
                 wfc::SolverLimits{.maxSteps = kMaxSolveSteps},
-                std::move(preferences))
+                std::move(weave.preferences))
                 .getSolveResult();
-
-        auto updatedStamps = stampedTiles;
 
         if (solution.outcome != wfc::SolveOutcome::Solved)
         {
-            return updatedStamps;
+            return weave.stampedTiles;
         }
 
-        for (std::size_t index = 0; index < decorPlacements.size(); ++index)
-        {
-            const auto value = solution.assignment[index];
-
-            std::size_t which = blank;
-
-            for (std::size_t place = 0; place < order.size();
-                 ++place)
-            {
-                if (order[place] == value)
-                {
-                    which = place;
-                }
-            }
-
-            if (which != blank)
-            {
-                updatedStamps.emplace(decorPlacements[index].face,
-                decor[which].tile);
-            }
-        }
-
-        return updatedStamps;
+        return getDecoratedStamps(weave, solution.assignment);
     } // GCOVR_EXCL_LINE
 
 }

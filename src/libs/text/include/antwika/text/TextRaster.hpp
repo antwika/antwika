@@ -5,6 +5,7 @@
 #include <string_view>
 
 #include "antwika/gfx/Color.hpp"
+#include "antwika/gfx/Glyphs.hpp"
 #include "antwika/text/GlyphCells.hpp"
 #include "antwika/text/GlyphCellsCache.hpp"
 #include "antwika/gfx/Point.hpp"
@@ -31,11 +32,11 @@ namespace antwika::text
         GlyphCellsCache &cache,
         gfx::Point originPoint,
         std::string_view text,
-        std::uint32_t scale,
+        gfx::TextScale scale,
         gfx::Color color,
         Visit visit)
     {
-        if (scale == 0)
+        if (scale.multiplier == 0)
         {
             return;
         }

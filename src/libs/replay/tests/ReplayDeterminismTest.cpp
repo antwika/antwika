@@ -25,6 +25,7 @@ using antwika::engine::Engine;
 using antwika::engine::EngineLoop;
 using antwika::engine::StopSignal;
 using antwika::event::Event;
+using antwika::event::EventName;
 using antwika::event::EventDispatcher;
 using antwika::event::ITickEventSink;
 using antwika::event::TickEventRecorder;
@@ -73,7 +74,7 @@ TEST(
         TickEvent{
             .tick = 1,
             .event = Event{
-                .name = "game.score_increment",
+                .name = EventName{"game.score_increment"},
                 .payload = "amount=5",
             },
         },
@@ -118,7 +119,7 @@ TEST(
         TickEvent{
             .tick = 1,
             .event = Event{
-                .name = "game.score_increment",
+                .name = EventName{"game.score_increment"},
                 .payload = "amount=5",
             },
         },
@@ -162,7 +163,7 @@ TEST(
         TickEvent{
             .tick = 1,
             .event = Event{
-                .name = "game.score_increment",
+                .name = EventName{"game.score_increment"},
                 .payload = "amount=5",
             },
         },

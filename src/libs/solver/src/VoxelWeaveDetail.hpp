@@ -8,7 +8,7 @@
 #include <set>
 #include <vector>
 
-#include <antwika/gfx/Math3D.hpp>
+#include <antwika/geometry/Math3D.hpp>
 #include <antwika/voxelmap/Voxel.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/tilemap/TileEdges.hpp>
@@ -39,10 +39,10 @@ namespace antwika::solver::weavedetail
     getRuledTilesByDomain(
         const tile::TileRules &rules);
 
-    [[nodiscard]] std::size_t faceAlong(const gfx::Vec3 direction);
+    [[nodiscard]] std::size_t faceAlong(const geometry::Vec3 direction);
 
     [[nodiscard]] bool isAtCubeFace(
-        voxel::VoxelPosition position, gfx::Vec3 direction);
+        voxel::VoxelPosition position, geometry::Vec3 direction);
 
     struct FaceEdge final
     {
@@ -52,11 +52,11 @@ namespace antwika::solver::weavedetail
     };
 
         [[nodiscard]] voxel::VoxelPosition getOffsetBy(
-            voxel::VoxelPosition fromPosition, gfx::Vec3 offset);
+            voxel::VoxelPosition fromPosition, geometry::Vec3 offset);
 
-        [[nodiscard]] gfx::Vec3 acrossOf(const std::size_t side);
+        [[nodiscard]] geometry::Vec3 acrossOf(const std::size_t side);
 
-        [[nodiscard]] gfx::Vec3 downOf(const std::size_t side);
+        [[nodiscard]] geometry::Vec3 downOf(const std::size_t side);
 
         [[nodiscard]] tilemap::Atlas atlasOf(const std::size_t side);
 
@@ -73,7 +73,7 @@ namespace antwika::solver::weavedetail
             const tilemap::TileEdge thereEdge);
 
         [[nodiscard]] voxel::Side getSideTowards(
-            const std::size_t face, const gfx::Vec3 direction);
+            const std::size_t face, const geometry::Vec3 direction);
 
         [[nodiscard]] bool isSameSurface(
             const voxelmap::FaceRef &oneFace,

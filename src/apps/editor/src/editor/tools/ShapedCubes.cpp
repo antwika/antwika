@@ -12,14 +12,14 @@ namespace antwika::editor
     std::vector<voxel::VoxelPosition> getShapedCubes(
         const voxel::VoxelPosition fromPosition,
         const voxel::VoxelPosition toPosition,
-        const map::Paint paint)
+        const Paint paint)
     {
         const auto a = antwika::voxel::cubeCornerOf(fromPosition);
         const auto b = antwika::voxel::cubeCornerOf(toPosition);
 
         std::vector<voxel::VoxelPosition> positions;
 
-        if (paint == map::Paint::Rect)
+        if (paint == Paint::Rect)
         {
             for (auto x = std::min(a.x, b.x);
                  x <= std::max(a.x, b.x);

@@ -9,6 +9,8 @@
 #include <antwika/gfx/MeshMaterial.hpp>
 #include <antwika/gfx/Size.hpp>
 
+#include "antwika/render/DoubleSidedTriangles.hpp"
+
 namespace antwika::render
 {
 
@@ -35,15 +37,8 @@ namespace antwika::render
                 .position = {-1.0F, 1.0F, 0.0F},
                 .texCoordinate = {0.0F, 1.0F}});
 
-        for (const auto corner : {1U, 2U, 0U, 2U, 3U, 0U})
-        {
-            mesh.indices.push_back(corner);
-        }
-
-        for (const auto corner : {2U, 1U, 0U, 3U, 2U, 0U})
-        {
-            mesh.indices.push_back(corner);
-        }
+        layDoubleSidedTriangle(mesh, {1U, 2U, 0U});
+        layDoubleSidedTriangle(mesh, {2U, 3U, 0U});
 
         return mesh;
     } // GCOVR_EXCL_LINE
@@ -80,11 +75,11 @@ namespace antwika::render
                     .size = framePixelsSize, .depth = true});
         }
 
-        if (!glowTarget)
+        if (!glowTarget || glowTarget->getSize() != framePixelsSize)
         {
             glowTarget = viewportRenderer.createRenderTarget(
                 gfx::RenderTargetSpec{
-                    .size = camera::kCanvasSize, .depth = true});
+                    .size = framePixelsSize, .depth = true});
         }
 
         viewportRenderer.setShaderNumber(voxelShader, "glowOnly", 1.0F);
@@ -116,12 +111,14 @@ namespace antwika::render
                 .nearPlane = -1.0F,
                 .farPlane = 1.0F}};
 
+        const auto sceneSize = sceneTarget->getSize();
+
         viewportRenderer.setShaderVector(
             *bloomShader,
             "texelSize",
             gfx::Vec3{
-                1.0F / static_cast<float>(camera::kCanvasSize.width),
-                1.0F / static_cast<float>(camera::kCanvasSize.height),
+                1.0F / static_cast<float>(sceneSize.width),
+                1.0F / static_cast<float>(sceneSize.height),
                 0.0F});
         viewportRenderer.setShaderNumber(
             *bloomShader, "bloomStrength", kBloomStrength);

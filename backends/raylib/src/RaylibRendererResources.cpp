@@ -91,12 +91,12 @@ namespace antwika::gfx::raylib
     void RaylibRenderer::updateTexture(
         ITexture &texture, const Bitmap &bitmap)
     {
-        auto *mine = dynamic_cast<RaylibTexture *>(&texture);
+        auto *mine = ownResourceOf<RaylibTexture>(
+            &texture,
+            "a texture this renderer does not hold was updated");
 
-        if (mine == nullptr || !mine->isOwnedBy(*this) || !mine->isLoaded())
+        if (mine == nullptr)
         {
-            sayRefused("a texture this renderer does not hold was updated");
-
             return;
         }
 
@@ -202,12 +202,11 @@ namespace antwika::gfx::raylib
 
     void RaylibRenderer::updateMesh(IMesh &mesh, const MeshData &data)
     {
-        auto *mine = dynamic_cast<RaylibMesh *>(&mesh);
+        auto *mine = ownResourceOf<RaylibMesh>(
+            &mesh, "a mesh this renderer does not hold was updated");
 
-        if (mine == nullptr || !mine->isOwnedBy(*this) || !mine->isLoaded())
+        if (mine == nullptr)
         {
-            sayRefused("a mesh this renderer does not hold was updated");
-
             return;
         }
 
@@ -332,96 +331,38 @@ namespace antwika::gfx::raylib
         return std::make_unique<RaylibRenderTarget>(*this, spec);
     }
 
-    void RaylibRenderer::trackTarget(RaylibRenderTarget &target)
+    void RaylibRenderer::trackResource(RaylibResource &resource)
     {
-        liveTargets.push_back(&target);
+        liveResources.push_back(&resource);
     }
 
-    void RaylibRenderer::untrackTarget(
-        const RaylibRenderTarget &target) noexcept
+    void RaylibRenderer::untrackResource(
+        const RaylibResource &resource) noexcept
     {
-        if (inTarget == &target)
+        if (static_cast<const RaylibResource *>(inTarget) == &resource)
         {
             inTarget = nullptr;
         }
 
-        for (auto liveTarget = liveTargets.begin();
-             liveTarget != liveTargets.end();
-             ++liveTarget)
-        {
-            if (*liveTarget == &target)
-            {
-                liveTargets.erase(liveTarget);
-                return;
-            }
-        }
-    }
-
-    void RaylibRenderer::trackTexture(RaylibTexture &texture)
-    {
-        liveTextures.push_back(&texture);
-    }
-
-    void RaylibRenderer::untrackTexture(
-        const RaylibTexture &texture) noexcept
-    {
-        std::erase(liveTextures, &texture);
-    }
-
-    void RaylibRenderer::trackMesh(RaylibMesh &mesh)
-    {
-        liveMeshes.push_back(&mesh);
-    }
-
-    void RaylibRenderer::untrackMesh(const RaylibMesh &mesh) noexcept
-    {
-        std::erase(liveMeshes, &mesh);
-    }
-
-    void RaylibRenderer::trackShader(RaylibShader &shader)
-    {
-        liveShaders.push_back(&shader);
-    }
-
-    void RaylibRenderer::untrackShader(
-        const RaylibShader &shader) noexcept
-    {
-        std::erase(liveShaders, &shader);
-        uniformLocations.erase(&shader);
+        uniformLocations.erase(&resource);
+        std::erase(liveResources, &resource);
     }
 
     const ::Texture2D *RaylibRenderer::ownTextureOf(
         const ITexture *texture) const noexcept
     {
-        const auto *mine = dynamic_cast<const RaylibTexture *>(texture);
+        const auto *mine = ownResourceOf<const RaylibTexture>(
+            texture, "a texture this renderer does not hold was bound");
 
-        if (mine == nullptr || !mine->isOwnedBy(*this)
-            || !mine->isLoaded())
-        {
-            if (texture != nullptr)
-            {
-                sayRefused(
-                    "a texture this renderer does not hold was bound");
-            }
-
-            return nullptr;
-        }
-
-        return &mine->getRawHandle();
+        return mine == nullptr ? nullptr : &mine->getRawHandle();
     }
 
     const ::Shader *RaylibRenderer::ownShaderOf(
         const IShader *shader) const noexcept
     {
-        const auto *mine = dynamic_cast<const RaylibShader *>(shader);
+        const auto *mine = ownResourceOf<const RaylibShader>(shader, {});
 
-        if (mine == nullptr || !mine->isOwnedBy(*this)
-            || !mine->isLoaded())
-        {
-            return nullptr;
-        }
-
-        return &mine->getRawHandle();
+        return mine == nullptr ? nullptr : &mine->getRawHandle();
     }
 
 }

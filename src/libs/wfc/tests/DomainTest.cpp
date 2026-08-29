@@ -95,14 +95,15 @@ TEST(DomainTest, Add_ChangesNothingForAPresentValue)
     EXPECT_EQ(domain, Domain(3));
 }
 
-TEST(DomainTest, RestrictTo_ReinstatesARemovedValue)
+TEST(DomainTest, RestrictTo_EmptiesTheDomainForARemovedValue)
 {
     Domain domain(3);
     domain.remove(2);
     domain.restrictTo(2);
 
-    EXPECT_EQ(domain.getCount(), 1U);
-    EXPECT_EQ(domain.getSingleValue(), 2U);
+    EXPECT_TRUE(domain.isEmpty());
+    EXPECT_EQ(domain.getCount(), 0U);
+    EXPECT_FALSE(domain.contains(2));
 }
 
 TEST(DomainTest, Values_IterateAscending)
@@ -185,9 +186,16 @@ TEST(DomainTest, Add_IgnoresTheValueOneStepPastTheAlphabet)
     EXPECT_EQ(domain.getAlphabetSize(), 3U);
 }
 
-TEST(DomainTest, RestrictTo_IgnoresAnOutOfRangeValue)
+TEST(DomainTest, RestrictTo_ThrowsOnAnOutOfRangeValue)
 {
     Domain domain(3);
-    domain.restrictTo(5);
+    EXPECT_THROW(domain.restrictTo(5), WfcError);
+    EXPECT_EQ(domain, Domain(3));
+}
+
+TEST(DomainTest, RestrictTo_ThrowsOnTheValueOneStepPastTheAlphabet)
+{
+    Domain domain(3);
+    EXPECT_THROW(domain.restrictTo(3), WfcError);
     EXPECT_EQ(domain, Domain(3));
 }

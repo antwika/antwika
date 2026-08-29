@@ -12,6 +12,8 @@ namespace antwika::ecs
 
         ~OpenPhase();
 
+        void close();
+
         OpenPhase(const OpenPhase &) = delete;
         OpenPhase(OpenPhase &&) = delete;
 

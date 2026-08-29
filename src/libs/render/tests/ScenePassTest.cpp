@@ -2,6 +2,8 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <string_view>
+#include <vector>
 
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/IMesh.hpp>
@@ -126,7 +128,7 @@ TEST(ScenePassTest, Draw_MakesItsTargetsOnceAndKeepsThem)
         nothing);
 }
 
-TEST(ScenePassTest, Draw_AsksForASceneTargetTheSizeOfAResizedWindow)
+TEST(ScenePassTest, Draw_AsksForBothTargetsTheSizeOfAResizedWindow)
 {
     NiceMock<MockRenderer> innerRenderer;
     handsOutResources(innerRenderer);
@@ -144,7 +146,7 @@ TEST(ScenePassTest, Draw_AsksForASceneTargetTheSizeOfAResizedWindow)
         nothing);
     viewportRenderer.resize(Size{.width = 1920, .height = 1080});
 
-    EXPECT_CALL(innerRenderer, createRenderTarget).Times(1);
+    EXPECT_CALL(innerRenderer, createRenderTarget).Times(2);
 
     pass.draw(
         viewportRenderer,
@@ -152,4 +154,64 @@ TEST(ScenePassTest, Draw_AsksForASceneTargetTheSizeOfAResizedWindow)
         antwika::gfx::Color{},
         nothing,
         nothing);
+}
+
+TEST(ScenePassTest, Draw_KeepsTheGlowTargetAndTexelStepAtTheSceneSize)
+{
+    NiceMock<MockRenderer> innerRenderer;
+    handsOutResources(innerRenderer);
+    ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
+    NiceMock<MockShader> voxelShader;
+    ScenePass pass;
+    const auto nothing = [] {};
+    std::vector<Size> targetSizes;
+    std::vector<antwika::gfx::Vec3> texelSizes;
+
+    ON_CALL(innerRenderer, createRenderTarget(::testing::_))
+        .WillByDefault(
+            [&targetSizes](const antwika::gfx::RenderTargetSpec &spec)
+            {
+                targetSizes.push_back(spec.size);
+
+                return std::unique_ptr<IRenderTarget>{
+                    std::make_unique<FakeSizedTarget>(spec.size)};
+            });
+    ON_CALL(
+        innerRenderer,
+        setShaderVector(::testing::_, ::testing::_, ::testing::_))
+        .WillByDefault(
+            [&texelSizes](
+                [[maybe_unused]] const IShader &shader,
+                const std::string_view name,
+                const antwika::gfx::Vec3 value)
+            {
+                if (name == "texelSize")
+                {
+                    texelSizes.push_back(value);
+                }
+            });
+
+    pass.open(viewportRenderer, ShaderSource{});
+    pass.draw(
+        viewportRenderer,
+        voxelShader,
+        antwika::gfx::Color{},
+        nothing,
+        nothing);
+    viewportRenderer.resize(Size{.width = 1920, .height = 1080});
+    pass.draw(
+        viewportRenderer,
+        voxelShader,
+        antwika::gfx::Color{},
+        nothing,
+        nothing);
+
+    ASSERT_EQ(targetSizes.size(), 4U);
+    EXPECT_EQ(targetSizes.at(1), (Size{.width = 960, .height = 540}));
+    EXPECT_EQ(targetSizes.at(3), (Size{.width = 1920, .height = 1080}));
+    ASSERT_EQ(texelSizes.size(), 2U);
+    EXPECT_EQ(texelSizes.at(0).x, 1.0F / 960.0F);
+    EXPECT_EQ(texelSizes.at(0).y, 1.0F / 540.0F);
+    EXPECT_EQ(texelSizes.at(1).x, 1.0F / 1920.0F);
+    EXPECT_EQ(texelSizes.at(1).y, 1.0F / 1080.0F);
 }

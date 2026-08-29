@@ -33,10 +33,14 @@ add_executable(antwika_input_tests
     PointerHintTest.cpp
     PositionTest.cpp
     StopOnKeySourceTest.cpp
+    TickEventSourceConformanceTest.cpp
 )
 
 target_link_libraries(antwika_input_tests
     PRIVATE
+        antwika::engine
+        antwika::event::tests::conformance
+        antwika::event::tests::fakes
         antwika::input
         antwika::input::tests::conformance
         antwika::input::tests::fakes

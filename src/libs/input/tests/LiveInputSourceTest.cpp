@@ -20,6 +20,7 @@
 #include "antwika/input/mocks/MockInputEventCodec.hpp"
 
 using antwika::event::Event;
+using antwika::event::EventName;
 using antwika::event::TickEvent;
 using antwika::input::InputEvent;
 using antwika::input::InputEventCodec;
@@ -42,12 +43,12 @@ namespace events = antwika::input::events;
 namespace
 {
     const Event kScripted{
-        .name = "life.toggle_cell", .payload = R"({"x":1,"y":2})"};
+        .name = EventName{"life.toggle_cell"}, .payload = R"({"x":1,"y":2})"};
 
-    [[nodiscard]] std::vector<std::string> namesOf(
+    [[nodiscard]] std::vector<EventName> namesOf(
         const std::vector<Event> &events)
     {
-        std::vector<std::string> names;
+        std::vector<EventName> names;
         for (const auto &event : events)
         {
             names.push_back(event.name);
@@ -94,7 +95,7 @@ TEST(LiveInputSourceTest, EventsFor_AppendsEveryEdgeAfterTheInnerEvents)
 
     EXPECT_EQ(
         namesOf(source.eventsFor(0)),
-        (std::vector<std::string>{
+        (std::vector<EventName>{
             kScripted.name,
             events::kPointerDown,
             events::kPointerMove,
@@ -103,7 +104,7 @@ TEST(LiveInputSourceTest, EventsFor_AppendsEveryEdgeAfterTheInnerEvents)
 
 TEST(LiveInputSourceTest, EventsFor_EncodesThroughTheCodecItWasGiven)
 {
-    const Event encodedEvent{.name = "input.made_up"};
+    const Event encodedEvent{.name = EventName{"input.made_up"}};
     const InputEvent edgeEvent = KeyPressed{.key = Key::Space};
 
     ReplaySource innerSource({});
@@ -142,7 +143,7 @@ TEST(LiveInputSourceTest, EventsFor_DrainsTheBackendEveryTick)
 TEST(LiveInputSourceTest, EventsFor_AsksTheInnerSourceForTheTickItWasGiven)
 {
     const Event laterEvent{
-        .name = "life.toggle_cell", .payload = R"({"x":0,"y":0})"};
+        .name = EventName{"life.toggle_cell"}, .payload = R"({"x":0,"y":0})"};
 
     ReplaySource innerSource({TickEvent{.tick = 3, .event = laterEvent}});
     FakeInputBackend backend;

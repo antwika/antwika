@@ -9,6 +9,8 @@
 #include <antwika/gfx/MeshData.hpp>
 #include <antwika/gfx/MeshMaterial.hpp>
 
+#include "antwika/render/DoubleSidedTriangles.hpp"
+
 namespace antwika::render
 {
 
@@ -55,12 +57,7 @@ namespace antwika::render
 
             for (std::uint32_t index = 1; index <= kSpokes; ++index)
             {
-                mesh.indices.push_back(0);
-                mesh.indices.push_back(index);
-                mesh.indices.push_back(index + 1);
-                mesh.indices.push_back(0);
-                mesh.indices.push_back(index + 1);
-                mesh.indices.push_back(index);
+                layDoubleSidedTriangle(mesh, {0U, index, index + 1U});
             }
 
             return mesh;
@@ -69,7 +66,7 @@ namespace antwika::render
 
     void Sprites::open(gfx::IRenderer &viewportRenderer)
     {
-        figureMesh = viewportRenderer.createMesh(character::getCharacterMesh());
+        characterMesh = viewportRenderer.createMesh(character::getCharacterMesh());
         shadowBlobMesh = viewportRenderer.createMesh(getShadowSpot());
     }
 
@@ -98,7 +95,7 @@ namespace antwika::render
         viewportRenderer.setShaderVector(
             shader, "spriteSpan", character::getFrameUvSize());
         viewportRenderer.drawMesh(
-            *figureMesh,
+            *characterMesh,
             character::getSpriteBillboardMatrix(
                 gfx::Vec3(modelMatrix * gfx::Vec4(localPosition, 1.0F)),
                 camera.getView()),

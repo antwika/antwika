@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 
+#include "antwika/gfx/Glyphs.hpp"
 #include "antwika/gfx/Size.hpp"
 
 namespace antwika::text
@@ -12,7 +13,7 @@ namespace antwika::text
     class GlyphCells final
     {
     public:
-        explicit GlyphCells(std::uint32_t scale);
+        explicit GlyphCells(gfx::TextScale scale);
 
         [[nodiscard]] gfx::Size getCellSize() const noexcept;
 

@@ -19,6 +19,7 @@
 #include "antwika/replay/ReplayWriter.hpp"
 
 using antwika::event::Event;
+using antwika::event::EventName;
 using antwika::event::TickEvent;
 using antwika::geometry::Size;
 using antwika::log::Level;
@@ -49,7 +50,7 @@ namespace
                 TickEvent{
                     .tick = tick,
                     .event = Event{
-                        .name = "input.pointer_move",
+                        .name = EventName{"input.pointer_move"},
                         .payload = R"({"x":512,"y":128})",
                     }});
         }
@@ -80,7 +81,7 @@ TEST(ReplayWriterReaderTest, Write_RoundTripsZeroEvents)
 TEST(ReplayWriterReaderTest, Write_RoundTripsOneEvent)
 {
     const std::vector<TickEvent> events{
-        TickEvent{.tick = 0, .event = Event{.name = "life.step"}},
+        TickEvent{.tick = 0, .event = Event{.name = EventName{"life.step"}}},
     };
     EXPECT_EQ(getRoundTrip(events), events);
 }
@@ -88,20 +89,20 @@ TEST(ReplayWriterReaderTest, Write_RoundTripsOneEvent)
 TEST(ReplayWriterReaderTest, Write_RoundTripsManyEventsInOrder)
 {
     const std::vector<TickEvent> events{
-        TickEvent{.tick = 0, .event = Event{.name = "life.step"}},
+        TickEvent{.tick = 0, .event = Event{.name = EventName{"life.step"}}},
         TickEvent{
             .tick = 0,
             .event = Event{
-                .name = "game.score_increment",
+                .name = EventName{"game.score_increment"},
                 .payload = R"({"amount":1})",
             },
         },
-        TickEvent{.tick = 1, .event = Event{.name = "life.step"}},
-        TickEvent{.tick = 2, .event = Event{.name = "life.step"}},
+        TickEvent{.tick = 1, .event = Event{.name = EventName{"life.step"}}},
+        TickEvent{.tick = 2, .event = Event{.name = EventName{"life.step"}}},
         TickEvent{
             .tick = 2,
             .event = Event{
-                .name = "game.score_increment",
+                .name = EventName{"game.score_increment"},
                 .payload = R"({"amount":4})",
             },
         },
@@ -122,7 +123,7 @@ TEST(ReplayWriterReaderTest, Write_KeepsANewlinePayloadOnOneLine)
     const std::vector<TickEvent> events{
         TickEvent{
             .tick = 0,
-            .event = Event{.name = "a.b", .payload = "one\ntwo"}},
+            .event = Event{.name = EventName{"a.b"}, .payload = "one\ntwo"}},
     };
     const auto text = getWrittenText(events);
 
@@ -222,7 +223,7 @@ TEST(ReplayWriterReaderTest, Read_DropsATornFinalLine)
     EXPECT_EQ(
         getReadText(text),
         (std::vector<TickEvent>{
-            TickEvent{.tick = 0, .event = Event{.name = "a.b"}}}));
+            TickEvent{.tick = 0, .event = Event{.name = EventName{"a.b"}}}}));
 }
 
 TEST(ReplayWriterReaderTest, Read_KeepsAFinalRecordWithNoNewline)
@@ -237,8 +238,8 @@ TEST(ReplayWriterReaderTest, Read_KeepsAFinalRecordWithNoNewline)
     EXPECT_EQ(
         getReadText(text),
         (std::vector<TickEvent>{
-            TickEvent{.tick = 0, .event = Event{.name = "a.b"}},
-            TickEvent{.tick = 1, .event = Event{.name = "c.d"}}}));
+            TickEvent{.tick = 0, .event = Event{.name = EventName{"a.b"}}},
+            TickEvent{.tick = 1, .event = Event{.name = EventName{"c.d"}}}}));
 }
 
 TEST(ReplayWriterReaderTest, Read_IgnoresBlankLinesBetweenRecords)
@@ -288,10 +289,10 @@ TEST(ReplayWriterReaderTest, Read_TakesAnOlderBuildsWholeDocument)
         (std::vector<TickEvent>{
             TickEvent{
                 .tick = 0,
-                .event = Event{.name = "a.b", .payload = "1"}},
+                .event = Event{.name = EventName{"a.b"}, .payload = "1"}},
             TickEvent{
                 .tick = 4,
-                .event = Event{.name = "c.d", .payload = "2"}}}));
+                .event = Event{.name = EventName{"c.d"}, .payload = "2"}}}));
 }
 
 TEST(ReplayWriterReaderTest, Read_RefusesContentAfterAWholeDocument)

@@ -22,9 +22,9 @@
 #include <antwika/schema/VersionedDocument.hpp>
 #include <antwika/tile/TilePaint.hpp>
 
-#include <antwika/character/Character.hpp>
 #include <antwika/map/MapFile.hpp>
 #include <antwika/map/MapFileError.hpp>
+
 #include "MapFileTables.hpp"
 #include "MapFileShared.hpp"
 #include "MapFileShared2.hpp"
@@ -243,23 +243,14 @@ namespace antwika::map
             getWrittenMarkedCube(map.exitCubePosition);
         document[std::string(kExitTargetKey)] = map.exitTarget;
 
-        auto figures = nlohmann::json::array();
+        auto characters = nlohmann::json::array();
 
-        for (const auto &figure : map.characters)
+        for (const auto &character : map.characters)
         {
-            figures.push_back(written(kCharacterFields, figure));
+            characters.push_back(written(kCharacterFields, character));
         }
 
-        document[std::string(kCharactersKey)] = figures;
-
-        auto plates = nlohmann::json::array();
-
-        for (const auto &plate : map.plates)
-        {
-            plates.push_back(written(kPlateFields, plate));
-        }
-
-        document[std::string(kPlatesKey)] = plates;
+        document[std::string(kCharactersKey)] = characters;
 
         outputStream << document.dump(kIndent) << '\n';
     }

@@ -20,9 +20,9 @@
 #include <antwika/schema/VersionedDocument.hpp>
 #include <antwika/tile/TilePaint.hpp>
 
-#include <antwika/character/Character.hpp>
 #include <antwika/map/MapFile.hpp>
 #include <antwika/map/MapFileError.hpp>
+
 #include "MapFileTables.hpp"
 #include "MapFileShared.hpp"
 #include "MapFileShared2.hpp"
@@ -166,8 +166,7 @@ namespace antwika::map
                     std::string(kStartKey),
                     std::string(kExitKey),
                     std::string(kExitTargetKey),
-                    std::string(kCharactersKey),
-                    std::string(kPlatesKey)};
+                    std::string(kCharactersKey)};
                 schema["properties"][std::string(kMagicKey)]["const"] =
                     std::string(kMapMagic);
                 schema["properties"]
@@ -256,10 +255,6 @@ namespace antwika::map
                       ["type"] = "array";
                 schema["properties"][std::string(kCharactersKey)]
                       ["items"] = getCharacterSchemaLatest();
-                schema["properties"][std::string(kPlatesKey)]
-                      ["type"] = "array";
-                schema["properties"][std::string(kPlatesKey)]
-                      ["items"] = getPlateSchema();
                 schema["properties"][std::string(kPaletteKey)]["type"] =
                     "array";
                 schema["properties"][std::string(kPaletteKey)]["items"] =
@@ -276,7 +271,7 @@ namespace antwika::map
                     tile::kMaxInks;
                 schema["properties"][std::string(kAmbientKey)] =
                     getWholeSchema(0, 100);
-                gatesSchemaWiring(schema);
+                markersSchemaWiring(schema);
 
                 return schema;
             } // GCOVR_EXCL_LINE

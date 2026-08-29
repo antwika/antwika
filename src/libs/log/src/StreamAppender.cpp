@@ -10,6 +10,7 @@ namespace antwika::log
     void StreamAppender::append(std::string_view message)
     {
         stream << message << "\n";
+        stream.flush();
     }
 
 }

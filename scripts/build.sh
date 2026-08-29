@@ -4,8 +4,6 @@ set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-source scripts/packages.sh
-
 read_selection() {
     local subsystem=$1
     local file=.vscode/$subsystem-backend
@@ -86,9 +84,7 @@ fi
 
 echo "==> gfx backend '$gfx_backend', sound backend '$sound_backend'"
 
-for editable in "${ANTWIKA_EDITABLES[@]}"; do
-    conan editable add "$editable"
-done
+scripts/register_editables.sh
 
 conan install . \
     -of build \

@@ -15,6 +15,7 @@
 #include "antwika/app/WindowInputSource.hpp"
 
 using antwika::event::Event;
+using antwika::event::EventName;
 using antwika::event::TickEvent;
 using antwika::gfx::CloseRequested;
 using antwika::gfx::Resized;
@@ -32,7 +33,7 @@ namespace
     constexpr WindowId kSomeoneElsesWindow{8};
 
     const Event kScripted{
-        .name = "app.something",
+        .name = EventName{"app.something"},
         .payload = R"({"x":1,"y":2})",
     };
 

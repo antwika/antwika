@@ -1,8 +1,9 @@
 #include "antwika/replay/ReplayMigrations.hpp"
 
+#include <array>
 #include <utility>
 
-#include <antwika/schema/Step.hpp>
+#include <antwika/schema/MigrationRow.hpp>
 #include <antwika/replay/ReplayVersions.hpp>
 
 namespace antwika::replay
@@ -20,11 +21,14 @@ namespace antwika::replay
     MigrationChain getStandardReplayMigrations()
     {
         MigrationList migrations;
-        migrations.push_back(schema::getMigration(
-            1,
-            2,
-            "replay: a record is unchanged by JSON Lines",
-            recordV1ToV2));
+        const std::array rows{
+            schema::MigrationRow{
+                1,
+                2,
+                "replay: a record is unchanged by JSON Lines",
+                recordV1ToV2}};
+
+        schema::pushMigrations(migrations, rows);
 
         return MigrationChain(
             std::move(migrations), kReplayDocumentVersion);

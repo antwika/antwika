@@ -15,10 +15,35 @@
 #include <antwika/voxel/VoxelPosition.hpp>
 
 #include "antwika/editor/LayerEdit.hpp"
+#include "antwika/editor/ui/SheetPaint.hpp"
 #include "antwika/editor/ui/ToolPanel.hpp"
 
 namespace
 {
+
+    [[nodiscard]] antwika::editor::PaintSurface createSheetSurface(
+        antwika::render::AtlasSheets &atlasSheets,
+        const antwika::tilemap::Tile tile,
+        const antwika::gfx::Color color)
+    {
+        return antwika::editor::PaintSurface{
+            .paintCells =
+                [&atlasSheets, tile, color](
+                    const std::span<const antwika::geometry::GridCell>
+                        cells)
+            {
+                antwika::tile::paintPixels(
+                    atlasSheets.sheet(tile.atlas), tile, cells, color);
+            },
+            .paintFill =
+                [&atlasSheets, tile, color](
+                    const antwika::geometry::GridCell cell)
+            {
+                antwika::tile::paintFill(
+                    atlasSheets.sheet(tile.atlas), tile, cell, color);
+            },
+            .touch = [&atlasSheets] { atlasSheets.touch(); }};
+    }
 
     [[nodiscard]] std::optional<antwika::voxel::Kind> getHoveredKind(
         const antwika::ui::Frame &frame)
@@ -459,18 +484,12 @@ namespace antwika::editor
 
             if (pixel.has_value())
             {
+                const auto pixelsOfShape = shapePixelsOf(preferences.paint);
                 const auto markedTiles =
                     !stroke.lineFromCell.has_value()
+                            || pixelsOfShape == nullptr
                         ? std::vector{*pixel}
-                    : preferences.paint == map::Paint::Rect
-                        ? tile::getRectPixels(
-                              *stroke.lineFromCell, *pixel)
-                    : preferences.paint == map::Paint::Circle
-                        ? tile::getCirclePixels(
-                              *stroke.lineFromCell, *pixel)
-                    : preferences.paint == map::Paint::Line
-                        ? tile::getLinePixels(*stroke.lineFromCell, *pixel)
-                        : std::vector{*pixel};
+                        : pixelsOfShape(*stroke.lineFromCell, *pixel);
 
                 for (const auto one : markedTiles)
                 {
@@ -514,9 +533,9 @@ namespace antwika::editor
 
 
     bool AtlasSheetsView::claims(
-        const map::View shownView, const bool playing) const noexcept
+        const View shownView, const bool playing) const noexcept
     {
-        return !playing && shownView == map::View::Atlases;
+        return !playing && shownView == View::Atlases;
     }
 
     std::string AtlasSheetsView::getStatusText(
@@ -551,9 +570,9 @@ namespace antwika::editor
     }
 
     bool AtlasSheetsView::offersPaint(
-        const map::Paint paint) const noexcept
+        const Paint paint) const noexcept
     {
-        return paint == map::Paint::Rect || paint == map::Paint::Circle
+        return paint == Paint::Rect || paint == Paint::Circle
                || IEditorView::offersPaint(paint);
     }
 
@@ -600,15 +619,15 @@ auto &stroke = viewContext.workbench.stroke;
             if (pixel.has_value())
             {
                 viewContext.editSteps.pushUndo();
-                tile::paint(
-                    atlasSheets.sheet(editedTileValue.atlas),
-                    editedTileValue,
+                beginStroke(
+                    Paint::Brush,
                     *pixel,
-                    gfx::Color{.alpha = 0});
-                stroke.brushAtCell = pixel;
-                stroke.active = true;
+                    stroke,
+                    createSheetSurface(
+                        atlasSheets,
+                        editedTileValue,
+                        gfx::Color{.alpha = 0}));
                 stroke.erases = true;
-                atlasSheets.touch();
 
                 return true;
             }
@@ -687,39 +706,22 @@ auto &stroke = viewContext.workbench.stroke;
             return true;
         }
 
-        if (preferences.paint == map::Paint::Line
-            || preferences.paint == map::Paint::Rect
-            || preferences.paint == map::Paint::Circle)
+        if (shapePixelsOf(preferences.paint) != nullptr)
         {
             stroke.lineFromCell = pixel;
 
             return true;
         }
 
-        auto &sheet = atlasSheets.sheet(editedTileValue.atlas);
-
         viewContext.editSteps.pushUndo();
-
-        if (preferences.paint == map::Paint::Fill)
-        {
-            tile::paintFill(
-                sheet,
+        beginStroke(
+            preferences.paint,
+            *pixel,
+            stroke,
+            createSheetSurface(
+                atlasSheets,
                 editedTileValue,
-                *pixel,
-                drawnMap.paletteColors.at(inkPicker.activeInk));
-        }
-        else
-        {
-            tile::paint(
-                sheet,
-                editedTileValue,
-                *pixel,
-                drawnMap.paletteColors.at(inkPicker.activeInk));
-            stroke.brushAtCell = pixel;
-            stroke.active = true;
-        }
-
-        atlasSheets.touch();
+                drawnMap.paletteColors.at(inkPicker.activeInk)));
 
         return true;
     }
@@ -737,6 +739,278 @@ auto &stroke = viewContext.workbench.stroke;
         }
 
         viewContext.notices.showStatus("this tile is woven from its materials", true);
+
+        return true;
+    }
+
+    void AtlasSheetsView::trackPointer(const ViewContext &viewContext)
+    {
+        auto &stroke = viewContext.workbench.stroke;
+        auto &sheetView = viewContext.workbench.sheetView;
+        auto &pointer = viewContext.workbench.pointer;
+        auto &inkPicker = viewContext.workbench.inkPicker;
+        auto &atlasSheets = viewContext.render.atlasSheets;
+        auto &drawnMap = viewContext.document.map;
+
+        if (stroke.active && stroke.selectedTile.has_value())
+        {
+            const auto editedTileValue = getEditedTile(
+                drawnMap,
+                viewContext.workbench.chosenLayer,
+                stroke,
+                viewContext.workbench.assignMode);
+            const auto pixel = tile::pixelAt(
+                editedTileValue,
+                getInspectedTileRect(sheetView.getFrameRect(), editedTileValue),
+                pointer.pointerOnCanvas);
+
+            if (pixel.has_value())
+            {
+                dragStroke(
+                    *pixel,
+                    stroke,
+                    createSheetSurface(
+                        atlasSheets,
+                        editedTileValue,
+                        stroke.erases
+                            ? gfx::Color{.alpha = 0}
+                            : drawnMap.paletteColors.at(
+                                  inkPicker.activeInk)));
+            }
+        }
+
+        if (viewContext.cameraRig.panning
+            && pointer.pointerInWindow.has_value())
+        {
+            const auto was =
+                viewContext.render.viewportRenderer.getViewport().toCanvas(
+                    gfx::Point{
+                        .x = pointer.lastPointerPosition.x,
+                        .y = pointer.lastPointerPosition.y});
+
+            sheetView.panPoint = gfx::PointF{
+                sheetView.panPoint.x + pointer.pointerOnCanvas.x
+                    - static_cast<float>(was.x),
+                sheetView.panPoint.y + pointer.pointerOnCanvas.y
+                    - static_cast<float>(was.y)};
+            pointer.lastPointerPosition = input::Position{
+                .x = pointer.pointerInWindow->x,
+                .y = pointer.pointerInWindow->y};
+        }
+    }
+
+    void AtlasSheetsView::finishShapedStroke(
+        const ViewContext &viewContext,
+        const gfx::PointF releasedAtPoint)
+    {
+        auto &stroke = viewContext.workbench.stroke;
+
+        if (!stroke.selectedTile.has_value())
+        {
+            stroke.lineFromCell.reset();
+
+            return;
+        }
+
+        const auto editedTileValue = getEditedTile(
+            viewContext.document.map,
+            viewContext.workbench.chosenLayer,
+            stroke,
+            viewContext.workbench.assignMode);
+        const auto pixel = tile::pixelAt(
+            editedTileValue,
+            getInspectedTileRect(
+                viewContext.workbench.sheetView.getFrameRect(),
+                editedTileValue),
+            releasedAtPoint);
+
+        if (pixel.has_value() && !blockedAsTransitionSlot(viewContext))
+        {
+            endShapedStroke(
+                viewContext.workbench.preferences.paint,
+                *pixel,
+                stroke,
+                createSheetSurface(
+                    viewContext.render.atlasSheets,
+                    editedTileValue,
+                    viewContext.document.map.paletteColors.at(
+                        viewContext.workbench.inkPicker.activeInk)),
+                viewContext.editSteps);
+        }
+
+        stroke.lineFromCell.reset();
+    }
+
+    bool AtlasSheetsView::consumeRelease(
+        const ViewContext &viewContext,
+        const input::PointerButtonReleased &upReleased)
+    {
+        if (upReleased.button != input::MouseButton::Left)
+        {
+            return false;
+        }
+
+        auto &stroke = viewContext.workbench.stroke;
+        auto &sheetView = viewContext.workbench.sheetView;
+        const auto chosenLayer = viewContext.workbench.chosenLayer;
+        auto &viewportRenderer = viewContext.render.viewportRenderer;
+        auto &drawnMap = viewContext.document.map;
+
+        const auto projectToScreen = viewportRenderer.getViewport().toCanvas(
+            gfx::Point{
+                .x = upReleased.position.x, .y = upReleased.position.y});
+        const gfx::PointF releasedAtPoint{
+            static_cast<float>(projectToScreen.x),
+            static_cast<float>(projectToScreen.y)};
+
+        finishShapedStroke(viewContext, releasedAtPoint);
+
+        const auto gesture = gestureFrom(
+            drawnMap.tilemap,
+            sheetView.getFrameRect(),
+            sheetView.getGridRect(drawnMap.tilemap),
+            sheetView.getClipRect(),
+            stroke.dragFromPoint,
+            releasedAtPoint,
+            stroke.selectedTile.has_value(),
+            stroke.selectedEdges);
+
+        switch (gesture.action)
+        {
+        case PointerAction::Swap:
+            viewContext.editSteps.pushUndo();
+
+            if (viewContext.heldModifiers.control)
+            {
+                viewContext.editSteps.duplicateTile(
+                    gesture.fromCell, gesture.toCell);
+
+                break;
+            }
+
+            tilemap::swapTiles(
+                drawnMap.tilemap,
+                gesture.fromCell,
+                gesture.toCell);
+            break;
+        case PointerAction::Look:
+        {
+            auto tile = drawnMap.tilemap.getEntryAt(
+                gesture.toCell.column, gesture.toCell.row);
+
+            if (tile.has_value()
+                && viewContext.editSteps.consumeAssignClick(*tile))
+            {
+                break;
+            }
+
+            if (!tile.has_value())
+            {
+                tile = tilemap::suggestedTileFor(
+                    drawnMap.tilemap, gesture.toCell);
+
+                if (tile.has_value())
+                {
+                    viewContext.editSteps.pushUndo();
+                    tilemap::putTile(
+                        drawnMap.tilemap,
+                        gesture.toCell,
+                        *tile);
+                    viewContext.editSteps.wipeTile(*tile);
+                }
+            }
+
+            if (tile.has_value())
+            {
+                stroke.selectedTile = tile;
+            }
+
+            break;
+        }
+        case PointerAction::Rule:
+        {
+            const auto tile = drawnMap.tilemap.getEntryAt(
+                gesture.toCell.column, gesture.toCell.row);
+
+            if (tile.has_value()
+                && !viewContext.editSteps.blockedAsVariant())
+            {
+                const auto forbidden =
+                    !stroke.allows(
+                        getActiveRules(drawnMap, chosenLayer), *tile);
+
+                viewContext.editSteps.pushUndo();
+
+                for (const auto edge :
+                     edgesIn(*stroke.selectedEdges))
+                {
+                    getActiveRules(drawnMap, chosenLayer).setAllows(
+                        *stroke.selectedTile,
+                        edge,
+                        *tile,
+                        forbidden);
+                }
+
+                viewContext.editSteps.rebuildWorld();
+            }
+
+            break;
+        }
+        case PointerAction::Turn:
+        {
+            if (viewContext.editSteps.blockedAsVariant())
+            {
+                break;
+            }
+
+            const auto cornerState =
+                getActiveRules(drawnMap, chosenLayer).getCorner(
+                    *stroke.selectedTile, gesture.corner);
+
+            viewContext.editSteps.pushUndo();
+            getActiveRules(drawnMap, chosenLayer).setCorner(
+                *stroke.selectedTile,
+                gesture.corner,
+                !cornerState.has_value()
+                    ? std::optional{true}
+                : *cornerState ? std::optional{false}
+                        : std::nullopt);
+            break;
+        }
+        case PointerAction::PixelSelection:
+            stroke.selectedEdges =
+                stroke.selectedEdges == gesture.selection
+                               ? std::nullopt
+                               : std::optional{gesture.selection};
+            break;
+        case PointerAction::Nothing:
+            break;
+        }
+
+        stroke.dragFromCell.reset();
+        stroke.dragFromPoint.reset();
+
+        return true;
+    }
+
+    bool AtlasSheetsView::consumeScroll(
+        const ViewContext &viewContext,
+        const input::PointerScrolled &rolledScrolled)
+    {
+        if (rolledScrolled.vertical == 0)
+        {
+            return false;
+        }
+
+        auto &sheetView = viewContext.workbench.sheetView;
+
+        sheetView.zoom = std::clamp(
+            sheetView.zoom
+                * (rolledScrolled.vertical > 0
+                       ? kGridZoomStep
+                       : 1.0F / kGridZoomStep),
+            kMinGridZoom,
+            kMaxGridZoom);
 
         return true;
     }

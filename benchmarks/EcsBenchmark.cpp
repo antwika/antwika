@@ -70,16 +70,19 @@ namespace
         std::uint64_t checksum{};
     };
 
-    [[nodiscard]] double millisSince(Clock::time_point start)
+    [[nodiscard]] double getMillisSince(Clock::time_point start)
     {
-        const auto elapsed = Clock::now() - start;
-        return std::chrono::duration<double, std::milli>(elapsed).count();
+        return std::chrono::duration<double, std::milli>(
+                   Clock::now() - start)
+            .count();
     }
 
-    // Mirrors what SystemScheduler::run does in the game app: eleven
-    // phases per tick, each ending in a World::commit, over a world
-    // where almost nothing changed.
-    [[nodiscard]] Result benchmarkCommit()
+    /**
+     * @brief Mirrors what SystemScheduler::run does in the game app:
+     * eleven phases per tick, each ending in a World::commit, over a
+     * world where almost nothing changed.
+     */
+    [[nodiscard]] Result getCommitResult()
     {
         constexpr std::size_t kEntities = 20000;
         constexpr int kPhases = 11;
@@ -94,15 +97,15 @@ namespace
         {
             const OpenPhase phase(world);
 
-            for (std::size_t at = 0; at < kEntities; ++at)
+            for (std::size_t index = 0; index < kEntities; ++index)
             {
                 const auto entity = world.create();
-                const auto value = static_cast<std::int32_t>(at);
+                const auto value = static_cast<std::int32_t>(index);
                 world.add<Position>(entity, Position{value, value});
                 world.add<Velocity>(entity, Velocity{1, 1});
                 world.add<Health>(entity, Health{value});
                 world.add<Label>(
-                    entity, Label{static_cast<std::uint32_t>(at)});
+                    entity, Label{static_cast<std::uint32_t>(index)});
                 entities.push_back(entity);
             }
         }
@@ -115,22 +118,24 @@ namespace
             for (int phase = 0; phase < kPhases; ++phase)
             {
                 const OpenPhase openPhase(world);
-                const auto at =
+                const auto index =
                     static_cast<std::size_t>(tick * kPhases + phase)
                     % kEntities;
-                world.set<Health>(entities[at], Health{tick});
+                world.set<Health>(entities[index], Health{tick});
             }
 
             checksum += static_cast<std::uint64_t>(
                 world.get<Health>(entities[0]).value);
         }
 
-        return Result{millisSince(start), checksum};
+        return Result{getMillisSince(start), checksum};
     }
 
-    // Mirrors LifeSystem: nine component reads per cell per tick, which
-    // is the pattern that pays for every World::get lookup.
-    [[nodiscard]] Result benchmarkGridReads()
+    /**
+     * @brief Mirrors LifeSystem: nine component reads per cell per
+     * tick, which is the pattern that pays for every World::get lookup.
+     */
+    [[nodiscard]] Result getGridReadsResult()
     {
         constexpr std::int32_t kSide = 200;
         constexpr int kTicks = 20;
@@ -138,8 +143,8 @@ namespace
         SilentLogger logger;
         World world(logger);
 
-        std::vector<Entity> grid;
-        grid.reserve(static_cast<std::size_t>(kSide) * kSide);
+        std::vector<Entity> entities;
+        entities.reserve(static_cast<std::size_t>(kSide) * kSide);
 
         {
             const OpenPhase phase(world);
@@ -150,14 +155,14 @@ namespace
                 {
                     const auto entity = world.create();
                     world.add<Cell>(entity, Cell{(x + y) % 3 == 0});
-                    grid.push_back(entity);
+                    entities.push_back(entity);
                 }
             }
         }
 
-        const auto at = [&grid](std::int32_t x, std::int32_t y)
+        const auto at = [&entities](std::int32_t x, std::int32_t y)
         {
-            return grid[static_cast<std::size_t>(y) * kSide + x];
+            return entities[static_cast<std::size_t>(y) * kSide + x];
         };
 
         std::uint64_t checksum = 0;
@@ -189,22 +194,25 @@ namespace
                         }
                     }
 
-                    const auto was = world.get<Cell>(at(x, y)).alive;
-                    const auto now =
-                        was ? (alive == 2 || alive == 3) : (alive == 3);
-                    world.set<Cell>(at(x, y), Cell{now});
+                    const auto wasAlive = world.get<Cell>(at(x, y)).alive;
+                    const auto nowAlive = wasAlive
+                        ? (alive == 2 || alive == 3)
+                        : (alive == 3);
+                    world.set<Cell>(at(x, y), Cell{nowAlive});
 
-                    checksum += now ? 1U : 0U;
+                    checksum += nowAlive ? 1U : 0U;
                 }
             }
         }
 
-        return Result{millisSince(start), checksum};
+        return Result{getMillisSince(start), checksum};
     }
 
-    // Mirrors the roughly forty world.view<A, B>() sites in the game
-    // app, where a view is built afresh every tick.
-    [[nodiscard]] Result benchmarkViews()
+    /**
+     * @brief Mirrors the roughly forty world.view<A, B>() sites in the
+     * game app, where a view is built afresh every tick.
+     */
+    [[nodiscard]] Result getViewsResult()
     {
         constexpr std::size_t kEntities = 20000;
         constexpr int kRounds = 500;
@@ -215,13 +223,13 @@ namespace
         {
             const OpenPhase phase(world);
 
-            for (std::size_t at = 0; at < kEntities; ++at)
+            for (std::size_t index = 0; index < kEntities; ++index)
             {
                 const auto entity = world.create();
-                const auto value = static_cast<std::int32_t>(at);
+                const auto value = static_cast<std::int32_t>(index);
                 world.add<Position>(entity, Position{value, value});
 
-                if (at % 2 == 0)
+                if (index % 2 == 0)
                 {
                     world.add<Velocity>(entity, Velocity{1, 1});
                 }
@@ -231,7 +239,7 @@ namespace
         std::uint64_t checksum = 0;
         const auto start = Clock::now();
 
-        for (int round = 0; round < kRounds; ++round)
+        for (int roundIndex = 0; roundIndex < kRounds; ++roundIndex)
         {
             for (const auto entity : world.view<Position, Velocity>())
             {
@@ -240,12 +248,14 @@ namespace
             }
         }
 
-        return Result{millisSince(start), checksum};
+        return Result{getMillisSince(start), checksum};
     }
 
-    // Mass despawn, which is where a linear erase per removed component
-    // turns quadratic.
-    [[nodiscard]] Result benchmarkTeardown()
+    /**
+     * @brief Mass despawn, which is where a linear erase per removed
+     * component turns quadratic.
+     */
+    [[nodiscard]] Result getTeardownResult()
     {
         constexpr std::size_t kEntities = 5000;
         constexpr int kRounds = 20;
@@ -256,7 +266,7 @@ namespace
         std::uint64_t checksum = 0;
         const auto start = Clock::now();
 
-        for (int round = 0; round < kRounds; ++round)
+        for (int roundIndex = 0; roundIndex < kRounds; ++roundIndex)
         {
             std::vector<Entity> entities;
             entities.reserve(kEntities);
@@ -264,15 +274,15 @@ namespace
             {
                 const OpenPhase spawningPhase(world);
 
-                for (std::size_t at = 0; at < kEntities; ++at)
+                for (std::size_t index = 0; index < kEntities; ++index)
                 {
                     const auto entity = world.create();
-                    const auto value = static_cast<std::int32_t>(at);
+                    const auto value = static_cast<std::int32_t>(index);
                     world.add<Position>(entity, Position{value, value});
                     world.add<Velocity>(entity, Velocity{1, 1});
                     world.add<Health>(entity, Health{value});
                     world.add<Label>(
-                        entity, Label{static_cast<std::uint32_t>(at)});
+                        entity, Label{static_cast<std::uint32_t>(index)});
                     entities.push_back(entity);
                 }
             }
@@ -289,7 +299,7 @@ namespace
             checksum += entities.size();
         }
 
-        return Result{millisSince(start), checksum};
+        return Result{getMillisSince(start), checksum};
     }
 
     class CountingSink final : public antwika::event::IEventSink
@@ -303,7 +313,7 @@ namespace
             }
         }
 
-        [[nodiscard]] std::uint64_t count() const noexcept
+        [[nodiscard]] std::uint64_t getCount() const noexcept
         {
             return seen;
         }
@@ -323,7 +333,7 @@ namespace
             }
         }
 
-        [[nodiscard]] std::uint64_t count() const noexcept
+        [[nodiscard]] std::uint64_t getCount() const noexcept
         {
             return seen;
         }
@@ -332,45 +342,50 @@ namespace
         std::uint64_t seen{};
     };
 
-    // Mirrors an engine tick fanning out to every sink an app registers,
-    // where each sink compares the event name against a constant.
-    [[nodiscard]] Result benchmarkEvents(const char *payload)
+    /**
+     * @brief Mirrors an engine tick fanning out to every sink an app
+     * registers, where each sink compares the event name against a
+     * constant.
+     */
+    [[nodiscard]] Result getEventsResult(const char *payload)
     {
         constexpr std::size_t kSinks = 20;
         constexpr int kEvents = 200000;
 
         std::vector<CountingSink> sinks(kSinks);
-        std::vector<std::reference_wrapper<antwika::event::IEventSink>> refs;
+        std::vector<std::reference_wrapper<antwika::event::IEventSink>>
+            sinkRefs;
         for (auto &sink : sinks)
         {
-            refs.emplace_back(sink);
+            sinkRefs.emplace_back(sink);
         }
 
-        CountingTickSink recorder;
+        CountingTickSink tickSink;
         std::vector<std::reference_wrapper<antwika::event::ITickEventSink>>
-            timed;
-        timed.emplace_back(recorder);
+            tickSinkRefs;
+        tickSinkRefs.emplace_back(tickSink);
 
-        antwika::event::EventDispatcher inner(std::move(refs));
+        antwika::event::EventDispatcher eventDispatcher(
+            std::move(sinkRefs));
         antwika::event::TickedEventDispatcher dispatcher(
-            inner, std::move(timed));
+            eventDispatcher, std::move(tickSinkRefs));
 
         const auto start = Clock::now();
 
-        for (int at = 0; at < kEvents; ++at)
+        for (int index = 0; index < kEvents; ++index)
         {
-            dispatcher.setTick(static_cast<antwika::time::Tick>(at));
+            dispatcher.setTick(static_cast<antwika::time::Tick>(index));
             dispatcher.dispatch(antwika::event::Event{
                 .name = antwika::engine::events::kTick, .payload = payload});
         }
 
-        std::uint64_t checksum = recorder.count();
+        std::uint64_t checksum = tickSink.getCount();
         for (const auto &sink : sinks)
         {
-            checksum += sink.count();
+            checksum += sink.getCount();
         }
 
-        return Result{millisSince(start), checksum};
+        return Result{getMillisSince(start), checksum};
     }
 
     void report(const char *name, const Result &result)
@@ -387,14 +402,14 @@ namespace
 int main()
 {
     std::printf("%-16s %13s\n", "scenario", "elapsed");
-    report("commit", benchmarkCommit());
-    report("grid-reads", benchmarkGridReads());
-    report("views", benchmarkViews());
-    report("teardown", benchmarkTeardown());
-    report("events-sso", benchmarkEvents("ok"));
+    report("commit", getCommitResult());
+    report("grid-reads", getGridReadsResult());
+    report("views", getViewsResult());
+    report("teardown", getTeardownResult());
+    report("events-sso", getEventsResult("ok"));
     report(
         "events-heap",
-        benchmarkEvents(
+        getEventsResult(
             "a payload comfortably past the small string buffer limit"));
     return 0;
 }

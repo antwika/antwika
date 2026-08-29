@@ -6,7 +6,7 @@
 
 #include <antwika/component/Patrol.hpp>
 #include <antwika/component/Position.hpp>
-#include <antwika/component/RosterIndex.hpp>
+#include <antwika/component/CharacterIndex.hpp>
 #include <antwika/component/Velocity.hpp>
 #include <antwika/ecs/OpenPhase.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
@@ -25,7 +25,7 @@ using antwika::component::Patrol;
 using antwika::system::PatrolSystem;
 using antwika::gameplay::Phase;
 using antwika::component::Position;
-using antwika::component::RosterIndex;
+using antwika::component::CharacterIndex;
 using antwika::component::Velocity;
 using antwika::voxel::VoxelCell;
 using antwika::voxel::voxelsOf;
@@ -63,7 +63,8 @@ namespace
         std::vector<std::vector<VoxelPosition>> stopPositions{};
         World world{logger};
         GameLoop gameLoop{world};
-        PatrolSystem system{solidVoxels, stopPositions};
+        antwika::system::SimulationState simulationState{};
+        PatrolSystem system{solidVoxels, stopPositions, simulationState};
         Entity entity{};
 
         void begin(const Position stoodPosition)
@@ -75,8 +76,8 @@ namespace
             gameLoop.getWorld().add<Position>(entity, stoodPosition);
             gameLoop.getWorld().add<Velocity>(entity, Velocity{});
             gameLoop.getWorld().add<Patrol>(entity, Patrol{});
-            gameLoop.getWorld().add<RosterIndex>(
-                entity, RosterIndex{.index = 0});
+            gameLoop.getWorld().add<CharacterIndex>(
+                entity, CharacterIndex{.index = 0});
         }
 
         [[nodiscard]] Velocity getSentVelocity() const
@@ -237,7 +238,7 @@ TEST(PatrolTest, Update_HoldsACharacterStillWhileItSpeaks)
     harness.solidVoxels = getFloorOver(3);
     harness.stopPositions = {{groundAt(3, 0)}};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
-    harness.system.setSpeaking(0U);
+    harness.simulationState.speaking = 0U;
     harness.gameLoop.run(0);
 
     EXPECT_NEAR(harness.getSentVelocity().velocityX, 0.0F, kTolerance);
@@ -250,22 +251,22 @@ TEST(PatrolTest, Update_LetsACharacterStrollAgainOnceItIsDone)
     harness.solidVoxels = getFloorOver(3);
     harness.stopPositions = {{groundAt(3, 0)}};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
-    harness.system.setSpeaking(0U);
+    harness.simulationState.speaking = 0U;
     harness.gameLoop.run(0);
-    harness.system.setSpeaking(std::nullopt);
+    harness.simulationState.speaking = std::nullopt;
     harness.gameLoop.run(1);
 
     EXPECT_NEAR(harness.getSentVelocity().velocityX, 1.0F, kTolerance);
 }
 
-TEST(PatrolTest, Update_HoldsEveryCharacterStillWhileFrozen)
+TEST(PatrolTest, Update_HoldsEveryCharacterStillWhilePaused)
 {
     PatrolHarness harness;
 
     harness.solidVoxels = getFloorOver(3);
     harness.stopPositions = {{groundAt(3, 0)}};
     harness.begin(Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
-    harness.system.setFrozen(true);
+    harness.simulationState.simulationPaused = true;
     harness.gameLoop.run(0);
 
     EXPECT_NEAR(harness.getSentVelocity().velocityX, 0.0F, kTolerance);
@@ -305,7 +306,8 @@ TEST(PatrolTest, Update_StrollsEveryCharacterOfTheRoster)
         {groundAt(3, 0)}, {groundAt(-3, 0)}};
     World world(logger);
     GameLoop gameLoop(world);
-    PatrolSystem system(solidVoxels, stopPositions);
+    antwika::system::SimulationState simulationState;
+    PatrolSystem system(solidVoxels, stopPositions, simulationState);
 
     gameLoop.addSystem(Phase::Sending, system);
 
@@ -322,8 +324,8 @@ TEST(PatrolTest, Update_StrollsEveryCharacterOfTheRoster)
                 entity, Position{.x = 0.0F, .y = 0.5F, .z = 0.0F});
             gameLoop.getWorld().add<Velocity>(entity, Velocity{});
             gameLoop.getWorld().add<Patrol>(entity, Patrol{});
-            gameLoop.getWorld().add<RosterIndex>(
-                entity, RosterIndex{.index = index});
+            gameLoop.getWorld().add<CharacterIndex>(
+                entity, CharacterIndex{.index = index});
             folkEntities.push_back(entity);
         }
     }

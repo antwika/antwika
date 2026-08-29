@@ -28,47 +28,24 @@ namespace antwika::voxelmap
             }
         }
 
-        const auto latticeAt = [](const std::int32_t x,
-                           const std::int32_t y,
-                           const std::int32_t z)
-        {
-            return getCellMiddle(voxel::VoxelPosition{.x = x, .y = y, .z = z})
-                   - gfx::Vec3{
-                       voxel::kVoxelSide / 2.0F,
-                       voxel::kVoxelSide / 2.0F,
-                       voxel::kVoxelSide / 2.0F};
-        };
-
         std::vector<LineSegment> segments;
 
         for (const auto &[column, level] : floors)
         {
             const auto &[x, z] = column;
-            const auto corner = latticeAt(x, level, z);
-            const auto acrossPoint = latticeAt(x + 1, level, z);
-            const auto alongPoint = latticeAt(x, level, z + 1);
-            const auto both = latticeAt(x + 1, level, z + 1);
+            const auto rimSegments = getCellRimSegments(
+                CellRim{.cellX = x, .cellZ = z, .latticeFoot = level});
 
-            segments.push_back(
-                LineSegment{
-                    .fromPosition = corner,
-                    .toPosition = acrossPoint});
-            segments.push_back(
-                LineSegment{
-                    .fromPosition = corner,
-                    .toPosition = alongPoint});
-            segments.push_back(
-                LineSegment{
-                    .fromPosition = acrossPoint,
-                    .toPosition = both});
-            segments.push_back(
-                LineSegment{
-                    .fromPosition = alongPoint,
-                    .toPosition = both});
+            segments.insert(
+                segments.end(), rimSegments.begin(), rimSegments.end());
         }
 
         return segments;
     } // GCOVR_EXCL_LINE
+
+    static_assert(
+        kOcclusionMaskLevels <= 8 * gfx::kBytesPerPixel,
+        "every occlusion mask level must fit the bits of one pixel");
 
     voxel::VoxelPosition getOcclusionMaskOrigin(
         const voxel::VoxelPosition aboutPosition)

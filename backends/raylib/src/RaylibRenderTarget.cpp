@@ -21,11 +21,31 @@ namespace antwika::gfx::raylib
                 .mipmaps = 1,
                 .format = format};
         }
+
+        [[nodiscard]] unsigned int createAttachedColor(
+            const unsigned int fbo, const int width, const int height)
+        {
+            const auto colorId = rlLoadTexture(
+                nullptr,
+                width,
+                height,
+                RL_PIXELFORMAT_UNCOMPRESSED_R8G8B8A8,
+                1);
+
+            rlFramebufferAttach(
+                fbo,
+                colorId,
+                RL_ATTACHMENT_COLOR_CHANNEL0,
+                RL_ATTACHMENT_TEXTURE2D,
+                0);
+
+            return colorId;
+        }
     }
 
     RaylibRenderTarget::RaylibRenderTarget(
         RaylibRenderer &ownerRenderer, const RenderTargetSpec &spec)
-        : owner(&ownerRenderer), targetSize(spec.size)
+        : RaylibResource(ownerRenderer), targetSize(spec.size)
     {
         const auto width = static_cast<int>(spec.size.width);
         const auto height = static_cast<int>(spec.size.height);
@@ -40,21 +60,14 @@ namespace antwika::gfx::raylib
 
         rlEnableFramebuffer(fbo);
 
-        colorId = rlLoadTexture(
-            nullptr,
-            width,
-            height,
-            RL_PIXELFORMAT_UNCOMPRESSED_R8G8B8A8,
-            1);
+        const bool keepsDepth = spec.depth || spec.depthOnly;
 
-        rlFramebufferAttach(
-            fbo,
-            colorId,
-            RL_ATTACHMENT_COLOR_CHANNEL0,
-            RL_ATTACHMENT_TEXTURE2D,
-            0);
+        if (!spec.depthOnly)
+        {
+            colorId = createAttachedColor(fbo, width, height);
+        }
 
-        if (spec.depth)
+        if (keepsDepth)
         {
             depthId = rlLoadTextureDepth(width, height, false);
 
@@ -66,7 +79,13 @@ namespace antwika::gfx::raylib
                 0);
         }
 
-        const bool complete = rlFramebufferComplete(fbo);
+        bool complete = rlFramebufferComplete(fbo);
+
+        if (!complete && colorId == 0) // GCOVR_EXCL_START
+        {
+            colorId = createAttachedColor(fbo, width, height);
+            complete = rlFramebufferComplete(fbo);
+        } // GCOVR_EXCL_STOP
 
         rlDisableFramebuffer();
 
@@ -80,16 +99,19 @@ namespace antwika::gfx::raylib
                 "depth back as a texture reports");
         }
 
-        colorTexture = std::make_unique<RaylibTexture>(
-            ownerRenderer,
-            getWornAs(
-                colorId,
+        if (!spec.depthOnly)
+        {
+            colorTexture = std::make_unique<RaylibTexture>(
+                ownerRenderer,
+                getWornAs(
+                    colorId,
+                    spec.size,
+                    RL_PIXELFORMAT_UNCOMPRESSED_R8G8B8A8),
                 spec.size,
-                RL_PIXELFORMAT_UNCOMPRESSED_R8G8B8A8),
-            spec.size,
-            false);
+                false);
+        }
 
-        if (spec.depth)
+        if (keepsDepth)
         {
             depthTexture = std::make_unique<RaylibTexture>(
                 ownerRenderer,
@@ -100,32 +122,15 @@ namespace antwika::gfx::raylib
                 spec.size,
                 false);
         }
-
-        ownerRenderer.trackTarget(*this);
     }
 
     RaylibRenderTarget::~RaylibRenderTarget()
     {
-        colorTexture.reset();
-        depthTexture.reset();
-
-        if (owner != nullptr)
-        {
-            owner->untrackTarget(*this);
-        }
-
         unload();
     }
 
-    void RaylibRenderTarget::unload() noexcept
+    void RaylibRenderTarget::unloadHandle() noexcept
     {
-        if (!loaded)
-        {
-            return;
-        }
-
-        loaded = false;
-
         if (depthId != 0)
         {
             rlUnloadTexture(depthId);
@@ -160,28 +165,6 @@ namespace antwika::gfx::raylib
     unsigned int RaylibRenderTarget::getFrameBuffer() const noexcept
     {
         return fbo;
-    }
-
-    bool RaylibRenderTarget::isOwnedBy(
-        const RaylibRenderer &candidateRenderer) const noexcept
-    {
-        return owner == &candidateRenderer;
-    }
-
-    void RaylibRenderTarget::untrackRenderer() noexcept
-    {
-        owner = nullptr;
-        loaded = false;
-
-        if (colorTexture != nullptr)
-        {
-            colorTexture->untrackRenderer();
-        }
-
-        if (depthTexture != nullptr)
-        {
-            depthTexture->untrackRenderer();
-        }
     }
 
 }

@@ -15,6 +15,11 @@ target_link_libraries(antwika_testing
         gtest::gtest
 )
 
+if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING
+        AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
+    add_subdirectory(tests)
+endif()
+
 install(
     TARGETS antwika_testing
     EXPORT antwika_testingTargets

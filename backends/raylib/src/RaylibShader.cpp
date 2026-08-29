@@ -6,34 +6,19 @@ namespace antwika::gfx::raylib
 {
 
     RaylibShader::RaylibShader(RaylibRenderer &ownerRenderer, ::Shader shader)
-        : owner(&ownerRenderer),
+        : RaylibResource(ownerRenderer),
           shader(shader)
     {
-        ownerRenderer.trackShader(*this);
     }
 
     RaylibShader::~RaylibShader()
     {
-        if (owner != nullptr)
-        {
-            owner->untrackShader(*this);
-        }
-
-        if (loaded)
-        {
-            UnloadShader(shader);
-        }
+        unload();
     }
 
     bool RaylibShader::isReady() const
     {
-        return loaded;
-    }
-
-    bool RaylibShader::isOwnedBy(
-        const RaylibRenderer &candidateRenderer) const noexcept
-    {
-        return owner == &candidateRenderer;
+        return isLoaded();
     }
 
     const ::Shader &RaylibShader::getRawHandle() const noexcept
@@ -41,15 +26,9 @@ namespace antwika::gfx::raylib
         return shader;
     }
 
-    bool RaylibShader::isLoaded() const noexcept
+    void RaylibShader::unloadHandle() noexcept
     {
-        return loaded;
-    }
-
-    void RaylibShader::untrackRenderer() noexcept
-    {
-        owner = nullptr;
-        loaded = false;
+        UnloadShader(shader);
     }
 
 }

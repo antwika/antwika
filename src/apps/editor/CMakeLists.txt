@@ -4,16 +4,19 @@ antwika_add_app(
         src/editor/CameraRig.cpp
         src/editor/CarriedLight.cpp
         src/editor/EditorActions.cpp
+        src/editor/EditorCatalog.cpp
         src/editor/EditorDocument.cpp
         src/editor/EditorFrame.cpp
         src/editor/EditorJourney.cpp
         src/editor/EditorMap.cpp
         src/editor/EditorSetup.cpp
+        src/editor/FileChooser.cpp
         src/editor/GameModule.cpp
+        src/editor/InkPanel.cpp
         src/editor/LayerEdit.cpp
-        src/editor/PlayComponents.cpp
         src/editor/PlaySession.cpp
         src/editor/PreferencesFile.cpp
+        src/editor/SimulationSteps.cpp
         src/editor/WorldCamera.cpp
         src/editor/draw/EditorHints.cpp
         src/editor/draw/EditorUi.cpp
@@ -22,26 +25,32 @@ antwika_add_app(
         src/editor/input/EditorPointer.cpp
         src/editor/input/EditorPress.cpp
         src/editor/input/EditorSheetPress.cpp
+        src/editor/panels/EditorCharacterPanel.cpp
+        src/editor/panels/EditorComponentPanel.cpp
         src/editor/panels/EditorDecorPanel.cpp
         src/editor/panels/EditorDialogs.cpp
-        src/editor/panels/EditorFigurePanel.cpp
+        src/editor/panels/EditorEntityListPanel.cpp
+        src/editor/panels/EditorEntityPanel.cpp
         src/editor/panels/EditorMenus.cpp
+        src/editor/panels/EditorPanelEdges.cpp
         src/editor/panels/EditorRail.cpp
         src/editor/panels/EditorSpanPanel.cpp
         src/editor/panels/EditorSpanWidgets.cpp
         src/editor/panels/EditorWidgets.cpp
+        src/editor/state/CharacterTool.cpp
         src/editor/state/KeyBench.cpp
+        src/editor/state/PanelSizes.cpp
         src/editor/state/SheetStroke.cpp
         src/editor/state/SheetView.cpp
+        src/editor/state/WorldEdit.cpp
         src/editor/tools/EditorAssign.cpp
         src/editor/tools/EditorAtlasTools.cpp
-        src/editor/tools/EditorFigures.cpp
+        src/editor/tools/EditorCharacters.cpp
         src/editor/tools/EditorFlips.cpp
-        src/editor/tools/EditorGates.cpp
         src/editor/tools/EditorGrow.cpp
         src/editor/tools/EditorGuide.cpp
-        src/editor/tools/EditorPlates.cpp
-        src/editor/tools/EditorStamp.cpp
+        src/editor/tools/EditorMarkers.cpp
+        src/editor/tools/EditorSelect.cpp
         src/editor/tools/EditorTransitions.cpp
         src/editor/tools/EditorVariants.cpp
         src/editor/tools/EditorWorldTools.cpp
@@ -57,6 +66,8 @@ antwika_add_app(
         src/ui/ColorPicker.cpp
         src/ui/EditorBindings.cpp
         src/ui/EditorBindingsFile.cpp
+        src/ui/GizmoSheet.cpp
+        src/ui/GizmoView.cpp
         src/ui/IconSheet.cpp
         src/ui/IconsView.cpp
         src/ui/LayerWidgets.cpp
@@ -69,6 +80,7 @@ antwika_add_app(
     LIBS
         antwika::animation
         antwika::app
+        antwika::assets
         antwika::camera
         antwika::character
         antwika::cli
@@ -85,6 +97,7 @@ antwika_add_app(
         antwika::input_backend
         antwika::io
         antwika::light
+        antwika::loadout
         antwika::log
         antwika::map
         antwika::pathfinding

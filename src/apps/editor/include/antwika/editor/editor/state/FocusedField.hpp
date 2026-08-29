@@ -9,10 +9,13 @@ namespace antwika::editor
     {
         Nothing,
         ExitTarget,
-        FigureName,
-        FigureLine,
+        CharacterName,
+        CharacterLine,
         PlanTitle,
         PlanBody,
+        ComponentValue,
+        MarkerAxis,
+        EntityAxis,
     };
 
 }

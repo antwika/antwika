@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+
 #include <antwika/geometry/Grid.hpp>
 #include <antwika/gfx/PointF.hpp>
 #include <antwika/gfx/RectF.hpp>

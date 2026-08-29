@@ -3,7 +3,7 @@
 #include <cmath>
 #include <utility>
 
-#include <antwika/gameplay/GateState.hpp>
+#include <antwika/gameplay/CheckpointState.hpp>
 #include <antwika/component/AnimationState.hpp>
 #include <antwika/component/Orientation.hpp>
 #include <antwika/component/Position.hpp>
@@ -16,19 +16,29 @@ namespace antwika::gameplay
     Game::Game(
         [[maybe_unused]] log::ILogger &logger,
         ecs::World &world,
+        const map::Map &laidMap,
         const voxel::Voxels &solidVoxels,
         const std::vector<std::vector<voxel::VoxelPosition>>
             &patrolPositions)
         : loop(world),
-          intentSystem(wasdDirectionKeys, arrowDirectionKeys),
-          patrolSystem(solidVoxels, patrolPositions),
-          walkSystem(solidVoxels)
+          intentSystem(
+              wasdDirectionKeys, arrowDirectionKeys, simulationState),
+          patrolSystem(solidVoxels, patrolPositions, simulationState),
+          walkSystem(solidVoxels),
+          pickupSystem(simulationState),
+          padSystem(simulationState),
+          spawnSystem(laidMap, solidVoxels, *this),
+          healthSystem(simulationState),
+          talkSystem(simulationState)
     {
+        loop.addSystem(Phase::Spawning, spawnSystem);
         loop.addSystem(Phase::Sending, intentSystem);
         loop.addSystem(Phase::Sending, patrolSystem);
         loop.addSystem(Phase::Walking, walkSystem);
         loop.addSystem(Phase::Walking, animationSystem);
         loop.addSystem(Phase::Walking, talkSystem);
+        loop.addSystem(Phase::Pickup, pickupSystem);
+        loop.addSystem(Phase::Pickup, padSystem);
         loop.addSystem(Phase::Health, healthSystem);
         loop.addSystem(Phase::Health, consumeSystem);
 
@@ -41,9 +51,10 @@ namespace antwika::gameplay
 
         eyeEntity = world.create();
 
-        const ecs::OpenPhase phase(world);
+        ecs::OpenPhase phase(world);
 
         world.add<component::Orientation>(eyeEntity, component::Orientation{});
+        phase.close();
     }
 
     ecs::World &Game::getWorld() noexcept
@@ -71,35 +82,19 @@ namespace antwika::gameplay
         playerEntity = entity;
     }
 
-    intent::DirectionKeys &Game::wasdKeys() noexcept
+    void Game::setWasdKeys(const component::DirectionKeys keys) noexcept
     {
-        return wasdDirectionKeys;
+        wasdDirectionKeys = keys;
     }
 
-    intent::DirectionKeys &Game::arrowKeys() noexcept
+    void Game::setArrowKeys(const component::DirectionKeys keys) noexcept
     {
-        return arrowDirectionKeys;
+        arrowDirectionKeys = keys;
     }
 
-    void Game::setWalkerFrozen(const bool frozen) noexcept
+    void Game::setSimulation(const system::SimulationState state) noexcept
     {
-        intentSystem.setFrozen(frozen);
-    }
-
-    void Game::setWorldFrozen(const bool frozen) noexcept
-    {
-        patrolSystem.setFrozen(frozen);
-        healthSystem.setFrozen(frozen);
-    }
-
-    void Game::setRunning(const bool running) noexcept
-    {
-        intentSystem.setRunning(running);
-    }
-
-    void Game::setRosterCount(const std::size_t rosterCount) noexcept
-    {
-        talkSystem.setRosterCount(rosterCount);
+        simulationState = state;
     }
 
     void Game::forgetPatrols()
@@ -112,15 +107,18 @@ namespace antwika::gameplay
         intentSystem.clearSteering();
     }
 
-    void Game::setSpeaking(
-        const std::optional<std::uint32_t> speaker) noexcept
-    {
-        patrolSystem.setSpeaking(speaker);
-    }
-
     void Game::run(const time::Tick tick)
     {
         loop.run(tick);
+
+        playerEntity = spawnSystem.getStoodWalkerEntity();
+    }
+
+    void Game::standPlayer()
+    {
+        spawnSystem.update(loop.getWorld(), 0);
+
+        playerEntity = spawnSystem.getStoodWalkerEntity();
     }
 
     gfx::Vec3 Game::playerAt() const
@@ -131,14 +129,14 @@ namespace antwika::gameplay
         return gfx::Vec3{stoodPosition.x, stoodPosition.y, stoodPosition.z};
     }
 
-    GateState &Game::getGates() noexcept
+    const CheckpointState &Game::getCheckpoint() const noexcept
     {
-        return gateState;
+        return checkpointState;
     }
 
-    const GateState &Game::getGates() const noexcept
+    void Game::setCheckpoint(CheckpointState checkpoint) noexcept
     {
-        return gateState;
+        checkpointState = std::move(checkpoint);
     }
 
     camera::CameraTransform &Game::getCameraTransform() noexcept
@@ -151,14 +149,24 @@ namespace antwika::gameplay
         return playTransform;
     }
 
-    std::int32_t &Game::zoom() noexcept
+    std::int32_t Game::getZoom() const noexcept
     {
         return playZoom;
     }
 
-    gfx::Vec3 &Game::cameraTarget() noexcept
+    void Game::setZoom(const std::int32_t zoom) noexcept
+    {
+        playZoom = zoom;
+    }
+
+    gfx::Vec3 Game::getCameraTarget() const noexcept
     {
         return cameraPosition;
+    }
+
+    void Game::setCameraTarget(const gfx::Vec3 targetPosition) noexcept
+    {
+        cameraPosition = targetPosition;
     }
 
     void Game::aimAt(const gfx::Mat4 &modelMatrix, const gfx::Vec3 position)

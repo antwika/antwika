@@ -1,6 +1,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <vector>
+
 #include <antwika/log/mocks/MockLogger.hpp>
 
 #include "EntityManager.hpp"
@@ -110,4 +112,27 @@ TEST(EntityManagerTest, Alive_StillAnswersAfterExhaustion)
     EXPECT_THROW(static_cast<void>(manager.create()), EcsError);
 
     EXPECT_TRUE(manager.isAlive(only));
+}
+
+TEST(EntityManagerTest, LiveEntities_SkipTheDeadAndTheNullIndex)
+{
+    NiceMock<MockLogger> logger;
+    EntityManager manager(logger);
+
+    const auto first = manager.create();
+    const auto second = manager.create();
+    const auto third = manager.create();
+
+    manager.destroy(second);
+
+    EXPECT_EQ(
+        manager.getLiveEntities(), std::vector<Entity>({first, third}));
+}
+
+TEST(EntityManagerTest, LiveEntities_AreNoneBeforeAnythingIsCreated)
+{
+    NiceMock<MockLogger> logger;
+    const EntityManager manager(logger);
+
+    EXPECT_TRUE(manager.getLiveEntities().empty());
 }

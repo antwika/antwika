@@ -1,10 +1,10 @@
 #pragma once
 
-#include <cstdint>
 #include <string_view>
 
 #include "antwika/gfx/ClipScope.hpp"
 #include "antwika/gfx/Color.hpp"
+#include "antwika/gfx/Glyphs.hpp"
 #include "antwika/gfx/ITexture.hpp"
 #include "antwika/gfx/PointF.hpp"
 #include "antwika/gfx/RectF.hpp"
@@ -31,7 +31,7 @@ namespace antwika::gfx
         virtual void drawText(
             PointF originPoint,
             std::string_view text,
-            std::uint32_t scale,
+            TextScale scale,
             Color color) = 0;
 
         virtual void drawTexture(

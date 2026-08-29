@@ -29,7 +29,7 @@ namespace antwika::solver
     {
 
         [[nodiscard]] voxel::VoxelPosition getOffsetBy(
-            const voxel::VoxelPosition fromPosition, const gfx::Vec3 offset)
+            const voxel::VoxelPosition fromPosition, const geometry::Vec3 offset)
         {
             return voxel::VoxelPosition{
                 .x = fromPosition.x + static_cast<std::int32_t>(
@@ -40,13 +40,13 @@ namespace antwika::solver
                                   std::lround(offset.z))};
         }
 
-        [[nodiscard]] gfx::Vec3 acrossOf(const std::size_t side)
+        [[nodiscard]] geometry::Vec3 acrossOf(const std::size_t side)
         {
             return voxelmap::getFaceCorner(side, kTopRightCorner)
                    - voxelmap::getFaceCorner(side, kTopLeftCorner);
         }
 
-        [[nodiscard]] gfx::Vec3 downOf(const std::size_t side)
+        [[nodiscard]] geometry::Vec3 downOf(const std::size_t side)
         {
             return voxelmap::getFaceCorner(side, kBottomLeftCorner)
                    - voxelmap::getFaceCorner(side, kTopLeftCorner);
@@ -156,7 +156,7 @@ namespace antwika::solver
         }
 
         [[nodiscard]] voxel::Side getSideTowards(
-            const std::size_t face, const gfx::Vec3 direction)
+            const std::size_t face, const geometry::Vec3 direction)
         {
             const auto acrossDot = glm::dot(direction, acrossOf(face));
 
@@ -175,7 +175,7 @@ namespace antwika::solver
                        : voxel::Side::Top;
         }
 
-        [[nodiscard]] std::size_t faceAlong(const gfx::Vec3 direction)
+        [[nodiscard]] std::size_t faceAlong(const geometry::Vec3 direction)
         {
             for (std::size_t side = 0; side < voxelmap::kVoxelFaceCount;
                  ++side)
@@ -190,7 +190,7 @@ namespace antwika::solver
         }
 
         [[nodiscard]] bool isAtCubeFace(
-            const voxel::VoxelPosition position, const gfx::Vec3 direction)
+            const voxel::VoxelPosition position, const geometry::Vec3 direction)
         {
             const auto corner = voxel::cubeCornerOf(position);
             const std::array<std::int32_t, kAxisCount> cubeOffsets{
@@ -270,7 +270,7 @@ namespace antwika::solver
             return edges;
         } // GCOVR_EXCL_LINE
 
-        [[nodiscard]] std::pair<gfx::Vec3, gfx::Vec3> getCornerWays(
+        [[nodiscard]] std::pair<geometry::Vec3, geometry::Vec3> getCornerWays(
             const std::size_t side, const voxel::Corner corner)
         {
             const auto acrossDirection = acrossOf(side);
@@ -284,7 +284,7 @@ namespace antwika::solver
                 topCorner ? -downDirection : downDirection};
         }
 
-        [[nodiscard]] gfx::Vec3 getCornerWay(
+        [[nodiscard]] geometry::Vec3 getCornerWay(
             const std::size_t side, const voxel::Corner corner)
         {
             const auto [acrossWay, downWay] = getCornerWays(side, corner);

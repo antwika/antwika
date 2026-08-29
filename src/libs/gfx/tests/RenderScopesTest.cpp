@@ -1,6 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <optional>
 #include <stdexcept>
 
 #include <antwika/gfx/fakes/FakeBareTarget.hpp>
@@ -43,7 +44,9 @@ TEST(RenderScopesTest, TargetScope_EndsTheTargetWhenItGoesOutOfScope)
     FakeBareTarget target;
     const InSequence order;
 
-    EXPECT_CALL(renderer, beginTarget(::testing::Ref(target)));
+    EXPECT_CALL(
+        renderer,
+        beginTarget(::testing::Ref(target), std::optional<Rect>{}));
     EXPECT_CALL(renderer, endTarget());
 
     {
@@ -58,7 +61,9 @@ TEST(RenderScopesTest, TargetScope_EndsTheRegionWhenItGoesOutOfScope)
     const InSequence order;
 
     EXPECT_CALL(
-        renderer, beginTargetRegion(::testing::Ref(target), kRegionRect));
+        renderer,
+        beginTarget(
+            ::testing::Ref(target), std::optional<Rect>{kRegionRect}));
     EXPECT_CALL(renderer, endTarget());
 
     {

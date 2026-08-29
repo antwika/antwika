@@ -98,15 +98,13 @@ namespace antwika::map::mapfile
         }
     }
 
-    void readGates(Map &map, const nlohmann::json &documentJson)
+    void readMarkers(Map &map, const nlohmann::json &documentJson)
     {
-        for (const auto &row : kGateRows)
+        for (const auto &row : kMarkerRows)
         {
             map.markers.positionsOf(row.marker) =
                 getReadCells(documentJson[std::string(row.key)]);
         }
-        map.exitLocked =
-            documentJson[std::string(kExitLockedKey)].get<bool>();
     }
 
     void readFamilies(Map &map, const nlohmann::json &documentJson)

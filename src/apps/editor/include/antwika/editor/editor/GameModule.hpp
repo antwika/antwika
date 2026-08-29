@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstddef>
 #include <filesystem>
 #include <optional>
 #include <string>
@@ -9,6 +8,7 @@
 #include <antwika/ecs/World.hpp>
 #include <antwika/gameplay/IGame.hpp>
 #include <antwika/log/ILogger.hpp>
+#include <antwika/map/MapFile.hpp>
 #include <antwika/voxel/VoxelPosition.hpp>
 
 namespace antwika::editor
@@ -20,6 +20,7 @@ namespace antwika::editor
         GameModule(
             log::ILogger &logger,
             ecs::World &world,
+            const map::Map &laidMap,
             const voxel::Voxels &solidVoxels,
             const std::vector<std::vector<voxel::VoxelPosition>>
                 &patrolPositions);
@@ -32,9 +33,13 @@ namespace antwika::editor
         GameModule &operator=(const GameModule &) = delete;
         GameModule &operator=(GameModule &&) = delete;
 
-        [[nodiscard]] gameplay::IGame *operator->() noexcept;
+        [[nodiscard]] gameplay::IGame *operator->();
 
-        [[nodiscard]] const gameplay::IGame *operator->() const noexcept;
+        [[nodiscard]] const gameplay::IGame *operator->() const;
+
+        [[nodiscard]] gameplay::IGame &operator*();
+
+        [[nodiscard]] const gameplay::IGame &operator*() const;
 
 #ifdef ANTWIKA_GAME_SHARED
         [[nodiscard]] bool hasChanged() const;
@@ -43,20 +48,39 @@ namespace antwika::editor
 #endif
 
     private:
+        using GameSetUp = gameplay::IGame *(*)(
+            log::ILogger *,
+            ecs::World *,
+            const map::Map *,
+            const voxel::Voxels *,
+            const std::vector<std::vector<voxel::VoxelPosition>> *);
+
+        using GameTakeDown = void (*)(gameplay::IGame *);
+
         void letGo() noexcept;
 
+        void createGame();
+
 #ifdef ANTWIKA_GAME_SHARED
+        struct ModuleEntry final
+        {
+            void *library = nullptr;
+
+            GameSetUp setUp = nullptr;
+
+            GameTakeDown takeDown = nullptr;
+        };
+
+        struct OpenedModule final
+        {
+            std::optional<ModuleEntry> entry;
+
+            std::string why;
+        };
+
         void open();
 
-        [[nodiscard]] static void *opened(
-            const std::string &path,
-            std::string &why,
-            gameplay::IGame *(**setUp)(
-                log::ILogger *,
-                ecs::World *,
-                const voxel::Voxels *,
-                const std::vector<std::vector<voxel::VoxelPosition>> *),
-            void (**takeDown)(gameplay::IGame *));
+        [[nodiscard]] static OpenedModule openedModuleAt(const std::string &path);
 
         [[nodiscard]] std::optional<std::string> copied();
 
@@ -66,21 +90,18 @@ namespace antwika::editor
 
         std::string openedPath;
 
-        log::ILogger *logger = nullptr;
-        ecs::World *world = nullptr;
-        const voxel::Voxels *solidVoxels = nullptr;
-        const std::vector<std::vector<voxel::VoxelPosition>> *patrolPositions =
-            nullptr;
         void *library = nullptr;
 #endif
 
-        gameplay::IGame *(*setUp)(
-            log::ILogger *,
-            ecs::World *,
-            const voxel::Voxels *,
-            const std::vector<std::vector<voxel::VoxelPosition>> *)
-            = nullptr;
-        void (*takeDown)(gameplay::IGame *) = nullptr;
+        log::ILogger *logger = nullptr;
+        ecs::World *world = nullptr;
+        const map::Map *laidMap = nullptr;
+        const voxel::Voxels *solidVoxels = nullptr;
+        const std::vector<std::vector<voxel::VoxelPosition>> *patrolPositions =
+            nullptr;
+
+        GameSetUp setUp = nullptr;
+        GameTakeDown takeDown = nullptr;
         gameplay::IGame *madeGame = nullptr;
     };
 

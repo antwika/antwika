@@ -18,6 +18,8 @@
 #include "antwika/editor/plan/PlanBoard.hpp"
 #include "antwika/editor/ui/PlanView.hpp"
 
+#include "antwika/editor/ui/WidgetIds.hpp"
+
 using antwika::editor::Column;
 using antwika::editor::FocusedField;
 using antwika::editor::kPlanBodyWidget;
@@ -65,7 +67,10 @@ namespace
     {
         Context context{kCanvasSize, Theme{}};
 
-        view.layout(context, FocusedField::Nothing);
+        view.layout(
+            context,
+            FocusedField::Nothing,
+            antwika::editor::PanelDrag{.windowSize = kCanvasSize});
 
         return context.build();
     }
@@ -341,4 +346,76 @@ TEST(PlanViewTest, Save_WritesTheBoardBackAndOnlyWhereItChanged)
     EXPECT_EQ(cardsOf(readView.getBoard(), Column::Todo).size(), 1U);
 
     std::filesystem::remove(getBoardPath("save"));
+}
+
+TEST(PlanViewTest, Layout_HangsAnEdgeBetweenEveryPairOfColumns)
+{
+    PlanView view;
+    openEmptyBoard(view, "edges");
+
+    const auto frame = laidOut(view);
+
+    EXPECT_TRUE(
+        frame.rects.getWidgetRect(antwika::editor::kPlanFirstEdgeWidget)
+            .has_value());
+    EXPECT_TRUE(
+        frame.rects.getWidgetRect(antwika::editor::kPlanSecondEdgeWidget)
+            .has_value());
+    EXPECT_TRUE(
+        frame.rects.getWidgetRect(antwika::editor::kPlanDetailEdgeWidget)
+            .has_value());
+}
+
+TEST(PlanViewTest, Layout_SharesTheRoomEvenlyUntilAnEdgeIsDragged)
+{
+    PlanView view;
+    openEmptyBoard(view, "even");
+
+    const auto frame = laidOut(view);
+    const auto first = frame.rects.getWidgetRect(
+        antwika::editor::getPlanColumnWidget(Column::Todo));
+    const auto second = frame.rects.getWidgetRect(
+        antwika::editor::getPlanColumnWidget(Column::Doing));
+
+    ASSERT_TRUE(first.has_value());
+    ASSERT_TRUE(second.has_value());
+    EXPECT_EQ(first->size.width, second->size.width);
+}
+
+TEST(PlanViewTest, Layout_GivesTheCardPaneTheWidthItsEdgeWasDraggedTo)
+{
+    PlanView view;
+    openEmptyBoard(view, "card");
+
+    Context context{kCanvasSize, Theme{}};
+    antwika::editor::PanelDrag panelDrag{.windowSize = kCanvasSize};
+    panelDrag.panelSizes.cardWidth = 110;
+
+    view.layout(context, FocusedField::Nothing, panelDrag);
+
+    const auto frame = context.build();
+    const auto pane =
+        frame.rects.getWidgetRect(antwika::editor::kPlanDetailWidget);
+
+    ASSERT_TRUE(pane.has_value());
+    EXPECT_EQ(pane->size.width, 110U);
+}
+
+TEST(PlanViewTest, Layout_GivesAColumnTheWidthItsEdgeWasDraggedTo)
+{
+    PlanView view;
+    openEmptyBoard(view, "dragged");
+
+    Context context{kCanvasSize, Theme{}};
+    antwika::editor::PanelDrag panelDrag{.windowSize = kCanvasSize};
+    panelDrag.panelSizes.planFirstWidth = 90;
+
+    view.layout(context, FocusedField::Nothing, panelDrag);
+
+    const auto frame = context.build();
+    const auto first = frame.rects.getWidgetRect(
+        antwika::editor::getPlanColumnWidget(Column::Todo));
+
+    ASSERT_TRUE(first.has_value());
+    EXPECT_EQ(first->size.width, 90U);
 }

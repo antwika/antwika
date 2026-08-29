@@ -50,7 +50,7 @@ namespace antwika::ui::detail
 
     void LayoutTree::addArea(Area area)
     {
-        areaList.push_back(area);
+        areaList.push_back(std::move(area));
     }
 
     const std::vector<Area> &LayoutTree::getAreas() const noexcept
@@ -76,6 +76,26 @@ namespace antwika::ui::detail
     const std::vector<Splitter> &LayoutTree::getBars() const noexcept
     {
         return splitters;
+    }
+
+    void LayoutTree::addEdge(PanelEdge panelEdge)
+    {
+        panelEdges.push_back(panelEdge);
+    }
+
+    const std::vector<PanelEdge> &LayoutTree::getEdges() const noexcept
+    {
+        return panelEdges;
+    }
+
+    void LayoutTree::addPane(ScrollPane pane)
+    {
+        scrollPanes.push_back(pane);
+    }
+
+    const std::vector<ScrollPane> &LayoutTree::getPanes() const noexcept
+    {
+        return scrollPanes;
     }
 
     std::size_t LayoutTree::append(Node valueNode)

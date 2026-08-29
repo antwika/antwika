@@ -2,6 +2,7 @@
 
 #include <utility>
 
+#include "antwika/voxel/FacingTraits.hpp"
 #include "antwika/voxel/KindTraits.hpp"
 #include "antwika/voxel/VoxelDetail.hpp"
 #include "antwika/voxel/VoxelStairs.hpp"
@@ -32,10 +33,10 @@ namespace antwika::voxel
         }
 
         constexpr std::array<VoxelPosition, 4> kAboutACubePositions{
-            VoxelPosition{.x = 1},
-            VoxelPosition{.x = -1},
-            VoxelPosition{.z = 1},
-            VoxelPosition{.z = -1}};
+            stepOf(Facing::East),
+            stepOf(Facing::West),
+            stepOf(Facing::South),
+            stepOf(Facing::North)};
 
         [[nodiscard]] bool isGroundBeside(
             const Voxels &standingVoxels,
@@ -179,6 +180,22 @@ namespace antwika::voxel
             .x = lowestOf(position.x),
             .y = lowestOf(position.y),
             .z = lowestOf(position.z)};
+    }
+
+    VoxelPosition cubeIndexOf(const VoxelPosition position)
+    {
+        return VoxelPosition{
+            .x = getCubeIndexOfLevel(position.x),
+            .y = getCubeIndexOfLevel(position.y),
+            .z = getCubeIndexOfLevel(position.z)};
+    }
+
+    VoxelPosition cubeCornerAt(const VoxelPosition cubePosition)
+    {
+        return VoxelPosition{
+            .x = cubePosition.x * kCubeSide,
+            .y = cubePosition.y * kCubeSide,
+            .z = cubePosition.z * kCubeSide};
     }
 
     std::vector<VoxelPosition> getCubeCells(const VoxelPosition cornerPosition)

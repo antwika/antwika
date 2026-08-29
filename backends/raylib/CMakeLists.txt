@@ -9,6 +9,7 @@ if(ANTWIKA_GFX_BACKEND STREQUAL "raylib")
         src/RaylibRenderer.cpp
         src/RaylibRendererDraw.cpp
         src/RaylibRendererResources.cpp
+        src/RaylibResource.cpp
         src/RaylibShader.cpp
         src/RaylibTexture.cpp
         src/RaylibWindow.cpp

@@ -10,36 +10,59 @@
 
 #include "antwika/editor/Editor.hpp"
 
+#include "antwika/editor/ui/WidgetIds.hpp"
+
 namespace antwika::editor
 {
 
     void Editor::layoutSidebar(ui::Context &context)
     {
         const auto showPalette =
-            viewChoice.activeView == map::View::Atlases
-            || viewChoice.activeView == map::View::Character
+            viewChoice.activeView == View::Atlases
+            || viewChoice.activeView == View::Character
             || (isWorldShown()
-                && preferences.tool == map::Tool::Lamp);
-        const auto showLayers = viewChoice.activeView == map::View::Atlases;
+                && preferences.tool == Tool::Lamp);
+        const auto showLayers = viewChoice.activeView == View::Atlases;
         const auto showExitPanel =
-            preferences.tool == map::Tool::Exit && isWorldShown();
-        const auto showFigures =
-            preferences.tool == map::Tool::Figure
+            preferences.tool == Tool::Exit && isWorldShown();
+        const auto showCharacters =
+            preferences.tool == Tool::Character
             && isWorldShown();
+        const auto showMarkerSection = isMarkerSectionShown();
+        const auto showEntitySection = isEntitySectionShown();
+        const auto showGizmoPanel =
+            viewChoice.activeView == View::Gizmos
+            && gizmoView.getPickedIndex().has_value();
 
-        if (showPalette || showLayers || showExitPanel || showFigures)
+        if (showPalette || showLayers || showExitPanel || showCharacters
+            || showMarkerSection || showEntitySection || showGizmoPanel)
         {
-            if (viewChoice.activeView != map::View::Atlases)
+            if (!getSheetNames(viewChoice.activeView).has_value()
+                && !isWorldPanelShown())
             {
                 context.spacer(antwika::ui::kGrowSizing);
             }
 
+            context.edge(
+                antwika::ui::EdgeSpec{
+                    .widgetId = antwika::editor::kRailEdgeWidget,
+                    .panelWidget = antwika::editor::kRailWidget,
+                    .minimum = kMinPanelWidth,
+                    .maximum =
+                        viewportRenderer.getWindowSize().width / 3,
+                    .dragging = pointer.heldEdgeWidget
+                                == antwika::editor::kRailEdgeWidget});
+
             const auto rail = context.column(
                 antwika::ui::ContainerSpec{
                     .widthSizing = antwika::ui::getFixedSize(
-                        getRailWidth(
-                            viewportRenderer.getWindowSize(),
-                            camera::kCanvasSize)),
+                        panelWidthOf(
+                            &PanelSizes::railWidth,
+                            getRailWidth(
+                                viewportRenderer.getWindowSize(),
+                                camera::kCanvasSize))),
+                    .heightSizing = antwika::ui::kGrowSizing,
+                    .backgroundColor = kPanelColor,
                     .gap = antwika::editor::kPanelGap
                            * kUiScale,
                     .widgetId = antwika::editor::kRailWidget});
@@ -71,7 +94,7 @@ namespace antwika::editor
                         antwika::ui::ContainerSpec{
                             .widthSizing = antwika::ui::kFitSizing,
                             .backgroundColor =
-                                which == inkPicker.activeInk
+                                which == inkPanel.inkPicker.activeInk
                                        ? std::optional{kTextColor}
                                        : std::nullopt,
                             .padding = kUiScale});
@@ -82,7 +105,7 @@ namespace antwika::editor
                             .backgroundColor =
                                 document.map.paletteColors.at(which),
                             .padding = 0,
-                            .widgetId = tile::getSwatchWidget(which)});
+                            .widgetId = getSwatchWidget(which)});
                 }
 
                 if (document.map.paletteColors.size() < tile::kMaxInks)
@@ -113,9 +136,24 @@ namespace antwika::editor
 
             layoutWorldRail(context);
 
-            if (inkPicker.editingInk.has_value())
+            if (showMarkerSection)
             {
-                const auto inkPanel = context.column(
+                layoutMarkerSection(context);
+            }
+
+            if (showEntitySection)
+            {
+                layoutEntitySection(context);
+            }
+
+            if (showGizmoPanel)
+            {
+                static_cast<void>(gizmoView.layoutRail(context));
+            }
+
+            if (inkPanel.inkPicker.editingInk.has_value())
+            {
+                const auto inkSheet = context.column(
                     antwika::ui::ContainerSpec{
                         .widthSizing = antwika::ui::kGrowSizing,
                         .backgroundColor = kPanelColor,
@@ -125,21 +163,20 @@ namespace antwika::editor
 
                 context.textField(
                     antwika::ui::TextFieldSpec{
-                        .widgetId = decor::
-                            kInkHexWidget,
-                        .text = inkPicker.hexText,
+                        .widgetId = kInkHexWidget,
+                        .text = inkPanel.inkPicker.hexText,
                         .placeholder = "#rrggbb",
                         .focused = true});
                 context.label(
                     "Glow "
                         + std::to_string(
-                            glowOf(*inkPicker.editingInk)),
+                            inkPanel.glowOf(*inkPanel.inkPicker.editingInk)),
                     kTextColor);
                 context.slider(
                     antwika::ui::SliderSpec{
                         .widgetId =
                             antwika::editor::kGlowWidget,
-                        .value = glowOf(*inkPicker.editingInk),
+                        .value = inkPanel.glowOf(*inkPanel.inkPicker.editingInk),
                         .range = 100,
                         .dragging =
                             slidingWidget
@@ -168,9 +205,9 @@ namespace antwika::editor
                 }
             }
 
-            layoutFigureChooser(context);
+            layoutCharacterChooser(context);
 
-            if (viewChoice.activeView == map::View::Character)
+            if (viewChoice.activeView == View::Character)
             {
                 const auto walking = context.column(
                     antwika::ui::ContainerSpec{
@@ -179,8 +216,8 @@ namespace antwika::editor
                         .padding = kPanelPadding,
                         .widgetId = antwika::editor::
                             kPreviewWidget});
-                const auto way = characterView.mark.hoveredWayRow.value_or(
-                    characterView.mark.selectedFrame.value_or(0)
+                const auto way = characterView.getMark().hoveredWayRow.value_or(
+                    characterView.getMark().selectedFrame.value_or(0)
                     / character::kCharacterFrames);
 
                 panelTitle(context, getCapitalizedText(character::getDirectionName(way)));
@@ -273,8 +310,7 @@ namespace antwika::editor
                         .widthSizing = antwika::ui::kGrowSizing,
                         .backgroundColor = kPanelColor,
                         .padding = kPanelPadding,
-                        .widgetId = decor::
-                            kTilingPanelWidget});
+                        .widgetId = kTilingPanelWidget});
 
                 {
                     const auto heading = context.row(
@@ -290,14 +326,12 @@ namespace antwika::editor
                     context.button(
                         "*",
                         antwika::ui::ButtonSpec{
-                            .widgetId = decor::
-                                kRerollPreviewWidget});
+                            .widgetId = kRerollPreviewWidget});
                     context.spacer(antwika::ui::kGrowSizing);
                     context.checkbox(
                         "Auto",
                         antwika::ui::CheckboxSpec{
-                            .widgetId = decor::
-                                kAutoPreviewWidget,
+                            .widgetId = kAutoPreviewWidget,
                             .checked = preview.automatic});
                 }
 

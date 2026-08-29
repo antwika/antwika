@@ -53,6 +53,8 @@ namespace antwika::ecs
 
         [[nodiscard]] bool isAlive(Entity entity) const noexcept;
 
+        [[nodiscard]] std::vector<Entity> getLiveEntities() const;
+
         template <Component T>
         void add(Entity entity, T value)
         {
@@ -141,6 +143,8 @@ namespace antwika::ecs
 
         void commit();
 
+        [[nodiscard]] ILogger &getLogger() const noexcept;
+
         static constexpr std::size_t kSeedSlots = 8;
 
         static_assert((kSeedSlots & (kSeedSlots - 1)) == 0);
@@ -155,23 +159,46 @@ namespace antwika::ecs
 
         void growSlots();
 
-        [[nodiscard]] std::size_t getFindSlot(
-            const ComponentKey key) const noexcept
+        [[nodiscard]] static std::size_t probedSlotFor(
+            const std::span<const ComponentKey> slotKeys,
+            const std::size_t slotMask,
+            const ComponentKey key) noexcept
         {
-            const auto slotMask = keys.size() - 1;
             auto slotIndex = static_cast<std::size_t>(key) & slotMask;
 
-            while (keys[slotIndex] != 0)
+            while (slotKeys[slotIndex] != 0 && slotKeys[slotIndex] != key)
             {
-                if (keys[slotIndex] == key)
-                {
-                    return slotIndex;
-                }
-
                 slotIndex = (slotIndex + 1) & slotMask;
             }
 
-            return kNoSlot;
+            return slotIndex;
+        }
+
+        [[nodiscard]] std::size_t getFindSlot(
+            const ComponentKey key) const noexcept
+        {
+            const auto slotIndex = probedSlotFor(keys, keys.size() - 1, key);
+
+            return keys[slotIndex] == key ? slotIndex : kNoSlot;
+        }
+
+        template <typename Made, typename Held, typename... MadeArgs>
+        [[nodiscard]] static Made &ensureAt(
+            std::vector<std::unique_ptr<Held>> &heldSlots,
+            const std::size_t id,
+            MadeArgs &&...madeArgs)
+        {
+            if (heldSlots[id] != nullptr)
+            {
+                return *static_cast<Made *>(heldSlots[id].get());
+            }
+
+            auto heldValue = std::make_unique<Made>(
+                std::forward<MadeArgs>(madeArgs)...);
+            auto *madeValue = heldValue.get();
+            heldSlots[id] = std::move(heldValue);
+
+            return *madeValue;
         }
 
         template <Component T>
@@ -179,16 +206,8 @@ namespace antwika::ecs
         {
             const auto id = slotFor(
                 detail::componentKey<T>(), detail::typeName<T>());
-            if (pools[id] != nullptr)
-            {
-                return *static_cast<ComponentStorage<T> *>(pools[id].get());
-            }
 
-            auto pool = std::make_unique<ComponentStorage<T>>();
-            auto *madePool = pool.get();
-            pools[id] = std::move(pool);
-
-            return *madePool;
+            return ensureAt<ComponentStorage<T>>(pools, id);
         }
 
         template <Component T>
@@ -196,18 +215,9 @@ namespace antwika::ecs
         {
             const auto id = slotFor(
                 detail::componentKey<T>(), detail::typeName<T>());
-            if (pendingBuffers[id] != nullptr)
-            {
-                return *static_cast<detail::PendingOps<T> *>(
-                    pendingBuffers[id].get());
-            }
 
-            auto buffer =
-                std::make_unique<detail::PendingOps<T>>(storageFor<T>());
-            auto *madeBuffer = buffer.get();
-            pendingBuffers[id] = std::move(buffer);
-
-            return *madeBuffer;
+            return ensureAt<detail::PendingOps<T>>(
+                pendingBuffers, id, storageFor<T>());
         }
 
         template <Component T>

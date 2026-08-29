@@ -1,17 +1,20 @@
 #include "antwika/editor/ui/MapPicker.hpp"
 
+#include <cassert>
 #include <cstdint>
 
 #include <antwika/io/FileNames.hpp>
+
+#include "antwika/editor/ui/WidgetIds.hpp"
 
 namespace antwika::editor
 {
 
     widget::WidgetId getMapRowWidget(const std::size_t rowIndex)
     {
-        return static_cast<widget::WidgetId>(
-            static_cast<std::uint64_t>(kFirstMapRowWidget)
-            + (rowIndex % kMaxPicked));
+        assert(rowIndex < kMaxPickedRows);
+
+        return getWidgetAfter(kFirstMapRowWidget, rowIndex);
     }
 
     std::vector<std::string> getFilterMapNames(

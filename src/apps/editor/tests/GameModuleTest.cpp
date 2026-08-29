@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <memory>
 #include <set>
 #include <vector>
 
@@ -34,6 +35,7 @@ namespace
     {
     protected:
         NiceMock<MockLogger> logger;
+        antwika::map::Map laidMap;
         Voxels solidVoxels;
         std::vector<std::vector<VoxelPosition>> patrolPositions;
     };
@@ -43,7 +45,8 @@ namespace
 TEST_F(GameModuleTest, GameModule_MakesAGameToBeReachedThrough)
 {
     World world(logger);
-    GameModule module(logger, world, solidVoxels, patrolPositions);
+    GameModule module(
+        logger, world, laidMap, solidVoxels, patrolPositions);
 
     EXPECT_TRUE(module->getWorld().isAlive(module->getEye()));
 }
@@ -51,7 +54,8 @@ TEST_F(GameModuleTest, GameModule_MakesAGameToBeReachedThrough)
 TEST_F(GameModuleTest, GameModule_IsReadThroughWhereItIsHeldAsConst)
 {
     World world(logger);
-    GameModule module(logger, world, solidVoxels, patrolPositions);
+    GameModule module(
+        logger, world, laidMap, solidVoxels, patrolPositions);
     const auto &constModule = module;
 
     EXPECT_EQ(constModule->getPlayer(), module->getPlayer());
@@ -60,7 +64,8 @@ TEST_F(GameModuleTest, GameModule_IsReadThroughWhereItIsHeldAsConst)
 TEST_F(GameModuleTest, GameModule_ClaimsThePlayForTheImageThatHoldsIt)
 {
     World world(logger);
-    GameModule module(logger, world, solidVoxels, patrolPositions);
+    GameModule module(
+        logger, world, laidMap, solidVoxels, patrolPositions);
     const auto entity = world.create();
 
     {
@@ -76,7 +81,8 @@ TEST_F(GameModuleTest, GameModule_ClaimsThePlayForTheImageThatHoldsIt)
 TEST_F(GameModuleTest, Reload_LeavesWhatWasPlayedStandingInTheWorld)
 {
     World world(logger);
-    GameModule module(logger, world, solidVoxels, patrolPositions);
+    GameModule module(
+        logger, world, laidMap, solidVoxels, patrolPositions);
     const auto entity = world.create();
 
     {
@@ -97,12 +103,58 @@ TEST_F(GameModuleTest, Reload_LeavesWhatWasPlayedStandingInTheWorld)
 TEST_F(GameModuleTest, Reload_TakesUpTheEyeThatAlreadyStands)
 {
     World world(logger);
-    GameModule module(logger, world, solidVoxels, patrolPositions);
+    GameModule module(
+        logger, world, laidMap, solidVoxels, patrolPositions);
     const auto eye = module->getEye();
 
     ASSERT_TRUE(module.reload());
 
     EXPECT_EQ(module->getEye(), eye);
     EXPECT_TRUE(world.isAlive(eye));
+}
+
+TEST_F(GameModuleTest, Reload_NeedsNoSecondClaimForThePoolsTheHostHolds)
+{
+    World world(logger);
+    GameModule module(
+        logger, world, laidMap, solidVoxels, patrolPositions);
+
+    ASSERT_TRUE(module.reload());
+
+    const auto entity = world.create();
+
+    {
+        const OpenPhase phase(world);
+
+        world.add<Inventory>(entity, Inventory{});
+    }
+
+    EXPECT_TRUE(world.has<Inventory>(entity));
+}
+
+TEST_F(GameModuleTest, Reload_TwiceKeepsEachCopyApartByItsLoadCount)
+{
+    World world(logger);
+    GameModule module(
+        logger, world, laidMap, solidVoxels, patrolPositions);
+
+    ASSERT_TRUE(module.reload());
+    ASSERT_TRUE(module.reload());
+
+    EXPECT_TRUE(world.isAlive(module->getEye()));
+}
+
+TEST_F(GameModuleTest, GameModule_KeepsOverlappingInstancesOnTheirOwnCopies)
+{
+    World firstWorld(logger);
+    auto firstModule = std::make_unique<GameModule>(
+        logger, firstWorld, solidVoxels, patrolPositions);
+    World secondWorld(logger);
+    GameModule secondModule(logger, secondWorld, solidVoxels, patrolPositions);
+
+    firstModule.reset();
+
+    ASSERT_TRUE(secondModule.reload());
+    EXPECT_TRUE(secondWorld.isAlive(secondModule->getEye()));
 }
 #endif

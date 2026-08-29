@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <map>
 #include <optional>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -17,6 +18,7 @@
 #include <antwika/voxelmap/Voxel.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/tilemap/TileEdges.hpp>
+#include <antwika/voxelmap/QuadPaint.hpp>
 
 #include "VoxelDetail.hpp"
 
@@ -165,6 +167,73 @@ namespace antwika::voxelmap
                 (uv.mostV - uv.leastV) * tileRect.size.height});
     } // GCOVR_EXCL_LINE
 
+    void addFaceQuads(
+        gfx::MeshData &mesh,
+        const std::size_t side,
+        const voxel::VoxelPosition climbPosition,
+        const bool climbing,
+        const gfx::Vec3 middlePoint,
+        const QuadPaint &paint)
+    {
+        const auto &face = kVoxelFaces[side];
+        const auto flight = climbing
+                          ? voxel::getStairQuads(climbPosition)
+                          : std::vector<voxel::StairQuad>{};
+
+        std::vector<voxel::StairQuad> layingQuads;
+
+        for (const auto &quad : flight)
+        {
+            if (quad.side == side)
+            {
+                layingQuads.push_back(quad);
+            }
+        }
+
+        if (!climbing)
+        {
+            layingQuads.push_back(
+                voxel::StairQuad{
+                    .side = side,
+                    .corners = face.corners});
+        }
+
+        for (const auto &quad : layingQuads)
+        {
+            const auto part =
+                getStairUvRect(paint.tileRect, quad, paint.mirrored);
+            const auto first =
+                static_cast<std::uint32_t>(mesh.vertices.size());
+
+            for (std::size_t corner = 0;
+                 corner < kCornersPerFace;
+                 ++corner)
+            {
+                const auto cornerOffset = kFaceCorners[corner];
+
+                mesh.vertices.push_back(
+                    gfx::Vertex3D{
+                        .position = middlePoint + quad.corners[corner]
+                                    + paint.liftPoint,
+                        .normal = face.normal,
+                        .texCoordinate =
+                            gfx::Vec2{
+                                part.originPoint.x
+                                    + cornerOffset.x * part.size.width,
+                                part.originPoint.y
+                                    + cornerOffset.y
+                                          * part.size.height},
+                        .color = paint.color});
+            }
+
+            for (const std::uint32_t step :
+                 {0U, 1U, 2U, 0U, 2U, 3U})
+            {
+                mesh.indices.push_back(first + step);
+            }
+        }
+    } // GCOVR_EXCL_LINE
+
     gfx::MeshData getVoxelMesh(const voxel::Voxels &voxels)
     {
         const auto faces = visibleFacesOf(voxels);
@@ -188,6 +257,12 @@ namespace antwika::voxelmap
         const std::span<const tilemap::Tile> wovenTiles,
         const Pass pass)
     {
+        if (faces.size() != wovenTiles.size())
+        {
+            throw std::invalid_argument{
+                "one woven tile must stand for every face"};
+        }
+
         gfx::MeshData mesh;
 
         for (std::size_t index = 0; index < faces.size(); ++index)
@@ -201,8 +276,6 @@ namespace antwika::voxelmap
                 continue;
             }
 
-            const auto &face = kVoxelFaces[faceRef.side];
-            const auto middlePoint = getCellMiddle(faceRef.cell.position);
             const auto wovenTile = wovenTiles[index];
             const auto tile = tilemap::getTileCoords(
                 wovenTile.index, tilemap::tileSizeOf(wovenTile.atlas));
@@ -213,62 +286,17 @@ namespace antwika::voxelmap
                                         .blue = 255,
                                         .alpha = kWaterAlpha}
                                                : kNoTintColor;
-            const auto flight =
-                isRampStep(voxels, faceRef.cell.position)
-                    ? voxel::getStairQuads(faceRef.climbPosition)
-                    : std::vector<voxel::StairQuad>{};
 
-            std::vector<voxel::StairQuad> layingQuads;
-
-            for (const auto &quad : flight)
-            {
-                if (quad.side == faceRef.side)
-                {
-                    layingQuads.push_back(quad);
-                }
-            }
-
-            if (flight.empty())
-            {
-                layingQuads.push_back(
-                    voxel::StairQuad{
-                        .side = faceRef.side,
-                        .corners = face.corners});
-            }
-
-            for (const auto &quad : layingQuads)
-            {
-                const auto part = getStairUvRect(
-                    tile, quad, isMirroredWithin(voxels, faceRef));
-                const auto first =
-                    static_cast<std::uint32_t>(mesh.vertices.size());
-
-                for (std::size_t corner = 0;
-                     corner < kCornersPerFace;
-                     ++corner)
-                {
-                    const auto cornerOffset = kFaceCorners[corner];
-
-                    mesh.vertices.push_back(
-                        gfx::Vertex3D{
-                            .position = middlePoint + quad.corners[corner],
-                            .normal = face.normal,
-                            .texCoordinate =
-                                gfx::Vec2{
-                                    part.originPoint.x
-                                        + cornerOffset.x * part.size.width,
-                                    part.originPoint.y
-                                        + cornerOffset.y
-                                              * part.size.height},
-                            .color = veil});
-                }
-
-                for (const std::uint32_t step :
-                     {0U, 1U, 2U, 0U, 2U, 3U})
-                {
-                    mesh.indices.push_back(first + step);
-                }
-            }
+            addFaceQuads(
+                mesh,
+                faceRef.side,
+                faceRef.climbPosition,
+                isRampStep(voxels, faceRef.cell.position),
+                getCellMiddle(faceRef.cell.position),
+                QuadPaint{
+                    .tileRect = tile,
+                    .mirrored = isMirroredWithin(voxels, faceRef),
+                    .color = veil});
         }
 
         return mesh;
@@ -299,12 +327,16 @@ namespace antwika::voxelmap
         const Pass pass,
         const std::int32_t regionSide)
     {
+        if (faces.size() != wovenTiles.size())
+        {
+            throw std::invalid_argument{
+                "one woven tile must stand for every face"};
+        }
+
         std::map<voxel::VoxelPosition, std::vector<std::size_t>>
             facesByRegion;
 
-        for (std::size_t index = 0;
-             index < faces.size() && index < wovenTiles.size();
-             ++index)
+        for (std::size_t index = 0; index < faces.size(); ++index)
         {
             facesByRegion[getMeshRegionOf(
                               faces[index].cell.position, regionSide)]

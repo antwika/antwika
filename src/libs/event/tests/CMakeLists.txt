@@ -1,9 +1,12 @@
 find_package(GTest REQUIRED)
 
+add_subdirectory(conformance)
+add_subdirectory(fakes)
 add_subdirectory(mocks)
 
 add_executable(antwika_event_tests
     EventDispatcherTest.cpp
+    EventNameTest.cpp
     EventTest.cpp
     ITickEventSourceTest.cpp
     TickEventRecorderTest.cpp

@@ -17,9 +17,10 @@ namespace antwika::gameplay
 
     enum class Phase : std::uint8_t
     {
+        Spawning,
         Sending,
         Walking,
-        Orienting,
+        Pickup,
 
         Health,
     };

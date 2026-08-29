@@ -13,6 +13,8 @@
 #include "antwika/editor/plan/PlanFile.hpp"
 #include "antwika/editor/plan/PlanFileError.hpp"
 
+#include "antwika/editor/ui/WidgetIds.hpp"
+
 namespace antwika::editor
 {
 
@@ -25,6 +27,33 @@ namespace antwika::editor
         constexpr std::uint32_t kDropMarkerHeight = 2 * kUiScale;
 
         constexpr std::string_view kUntitled = "(untitled)";
+
+        void dropMarker(ui::Context &context)
+        {
+            const auto slot = context.column(
+                antwika::ui::ContainerSpec{
+                    .widthSizing = antwika::ui::kGrowSizing,
+                    .heightSizing =
+                        antwika::ui::getFixedSize(kDropMarkerHeight),
+                    .backgroundColor = kSelectionAccentColor});
+        }
+
+        [[nodiscard]] antwika::ui::Sizing getColumnSizing(
+            const Column whichColumn, const PanelDrag &panelDrag)
+        {
+            const auto wish =
+                whichColumn == Column::Todo
+                    ? panelDrag.panelSizes.planFirstWidth
+                : whichColumn == Column::Doing
+                    ? panelDrag.panelSizes.planSecondWidth
+                    : 0U;
+
+            return wish == 0
+                       ? antwika::ui::kGrowSizing
+                       : antwika::ui::getFixedSize(
+                             getFittedPanelWidth(
+                                 wish, wish, panelDrag.windowSize.width));
+        }
 
         [[nodiscard]] bool covers(
             const antwika::gfx::Rect &roomRect,
@@ -139,7 +168,9 @@ namespace antwika::editor
     }
 
     void PlanView::layout(
-        ui::Context &context, const FocusedField focusedField)
+        ui::Context &context,
+        const FocusedField focusedField,
+        const PanelDrag &panelDrag)
     {
         const auto rowWidget = context.row(
             antwika::ui::ContainerSpec{
@@ -150,94 +181,127 @@ namespace antwika::editor
 
         for (const auto which : kEveryColumn)
         {
-            const auto &columnCards = cardsOf(planBoard, which);
-            const auto carrying =
-                planDrag.has_value() && planDrag->moved;
-            const auto marking =
-                carrying
-                && (planDrag->overColumn.has_value()
-                        ? *planDrag->overColumn == which
-                        : planDrag->fromColumn == which);
-            const std::size_t markedIndex =
-                !carrying                    ? 0
-                : planDrag->overColumn.has_value() ? planDrag->dropIndex
-                                             : planDrag->cardIndex;
+            layoutColumn(context, which, panelDrag);
 
-            const auto list = context.column(
-                antwika::ui::ContainerSpec{
-                    .widthSizing = antwika::ui::kGrowSizing,
-                    .heightSizing = antwika::ui::kGrowSizing,
-                    .backgroundColor = kPanelColor,
-                    .padding = kPanelPadding,
-                    .widgetId = getPlanColumnWidget(which),
-                    .clips = true});
+            const auto edgeWidget = getPlanEdgeWidget(which);
 
-            panelTitle(context, std::string(getColumnName(which)));
-
-            for (std::size_t index = 0; index < columnCards.size(); ++index)
+            if (edgeWidget != widget::kNoWidget)
             {
-                if (marking && index == markedIndex)
-                {
-                    const auto slot = context.column(
-                        antwika::ui::ContainerSpec{
-                            .widthSizing = antwika::ui::kGrowSizing,
-                            .heightSizing = antwika::ui::getFixedSize(
-                                kDropMarkerHeight),
-                            .backgroundColor = kSelectionAccentColor});
-                }
-
-                const auto cardPicked =
-                    planPicked.has_value()
-                    && planPicked->first == which
-                    && planPicked->second == index;
-                const auto carryingHere =
-                    carrying && planDrag->fromColumn == which
-                    && planDrag->cardIndex == index;
-                const auto &card = columnCards.at(index);
-
-                context.button(
-                    card.title.empty() ? std::string(kUntitled)
-                                       : card.title,
-                    antwika::ui::ButtonSpec{
-                        .widgetId = getPlanCardWidget(which, index),
-                        .widthSizing = antwika::ui::kGrowSizing,
-                        .state =
-                            cardPicked
-                                ? std::optional{
-                                      antwika::ui::ButtonState::
-                                          Pressed}
-                                : std::nullopt,
-                        .fillColor = carryingHere
-                                   ? std::optional{kTitleBarColor}
-                                   : std::nullopt,
-                        .wrapWidth = getCardWidth()});
-            }
-
-            if (marking && markedIndex >= columnCards.size())
-            {
-                const auto slot = context.column(
-                    antwika::ui::ContainerSpec{
-                        .widthSizing = antwika::ui::kGrowSizing,
-                        .heightSizing =
-                            antwika::ui::getFixedSize(kDropMarkerHeight),
-                        .backgroundColor = kSelectionAccentColor});
-            }
-
-            context.spacer(antwika::ui::kGrowSizing);
-
-            if (columnCards.size() < kMaxCardsPerColumn)
-            {
-                context.button(
-                    "+ card",
-                    antwika::ui::ButtonSpec{
-                        .widgetId = getPlanAddWidget(which),
-                        .widthSizing = antwika::ui::kGrowSizing});
+                context.edge(
+                    antwika::ui::EdgeSpec{
+                        .widgetId = edgeWidget,
+                        .panelWidget = getPlanColumnWidget(which),
+                        .minimum = kMinPanelWidth,
+                        .maximum = panelDrag.windowSize.width / 3,
+                        .dragging =
+                            panelDrag.heldEdgeWidget == edgeWidget});
             }
         }
 
+        context.edge(
+            antwika::ui::EdgeSpec{
+                .widgetId = kPlanDetailEdgeWidget,
+                .panelWidget = kPlanDetailWidget,
+                .minimum = kMinPanelWidth,
+                .maximum = panelDrag.windowSize.width / 3,
+                .dragging =
+                    panelDrag.heldEdgeWidget == kPlanDetailEdgeWidget});
+
+        layoutCardPane(context, focusedField, panelDrag);
+    }
+
+    void PlanView::layoutColumn(
+        ui::Context &context,
+        const Column whichColumn,
+        const PanelDrag &panelDrag)
+    {
+        const auto &columnCards = cardsOf(planBoard, whichColumn);
+        const auto carrying =
+            planDrag.has_value() && planDrag->moved;
+        const auto marking =
+            carrying
+            && (planDrag->overColumn.has_value()
+                    ? *planDrag->overColumn == whichColumn
+                    : planDrag->fromColumn == whichColumn);
+        const std::size_t markedIndex =
+            !carrying                    ? 0
+            : planDrag->overColumn.has_value() ? planDrag->dropIndex
+                                         : planDrag->cardIndex;
+
+        const auto list = context.column(
+            antwika::ui::ContainerSpec{
+                .widthSizing = getColumnSizing(whichColumn, panelDrag),
+                .heightSizing = antwika::ui::kGrowSizing,
+                .backgroundColor = kPanelColor,
+                .padding = kPanelPadding,
+                .widgetId = getPlanColumnWidget(whichColumn),
+                .clips = true});
+
+        panelTitle(context, std::string(getColumnName(whichColumn)));
+
+        for (std::size_t index = 0; index < columnCards.size(); ++index)
+        {
+            if (marking && index == markedIndex)
+            {
+                dropMarker(context);
+            }
+
+            const auto cardPicked =
+                planPicked.has_value()
+                && planPicked->first == whichColumn
+                && planPicked->second == index;
+            const auto carryingHere =
+                carrying && planDrag->fromColumn == whichColumn
+                && planDrag->cardIndex == index;
+            const auto &card = columnCards.at(index);
+
+            context.button(
+                card.title.empty() ? std::string(kUntitled)
+                                   : card.title,
+                antwika::ui::ButtonSpec{
+                    .widgetId = getPlanCardWidget(whichColumn, index),
+                    .widthSizing = antwika::ui::kGrowSizing,
+                    .state =
+                        cardPicked
+                            ? std::optional{
+                                  antwika::ui::ButtonState::
+                                      Pressed}
+                            : std::nullopt,
+                    .fillColor = carryingHere
+                               ? std::optional{kTitleBarColor}
+                               : std::nullopt,
+                    .wrapWidth = getCardWidth()});
+        }
+
+        if (marking && markedIndex >= columnCards.size())
+        {
+            dropMarker(context);
+        }
+
+        context.spacer(antwika::ui::kGrowSizing);
+
+        if (columnCards.size() < kMaxCardsPerColumn)
+        {
+            context.button(
+                "+ card",
+                antwika::ui::ButtonSpec{
+                    .widgetId = getPlanAddWidget(whichColumn),
+                    .widthSizing = antwika::ui::kGrowSizing});
+        }
+    }
+
+    void PlanView::layoutCardPane(
+        ui::Context &context,
+        const FocusedField focusedField,
+        const PanelDrag &panelDrag)
+    {
         const auto pane = context.column(
             antwika::ui::ContainerSpec{
-                .widthSizing = antwika::ui::getFixedSize(kDetailWidth),
+                .widthSizing = antwika::ui::getFixedSize(
+                    getFittedPanelWidth(
+                        panelDrag.panelSizes.cardWidth,
+                        kDetailWidth,
+                        panelDrag.windowSize.width)),
                 .heightSizing = antwika::ui::kGrowSizing,
                 .backgroundColor = kPanelColor,
                 .padding = kPanelPadding,
@@ -359,14 +423,21 @@ namespace antwika::editor
                 ? antwika::ui::getWrapColumns(getGameTheme(), *room)
                 : 0);
         const auto pad = static_cast<float>(2 * kUiScale);
-        const auto step = text::getTextSize(titleText, kUiScale).height;
+        const auto step =
+            text::getTextSize(
+                titleText, antwika::gfx::TextScale{.multiplier = kUiScale})
+                .height;
 
         std::uint32_t widest = 0;
 
         for (const auto line : lines)
         {
             widest = std::max(
-                widest, text::getTextSize(line, kUiScale).width);
+                widest,
+                text::getTextSize(
+                    line,
+                    antwika::gfx::TextScale{.multiplier = kUiScale})
+                    .width);
         }
 
         const auto width =
@@ -380,9 +451,9 @@ namespace antwika::editor
         const auto top =
             static_cast<float>(pointerInWindow->y) - (height / 2.0F);
 
-        auto &nativeRenderer = viewportRenderer.nativeRenderer();
+        auto &innerRenderer = viewportRenderer.innerRenderer();
 
-        nativeRenderer.drawRect(
+        innerRenderer.drawRect(
             antwika::gfx::RectF(
                 antwika::gfx::PointF{left, top},
                 antwika::gfx::SizeF{width, height}),
@@ -390,14 +461,14 @@ namespace antwika::editor
 
         for (std::size_t index = 0; index < lines.size(); ++index)
         {
-            nativeRenderer.drawText(
+            innerRenderer.drawText(
                 antwika::gfx::PointF{
                     left + pad,
                     top + pad
                         + static_cast<float>(
                             step * static_cast<std::uint32_t>(index))},
                 lines.at(index),
-                kUiScale,
+                antwika::gfx::TextScale{.multiplier = kUiScale},
                 kSelectionAccentColor);
         }
     }
@@ -572,9 +643,9 @@ namespace antwika::editor
 
 
     bool PlanView::claims(
-        const map::View shownView, const bool playing) const noexcept
+        const View shownView, const bool playing) const noexcept
     {
-        return !playing && shownView == map::View::Plan;
+        return !playing && shownView == View::Plan;
     }
 
     std::string PlanView::getStatusText(const ViewContext &) const
@@ -595,7 +666,16 @@ namespace antwika::editor
     bool PlanView::layoutPanel(
         ui::Context &context, const ViewContext &viewContext)
     {
-        layout(context, viewContext.workbench.focusedField);
+        layout(
+            context,
+            viewContext.workbench.focusedField,
+            PanelDrag{
+                .panelSizes =
+                    viewContext.workbench.preferences.panelSizes,
+                .heldEdgeWidget =
+                    viewContext.workbench.pointer.heldEdgeWidget,
+                .windowSize =
+                    viewContext.render.viewportRenderer.getWindowSize()});
 
         return true;
     }
@@ -623,6 +703,33 @@ namespace antwika::editor
             viewContext.workbench.pointer.pointerInWindow,
             viewContext.workbench.focusedField,
             notice);
+    }
+
+    void PlanView::trackPointer(const ViewContext &viewContext)
+    {
+        const auto &pointer = viewContext.workbench.pointer;
+
+        if (pointer.pointerInWindow.has_value())
+        {
+            draggedTo(*pointer.pointerInWindow);
+        }
+    }
+
+    bool PlanView::consumeRelease(
+        const ViewContext &viewContext,
+        const input::PointerButtonReleased &upReleased)
+    {
+        if (upReleased.button != input::MouseButton::Left)
+        {
+            return false;
+        }
+
+        if (const auto notice = letGo(); notice.has_value())
+        {
+            viewContext.notices.showStatus(*notice, true, 120);
+        }
+
+        return true;
     }
 
 }

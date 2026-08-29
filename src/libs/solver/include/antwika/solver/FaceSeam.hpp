@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+
 #include <antwika/tilemap/AtlasLayout.hpp>
 #include <antwika/tilemap/TileEdges.hpp>
 #include <antwika/tilemap/Tilemap.hpp>

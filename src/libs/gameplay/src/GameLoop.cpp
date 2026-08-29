@@ -9,12 +9,14 @@ namespace antwika::gameplay
     {
         switch (phase)
         {
+        case Phase::Spawning:
+            return "spawning";
         case Phase::Sending:
             return "sending";
         case Phase::Walking:
             return "walking";
-        case Phase::Orienting:
-            return "gazing";
+        case Phase::Pickup:
+            return "pickup";
         case Phase::Health:
             break;
         }

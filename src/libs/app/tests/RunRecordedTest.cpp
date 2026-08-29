@@ -23,6 +23,7 @@
 using antwika::app::RunContext;
 using antwika::app::runRecorded;
 using antwika::app::getLoadReplayEvents;
+using antwika::event::EventName;
 using antwika::event::TickEvent;
 using antwika::replay::getLoadReplayFile;
 using antwika::replay::ReplayFormatError;
@@ -32,7 +33,7 @@ namespace
 {
     const TickEvent kScripted{
         .tick = antwika::time::Tick{1},
-        .event = {.name = "test.event", .payload = "payload"}};
+        .event = {.name = EventName{"test.event"}, .payload = "payload"}};
 }
 
 TEST(RunRecordedTest, RunRecorded_RunsTheBodyAndSucceeds)
@@ -188,7 +189,7 @@ TEST(RunRecordedTest, RunRecorded_KeepsWhatAKilledRunGotTo)
             run.replayRecorderSink->get().handle(
                 TickEvent{
                     .tick = antwika::time::Tick{2},
-                    .event = {.name = "test.event", .payload = "more"}});
+                    .event = {.name = EventName{"test.event"}, .payload = "more"}});
 
             midRunEvents = getLoadReplayFile(path);
         },

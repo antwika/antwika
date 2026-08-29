@@ -3,9 +3,9 @@
 #include <cstdint>
 
 #include <antwika/input/KeyModifiers.hpp>
-#include <antwika/map/Settings.hpp>
 #include <antwika/time/SystemClock.hpp>
 
+#include "antwika/editor/Preferences.hpp"
 #include "antwika/editor/editor/CameraRig.hpp"
 #include "antwika/editor/editor/EditorDocument.hpp"
 #include "antwika/editor/editor/PlaySession.hpp"
@@ -41,7 +41,7 @@ namespace antwika::editor
 
         INotices &notices;
 
-        map::View shownView = map::View::World;
+        View shownView = View::World;
 
         input::KeyModifiers heldModifiers{};
 

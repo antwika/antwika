@@ -14,6 +14,7 @@
 #include <antwika/ui/Frame.hpp>
 
 #include "antwika/editor/editor/state/FocusedField.hpp"
+#include "antwika/editor/editor/state/PanelDrag.hpp"
 #include "antwika/editor/editor/state/PlanDrag.hpp"
 #include "antwika/editor/plan/PlanBoard.hpp"
 #include "antwika/editor/view/IEditorView.hpp"
@@ -25,7 +26,7 @@ namespace antwika::editor
     {
     public:
         [[nodiscard]] bool claims(
-            map::View shownView, bool playing) const noexcept override;
+            View shownView, bool playing) const noexcept override;
 
         [[nodiscard]] std::string getStatusText(
             const ViewContext &viewContext) const override;
@@ -48,6 +49,12 @@ namespace antwika::editor
             const ViewContext &viewContext,
             std::optional<std::string> &notice) override;
 
+        void trackPointer(const ViewContext &viewContext) override;
+
+        [[nodiscard]] bool consumeRelease(
+            const ViewContext &viewContext,
+            const input::PointerButtonReleased &upReleased) override;
+
         void open(std::string path);
 
         [[nodiscard]] const Board &getBoard() const noexcept;
@@ -56,7 +63,10 @@ namespace antwika::editor
 
         [[nodiscard]] std::optional<std::string> save();
 
-        void layout(ui::Context &context, FocusedField focusedField);
+        void layout(
+            ui::Context &context,
+            FocusedField focusedField,
+            const PanelDrag &panelDrag);
 
         void updateFrame(
             const ui::Frame &frame,
@@ -88,6 +98,16 @@ namespace antwika::editor
         [[nodiscard]] bool isDragging() const noexcept;
 
     private:
+        void layoutColumn(
+            ui::Context &context,
+            Column whichColumn,
+            const PanelDrag &panelDrag);
+
+        void layoutCardPane(
+            ui::Context &context,
+            FocusedField focusedField,
+            const PanelDrag &panelDrag);
+
         [[nodiscard]] std::optional<std::uint32_t> getCardWidth() const;
 
         Board planBoard;

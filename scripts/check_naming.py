@@ -132,7 +132,7 @@ INDEX_NAMES = frozenset(
 )
 
 REQUIRED_NAMES = frozenset(
-    """begin cbegin cend data end hash rbegin rend swap""".split()
+    """begin cbegin cend data end hash main rbegin rend swap""".split()
 )
 
 BUILTIN_TYPES = frozenset(

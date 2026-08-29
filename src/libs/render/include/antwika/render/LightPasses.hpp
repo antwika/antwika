@@ -12,6 +12,7 @@
 #include <antwika/gfx/ShaderSource.hpp>
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/IRenderer.hpp>
+#include <antwika/gfx/Size.hpp>
 #include <antwika/light/ActiveLight.hpp>
 #include <antwika/light/PointLight.hpp>
 #include <antwika/voxel/VoxelPosition.hpp>
@@ -56,6 +57,7 @@ namespace antwika::render
     private:
         std::unique_ptr<gfx::IShader> shadowShader;
         std::unique_ptr<gfx::IRenderTarget> lampShadowAtlasTarget;
+        gfx::Size atlasSize{.width = 1, .height = 1};
         std::unique_ptr<gfx::ITexture> occlusionTexture;
         bool stale = true;
         std::vector<light::ActiveLight> bakedLights;

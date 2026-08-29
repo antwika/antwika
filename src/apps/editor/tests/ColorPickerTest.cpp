@@ -29,6 +29,8 @@ namespace
 
     constexpr antwika::gfx::Size kCanvasSize{.width = 480, .height = 270};
 
+    constexpr float kRailWidth = antwika::editor::kRightPanelWidth;
+
     [[nodiscard]] bool isWithin(const RectF outerRect, const RectF innerRect)
     {
         return innerRect.originPoint.x >= outerRect.originPoint.x
@@ -41,20 +43,26 @@ namespace
 
     TEST(ColorPickerTest, PickerPlace_HoldsTheFieldAndTheStrip)
     {
-        EXPECT_TRUE(isWithin(getPickerPlace(kCanvasSize), getFieldPlace(kCanvasSize)));
-        EXPECT_TRUE(isWithin(getPickerPlace(kCanvasSize), getHuePlace(kCanvasSize)));
+        EXPECT_TRUE(
+            isWithin(
+                getPickerPlace(kCanvasSize, kRailWidth),
+                getFieldPlace(kCanvasSize, kRailWidth)));
+        EXPECT_TRUE(
+            isWithin(
+                getPickerPlace(kCanvasSize, kRailWidth),
+                getHuePlace(kCanvasSize, kRailWidth)));
         EXPECT_GE(
-            getHuePlace(kCanvasSize).originPoint.x,
-            getFieldPlace(kCanvasSize).originPoint.x
-                + getFieldPlace(kCanvasSize).size.width);
+            getHuePlace(kCanvasSize, kRailWidth).originPoint.x,
+            getFieldPlace(kCanvasSize, kRailWidth).originPoint.x
+                + getFieldPlace(kCanvasSize, kRailWidth).size.width);
     }
 
     TEST(ColorPickerTest, ColorAtPoint_TakesSaturationAcrossTheField)
     {
-        const auto field = getFieldPlace(kCanvasSize);
+        const auto field = getFieldPlace(kCanvasSize, kRailWidth);
         const Hsv hsv{.hue = 0.25F, .saturation = 0.0F, .value = 0.5F};
         const auto pickedColor = getColorAtPoint(
-            kCanvasSize,
+            kCanvasSize, kRailWidth,
             hsv,
             PointF{
                 field.originPoint.x + field.size.width,
@@ -68,9 +76,9 @@ namespace
 
     TEST(ColorPickerTest, ColorAtPoint_TakesValueUpTheField)
     {
-        const auto field = getFieldPlace(kCanvasSize);
+        const auto field = getFieldPlace(kCanvasSize, kRailWidth);
         const auto pickedColor = getColorAtPoint(
-            kCanvasSize,
+            kCanvasSize, kRailWidth,
             Hsv{.hue = 0.25F, .saturation = 0.5F, .value = 0.5F},
             field.originPoint);
 
@@ -81,10 +89,10 @@ namespace
 
     TEST(ColorPickerTest, ColorAtPoint_TakesTheHueDownTheStrip)
     {
-        const auto strip = getHuePlace(kCanvasSize);
+        const auto strip = getHuePlace(kCanvasSize, kRailWidth);
         const Hsv hsv{.hue = 0.0F, .saturation = 0.6F, .value = 0.7F};
         const auto pickedColor = getColorAtPoint(
-            kCanvasSize,
+            kCanvasSize, kRailWidth,
             hsv,
             PointF{
                 strip.originPoint.x + (strip.size.width / 2.0F),
@@ -98,11 +106,11 @@ namespace
 
     TEST(ColorPickerTest, ColorAtPoint_FindsNothingBesideThePicker)
     {
-        const auto panel = getPickerPlace(kCanvasSize);
+        const auto panel = getPickerPlace(kCanvasSize, kRailWidth);
 
         EXPECT_FALSE(
             getColorAtPoint(
-            kCanvasSize,
+            kCanvasSize, kRailWidth,
                 Hsv{},
                 PointF{
                     panel.originPoint.x + panel.size.width + 8.0F,
@@ -115,7 +123,11 @@ namespace
         const Hsv hsv{
             .hue = 0.75F, .saturation = 0.25F, .value = 0.8F};
         const auto pickedColor =
-            getColorAtPoint(kCanvasSize, hsv, getFieldCursorPos(kCanvasSize, hsv));
+            getColorAtPoint(
+                kCanvasSize,
+                kRailWidth,
+                hsv,
+                getFieldCursorPos(kCanvasSize, kRailWidth, hsv));
 
         ASSERT_TRUE(pickedColor.has_value());
         EXPECT_NEAR(pickedColor->saturation, hsv.saturation, 1e-3F);
@@ -125,13 +137,13 @@ namespace
     TEST(ColorPickerTest, HueCursorPos_StandsWhereThePickWouldLeaveIt)
     {
         const Hsv hsv{.hue = 0.3F, .saturation = 1.0F, .value = 1.0F};
-        const auto strip = getHuePlace(kCanvasSize);
+        const auto strip = getHuePlace(kCanvasSize, kRailWidth);
         const auto pickedColor = getColorAtPoint(
-            kCanvasSize,
+            kCanvasSize, kRailWidth,
             hsv,
             PointF{
                 strip.originPoint.x + (strip.size.width / 2.0F),
-                getHueCursorPos(kCanvasSize, hsv)});
+                getHueCursorPos(kCanvasSize, kRailWidth, hsv)});
 
         ASSERT_TRUE(pickedColor.has_value());
         EXPECT_NEAR(pickedColor->hue, hsv.hue, 1e-3F);
@@ -139,8 +151,12 @@ namespace
 
     TEST(ColorPickerTest, OnPicker_TellsThePanelFromTheCanvasBesideIt)
     {
-        EXPECT_TRUE(isOnPicker(kCanvasSize, getFieldCursorPos(kCanvasSize, Hsv{})));
-        EXPECT_FALSE(isOnPicker(kCanvasSize, PointF{0.0F, 0.0F}));
+        EXPECT_TRUE(
+            isOnPicker(
+                kCanvasSize,
+                kRailWidth,
+                getFieldCursorPos(kCanvasSize, kRailWidth, Hsv{})));
+        EXPECT_FALSE(isOnPicker(kCanvasSize, kRailWidth, PointF{0.0F, 0.0F}));
     }
 
     TEST(ColorPickerTest, BandPlace_KeepsEveryBandInTheField)
@@ -152,8 +168,8 @@ namespace
             {
                 EXPECT_TRUE(
                     isWithin(
-                        getFieldPlace(kCanvasSize),
-                        getBandPlace(kCanvasSize, column, row)));
+                        getFieldPlace(kCanvasSize, kRailWidth),
+                        getBandPlace(kCanvasSize, kRailWidth, column, row)));
             }
         }
     }
@@ -177,11 +193,36 @@ namespace
         for (std::size_t bandIndex = 0; bandIndex < kPickerBands; ++bandIndex)
         {
             EXPECT_TRUE(
-                isWithin(getHuePlace(kCanvasSize),
-                getHueBandPlace(kCanvasSize, bandIndex)));
+                isWithin(getHuePlace(kCanvasSize, kRailWidth),
+                getHueBandPlace(kCanvasSize, kRailWidth, bandIndex)));
             EXPECT_GE(getHueBand(bandIndex), 0.0F);
             EXPECT_LT(getHueBand(bandIndex), 1.0F);
         }
     }
 
+}
+
+TEST(ColorPickerTest, PickerPlace_StandsClearOfAWiderRail)
+{
+    const auto restingPlace = getPickerPlace(kCanvasSize, kRailWidth);
+    const auto widePlace = getPickerPlace(kCanvasSize, kRailWidth * 2.0F);
+
+    EXPECT_FLOAT_EQ(
+        restingPlace.originPoint.x - widePlace.originPoint.x, kRailWidth);
+    EXPECT_FLOAT_EQ(widePlace.size.width, restingPlace.size.width);
+}
+
+TEST(ColorPickerTest, ColorAtPoint_FollowsThePickerUnderAWiderRail)
+{
+    const auto widePlace = getPickerPlace(kCanvasSize, kRailWidth * 2.0F);
+    const PointF middlePoint{
+        widePlace.originPoint.x + (widePlace.size.width / 2.0F),
+        widePlace.originPoint.y + (widePlace.size.height / 2.0F)};
+
+    EXPECT_TRUE(
+        getColorAtPoint(kCanvasSize, kRailWidth * 2.0F, Hsv{}, middlePoint)
+            .has_value());
+    EXPECT_FALSE(
+        getColorAtPoint(kCanvasSize, kRailWidth, Hsv{}, middlePoint)
+            .has_value());
 }

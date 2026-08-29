@@ -1,9 +1,11 @@
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/solver/ChunkGrow.hpp>
+#include <antwika/worldgen/ChunkShape.hpp>
 #include <antwika/worldgen/CityRuleset.hpp>
 #include <antwika/worldgen/Expand.hpp>
 #include <antwika/worldgen/Grow.hpp>
@@ -28,32 +30,37 @@ namespace antwika::editor
 
     void Editor::growChunk()
     {
+        const worldgen::ChunkShape shape{};
         const worldgen::ChunkRequest request{
-            .seed = worldView.grow.seed++,
-            .shape = worldView.grow.shape,
+            .seed = worldView.takeGrowSeed(),
+            .shape = shape,
             .originPosition = voxel::VoxelPosition{},
-            .hintVoxels = solver::hintsFrom(document.map.voxels, worldView.grow.shape,
-                voxel::VoxelPosition{})};
+            .hintVoxels = solver::hintsFrom(
+                document.map.voxels, shape, voxel::VoxelPosition{})};
 
         const auto result = worldgen::getGrowChunk(getShippedRules(), request);
 
-        worldView.grow.troublePositions.clear();
-
         if (result.outcome != worldgen::ChunkOutcome::Grown)
         {
+            std::vector<voxel::VoxelPosition> troublePositions;
+
             for (const voxel::VoxelPosition cube : result.culpritPositions)
             {
-                worldView.grow.troublePositions.push_back(
+                troublePositions.push_back(
                     voxel::VoxelPosition{
                         .x = cube.x * voxel::kCubeSide,
                         .y = cube.y * voxel::kCubeSide,
                         .z = cube.z * voxel::kCubeSide});
             }
 
+            worldView.setGrowTrouble(std::move(troublePositions));
+
             showStatus(solver::getGrowTrouble(result), true);
 
             return;
         }
+
+        worldView.clearGrowTrouble();
 
         pushUndo();
 

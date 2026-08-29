@@ -1,5 +1,7 @@
 #include "antwika/editor/ui/EditorBindings.hpp"
 
+#include "antwika/editor/ui/WidgetIds.hpp"
+
 namespace antwika::editor
 {
 
@@ -64,6 +66,18 @@ namespace antwika::editor
              "corners",
              "corners joined",
              Chord{.key = input::Key::C}},
+            {Action::FreeLook,
+             "toolEye",
+             "free look",
+             Chord{.key = input::Key::F, .shift = true}},
+            {Action::EditorLighting,
+             "toolLight",
+             "editor lighting",
+             Chord{.key = input::Key::L}},
+            {Action::RuleLines,
+             "toolTies",
+             "rule lines",
+             Chord{.key = input::Key::T}},
             {Action::WeaveLog,
              "weaveLog",
              "log the weave",
@@ -92,6 +106,10 @@ namespace antwika::editor
              "viewPlan",
              "plan view",
              Chord{.key = input::Key::Digit5}},
+            {Action::ViewGizmos,
+             "viewGizmos",
+             "gizmos view",
+             Chord{.key = input::Key::Digit6}},
             {Action::ViewNext,
              "viewNext",
              "next view",
@@ -100,32 +118,22 @@ namespace antwika::editor
              "viewBack",
              "view before",
              Chord{.key = input::Key::Tab, .shift = true}},
-            {Action::ToolBrush,
-             "toolBrush",
-             "brush tool",
-             Chord{.key = input::Key::B}},
+            {Action::ToolSelect,
+             "toolSelect",
+             "select tool",
+             Chord{.key = input::Key::V}},
             {Action::ToolPicker,
              "toolPicker",
              "picker tool",
              Chord{.key = input::Key::I}},
-            {Action::ToolFreeLook,
-             "toolEye",
-             "free look",
-             Chord{.key = input::Key::F, .shift = true}},
-            {Action::ToolLighting,
-             "toolLight",
-             "lighting",
-             Chord{.key = input::Key::L}},
             {Action::ToolLamp, "toolLamp", "lamp tool", std::nullopt},
-            {Action::ToolRuleLines,
-             "toolTies",
-             "rule lines",
-             Chord{.key = input::Key::T}},
             {Action::ToolStart, "toolStart", "start tool", std::nullopt},
             {Action::ToolExit, "toolExit", "exit tool", std::nullopt},
             {Action::ToolStamp, "toolStamp", "stamp tool", std::nullopt},
-            {Action::ToolFigure, "toolFigure", "figure tool", std::nullopt},
-            {Action::ToolPlate, "toolPlate", "plate tool", std::nullopt},
+            {Action::ToolCharacter,
+             "toolCharacter",
+             "character tool",
+             std::nullopt},
             {Action::KindStone,
              "kindStone",
              "stone cubes",
@@ -242,8 +250,7 @@ namespace antwika::editor
 
     widget::WidgetId getKeyRowWidget(const std::size_t rowIndex)
     {
-        return widget::WidgetId{
-            300 + static_cast<std::uint64_t>(rowIndex)};
+        return getWidgetAfter(kFirstKeyRowWidget, rowIndex);
     }
 
     KeyBindings getDefaultChords()

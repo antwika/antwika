@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <optional>
+
 #include "antwika/editor/plan/PlanBoard.hpp"
 
 namespace antwika::editor
