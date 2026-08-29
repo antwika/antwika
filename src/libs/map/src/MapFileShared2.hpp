@@ -7,7 +7,6 @@
 
 #include <antwika/schema/MigrationChain.hpp>
 
-#include <antwika/character/Character.hpp>
 #include <antwika/map/MapFile.hpp>
 
 #include "MapFileShared.hpp"
@@ -40,6 +39,11 @@ namespace antwika::map::mapfile
     constexpr std::string_view kFigureLampKey = "lamp";
 
     constexpr std::string_view kComponentsKey = "components";
+
+    constexpr std::string_view kTuningKey = "tuning";
+
+    constexpr std::string_view kComponentValuesKey =
+        "componentValues";
 
     constexpr std::string_view kCharacterPlayerKey =
         "player";
@@ -83,11 +87,11 @@ namespace antwika::map::mapfile
 
     void readFamilies(Map &map, const nlohmann::json &documentJson);
 
-    void readGates(Map &map, const nlohmann::json &documentJson);
+    void readMarkers(Map &map, const nlohmann::json &documentJson);
 
     [[nodiscard]] nlohmann::json getSettingsSchema();
 
-    void gatesSchemaWiring(nlohmann::json &schema);
+    void markersSchemaWiring(nlohmann::json &schema);
 
     void readTransitions(Map &map, const nlohmann::json &documentJson);
 
@@ -96,7 +100,5 @@ namespace antwika::map::mapfile
     void readDecor(Map &map, const nlohmann::json &documentJson);
 
     void writeLatest(nlohmann::json &document, const Map &map);
-
-    void latestMapMigrations(schema::MigrationList &migrations);
 
 }

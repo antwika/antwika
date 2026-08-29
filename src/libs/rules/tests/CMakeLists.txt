@@ -1,8 +1,8 @@
 find_package(GTest REQUIRED)
 
 add_executable(antwika_rules_tests
-    GatesTest.cpp
     ItemsTest.cpp
+    MarkerCubesTest.cpp
 )
 
 target_link_libraries(antwika_rules_tests

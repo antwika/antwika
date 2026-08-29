@@ -19,6 +19,7 @@
 
 using antwika::app::FullscreenToggleSource;
 using antwika::event::Event;
+using antwika::event::EventName;
 using antwika::event::TickEvent;
 using antwika::gfx::mocks::MockWindow;
 using antwika::input::InputEventCodec;
@@ -133,7 +134,7 @@ TEST(FullscreenToggleSourceTest, EventsFor_IgnoresAnotherKey)
 TEST(FullscreenToggleSourceTest, EventsFor_IgnoresAnEventThatIsNotInput)
 {
     ReplaySource innerSource(
-        {getEntryAt(0, Event{.name = "game.score_increment", .payload = "{}"}),
+        {getEntryAt(0, Event{.name = EventName{"game.score_increment"}, .payload = "{}"}),
          getEntryAt(0,
             kCodec.getEncodedEvent(
                 PointerButtonPressed{.button = MouseButton::Left}))});
@@ -152,7 +153,7 @@ TEST(FullscreenToggleSourceTest, EventsFor_LetsABadPayloadThrough)
     ReplaySource innerSource(
         {getEntryAt(0,
             Event{
-                .name = "input.key_down",
+                .name = EventName{"input.key_down"},
                 .payload = R"({"key":"NotAKey"})"})});
 
     NiceMock<MockWindow> window;

@@ -354,3 +354,29 @@ TEST(FlyCameraTest, CameraOf_StandsWhereTheTransformStands)
     EXPECT_NEAR(square(3.0F) - square(2.0F), pixel, 1e-5F);
     EXPECT_NEAR(square(0.3F), 0.3F * pixel, 1e-5F);
 }
+
+TEST(FlyCameraTest, AimedAt_PutsThePivotOnThePlaceAndLeavesTheAngleAlone)
+{
+    using antwika::camera::getAimedAt;
+
+    const antwika::gfx::Vec3 standingPosition{9.0F, 2.0F, 4.0F};
+    const auto viewTransform =
+        getRotatedTransform(getDefaultTransform(), 0.5F, 0.2F);
+    const auto transform = getAimedAt(viewTransform, standingPosition);
+
+    EXPECT_EQ(transform.position, standingPosition);
+    EXPECT_FLOAT_EQ(transform.yaw, viewTransform.yaw);
+    EXPECT_FLOAT_EQ(transform.pitch, viewTransform.pitch);
+}
+
+TEST(FlyCameraTest, AimedAt_LandsShortOfWhereCenteredOnPutsTheSamePlace)
+{
+    using antwika::camera::getAimedAt;
+
+    const antwika::gfx::Vec3 standingPosition{9.0F, 2.0F, 4.0F};
+
+    EXPECT_EQ(
+        getCenteredOn(getDefaultTransform(), standingPosition).position,
+        getAimedAt(getDefaultTransform(), standingPosition).position
+            + getDefaultTransform().position);
+}

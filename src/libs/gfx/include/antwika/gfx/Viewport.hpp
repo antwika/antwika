@@ -35,6 +35,10 @@ namespace antwika::gfx
 
         [[nodiscard]] Point toCanvas(Point point) const noexcept;
 
+        [[nodiscard]] PointF toCanvas(PointF point) const noexcept;
+
+        [[nodiscard]] RectF toCanvas(RectF rect) const noexcept;
+
         [[nodiscard]] std::uint32_t toWindowScale(
             std::uint32_t scale) const noexcept;
 

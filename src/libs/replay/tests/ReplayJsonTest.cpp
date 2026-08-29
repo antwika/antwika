@@ -18,6 +18,7 @@
 #include "antwika/replay/ReplayVersions.hpp"
 
 using antwika::event::Event;
+using antwika::event::EventName;
 using antwika::event::TickEvent;
 using antwika::geometry::Size;
 using antwika::replay::kReplayDocumentVersion;
@@ -155,15 +156,15 @@ TEST(ReplayJsonTest, ReadHeader_PassesOverAnUnknownMember)
 TEST(ReplayJsonTest, ReadRecords_RoundTripInOrder)
 {
     const std::vector<TickEvent> events{
-        TickEvent{.tick = 0, .event = Event{.name = "life.step"}},
+        TickEvent{.tick = 0, .event = Event{.name = EventName{"life.step"}}},
         TickEvent{
             .tick = 0,
             .event = Event{
-                .name = "game.score_increment",
+                .name = EventName{"game.score_increment"},
                 .payload = R"({"amount":1})",
             },
         },
-        TickEvent{.tick = 2, .event = Event{.name = "life.step"}},
+        TickEvent{.tick = 2, .event = Event{.name = EventName{"life.step"}}},
     };
 
     EXPECT_EQ(getReadRecords(nlohmann::json(events)), events);
@@ -262,7 +263,7 @@ TEST(ReplayJsonTest, Read_TakesAWholeDocumentAsHeaderAndRecords)
     const std::vector<TickEvent> events{
         TickEvent{
             .tick = 1,
-            .event = Event{.name = "life.toggle_cell", .payload = "{}"}},
+            .event = Event{.name = EventName{"life.toggle_cell"}, .payload = "{}"}},
     };
 
     const auto document = getContents(nlohmann::json{

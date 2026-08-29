@@ -4,7 +4,9 @@ add_executable(antwika_system_tests
     ConsumeTest.cpp
     HealthTest.cpp
     OrientationTest.cpp
+    PadTest.cpp
     PatrolTest.cpp
+    PickupTest.cpp
     TalkTest.cpp
     TickPacerTest.cpp
     WalkerTest.cpp

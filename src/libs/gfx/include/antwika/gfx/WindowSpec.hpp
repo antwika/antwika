@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 #include "antwika/gfx/Size.hpp"
@@ -18,6 +19,8 @@ namespace antwika::gfx
         bool fullscreen = false;
 
         bool hidden = false;
+
+        std::uint32_t targetFps = 0;
     };
 
 }

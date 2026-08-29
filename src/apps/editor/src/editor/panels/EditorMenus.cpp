@@ -5,7 +5,6 @@
 #include <antwika/geometry/Grid.hpp>
 #include <antwika/input/Key.hpp>
 #include <antwika/light/PointLight.hpp>
-#include <antwika/solver/VoxelWeave.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 
 #include "antwika/editor/Editor.hpp"
@@ -16,40 +15,29 @@ namespace antwika::editor
     bool Editor::isToolButtonActive(const ToolButton whichButton) const
     {
         return antwika::editor::isToolButtonActive(
-            whichButton,
-            preferences.tool,
-            ToolToggles{
-                .freeLook = cameraRig.freeLook,
-                .lighting = document.map.settings.lighting,
-                .showRuleLines = preferences.showRuleLines});
+            whichButton, preferences.tool, preferences.kind);
     }
 
     void Editor::pressTool(const ToolButton whichButton)
     {
-        const auto chosenTool =
-            enums::lookup(kToolButtonRows, whichButton).tool;
+        const auto row = enums::lookup(kToolButtonRows, whichButton);
 
-        if (chosenTool.has_value())
+        if (preferences.tool != row.tool)
         {
-            preferences.tool = *chosenTool;
-
-            return;
+            dropMarkerPick();
+            dropEntityPick();
         }
 
-        if (whichButton == ToolButton::Lighting)
+        preferences.tool = row.tool;
+
+        if (row.kind.has_value())
         {
-            document.map.settings.lighting = !document.map.settings.lighting;
-
-            return;
+            preferences.kind = *row.kind;
         }
+    }
 
-        if (whichButton == ToolButton::RuleLines)
-        {
-            preferences.showRuleLines = !preferences.showRuleLines;
-
-            return;
-        }
-
+    void Editor::toggleFreeLook()
+    {
         cameraRig.freeLook = !cameraRig.freeLook;
 
         if (!cameraRig.freeLook)
@@ -81,9 +69,13 @@ namespace antwika::editor
                 [](Editor &editor) -> bool &
                 { return editor.preferences.showRuleLines; }},
             FlagRow{
-                MenuItem::Lighting,
+                MenuItem::GameLighting,
                 [](Editor &editor) -> bool &
                 { return editor.document.map.settings.lighting; }},
+            FlagRow{
+                MenuItem::EditorLighting,
+                [](Editor &editor) -> bool &
+                { return editor.preferences.lighting; }},
             FlagRow{
                 MenuItem::Sight,
                 [](Editor &editor) -> bool &
@@ -91,11 +83,11 @@ namespace antwika::editor
             FlagRow{
                 MenuItem::LowerSight,
                 [](Editor &editor) -> bool &
-                { return editor.worldView.worldEdit.lowerSight; }},
+                { return editor.worldView.worldEdit().lowerSight; }},
             FlagRow{
                 MenuItem::LowerLight,
                 [](Editor &editor) -> bool &
-                { return editor.worldView.worldEdit.lowerLight; }},
+                { return editor.worldView.worldEdit().lowerLight; }},
             FlagRow{
                 MenuItem::Follow,
                 [](Editor &editor) -> bool &
@@ -138,10 +130,12 @@ namespace antwika::editor
             startNewMap();
             break;
         case MenuItem::Save:
-            openFileDialog(true);
+            fileChooser.open(
+                document.getPath(), document.getStartPath(), true);
             break;
         case MenuItem::Load:
-            openFileDialog(false);
+            fileChooser.open(
+                document.getPath(), document.getStartPath(), false);
             break;
         case MenuItem::Quit:
             if (document.isDirty())
@@ -166,20 +160,17 @@ namespace antwika::editor
             growChunk();
             break;
         case MenuItem::FreeLook:
-            pressTool(ToolButton::FreeLook);
+            toggleFreeLook();
             break;
         case MenuItem::Corners:
-            worldView.worldEdit.cornerJoining =
-                worldView.worldEdit.cornerJoining == solver::CornerSeams::Included
-                    ? solver::CornerSeams::Ignored
-                    : solver::CornerSeams::Included;
+            worldView.worldEdit().toggleCornerJoining();
             rebuildWorld();
             break;
-        case MenuItem::Settings:
         case MenuItem::Grid:
         case MenuItem::Marker:
         case MenuItem::RuleLines:
-        case MenuItem::Lighting:
+        case MenuItem::GameLighting:
+        case MenuItem::EditorLighting:
         case MenuItem::Sight:
         case MenuItem::LowerSight:
         case MenuItem::LowerLight:
@@ -202,7 +193,7 @@ namespace antwika::editor
         }
 
         return item == MenuItem::Corners
-               && worldView.worldEdit.cornerJoining == solver::CornerSeams::Included;
+               && worldView.worldEdit().isCornerJoiningOn();
     }
 
 }

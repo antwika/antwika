@@ -8,6 +8,8 @@
 
 #include "antwika/editor/Editor.hpp"
 
+#include "antwika/editor/ui/WidgetIds.hpp"
+
 namespace antwika::editor
 {
 
@@ -149,37 +151,37 @@ namespace antwika::editor
             context.button(
                 "move to " + map::getLayerLabel(chosenLayer),
                 antwika::ui::ButtonSpec{
-                    .widgetId = decor::kDecorMoveWidget,
+                    .widgetId = kDecorMoveWidget,
                     .widthSizing = antwika::ui::kGrowSizing});
         }
 
         context.checkbox(
             "pick bases",
             antwika::ui::CheckboxSpec{
-                .widgetId = decor::kPickBaseTilesWidget,
+                .widgetId = kPickBaseTilesWidget,
                 .checked = assignMode.basePicking});
         context.label(
             "frequency " + std::to_string(decorShown.frequency),
             kTextColor);
         context.slider(
             antwika::ui::SliderSpec{
-                .widgetId = decor::kFrequencyWidget,
+                .widgetId = kFrequencyWidget,
                 .value = decorShown.frequency,
                 .range = decor::kFullFrequency,
                 .dragging =
                     slidingWidget
-                    == decor::kFrequencyWidget});
+                    == kFrequencyWidget});
         context.label(
             "weight " + std::to_string(decorShown.weight),
             kTextColor);
         context.slider(
             antwika::ui::SliderSpec{
-                .widgetId = decor::kDecorWeightWidget,
+                .widgetId = kDecorWeightWidget,
                 .value = decorShown.weight,
                 .range = decor::kFullFrequency,
                 .dragging =
                     slidingWidget
-                    == decor::kDecorWeightWidget});
+                    == kDecorWeightWidget});
         layoutSpanRows(context, decorShown);
 
         if (decor::isDecorSpanned(decorShown))
@@ -204,7 +206,7 @@ namespace antwika::editor
                 context.button(
                     std::to_string(frame + 1),
                     antwika::ui::ButtonSpec{
-                        .widgetId = decor::getFrameWidget(
+                        .widgetId = getFrameWidget(
                             frame),
                         .fillColor =
                             frame == assignMode.framePicked
@@ -218,8 +220,7 @@ namespace antwika::editor
                 context.button(
                     "+",
                     antwika::ui::ButtonSpec{
-                        .widgetId = decor::
-                            kFrameAddWidget});
+                        .widgetId = kFrameAddWidget});
             }
         }
 

@@ -18,190 +18,7 @@
 #include <antwika/text/TextLayout.hpp>
 
 #include "antwika/editor/Editor.hpp"
-
-namespace antwika::editor
-{
-
-    namespace
-    {
-
-        template <typename Enum>
-        struct HintRow final
-        {
-            Enum value;
-            std::string_view hint;
-        };
-
-        constexpr std::array<HintRow<ToolButton>, enums::kCount<ToolButton>>
-            kToolHints{{
-            {ToolButton::Brush, "brush - lays cubes, right press takes them"},
-            {ToolButton::Picker,
-             "picker - lifts what stands under the pointer"},
-            {ToolButton::FreeLook, "free look - drag turns the view about"},
-            {ToolButton::Lighting, "lighting on and off"},
-            {ToolButton::Lamp, "lamp - sets a light of the chosen ink"},
-            {ToolButton::RuleLines, "rule lines on and off"},
-            {ToolButton::Start, "start cube - the character begins on it"},
-            {ToolButton::Exit, "exit cube - reaching it closes the game"},
-            {ToolButton::Stamp, "stamp - drag copies cubes to set down again"},
-            {ToolButton::Figure, "figure - sets a walker of the world down"},
-            {ToolButton::PressurePlate, "plate - stood on, it sways cubes"},
-            {ToolButton::Key, "key - a cube the player picks a key from"},
-            {ToolButton::Door, "door - a cube a carried key dissolves"},
-            {ToolButton::Checkpoint,
-             "checkpoint - stood on, it sets the respawn"},
-            {ToolButton::Food, "food - a cube a character picks food from"},
-            {ToolButton::Water, "water - a cube a character picks water from"},
-            {ToolButton::Eraser,
-             "rubber - clears cubes, drag sweeps them away"}}};
-
-        static_assert(
-            enums::tagsInOrder(kToolHints, &HintRow<ToolButton>::value));
-
-        [[nodiscard]] std::string_view getToolHint(const ToolButton whichButton)
-        {
-            return enums::lookup(kToolHints, whichButton).hint;
-        }
-
-        constexpr std::array<HintRow<map::Paint>, enums::kCount<map::Paint>>
-            kPaintHints{{
-            {map::Paint::Brush, "brush - draws pixel by pixel"},
-            {map::Paint::Line, "line - drags a straight run"},
-            {map::Paint::Fill, "fill - floods a patch of one colour"},
-            {map::Paint::Select, "mark - drags a rectangle to lift"},
-            {map::Paint::Rect, "rectangle - drags an outline"},
-            {map::Paint::Circle, "circle - drags a ring"}}};
-
-        static_assert(
-            enums::tagsInOrder(kPaintHints, &HintRow<map::Paint>::value));
-
-        [[nodiscard]] std::string_view getPaintHint(const map::Paint whichPaint)
-        {
-            return enums::lookup(kPaintHints, whichPaint).hint;
-        }
-
-        constexpr std::array<HintRow<voxel::Kind>, enums::kCount<voxel::Kind>>
-            kKindHints{{
-            {voxel::Kind::Normal, "stone - stood on and built with"},
-            {voxel::Kind::Water,
-             "water - waded through, never stood on"},
-            {voxel::Kind::Ramp,
-             "ramp - a flight climbed at half pace"}}};
-
-        static_assert(
-            enums::tagsInOrder(kKindHints, &HintRow<voxel::Kind>::value));
-
-        [[nodiscard]] std::string_view getKindHint(const voxel::Kind whichKind)
-        {
-            return enums::lookup(kKindHints, whichKind).hint;
-        }
-
-        constexpr std::array<HintRow<voxel::Facing>,
-            enums::kCount<voxel::Facing>>
-            kFacingHints{{
-            {voxel::Facing::Any,
-             "climbs whichever way the ground asks"},
-            {voxel::Facing::East, "climbs east"},
-            {voxel::Facing::West, "climbs west"},
-            {voxel::Facing::North, "climbs north"},
-            {voxel::Facing::South, "climbs south"}}};
-
-        static_assert(
-            enums::tagsInOrder(kFacingHints, &HintRow<voxel::Facing>::value));
-
-        [[nodiscard]] std::string_view getFacingHint(
-            const voxel::Facing whichFacing)
-        {
-            return enums::lookup(kFacingHints, whichFacing).hint;
-        }
-
-        constexpr std::array<HintRow<voxel::StairHalf>,
-            enums::kCount<voxel::StairHalf>>
-            kStairHalfHints{{
-            {voxel::StairHalf::Any,
-             "drawn for either step of a flight"},
-            {voxel::StairHalf::Lower,
-             "drawn for the lower step of a flight"},
-            {voxel::StairHalf::Upper,
-             "drawn for the upper step of a flight"}}};
-
-        static_assert(
-            enums::tagsInOrder(kStairHalfHints,
-                &HintRow<voxel::StairHalf>::value));
-
-        [[nodiscard]] std::string_view getLevelHint(
-            const voxel::StairHalf whichHalf)
-        {
-            return enums::lookup(kStairHalfHints, whichHalf).hint;
-        }
-
-        constexpr std::array<HintRow<EdgeToggle>, enums::kCount<EdgeToggle>>
-            kEdgeToggleHints{{
-            {EdgeToggle::Boundary, "rim - this edge may lie against the air"},
-            {EdgeToggle::Forbidden, "shut - this edge meets nothing at all"}}};
-
-        static_assert(
-            enums::tagsInOrder(kEdgeToggleHints, &HintRow<EdgeToggle>::value));
-
-        [[nodiscard]] std::string_view getEdgeToggleHint(
-            const EdgeToggle whichToggle)
-        {
-            return enums::lookup(kEdgeToggleHints, whichToggle).hint;
-        }
-
-    }
-
-    namespace
-    {
-
-        [[nodiscard]] bool isOnToolPanel(const widget::WidgetId whichWidget)
-        {
-            for (const auto button : kEveryToolButton)
-            {
-                if (whichWidget == getToolWidget(button))
-                {
-                    return true;
-                }
-            }
-
-            for (const auto paint : kEveryPaint)
-            {
-                if (whichWidget == getPaintWidget(paint))
-                {
-                    return true;
-                }
-            }
-
-            for (const auto kind : voxel::kEveryKind)
-            {
-                if (whichWidget == getKindWidget(kind))
-                {
-                    return true;
-                }
-            }
-
-            for (const auto facing : kMarkedFacings)
-            {
-                if (whichWidget == getFacingWidget(facing))
-                {
-                    return true;
-                }
-            }
-
-            for (const auto level : kMarkedStairHalves)
-            {
-                if (whichWidget == getLevelWidget(level))
-                {
-                    return true;
-                }
-            }
-
-            return whichWidget == kMirrorWidget;
-        }
-
-    }
-
-}
+#include "antwika/editor/ui/WidgetCatalog.hpp"
 
 namespace antwika::editor
 {
@@ -210,7 +27,8 @@ namespace antwika::editor
     {
         if (!isTooltipDue(pointer.hoverTracker, tick)
             || pointer.hoverTracker.widget != pointer.hoveredWidget
-            || !isOnToolPanel(pointer.hoveredWidget))
+            || !widget_catalog::isOnToolPanel(
+                getWidgetCatalog(), *this, pointer.hoveredWidget))
         {
             return;
         }
@@ -224,7 +42,8 @@ namespace antwika::editor
         }
 
         const auto pad = static_cast<float>(2 * kUiScale);
-        const auto hintSize = text::getTextSize(hint, kUiScale);
+        const auto hintSize = text::getTextSize(
+            hint, gfx::TextScale{.multiplier = kUiScale});
         const auto width =
             static_cast<float>(hintSize.width) + (pad * 2.0F);
         const auto height =
@@ -240,12 +59,15 @@ namespace antwika::editor
             static_cast<float>(room->originPoint.y),
             static_cast<float>(window.height) - height);
 
-        auto &nativeRenderer = viewportRenderer.nativeRenderer();
+        auto &innerRenderer = viewportRenderer.innerRenderer();
 
-        nativeRenderer.drawRect(
+        innerRenderer.drawRect(
             gfx::RectF({left, top}, {width, height}), kTitleBarColor);
-        nativeRenderer.drawText(
-            {left + pad, top + pad}, hint, kUiScale, kTextColor);
+        innerRenderer.drawText(
+            {left + pad, top + pad},
+            hint,
+            gfx::TextScale{.multiplier = kUiScale},
+            kTextColor);
     }
 
     namespace
@@ -270,11 +92,11 @@ namespace antwika::editor
 
         const auto clear =
             !play.playing && !dialogs.quitConfirmOpen && !keyBench.panelShown
-            && !dialogs.fileDialog.has_value()
-            && !inkPicker.editingInk.has_value()
+            && !fileChooser.fileDialog.has_value()
+            && !inkPanel.inkPicker.editingInk.has_value()
             && !frame.interactions.pointerOverUi;
 
-        if (clear && viewChoice.activeView == map::View::Atlases)
+        if (clear && viewChoice.activeView == View::Atlases)
         {
             const auto cell = cellUnderPointer();
 
@@ -287,7 +109,7 @@ namespace antwika::editor
         }
 
         if (clear && isWorldShown()
-            && preferences.tool == map::Tool::Picker)
+            && preferences.tool == Tool::Picker)
         {
             face = voxelmap::getFacePicked(
                 visibleCells(),
@@ -362,7 +184,8 @@ namespace antwika::editor
         }
 
         const auto pad = static_cast<float>(2 * kUiScale);
-        const auto hintSize = text::getTextSize(hint, kUiScale);
+        const auto hintSize = text::getTextSize(
+            hint, gfx::TextScale{.multiplier = kUiScale});
         const auto width =
             static_cast<float>(hintSize.width) + (pad * 2.0F);
         const auto height =
@@ -378,278 +201,40 @@ namespace antwika::editor
             0.0F,
             static_cast<float>(window.height) - height);
 
-        auto &nativeRenderer = viewportRenderer.nativeRenderer();
+        auto &innerRenderer = viewportRenderer.innerRenderer();
 
-        nativeRenderer.drawRect(
+        innerRenderer.drawRect(
             gfx::RectF({left, top}, {width, height}), kTitleBarColor);
-        nativeRenderer.drawText(
-            {left + pad, top + pad}, hint, kUiScale, kTextColor);
+        innerRenderer.drawText(
+            {left + pad, top + pad},
+            hint,
+            gfx::TextScale{.multiplier = kUiScale},
+            kTextColor);
     }
 
     std::string_view Editor::hintFor(const widget::WidgetId whichWidget) const
     {
-        if (whichWidget == getTabWidget(map::View::World))
-        {
-            return "world - the pile itself, built and played";
-        }
+        const auto &catalog = getWidgetCatalog();
 
-        if (whichWidget == getTabWidget(map::View::Atlases))
+        for (const auto &row : catalog.soloRows)
         {
-            return "tiles - the atlases the pile is drawn from";
-        }
-
-        if (whichWidget == getTabWidget(map::View::Character))
-        {
-            return "characters - the walkers and their sheets";
-        }
-
-        if (whichWidget == getTabWidget(map::View::Icons))
-        {
-            return "icons - the editor's own pictures";
-        }
-
-        for (const auto button : kEveryToolButton)
-        {
-            if (whichWidget == getToolWidget(button))
+            if (whichWidget == row.widget)
             {
-                return getToolHint(button);
+                return row.hint;
             }
         }
 
-        for (const auto paint : kEveryPaint)
+        for (const auto &family : catalog.familyRows)
         {
-            if (whichWidget == getPaintWidget(paint))
+            const auto placeEnd = widget_catalog::placeEndIn(family, *this);
+
+            for (auto place = family.firstPlace; place < placeEnd; ++place)
             {
-                return getPaintHint(paint);
+                if (whichWidget == family.widgetAt(place))
+                {
+                    return widget_catalog::hintIn(family, place);
+                }
             }
-        }
-
-        for (const auto kind : voxel::kEveryKind)
-        {
-            if (whichWidget == getKindWidget(kind))
-            {
-                return getKindHint(kind);
-            }
-        }
-
-        for (const auto facing : kMarkedFacings)
-        {
-            if (whichWidget == getFacingWidget(facing))
-            {
-                return getFacingHint(facing);
-            }
-        }
-
-        for (const auto level : kMarkedStairHalves)
-        {
-            if (whichWidget == getLevelWidget(level))
-            {
-                return getLevelHint(level);
-            }
-        }
-
-        for (const auto toggle : kEveryEdgeToggle)
-        {
-            if (whichWidget == getEdgeToggleWidget(toggle))
-            {
-                return getEdgeToggleHint(toggle);
-            }
-        }
-
-        if (whichWidget == kPartFrontWidget)
-        {
-            return "drawn for the fronts of a flight - its "
-                   "risers and the face at its head";
-        }
-
-        if (whichWidget == kPartSideWidget)
-        {
-            return "drawn for the stepped side of a flight";
-        }
-
-        for (std::size_t frame = 0; frame < decor::kMaxDecorFrames;
-             ++frame)
-        {
-            if (whichWidget == decor::getFrameWidget(frame))
-            {
-                return "picks the frame the canvas draws";
-            }
-        }
-
-        for (std::size_t ink = 0; ink < document.map.paletteColors.size();
-             ++ink)
-        {
-            if (whichWidget == tile::getSwatchWidget(ink))
-            {
-                return "chooses this ink - again mixes it";
-            }
-        }
-
-        for (std::size_t layer = 0; layer < document.map.layers.size();
-             ++layer)
-        {
-            if (whichWidget == getLayerWidget(layer))
-            {
-                return "works on this layer";
-            }
-        }
-
-        if (whichWidget == kDeriveRulesWidget)
-        {
-            return "ties tiles of one shape together";
-        }
-
-        if (whichWidget == kMirrorWidget)
-        {
-            return "flips the marked patch, left for right";
-        }
-
-        if (whichWidget == kAddInkWidget)
-        {
-            return "adds another ink to the palette";
-        }
-
-        if (whichWidget == kAddLayerWidget)
-        {
-            return "adds a layer over the ones held";
-        }
-
-        if (whichWidget == kRemoveLayerWidget)
-        {
-            return "takes the chosen layer away";
-        }
-
-        if (whichWidget == decor::kPickBaseTilesWidget)
-        {
-            return "picks the bases the decor stands on - "
-                   "an upright base dresses walls";
-        }
-
-        if (whichWidget == decor::kVariantChoiceWidget)
-        {
-            return "picks the tiles drawn in this one's stead";
-        }
-
-        if (whichWidget == decor::kVariantWeightWidget)
-        {
-            return "how often this variant is drawn - "
-                   "the wheel nudges it";
-        }
-
-        if (whichWidget == decor::kGoToCanonicalWidget)
-        {
-            return "goes to the leader this tile stands in for";
-        }
-
-        if (whichWidget == decor::kFrequencyWidget)
-        {
-            return "how often the decor takes a base - "
-                   "the wheel nudges it";
-        }
-
-        if (whichWidget == decor::kDecorWeightWidget)
-        {
-            return "how strongly this decor is weighed against "
-                   "the others its base offers - the wheel "
-                   "nudges it";
-        }
-
-        if (whichWidget == decor::kDecorMoveWidget)
-        {
-            return "moves this decor to the layer being "
-                   "worked on";
-        }
-
-        if (whichWidget == decor::kFrameAddWidget)
-        {
-            return "adds a frame, drawn in this very place";
-        }
-
-        if (whichWidget == decor::kToggleAnimationWidget)
-        {
-            return "walks this tile's pixels through frames "
-                   "wherever it is drawn";
-        }
-
-        if (whichWidget == decor::kAddFrameWidget)
-        {
-            return "adds a frame for the tile to walk";
-        }
-
-        for (std::size_t frame = 0;
-             frame < decor::kMaxDecorFrames;
-             ++frame)
-        {
-            if (whichWidget
-                == decor::getFlipFrameWidget(frame))
-            {
-                return "shows this frame - a grid click "
-                       "assigns its tile";
-            }
-        }
-
-        if (whichWidget == kFigureLampWidget)
-        {
-            return "gives this figure a lamp to carry";
-        }
-
-        if (whichWidget == kExitLockedWidget)
-        {
-            return "the exit opens only for a carried key";
-        }
-
-        if (whichWidget == tile::kTransitionAddWidget)
-        {
-            return "weaves an edge between two materials "
-                   "from a drawn mask";
-        }
-
-        if (whichWidget == tile::kRemoveTransitionWidget)
-        {
-            return "takes the chosen transition away";
-        }
-
-        for (std::size_t index = 0;
-             index < tile::kMaxTransitions;
-             ++index)
-        {
-            if (whichWidget
-                == tile::getTransitionRowWidget(index))
-            {
-                return "shows this transition's pieces";
-            }
-        }
-
-        if (whichWidget == decor::kSpanAcrossLessWidget
-            || whichWidget == decor::kSpanAcrossMoreWidget
-            || whichWidget == decor::kSpanDownLessWidget
-            || whichWidget == decor::kSpanDownMoreWidget)
-        {
-            return "how many faces the decor spans - "
-                   "a span is stamped whole or not at all";
-        }
-
-        for (std::size_t place = 1;
-             place < static_cast<std::size_t>(
-                         decor::kMaxDecorSpan)
-                         * decor::kMaxDecorSpan;
-             ++place)
-        {
-            if (whichWidget == decor::getMemberWidget(place))
-            {
-                return "shows this place of the span - "
-                       "a grid click assigns its tile";
-            }
-        }
-
-        if (whichWidget == decor::kAutoPreviewWidget)
-        {
-            return "keeps the tiling squares turning";
-        }
-
-        if (whichWidget == decor::kRerollPreviewWidget)
-        {
-            return "lays another tiling square";
         }
 
         return "";

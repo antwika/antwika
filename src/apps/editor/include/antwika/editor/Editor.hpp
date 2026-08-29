@@ -1,41 +1,20 @@
 #pragma once
 
-#include <array>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <map>
 #include <memory>
 #include <optional>
-#include <set>
 #include <string>
 #include <string_view>
 #include <vector>
 
-#include <antwika/app/FramePacing.hpp>
 #include <antwika/app/TickDebt.hpp>
-#include <antwika/camera/FlyCamera.hpp>
-#include <antwika/character/Character.hpp>
-#include <antwika/component/AnimationState.hpp>
-#include <antwika/component/Item.hpp>
 #include <antwika/component/Position.hpp>
-#include <antwika/ecs/Entity.hpp>
-#include <antwika/ecs/World.hpp>
-#include <antwika/geometry/Grid.hpp>
-#include <antwika/gfx/Bitmap.hpp>
-#include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/IGfxBackend.hpp>
-#include <antwika/gfx/IMesh.hpp>
-#include <antwika/gfx/IRenderTarget.hpp>
-#include <antwika/gfx/IShader.hpp>
-#include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/IWindow.hpp>
 #include <antwika/gfx/Math3D.hpp>
-#include <antwika/gfx/PointF.hpp>
-#include <antwika/gfx/RectF.hpp>
 #include <antwika/gfx/ViewportRenderer.hpp>
-#include <antwika/input/ActionMap.hpp>
-#include <antwika/input/DirectionKeys.hpp>
 #include <antwika/input/IInputBackend.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputState.hpp>
@@ -43,27 +22,17 @@
 #include <antwika/input/Position.hpp>
 #include <antwika/light/ActiveLight.hpp>
 #include <antwika/log/ILogger.hpp>
-#include <antwika/map/EditHistory.hpp>
 #include <antwika/map/MapFile.hpp>
-#include <antwika/map/PlayerProgress.hpp>
 #include <antwika/render/AtlasSheets.hpp>
 #include <antwika/render/LightPasses.hpp>
 #include <antwika/render/ScenePass.hpp>
 #include <antwika/render/Sprites.hpp>
 #include <antwika/render/WorldShader.hpp>
 #include <antwika/render/WorldMeshes.hpp>
-#include <antwika/solver/VoxelWeave.hpp>
-#include <antwika/time/FrameRate.hpp>
 #include <antwika/time/SystemClock.hpp>
 #include <antwika/ui/Context.hpp>
-#include <antwika/ui/DoubleClick.hpp>
 #include <antwika/ui/Frame.hpp>
-#include <antwika/ui/HoverHint.hpp>
-#include <antwika/ui/Keyboard.hpp>
 #include <antwika/voxelmap/Voxel.hpp>
-#include <antwika/voxelmap/VoxelPick.hpp>
-#include <antwika/collision/Collision.hpp>
-#include <antwika/worldgen/ChunkShape.hpp>
 
 #include "antwika/editor/LayerEdit.hpp"
 #include "antwika/editor/Preferences.hpp"
@@ -76,16 +45,16 @@
 #include "antwika/editor/editor/state/AssignMode.hpp"
 #include "antwika/editor/editor/state/CanvasRest.hpp"
 #include "antwika/editor/editor/state/Dialogs.hpp"
-#include "antwika/editor/editor/state/Caption.hpp"
 #include "antwika/editor/editor/state/FocusedField.hpp"
 #include "antwika/editor/editor/state/FrameMeters.hpp"
 #include "antwika/editor/editor/state/PointerTrack.hpp"
-#include "antwika/editor/editor/state/InkPicker.hpp"
-#include "antwika/editor/editor/state/GrowSetup.hpp"
-#include "antwika/editor/editor/state/FigureTool.hpp"
+#include "antwika/editor/editor/state/CharacterTool.hpp"
+#include "antwika/editor/editor/state/GizmoSet.hpp"
 #include "antwika/editor/editor/state/KeyBench.hpp"
+#include "antwika/editor/editor/state/EntityList.hpp"
+#include "antwika/editor/editor/state/EntityPick.hpp"
+#include "antwika/editor/editor/state/MarkerPick.hpp"
 #include "antwika/editor/editor/state/OverlayCache.hpp"
-#include "antwika/editor/editor/state/PlateTool.hpp"
 #include "antwika/editor/editor/state/RemeshDebt.hpp"
 #include "antwika/editor/editor/state/ViewChoice.hpp"
 #include "antwika/editor/editor/state/WorldPaint.hpp"
@@ -97,11 +66,13 @@
 #include "antwika/editor/editor/state/TilePreview.hpp"
 #include "antwika/editor/editor/state/TransitionPick.hpp"
 #include "antwika/editor/editor/state/StatusMessage.hpp"
-#include "antwika/editor/editor/FileDialog.hpp"
+#include "antwika/editor/editor/FileChooser.hpp"
 #include "antwika/editor/editor/CameraRig.hpp"
 #include "antwika/editor/editor/EditorDocument.hpp"
 #include "antwika/editor/editor/GameModule.hpp"
+#include "antwika/editor/editor/InkPanel.hpp"
 #include "antwika/editor/editor/PlaySession.hpp"
+#include "antwika/editor/editor/SimulationSteps.hpp"
 #include "antwika/editor/plan/PlanBoard.hpp"
 #include "antwika/editor/plan/PlanFile.hpp"
 #include "antwika/editor/ui/AtlasSheetsView.hpp"
@@ -109,20 +80,30 @@
 #include "antwika/editor/ui/WorldView.hpp"
 
 #include "antwika/editor/ui/CharacterSheetView.hpp"
-#include "antwika/editor/ui/ColorPicker.hpp"
 #include "antwika/editor/ui/EditorBindings.hpp"
+#include "antwika/editor/ui/GizmoView.hpp"
 #include "antwika/editor/ui/IconsView.hpp"
 #include "antwika/editor/ui/MenuBar.hpp"
 #include "antwika/editor/ui/PlanView.hpp"
 #include "antwika/editor/ui/ToolButtonRow.hpp"
+#include "antwika/editor/ui/ToolGroupMembers.hpp"
 #include "antwika/editor/ui/ToolPanel.hpp"
 #include "antwika/editor/ui/ToolPlacement.hpp"
 #include "antwika/editor/ui/ToolPlacementRow.hpp"
-#include "antwika/editor/ui/ToolToggles.hpp"
-#include "antwika/rules/Gates.hpp"
-#include "antwika/system/HealthSystem.hpp"
-#include "antwika/system/OrientationSystem.hpp"
-#include "antwika/system/PatrolSystem.hpp"
+
+namespace antwika::editor::widget_catalog
+{
+
+    struct Catalog;
+
+}
+
+namespace antwika::editor::fakes
+{
+
+    struct EditorProbe;
+
+}
 
 namespace antwika::editor
 {
@@ -146,6 +127,22 @@ namespace antwika::editor
         void run();
 
         [[nodiscard]] component::Position playerStandsAt() const;
+
+        [[nodiscard]] bool isPlaying() const noexcept
+        {
+            return play.playing;
+        }
+
+        [[nodiscard]] View getActiveView() const noexcept
+        {
+            return viewChoice.activeView;
+        }
+
+        [[nodiscard]] const CharacterSheetView &getCharacterView()
+            const noexcept
+        {
+            return characterView;
+        }
 
     private:
         log::ILogger &logger;
@@ -171,9 +168,13 @@ namespace antwika::editor
 
         IconsView iconsView;
 
+        GizmoSet gizmos;
+
+        GizmoView gizmoView;
+
         CharacterSheetView characterView;
 
-        render::CharacterSkins rosterSkins;
+        render::CharacterSkins characterSkins;
 
         render::ScenePass scenePass;
 
@@ -184,13 +185,14 @@ namespace antwika::editor
         PlanView plan;
 
         Preferences preferences;
-        voxel::Facing rampFacing = voxel::Facing::Any;
 
         bool turningPlayer = false;
         bool running = true;
         input::InputState inputState;
 
         Dialogs dialogs;
+
+        FileChooser fileChooser;
 
         StatusMessage statusMessageNotice;
 
@@ -210,12 +212,21 @@ namespace antwika::editor
 
         ViewChoice viewChoice;
 
-        Caption caption;
+        SimulationSteps simulation{document, *this, tick};
 
-        InkPicker inkPicker;
+        InkPanel inkPanel{
+            document,
+            atlasSheets,
+            characterView,
+            characterSkins,
+            viewportRenderer,
+            *this};
 
         std::size_t chosenLayer = map::kBaseLayer;
         AssignMode assignMode;
+        MarkerPick markerPick;
+        EntityPick entityPick;
+        EntityList entityList;
         std::optional<widget::WidgetId> slidingWidget;
         FocusedField focusedField = FocusedField::Nothing;
 
@@ -232,11 +243,28 @@ namespace antwika::editor
 
         [[nodiscard]] bool isWorldShown() const noexcept;
 
+        /**
+         * @brief The world stands in a panel of its own while the
+         * editor is up, and fills the window while the game plays.
+         */
+        [[nodiscard]] bool isWorldPanelShown() const noexcept;
+
         [[nodiscard]] bool pollWindow();
         void pollInputs();
 
+        void loadMapOrBuiltIn();
+        void loadPlan(std::string planPathGiven);
+        void openSheets();
+        void openGizmoSheet();
+        void openPasses();
+        void aimOpeningCamera();
+        void beginPlay();
+        void restoreProgress();
+        void keepMapForPlay();
+        void restoreMapAfterPlay();
+
         [[nodiscard]] voxel::Voxels visibleCells();
-        void rebuildWorld();
+        void rebuildWorld() override;
         [[nodiscard]] map::Placement startingPlacement();
         void standPlayer();
         void moveCamera();
@@ -247,15 +275,14 @@ namespace antwika::editor
         void saveCurrentMap();
         bool loadCurrentMap();
         void startNewMap();
-        void listFolder(const std::string &folder);
-        void openFileDialog(bool forSave);
         void confirmFileDialog();
-        void cancelFileDialog();
-        [[nodiscard]] map::Snapshot snapshot();
+        [[nodiscard]] Snapshot snapshot();
         void pushUndo() override;
-        void applyStep(map::Snapshot stepSnapshot);
+        void applyStep(Snapshot stepSnapshot);
 
         void pressTool(ToolButton whichButton);
+
+        void toggleFreeLook();
 
         [[nodiscard]] bool isToolButtonActive(
             ToolButton whichButton) const;
@@ -275,6 +302,8 @@ namespace antwika::editor
         [[nodiscard]] bool isChecked(MenuItem item);
         [[nodiscard]] std::string statusText();
 
+        [[nodiscard]] static const widget_catalog::Catalog &getWidgetCatalog();
+
         [[nodiscard]] std::string_view hintFor(
             widget::WidgetId whichWidget) const;
 
@@ -289,18 +318,8 @@ namespace antwika::editor
             std::chrono::time_point<std::chrono::system_clock>
                 startedAt);
 
-        bool beginShape(
-            voxel::VoxelPosition position, input::MouseButton button);
-
-        void finishShape(input::MouseButton button);
-
         void placeStartOrExit(
             voxel::VoxelPosition position, input::MouseButton button);
-
-        void pressStamp(
-            voxel::VoxelPosition position, input::MouseButton button);
-
-        void finishStamp(input::MouseButton button);
 
         [[nodiscard]] std::string getCharacterSheetPath(
             std::size_t position) const;
@@ -309,35 +328,22 @@ namespace antwika::editor
 
         void saveCharacterSkins();
 
-        void pressFigure(
+        void pressCharacter(
             voxel::VoxelPosition position, input::MouseButton button);
 
-        void ensurePlayerInRoster();
+        void ensurePlayerCharacter();
 
-        void spawnRoster();
+        void spawnCharacters();
 
         void spawnItems();
 
         void playApart();
 
-        void consumeItem(component::ItemKind kind);
-        void sayConsumeReport();
-        void sayDialogueLine();
-
-        void interact();
-
-        void pressPlate(
-            voxel::VoxelPosition position, input::MouseButton button);
-
-        void onSteppedPlates(voxel::VoxelPosition standsOnPosition);
-
         void layoutWorldRail(ui::Context &context);
 
-        [[nodiscard]] bool variantWidgets(
-            const ui::Interactions &interactions);
         void pickedVariant(tilemap::Tile tile);
-        [[nodiscard]] bool consumeAssignClick(tilemap::Tile tile);
-        [[nodiscard]] bool blockedAsVariant();
+        [[nodiscard]] bool consumeAssignClick(tilemap::Tile tile) override;
+        [[nodiscard]] bool blockedAsVariant() override;
         [[nodiscard]] std::uint8_t variantWeightOf(
             tilemap::Tile tile) const;
         void layoutDecorRail(ui::Context &context);
@@ -345,68 +351,102 @@ namespace antwika::editor
         [[nodiscard]] std::optional<tilemap::Tile> freeTileSlot(
             tilemap::Atlas atlas);
         void copyTilePixels(tilemap::Tile fromTile, tilemap::Tile toTile);
-        void wipeTile(tilemap::Tile tile);
+        void wipeTile(tilemap::Tile tile) override;
         void layoutVariantRail(ui::Context &context);
         void layoutSpanRows(
             ui::Context &context, const decor::DecorTile &decor);
         void layoutFlipRail(ui::Context &context);
         void layoutTransitionRail(ui::Context &context);
-        [[nodiscard]] bool paintedOnAtlasPixel();
         void pressedOnSheets(
             const input::PointerButtonPressed &downPressed);
-        void pressGate(
+        void pressMarker(
             voxel::VoxelPosition position, input::MouseButton button);
         [[nodiscard]] std::vector<light::ActiveLight> currentLights();
-        void onSteppedGates(
-            voxel::VoxelPosition standsInPosition,
-            voxel::VoxelPosition standsOnPosition);
-        void onSteppedKeys(
-            voxel::VoxelPosition standsInPosition,
-            voxel::VoxelPosition standsOnPosition);
-        void onSteppedCheckpoints(voxel::VoxelPosition standsOnPosition);
-        void onSteppedDoors(voxel::VoxelPosition standsInPosition);
-        void onSteppedWorld(gfx::Vec3 walkerPosition);
-        [[nodiscard]] bool tryUnlockExit();
-        void resetGates();
+        void onSteppedWorld();
         void clearAssignModes();
-        [[nodiscard]] static widget::WidgetId getWidgetForField(
-            FocusedField focusedField);
-        void sayCaption(
-            const std::string &name,
-            const std::string &line,
-            std::optional<std::size_t> speaker = std::nullopt);
+        [[nodiscard]] widget::WidgetId getWidgetForField(
+            FocusedField focusedField) const;
         void showStatus(
             const std::string &text,
             bool warns = false,
             std::uint32_t durationTicks = kNoticeTicks) override;
-        [[nodiscard]] bool transitionWidgets(
-            const ui::Interactions &interactions);
         [[nodiscard]] bool pickedTransition(tilemap::Tile tile);
-        [[nodiscard]] bool flipWidgets(
-            const ui::Interactions &interactions);
         [[nodiscard]] bool shouldAdvanceTileAnimation() const;
         void uploadAtlases(bool force);
-        [[nodiscard]] bool spanWidgets(
-            const ui::Interactions &interactions);
-        [[nodiscard]] bool figureRosterWidgets(
-            const ui::Interactions &interactions);
-
-        void layoutFigureChooser(ui::Context &context);
-
-        [[nodiscard]] bool consumePaletteWidgets(
+        [[nodiscard]] bool nudgeSpan(int acrossStep, int downStep);
+        [[nodiscard]] bool characterWidgets(
             const ui::Interactions &interactions);
 
-        [[nodiscard]] bool consumePickerPress(
-            const input::PointerButtonPressed &downPressed);
+        void layoutComponentSection(
+            ui::Context &context, std::size_t chosenCharacter);
+
+        [[nodiscard]] bool componentWidgets(
+            const ui::Interactions &interactions);
+
+        void carryComponentScroll(const ui::Interactions &interactions);
+
+        [[nodiscard]] bool isInspectorHovered() const;
+
+        void commitComponentEdit();
+
+        [[nodiscard]] bool isMarkerSectionShown() const;
+
+        void layoutMarkerSection(ui::Context &context);
+
+        void commitMarkerEdit();
+
+        void dropMarkerPick();
+
+        void pressSelect(
+            voxel::VoxelPosition position, input::MouseButton button);
+
+        [[nodiscard]] std::optional<EntityPick> findEntityAt(
+            voxel::VoxelPosition position) const;
+
+        void keepEntityStep();
+
+        bool moveEntityTo(
+            voxel::VoxelPosition nextPosition, bool snapsToGround);
+
+        void carryEntity();
+
+        void removeEntityPick();
+
+        void dropEntityPick();
+
+        void commitEntityEdit();
+
+        [[nodiscard]] bool isEntitySectionShown() const;
+
+        void layoutEntitySection(ui::Context &context);
+
+        void rebuildEntityRows();
+
+        void layoutEntityListPanel(ui::Context &context);
+
+        [[nodiscard]] bool pressEntityRow(std::size_t place);
+
+        void carryEntityListScroll(const ui::Interactions &interactions);
+
+        [[nodiscard]] bool isEntityListHovered() const;
+
+        void layoutCharacterChooser(ui::Context &context);
 
         void endSliderDrag();
 
-        bool beginLampCarry(voxel::VoxelPosition position);
+        [[nodiscard]] bool beginEdgeDrag(
+            const ui::Interactions &interactions);
 
-        void carryLamp();
+        void endEdgeDrag();
+
+        [[nodiscard]] std::uint32_t panelWidthOf(
+            std::uint32_t PanelSizes::*extent,
+            std::uint32_t restingWidth) const;
+
+        [[nodiscard]] float getRailWidthOnCanvas() const;
 
         void duplicateTile(
-            geometry::GridCell fromCell, geometry::GridCell toCell);
+            geometry::GridCell fromCell, geometry::GridCell toCell) override;
 
         [[nodiscard]] bool beginSliderDrag(
             const ui::Interactions &interactions);
@@ -418,7 +458,7 @@ namespace antwika::editor
         void growChunk();
 
         void settleHistory(
-            std::optional<map::Snapshot> stepSnapshot,
+            std::optional<Snapshot> stepSnapshot,
             const std::string &doneLabel,
             const std::string &nothing);
 
@@ -456,11 +496,6 @@ namespace antwika::editor
 
         [[nodiscard]] bool consumeTextInput(
             const input::KeyPressed &pressedKey);
-        [[nodiscard]] std::uint8_t glowOf(std::size_t ink) const;
-
-        void carryInk();
-
-        void recolorInk(gfx::Color nextColor);
         void simulate();
 
 #ifdef ANTWIKA_GAME_SHARED
@@ -492,7 +527,9 @@ namespace antwika::editor
             std::chrono::time_point<std::chrono::system_clock>
                 startedAt);
 
-        void setView(map::View nextView);
+        void setView(View nextView);
+
+        friend struct fakes::EditorProbe;
     };
 
 }

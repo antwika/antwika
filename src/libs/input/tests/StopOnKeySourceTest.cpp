@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include <antwika/engine/Events.hpp>
+#include <antwika/event/EngineEvents.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/replay/ReplaySource.hpp>
@@ -12,6 +12,7 @@
 #include "antwika/input/StopOnKeySource.hpp"
 
 using antwika::event::Event;
+using antwika::event::EventName;
 using antwika::event::TickEvent;
 using antwika::input::InputEventCodec;
 using antwika::input::Key;
@@ -22,7 +23,7 @@ using antwika::replay::ReplaySource;
 
 namespace
 {
-    constexpr auto kStop = antwika::engine::events::kStop;
+    constexpr auto kStop = antwika::event::kStop;
 
     [[nodiscard]] TickEvent getKeyDown(Key key, bool repeat = false)
     {
@@ -101,7 +102,7 @@ TEST(StopOnKeySourceTest, EventsFor_IgnoresAReleaseOfTheChosenKey)
 TEST(StopOnKeySourceTest, EventsFor_IgnoresEventsThatAreNotInputAtAll)
 {
     ReplaySource innerSource(
-        {TickEvent{.tick = 0, .event = Event{.name = "engine.tick"}}});
+        {TickEvent{.tick = 0, .event = Event{.name = EventName{"engine.tick"}}}});
     const InputEventCodec codec;
     StopOnKeySource source(innerSource, codec, Key::Escape);
 

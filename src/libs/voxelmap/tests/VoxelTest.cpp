@@ -8,6 +8,7 @@
 #include <numbers>
 #include <ranges>
 #include <set>
+#include <stdexcept>
 #include <vector>
 
 #include <antwika/tilemap/AtlasLayout.hpp>
@@ -18,6 +19,7 @@
 #include <antwika/gfx/SizeF.hpp>
 
 #include <antwika/voxelmap/Voxel.hpp>
+#include <antwika/voxelmap/VoxelBounds.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/tilemap/TileEdges.hpp>
 
@@ -978,4 +980,78 @@ TEST(VoxelTest, StairPartOf_NamesNoPartOfAFaceWithNoFlight)
         EXPECT_EQ(
             stairPartOf(VoxelPosition{}, side), StairPart::Any);
     }
+}
+
+TEST(VoxelTest, BoundsOf_TakesTheLeastAndMostOfEveryAxis)
+{
+    const auto scatteredCells = voxelsOf({
+        VoxelCell{.position = {.x = 2, .y = -1, .z = 5}},
+        VoxelCell{.position = {.x = -3, .y = 4, .z = 0}},
+        VoxelCell{.position = {.x = 0, .y = 0, .z = -7}}});
+    const auto bounds = antwika::voxelmap::boundsOf(scatteredCells);
+
+    EXPECT_EQ(
+        bounds.lowestPosition, (VoxelPosition{.x = -3, .y = -1, .z = -7}));
+    EXPECT_EQ(
+        bounds.highestPosition, (VoxelPosition{.x = 2, .y = 4, .z = 5}));
+}
+
+TEST(VoxelTest, BoundsOf_StandsAtNoughtForAPileWithNoVoxels)
+{
+    EXPECT_EQ(
+        antwika::voxelmap::boundsOf({}), antwika::voxelmap::VoxelBounds{});
+}
+
+TEST(VoxelTest, VoxelMesh_ThrowsWhereTilesAndFacesDisagree)
+{
+    const auto pileCells = getDemoCells();
+    const auto faces = visibleFacesOf(pileCells);
+    const std::vector<antwika::tilemap::Tile> fewTiles(faces.size() - 1);
+
+    EXPECT_THROW(
+        static_cast<void>(
+            getVoxelMesh(
+                pileCells,
+                faces,
+                fewTiles,
+                antwika::voxelmap::Pass::Solid)),
+        std::invalid_argument);
+}
+
+TEST(VoxelTest, FaceRef_TellsWholeLikenessFromAMatchingPlaceAndSide)
+{
+    const antwika::voxelmap::FaceRef faceRef{
+        .cell = {
+            .position = {.x = 1},
+            .material = {.kind = antwika::voxel::Kind::Normal}},
+        .side = 2,
+        .climbPosition = {.x = 1},
+        .levelHalf = antwika::voxel::StairHalf::Lower};
+    auto otherFace = faceRef;
+
+    EXPECT_TRUE(faceRef.refersToSameFace(otherFace));
+    EXPECT_TRUE(faceRef.isIdenticalTo(otherFace));
+
+    otherFace.climbPosition = VoxelPosition{};
+
+    EXPECT_TRUE(faceRef.refersToSameFace(otherFace));
+    EXPECT_FALSE(faceRef.isIdenticalTo(otherFace));
+
+    otherFace = faceRef;
+    otherFace.cell.material.kind = antwika::voxel::Kind::Water;
+
+    EXPECT_TRUE(faceRef.refersToSameFace(otherFace));
+    EXPECT_FALSE(faceRef.isIdenticalTo(otherFace));
+
+    otherFace = faceRef;
+    otherFace.levelHalf = antwika::voxel::StairHalf::Upper;
+
+    EXPECT_TRUE(faceRef.refersToSameFace(otherFace));
+    EXPECT_FALSE(faceRef.isIdenticalTo(otherFace));
+
+    otherFace = faceRef;
+    otherFace.side = 3;
+
+    EXPECT_FALSE(faceRef.refersToSameFace(otherFace));
+    EXPECT_FALSE(faceRef.isIdenticalTo(otherFace));
 }

@@ -14,4 +14,5 @@ TEST(WindowSpecTest, Defaults_AskForAnUntitledFixed800x600Window)
     EXPECT_EQ(spec.size, (Size{.width = 800, .height = 600}));
     EXPECT_FALSE(spec.resizable);
     EXPECT_FALSE(spec.fullscreen);
+    EXPECT_EQ(spec.targetFps, 0U);
 }

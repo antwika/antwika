@@ -14,12 +14,6 @@ namespace antwika::collision
 
     namespace
     {
-        [[nodiscard]] std::int32_t columnOf(const float coordinate)
-        {
-            return static_cast<std::int32_t>(
-                std::floor(coordinate / voxel::kVoxelSide));
-        }
-
         [[nodiscard]] std::int32_t lastColumnOf(const float coordinate)
         {
             return static_cast<std::int32_t>(
@@ -38,21 +32,46 @@ namespace antwika::collision
                 std::floor(height / voxel::kVoxelSide));
         }
 
-        [[nodiscard]] std::int32_t getStoodOn(const float feet)
+        [[nodiscard]] std::int32_t getReachLevel(const float feet)
         {
-            return lastColumnOf(feet);
+            return levelAt(feet + kWalkerStep);
+        }
+
+        [[nodiscard]] float getStepOnto(
+            const voxel::VoxelCell groundCell, const float stepUp)
+        {
+            return voxel::isRamped(groundCell.material.kind)
+                       ? kWalkerStep
+                       : stepUp;
+        }
+
+        [[nodiscard]] float getLowestFootingOn(
+            const voxel::VoxelCell groundCell)
+        {
+            const auto top = topOf(groundCell.position.y);
+
+            if (voxel::isSwimmable(groundCell.material.kind))
+            {
+                return top - (voxel::kVoxelSide / 2.0F);
+            }
+
+            return voxel::isRamped(groundCell.material.kind)
+                       ? top - voxel::kVoxelSide
+                       : top;
         }
 
         [[nodiscard]] component::Position getMovedBy(
             const voxel::Voxels &filledVoxels,
             const component::Position position,
             const float byX,
-            const float byZ)
+            const float byZ,
+            const float stepUp)
         {
             const auto x = position.x + byX;
             const auto z = position.z + byZ;
 
-            return getGroundHeightUnderFootprint(filledVoxels, x, z, position.y)
+            return getGroundHeightUnderFootprint(
+                       filledVoxels, x, z, position.y, stepUp)
                 .transform([&](const float footing) {
                     return component::Position{
                         .x = x,
@@ -64,10 +83,11 @@ namespace antwika::collision
 
         [[nodiscard]] component::Position getSnappedToGround(
             const voxel::Voxels &filledVoxels,
-            const component::Position position)
+            const component::Position position,
+            const float stepUp)
         {
             return getGroundHeightUnderFootprint(
-                       filledVoxels, position.x, position.z, position.y)
+                       filledVoxels, position.x, position.z, position.y, stepUp)
                 .transform([&](const float footing) {
                     return component::Position{
                         .x = position.x,
@@ -78,7 +98,7 @@ namespace antwika::collision
         }
 
         [[nodiscard]] float getDistanceBetween(
-            const component::Position position, const gfx::Vec3 fromPosition)
+            const component::Position position, const geometry::Vec3 fromPosition)
         {
             const auto byX = position.x - fromPosition.x;
             const auto byZ = position.z - fromPosition.z;
@@ -87,12 +107,18 @@ namespace antwika::collision
         }
     }
 
-    gfx::Vec3 positionOf(const component::Position position)
+    std::int32_t columnOf(const float coordinate)
     {
-        return gfx::Vec3{position.x, position.y, position.z};
+        return static_cast<std::int32_t>(
+            std::floor(coordinate / voxel::kVoxelSide));
     }
 
-    component::Position positionFrom(const gfx::Vec3 position)
+    geometry::Vec3 positionOf(const component::Position position)
+    {
+        return geometry::Vec3{position.x, position.y, position.z};
+    }
+
+    component::Position positionFrom(const geometry::Vec3 position)
     {
         return component::Position{
             .x = position.x, .y = position.y, .z = position.z};
@@ -134,13 +160,23 @@ namespace antwika::collision
         const std::int32_t z,
         const float feet)
     {
-        const auto underCell = getStoodOn(feet);
+        return getSupportingVoxel(filledVoxels, x, z, feet, kWalkerStep);
+    }
 
-        for (std::int32_t step = 1; step >= -kMaxFallDepth; --step)
+    std::optional<voxel::VoxelCell> getSupportingVoxel(
+        const voxel::Voxels &filledVoxels,
+        const std::int32_t x,
+        const std::int32_t z,
+        const float feet,
+        const float stepUp)
+    {
+        const auto reachLevel = getReachLevel(feet);
+
+        for (std::int32_t step = 0; step >= -kMaxFallDepth; --step)
         {
             const voxel::VoxelPosition groundPosition{
                 .x = x,
-                .y = underCell + step,
+                .y = reachLevel + step,
                 .z = z};
             const auto foundVoxel = filledVoxels.find(groundPosition);
 
@@ -149,11 +185,18 @@ namespace antwika::collision
                 continue;
             }
 
+            const voxel::VoxelCell groundCell{
+                .position = foundVoxel->first,
+                .material = foundVoxel->second};
+
+            if (getLowestFootingOn(groundCell)
+                > feet + getStepOnto(groundCell, stepUp))
+            {
+                continue;
+            }
+
             return hasHeadroom(filledVoxels, groundPosition)
-                       ? std::optional<voxel::VoxelCell>{
-                             voxel::VoxelCell{
-                        .position = foundVoxel->first,
-                        .material = foundVoxel->second}}
+                       ? std::optional<voxel::VoxelCell>{groundCell}
                        : std::nullopt;
         }
 
@@ -223,6 +266,17 @@ namespace antwika::collision
         const float z,
         const float feet)
     {
+        return getGroundHeightUnderFootprint(
+            filledVoxels, x, z, feet, kWalkerStep);
+    }
+
+    std::optional<float> getGroundHeightUnderFootprint(
+        const voxel::Voxels &filledVoxels,
+        const float x,
+        const float z,
+        const float feet,
+        const float stepUp)
+    {
         const auto acrossArm = kFootprintWidth / 2.0F;
         const auto alongArm = kFootprintDepth / 2.0F;
         std::optional<float> highest;
@@ -235,8 +289,8 @@ namespace antwika::collision
                  rowIndex <= lastColumnOf(z + alongArm);
                  ++rowIndex)
             {
-                const auto groundCell =
-                    getSupportingVoxel(filledVoxels, columnIndex, rowIndex, feet);
+                const auto groundCell = getSupportingVoxel(
+                    filledVoxels, columnIndex, rowIndex, feet, stepUp);
 
                 if (!groundCell.has_value())
                 {
@@ -351,13 +405,17 @@ namespace antwika::collision
         const auto byX = velocity.velocityX * pace;
         const auto byZ = velocity.velocityZ * pace;
 
+        const auto stepUp = climbing ? kRampSideStep : kWalkerStep;
+
         return getSnappedToGround(
             filledVoxels,
             getMovedBy(
                 filledVoxels,
-                getMovedBy(filledVoxels, position, byX, 0.0F),
+                getMovedBy(filledVoxels, position, byX, 0.0F, stepUp),
                 0.0F,
-                byZ));
+                byZ,
+                stepUp),
+            stepUp);
     }
 
     std::array<voxel::VoxelPosition, 2> getStoodCells(

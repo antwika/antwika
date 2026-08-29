@@ -301,6 +301,7 @@ jobs:
         shell: bash
         run: |
           "${BUILD_DIR}/bin/antwika_ecs_benchmark"
+          "${BUILD_DIR}/bin/antwika_worldgen_benchmark"
 
       - name: Upload coverage badge
         if: matrix.coverage

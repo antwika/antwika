@@ -5,7 +5,6 @@
 
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/time/Tick.hpp>
-#include <antwika/widget/WidgetId.hpp>
 #include <antwika/tilemap/Tilemap.hpp>
 
 #include <antwika/decor/Decor.hpp>
@@ -49,11 +48,5 @@ namespace antwika::decor
         tilemap::Atlas atlas,
         std::span<const TileAnimation> flipAnimations,
         time::Tick tick);
-
-    inline constexpr widget::WidgetId kToggleAnimationWidget{369};
-
-    inline constexpr widget::WidgetId kAddFrameWidget{370};
-
-    [[nodiscard]] widget::WidgetId getFlipFrameWidget(std::size_t frame);
 
 }

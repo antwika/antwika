@@ -4,7 +4,10 @@
 
 #include <antwika/map/Layers.hpp>
 #include <antwika/editor/ui/LayerWidgets.hpp>
+
 #include "antwika/editor/ui/ToolPanel.hpp"
+
+#include "antwika/editor/ui/WidgetIds.hpp"
 
 using antwika::map::getDefaultLayers;
 using antwika::map::kBaseLayer;

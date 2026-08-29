@@ -1,9 +1,8 @@
 find_package(GTest REQUIRED)
 
 add_executable(antwika_map_tests
-    HistoryTest.cpp
-    MapAssetsTest.cpp
     MapFileTest.cpp
+    MapWarningsTest.cpp
 )
 
 target_include_directories(antwika_map_tests

@@ -13,6 +13,7 @@
 #include <antwika/render/CharacterSkins.hpp>
 
 #include "antwika/editor/ui/SheetMark.hpp"
+#include "antwika/editor/ui/SheetPaint.hpp"
 #include "antwika/editor/view/IEditorView.hpp"
 
 namespace antwika::editor
@@ -22,7 +23,7 @@ namespace antwika::editor
     {
     public:
         [[nodiscard]] bool claims(
-            map::View shownView, bool playing) const noexcept override;
+            View shownView, bool playing) const noexcept override;
 
         [[nodiscard]] std::string getStatusText(
             const ViewContext &viewContext) const override;
@@ -30,7 +31,7 @@ namespace antwika::editor
         [[nodiscard]] bool takesPaintKeys() const noexcept override;
 
         [[nodiscard]] bool offersPaint(
-            map::Paint paint) const noexcept override;
+            Paint paint) const noexcept override;
 
         void draw(
             const ViewContext &viewContext,
@@ -44,11 +45,21 @@ namespace antwika::editor
             const ViewContext &viewContext,
             const input::PointerButtonPressed &downPressed) override;
 
+        [[nodiscard]] bool consumeRelease(
+            const ViewContext &viewContext,
+            const input::PointerButtonReleased &upReleased) override;
+
         void trackPointer(const ViewContext &viewContext) override;
 
         [[nodiscard]] bool consumeKey(
             const ViewContext &viewContext,
             const input::KeyPressed &pressedKey) override;
+
+        [[nodiscard]] SheetMark &getMark() noexcept;
+
+        [[nodiscard]] const SheetMark &getMark() const noexcept;
+
+        void dropSelection() noexcept;
 
         void open(
             gfx::ViewportRenderer &viewportRenderer,
@@ -56,17 +67,17 @@ namespace antwika::editor
 
         void takeSkins(
             gfx::ViewportRenderer &viewportRenderer,
-            render::CharacterSkins &rosterSkins,
+            render::CharacterSkins &characterSkins,
             std::vector<gfx::Bitmap> skinBitmaps);
 
         [[nodiscard]] std::vector<gfx::Bitmap> getSkinsAsDrawn(
-            const render::CharacterSkins &rosterSkins) const;
+            const render::CharacterSkins &characterSkins) const;
 
 
 
         void keepEdits(
             gfx::ViewportRenderer &viewportRenderer,
-            render::CharacterSkins &rosterSkins);
+            render::CharacterSkins &characterSkins);
 
         [[nodiscard]] std::size_t getEditing() const noexcept;
 
@@ -74,12 +85,12 @@ namespace antwika::editor
 
         void switchTo(
             gfx::ViewportRenderer &viewportRenderer,
-            render::CharacterSkins &rosterSkins,
+            render::CharacterSkins &characterSkins,
             std::size_t skinIndex);
 
         void repaint(
             gfx::ViewportRenderer &viewportRenderer,
-            render::CharacterSkins &rosterSkins,
+            render::CharacterSkins &characterSkins,
             std::size_t skinIndex,
             gfx::Bitmap skinBitmap);
 
@@ -97,12 +108,21 @@ namespace antwika::editor
 
         [[nodiscard]] gfx::ITexture *getChecker() const noexcept;
 
-        void drawSheet(gfx::ViewportRenderer &viewportRenderer) const;
+        void drawSheet(
+            gfx::ViewportRenderer &viewportRenderer,
+            gfx::RectF sheetRect,
+            gfx::RectF drawRect) const;
+
+    private:
+        void finishShapedStroke(
+            const ViewContext &viewContext,
+            const input::PointerButtonReleased &upReleased);
+
+        [[nodiscard]] PaintSurface createPaintSurface(gfx::Color color);
 
         SheetMark mark;
 
-    private:
-        gfx::Bitmap editedSheet;
+        gfx::Bitmap editedBitmap;
         std::size_t editingAt = 0;
         bool sheetDirty = true;
         std::unique_ptr<gfx::ITexture> sheetTexture;

@@ -196,7 +196,7 @@ namespace antwika::replay
                     "engine regenerates that event, and a regenerated "
                     "event is never replay input",
                     ordinal,
-                    antwika::engine::events::kTick));
+                    antwika::engine::events::kTick.getText()));
             }
 
             requireTickDoesNotGoBackwards(

@@ -17,6 +17,7 @@ using antwika::engine::EngineLoopError;
 using antwika::engine::StopSignal;
 using antwika::engine::mocks::MockEngine;
 using antwika::event::Event;
+using antwika::event::EventName;
 using antwika::event::TickedEventDispatcher;
 using antwika::event::TickEvent;
 using antwika::event::mocks::MockEventDispatcher;
@@ -32,8 +33,8 @@ TEST(EngineLoopTest, Run_DispatchesSourcedEventsThenStepsEngineUntilStop)
     TickedEventDispatcher tickedEventDispatcher(
         mockEventDispatcher, {stopSignal});
     ReplaySource source({
-        TickEvent{.tick = 0, .event = Event{.name = "a"}},
-        TickEvent{.tick = 2, .event = Event{.name = "b"}},
+        TickEvent{.tick = 0, .event = Event{.name = EventName{"a"}}},
+        TickEvent{.tick = 2, .event = Event{.name = EventName{"b"}}},
         TickEvent{
             .tick = 2,
             .event = Event{.name = antwika::engine::events::kStop}},
@@ -42,10 +43,10 @@ TEST(EngineLoopTest, Run_DispatchesSourcedEventsThenStepsEngineUntilStop)
 
     {
         ::testing::InSequence seq;
-        EXPECT_CALL(mockEventDispatcher, dispatch(Event{.name = "a"}));
+        EXPECT_CALL(mockEventDispatcher, dispatch(Event{.name = EventName{"a"}}));
         EXPECT_CALL(mockEngine, step(0));
         EXPECT_CALL(mockEngine, step(1));
-        EXPECT_CALL(mockEventDispatcher, dispatch(Event{.name = "b"}));
+        EXPECT_CALL(mockEventDispatcher, dispatch(Event{.name = EventName{"b"}}));
         EXPECT_CALL(
             mockEventDispatcher,
             dispatch(Event{.name = antwika::engine::events::kStop}));
@@ -64,8 +65,8 @@ TEST(EngineLoopTest, Run_StampsAnEventWithTheTickItArrivedOn)
     TickedEventDispatcher tickedEventDispatcher(
         mockEventDispatcher, {stopSignal, mockTickEventSink});
     ReplaySource source({
-        TickEvent{.tick = 0, .event = Event{.name = "a"}},
-        TickEvent{.tick = 2, .event = Event{.name = "b"}},
+        TickEvent{.tick = 0, .event = Event{.name = EventName{"a"}}},
+        TickEvent{.tick = 2, .event = Event{.name = EventName{"b"}}},
         TickEvent{
             .tick = 2,
             .event = Event{.name = antwika::engine::events::kStop}},
@@ -80,10 +81,10 @@ TEST(EngineLoopTest, Run_StampsAnEventWithTheTickItArrivedOn)
         ::testing::InSequence seq;
         EXPECT_CALL(
             mockTickEventSink,
-            handle(TickEvent{.tick = 0, .event = Event{.name = "a"}}));
+            handle(TickEvent{.tick = 0, .event = Event{.name = EventName{"a"}}}));
         EXPECT_CALL(
             mockTickEventSink,
-            handle(TickEvent{.tick = 2, .event = Event{.name = "b"}}));
+            handle(TickEvent{.tick = 2, .event = Event{.name = EventName{"b"}}}));
         EXPECT_CALL(
             mockTickEventSink,
             handle(TickEvent{

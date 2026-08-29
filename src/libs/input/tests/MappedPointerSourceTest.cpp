@@ -20,6 +20,7 @@
 #include "antwika/input/Position.hpp"
 
 using antwika::event::Event;
+using antwika::event::EventName;
 using antwika::event::TickEvent;
 using antwika::input::InputEvent;
 using antwika::input::InputEventCodec;
@@ -108,7 +109,7 @@ TEST(MappedPointerSourceTest, EventsFor_LeavesAPositionlessEdgeAlone)
 
 TEST(MappedPointerSourceTest, EventsFor_LeavesAnUnrelatedEventAlone)
 {
-    const Event otherEvent{.name = "game.score_increment", .payload = "{}"};
+    const Event otherEvent{.name = EventName{"game.score_increment"}, .payload = "{}"};
 
     ReplaySource innerSource({getEntryAt(0, otherEvent)});
 
@@ -138,7 +139,7 @@ TEST(MappedPointerSourceTest, EventsFor_LetsABadPayloadThrough)
     ReplaySource innerSource(
         {getEntryAt(0,
             antwika::event::Event{
-                .name = "input.pointer_move",
+                .name = EventName{"input.pointer_move"},
                 .payload = R"({"x":"far","y":2})"})});
 
     const FakeHalvingPointerMapping mapping;

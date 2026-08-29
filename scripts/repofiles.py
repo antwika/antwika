@@ -9,6 +9,8 @@ CPP_GLOBS = (
     "src/**/*.hpp",
     "backends/**/*.cpp",
     "backends/**/*.hpp",
+    "benchmarks/**/*.cpp",
+    "benchmarks/**/*.hpp",
 )
 
 PYTHON_GLOBS = (
@@ -29,7 +31,10 @@ MARKDOWN_GLOBS = ("README.md",)
 
 YAML_GLOBS = (".github/workflows/*.yml",)
 
-SHELL_GLOBS = ("scripts/*.sh",)
+SHELL_GLOBS = (
+    "scripts/*.sh",
+    ".devcontainer/*/scripts/*.sh",
+)
 
 DOCKER_GLOBS = (".devcontainer/*/Dockerfile",)
 

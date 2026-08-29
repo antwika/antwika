@@ -1,10 +1,11 @@
 #include <cmath>
-#include <filesystem>
 #include <numbers>
+#include <variant>
 
 #include <antwika/component/AnimationState.hpp>
 #include <antwika/component/Position.hpp>
 #include <antwika/ecs/OpenPhase.hpp>
+#include <antwika/editor/ui/GizmoSheet.hpp>
 #include <antwika/editor/ui/IconSheet.hpp>
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Math3D.hpp>
@@ -16,24 +17,22 @@
 #include <antwika/input/SelectedInputBackend.hpp>
 #include <antwika/light/PointLight.hpp>
 #include <antwika/log/Level.hpp>
-#include <antwika/map/MapAssets.hpp>
+#include <antwika/assets/MapAssets.hpp>
+#include <antwika/assets/ShaderAssets.hpp>
 #include <antwika/map/MapFileError.hpp>
 #include <antwika/render/Checkerboard.hpp>
 #include <antwika/solver/VoxelWeave.hpp>
 #include <antwika/tilemap/Tilemap.hpp>
+#include <antwika/ui/Overloaded.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/voxelmap/VoxelPick.hpp>
+#include <antwika/app/FramePacing.hpp>
 #include <antwika/app/WindowEvents.hpp>
 
 #include "antwika/editor/PreferencesFile.hpp"
 
 #include "antwika/editor/Editor.hpp"
 #include "antwika/editor/plan/PlanFileError.hpp"
-
-namespace
-{
-
-}
 
 namespace antwika::editor
 {
@@ -52,21 +51,48 @@ namespace antwika::editor
           window(
               backend.createWindow(
                   gfx::WindowSpec{
-                      .title = "Antwika",
+                      .title = "Antwika game editor",
                       .size = app::kDefaultWindowSize,
-                      .resizable = true})),
+                      .resizable = true,
+                      .targetFps = app::kTargetFps})),
           viewportRenderer(
               window->renderer(), window->getSize(), camera::kCanvasSize),
-          play(logger, worldMeshes.getCells())
+          play(logger, document.map, worldMeshes.getCells())
     {
         document.startFrom(std::move(mapPathGiven));
-        document.map = map::Map{
-            .voxels = voxel::getExpandCubesToVoxels(voxelmap::getDemoCells()),
-            .tilemap = tilemap::getDefaultTilemap()};
 
-        worldShader.open(viewportRenderer, map::getLoadShader("voxel"));
+        worldShader.open(viewportRenderer, assets::getShaderSource("voxel"));
         keyBench.takeBindings(getLoadChords(getChordsPath()));
 
+        loadMapOrBuiltIn();
+        loadPlan(std::move(planPathGiven));
+        openSheets();
+        openPasses();
+
+        Preferences restingPreferences;
+
+        restingPreferences.lighting = document.map.settings.lighting;
+
+        takePreferences(
+            getLoadPreferences(document.getPath(), restingPreferences));
+
+        rebuildWorld();
+
+        spawnCharacters();
+        loadCharacterSkins();
+
+        aimOpeningCamera();
+
+        if (playOnly)
+        {
+            beginPlay();
+        }
+
+        logger.log(log::Level::Info, "Antwika opened");
+    }
+
+    void Editor::loadMapOrBuiltIn()
+    {
         try
         {
             document.map = map::getLoadMap(document.getPath());
@@ -75,12 +101,24 @@ namespace antwika::editor
         }
         catch (const map::MapFileError &)
         {
+            document.map = map::Map{
+                .voxels =
+                    voxel::getExpandCubesToVoxels(voxelmap::getDemoCells()),
+                .tilemap = tilemap::getDefaultTilemap()};
+
             logger.log(
                 log::Level::Info,
                 "No map at " + document.getPath()
                     + ", starting from the built-in one");
         }
 
+        worldView.worldEdit().setEditLevel(
+            antwika::voxel::getCubeIndexOfLevel(voxelmap::getTopLevel(
+                    document.map.voxels)));
+    }
+
+    void Editor::loadPlan(std::string planPathGiven)
+    {
         try
         {
             plan.open(std::move(planPathGiven));
@@ -89,32 +127,39 @@ namespace antwika::editor
         {
             logger.log(log::Level::Warning, error.what());
         }
+    }
 
-        worldView.worldEdit.editLevel =
-            antwika::voxel::getCubeIndexOfLevel(voxelmap::getTopLevel(
-                    document.map.voxels));
-
+    void Editor::openSheets()
+    {
         atlasSheets.open(
             viewportRenderer,
-            map::getLoadAtlasPairOrBlank(document.getPath(), kAppName),
+            assets::getLoadAtlasPairOrBlank(document.getPath(), kAppName),
             document.map,
             tick);
         characterView.open(
-            viewportRenderer, map::getLoadCharacterSheet(document.getPath(),
+            viewportRenderer, assets::getLoadCharacterSheet(document.getPath(),
                 kAppName));
         iconsView.open(
             viewportRenderer, getLoadIconSheet(document.getPath(), kAppName));
+        openGizmoSheet();
+    }
+
+    void Editor::openGizmoSheet()
+    {
+        gizmos.sheetBitmap = getLoadGizmoSheet(document.getPath(), kAppName);
+        gizmos.texture = viewportRenderer.createTexture(gizmos.sheetBitmap);
+        gizmos.unsaved = false;
+    }
+
+    void Editor::openPasses()
+    {
         sprites.open(viewportRenderer);
-        lightPasses.open(viewportRenderer, map::getLoadShader("shadow"));
-        scenePass.open(viewportRenderer, map::getLoadShader("bloom"));
+        lightPasses.open(viewportRenderer, assets::getShaderSource("shadow"));
+        scenePass.open(viewportRenderer, assets::getShaderSource("bloom"));
+    }
 
-        takePreferences(getLoadPreferences(document.getPath()));
-
-        rebuildWorld();
-
-        spawnRoster();
-        loadCharacterSkins();
-
+    void Editor::aimOpeningCamera()
+    {
         const auto opening = map::CameraView{
             .transform = camera::getCenteredOn(camera::getDefaultTransform(),
                 voxelmap::getVoxelsCenter(document.map.voxels))};
@@ -122,49 +167,79 @@ namespace antwika::editor
         cameraRig.view = document.map.camera.value_or(opening);
         cameraRig.viewHeight =
             camera::getOrthoHalfHeight(camera::kCanvasSize, cameraRig.view.zoom);
+    }
 
-        if (playOnly)
+    void Editor::beginPlay()
+    {
+        restoreProgress();
+
+        keepMapForPlay();
+        play.playing = true;
+        play.titleScreenUp = true;
+        aimPlayCamera();
+    }
+
+    void Editor::keepMapForPlay()
+    {
+        play.mapBeforePlay = document.map;
+        play.wasDirtyBeforePlay = document.isDirty();
+    }
+
+    void Editor::restoreMapAfterPlay()
+    {
+        if (!play.mapBeforePlay.has_value())
         {
-            const auto progress = map::getLoadProgress(getProgressPath());
-
-            if (progress.has_value())
+            if (preferences.hideAboveLevel)
             {
-                document.openAt((std::filesystem::path(document.getStartPath())
-                               .parent_path()
-                           / progress->map)
-                              .string());
-
-                if (loadCurrentMap())
-                {
-                    {
-                        const ecs::OpenPhase phase(play.game->getWorld());
-
-                        play.game->getWorld().set<component::Position>(
-                            play.game->getPlayer(),
-                            collision::positionFrom(
-                                progress->stancePlacement.position));
-                        play.game->getWorld().set<component::AnimationState>(
-                            play.game->getPlayer(),
-                            component::AnimationState{
-                                .direction =
-                                    progress->stancePlacement.way});
-                    }
-
-                    play.game->cameraTarget() =
-                        progress->stancePlacement.position;
-                }
-                else
-                {
-                    document.openAt(document.getStartPath());
-                }
+                rebuildWorld();
             }
 
-            play.playing = true;
-            play.titleScreenUp = true;
-            aimPlayCamera();
+            return;
         }
 
-        logger.log(log::Level::Info, "Antwika opened");
+        document.map = std::move(*play.mapBeforePlay);
+        play.mapBeforePlay.reset();
+        rebuildWorld();
+
+        if (!play.wasDirtyBeforePlay)
+        {
+            document.markSaved();
+        }
+    }
+
+    void Editor::restoreProgress()
+    {
+        const auto progress = map::getLoadProgress(getProgressPath());
+
+        if (!progress.has_value())
+        {
+            return;
+        }
+
+        document.openAt(document.getStartSiblingPath(progress->map));
+
+        if (!loadCurrentMap())
+        {
+            document.openAt(document.getStartPath());
+
+            return;
+        }
+
+        {
+            const ecs::OpenPhase phase(play.game->getWorld());
+
+            play.game->getWorld().set<component::Position>(
+                play.game->getPlayer(),
+                collision::positionFrom(
+                    progress->stancePlacement.position));
+            play.game->getWorld().set<component::AnimationState>(
+                play.game->getPlayer(),
+                component::AnimationState{
+                    .direction =
+                        progress->stancePlacement.way});
+        }
+
+        play.game->setCameraTarget(progress->stancePlacement.position);
     }
 
     bool Editor::pollWindow()
@@ -196,48 +271,33 @@ namespace antwika::editor
         {
             inputState.apply(*event);
 
-            if (const auto *rolled =
-                    std::get_if<input::PointerScrolled>(&event.value()))
-            {
-                onScrolled(*rolled);
-                continue;
-            }
-
-            if (const auto *movedEvent =
-                    std::get_if<input::PointerMoved>(&event.value()))
-            {
-                onPointerMoved(*movedEvent);
-                continue;
-            }
-
-            if (const auto *pressedEvent =
-                    std::get_if<input::PointerButtonPressed>(
-                    &event.value()))
-            {
-                onPointerPressed(*pressedEvent);
-                continue;
-            }
-
-            if (const auto *releasedEvent =
-                    std::get_if<input::PointerButtonReleased>(
-                        &event.value()))
-            {
-                onPointerReleased(*releasedEvent);
-                continue;
-            }
-
-            if (const auto *released =
-                    std::get_if<input::KeyReleased>(&event.value()))
-            {
-                onKeyReleased(*released);
-                continue;
-            }
-
-            if (const auto *pressedEvent =
-                    std::get_if<input::KeyPressed>(&event.value()))
-            {
-                onKeyPressed(*pressedEvent);
-            }
+            std::visit(
+                ui::Overloaded{
+                    [this](const input::PointerScrolled &rolledScrolled)
+                    {
+                        onScrolled(rolledScrolled);
+                    },
+                    [this](const input::PointerMoved &movedEvent)
+                    {
+                        onPointerMoved(movedEvent);
+                    },
+                    [this](const input::PointerButtonPressed &downPressed)
+                    {
+                        onPointerPressed(downPressed);
+                    },
+                    [this](const input::PointerButtonReleased &upReleased)
+                    {
+                        onPointerReleased(upReleased);
+                    },
+                    [this](const input::KeyReleased &releasedEvent)
+                    {
+                        onKeyReleased(releasedEvent);
+                    },
+                    [this](const input::KeyPressed &pressedKey)
+                    {
+                        onKeyPressed(pressedKey);
+                    }},
+                *event);
         }
     }
 

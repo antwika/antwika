@@ -24,7 +24,7 @@ using antwika::editor::getInspectColumnBounds;
 using antwika::voxel::kEveryCorner;
 using antwika::editor::getTilemapBounds;
 using antwika::editor::kEveryEdgeToggle;
-using antwika::map::kEveryView;
+using antwika::editor::kEveryView;
 using antwika::editor::getPanZoomed;
 using antwika::editor::EdgeToggle;
 using antwika::editor::edgeToggleAt;
@@ -47,8 +47,10 @@ using antwika::editor::edgesIn;
 using antwika::voxel::kEverySide;
 using antwika::editor::markerAt;
 using antwika::editor::getMarkerPlace;
-using antwika::map::View;
+using antwika::editor::View;
+using antwika::editor::getViewAfter;
 using antwika::editor::getViewAfterKey;
+using antwika::editor::getViewBefore;
 using antwika::tilemap::Tile;
 using antwika::tilemap::swapTiles;
 using antwika::tilemap::Tilemap;
@@ -195,6 +197,9 @@ TEST(AtlasViewTest, ShownAfter_TakesADigitToAViewApiece)
     EXPECT_EQ(
         getViewAfterKey(View::World, Key::Digit5, false),
         View::Plan);
+    EXPECT_EQ(
+        getViewAfterKey(View::World, Key::Digit6, false),
+        View::Gizmos);
 }
 
 TEST(AtlasViewTest, ShownAfter_TurnsRoundEveryViewAndBackToTheFirst)
@@ -210,13 +215,17 @@ TEST(AtlasViewTest, ShownAfter_TurnsRoundEveryViewAndBackToTheFirst)
     EXPECT_EQ(
         getViewAfterKey(View::Icons, Key::Tab, false), View::Plan);
     EXPECT_EQ(
-        getViewAfterKey(View::Plan, Key::Tab, false), View::World);
+        getViewAfterKey(View::Plan, Key::Tab, false), View::Gizmos);
+    EXPECT_EQ(
+        getViewAfterKey(View::Gizmos, Key::Tab, false), View::World);
 }
 
 TEST(AtlasViewTest, ShownAfter_TurnsTheOtherWayRoundWhileHeldBack)
 {
     EXPECT_EQ(
-        getViewAfterKey(View::World, Key::Tab, true), View::Plan);
+        getViewAfterKey(View::World, Key::Tab, true), View::Gizmos);
+    EXPECT_EQ(
+        getViewAfterKey(View::Gizmos, Key::Tab, true), View::Plan);
     EXPECT_EQ(
         getViewAfterKey(View::Plan, Key::Tab, true), View::Icons);
     EXPECT_EQ(
@@ -225,6 +234,34 @@ TEST(AtlasViewTest, ShownAfter_TurnsTheOtherWayRoundWhileHeldBack)
         getViewAfterKey(View::Character, Key::Tab, true), View::Atlases);
     EXPECT_EQ(
         getViewAfterKey(View::Atlases, Key::Tab, true), View::World);
+}
+
+TEST(AtlasViewTest, ViewAfter_WalksTheViewsForwardInOrder)
+{
+    EXPECT_EQ(getViewAfter(View::World), View::Atlases);
+    EXPECT_EQ(getViewAfter(View::Atlases), View::Character);
+    EXPECT_EQ(getViewAfter(View::Character), View::Icons);
+    EXPECT_EQ(getViewAfter(View::Icons), View::Plan);
+    EXPECT_EQ(getViewAfter(View::Plan), View::Gizmos);
+    EXPECT_EQ(getViewAfter(View::Gizmos), View::World);
+}
+
+TEST(AtlasViewTest, ViewBefore_WalksTheViewsBackInOrder)
+{
+    EXPECT_EQ(getViewBefore(View::World), View::Gizmos);
+    EXPECT_EQ(getViewBefore(View::Gizmos), View::Plan);
+    EXPECT_EQ(getViewBefore(View::Plan), View::Icons);
+    EXPECT_EQ(getViewBefore(View::Icons), View::Character);
+    EXPECT_EQ(getViewBefore(View::Character), View::Atlases);
+    EXPECT_EQ(getViewBefore(View::Atlases), View::World);
+}
+
+TEST(AtlasViewTest, ViewBefore_TakesEveryViewBackWhereViewAfterLedIt)
+{
+    for (const auto view : kEveryView)
+    {
+        EXPECT_EQ(getViewBefore(getViewAfter(view)), view);
+    }
 }
 
 TEST(AtlasViewTest, ShownAfter_TakesEveryViewBackWhereItCameFrom)
@@ -241,7 +278,7 @@ TEST(AtlasViewTest, ShownAfter_TakesEveryViewBackWhereItCameFrom)
 TEST(AtlasViewTest, ShownAfter_StaysWhereItIsForAnyOtherKey)
 {
     for (const auto key :
-         {Key::W, Key::Digit6, Key::F5, Key::Escape, Key::ArrowUp})
+         {Key::W, Key::Digit7, Key::F5, Key::Escape, Key::ArrowUp})
     {
         EXPECT_EQ(getViewAfterKey(View::World, key, false), View::World);
         EXPECT_EQ(
@@ -1303,6 +1340,32 @@ TEST(AtlasViewTest, GestureFrom_StillSwapsBetweenTwoPlacesBothShown)
         getGestureShown(map, where, fromPoint, ontoPoint, false, std::nullopt)
             .action,
         PointerAction::Swap);
+}
+
+TEST(AtlasViewTest, SheetNames_NameNothingForTheWorldOrThePlan)
+{
+    using antwika::editor::getSheetNames;
+    using antwika::editor::View;
+
+    EXPECT_FALSE(getSheetNames(View::World).has_value());
+    EXPECT_FALSE(getSheetNames(View::Plan).has_value());
+}
+
+TEST(AtlasViewTest, SheetNames_TellTheSheetViewsApart)
+{
+    using antwika::editor::getSheetNames;
+    using antwika::editor::View;
+
+    EXPECT_EQ(getSheetNames(View::Atlases)->sheetName, "Tiles");
+    EXPECT_EQ(getSheetNames(View::Character)->sheetName, "Frames");
+    EXPECT_EQ(getSheetNames(View::Icons)->sheetName, "Icons");
+    EXPECT_EQ(getSheetNames(View::Gizmos)->sheetName, "Gizmos");
+
+    for (const auto view :
+         {View::Atlases, View::Character, View::Icons, View::Gizmos})
+    {
+        EXPECT_EQ(getSheetNames(view)->drawName, "Drawing");
+    }
 }
 
 TEST(AtlasViewTest, GestureFrom_AsksNothingOfAPlaceTheClipKeepsHidden)

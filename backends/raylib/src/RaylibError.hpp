@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdexcept>
+
 #include <antwika/log/ILogger.hpp>
 
 namespace antwika::raylib

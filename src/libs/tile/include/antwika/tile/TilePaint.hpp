@@ -11,7 +11,6 @@
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/PointF.hpp>
 #include <antwika/gfx/RectF.hpp>
-#include <antwika/widget/WidgetId.hpp>
 #include <antwika/gfx/Size.hpp>
 
 #include <antwika/tilemap/Tilemap.hpp>
@@ -34,8 +33,6 @@ namespace antwika::tile
     inline constexpr float kSwatchSide = 15.0F;
 
     inline constexpr float kSwatchGap = 3.0F;
-
-    [[nodiscard]] widget::WidgetId getSwatchWidget(std::size_t which);
 
     [[nodiscard]] gfx::RectF getPixelPlace(
         tilemap::Tile tile, gfx::RectF whereRect, geometry::GridCell pixelCell);
@@ -89,6 +86,11 @@ namespace antwika::tile
 
     [[nodiscard]] bool isSoleInk(
         std::span<const gfx::Color> paletteColors, std::size_t which);
+
+    [[nodiscard]] gfx::Color soleInkColorOf(
+        std::span<const gfx::Color> paletteColors,
+        std::size_t which,
+        gfx::Color wantedColor);
 
     [[nodiscard]] std::vector<std::size_t> getPaintedWith(
         const gfx::Bitmap &atlasBitmap, gfx::Color color);

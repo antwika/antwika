@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+
 #include "antwika/editor/ui/ColorPicker.hpp"
 
 namespace antwika::editor

@@ -73,6 +73,26 @@ namespace antwika::ui::detail
             return widgetIds[nextIndex % widgetIds.size()];
         }
 
+        [[nodiscard]] bool isShownAt(
+            const LayoutTree &tree,
+            const std::size_t index,
+            const Point point)
+        {
+            for (auto up = tree.getNode(index).parent; up != kNoNode;
+                 up = tree.getNode(up).parent)
+            {
+                const auto &ancestor = tree.getNode(up);
+
+                if (ancestor.clips
+                    && !contains(ancestor.arrangedRect, point))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         [[nodiscard]] bool hitTest(
             const LayoutTree &tree,
             const Pointer &pointer,
@@ -88,7 +108,8 @@ namespace antwika::ui::detail
                     const auto &node = tree.getNode(index);
 
                     if (node.overlay != overlay
-                        || !contains(node.arrangedRect, *pointer.positionPoint))
+                        || !contains(node.arrangedRect, *pointer.positionPoint)
+                        || !isShownAt(tree, index, *pointer.positionPoint))
                     {
                         continue;
                     }
@@ -222,7 +243,9 @@ namespace antwika::ui::detail
         resolveAreas(tree, pointer, underOverlay, interactions, edit);
         resolveRails(
             tree, pointer, underOverlay, thumbWidth, interactions);
+        resolvePanes(tree, pointer, underOverlay, interactions);
         resolveBars(tree, pointer, underOverlay, interactions);
+        resolveEdges(tree, pointer, underOverlay, interactions);
         applyVisualState(tree, interactions, pointer.down);
 
         return interactions;

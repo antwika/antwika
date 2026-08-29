@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string_view>
 
 #include <antwika/gfx/PointF.hpp>
@@ -30,6 +32,8 @@
 namespace antwika::gfx
 {
 
+    inline constexpr std::size_t kMaxTransformDepth = 32;
+
     class IRenderer : public ISurfaceRenderer
     {
     public:
@@ -50,10 +54,18 @@ namespace antwika::gfx
         [[nodiscard]] virtual std::unique_ptr<IRenderTarget>
         createRenderTarget(const RenderTargetSpec &spec) = 0;
 
-        virtual void beginTarget(IRenderTarget &target) = 0;
+        virtual void beginTarget(
+            IRenderTarget &target, std::optional<Rect> regionRect) = 0;
 
-        virtual void beginTargetRegion(
-            IRenderTarget &target, Rect regionRect) = 0;
+        void beginTarget(IRenderTarget &target)
+        {
+            beginTarget(target, std::nullopt);
+        }
+
+        void beginTargetRegion(IRenderTarget &target, const Rect regionRect)
+        {
+            beginTarget(target, regionRect);
+        }
 
         virtual void endTarget() = 0;
 
@@ -106,7 +118,7 @@ namespace antwika::gfx
         [[nodiscard]] TargetScope targetScope(
             IRenderTarget &target, const Rect regionRect)
         {
-            beginTargetRegion(target, regionRect);
+            beginTarget(target, regionRect);
 
             return TargetScope{*this};
         }

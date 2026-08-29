@@ -2,7 +2,6 @@
 #include <antwika/component/Position.hpp>
 #include <antwika/decor/Decor.hpp>
 #include <antwika/editor/ui/EditorLook.hpp>
-#include <antwika/editor/ui/MapPicker.hpp>
 #include <antwika/gfx/Camera3D.hpp>
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Math3D.hpp>
@@ -16,6 +15,7 @@
 #include <antwika/voxelmap/VoxelPick.hpp>
 
 #include "antwika/editor/Editor.hpp"
+#include "antwika/editor/ui/WidgetCatalog.hpp"
 
 namespace antwika::editor
 {
@@ -24,23 +24,25 @@ namespace antwika::editor
     {
         play.game->stepAlongPath(play.playing);
         moveCamera();
-        play.game->setWalkerFrozen(
-            !play.playing || getHeldModifiers().control || getHeldModifiers().shift
-                || getHeldModifiers().alt);
-        play.game->setWorldFrozen(!play.playing);
-        play.game->setSpeaking(
-            tick < caption.untilTick && caption.speaker.has_value()
+        play.simulationState.walkerHeld =
+            !play.playing || getHeldModifiers().control
+            || getHeldModifiers().shift || getHeldModifiers().alt;
+        play.simulationState.simulationPaused = !play.playing;
+        play.simulationState.speaking =
+            tick < simulation.caption.untilTick
+                    && simulation.caption.speaker.has_value()
                 ? std::optional<std::uint32_t>(
-                      static_cast<std::uint32_t>(*caption.speaker))
-                : std::nullopt);
-        play.game->setRosterCount(document.map.characters.size());
+                      static_cast<std::uint32_t>(*simulation.caption.speaker))
+                : std::nullopt;
+        play.simulationState.characterCount = document.map.characters.size();
+        play.game->setSimulation(play.simulationState);
         play.game->run(tick);
-        sayConsumeReport();
-        sayDialogueLine();
+        simulation.sayConsumeReport(*play.game);
+        simulation.sayDialogueLine(*play.game);
 
         if (play.playing && !play.game->getWorld().isAlive(play.game->getPlayer()))
         {
-            sayCaption("the walker", "it gave out");
+            simulation.sayCaption("the walker", "it gave out");
             standPlayer();
         }
 
@@ -51,7 +53,7 @@ namespace antwika::editor
 
         if (play.playing)
         {
-            onSteppedWorld(walkerPosition);
+            onSteppedWorld();
         }
 
         if (preferences.cameraFollows && play.playing)
@@ -71,9 +73,9 @@ namespace antwika::editor
         }
 
         const auto keptTransform = play.game->getCameraTransform();
-        const auto keptZoom = play.game->zoom();
-        const auto target = play.game->cameraTarget();
-        const auto gates = play.game->getGates();
+        const auto keptZoom = play.game->getZoom();
+        const auto target = play.game->getCameraTarget();
+        const auto checkpoint = play.game->getCheckpoint();
 
         if (!play.game.reload())
         {
@@ -88,9 +90,9 @@ namespace antwika::editor
         }
 
         play.game->getCameraTransform() = keptTransform;
-        play.game->zoom() = keptZoom;
-        play.game->cameraTarget() = target;
-        play.game->getGates() = gates;
+        play.game->setZoom(keptZoom);
+        play.game->setCameraTarget(target);
+        play.game->setCheckpoint(checkpoint);
 
         logger.log(log::Level::Info, "the game module was reloaded");
         showStatus("the game module was reloaded");
@@ -111,7 +113,8 @@ namespace antwika::editor
         }
 
         for (std::size_t tickCount = 0;
-             tickDebt.owesTick() && tickCount < app::kMaxCatchUpTicks;
+             running && tickDebt.owesTick()
+             && tickCount < app::kMaxCatchUpTicks;
              ++tickCount)
         {
             tickDebt.payTick();
@@ -140,7 +143,7 @@ namespace antwika::editor
                           model,
                           camera::kCanvasSize,
                           pointer.pointerOnCanvas,
-                          antwika::voxel::getCubeTop(worldView.worldEdit.editLevel));
+                          antwika::voxel::getCubeTop(worldView.worldEdit().getEditLevel()));
             const auto anchoredTarget =
                 play.playing
                     ? walkerPosition
@@ -153,7 +156,7 @@ namespace antwika::editor
                               + 0.5F,
                           static_cast<float>(
                               antwika::voxel::getCubeTop(
-                                  worldView.worldEdit.editLevel))
+                                  worldView.worldEdit().getEditLevel()))
                               + 0.5F,
                           static_cast<float>(
                               aimedRotation.value_or(
@@ -218,9 +221,11 @@ namespace antwika::editor
                 viewportRenderer,
                 render::WorldShaderInputs{
                     .playing = play.playing,
-                    .lighting = document.map.settings.lighting,
+                    .lighting = play.playing
+                                    ? document.map.settings.lighting
+                                    : preferences.lighting,
                     .sightOn = preferences.lampSight && play.playing
-                               && worldView.worldEdit.lowerLight,
+                               && worldView.worldEdit().lowerLight,
                     .ambient =
                         static_cast<float>(document.map.ambient) / 100.0F,
                     .walkerPosition = walkerPosition,
@@ -228,7 +233,8 @@ namespace antwika::editor
                         play.playing
                             ? walkerStood.y
                             : (static_cast<float>(
-                                   antwika::voxel::getCubeTop(worldView.worldEdit.editLevel)
+                                   antwika::voxel::getCubeTop(
+                                       worldView.worldEdit().getEditLevel())
                                    - voxel::kCubeSide)
                                + 0.5F)
                                   * antwika::voxel::kVoxelSide,
@@ -240,7 +246,12 @@ namespace antwika::editor
                     .upperSightPoint =
                         antwika::voxel::getUpperLineOfSight(walkerPosition),
                     .upperSightSlot = 1,
-                    .upperSightOn = worldView.isUpperSightOn(viewContextNow())},
+                    .upperSightOn = worldView.isUpperSightOn(viewContextNow()),
+                    .viewPosition =
+                        getWorldCamera(play, cameraRig).getPosition(),
+                    .viewTargetPoint =
+                        getWorldCamera(play, cameraRig).getTarget(),
+                    .backdropColor = kPlayBackgroundColor},
                 lights,
                 lightPasses.getLamps());
         }
@@ -253,7 +264,7 @@ namespace antwika::editor
         viewportRenderer.clear(
             play.playing ? kPlayBackgroundColor : kEditorBackgroundColor);
 
-        if (viewChoice.activeView == map::View::Atlases && stroke.selectedTile.has_value())
+        if (viewChoice.activeView == View::Atlases && stroke.selectedTile.has_value())
         {
             const auto seedNow =
                 preview.automatic ? tick / 62 : preview.seed;
@@ -273,8 +284,8 @@ namespace antwika::editor
 
         const auto uiResting =
             play.playing && !dialogs.quitConfirmOpen && !keyBench.panelShown
-            && !dialogs.fileDialog.has_value()
-            && !inkPicker.editingInk.has_value()
+            && !fileChooser.fileDialog.has_value()
+            && !inkPanel.inkPicker.editingInk.has_value()
             && !keyBench.rebindingAction.has_value() && !slidingWidget.has_value()
             && focusedField == FocusedField::Nothing;
 
@@ -299,117 +310,46 @@ namespace antwika::editor
             view->carryFrame(uiFrame, viewContextNow());
         }
 
-        if (dialogs.fileDialog.has_value() && dialogs.fileDialog->isSaveMode
-            && uiFrame.interactions.edit.has_value()
-            && uiFrame.interactions.edit->fieldWidget
-                   == antwika::editor::kPickerNameWidget)
+        if (uiFrame.interactions.edit.has_value())
         {
-            dialogs.fileDialog->fileName =
-                uiFrame.interactions.edit->text;
+            for (const auto &row : getWidgetCatalog().fieldRows)
+            {
+                if (uiFrame.interactions.edit->fieldWidget == row.widget)
+                {
+                    row.editEffect(*this, uiFrame.interactions.edit->text);
+                }
+            }
+
+            widget_catalog::carryFamilyEdit(
+                getWidgetCatalog(),
+                *this,
+                uiFrame.interactions.edit->fieldWidget,
+                uiFrame.interactions.edit->text);
         }
 
-        if (inkPicker.editingInk.has_value()
-            && uiFrame.interactions.edit.has_value()
-            && uiFrame.interactions.edit->fieldWidget
-                   == decor::kInkHexWidget)
+        if (uiFrame.interactions.slidChange.has_value())
         {
-            inkPicker.hexText = uiFrame.interactions.edit->text;
-
-            const auto parsedColor = getColorFromHex(inkPicker.hexText);
-
-            if (parsedColor.has_value())
+            for (const auto &row : getWidgetCatalog().sliderRows)
             {
-                recolorInk(*parsedColor);
-                inkPicker.pickerHsv = hsvOf(*parsedColor);
+                if (slidingWidget == row.widget
+                    && uiFrame.interactions.slidChange->sliderWidget
+                           == row.widget)
+                {
+                    row.slideEffect(
+                        *this, uiFrame.interactions.slidChange->value);
+                }
             }
         }
 
-        if (slidingWidget == decor::kFrequencyWidget
-            && stroke.selectedTile.has_value()
-            && uiFrame.interactions.slidChange.has_value()
-            && uiFrame.interactions.slidChange->sliderWidget
-                   == decor::kFrequencyWidget)
+        if (uiFrame.interactions.edge.has_value()
+            && pointer.heldEdgeWidget
+                   == uiFrame.interactions.edge->edgeWidget)
         {
-            document.map.decor = getWithFrequencySet(
-                document.map.decor,
-                *stroke.selectedTile,
-                static_cast<std::uint8_t>(
-                    uiFrame.interactions.slidChange->value));
+            static_cast<void>(beginEdgeDrag(uiFrame.interactions));
         }
 
-        if (slidingWidget == decor::kDecorWeightWidget
-            && stroke.selectedTile.has_value()
-            && uiFrame.interactions.slidChange.has_value()
-            && uiFrame.interactions.slidChange->sliderWidget
-                   == decor::kDecorWeightWidget)
-        {
-            document.map.decor = getWithWeightSet(
-                document.map.decor,
-                *stroke.selectedTile,
-                static_cast<std::uint8_t>(
-                    uiFrame.interactions.slidChange->value));
-        }
-
-        if (slidingWidget == antwika::editor::kGlowWidget
-            && inkPicker.editingInk.has_value()
-            && *inkPicker.editingInk < document.map.glows.size()
-            && uiFrame.interactions.slidChange.has_value()
-            && uiFrame.interactions.slidChange->sliderWidget
-                   == antwika::editor::kGlowWidget)
-        {
-            document.map.glows.at(*inkPicker.editingInk) =
-                static_cast<std::uint8_t>(
-                    uiFrame.interactions.slidChange->value);
-        }
-
-        if (slidingWidget == antwika::editor::kAmbientWidget
-            && uiFrame.interactions.slidChange.has_value()
-            && uiFrame.interactions.slidChange->sliderWidget
-                   == antwika::editor::kAmbientWidget)
-        {
-            document.map.ambient = static_cast<std::uint8_t>(
-                uiFrame.interactions.slidChange->value);
-        }
-
-        if (slidingWidget
-                == decor::kVariantWeightWidget
-            && stroke.selectedTile.has_value()
-            && uiFrame.interactions.slidChange.has_value()
-            && uiFrame.interactions.slidChange->sliderWidget
-                   == decor::kVariantWeightWidget)
-        {
-            document.map.familyGroups = getWithVariantWeightSet(
-                document.map.familyGroups,
-                *stroke.selectedTile,
-                static_cast<std::uint8_t>(
-                    uiFrame.interactions.slidChange->value));
-        }
-
-        if (focusedField == FocusedField::ExitTarget
-            && uiFrame.interactions.edit.has_value()
-            && uiFrame.interactions.edit->fieldWidget
-                   == antwika::editor::kExitTargetWidget)
-        {
-            document.map.exitTarget = uiFrame.interactions.edit->text;
-        }
-
-        if (focusedField == FocusedField::FigureName && worldView.figureTool.chosenIndex.has_value()
-            && *worldView.figureTool.chosenIndex < document.map.characters.size()
-            && uiFrame.interactions.edit.has_value()
-            && uiFrame.interactions.edit->fieldWidget
-                   == antwika::editor::kFigureNameWidget)
-        {
-            document.map.characters.at(*worldView.figureTool.chosenIndex).name =
-                uiFrame.interactions.edit->text;
-        }
-
-        if (focusedField == FocusedField::FigureLine
-            && uiFrame.interactions.edit.has_value()
-            && uiFrame.interactions.edit->fieldWidget
-                   == antwika::editor::kFigureLineWidget)
-        {
-            worldView.figureTool.pendingLine = uiFrame.interactions.edit->text;
-        }
+        carryComponentScroll(uiFrame.interactions);
+        carryEntityListScroll(uiFrame.interactions);
 
         if (remesh.afterNudge && tick >= remesh.lastWheelNudgeTick + 15)
         {
@@ -419,6 +359,7 @@ namespace antwika::editor
 
         keyBench.typedThisFrame.clear();
         keyBench.keysNow.clear();
+        pointer.wheelSteps = 0;
 
         if (auto *view = viewNow(); view != nullptr)
         {

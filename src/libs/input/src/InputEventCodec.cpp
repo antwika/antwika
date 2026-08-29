@@ -3,6 +3,7 @@
 #include <nlohmann/json-schema.hpp>
 #include <nlohmann/json.hpp>
 
+#include <array>
 #include <cstdint>
 #include <limits>
 #include <optional>
@@ -159,7 +160,8 @@ namespace antwika::input
             return antwika::schema::parseAndValidatePayload<InputError>(
                 event.payload,
                 validator,
-                "InputEventCodec: " + event.name + " payload");
+                "InputEventCodec: " + std::string(event.name.getText())
+                    + " payload");
         }
 
         template <typename Edge>
@@ -248,6 +250,77 @@ namespace antwika::input
                 return payload.dump();
             }
         };
+
+        [[nodiscard]] InputEvent getDecodedKeyPressed(
+            const nlohmann::json &payload)
+        {
+            return KeyPressed{
+                .key = getKeyFromString(payload.at("key").get<std::string>()),
+                .modifiers = getReadModifiers(payload),
+                .repeat = payload.at("repeat").get<bool>()};
+        }
+
+        [[nodiscard]] InputEvent getDecodedKeyReleased(
+            const nlohmann::json &payload)
+        {
+            return KeyReleased{
+                .key = getKeyFromString(payload.at("key").get<std::string>()),
+                .modifiers = getReadModifiers(payload)};
+        }
+
+        [[nodiscard]] InputEvent getDecodedPointerMoved(
+            const nlohmann::json &payload)
+        {
+            return PointerMoved{.position = getReadPosition(payload)};
+        }
+
+        [[nodiscard]] InputEvent getDecodedPointerButtonPressed(
+            const nlohmann::json &payload)
+        {
+            return buttonEdge<PointerButtonPressed>(payload);
+        }
+
+        [[nodiscard]] InputEvent getDecodedPointerButtonReleased(
+            const nlohmann::json &payload)
+        {
+            return buttonEdge<PointerButtonReleased>(payload);
+        }
+
+        [[nodiscard]] InputEvent getDecodedPointerScrolled(
+            const nlohmann::json &payload)
+        {
+            return PointerScrolled{ // GCOVR_EXCL_LINE
+                .horizontal = payload.at("horizontal").get<std::int32_t>(),
+                .vertical = payload.at("vertical").get<std::int32_t>()};
+        }
+
+        struct EventDecoder final
+        {
+            antwika::event::EventName name;
+            const Validator &(*getValidator)();
+            InputEvent (*getDecodedInputEvent)(const nlohmann::json &payload);
+        };
+
+        constexpr std::array<EventDecoder, 6> kEventDecoders{{
+            {events::kKeyDown,
+             validatorFor<getKeyDownSchema>,
+             getDecodedKeyPressed},
+            {events::kKeyUp,
+             validatorFor<getKeyUpSchema>,
+             getDecodedKeyReleased},
+            {events::kPointerMove,
+             validatorFor<getPointerMoveSchema>,
+             getDecodedPointerMoved},
+            {events::kPointerDown,
+             validatorFor<getPointerButtonSchema>,
+             getDecodedPointerButtonPressed},
+            {events::kPointerUp,
+             validatorFor<getPointerButtonSchema>,
+             getDecodedPointerButtonReleased},
+            {events::kPointerScroll,
+             validatorFor<getPointerScrollSchema>,
+             getDecodedPointerScrolled},
+        }};
     }
 
     Event InputEventCodec::getEncodedEvent(const InputEvent &event) const
@@ -257,55 +330,13 @@ namespace antwika::input
 
     std::optional<InputEvent> InputEventCodec::getDecodedEvent(const Event &event) const
     {
-        if (event.name == events::kKeyDown)
+        for (const auto &entry : kEventDecoders)
         {
-            const auto payload =
-                getParsedDocument(event, validatorFor<getKeyDownSchema>());
-
-            return KeyPressed{
-                .key = getKeyFromString(payload.at("key").get<std::string>()),
-                .modifiers = getReadModifiers(payload),
-                .repeat = payload.at("repeat").get<bool>()};
-        }
-
-        if (event.name == events::kKeyUp)
-        {
-            const auto payload =
-                getParsedDocument(event, validatorFor<getKeyUpSchema>());
-
-            return KeyReleased{
-                .key = getKeyFromString(payload.at("key").get<std::string>()),
-                .modifiers = getReadModifiers(payload)};
-        }
-
-        if (event.name == events::kPointerMove)
-        {
-            const auto payload =
-                getParsedDocument(event, validatorFor<getPointerMoveSchema>());
-
-            return PointerMoved{.position = getReadPosition(payload)};
-        }
-
-        if (event.name == events::kPointerDown)
-        {
-            return buttonEdge<PointerButtonPressed>(
-                getParsedDocument(event, validatorFor<getPointerButtonSchema>()));
-        }
-
-        if (event.name == events::kPointerUp)
-        {
-            return buttonEdge<PointerButtonReleased>(
-                getParsedDocument(event, validatorFor<getPointerButtonSchema>()));
-        }
-
-        if (event.name == events::kPointerScroll)
-        {
-            const auto payload =
-                getParsedDocument(event, validatorFor<getPointerScrollSchema>());
-
-            return PointerScrolled{ // GCOVR_EXCL_LINE
-                .horizontal = payload.at("horizontal").get<std::int32_t>(),
-                .vertical = payload.at("vertical").get<std::int32_t>()};
+            if (event.name == entry.name)
+            {
+                return entry.getDecodedInputEvent(
+                    getParsedDocument(event, entry.getValidator()));
+            }
         }
 
         return std::nullopt;

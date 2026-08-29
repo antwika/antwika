@@ -6,6 +6,8 @@
 #include <antwika/ecs/World.hpp>
 #include <antwika/time/Tick.hpp>
 
+#include "antwika/system/SimulationState.hpp"
+
 namespace antwika::system
 {
 
@@ -14,12 +16,12 @@ namespace antwika::system
     class TalkSystem final : public ecs::ISystem
     {
     public:
-        void setRosterCount(std::size_t rosterCount) noexcept;
+        explicit TalkSystem(const SimulationState &simulation) noexcept;
 
         void update(ecs::World &world, time::Tick tick) override;
 
     private:
-        std::size_t rosterCount = 0;
+        const SimulationState *simulation;
     };
 
 }

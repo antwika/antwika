@@ -41,6 +41,11 @@ namespace antwika::gfx::raylib
             SetConfigFlags(FLAG_WINDOW_HIDDEN);
         }
 
+        if (spec.targetFps > 0)
+        {
+            SetConfigFlags(FLAG_VSYNC_HINT);
+        }
+
         InitWindow(
             static_cast<int>(spec.size.width),
             static_cast<int>(spec.size.height),
@@ -55,6 +60,11 @@ namespace antwika::gfx::raylib
         }
 
         SetExitKey(KEY_NULL);
+
+        if (spec.targetFps > 0)
+        {
+            SetTargetFPS(static_cast<int>(spec.targetFps));
+        }
 
         if (spec.hidden)
         {

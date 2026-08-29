@@ -8,7 +8,7 @@ antwika_add_library(
         src/VoxelWeaveWants.cpp
     DEPENDS
         antwika::enums
-        antwika::gfx
+        antwika::geometry
         antwika::tilemap
         antwika::tile
         antwika::voxel

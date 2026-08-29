@@ -17,6 +17,9 @@ namespace antwika::component
         gfx::Color tintColor = kLampTintColor;
         float aboveHeight = kCarriedLightHeight;
         float reach = kCarriedLightRange;
+
+        [[nodiscard]] bool operator==(
+            const CarriedLight &other) const = default;
     };
 
 }

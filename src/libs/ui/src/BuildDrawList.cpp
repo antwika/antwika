@@ -156,7 +156,7 @@ namespace antwika::ui::detail
                 const auto measuredSize =
                     antwika::text::getTextSize(node.text, node.textScale);
 
-                if (node.arrangedRect.size.height < measuredSize.height)
+                if (node.arrangedRect.size.height == 0)
                 {
                     continue;
                 }
@@ -171,11 +171,25 @@ namespace antwika::ui::detail
                     continue;
                 }
 
+                const bool cropped =
+                    node.arrangedRect.size.height < measuredSize.height;
+
+                if (cropped)
+                {
+                    drawList.push_back(
+                        PushClip{.rect = node.arrangedRect});
+                }
+
                 drawList.push_back(DrawText{ // GCOVR_EXCL_LINE
                     .originPoint = node.arrangedRect.originPoint,
                     .text = node.text.substr(0, cells),
                     .scale = node.textScale,
                     .color = node.textColor});
+
+                if (cropped)
+                {
+                    drawList.push_back(PopClip{});
+                }
             }
 
             while (!clippedNodes.empty())

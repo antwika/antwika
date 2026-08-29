@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include <antwika/event/EngineEvents.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/replay/ReplaySource.hpp>
@@ -12,6 +13,8 @@
 #include "antwika/input/MouseButton.hpp"
 
 using antwika::event::Event;
+using antwika::event::kTick;
+using antwika::event::EventName;
 using antwika::event::TickEvent;
 using antwika::input::CoalescingPointerSource;
 using antwika::input::InputEventCodec;
@@ -42,10 +45,10 @@ namespace
                     PointerButtonPressed{.button = MouseButton::Left})};
     }
 
-    [[nodiscard]] std::vector<std::string> namesOf(
+    [[nodiscard]] std::vector<EventName> namesOf(
         const std::vector<Event> &events)
     {
-        std::vector<std::string> names;
+        std::vector<EventName> names;
         for (const auto &event : events)
         {
             names.push_back(event.name);
@@ -82,7 +85,7 @@ TEST(CoalescingPointerSourceTest, EventsFor_KeepsTheMovementBeforeAClick)
 
     EXPECT_EQ(
         namesOf(source.eventsFor(0)),
-        (std::vector<std::string>{
+        (std::vector<EventName>{
             events::kPointerMove,
             events::kPointerDown,
             events::kPointerMove}));
@@ -113,13 +116,13 @@ TEST(CoalescingPointerSourceTest, EventsFor_ThinsEachRunSeparately)
 TEST(CoalescingPointerSourceTest, EventsFor_LeavesEverythingElseAlone)
 {
     ReplaySource innerSource(
-        {TickEvent{.tick = 0, .event = Event{.name = "engine.tick"}},
+        {TickEvent{.tick = 0, .event = Event{.name = kTick}},
          getClickEvent()});
     CoalescingPointerSource source(innerSource);
 
     EXPECT_EQ(
         namesOf(source.eventsFor(0)),
-        (std::vector<std::string>{"engine.tick", events::kPointerDown}));
+        (std::vector<EventName>{kTick, events::kPointerDown}));
 }
 
 TEST(CoalescingPointerSourceTest, EventsFor_PassesAnEmptyTickThrough)

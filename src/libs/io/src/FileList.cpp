@@ -40,12 +40,10 @@ namespace antwika::io
 
         listedEntry.push_back(std::move(upEntry));
 
-        std::error_code errorCode;
+        std::error_code openCode;
+        std::filesystem::directory_iterator entries(directory, openCode);
 
-        const std::filesystem::directory_iterator entries(
-            directory, errorCode);
-
-        if (errorCode)
+        if (openCode)
         {
             return listedEntry;
         }
@@ -53,16 +51,26 @@ namespace antwika::io
         std::vector<std::string> folders;
         std::vector<std::string> files;
 
-        for (const auto &entry : entries)
+        const std::filesystem::directory_iterator pastEnd;
+
+        std::error_code stepCode;
+
+        while (entries != pastEnd && !stepCode)
         {
-            if (entry.is_directory(errorCode))
+            const auto &entry = *entries;
+
+            std::error_code statusCode;
+
+            if (entry.is_directory(statusCode))
             {
                 folders.push_back(entry.path().filename().string());
             }
-            else if (entry.is_regular_file(errorCode))
+            else if (entry.is_regular_file(statusCode))
             {
                 files.push_back(entry.path().filename().string());
             }
+
+            entries.increment(stepCode);
         }
 
         appendSorted(listedEntry, std::move(folders), true);

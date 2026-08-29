@@ -7,11 +7,6 @@ namespace antwika::editor
 
     void Editor::takeExit()
     {
-        if (!tryUnlockExit())
-        {
-            return;
-        }
-
         logger.log(log::Level::Info, "the exit was reached");
 
         if (document.map.exitTarget.empty())
@@ -28,9 +23,7 @@ namespace antwika::editor
 
         const auto was = document.getPath();
 
-        document.openAt((std::filesystem::path(document.getPath()).parent_path()
-                   / document.map.exitTarget)
-                      .string());
+        document.openAt(document.getSiblingPath(document.map.exitTarget));
 
         if (!loadCurrentMap())
         {
@@ -39,6 +32,7 @@ namespace antwika::editor
             return;
         }
 
+        keepMapForPlay();
         play.playing = true;
         aimPlayCamera();
 
@@ -50,9 +44,7 @@ namespace antwika::editor
 
     std::string Editor::getProgressPath() const
     {
-        return (std::filesystem::path(document.getStartPath()).parent_path()
-                / "progress.json")
-            .string();
+        return document.getStartSiblingPath("progress.json");
     }
 
     void Editor::savePlayerProgress()

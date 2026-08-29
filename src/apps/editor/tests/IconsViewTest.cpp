@@ -158,7 +158,10 @@ TEST(IconsViewTest, Draw_DrawsEveryIconAndTheOneTakenUp)
         .Times(::testing::AtLeast(
             static_cast<int>(kIconCellSize.width * kIconCellSize.height)));
 
-    icons.drawSheet(viewportRenderer);
+    icons.drawSheet(
+        viewportRenderer,
+        antwika::editor::getIconSheetBounds(antwika::camera::kCanvasSize),
+        antwika::editor::getIconDrawBounds(antwika::camera::kCanvasSize));
 }
 
 TEST(IconsViewTest, Draw_LeavesTheBlownUpIconOutWhereNoneIsTakenUp)
@@ -171,7 +174,29 @@ TEST(IconsViewTest, Draw_LeavesTheBlownUpIconOutWhereNoneIsTakenUp)
     icons.open(viewportRenderer, getBlankSheet(kSomeIcons));
     icons.pick(std::nullopt);
 
-    EXPECT_CALL(innerRenderer, drawRect).Times(0);
+    EXPECT_CALL(innerRenderer, drawRect).Times(2);
 
-    icons.drawSheet(viewportRenderer);
+    icons.drawSheet(
+        viewportRenderer,
+        antwika::editor::getIconSheetBounds(antwika::camera::kCanvasSize),
+        antwika::editor::getIconDrawBounds(antwika::camera::kCanvasSize));
+}
+
+TEST(IconsViewTest, Draw_ClipsTheSheetAndTheDrawingToTheirOwnPanels)
+{
+    NiceMock<MockRenderer> innerRenderer;
+    handsOutTextures(innerRenderer);
+    ViewportRenderer viewportRenderer(innerRenderer, kWindowSize, kCanvasSize);
+    IconsView icons;
+
+    icons.open(viewportRenderer, getBlankSheet(kSomeIcons));
+    icons.pick(1);
+
+    EXPECT_CALL(innerRenderer, beginClip).Times(2);
+    EXPECT_CALL(innerRenderer, endClip).Times(2);
+
+    icons.drawSheet(
+        viewportRenderer,
+        antwika::editor::getIconSheetBounds(antwika::camera::kCanvasSize),
+        antwika::editor::getIconDrawBounds(antwika::camera::kCanvasSize));
 }

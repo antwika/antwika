@@ -4,17 +4,18 @@ antwika_add_library(
         src/AnimationSystem.cpp
         src/ConsumeSystem.cpp
         src/HealthSystem.cpp
-        src/OrientationSystem.cpp
+        src/MoveIntentSystem.cpp
+        src/PadSystem.cpp
         src/PatrolSystem.cpp
+        src/PickupSystem.cpp
         src/TalkSystem.cpp
         src/TickPacer.cpp
-        src/WalkerSystems.cpp
+        src/WalkSystem.cpp
     DEPENDS
         antwika::character
         antwika::component
         antwika::ecs
-        antwika::gfx
-        antwika::intent
+        antwika::geometry
         antwika::pathfinding
         antwika::rules
         antwika::time

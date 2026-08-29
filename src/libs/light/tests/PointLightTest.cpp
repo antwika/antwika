@@ -11,6 +11,7 @@
 #include <antwika/component/Position.hpp>
 #include <antwika/component/Velocity.hpp>
 #include <antwika/gfx/Math3D.hpp>
+#include <antwika/voxel/VoxelCube.hpp>
 
 #include <antwika/light/PointLight.hpp>
 
@@ -20,7 +21,7 @@ namespace
     constexpr float kTolerance = 0.001F;
 }
 
-TEST(PointLightTest, WithLampAt_SetsOneDownWhereItIsAsked)
+TEST(PointLightTest, WithLampAt_SetsOneDownInTheCubeItIsAsked)
 {
     using antwika::voxel::VoxelPosition;
 using antwika::voxel::VoxelPosition;
@@ -33,7 +34,9 @@ using antwika::voxel::VoxelPosition;
     const auto lamps = withLampAt({}, wherePosition, tintColor);
 
     ASSERT_EQ(lamps.size(), 1U);
-    EXPECT_EQ(lamps.front().position, wherePosition);
+    EXPECT_EQ(
+        lamps.front().position,
+        antwika::voxel::cubeCornerOf(wherePosition));
     EXPECT_EQ(lamps.front().tintColor, tintColor);
 }
 
@@ -66,7 +69,10 @@ using antwika::voxel::VoxelPosition;
          index < static_cast<std::int32_t>(kMaxLamps) + 3;
          ++index)
     {
-        lamps = withLampAt(lamps, VoxelPosition{.x = index}, {});
+        lamps = withLampAt(
+            lamps,
+            VoxelPosition{.x = index * antwika::voxel::kCubeSide},
+            {});
     }
 
     EXPECT_EQ(lamps.size(), kMaxLamps);
@@ -93,7 +99,7 @@ using antwika::voxel::VoxelPosition;
 
 TEST(PointLightTest, LampGizmoSpans_CrossesTheMiddleOfItsOwnPlace)
 {
-    using antwika::voxelmap::getCellMiddle;
+    using antwika::voxelmap::getCubeMiddle;
     using antwika::light::Lamp;
     using antwika::light::getLampGizmoSpans;
     using antwika::voxel::VoxelPosition;
@@ -101,7 +107,7 @@ using antwika::voxel::VoxelPosition;
 
     constexpr Lamp lamp{.position = VoxelPosition{.x = 2, .y = -1, .z = 5}};
 
-    const auto middle = getCellMiddle(lamp.position);
+    const auto middle = getCubeMiddle(lamp.position);
     const auto spans = getLampGizmoSpans(lamp);
 
     EXPECT_FALSE(spans.empty());
@@ -293,4 +299,47 @@ TEST(PointLightTest, SightRange_LooksFurtherThanALampCarries)
 
     EXPECT_GT(kSightRange, kLampRange);
     EXPECT_GE(kLampFarPlane, kSightRange);
+}
+
+TEST(PointLightTest, LampPosition_SitsInTheMiddleOfTheCubeItIsIn)
+{
+    using antwika::light::Lamp;
+    using antwika::light::getLampPosition;
+    using antwika::voxel::VoxelPosition;
+    using antwika::voxelmap::getCubeMiddle;
+
+    constexpr VoxelPosition wherePosition{.x = 1, .y = 2, .z = 3};
+    const auto middle = getCubeMiddle(wherePosition);
+    const auto position =
+        getLampPosition(Lamp{.position = wherePosition});
+
+    EXPECT_NEAR(position.x, middle.x, kTolerance);
+    EXPECT_NEAR(position.y, middle.y, kTolerance);
+    EXPECT_NEAR(position.z, middle.z, kTolerance);
+}
+
+TEST(PointLightTest, WithoutLampAt_TakesTheLampAnywhereInTheCube)
+{
+    using antwika::light::withLampAt;
+    using antwika::light::withoutLampAt;
+    using antwika::voxel::VoxelPosition;
+
+    const auto lamps = withoutLampAt(
+        withLampAt({}, VoxelPosition{}, {}),
+        VoxelPosition{.x = 1, .y = 1, .z = 1});
+
+    EXPECT_TRUE(lamps.empty());
+}
+
+TEST(PointLightTest, WithLampAt_KeepsOneLampToACube)
+{
+    using antwika::light::withLampAt;
+    using antwika::voxel::VoxelPosition;
+
+    const auto lamps = withLampAt(
+        withLampAt({}, VoxelPosition{}, {}),
+        VoxelPosition{.x = 1, .y = 1, .z = 1},
+        {});
+
+    EXPECT_EQ(lamps.size(), 1U);
 }

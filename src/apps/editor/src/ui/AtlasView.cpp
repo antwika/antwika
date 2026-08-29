@@ -2,84 +2,100 @@
 
 #include <antwika/input/Key.hpp>
 #include <antwika/gfx/SizeF.hpp>
+
 #include "antwika/editor/ui/EditorLook.hpp"
 #include "antwika/editor/ui/TilemapView.hpp"
+#include "antwika/editor/ui/WidgetIds.hpp"
 
 namespace antwika::editor
 {
 
-    namespace
-    {
-        constexpr std::uint64_t kBoundaryToggleWidget = 176;
-
-        constexpr std::uint64_t kForbiddenToggleWidget = 177;
-
-        constexpr std::uint64_t kFirstTabWidget = 405;
-    }
-
-    map::View getViewAfterKey(
-        const map::View view, const input::Key key, const bool back)
+    View getViewAfterKey(
+        const View view, const input::Key key, const bool back)
     {
         if (key == input::Key::Digit1)
         {
-            return map::View::World;
+            return View::World;
         }
 
         if (key == input::Key::Digit2)
         {
-            return map::View::Atlases;
+            return View::Atlases;
         }
 
         if (key == input::Key::Digit3)
         {
-            return map::View::Character;
+            return View::Character;
         }
 
         if (key == input::Key::Digit4)
         {
-            return map::View::Icons;
+            return View::Icons;
         }
 
         if (key == input::Key::Digit5)
         {
-            return map::View::Plan;
+            return View::Plan;
+        }
+
+        if (key == input::Key::Digit6)
+        {
+            return View::Gizmos;
         }
 
         if (key == input::Key::Tab)
         {
-            const auto ways = enums::kCount<map::View>;
-
-            return enums::wrapToEnum<map::View>(
-                enums::index(view) + (back ? ways - 1 : 1));
+            return back ? getViewBefore(view) : getViewAfter(view);
         }
 
         return view;
     }
 
-    std::string_view getTabName(const map::View view)
+    std::optional<SheetNames> getSheetNames(const View view)
     {
         switch (view)
         {
-        case map::View::World:
+        case View::Atlases:
+            return SheetNames{.sheetName = "Tiles", .drawName = "Drawing"};
+        case View::Character:
+            return SheetNames{.sheetName = "Frames", .drawName = "Drawing"};
+        case View::Icons:
+            return SheetNames{.sheetName = "Icons", .drawName = "Drawing"};
+        case View::Gizmos:
+            return SheetNames{.sheetName = "Gizmos", .drawName = "Drawing"};
+        case View::World:
+        case View::Plan:
+            break;
+        }
+
+        return std::nullopt;
+    }
+
+    std::string_view getTabName(const View view)
+    {
+        switch (view)
+        {
+        case View::World:
             return "World";
-        case map::View::Atlases:
+        case View::Atlases:
             return "Tiles";
-        case map::View::Character:
+        case View::Character:
             return "Characters";
-        case map::View::Icons:
+        case View::Icons:
             return "Icons";
-        case map::View::Plan:
+        case View::Plan:
             return "Plan";
+        case View::Gizmos:
+            return "Gizmos";
         }
 
         return "";
     }
 
-    widget::WidgetId getTabWidget(const map::View view)
+    widget::WidgetId getTabWidget(const View view)
     {
-        return widget::WidgetId{
-            kFirstTabWidget
-            + static_cast<std::uint64_t>(view)};
+        return getWidgetAfter(
+            kFirstTabWidget, static_cast<std::uint64_t>(view));
     }
 
     std::uint32_t getRailWidth(
@@ -407,9 +423,9 @@ namespace antwika::editor
 
     widget::WidgetId getEdgeToggleWidget(const EdgeToggle whichToggle)
     {
-        return widget::WidgetId{
-            whichToggle == EdgeToggle::Boundary ? kBoundaryToggleWidget
-                         : kForbiddenToggleWidget};
+        return whichToggle == EdgeToggle::Boundary
+                   ? kBoundaryToggleWidget
+                   : kForbiddenToggleWidget;
     }
 
     std::string_view getEdgeToggleName(const EdgeToggle whichToggle)

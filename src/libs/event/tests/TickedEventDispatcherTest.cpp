@@ -10,6 +10,7 @@
 #include "antwika/event/TickedEventDispatcher.hpp"
 
 using antwika::event::Event;
+using antwika::event::EventName;
 using antwika::event::TickedEventDispatcher;
 using antwika::event::TickEvent;
 using antwika::event::mocks::MockEventDispatcher;
@@ -28,11 +29,11 @@ TEST(TickedEventDispatcherTest, Dispatch_RefusesReentryFromASink)
             [&tickedEventDispatcher](const TickEvent &)
             {
                 tickedEventDispatcher.dispatch(
-                    Event{.name = "derived"});
+                    Event{.name = EventName{"derived"}});
             });
 
     EXPECT_THROW(
-        tickedEventDispatcher.dispatch(Event{.name = "cause"}),
+        tickedEventDispatcher.dispatch(Event{.name = EventName{"cause"}}),
         antwika::event::EventError);
 }
 
@@ -51,10 +52,10 @@ TEST(TickedEventDispatcherTest, Dispatch_RecoversFromAThrowingSink)
         .WillOnce([](const TickEvent &) {});
 
     EXPECT_THROW(
-        tickedEventDispatcher.dispatch(Event{.name = "first"}),
+        tickedEventDispatcher.dispatch(Event{.name = EventName{"first"}}),
         std::runtime_error);
 
-    tickedEventDispatcher.dispatch(Event{.name = "second"});
+    tickedEventDispatcher.dispatch(Event{.name = EventName{"second"}});
 }
 
 TEST(
@@ -65,7 +66,7 @@ TEST(
     MockTickEventSink mockTickEventSink;
     TickedEventDispatcher tickedEventDispatcher(
         mockDispatcher, {mockTickEventSink});
-    Event mockEvent{.name = "mockEvent"};
+    Event mockEvent{.name = EventName{"mockEvent"}};
 
     tickedEventDispatcher.setTick(5);
 
@@ -88,7 +89,7 @@ TEST(TickedEventDispatcherTest, Dispatch_NotifiesEveryTimedSink)
     MockTickEventSink secondSink;
     TickedEventDispatcher tickedEventDispatcher(
         mockDispatcher, {firstSink, secondSink});
-    Event mockEvent{.name = "mockEvent"};
+    Event mockEvent{.name = EventName{"mockEvent"}};
 
     tickedEventDispatcher.setTick(3);
 
@@ -109,8 +110,8 @@ TEST(
     MockTickEventSink mockTickEventSink;
     TickedEventDispatcher tickedEventDispatcher(
         mockDispatcher, {mockTickEventSink});
-    Event mockEvent1{.name = "mockEvent1"};
-    Event mockEvent2{.name = "mockEvent2"};
+    Event mockEvent1{.name = EventName{"mockEvent1"}};
+    Event mockEvent2{.name = EventName{"mockEvent2"}};
 
     EXPECT_CALL(mockDispatcher, dispatch(::testing::_)).Times(2);
 
@@ -139,7 +140,7 @@ TEST(
     MockTickEventSink mockTickEventSink;
     TickedEventDispatcher tickedEventDispatcher(
         mockDispatcher, {mockTickEventSink});
-    Event mockEvent{.name = "mockEvent"};
+    Event mockEvent{.name = EventName{"mockEvent"}};
 
     EXPECT_CALL(mockDispatcher, dispatch(mockEvent))
         .WillOnce(::testing::Throw(std::runtime_error("mockException")));

@@ -3,105 +3,146 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <span>
+#include <string>
+#include <string_view>
 
-#include <antwika/editor/ui/LayerWidgets.hpp>
 #include <antwika/widget/WidgetId.hpp>
-#include <antwika/tile/Transitions.hpp>
-#include <antwika/decor/Decor.hpp>
-#include <antwika/decor/TileAnimation.hpp>
-#include <antwika/decor/Variants.hpp>
-#include <antwika/map/Layers.hpp>
 
-#include "antwika/editor/plan/PlanBoard.hpp"
-#include "antwika/editor/ui/AtlasView.hpp"
-#include "antwika/editor/ui/EditorBindings.hpp"
-#include "antwika/editor/ui/MapPicker.hpp"
-#include "antwika/editor/ui/MenuBar.hpp"
-#include "antwika/editor/ui/ToolPanel.hpp"
+namespace antwika::editor
+{
+
+    class Editor;
+
+}
 
 namespace antwika::editor::widget_catalog
 {
 
-    inline constexpr std::array kFixedWidgets{
-        widget::kNoWidget,
-        kToolPanelWidget,
-        kDeriveRulesWidget,
-        kStatusBarWidget,
-        kLayersPanelWidget,
-        kPaletteWidget,
-        kRailWidget,
-        kPreviewWidget,
-        kAddInkWidget,
-        kInkOkWidget,
-        kInkCancelWidget,
-        kInkDeleteWidget,
-        kAddLayerWidget,
-        kRemoveLayerWidget,
-        kMirrorWidget,
-        decor::kInkHexWidget,
-        decor::kAutoPreviewWidget,
-        decor::kPickBaseTilesWidget,
-        kPartFrontWidget,
-        kPartSideWidget,
-        kFirstLayerWidget,
-        decor::kFrameAddWidget,
-        decor::kTilingPanelWidget,
-        decor::kFrequencyWidget,
-        decor::kDecorWeightWidget,
-        decor::kDecorMoveWidget,
-        kQuitConfirmWidget,
-        kQuitCancelWidget,
-        kQuitAndSaveWidget,
-        kPickerNameWidget,
-        kPickerConfirmWidget,
-        kPickerCancelWidget,
-        kPickerOverwriteWidget,
-        decor::kRerollPreviewWidget,
-        kGlowWidget,
-        kAmbientWidget,
-        kExitTargetWidget,
-        kFigureNameWidget,
-        kAddFigureWidget,
-        kRemoveFigureWidget,
-        kFigureLineWidget,
-        kFigureLineAddWidget,
-        kFigureLampWidget,
-        kFirstMapRowWidget,
-        decor::kVariantChoiceWidget,
-        decor::kVariantWeightWidget,
-        decor::kGoToCanonicalWidget,
-        tile::kTransitionAddWidget,
-        tile::kRemoveTransitionWidget,
-        decor::kToggleAnimationWidget,
-        decor::kAddFrameWidget,
-        kKeysDoneWidget,
-        kKeysResetWidget,
-        decor::kSpanAcrossLessWidget,
-        decor::kSpanAcrossMoreWidget,
-        decor::kSpanDownLessWidget,
-        decor::kSpanDownMoreWidget,
-        kExitLockedWidget,
-        kSheetPanelWidget,
-        kDrawPanelWidget,
-        kPlanDetailWidget,
-        kPlanTitleWidget,
-        kPlanBodyWidget,
-        kPlanDeleteWidget};
-
-    static_assert(
-        widget::allDistinct(kFixedWidgets),
-        "two fixed widgets share a number");
-
-    [[nodiscard]] constexpr bool isBlockClearOfFixed(
-        const widget::WidgetId baseWidget, const std::size_t width) noexcept
+    struct Catalog final
     {
-        const auto first = static_cast<std::uint64_t>(baseWidget);
-
-        for (const auto id : kFixedWidgets)
+        enum class Delegate : std::uint8_t
         {
-            const auto idValue = static_cast<std::uint64_t>(id);
+            Activation,
+            Slider,
+            InkPanel,
+        };
 
-            if (idValue > first && idValue < first + width)
+        struct SoloRow final
+        {
+            widget::WidgetId widget = widget::kNoWidget;
+
+            std::string_view hint = {};
+
+            bool toolPanelMembership = false;
+
+            Delegate delegate = Delegate::Activation;
+
+            bool (*activation)(Editor &) = nullptr;
+        };
+
+        struct FamilyRow final
+        {
+            widget::WidgetId (*widgetAt)(std::size_t) = nullptr;
+
+            std::size_t firstPlace = 0;
+
+            std::size_t placeCount = 0;
+
+            std::size_t (*placeCountOf)(const Editor &) = nullptr;
+
+            std::string_view hint = {};
+
+            std::string_view (*hintAt)(std::size_t) = nullptr;
+
+            bool toolPanelMembership = false;
+
+            Delegate delegate = Delegate::Activation;
+
+            bool (*activation)(Editor &, std::size_t) = nullptr;
+        };
+
+        struct SliderRow final
+        {
+            widget::WidgetId widget = widget::kNoWidget;
+
+            bool undoNeed = true;
+
+            bool decorNeed = false;
+
+            bool (*slideGate)(const Editor &) = nullptr;
+
+            std::uint32_t (*valueOf)(const Editor &) = nullptr;
+
+            void (*slideEffect)(Editor &, std::uint32_t) = nullptr;
+
+            void (*settleEffect)(Editor &) = nullptr;
+        };
+
+        struct FieldRow final
+        {
+            widget::WidgetId widget = widget::kNoWidget;
+
+            void (*editEffect)(Editor &, const std::string &) = nullptr;
+        };
+
+        struct FieldFamilyRow final
+        {
+            widget::WidgetId (*widgetAt)(std::size_t) = nullptr;
+
+            std::size_t placeCount = 0;
+
+            void (*editEffect)(
+                Editor &, std::size_t, const std::string &) = nullptr;
+        };
+
+        std::span<const SoloRow> soloRows;
+
+        std::span<const FamilyRow> familyRows;
+
+        std::span<const SliderRow> sliderRows;
+
+        std::span<const FieldRow> fieldRows;
+
+        std::span<const FieldFamilyRow> fieldFamilies;
+    };
+
+    /**
+     * @brief The place just past the family's last, counted from
+     * firstPlace. placeCountOf, when a family carries one, wins over
+     * placeCount.
+     */
+    [[nodiscard]] inline std::size_t placeEndIn(
+        const Catalog::FamilyRow &family, const Editor &editor)
+    {
+        return family.firstPlace
+               + (family.placeCountOf != nullptr
+                      ? family.placeCountOf(editor)
+                      : family.placeCount);
+    }
+
+    /**
+     * @brief hintAt, when a family carries one, wins over the shared hint.
+     */
+    [[nodiscard]] inline std::string_view hintIn(
+        const Catalog::FamilyRow &family, const std::size_t place)
+    {
+        return family.hintAt != nullptr ? family.hintAt(place)
+                                        : family.hint;
+    }
+
+    /**
+     * @brief Every field family names both its widgets and its edit
+     * effect.
+     */
+    template <std::size_t FamilyCount>
+    [[nodiscard]] constexpr bool isEveryFieldFamilyClaimed(
+        const std::array<Catalog::FieldFamilyRow, FamilyCount>
+            &fieldFamilies) noexcept
+    {
+        for (const auto &family : fieldFamilies)
+        {
+            if (family.widgetAt == nullptr || family.editEffect == nullptr)
             {
                 return false;
             }
@@ -110,33 +151,115 @@ namespace antwika::editor::widget_catalog
         return true;
     }
 
-    static_assert(
-        isBlockClearOfFixed(kFirstLayerWidget, map::kMaxLayers),
-        "a fixed widget stands among the layer rows");
+    /**
+     * @brief No field family widget, over the family's whole domain,
+     * stands in another family's domain or on a solo field row.
+     */
+    template <std::size_t FamilyCount, std::size_t FieldCount>
+    [[nodiscard]] constexpr bool isEveryFieldFamilyApart(
+        const std::array<Catalog::FieldFamilyRow, FamilyCount>
+            &fieldFamilies,
+        const std::array<Catalog::FieldRow, FieldCount>
+            &fieldRows) noexcept
+    {
+        for (std::size_t familyAt = 0; familyAt < FamilyCount; ++familyAt)
+        {
+            const auto &ownFamily = fieldFamilies[familyAt];
 
-    static_assert(
-        static_cast<std::uint64_t>(kFirstLayerWidget) + map::kMaxLayers
-            <= static_cast<std::uint64_t>(decor::kFrameAddWidget),
-        "the layer rows run into the decor frame block");
+            for (std::size_t ownPlace = 0; ownPlace < ownFamily.placeCount;
+                 ++ownPlace)
+            {
+                const auto ownWidget = ownFamily.widgetAt(ownPlace);
 
-    static_assert(
-        isBlockClearOfFixed(kFirstMapRowWidget, kMaxPicked),
-        "a fixed widget stands among the map picker rows");
+                for (const auto &fieldRow : fieldRows)
+                {
+                    if (ownWidget == fieldRow.widget)
+                    {
+                        return false;
+                    }
+                }
 
-    static_assert(
-        isBlockClearOfFixed(
-            getPlanColumnWidget(Column::Todo), kEveryColumn.size()),
-        "a fixed widget stands among the plan columns");
+                for (std::size_t otherAt = familyAt; otherAt < FamilyCount;
+                     ++otherAt)
+                {
+                    const auto &otherFamily = fieldFamilies[otherAt];
 
-    static_assert(
-        isBlockClearOfFixed(
-            getPlanAddWidget(Column::Todo), kEveryColumn.size()),
-        "a fixed widget stands among the plan add buttons");
+                    for (auto otherPlace =
+                             otherAt == familyAt ? ownPlace + 1
+                                                 : std::size_t{0};
+                         otherPlace < otherFamily.placeCount;
+                         ++otherPlace)
+                    {
+                        if (ownWidget == otherFamily.widgetAt(otherPlace))
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
 
-    static_assert(
-        isBlockClearOfFixed(
-            getPlanCardWidget(Column::Todo, 0),
-            kEveryColumn.size() * kMaxCardsPerColumn),
-        "a fixed widget stands among the plan cards");
+        return true;
+    }
+
+    /**
+     * @brief Hands a field edit to the family place whose widget it
+     * names. Only the first matching place is told, since one frame
+     * carries at most one edit.
+     */
+    inline void carryFamilyEdit(
+        const Catalog &catalog,
+        Editor &editor,
+        const widget::WidgetId fieldWidget,
+        const std::string &text)
+    {
+        for (const auto &family : catalog.fieldFamilies)
+        {
+            for (std::size_t place = 0; place < family.placeCount; ++place)
+            {
+                if (fieldWidget == family.widgetAt(place))
+                {
+                    family.editEffect(editor, place, text);
+
+                    return;
+                }
+            }
+        }
+    }
+
+    [[nodiscard]] inline bool isOnToolPanel(
+        const Catalog &catalog,
+        const Editor &editor,
+        const widget::WidgetId whichWidget)
+    {
+        for (const auto &row : catalog.soloRows)
+        {
+            if (row.toolPanelMembership && whichWidget == row.widget)
+            {
+                return true;
+            }
+        }
+
+        for (const auto &family : catalog.familyRows)
+        {
+            if (!family.toolPanelMembership)
+            {
+                continue;
+            }
+
+            const auto placeEnd = placeEndIn(family, editor);
+
+            for (auto place = family.firstPlace; place < placeEnd;
+                 ++place)
+            {
+                if (whichWidget == family.widgetAt(place))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 
 }

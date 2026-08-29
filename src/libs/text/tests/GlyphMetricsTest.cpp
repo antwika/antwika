@@ -1,10 +1,9 @@
 #include <gtest/gtest.h>
 
-#include <cstdint>
-
 #include "antwika/gfx/Glyphs.hpp"
 
-using antwika::gfx::getEncodeTextScale;
+using antwika::gfx::getScaledGlyphAdvance;
+using antwika::gfx::getScaledGlyphLineHeight;
 using antwika::gfx::glyphAdvanceOf;
 using antwika::gfx::glyphLineHeightOf;
 using antwika::gfx::kGlyphAdvance;
@@ -12,8 +11,7 @@ using antwika::gfx::kGlyphLineHeight;
 using antwika::gfx::kSmallGlyphAdvance;
 using antwika::gfx::kSmallGlyphLineHeight;
 using antwika::gfx::TextFace;
-using antwika::gfx::textFaceOf;
-using antwika::gfx::textMultiplierOf;
+using antwika::gfx::TextScale;
 
 TEST(GlyphMetricsTest, GlyphAdvanceOf_NarrowsForTheSmallFace)
 {
@@ -28,16 +26,22 @@ TEST(GlyphMetricsTest, GlyphLineHeightOf_ShortensForTheSmallFace)
         glyphLineHeightOf(TextFace::Small), kSmallGlyphLineHeight);
 }
 
-TEST(GlyphMetricsTest, EncodeTextScale_RoundTripsThroughBothParts)
+TEST(GlyphMetricsTest, ScaledGlyphAdvance_MultipliesTheFaceAdvance)
 {
-    const auto scale = getEncodeTextScale(TextFace::Small, 3);
+    const TextScale scale{.face = TextFace::Small, .multiplier = 3};
 
-    EXPECT_EQ(textFaceOf(scale), TextFace::Small);
-    EXPECT_EQ(textMultiplierOf(scale), 3U);
+    EXPECT_EQ(getScaledGlyphAdvance(scale), kSmallGlyphAdvance * 3);
+    EXPECT_EQ(
+        getScaledGlyphAdvance(TextScale{.multiplier = 2}),
+        kGlyphAdvance * 2);
 }
 
-TEST(GlyphMetricsTest, EncodeTextScale_LeavesANormalScaleBare)
+TEST(GlyphMetricsTest, ScaledGlyphLineHeight_MultipliesTheFaceLineHeight)
 {
-    EXPECT_EQ(getEncodeTextScale(TextFace::Normal, 2), 2U);
-    EXPECT_EQ(textFaceOf(2), TextFace::Normal);
+    const TextScale scale{.face = TextFace::Small, .multiplier = 3};
+
+    EXPECT_EQ(getScaledGlyphLineHeight(scale), kSmallGlyphLineHeight * 3);
+    EXPECT_EQ(
+        getScaledGlyphLineHeight(TextScale{.multiplier = 2}),
+        kGlyphLineHeight * 2);
 }

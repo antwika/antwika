@@ -6,21 +6,17 @@
 
 #include <antwika/gfx/IMesh.hpp>
 
+#include "RaylibResource.hpp"
+
 namespace antwika::gfx::raylib
 {
 
     class RaylibRenderer;
 
-    class RaylibMesh final : public IMesh
+    class RaylibMesh final : public IMesh, public RaylibResource
     {
     public:
         RaylibMesh(RaylibRenderer &ownerRenderer, ::Mesh mesh);
-
-        RaylibMesh(const RaylibMesh &) = delete;
-        RaylibMesh(RaylibMesh &&) = delete;
-
-        RaylibMesh &operator=(const RaylibMesh &) = delete;
-        RaylibMesh &operator=(RaylibMesh &&) = delete;
 
         ~RaylibMesh() override;
 
@@ -28,23 +24,16 @@ namespace antwika::gfx::raylib
 
         [[nodiscard]] std::size_t getTriangleCount() const override;
 
-        [[nodiscard]] bool isOwnedBy(
-            const RaylibRenderer &candidateRenderer) const noexcept;
-
         [[nodiscard]] const ::Mesh &getRawHandle() const noexcept;
 
         [[nodiscard]] ::Mesh &writableHandle() noexcept;
 
-        [[nodiscard]] bool isLoaded() const noexcept;
-
-        void untrackRenderer() noexcept;
-
     private:
-        RaylibRenderer *owner;
+        void unloadHandle() noexcept override;
+
         ::Mesh mesh;
         std::size_t vertices;
         std::size_t triangles;
-        bool loaded = true;
     };
 
 }

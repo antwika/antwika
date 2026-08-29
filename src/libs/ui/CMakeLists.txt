@@ -6,6 +6,7 @@ antwika_add_library(
         src/Context.cpp
         src/DoubleClick.cpp
         src/Dropdown.cpp
+        src/Edge.cpp
         src/Hover.cpp
         src/HoverHint.cpp
         src/Layout.cpp
@@ -14,6 +15,7 @@ antwika_add_library(
         src/Painter.cpp
         src/Resolve.cpp
         src/ResolveWidgets.cpp
+        src/ScrollColumn.cpp
         src/Slider.cpp
         src/Split.cpp
         src/TextArea.cpp

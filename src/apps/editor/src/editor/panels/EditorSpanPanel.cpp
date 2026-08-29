@@ -3,6 +3,8 @@
 
 #include "antwika/editor/Editor.hpp"
 
+#include "antwika/editor/ui/WidgetIds.hpp"
+
 namespace antwika::editor
 {
 
@@ -22,13 +24,11 @@ namespace antwika::editor
             context.button(
                 "-",
                 antwika::ui::ButtonSpec{
-                    .widgetId = decor::
-                        kSpanAcrossLessWidget});
+                    .widgetId = kSpanAcrossLessWidget});
             context.button(
                 "+",
                 antwika::ui::ButtonSpec{
-                    .widgetId = decor::
-                        kSpanAcrossMoreWidget});
+                    .widgetId = kSpanAcrossMoreWidget});
             context.label("across", kTextColor);
         }
 
@@ -40,11 +40,11 @@ namespace antwika::editor
             context.button(
                 "-",
                 antwika::ui::ButtonSpec{
-                    .widgetId = decor::kSpanDownLessWidget});
+                    .widgetId = kSpanDownLessWidget});
             context.button(
                 "+",
                 antwika::ui::ButtonSpec{
-                    .widgetId = decor::kSpanDownMoreWidget});
+                    .widgetId = kSpanDownMoreWidget});
             context.label("down", kTextColor);
         }
 
@@ -71,7 +71,7 @@ namespace antwika::editor
                 context.button(
                     std::to_string(place + 1),
                     antwika::ui::ButtonSpec{
-                        .widgetId = decor::getMemberWidget(
+                        .widgetId = getMemberWidget(
                             place),
                         .fillColor =
                             assignMode.memberAssigning

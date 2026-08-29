@@ -8,6 +8,8 @@
 
 #include "antwika/editor/plan/PlanBoard.hpp"
 
+#include "antwika/editor/ui/WidgetIds.hpp"
+
 using antwika::editor::Board;
 using antwika::editor::Card;
 using antwika::editor::Column;

@@ -11,8 +11,6 @@
 namespace antwika::voxel
 {
 
-    inline constexpr std::int32_t kRoofSearchLevels = 6;
-
     inline constexpr std::size_t kMaxOccludedVoxels = 4096;
 
     inline constexpr std::uint32_t kOcclusionMaskWidth = 32;

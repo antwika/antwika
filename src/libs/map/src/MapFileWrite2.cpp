@@ -40,7 +40,7 @@ namespace antwika::map::mapfile
 
         document[std::string(kTransitionsKey)] = transitions;
 
-        for (const auto &row : kGateRows)
+        for (const auto &row : kMarkerRows)
         {
             auto arrayJson = nlohmann::json::array();
 
@@ -51,8 +51,6 @@ namespace antwika::map::mapfile
 
             document[std::string(row.key)] = arrayJson;
         }
-        document[std::string(kExitLockedKey)] =
-            map.exitLocked;
     }
 
 }

@@ -33,10 +33,11 @@ using antwika::gfx::kGlyphCount;
 using antwika::gfx::Point;
 using antwika::gfx::Rect;
 using antwika::gfx::Size;
+using antwika::gfx::TextScale;
 
 namespace
 {
-    constexpr std::uint32_t kScale = 2;
+    constexpr TextScale kScale{.multiplier = 2};
 
     constexpr Point kOriginPoint{.x = 10, .y = 20};
 

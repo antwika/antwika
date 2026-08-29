@@ -4,6 +4,8 @@
 
 #include "antwika/editor/Editor.hpp"
 
+#include "antwika/editor/ui/WidgetIds.hpp"
+
 namespace antwika::editor
 {
 
@@ -102,61 +104,6 @@ namespace antwika::editor
         return true;
     }
 
-    bool Editor::transitionWidgets(
-        const ui::Interactions &interactions)
-    {
-        auto consumedKey = false;
-
-        if (interactions.activatedWidget
-                == tile::kTransitionAddWidget
-            && stroke.selectedTile.has_value()
-            && document.map.transitions.size() < tile::kMaxTransitions)
-        {
-            transition.fromTile = stroke.selectedTile;
-            transition.toTile.reset();
-            showStatus(
-                "pick the other material", false, 360);
-            consumedKey = true;
-        }
-
-        if (interactions.activatedWidget
-                == tile::kRemoveTransitionWidget
-            && transition.chosenIndex.has_value()
-            && *transition.chosenIndex < document.map.transitions.size())
-        {
-            pushUndo();
-            document.map.transitions.erase(
-                std::next(
-                    document.map.transitions.begin(),
-                    static_cast<std::ptrdiff_t>(
-                        *transition.chosenIndex)));
-            transition.chosenIndex.reset();
-            atlasSheets.touch();
-            rebuildWorld();
-            consumedKey = true;
-        }
-
-        for (std::size_t index = 0;
-             index < document.map.transitions.size()
-             && index < tile::kMaxTransitions;
-             ++index)
-        {
-            if (interactions.activatedWidget
-                != tile::getTransitionRowWidget(index))
-            {
-                continue;
-            }
-
-            transition.chosenIndex =
-                transition.chosenIndex == index
-                                  ? std::optional<std::size_t>{}
-                                  : std::optional{index};
-            consumedKey = true;
-        }
-
-        return consumedKey;
-    }
-
     void Editor::layoutTransitionRail(ui::Context &context)
     {
         const auto transitionsPanel = context.column(
@@ -186,7 +133,7 @@ namespace antwika::editor
                     + std::to_string(
                         rowTransition.outputTile.index),
                 antwika::ui::ButtonSpec{
-                    .widgetId = tile::getTransitionRowWidget(
+                    .widgetId = getTransitionRowWidget(
                         index),
                     .widthSizing = antwika::ui::kGrowSizing,
                     .fillColor = transition.chosenIndex == index
@@ -199,8 +146,7 @@ namespace antwika::editor
             context.button(
                 "x",
                 antwika::ui::ButtonSpec{
-                    .widgetId = tile::
-                        kRemoveTransitionWidget});
+                    .widgetId = kRemoveTransitionWidget});
         }
 
         if (document.map.transitions.size() < tile::kMaxTransitions)
@@ -212,7 +158,7 @@ namespace antwika::editor
                            : "other?")
                     : "new transition",
                 antwika::ui::ButtonSpec{
-                    .widgetId = tile::kTransitionAddWidget,
+                    .widgetId = kTransitionAddWidget,
                     .widthSizing = antwika::ui::kGrowSizing});
         }
     }

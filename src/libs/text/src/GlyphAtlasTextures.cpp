@@ -1,6 +1,5 @@
 #include "antwika/text/GlyphAtlasTextures.hpp"
 
-#include <cstdint>
 #include <string_view>
 #include <utility>
 
@@ -23,10 +22,10 @@ namespace antwika::text
         gfx::IRenderer &renderer,
         gfx::PointF originPoint,
         std::string_view text,
-        std::uint32_t scale,
+        gfx::TextScale scale,
         gfx::Color color)
     {
-        if (scale == 0 || text.empty())
+        if (scale.multiplier == 0 || text.empty())
         {
             return;
         }

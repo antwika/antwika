@@ -14,6 +14,9 @@ namespace antwika::component
         bool walking = false;
 
         time::Tick startedAtTick = 0;
+
+        [[nodiscard]] bool operator==(
+            const AnimationState &other) const = default;
     };
 
 }

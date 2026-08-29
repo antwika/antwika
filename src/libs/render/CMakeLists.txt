@@ -11,6 +11,7 @@ antwika_add_library(
         src/WorldMeshes.cpp
         src/WorldShader.cpp
     DEPENDS
+        antwika::assets
         antwika::component
         antwika::camera
         antwika::character

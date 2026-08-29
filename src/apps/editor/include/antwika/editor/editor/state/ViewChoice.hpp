@@ -1,13 +1,13 @@
 #pragma once
 
-#include <antwika/map/Settings.hpp>
+#include "antwika/editor/Preferences.hpp"
 
 namespace antwika::editor
 {
 
     struct ViewChoice final
     {
-        map::View activeView = map::View::World;
+        View activeView = View::World;
     };
 
 }

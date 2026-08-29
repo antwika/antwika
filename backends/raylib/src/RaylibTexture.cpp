@@ -10,25 +10,16 @@ namespace antwika::gfx::raylib
         ::Texture2D texture,
         Size size,
         const bool owns)
-        : owner(&ownerRenderer),
+        : RaylibResource(ownerRenderer),
           texture(texture),
           textureSize(size),
           owned(owns)
     {
-        ownerRenderer.trackTexture(*this);
     }
 
     RaylibTexture::~RaylibTexture()
     {
-        if (owner != nullptr)
-        {
-            owner->untrackTexture(*this);
-        }
-
-        if (loaded && owned)
-        {
-            UnloadTexture(texture);
-        }
+        unload();
     }
 
     Size RaylibTexture::getSize() const
@@ -36,31 +27,17 @@ namespace antwika::gfx::raylib
         return textureSize;
     }
 
-    bool RaylibTexture::isOwnedBy(
-        const RaylibRenderer &candidateRenderer) const noexcept
-    {
-        return owner == &candidateRenderer;
-    }
-
     const ::Texture2D &RaylibTexture::getRawHandle() const noexcept
     {
         return texture;
     }
 
-    bool RaylibTexture::isLoaded() const noexcept
+    void RaylibTexture::unloadHandle() noexcept
     {
-        return loaded;
-    }
-
-    bool RaylibTexture::isOwned() const noexcept
-    {
-        return owned;
-    }
-
-    void RaylibTexture::untrackRenderer() noexcept
-    {
-        owner = nullptr;
-        loaded = false;
+        if (owned)
+        {
+            UnloadTexture(texture);
+        }
     }
 
 }

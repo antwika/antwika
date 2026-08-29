@@ -5,19 +5,10 @@
 #include <antwika/gfx/RectF.hpp>
 
 #include "antwika/ui/DrawCommand.hpp"
+#include "antwika/ui/Overloaded.hpp"
 
 namespace antwika::ui
 {
-
-    namespace
-    {
-        template <typename... Arms>
-        struct Overloaded final : Arms...
-        {
-            using Arms::operator()...;
-        };
-    }
-
 
     void paint(ISurfaceRenderer &renderer, const DrawList &drawList)
     {

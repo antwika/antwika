@@ -7,6 +7,7 @@
 #include <string>
 
 #include <antwika/gfx/Color.hpp>
+#include <antwika/gfx/Glyphs.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
 
@@ -26,6 +27,7 @@ namespace antwika::ui::detail
     using antwika::gfx::Color;
     using antwika::gfx::Rect;
     using antwika::gfx::Size;
+    using antwika::gfx::TextScale;
 
     struct Node final
     {
@@ -57,11 +59,13 @@ namespace antwika::ui::detail
 
         bool clips = false;
 
+        std::optional<std::uint32_t> scrollOffset{};
+
         std::optional<SplitInfo> splitInfo{};
 
         std::string text{};
 
-        std::uint32_t textScale = 0;
+        TextScale textScale{};
 
         Color textColor{};
 

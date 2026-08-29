@@ -18,6 +18,7 @@
 #include "antwika/input/PointerHintChannel.hpp"
 
 using antwika::event::Event;
+using antwika::event::EventName;
 using antwika::event::TickEvent;
 using antwika::input::InputEvent;
 using antwika::input::InputEventCodec;
@@ -62,7 +63,7 @@ TEST(PointerHintSourceTest, EventsFor_ReturnsTheInnerEventsUntouched)
 {
     ReplaySource innerSource(
         {getEntryAt(0, getPointerMoveEvent(1, 1)),
-         TickEvent{.tick = 0, .event = Event{.name = "game.score_increment"}},
+         TickEvent{.tick = 0, .event = Event{.name = EventName{"game.score_increment"}}},
          getEntryAt(0, getPointerMoveEvent(2, 2))});
     PointerHintChannel channel;
     PointerHintSource source(innerSource, kCodec, channel);
@@ -71,7 +72,7 @@ TEST(PointerHintSourceTest, EventsFor_ReturnsTheInnerEventsUntouched)
         source.eventsFor(0),
         (std::vector<Event>{
             kCodec.getEncodedEvent(getPointerMoveEvent(1, 1)),
-            Event{.name = "game.score_increment"},
+            Event{.name = EventName{"game.score_increment"}},
             kCodec.getEncodedEvent(getPointerMoveEvent(2, 2))}));
 }
 
@@ -157,7 +158,7 @@ TEST(PointerHintSourceTest, EventsFor_LeavesTheHintAloneOnAPositionlessTick)
 TEST(PointerHintSourceTest, EventsFor_IgnoresAnEventThatIsNotInput)
 {
     ReplaySource innerSource(
-        {TickEvent{.tick = 0, .event = Event{.name = "engine.tick"}}});
+        {TickEvent{.tick = 0, .event = Event{.name = EventName{"engine.tick"}}}});
     PointerHintChannel channel;
     PointerHintSource source(innerSource, kCodec, channel);
 

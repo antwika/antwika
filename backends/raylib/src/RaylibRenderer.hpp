@@ -36,6 +36,7 @@ namespace antwika::gfx::raylib
     class RaylibMaterial;
     class RaylibMesh;
     class RaylibRenderTarget;
+    class RaylibResource;
     class RaylibShader;
     class RaylibTexture;
 
@@ -65,7 +66,7 @@ namespace antwika::gfx::raylib
         void drawText(
             PointF originPoint,
             std::string_view text,
-            std::uint32_t scale,
+            TextScale scale,
             Color color) override;
 
         [[nodiscard]] std::unique_ptr<ITexture> createTexture(
@@ -101,10 +102,11 @@ namespace antwika::gfx::raylib
         [[nodiscard]] std::unique_ptr<IRenderTarget> createRenderTarget(
             const RenderTargetSpec &spec) override;
 
-        void beginTarget(IRenderTarget &target) override;
+        using IRenderer::beginTarget;
 
-        void beginTargetRegion(
-            IRenderTarget &target, Rect regionRect) override;
+        void beginTarget(
+            IRenderTarget &target,
+            std::optional<Rect> regionRect) override;
 
         void endTarget() override;
 
@@ -136,29 +138,44 @@ namespace antwika::gfx::raylib
 
         void detach();
 
-        void trackTexture(RaylibTexture &texture);
+        void trackResource(RaylibResource &resource);
 
-        void untrackTexture(const RaylibTexture &texture) noexcept;
-
-        void trackMesh(RaylibMesh &mesh);
-
-        void untrackMesh(const RaylibMesh &mesh) noexcept;
-
-        void trackShader(RaylibShader &shader);
-
-        void untrackShader(const RaylibShader &shader) noexcept;
-
-        void trackTarget(RaylibRenderTarget &target);
-
-        void untrackTarget(const RaylibRenderTarget &target) noexcept;
+        void untrackResource(const RaylibResource &resource) noexcept;
 
     private:
         ILogger &logger;
         void ensureDrawing();
 
+        /**
+         * @brief Sets the scissor back to the innermost clip, which a
+         * render target scope turns off while it draws elsewhere.
+         */
+        void applyClipScissor();
+
         std::vector<RectF> clipRects;
 
         void sayRefused(std::string_view what) const;
+
+        template <typename Resource, typename Interface>
+        [[nodiscard]] Resource *ownResourceOf(
+            Interface *candidate,
+            const std::string_view refusal) const noexcept
+        {
+            auto *mine = dynamic_cast<Resource *>(candidate);
+
+            if (mine != nullptr && mine->isOwnedBy(*this)
+                && mine->isLoaded())
+            {
+                return mine;
+            }
+
+            if (candidate != nullptr && !refusal.empty())
+            {
+                sayRefused(refusal);
+            }
+
+            return nullptr;
+        }
 
         [[nodiscard]] const ::Texture2D *ownTextureOf(
             const ITexture *texture) const noexcept;
@@ -167,9 +184,7 @@ namespace antwika::gfx::raylib
             const IShader *shader) const noexcept;
 
         [[nodiscard]] int uniformLocationOf(
-            const IShader &shader,
-            const ::Shader &nativeShader,
-            std::string_view name);
+            const RaylibShader &shader, std::string_view name);
 
         void setShaderValue(
             const IShader &shader,
@@ -184,11 +199,7 @@ namespace antwika::gfx::raylib
 
         antwika::text::GlyphAtlasTextures glyphAtlases;
 
-        std::vector<RaylibTexture *> liveTextures;
-
-        std::vector<RaylibMesh *> liveMeshes;
-
-        std::vector<RaylibShader *> liveShaders;
+        std::vector<RaylibResource *> liveResources;
 
         struct NameHash final
         {
@@ -202,15 +213,13 @@ namespace antwika::gfx::raylib
         };
 
         std::unordered_map<
-            const IShader *,
+            const RaylibResource *,
             std::unordered_map<
                 std::string,
                 int,
                 NameHash,
                 std::equal_to<>>>
             uniformLocations;
-
-        std::vector<RaylibRenderTarget *> liveTargets;
 
         void applyRegionViewport();
 

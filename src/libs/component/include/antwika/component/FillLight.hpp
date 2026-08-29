@@ -20,6 +20,9 @@ namespace antwika::component
         gfx::Color tintColor = kFillLightTintColor;
         float aboveHeight = kFillLightHeight;
         float reach = kFillLightRange;
+
+        [[nodiscard]] bool operator==(
+            const FillLight &other) const = default;
     };
 
 }

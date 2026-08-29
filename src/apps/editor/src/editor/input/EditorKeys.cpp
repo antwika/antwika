@@ -11,35 +11,6 @@
 
 #include "antwika/editor/Editor.hpp"
 
-namespace
-{
-
-    [[nodiscard]] antwika::map::View getViewAfter(const antwika::map::View view)
-    {
-        switch (view)
-        {
-        case antwika::map::View::World:
-            return antwika::map::View::Atlases;
-        case antwika::map::View::Atlases:
-            return antwika::map::View::Character;
-        case antwika::map::View::Character:
-            return antwika::map::View::Icons;
-        case antwika::map::View::Icons:
-            return antwika::map::View::Plan;
-        case antwika::map::View::Plan:
-            break;
-        }
-
-        return antwika::map::View::World;
-    }
-
-    [[nodiscard]] antwika::map::View getViewBefore(const antwika::map::View view)
-    {
-        return getViewAfter(getViewAfter(getViewAfter(getViewAfter(view))));
-    }
-
-}
-
 namespace antwika::editor
 {
 
@@ -52,64 +23,65 @@ namespace antwika::editor
         };
 
         constexpr std::array kToolKeyRows{
-            ToolKeyRow{Action::ToolBrush, ToolButton::Brush},
+            ToolKeyRow{Action::ToolSelect, ToolButton::Select},
             ToolKeyRow{Action::ToolPicker, ToolButton::Picker},
-            ToolKeyRow{Action::ToolFreeLook, ToolButton::FreeLook},
-            ToolKeyRow{Action::ToolLighting, ToolButton::Lighting},
             ToolKeyRow{Action::ToolLamp, ToolButton::Lamp},
-            ToolKeyRow{Action::ToolRuleLines, ToolButton::RuleLines},
             ToolKeyRow{Action::ToolStart, ToolButton::Start},
             ToolKeyRow{Action::ToolExit, ToolButton::Exit},
             ToolKeyRow{Action::ToolStamp, ToolButton::Stamp},
-            ToolKeyRow{Action::ToolFigure, ToolButton::Figure},
-            ToolKeyRow{Action::ToolPlate, ToolButton::PressurePlate}};
+            ToolKeyRow{Action::ToolCharacter, ToolButton::Character},
+            ToolKeyRow{Action::KindStone, ToolButton::StoneCube},
+            ToolKeyRow{Action::KindWater, ToolButton::WaterCube},
+            ToolKeyRow{Action::KindRamp, ToolButton::RampCube}};
 
-        struct KindKeyRow final
+        struct ToggleKeyRow final
         {
             Action action;
-            voxel::Kind kind;
+            MenuItem item;
         };
 
-        constexpr std::array kKindKeyRows{
-            KindKeyRow{Action::KindStone, voxel::Kind::Normal},
-            KindKeyRow{Action::KindWater, voxel::Kind::Water},
-            KindKeyRow{Action::KindRamp, voxel::Kind::Ramp}};
+        constexpr std::array kToggleKeyRows{
+            ToggleKeyRow{Action::FreeLook, MenuItem::FreeLook},
+            ToggleKeyRow{
+                Action::EditorLighting, MenuItem::EditorLighting},
+            ToggleKeyRow{Action::RuleLines, MenuItem::RuleLines}};
 
         struct PaintKeyRow final
         {
             Action action;
-            map::Paint paint;
+            Paint paint;
         };
 
-        constexpr std::array<PaintKeyRow, enums::kCount<map::Paint>>
+        constexpr std::array<PaintKeyRow, enums::kCount<Paint>>
             kPaintKeyRows{{
-            {Action::PaintBrush, map::Paint::Brush},
-            {Action::PaintLine, map::Paint::Line},
-            {Action::PaintFill, map::Paint::Fill},
-            {Action::PaintSelect, map::Paint::Select},
-            {Action::PaintRect, map::Paint::Rect},
-            {Action::PaintCircle, map::Paint::Circle}}};
+            {Action::PaintBrush, Paint::Brush},
+            {Action::PaintLine, Paint::Line},
+            {Action::PaintFill, Paint::Fill},
+            {Action::PaintSelect, Paint::Select},
+            {Action::PaintRect, Paint::Rect},
+            {Action::PaintCircle, Paint::Circle}}};
 
         static_assert(enums::tagsInOrder(kPaintKeyRows, &PaintKeyRow::paint));
 
         struct ViewKeyRow final
         {
             Action action;
-            map::View view;
+            View view;
         };
 
-        constexpr std::array<ViewKeyRow, enums::kCount<map::View>>
+        constexpr std::array<ViewKeyRow, enums::kCount<View>>
             kViewKeyRows{{
-            {Action::ViewWorld, map::View::World},
-            {Action::ViewAtlases, map::View::Atlases},
-            {Action::ViewCharacter, map::View::Character},
-            {Action::ViewIcons, map::View::Icons},
-            {Action::ViewPlan, map::View::Plan}}};
+            {Action::ViewWorld, View::World},
+            {Action::ViewAtlases, View::Atlases},
+            {Action::ViewCharacter, View::Character},
+            {Action::ViewIcons, View::Icons},
+            {Action::ViewPlan, View::Plan},
+            {Action::ViewGizmos, View::Gizmos}}};
 
         static_assert(enums::tagsInOrder(kViewKeyRows, &ViewKeyRow::view));
     }
 
-    void Editor::setView(const map::View nextView)
+    void Editor::setView(const View nextView)
     {
         if (nextView != viewChoice.activeView)
         {
@@ -118,17 +90,17 @@ namespace antwika::editor
             stroke.doubleClickAtPoint.reset();
             plan.endDrag();
             characterView.commitFloatingPatch();
-            characterView.mark.selection.reset();
+            characterView.dropSelection();
         }
 
         viewChoice.activeView = nextView;
 
         if (const auto *shownView = viewNow();
-            preferences.paint == map::Paint::Select
+            preferences.paint == Paint::Select
             && (shownView == nullptr
-                || !shownView->offersPaint(map::Paint::Select)))
+                || !shownView->offersPaint(Paint::Select)))
         {
-            preferences.paint = map::Paint::Brush;
+            preferences.paint = Paint::Brush;
         }
     }
 
@@ -139,12 +111,12 @@ namespace antwika::editor
 
         if (releasedEvent.key == input::Key::Q)
         {
-            worldView.worldEdit.descendHeld = false;
+            worldView.worldEdit().setDescendHeld(false);
         }
 
         if (releasedEvent.key == input::Key::E)
         {
-            worldView.worldEdit.ascendHeld = false;
+            worldView.worldEdit().setAscendHeld(false);
         }
     }
 
@@ -176,11 +148,7 @@ namespace antwika::editor
 
                 play.playing = false;
                 turningPlayer = false;
-
-                if (preferences.hideAboveLevel)
-                {
-                    rebuildWorld();
-                }
+                restoreMapAfterPlay();
             }
 
             if (fresh(Action::Fullscreen))
@@ -197,17 +165,17 @@ namespace antwika::editor
 
             if (fresh(Action::Talk))
             {
-                interact();
+                simulation.interact(*play.game);
             }
 
             if (fresh(Action::Eat))
             {
-                consumeItem(component::ItemKind::Food);
+                simulation.consumeItem(*play.game, component::ItemKind::Food);
             }
 
             if (fresh(Action::Drink))
             {
-                consumeItem(component::ItemKind::Water);
+                simulation.consumeItem(*play.game, component::ItemKind::Water);
             }
 
             if (fresh(Action::Save))
@@ -249,18 +217,15 @@ namespace antwika::editor
         {
             dialogs.openMenu.reset();
             characterView.commitFloatingPatch();
-            characterView.mark.selection.reset();
+            characterView.dropSelection();
             stroke.lineFromCell.reset();
-            worldView.worldPaint.shapeFromPosition.reset();
-            worldView.worldPaint.dragButton.reset();
-            worldView.stamp.voxels.clear();
-            worldView.stamp.fromPosition.reset();
+            worldView.endDrags();
         }
 
         if (matchesChord(Action::LevelUp, pressedKey.key))
         {
-            worldView.worldEdit.editLevel += 1;
-            worldView.overlays.stale = true;
+            worldView.worldEdit().stepLevelUp();
+            worldView.markOverlaysStale();
 
             if (preferences.hideAboveLevel)
             {
@@ -270,8 +235,8 @@ namespace antwika::editor
 
         if (matchesChord(Action::LevelDown, pressedKey.key))
         {
-            worldView.worldEdit.editLevel -= 1;
-            worldView.overlays.stale = true;
+            worldView.worldEdit().stepLevelDown();
+            worldView.markOverlaysStale();
 
             if (preferences.hideAboveLevel)
             {
@@ -289,12 +254,10 @@ namespace antwika::editor
                 }
             }
 
-            for (const auto &row : kKindKeyRows)
+            if (matchesChord(Action::Delete, pressedKey.key)
+                && preferences.tool == Tool::Select)
             {
-                if (matchesChord(row.action, pressedKey.key))
-                {
-                    preferences.kind = row.kind;
-                }
+                removeEntityPick();
             }
         }
 
@@ -314,7 +277,7 @@ namespace antwika::editor
             }
         }
 
-        if (!pressedKey.repeat && viewChoice.activeView == map::View::Atlases)
+        if (!pressedKey.repeat && viewChoice.activeView == View::Atlases)
         {
             for (const auto &[act, kind] :
                  {std::pair{Action::KindStone, voxel::Kind::Normal},
@@ -359,11 +322,16 @@ namespace antwika::editor
 
         if (fresh(Action::Corners))
         {
-            worldView.worldEdit.cornerJoining =
-                worldView.worldEdit.cornerJoining
-                        == solver::CornerSeams::Included
-                         ? solver::CornerSeams::Ignored
-                         : solver::CornerSeams::Included;
+            worldView.worldEdit().toggleCornerJoining();
+        }
+
+        for (const auto &row : kToggleKeyRows)
+        {
+            if (!pressedKey.repeat
+                && matchesChord(row.action, pressedKey.key))
+            {
+                onMenuItem(row.item);
+            }
         }
 
         if (matchesChord(Action::WeaveLog, pressedKey.key))
@@ -371,13 +339,19 @@ namespace antwika::editor
             const auto faces =
                 voxelmap::visibleFacesOf(visibleCells());
             const auto solvedTiles =
-                solver::getSolveTiles(faces, document.map.rules, worldView.worldEdit.cornerJoining);
+                solver::getSolveTiles(
+                    faces,
+                    document.map.rules,
+                    worldView.worldEdit().getCornerJoining());
 
             rebuildWorld();
             logger.log(
                 antwika::log::Level::Info,
                 solver::getWeaveErrorMessage(
-                    faces, document.map.rules, solvedTiles, worldView.worldEdit.cornerJoining));
+                    faces,
+                    document.map.rules,
+                    solvedTiles,
+                    worldView.worldEdit().getCornerJoining()));
         }
 
         auto nextView = viewChoice.activeView;
@@ -419,17 +393,18 @@ namespace antwika::editor
             const auto playHere =
                 matchesChord(Action::PlayHere, pressedKey.key);
 
+            keepMapForPlay();
             play.playing = true;
             dialogs.openMenu.reset();
-            dialogs.fileDialog.reset();
-            inkPicker.editingInk.reset();
+            fileChooser.fileDialog.reset();
+            inkPanel.inkPicker.editingInk.reset();
 
             if (preferences.hideAboveLevel)
             {
                 rebuildWorld();
             }
 
-            resetGates();
+            play.game->setCheckpoint(gameplay::CheckpointState{});
 
             if (playHere && pointer.hoveredPosition.has_value())
             {
@@ -460,12 +435,12 @@ namespace antwika::editor
 
         if (pressedKey.key == input::Key::Q)
         {
-            worldView.worldEdit.descendHeld = true;
+            worldView.worldEdit().setDescendHeld(true);
         }
 
         if (pressedKey.key == input::Key::E)
         {
-            worldView.worldEdit.ascendHeld = true;
+            worldView.worldEdit().setAscendHeld(true);
         }
     }
 

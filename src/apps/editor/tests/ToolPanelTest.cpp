@@ -8,10 +8,13 @@
 #include <antwika/input/Key.hpp>
 
 #include "antwika/editor/ui/ToolButtonRow.hpp"
+#include "antwika/editor/ui/ToolGroup.hpp"
+#include "antwika/editor/ui/ToolGroupMembers.hpp"
 #include "antwika/editor/ui/ToolPanel.hpp"
 #include "antwika/editor/ui/ToolPlacement.hpp"
 #include "antwika/editor/ui/ToolPlacementRow.hpp"
-#include "antwika/editor/ui/ToolToggles.hpp"
+
+#include "antwika/editor/ui/WidgetIds.hpp"
 
 namespace
 {
@@ -29,7 +32,7 @@ namespace
     using antwika::voxel::Kind;
     using antwika::voxel::StairHalf;
     using antwika::editor::getLevelWidget;
-    using antwika::map::Paint;
+    using antwika::editor::Paint;
     using antwika::editor::getPaintWidget;
     using antwika::editor::ToolButton;
     using antwika::editor::getToolWidget;
@@ -77,7 +80,7 @@ namespace
             check(iconOf(which));
         }
 
-        EXPECT_EQ(lefts.size(), 32U);
+        EXPECT_EQ(lefts.size(), 29U);
     }
 
     TEST(ToolPanelTest, IconOf_LaysTheCellsInOneRunWithNoGaps)
@@ -148,21 +151,10 @@ namespace
             EXPECT_TRUE(seenWidgets.insert(getLevelWidget(which)).second);
         }
 
-        EXPECT_EQ(seenWidgets.size(), 32U);
+        EXPECT_EQ(seenWidgets.size(), 29U);
         EXPECT_FALSE(seenWidgets.contains(antwika::widget::kNoWidget));
         EXPECT_FALSE(
             seenWidgets.contains(antwika::editor::kToolPanelWidget));
-    }
-
-    TEST(ToolPanelTest, ToolFor_BindsEachToolToAKey)
-    {
-        using antwika::editor::toolFor;
-
-        EXPECT_EQ(toolFor(Key::B, false, false), ToolButton::Brush);
-        EXPECT_EQ(toolFor(Key::I, false, false), ToolButton::Picker);
-        EXPECT_EQ(toolFor(Key::F, true, false), ToolButton::FreeLook);
-        EXPECT_EQ(toolFor(Key::L, false, false), ToolButton::Lighting);
-        EXPECT_FALSE(toolFor(Key::G, false, false).has_value());
     }
 
     TEST(ToolPanelTest, KindFor_BindsEachKindToAKey)
@@ -211,115 +203,121 @@ namespace
 
 TEST(ToolPanelTest, ToolButtonActive_LightsTheButtonForTheChosenTool)
 {
-    using antwika::editor::ToolToggles;
-    using antwika::map::Tool;
+    using antwika::voxel::Kind;
 
     for (const auto row : antwika::editor::kToolButtonRows)
     {
-        if (!row.tool.has_value())
-        {
-            continue;
-        }
-
         EXPECT_TRUE(
             antwika::editor::isToolButtonActive(
-                row.button, *row.tool, ToolToggles{}));
+                row.button,
+                row.tool,
+                row.kind.value_or(Kind::Normal)));
     }
 }
 
 TEST(ToolPanelTest, ToolButtonActive_LeavesTheOtherToolButtonsDark)
 {
-    using antwika::editor::ToolToggles;
-    using antwika::map::Tool;
+    using antwika::editor::Tool;
+    using antwika::voxel::Kind;
 
     for (const auto row : antwika::editor::kToolButtonRows)
     {
-        if (!row.tool.has_value() || *row.tool == Tool::Brush)
+        if (row.tool == Tool::Picker)
         {
             continue;
         }
 
         EXPECT_FALSE(
             antwika::editor::isToolButtonActive(
-                row.button, Tool::Brush, ToolToggles{}));
+                row.button, Tool::Picker, Kind::Normal));
     }
 }
 
-TEST(ToolPanelTest, ToolButtonActive_KeepsRuleLinesOffTheToolButtons)
+TEST(ToolPanelTest, ToolButtonActive_TellsTheCubeButtonsApartByTheirKind)
 {
     using antwika::editor::ToolButton;
-    using antwika::editor::ToolToggles;
-    using antwika::map::Tool;
-
-    const ToolToggles ruleLinesToggles{.showRuleLines = true};
+    using antwika::editor::Tool;
+    using antwika::voxel::Kind;
 
     EXPECT_TRUE(
         antwika::editor::isToolButtonActive(
-            ToolButton::RuleLines, Tool::Brush, ruleLinesToggles));
-
-    for (const auto button :
-         {ToolButton::Key,
-          ToolButton::Door,
-          ToolButton::Checkpoint,
-          ToolButton::Food,
-          ToolButton::Water})
-    {
-        EXPECT_FALSE(
-            antwika::editor::isToolButtonActive(
-                button, Tool::Brush, ruleLinesToggles));
-    }
-}
-
-TEST(ToolPanelTest, ToolButtonActive_ReadsEachToggleFromItsOwnFlag)
-{
-    using antwika::editor::ToolButton;
-    using antwika::editor::ToolToggles;
-    using antwika::map::Tool;
-
-    EXPECT_TRUE(
-        antwika::editor::isToolButtonActive(
-            ToolButton::FreeLook, Tool::Brush,
-            ToolToggles{.freeLook = true}));
-    EXPECT_TRUE(
-        antwika::editor::isToolButtonActive(
-            ToolButton::Lighting, Tool::Brush,
-            ToolToggles{.lighting = true}));
+            ToolButton::WaterCube, Tool::Brush, Kind::Water));
     EXPECT_FALSE(
         antwika::editor::isToolButtonActive(
-            ToolButton::FreeLook, Tool::Brush,
-            ToolToggles{.lighting = true}));
+            ToolButton::StoneCube, Tool::Brush, Kind::Water));
+    EXPECT_FALSE(
+        antwika::editor::isToolButtonActive(
+            ToolButton::RampCube, Tool::Brush, Kind::Water));
 }
 
-TEST(ToolPanelTest, PlacementOf_SendsEveryGateToolToTheGatePlacement)
+TEST(ToolPanelTest, ToolButtonActive_LeavesTheKindOutWhereNoneIsNamed)
+{
+    using antwika::editor::ToolButton;
+    using antwika::editor::Tool;
+    using antwika::voxel::Kind;
+
+    for (const auto kind : antwika::voxel::kEveryKind)
+    {
+        EXPECT_TRUE(
+            antwika::editor::isToolButtonActive(
+                ToolButton::Rubber, Tool::Eraser, kind));
+    }
+}
+
+TEST(ToolPanelTest, ToolsIn_SplitsTheButtonsIntoTheirGroups)
+{
+    using antwika::editor::getToolsIn;
+    using antwika::editor::kEveryToolButton;
+    using antwika::editor::kToolGroupRows;
+    using antwika::editor::ToolButton;
+    using antwika::editor::ToolGroup;
+
+    const auto voxelTools = getToolsIn(ToolGroup::Voxel);
+    const auto entityTools = getToolsIn(ToolGroup::Entity);
+
+    EXPECT_EQ(
+        voxelTools.count + entityTools.count, kEveryToolButton.size());
+    EXPECT_EQ(voxelTools.buttons.at(0), ToolButton::StoneCube);
+    EXPECT_EQ(
+        voxelTools.buttons.at(voxelTools.count - 1), ToolButton::Rubber);
+    EXPECT_EQ(entityTools.buttons.at(0), ToolButton::Select);
+    EXPECT_EQ(
+        entityTools.buttons.at(entityTools.count - 1), ToolButton::Water);
+
+    for (const auto &row : kToolGroupRows)
+    {
+        EXPECT_FALSE(
+            antwika::editor::getToolGroupTitle(row.group).empty());
+    }
+}
+
+TEST(ToolPanelTest, PlacementOf_SendsEveryMarkerToolToTheMarkerPlacement)
 {
     using antwika::editor::placementOf;
     using antwika::editor::ToolPlacement;
-    using antwika::map::Tool;
+    using antwika::editor::Tool;
 
     for (const auto tool :
-         {Tool::Key,
-          Tool::Door,
-          Tool::Checkpoint,
+         {Tool::Checkpoint,
           Tool::Food,
           Tool::Water})
     {
-        EXPECT_EQ(placementOf(tool), ToolPlacement::Gate);
+        EXPECT_EQ(placementOf(tool), ToolPlacement::Marker);
     }
 
     EXPECT_EQ(placementOf(Tool::Start), ToolPlacement::StartOrExit);
     EXPECT_EQ(placementOf(Tool::Exit), ToolPlacement::StartOrExit);
     EXPECT_EQ(placementOf(Tool::Lamp), ToolPlacement::Lamp);
     EXPECT_EQ(placementOf(Tool::Stamp), ToolPlacement::Stamp);
-    EXPECT_EQ(placementOf(Tool::Figure), ToolPlacement::Figure);
     EXPECT_EQ(
-        placementOf(Tool::PressurePlate), ToolPlacement::Plate);
+        placementOf(Tool::Character), ToolPlacement::Character);
 }
 
 TEST(ToolPanelTest, PlacementOf_LeavesTheDrawingToolsToTheShapePath)
 {
     using antwika::editor::placementOf;
     using antwika::editor::ToolPlacement;
-    using antwika::map::Tool;
+    using antwika::editor::Tool;
 
     EXPECT_EQ(placementOf(Tool::Brush), ToolPlacement::Shape);
     EXPECT_EQ(placementOf(Tool::Eraser), ToolPlacement::Shape);

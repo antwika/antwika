@@ -5,11 +5,20 @@ antwika_add_app_tests(
         CameraRigTest.cpp
         CharacterSheetViewTest.cpp
         CharacterTest.cpp
+        CharacterToolTest.cpp
         ColorPickerTest.cpp
+        ComponentScrollTest.cpp
         EditorBindingsTest.cpp
         EditorDocumentTest.cpp
+        EditorMenusTest.cpp
+        EditorSelectTest.cpp
         EditorTest.cpp
+        EntityListPanelTest.cpp
+        EntityPanelTest.cpp
+        FileChooserTest.cpp
         GameModuleTest.cpp
+        GizmoViewTest.cpp
+        HistoryTest.cpp
         IconSheetTest.cpp
         IconsViewTest.cpp
         KeyBenchTest.cpp
@@ -17,45 +26,63 @@ antwika_add_app_tests(
         LayersTest.cpp
         MapPickerTest.cpp
         MenuBarTest.cpp
+        PanelLayoutTest.cpp
+        PanelSizesTest.cpp
         PlanBoardTest.cpp
         PlanFileTest.cpp
         PlanViewTest.cpp
+        PlayStateTest.cpp
+        PreferencesFileTest.cpp
+        ScriptedEditorTest.cpp
         ShapedCubesTest.cpp
         SheetStrokeTest.cpp
         SheetViewTest.cpp
+        SimulationStepsTest.cpp
         TilemapViewTest.cpp
         ToolPanelTest.cpp
+        UndoDisciplineTest.cpp
         ViewPaintTest.cpp
+        WidgetCatalogTest.cpp
+        WidgetIdsTest.cpp
+        WorldEditTest.cpp
+        WorldViewTest.cpp
+    EXTRA_INCLUDES
+        ${CMAKE_CURRENT_SOURCE_DIR}/fakes/include
     LIBS
         antwika::animation
         antwika::app
+        antwika::assets
+        antwika::camera
+        antwika::character
+        antwika::collision
         antwika::decor
-        antwika::schema
         antwika::ecs
         antwika::gameplay
+        antwika::gameplay::tests::fakes
         antwika::gfx
         antwika::gfx::tests::fakes
         antwika::gfx::tests::mocks
         antwika::gfx_backend
         antwika::input
+        antwika::input::tests::fakes
         antwika::input_backend
         antwika::io
         antwika::light
-        antwika::map
+        antwika::loadout
         antwika::log::tests::mocks
+        antwika::map
         antwika::pathfinding
         antwika::render
-        antwika::camera
-        antwika::character
+        antwika::schema
         antwika::solver
         antwika::testing
-        antwika::tilemap
         antwika::tile
-        antwika::voxelmap
+        antwika::tilemap
         antwika::time
         antwika::ui
-        antwika::collision
+        antwika::ui::tests::support
         antwika::voxel
+        antwika::voxelmap
         antwika::wfc
         antwika::worldgen
         gtest::gtest

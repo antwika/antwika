@@ -2,9 +2,11 @@
 
 #include <array>
 #include <cstdint>
+
 #include <antwika/log/ILogger.hpp>
 #include <antwika/time/IClock.hpp>
 #include <antwika/time/Tick.hpp>
+
 #include "antwika/app/IFramePacingSink.hpp"
 
 namespace antwika::app

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <optional>
 
 #include <antwika/gfx/Point.hpp>
@@ -18,6 +19,8 @@ namespace antwika::ui
         bool pressed = false;
 
         bool extendsSelection = false;
+
+        std::int32_t scrolledSteps = 0;
     };
 
 }

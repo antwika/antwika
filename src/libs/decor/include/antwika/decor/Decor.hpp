@@ -10,7 +10,6 @@
 #include <vector>
 
 #include <antwika/time/Tick.hpp>
-#include <antwika/widget/WidgetId.hpp>
 #include <antwika/tilemap/Tilemap.hpp>
 #include <antwika/voxelmap/Voxel.hpp>
 
@@ -147,35 +146,5 @@ namespace antwika::decor
         float lift = kDecorDepthBias);
 
     [[nodiscard]] bool hasAnimatedDecor(std::span<const DecorTile> decor);
-
-    inline constexpr widget::WidgetId kInkHexWidget{204};
-
-    inline constexpr widget::WidgetId kAutoPreviewWidget{205};
-
-    inline constexpr widget::WidgetId kRerollPreviewWidget{244};
-
-    inline constexpr widget::WidgetId kPickBaseTilesWidget{207};
-
-    inline constexpr widget::WidgetId kFrameAddWidget{224};
-
-    inline constexpr widget::WidgetId kTilingPanelWidget{233};
-
-    inline constexpr widget::WidgetId kFrequencyWidget{234};
-
-    inline constexpr widget::WidgetId kDecorWeightWidget{235};
-
-    inline constexpr widget::WidgetId kDecorMoveWidget{239};
-
-    [[nodiscard]] widget::WidgetId getFrameWidget(std::size_t frame);
-
-    inline constexpr widget::WidgetId kSpanAcrossLessWidget{382};
-
-    inline constexpr widget::WidgetId kSpanAcrossMoreWidget{383};
-
-    inline constexpr widget::WidgetId kSpanDownLessWidget{384};
-
-    inline constexpr widget::WidgetId kSpanDownMoreWidget{385};
-
-    [[nodiscard]] widget::WidgetId getMemberWidget(std::size_t member);
 
 }

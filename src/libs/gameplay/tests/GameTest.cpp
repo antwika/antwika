@@ -8,9 +8,12 @@
 #include <antwika/camera/FlyCamera.hpp>
 #include <antwika/character/Character.hpp>
 #include <antwika/ecs/OpenPhase.hpp>
-#include <antwika/gameplay/GateState.hpp>
+#include <antwika/gameplay/CheckpointState.hpp>
 #include <antwika/component/AnimationState.hpp>
+#include <antwika/component/CheckpointReport.hpp>
+#include <antwika/component/ExitReport.hpp>
 #include <antwika/component/Orientation.hpp>
+#include <antwika/component/Pad.hpp>
 #include <antwika/component/Player.hpp>
 #include <antwika/component/Position.hpp>
 #include <antwika/component/Velocity.hpp>
@@ -20,14 +23,17 @@
 #include <antwika/collision/Collision.hpp>
 
 #include "antwika/gameplay/Game.hpp"
+#include "antwika/gameplay/PadReports.hpp"
 
 using antwika::ecs::OpenPhase;
 using antwika::ecs::World;
+using antwika::component::DirectionKeys;
+using antwika::system::SimulationState;
 using antwika::voxel::VoxelPosition;
 using antwika::voxel::Voxels;
 using antwika::component::AnimationState;
 using antwika::gameplay::Game;
-using antwika::gameplay::GateState;
+using antwika::gameplay::CheckpointState;
 using antwika::component::Orientation;
 using antwika::log::mocks::MockLogger;
 using antwika::voxel::Kind;
@@ -84,11 +90,27 @@ namespace
             }
         }
 
+        void layPad(
+            const VoxelPosition position,
+            const antwika::component::PadKind kind)
+        {
+            const auto entity = game.getWorld().create();
+
+            const OpenPhase phase(game.getWorld());
+
+            game.getWorld().add<antwika::component::Pad>(
+                entity,
+                antwika::component::Pad{
+                    .position = position,
+                    .kind = static_cast<std::uint8_t>(kind)});
+        }
+
         NiceMock<MockLogger> logger;
         Voxels solids = getFloorOver(6);
         std::vector<std::vector<VoxelPosition>> patrolPositions;
         World world{logger};
-        Game game{logger, world, solids, patrolPositions};
+        antwika::map::Map laidMap;
+        Game game{logger, world, laidMap, solids, patrolPositions};
     };
 
 }
@@ -122,18 +144,18 @@ TEST_F(GameTest, PlayerAt_GivesWhereThePlayerStands)
 TEST_F(GameTest, Run_WalksThePlayerTheWayTheKeysAsk)
 {
     stand();
-    game.setWalkerFrozen(false);
-    game.arrowKeys().east = true;
+    game.setSimulation(SimulationState{});
+    game.setArrowKeys(DirectionKeys{.east = true});
     game.run(1);
 
     EXPECT_GT(game.playerAt().x, 0.0F);
 }
 
-TEST_F(GameTest, SetWalkerFrozen_HoldsTheWalkerStill)
+TEST_F(GameTest, SetWalkerHeld_HoldsTheWalkerStill)
 {
     stand();
-    game.setWalkerFrozen(true);
-    game.arrowKeys().east = true;
+    game.setSimulation(SimulationState{.walkerHeld = true});
+    game.setArrowKeys(DirectionKeys{.east = true});
     game.run(1);
 
     EXPECT_NEAR(game.playerAt().x, 0.0F, kTolerance);
@@ -142,27 +164,33 @@ TEST_F(GameTest, SetWalkerFrozen_HoldsTheWalkerStill)
 TEST_F(GameTest, SetRunning_SendsTheWalkerFurtherInOneStep)
 {
     stand();
-    game.setWalkerFrozen(false);
-    game.wasdKeys().east = true;
+    game.setSimulation(SimulationState{});
+    game.setWasdKeys(DirectionKeys{.east = true});
     game.run(1);
 
     const auto walkedX = game.playerAt().x;
 
-    game.setRunning(true);
+    game.setSimulation(SimulationState{.running = true});
     game.run(2);
 
     EXPECT_GT(game.playerAt().x - walkedX, walkedX);
 }
 
-TEST_F(GameTest, Gates_StartEmptyAndAreKeptAsTheyAreSet)
+TEST_F(GameTest, Checkpoint_StartsEmptyAndIsKeptAsItIsSet)
 {
-    EXPECT_EQ(game.getGates().keysHeld, 0U);
+    EXPECT_FALSE(game.getCheckpoint().onPosition.has_value());
 
-    game.getGates().keysHeld = 2;
+    auto heldCheckpoint = antwika::gameplay::CheckpointState{};
+
+    heldCheckpoint.onPosition =
+        antwika::voxel::VoxelPosition{.x = 2, .y = 0, .z = 2};
+    game.setCheckpoint(heldCheckpoint);
 
     const auto &constGame = game;
 
-    EXPECT_EQ(constGame.getGates().keysHeld, 2U);
+    EXPECT_EQ(
+        constGame.getCheckpoint().onPosition,
+        (antwika::voxel::VoxelPosition{.x = 2, .y = 0, .z = 2}));
 }
 
 TEST_F(GameTest, CameraTransform_StartsAtTheDefaultAndZoomAtTheDefaultZoom)
@@ -172,7 +200,7 @@ TEST_F(GameTest, CameraTransform_StartsAtTheDefaultAndZoomAtTheDefaultZoom)
     EXPECT_EQ(
         constGame.getCameraTransform().yaw,
         antwika::camera::getDefaultTransform().yaw);
-    EXPECT_EQ(game.zoom(), antwika::camera::kDefaultZoom);
+    EXPECT_EQ(game.getZoom(), antwika::camera::kDefaultZoom);
 }
 
 TEST_F(GameTest, AimAt_PutsThePlayedCameraOnAPlaceAtOnce)
@@ -181,7 +209,7 @@ TEST_F(GameTest, AimAt_PutsThePlayedCameraOnAPlaceAtOnce)
         antwika::gfx::Mat4(1.0F),
         antwika::gfx::Vec3{4.0F, 0.0F, 5.0F});
 
-    EXPECT_NEAR(game.cameraTarget().x, 4.0F, kTolerance);
+    EXPECT_NEAR(game.getCameraTarget().x, 4.0F, kTolerance);
     EXPECT_NEAR(game.getCameraTransform().position.x, 4.0F, kTolerance);
 }
 
@@ -192,7 +220,7 @@ TEST_F(GameTest, Follow_ClosesOnlyAShareOfTheWayToThePlace)
         antwika::gfx::Vec3{10.0F, 0.0F, 0.0F});
 
     EXPECT_NEAR(
-        game.cameraTarget().x,
+        game.getCameraTarget().x,
         10.0F * antwika::gameplay::kCameraFollowLerp,
         kTolerance);
 }
@@ -211,7 +239,7 @@ TEST_F(GameTest, FollowPath_TakesUpTheStopsAndTheGoal)
 TEST_F(GameTest, StepAlongPath_SendsTheWalkerAtTheStopItMakesFor)
 {
     stand();
-    game.setWalkerFrozen(false);
+    game.setSimulation(SimulationState{});
     game.followPath(
         {antwika::gfx::Vec3{3.0F, 0.0F, 0.0F}},
         VoxelPosition{.x = 3, .y = 0, .z = 0});
@@ -247,8 +275,8 @@ TEST_F(GameTest, StepAlongPath_LeavesThePathAloneWhileNotPlaying)
 TEST_F(GameTest, StepAlongPath_LetsTheKeysWinOverThePath)
 {
     stand();
-    game.setWalkerFrozen(false);
-    game.wasdKeys().west = true;
+    game.setSimulation(SimulationState{});
+    game.setWasdKeys(DirectionKeys{.west = true});
     game.followPath(
         {antwika::gfx::Vec3{3.0F, 0.0F, 0.0F}},
         VoxelPosition{.x = 3, .y = 0, .z = 0});
@@ -272,7 +300,7 @@ TEST_F(GameTest, ClearPath_DropsWhateverWasBeingFollowed)
 TEST_F(GameTest, ClearSteering_LeavesTheWalkerStandingStill)
 {
     stand();
-    game.setWalkerFrozen(false);
+    game.setSimulation(SimulationState{});
     game.followPath(
         {antwika::gfx::Vec3{3.0F, 0.0F, 0.0F}},
         VoxelPosition{.x = 3, .y = 0, .z = 0});
@@ -283,11 +311,13 @@ TEST_F(GameTest, ClearSteering_LeavesTheWalkerStandingStill)
     EXPECT_NEAR(game.playerAt().x, 0.0F, kTolerance);
 }
 
-TEST_F(GameTest, SetWorldFrozen_HoldsWhatTheWorldDoesOfItsOwnAccord)
+TEST_F(GameTest, SetSimulationPaused_HoldsWhatTheWorldDoesOfItsOwnAccord)
 {
     stand();
-    game.setWorldFrozen(true);
-    game.setSpeaking(std::optional<std::uint32_t>{0});
+    game.setSimulation(
+        SimulationState{
+            .simulationPaused = true,
+            .speaking = std::optional<std::uint32_t>{0}});
     game.run(1);
 
     EXPECT_TRUE(game.getWorld().isAlive(game.getPlayer()));
@@ -311,4 +341,57 @@ TEST_F(GameTest, Progress_SaysWhichMapAndWhereThePlayerStands)
     EXPECT_EQ(savedProgress.map, "map.json");
     EXPECT_NEAR(savedProgress.stancePlacement.position.x, 1.0F, kTolerance);
     EXPECT_EQ(savedProgress.stancePlacement.way, 3U);
+}
+
+TEST_F(GameTest, Run_ReportsTheCheckpointTheWalkerStandsOn)
+{
+    stand();
+    layPad(VoxelPosition{}, antwika::component::PadKind::Checkpoint);
+
+    game.run(1);
+
+    EXPECT_TRUE(
+        game.getWorld().has<antwika::component::CheckpointReport>(
+            game.getPlayer()));
+}
+
+TEST_F(GameTest, Run_ReportsTheExitTheWalkerReaches)
+{
+    stand();
+    layPad(VoxelPosition{}, antwika::component::PadKind::Exit);
+
+    game.run(1);
+
+    EXPECT_TRUE(
+        game.getWorld().has<antwika::component::ExitReport>(
+            game.getPlayer()));
+}
+
+TEST_F(GameTest, Run_MovesTheRespawnToTheCheckpointItRanOver)
+{
+    stand(2.0F, 3.0F);
+    layPad(VoxelPosition{.x = 2, .y = 0, .z = 2},
+        antwika::component::PadKind::Checkpoint);
+
+    game.run(1);
+
+    EXPECT_TRUE(
+        antwika::gameplay::takeCheckpointReport(
+            game, game.getWorld(), game.getPlayer()));
+    EXPECT_EQ(
+        game.getCheckpoint().onPosition,
+        (VoxelPosition{.x = 2, .y = 0, .z = 2}));
+}
+
+TEST_F(GameTest, Run_ReadsNoPadWhileTheSimulationIsPaused)
+{
+    stand();
+    layPad(VoxelPosition{}, antwika::component::PadKind::Exit);
+    game.setSimulation(SimulationState{.simulationPaused = true});
+
+    game.run(1);
+
+    EXPECT_FALSE(
+        game.getWorld().has<antwika::component::ExitReport>(
+            game.getPlayer()));
 }

@@ -2,6 +2,7 @@
 
 #include <optional>
 
+#include "antwika/ui/EdgeChange.hpp"
 #include "antwika/ui/OptionChoice.hpp"
 #include "antwika/ui/ScrollChange.hpp"
 #include "antwika/ui/SliderChange.hpp"
@@ -35,6 +36,8 @@ namespace antwika::ui
         std::optional<SliderChange> slidChange{};
 
         std::optional<SplitChange> split{};
+
+        std::optional<EdgeChange> edge{};
 
         [[nodiscard]] bool operator==(const Interactions &other) const =
             default;

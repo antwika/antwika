@@ -2,9 +2,10 @@
 
 #include <string>
 
-#include <antwika/map/Settings.hpp>
+#include <antwika/gfx/PointF.hpp>
 #include <antwika/ui/Frame.hpp>
 
+#include "antwika/editor/Preferences.hpp"
 #include "antwika/editor/view/IEditorView.hpp"
 
 namespace antwika::editor
@@ -14,7 +15,7 @@ namespace antwika::editor
     {
     public:
         [[nodiscard]] bool claims(
-            map::View shownView, bool playing) const noexcept override;
+            View shownView, bool playing) const noexcept override;
 
         [[nodiscard]] std::string getStatusText(
             const ViewContext &viewContext) const override;
@@ -23,10 +24,20 @@ namespace antwika::editor
             const ViewContext &viewContext,
             const input::PointerButtonPressed &downPressed) override;
 
+        [[nodiscard]] bool consumeRelease(
+            const ViewContext &viewContext,
+            const input::PointerButtonReleased &upReleased) override;
+
+        [[nodiscard]] bool consumeScroll(
+            const ViewContext &viewContext,
+            const input::PointerScrolled &rolledScrolled) override;
+
+        void trackPointer(const ViewContext &viewContext) override;
+
         [[nodiscard]] bool takesPaintKeys() const noexcept override;
 
         [[nodiscard]] bool offersPaint(
-            map::Paint paint) const noexcept override;
+            Paint paint) const noexcept override;
 
         void draw(
             const ViewContext &viewContext,
@@ -36,6 +47,10 @@ namespace antwika::editor
             const ViewContext &viewContext);
 
     private:
+        void finishShapedStroke(
+            const ViewContext &viewContext,
+            gfx::PointF releasedAtPoint);
+
         [[nodiscard]] bool paintedOnAtlasPixel(
             const ViewContext &viewContext);
     };

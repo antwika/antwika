@@ -33,6 +33,10 @@ namespace antwika::ecs::detail
 
         [[nodiscard]] bool isAlive(Entity entity) const noexcept;
 
+        [[nodiscard]] std::vector<Entity> getLiveEntities() const;
+
+        [[nodiscard]] ILogger &getLogger() const noexcept;
+
     private:
         ILogger &logger;
         std::uint64_t maxEntities;

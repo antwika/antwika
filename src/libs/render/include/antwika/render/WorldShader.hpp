@@ -18,6 +18,12 @@
 namespace antwika::render
 {
 
+    inline constexpr float kFogNear = 4.0F;
+
+    inline constexpr float kFogFar = 28.0F;
+
+    inline constexpr float kFogStrength = 0.3F;
+
     class WorldShader final
     {
     public:

@@ -7,13 +7,13 @@ namespace antwika::event
 
     void to_json(nlohmann::json &j, const Event &event)
     {
-        j["name"] = event.name;
+        j["name"] = std::string(event.name.getText());
         j["payload"] = event.payload;
     }
 
     void from_json(const nlohmann::json &j, Event &event)
     {
-        event.name = j.at("name").get<std::string>();
+        event.name = EventName(j.at("name").get<std::string>());
         event.payload = j.at("payload").get<std::string>();
     }
 

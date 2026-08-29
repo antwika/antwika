@@ -6,7 +6,7 @@
 #include <antwika/voxel/VoxelCube.hpp>
 
 using antwika::editor::getShapedCubes;
-using antwika::map::Paint;
+using antwika::editor::Paint;
 using antwika::voxel::kCubeSide;
 using antwika::voxel::VoxelPosition;
 

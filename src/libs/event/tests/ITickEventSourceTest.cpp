@@ -9,6 +9,7 @@
 #include "antwika/event/ITickEventSource.hpp"
 
 using antwika::event::Event;
+using antwika::event::EventName;
 using antwika::event::ITickEventSource;
 using antwika::event::mocks::MockTickEventSource;
 
@@ -19,10 +20,10 @@ TEST(ITickEventSourceTest, EventsFor_CarriesTheTickToTheImplementation)
 
     EXPECT_CALL(source, eventsFor(7))
         .WillOnce(
-            ::testing::Return(std::vector<Event>{Event{.name = "tick-7"}}));
+            ::testing::Return(std::vector<Event>{Event{.name = EventName{"tick-7"}}}));
 
     const auto events = asInterfaceSource.eventsFor(7);
 
     ASSERT_EQ(events.size(), 1U);
-    EXPECT_EQ(events[0].name, "tick-7");
+    EXPECT_EQ(events[0].name, EventName{"tick-7"});
 }

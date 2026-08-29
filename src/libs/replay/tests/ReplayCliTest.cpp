@@ -20,6 +20,7 @@
 
 using antwika::cli::CommandLineError;
 using antwika::event::Event;
+using antwika::event::EventName;
 using antwika::event::TickEvent;
 using antwika::replay::getLoadReplayFile;
 using antwika::replay::getOpenReplayFile;
@@ -131,7 +132,7 @@ TEST(ReplayCliTest, LoadReplayFile_DecodesASavedDocument)
     EXPECT_EQ(
         events,
         (std::vector<TickEvent>{
-            TickEvent{.tick = 0, .event = Event{.name = "life.step"}},
+            TickEvent{.tick = 0, .event = Event{.name = EventName{"life.step"}}},
         }));
 }
 
@@ -151,12 +152,12 @@ TEST(ReplayCliTest, SaveReplayFile_FiltersOutBuiltInTicks)
 {
     antwika::testing::ScratchFile file("antwika_replay_cli_save_test.jsonl");
     std::vector<TickEvent> events{
-        TickEvent{.tick = 0, .event = Event{.name = "engine.tick"}},
+        TickEvent{.tick = 0, .event = Event{.name = EventName{"engine.tick"}}},
         TickEvent{
             .tick = 0,
-            .event = Event{.name = "game.score_increment", .payload = "1"},
+            .event = Event{.name = EventName{"game.score_increment"}, .payload = "1"},
         },
-        TickEvent{.tick = 1, .event = Event{.name = "engine.tick"}},
+        TickEvent{.tick = 1, .event = Event{.name = EventName{"engine.tick"}}},
     };
 
     saveReplayFile(events, file.getString());
@@ -168,7 +169,7 @@ TEST(ReplayCliTest, SaveReplayFile_FiltersOutBuiltInTicks)
             TickEvent{
                 .tick = 0,
                 .event =
-                    Event{.name = "game.score_increment", .payload = "1"},
+                    Event{.name = EventName{"game.score_increment"}, .payload = "1"},
             },
         }));
 }

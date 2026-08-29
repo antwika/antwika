@@ -22,7 +22,6 @@
 #include <antwika/schema/SchemaVersion.hpp>
 #include <antwika/schema/VersionedDocument.hpp>
 #include <antwika/tile/TilePaint.hpp>
-#include <antwika/character/Character.hpp>
 
 #include "antwika/map/MapFileError.hpp"
 #include "MapFileTables.hpp"
@@ -142,9 +141,9 @@ namespace antwika::map
 
         positions.reserve(map.characters.size());
 
-        for (const auto &figure : map.characters)
+        for (const auto &character : map.characters)
         {
-            positions.push_back(figure.patrolPathPositions);
+            positions.push_back(character.patrolPathPositions);
         }
 
         return positions;
@@ -306,7 +305,7 @@ namespace antwika::map
         readFamilies(map, wholeDocument);
         readFlips(map, wholeDocument);
         readTransitions(map, wholeDocument);
-        readGates(map, wholeDocument);
+        readMarkers(map, wholeDocument);
         map.spawnCubePosition =
             getReadMarkedCube(wholeDocument[std::string(kStartKey)]);
         map.exitCubePosition = getReadMarkedCube(wholeDocument[std::string(
@@ -314,26 +313,19 @@ namespace antwika::map
         map.exitTarget = wholeDocument[std::string(kExitTargetKey)]
                              .get<std::string>();
 
-        for (const auto &figureJson :
+        for (const auto &characterJson :
              wholeDocument[std::string(kCharactersKey)])
         {
-            const auto figureCharacter =
-                read<Character>(kCharacterFields, figureJson);
+            const auto readCharacter =
+                read<Character>(kCharacterFields, characterJson);
 
-            if (figureCharacter.player && getPlayerIndex(map).has_value())
+            if (readCharacter.player && getPlayerIndex(map).has_value())
             {
                 throw MapFileError(
                     "antwika::map: a map may hold but one player");
             }
 
-            map.characters.push_back(figureCharacter);
-        }
-
-        for (const auto &plateJson :
-             wholeDocument[std::string(kPlatesKey)])
-        {
-            map.plates.push_back(
-                read<PressurePlate>(kPlateFields, plateJson));
+            map.characters.push_back(readCharacter);
         }
 
         map.settings = read<Settings>(

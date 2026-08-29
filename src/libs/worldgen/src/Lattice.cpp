@@ -1,6 +1,7 @@
 #include "Lattice.hpp"
 
 #include <algorithm>
+
 #include <antwika/worldgen/ruleset/CompiledRuleset.hpp>
 
 namespace antwika::worldgen::detail

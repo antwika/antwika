@@ -13,12 +13,17 @@
 namespace antwika::editor
 {
 
+    [[nodiscard]] gfx::RectF getCharacterSheetBounds(gfx::Size canvasSize);
+
+    [[nodiscard]] gfx::RectF getCharacterDrawBounds(
+        gfx::Size canvasSize, float railWidth);
+
     [[nodiscard]] gfx::RectF getCharacterPlace(
-        gfx::Size canvasSize, std::size_t direction, std::size_t frame);
+        gfx::RectF sheetRect, std::size_t direction, std::size_t frame);
 
     [[nodiscard]] std::optional<std::size_t> characterAt(
-        gfx::Size canvasSize, gfx::PointF point);
+        gfx::RectF sheetRect, gfx::PointF point);
 
-    [[nodiscard]] gfx::RectF getCharacterCanvasRect(gfx::Size canvasSize);
+    [[nodiscard]] gfx::RectF getCharacterCanvasRect(gfx::RectF drawRect);
 
 }

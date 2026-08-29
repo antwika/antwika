@@ -2,7 +2,6 @@
 
 #include <vector>
 
-#include <antwika/voxelmap/Voxel.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/tilemap/TileEdges.hpp>
 

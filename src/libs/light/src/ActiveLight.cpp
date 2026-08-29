@@ -7,6 +7,85 @@
 namespace antwika::light
 {
 
+    namespace
+    {
+
+        [[nodiscard]] bool appendCapped(
+            std::vector<ActiveLight> &lights, const ActiveLight &light)
+        {
+            if (lights.size() >= kMaxLamps)
+            {
+                return false;
+            }
+
+            lights.push_back(light);
+            return true;
+        }
+
+        template <typename Component>
+        [[nodiscard]] auto hungLightView(const ecs::World &world)
+        {
+            return world.view<component::Position, Component>();
+        }
+
+        template <typename Component>
+        void appendHungLights(
+            std::vector<ActiveLight> &lights,
+            const ecs::World &world,
+            const bool castsShadows)
+        {
+            for (const auto entity : hungLightView<Component>(world))
+            {
+                const auto stoodPosition =
+                    world.get<component::Position>(entity);
+                const auto hungLight = world.get<Component>(entity);
+
+                const ActiveLight light{ // GCOVR_EXCL_LINE
+                        .position =
+                            gfx::Vec3{
+                                stoodPosition.x,
+                                stoodPosition.y + hungLight.aboveHeight,
+                                stoodPosition.z},
+                        .tintColor = hungLight.tintColor,
+                        .reach = hungLight.reach,
+                        .castsShadows = castsShadows};
+
+                if (!appendCapped(lights, light))
+                {
+                    return;
+                }
+            }
+        }
+
+        void appendFolkAndLamps(
+            std::vector<ActiveLight> &lights,
+            const std::vector<ActiveLight> &folkLights,
+            const std::vector<Lamp> &lamps)
+        {
+            for (const auto &folkLight : folkLights)
+            {
+                if (!appendCapped(lights, folkLight))
+                {
+                    return;
+                }
+            }
+
+            for (const auto lamp : lamps)
+            {
+                const ActiveLight lampLight{
+                    .position = getLampPosition(lamp),
+                    .tintColor = lamp.tintColor,
+                    .reach = component::kLampRange};
+
+                if (!appendCapped(lights, lampLight))
+                {
+                    return;
+                }
+            }
+        }
+
+    }
+
     std::vector<ActiveLight> getActiveLights(
         const ecs::World &world,
         const std::vector<ActiveLight> &folkLights,
@@ -14,75 +93,9 @@ namespace antwika::light
     {
         std::vector<ActiveLight> lights;
 
-        for (const auto entity :
-             world.view<component::Position, component::CarriedLight>())
-        {
-            if (lights.size() >= kMaxLamps)
-            {
-                return lights;
-            }
-
-            const auto stoodPosition = world.get<component::Position>(entity);
-            const auto carriedLight =
-                world.get<component::CarriedLight>(entity);
-
-            lights.push_back(
-                ActiveLight{ // GCOVR_EXCL_LINE
-                        .position =
-                            gfx::Vec3{
-                                stoodPosition.x,
-                                stoodPosition.y + carriedLight.aboveHeight,
-                                stoodPosition.z},
-                        .tintColor = carriedLight.tintColor,
-                        .reach = carriedLight.reach});
-        }
-
-        for (const auto entity :
-             world.view<component::Position, component::FillLight>())
-        {
-            if (lights.size() >= kMaxLamps)
-            {
-                return lights;
-            }
-
-            const auto stoodPosition = world.get<component::Position>(entity);
-            const auto fillLight = world.get<component::FillLight>(entity);
-
-            lights.push_back(
-                ActiveLight{ // GCOVR_EXCL_LINE
-                        .position =
-                            gfx::Vec3{
-                                stoodPosition.x,
-                                stoodPosition.y + fillLight.aboveHeight,
-                                stoodPosition.z},
-                        .tintColor = fillLight.tintColor,
-                        .reach = fillLight.reach,
-                        .castsShadows = false});
-        }
-
-        for (const auto &light : folkLights)
-        {
-            if (lights.size() >= kMaxLamps)
-            {
-                return lights;
-            }
-
-            lights.push_back(light);
-        }
-
-        for (const auto lamp : lamps)
-        {
-            if (lights.size() >= kMaxLamps)
-            {
-                return lights;
-            }
-
-            lights.push_back(
-                ActiveLight{
-                    .position = getLampPosition(lamp),
-                    .tintColor = lamp.tintColor,
-                    .reach = component::kLampRange});
-        }
+        appendHungLights<component::CarriedLight>(lights, world, true);
+        appendHungLights<component::FillLight>(lights, world, false);
+        appendFolkAndLamps(lights, folkLights, lamps);
 
         return lights;
     }
@@ -99,29 +112,7 @@ namespace antwika::light
     {
         std::vector<ActiveLight> lights;
 
-        for (const auto &light : folkLights)
-        {
-            if (lights.size() >= kMaxLamps)
-            {
-                return lights;
-            }
-
-            lights.push_back(light);
-        }
-
-        for (const auto lamp : lamps)
-        {
-            if (lights.size() >= kMaxLamps)
-            {
-                return lights;
-            }
-
-            lights.push_back(
-                ActiveLight{
-                    .position = getLampPosition(lamp),
-                    .tintColor = lamp.tintColor,
-                    .reach = component::kLampRange});
-        }
+        appendFolkAndLamps(lights, folkLights, lamps);
 
         return lights;
     } // GCOVR_EXCL_LINE
@@ -138,7 +129,7 @@ namespace antwika::light
         std::size_t lightIndex = 0;
 
         for (const auto carrier :
-             world.view<component::Position, component::CarriedLight>())
+             hungLightView<component::CarriedLight>(world))
         {
             if (lightIndex >= kMaxLamps)
             {

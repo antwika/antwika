@@ -171,8 +171,9 @@ namespace antwika::ui
                                      : std::nullopt),
                     .text = std::string{ // GCOVR_EXCL_LINE
                         line.text.substr(fromIndex, toIndex - fromIndex)},
-                    .textScale = antwika::gfx::getEncodeTextScale(
-                        theme.face, theme.textScale),
+                    .textScale = antwika::gfx::TextScale{
+                        .face = theme.face,
+                        .multiplier = theme.textScale},
                     .textColor = theme.textColor});
             }
 
@@ -355,14 +356,14 @@ namespace antwika::ui
             .column = column,
             .track = track,
             .thumb = thumb,
-            .text = spec.text,
+            .text = std::string{spec.text},
             .scroll = first,
             .requestedExtent = spec.scroll,
             .lines = lines,
             .cursor = cursor,
             .anchor = anchor,
             .dragging = spec.dragging,
-            .bandRuns = spec.bandRuns,
+            .bandRuns = {spec.bandRuns.begin(), spec.bandRuns.end()},
             .lineHeight = std::max(1U, lineHeightOf(themeValue)),
             .advance = std::max(1U, advanceOf(themeValue)),
             .focused = focused});

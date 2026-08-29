@@ -1,24 +1,20 @@
 #pragma once
 
-#include <gtest/gtest.h>
-
 #include <filesystem>
-#include <fstream>
 #include <string>
 #include <string_view>
 #include <system_error>
-#include <unistd.h>
 
-#include "antwika/testing/ScratchPath.hpp"
+#include "antwika/testing/ScratchEntry.hpp"
 
 namespace antwika::testing
 {
 
-    class ScratchDirectory final
+    class ScratchDirectory final : public ScratchEntry
     {
     public:
         explicit ScratchDirectory(std::string_view prefix)
-            : where(getScratchPath(prefix))
+            : ScratchEntry(prefix)
         {
             std::filesystem::create_directories(where);
         }
@@ -29,22 +25,6 @@ namespace antwika::testing
             std::filesystem::remove_all(where, errorCode);
         }
 
-        ScratchDirectory(const ScratchDirectory &) = delete;
-        ScratchDirectory(ScratchDirectory &&) = delete;
-
-        ScratchDirectory &operator=(const ScratchDirectory &) = delete;
-        ScratchDirectory &operator=(ScratchDirectory &&) = delete;
-
-        [[nodiscard]] const std::filesystem::path &getPath() const noexcept
-        {
-            return where;
-        }
-
-        [[nodiscard]] std::string getString() const
-        {
-            return where.string();
-        }
-
         [[nodiscard]] std::string pathIn(std::string_view name) const
         {
             return (where / name).string();
@@ -52,12 +32,8 @@ namespace antwika::testing
 
         void write(std::string_view name, std::string_view text) const
         {
-            std::ofstream file(where / name);
-            file << text;
+            writeText(where / name, text);
         }
-
-    private:
-        std::filesystem::path where;
     };
 
 }

@@ -7,6 +7,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 build_dir=build-coverage
 summary=""
 html_dir=""
+baseline_out=""
 
 usage() {
     echo "Usage: scripts/coverage.sh [options]" >&2
@@ -14,6 +15,8 @@ usage() {
         "build-coverage)" >&2
     echo "  --summary <file>   Also write a JSON summary there" >&2
     echo "  --html <dir>       Also write an HTML report there" >&2
+    echo "  --baseline-out <file>  Also write a per-library ratchet" \
+        "baseline there" >&2
 }
 
 require_value() {
@@ -41,6 +44,11 @@ while [ "$#" -gt 0 ]; do
             html_dir=$2
             shift 2
             ;;
+        --baseline-out)
+            require_value "$@"
+            baseline_out=$2
+            shift 2
+            ;;
         -h | --help)
             usage
             exit 0
@@ -53,6 +61,11 @@ while [ "$#" -gt 0 ]; do
     esac
 done
 
+if [ -n "$baseline_out" ] && [ -z "$summary" ]; then
+    summary=$(mktemp)
+    trap 'rm -f "$summary"' EXIT
+fi
+
 if [ -z "$build_dir" ] || [ ! -d "$build_dir" ]; then
     echo "No instrumented build at '$build_dir'." >&2
     echo "Run 'cmake --preset conan-coverage' and build it first." >&2
@@ -62,6 +75,7 @@ fi
 gcovr_args=(
     --root .
     --filter 'src/.*'
+    --filter 'backends/.*'
     --exclude '.*/tests/.*'
     --exclude '.*/apps/[^/]+/src/main\.cpp'
     --exclude-throw-branches
@@ -80,4 +94,10 @@ if [ -n "$html_dir" ]; then
     gcovr_args+=(--html-details "$html_dir/index.html")
 fi
 
-gcovr "${gcovr_args[@]}" "$build_dir" src
+gcovr "${gcovr_args[@]}" "$build_dir" src backends
+
+if [ -n "$baseline_out" ]; then
+    python3 scripts/check_full_coverage.py \
+        --summary "$summary" \
+        --write-baseline "$baseline_out"
+fi

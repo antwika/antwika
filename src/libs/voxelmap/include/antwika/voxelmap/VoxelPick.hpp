@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <span>
 #include <vector>
@@ -35,6 +36,25 @@ namespace antwika::voxelmap
 
     [[nodiscard]] std::array<LineSegment, 12> getCubeWireframe(
         voxel::VoxelPosition position);
+
+    inline constexpr float kCubeGizmoArm = 0.4F;
+
+    [[nodiscard]] gfx::Vec3 getCubeMiddle(voxel::VoxelPosition position);
+
+    [[nodiscard]] std::array<LineSegment, 3> getCubeGizmoSpans(
+        voxel::VoxelPosition position);
+
+    struct CellRim final
+    {
+        std::int32_t cellX = 0;
+
+        std::int32_t cellZ = 0;
+
+        std::int32_t latticeFoot = 0;
+    };
+
+    [[nodiscard]] std::array<LineSegment, 4> getCellRimSegments(
+        CellRim rim);
 
     [[nodiscard]] std::vector<LineSegment> getBuildableTopOutlines(
         const voxel::Voxels &voxels, std::int32_t level);

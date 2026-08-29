@@ -16,21 +16,24 @@
 #include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/tilemap/TileEdges.hpp>
 
-#include <antwika/map/Settings.hpp>
+#include "antwika/editor/Preferences.hpp"
 
 #include "antwika/editor/ui/EdgeSelection.hpp"
 #include "antwika/editor/ui/GestureResult.hpp"
 #include "antwika/editor/ui/PointerAction.hpp"
+#include "antwika/editor/ui/SheetNames.hpp"
 
 namespace antwika::editor
 {
 
-    [[nodiscard]] std::string_view getTabName(map::View view);
+    [[nodiscard]] std::string_view getTabName(View view);
 
-    [[nodiscard]] widget::WidgetId getTabWidget(map::View view);
+    [[nodiscard]] std::optional<SheetNames> getSheetNames(View view);
 
-    [[nodiscard]] map::View getViewAfterKey(
-        map::View view, input::Key key, bool back);
+    [[nodiscard]] widget::WidgetId getTabWidget(View view);
+
+    [[nodiscard]] View getViewAfterKey(
+        View view, input::Key key, bool back);
 
     [[nodiscard]] std::uint32_t getRailWidth(
         gfx::Size windowSize, gfx::Size canvasSize);
@@ -107,8 +110,6 @@ namespace antwika::editor
     inline constexpr float kEdgeToggleSide = 13.0F;
 
     [[nodiscard]] widget::WidgetId getEdgeToggleWidget(EdgeToggle whichToggle);
-
-    inline constexpr widget::WidgetId kDeriveRulesWidget{178};
 
     [[nodiscard]] std::string_view getEdgeToggleName(EdgeToggle whichToggle);
 

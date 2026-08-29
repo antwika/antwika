@@ -18,7 +18,8 @@ namespace antwika::gfx::detail
         : extent(spec.size),
           colorTexture(spec.size),
           depthTexture(spec.size),
-          keepsDepth(spec.depth)
+          keepsColor(!spec.depthOnly),
+          keepsDepth(spec.depth || spec.depthOnly)
     {
     }
 
@@ -29,7 +30,7 @@ namespace antwika::gfx::detail
 
     const ITexture *NullRenderTarget::getColor() const
     {
-        return &colorTexture;
+        return keepsColor ? &colorTexture : nullptr;
     }
 
     const ITexture *NullRenderTarget::getDepth() const

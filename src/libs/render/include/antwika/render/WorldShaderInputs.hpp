@@ -2,6 +2,8 @@
 
 #include <cstddef>
 #include <optional>
+
+#include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/IShader.hpp>
 #include <antwika/gfx/Math3D.hpp>
 #include <antwika/gfx/ShaderSource.hpp>
@@ -26,7 +28,7 @@ namespace antwika::render
 
         float fadeAbove = 0.0F;
 
-        std::optional<std::size_t> carrying;
+        std::optional<std::size_t> carrying{};
 
         voxel::VoxelPosition hidingCornerPosition{};
 
@@ -39,6 +41,12 @@ namespace antwika::render
         std::size_t upperSightSlot = 1;
 
         bool upperSightOn = true;
+
+        gfx::Vec3 viewPosition{};
+
+        gfx::Vec3 viewTargetPoint{};
+
+        gfx::Color backdropColor{};
     };
 
 }

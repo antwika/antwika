@@ -1,8 +1,10 @@
 #pragma once
 
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <string_view>
+#include <vector>
 
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Size.hpp>
@@ -12,11 +14,13 @@
 #include "antwika/ui/CheckboxSpec.hpp"
 #include "antwika/ui/ContainerSpec.hpp"
 #include "antwika/ui/DropdownSpec.hpp"
+#include "antwika/ui/EdgeSpec.hpp"
 #include "antwika/ui/Frame.hpp"
 #include "antwika/ui/Icon.hpp"
 #include "antwika/ui/Keyboard.hpp"
 #include "antwika/ui/Pointer.hpp"
 #include "antwika/ui/ContainerScope.hpp"
+#include "antwika/ui/ScrollSpec.hpp"
 #include "antwika/ui/Sizing.hpp"
 #include "antwika/ui/SliderSpec.hpp"
 #include "antwika/ui/SplitSpec.hpp"
@@ -64,6 +68,8 @@ namespace antwika::ui
 
         [[nodiscard]] ContainerScope split(const SplitSpec &spec);
 
+        [[nodiscard]] ContainerScope scrollColumn(const ScrollSpec &spec);
+
         void label(std::string_view text);
 
         void label(std::string_view text, Color color);
@@ -86,6 +92,8 @@ namespace antwika::ui
 
         void slider(const SliderSpec &spec);
 
+        void edge(const EdgeSpec &spec);
+
         void spacer(Sizing alongSizing);
 
         [[nodiscard]] Frame build();
@@ -93,7 +101,16 @@ namespace antwika::ui
     private:
         friend class ContainerScope;
 
-        void closeContainer() noexcept;
+        struct OpenScroll final
+        {
+            std::size_t viewport = 0;
+
+            ScrollSpec spec{};
+        };
+
+        void closeContainer();
+
+        void finishScrollColumn();
 
         ContainerScope openContainer(Axis axis, const ContainerSpec &spec);
 
@@ -104,6 +121,8 @@ namespace antwika::ui
         WidgetId focusedWidget;
 
         std::optional<TextEdit> pendingEdit{};
+
+        std::vector<OpenScroll> openScrolls{};
 
         std::unique_ptr<detail::LayoutTree> tree;
     };

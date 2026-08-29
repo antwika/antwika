@@ -170,10 +170,4 @@ namespace antwika::decor
         return sheetBitmap;
     } // GCOVR_EXCL_LINE
 
-    widget::WidgetId getFlipFrameWidget(const std::size_t frame)
-    {
-        return widget::WidgetId{
-            371 + static_cast<std::uint64_t>(frame)};
-    }
-
 }

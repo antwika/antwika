@@ -3,9 +3,11 @@
 #include <cstdint>
 #include <string>
 #include <vector>
-#include <antwika/engine/Events.hpp>
+
+#include <antwika/event/EngineEvents.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
+
 #include "antwika/input/InputEvent.hpp"
 #include "antwika/input/InputEventCodec.hpp"
 #include "antwika/input/InputState.hpp"

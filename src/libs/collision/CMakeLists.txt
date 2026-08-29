@@ -4,7 +4,7 @@ antwika_add_library(
         src/Collision.cpp
     DEPENDS
         antwika::component
-        antwika::gfx
+        antwika::geometry
         antwika::pathfinding
         antwika::tilemap
         antwika::voxel

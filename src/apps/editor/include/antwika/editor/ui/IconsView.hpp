@@ -41,12 +41,15 @@ namespace antwika::editor
             geometry::GridCell pixelCell,
             bool erases);
 
-        void drawSheet(gfx::ViewportRenderer &viewportRenderer) const;
+        void drawSheet(
+            gfx::ViewportRenderer &viewportRenderer,
+            gfx::RectF sheetRect,
+            gfx::RectF drawRect) const;
 
         [[nodiscard]] std::size_t getCount() const;
 
         [[nodiscard]] bool claims(
-            map::View shownView, bool playing) const noexcept override;
+            View shownView, bool playing) const noexcept override;
 
         [[nodiscard]] std::string getStatusText(
             const ViewContext &viewContext) const override;

@@ -7,7 +7,7 @@
 #include "MapFileMakers.hpp"
 #include "MapFileShared.hpp"
 #include "CornerRow.hpp"
-#include "GateRow.hpp"
+#include "MarkerRow.hpp"
 #include "MapFileShared2.hpp"
 
 namespace antwika::map::mapfile
@@ -16,10 +16,6 @@ namespace antwika::map::mapfile
     inline constexpr std::array<Field, 2> kSettingsFields{
         flagField<&Settings::lighting>(kLightingKey),
         flagField<&Settings::cornersJoined>(kCornersJoinedKey)};
-
-    inline constexpr std::array<Field, 2> kPlateFields{
-        cellField<&PressurePlate::position>(kAtKey),
-        cellListField<&PressurePlate::togglePositions>(kSwaysKey)};
 
     inline constexpr std::array<Field, 2> kLampFields{
         cellField<&light::Lamp::position>(kAtKey),
@@ -55,17 +51,18 @@ namespace antwika::map::mapfile
 
     inline constexpr std::array<Field, 2> kPlacementFields{
         fixedPlaceField<&Placement::position>(kAtKey),
-        wholeField<&Placement::way, 0,
-            static_cast<int>(character::kCharacterWays) - 1>(kWayKey)};
+        wholeField<&Placement::way, 0, kWayCount - 1>(kWayKey)};
 
-    inline constexpr std::array<Field, 6> kCharacterFields{
+    inline constexpr std::array<Field, 7> kCharacterFields{
         textField<&Character::name>(kNameKey),
         recordField<&Character::idlePlacement, kPlacementFields>(
             kHomeKey),
         cellListField<&Character::patrolPathPositions>(kStopsKey),
         textListField<&Character::dialogue>(kLinesKey),
         textListField<&Character::components>(kComponentsKey),
-        flagField<&Character::player>(kCharacterPlayerKey)};
+        flagField<&Character::player>(kCharacterPlayerKey),
+        componentValuesField<&Character::componentValues>(
+            kComponentValuesKey)};
 
     inline constexpr std::array<Field, 8> kDecorFields{
         tileField<&decor::DecorTile::tile>(kTileKey),
@@ -138,11 +135,10 @@ namespace antwika::map::mapfile
         namedField<&CornerRow::corner, kCornerNames>(kCornerKey),
         flagField<&CornerRow::filled>(kFilledKey)};
 
-    inline constexpr std::array<GateRow, enums::kCount<Marker>> kGateRows{
-        GateRow{kKeysKey, Marker::Key},
-        GateRow{kDoorsKey, Marker::Door},
-        GateRow{kCheckpointsKey, Marker::Checkpoint},
-        GateRow{kFoodKey, Marker::Food},
-        GateRow{kWaterKey, Marker::Water}};
+    inline constexpr std::array<MarkerRow, enums::kCount<Marker>>
+        kMarkerRows{
+            MarkerRow{kCheckpointsKey, Marker::Checkpoint},
+            MarkerRow{kFoodKey, Marker::Food},
+            MarkerRow{kWaterKey, Marker::Water}};
 
 }

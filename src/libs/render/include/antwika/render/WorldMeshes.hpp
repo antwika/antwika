@@ -80,6 +80,7 @@ namespace antwika::render
         std::vector<
             std::pair<std::size_t, std::map<std::size_t, tilemap::Tile>>>
             decorByFace;
+        voxel::Voxels meshedVoxels;
         std::vector<MeshPiece> solidMesh;
         std::vector<MeshPiece> waterMesh;
         std::unique_ptr<gfx::IMesh> decorMesh;

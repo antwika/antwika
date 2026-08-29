@@ -8,25 +8,16 @@ namespace antwika::gfx::raylib
 {
 
     RaylibMesh::RaylibMesh(RaylibRenderer &ownerRenderer, ::Mesh mesh)
-        : owner(&ownerRenderer),
+        : RaylibResource(ownerRenderer),
           mesh(mesh),
           vertices(static_cast<std::size_t>(mesh.vertexCount)),
           triangles(static_cast<std::size_t>(mesh.triangleCount))
     {
-        ownerRenderer.trackMesh(*this);
     }
 
     RaylibMesh::~RaylibMesh()
     {
-        if (owner != nullptr)
-        {
-            owner->untrackMesh(*this);
-        }
-
-        if (loaded)
-        {
-            UnloadMesh(mesh);
-        }
+        unload();
     }
 
     std::size_t RaylibMesh::getVertexCount() const
@@ -39,12 +30,6 @@ namespace antwika::gfx::raylib
         return triangles;
     }
 
-    bool RaylibMesh::isOwnedBy(
-        const RaylibRenderer &candidateRenderer) const noexcept
-    {
-        return owner == &candidateRenderer;
-    }
-
     const ::Mesh &RaylibMesh::getRawHandle() const noexcept
     {
         return mesh;
@@ -55,15 +40,9 @@ namespace antwika::gfx::raylib
         return mesh;
     }
 
-    bool RaylibMesh::isLoaded() const noexcept
+    void RaylibMesh::unloadHandle() noexcept
     {
-        return loaded;
-    }
-
-    void RaylibMesh::untrackRenderer() noexcept
-    {
-        owner = nullptr;
-        loaded = false;
+        UnloadMesh(mesh);
     }
 
 }

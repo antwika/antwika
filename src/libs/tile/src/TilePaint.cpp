@@ -12,15 +12,9 @@
 #include <antwika/tilemap/AtlasLayout.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/SizeF.hpp>
-#include <antwika/voxelmap/Voxel.hpp>
 
 namespace antwika::tile
 {
-
-    namespace
-    {
-        constexpr std::uint64_t kFirstSwatchWidget = 160;
-    }
 
     namespace
     {
@@ -37,12 +31,6 @@ namespace antwika::tile
                 .y = static_cast<std::int32_t>(tileRect.originPoint.y)
                      + static_cast<std::int32_t>(pixelCell.row)};
         }
-    }
-
-    widget::WidgetId getSwatchWidget(const std::size_t which)
-    {
-        return widget::WidgetId{
-            kFirstSwatchWidget + static_cast<std::uint64_t>(which)};
     }
 
     std::optional<geometry::GridCell> pixelAt(
@@ -387,6 +375,57 @@ namespace antwika::tile
         }
 
         return true;
+    }
+
+    gfx::Color soleInkColorOf(
+        const std::span<const gfx::Color> paletteColors,
+        const std::size_t which,
+        const gfx::Color wantedColor)
+    {
+        const auto taken = [&paletteColors, which](const gfx::Color color)
+        {
+            for (std::size_t other = 0; other < paletteColors.size(); ++other)
+            {
+                if (other != which
+                    && paletteColors[other].red == color.red
+                    && paletteColors[other].green == color.green
+                    && paletteColors[other].blue == color.blue)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        if (!taken(wantedColor))
+        {
+            return wantedColor;
+        }
+
+        for (std::int32_t distance = 1; distance < 256; ++distance)
+        {
+            for (const auto blue :
+                 {static_cast<std::int32_t>(wantedColor.blue) + distance,
+                  static_cast<std::int32_t>(wantedColor.blue) - distance})
+            {
+                if (blue < 0 || blue > 255)
+                {
+                    continue;
+                }
+
+                auto shiftedColor = wantedColor;
+
+                shiftedColor.blue = static_cast<std::uint8_t>(blue);
+
+                if (!taken(shiftedColor))
+                {
+                    return shiftedColor;
+                }
+            }
+        }
+
+        return wantedColor; // GCOVR_EXCL_LINE
     }
 
     std::vector<std::size_t> getPaintedWith(

@@ -2,10 +2,12 @@
 
 #include <cstdint>
 #include <vector>
+
 #include <antwika/rng/IRng.hpp>
 #include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxel/Voxels.hpp>
 #include <antwika/worldgen/ruleset/CompiledRuleset.hpp>
+
 #include "antwika/worldgen/ChunkShape.hpp"
 #include "antwika/worldgen/Ruleset.hpp"
 

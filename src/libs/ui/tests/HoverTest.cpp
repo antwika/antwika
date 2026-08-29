@@ -237,7 +237,7 @@ TEST(HoverTest, ApplyHover_SkipsATargetNamingSomethingThatIsNotAFill)
         DrawText{
             .originPoint = {.x = 0, .y = 0},
             .text = std::string{"hi"},
-            .scale = 1,
+            .scale = {.multiplier = 1},
             .color = kIdleColor}};
 
     HoverTargets targets{getTwoTargets().at(0)};

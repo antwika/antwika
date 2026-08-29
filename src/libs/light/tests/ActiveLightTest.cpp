@@ -52,7 +52,7 @@ TEST(ActiveLightTest, ActiveLights_TakesEveryLampSetDown)
     const auto lights = getActiveLights(world, lamps);
 
     ASSERT_EQ(lights.size(), 1U);
-    EXPECT_NEAR(lights.front().position.y, 2.5F, kTolerance);
+    EXPECT_NEAR(lights.front().position.y, 3.0F, kTolerance);
     EXPECT_EQ(lights.front().tintColor, kRedColor);
 }
 
@@ -674,6 +674,44 @@ TEST(
     EXPECT_TRUE(lights.at(0).castsShadows);
     EXPECT_TRUE(lights.at(1).castsShadows);
     EXPECT_FALSE(lights.at(2).castsShadows);
+}
+
+TEST(
+    ActiveLightTest,
+    CarriedLightSlot_WalksTheSameOrderActiveLightsLaysDown)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    std::vector<antwika::ecs::Entity> carrierEntities;
+
+    {
+        const OpenPhase phase(world);
+
+        for (std::size_t index = 0; index < 4; ++index)
+        {
+            const auto entity = world.create();
+
+            world.add<Position>(
+                entity, Position{.x = static_cast<float>(index)});
+            world.add<CarriedLight>(entity, CarriedLight{});
+            carrierEntities.push_back(entity);
+        }
+    }
+
+    const auto lights = getActiveLights(world, {});
+
+    ASSERT_EQ(lights.size(), carrierEntities.size());
+
+    for (std::size_t index = 0; index < carrierEntities.size(); ++index)
+    {
+        const auto slot = getCarriedLightSlot(world, carrierEntities.at(index));
+
+        ASSERT_TRUE(slot.has_value());
+        EXPECT_NEAR(
+            lights.at(*slot).position.x,
+            static_cast<float>(index),
+            kTolerance);
+    }
 }
 
 TEST(

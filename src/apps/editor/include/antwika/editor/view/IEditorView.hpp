@@ -5,10 +5,12 @@
 
 #include <antwika/input/event/KeyPressed.hpp>
 #include <antwika/input/event/PointerButtonPressed.hpp>
-#include <antwika/map/Settings.hpp>
+#include <antwika/input/event/PointerButtonReleased.hpp>
+#include <antwika/input/event/PointerScrolled.hpp>
 #include <antwika/ui/Context.hpp>
 #include <antwika/ui/Frame.hpp>
 
+#include "antwika/editor/Preferences.hpp"
 #include "antwika/editor/view/ViewContext.hpp"
 
 namespace antwika::editor
@@ -28,7 +30,7 @@ namespace antwika::editor
         virtual ~IEditorView() = default;
 
         [[nodiscard]] virtual bool claims(
-            map::View shownView, bool playing) const noexcept
+            View shownView, bool playing) const noexcept
             = 0;
 
         [[nodiscard]] virtual std::string getStatusText(
@@ -59,10 +61,10 @@ namespace antwika::editor
         }
 
         [[nodiscard]] virtual bool offersPaint(
-            const map::Paint paint) const noexcept
+            const Paint paint) const noexcept
         {
-            return paint == map::Paint::Brush || paint == map::Paint::Line
-                   || paint == map::Paint::Fill;
+            return paint == Paint::Brush || paint == Paint::Line
+                   || paint == Paint::Fill;
         }
 
         [[nodiscard]] virtual bool takeWidgets(
@@ -75,6 +77,18 @@ namespace antwika::editor
 
         [[nodiscard]] virtual bool consumePress(
             const ViewContext &, const input::PointerButtonPressed &)
+        {
+            return false;
+        }
+
+        [[nodiscard]] virtual bool consumeRelease(
+            const ViewContext &, const input::PointerButtonReleased &)
+        {
+            return false;
+        }
+
+        [[nodiscard]] virtual bool consumeScroll(
+            const ViewContext &, const input::PointerScrolled &)
         {
             return false;
         }

@@ -12,6 +12,10 @@
 #include <string_view>
 #include <vector>
 
+#include <antwika/component/CarriedLight.hpp>
+#include <antwika/component/Health.hpp>
+#include <antwika/gfx/Color.hpp>
+#include <antwika/loadout/ComponentValue.hpp>
 #include <antwika/voxelmap/Voxel.hpp>
 #include <antwika/tilemap/Tilemap.hpp>
 #include <antwika/tile/TilePaint.hpp>
@@ -52,6 +56,59 @@ namespace
     void ageTo(
         nlohmann::json &document, const std::uint32_t version)
     {
+        if (version < 51)
+        {
+            for (auto &figure : document["characters"])
+            {
+                auto &names = figure[std::string("components")];
+
+                for (auto &name : names)
+                {
+                    if (name.get<std::string>()
+                        == "component::CharacterIndex")
+                    {
+                        name = std::string("component::RosterIndex");
+                    }
+                }
+
+                auto &values =
+                    figure[std::string("componentValues")];
+
+                if (values.contains("component::CharacterIndex"))
+                {
+                    values["component::RosterIndex"] =
+                        values["component::CharacterIndex"];
+                    values.erase(
+                        std::string("component::CharacterIndex"));
+                }
+            }
+        }
+
+        if (version < 50)
+        {
+            for (auto &figure : document["characters"])
+            {
+                figure["tuning"] = figure["componentValues"];
+                figure.erase(std::string("componentValues"));
+            }
+        }
+
+        if (version < 49)
+        {
+            document["keys"] = nlohmann::json::array();
+            document["doors"] = nlohmann::json::array();
+            document["plates"] = nlohmann::json::array();
+            document["exitLocked"] = false;
+        }
+
+        if (version < 48)
+        {
+            for (auto &figure : document["characters"])
+            {
+                figure.erase(std::string("tuning"));
+            }
+        }
+
         if (version < 42)
         {
             document.erase(std::string("food"));
@@ -1799,7 +1856,7 @@ TEST(MapFileTest, ReadMap_RefusesATransitionIntoItself)
         antwika::map::MapFileError);
 }
 
-TEST(MapFileTest, WriteMap_CarriesTheGatesItHolds)
+TEST(MapFileTest, WriteMap_CarriesTheMarkersItHolds)
 {
     auto map = getDemoMap();
 
@@ -1813,8 +1870,6 @@ TEST(MapFileTest, WriteMap_CarriesTheGatesItHolds)
         apart += 2;
     }
 
-    map.exitLocked = true;
-
     const auto reloadedMap = getReadText(getSerializeMap(map));
 
     for (const auto marker : antwika::map::kEveryMarker)
@@ -1823,27 +1878,43 @@ TEST(MapFileTest, WriteMap_CarriesTheGatesItHolds)
             reloadedMap.markers.positionsOf(marker), map.markers.positionsOf(marker))
             << static_cast<int>(marker);
     }
-
-    EXPECT_TRUE(reloadedMap.exitLocked);
 }
 
-TEST(MapFileTest, ReadMap_LeavesAMapDrawnBeforeGatesBare)
+TEST(MapFileTest, ReadMap_LeavesAMapDrawnBeforeMarkersBare)
 {
     auto document = nlohmann::json::parse(
         getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
-    document.erase(std::string("keys"));
-    document.erase(std::string("doors"));
     document.erase(std::string("checkpoints"));
-    document.erase(std::string("exitLocked"));
     ageTo(document, 34);
 
     const auto reloadedMap = getReadText(document.dump());
 
-    EXPECT_TRUE(reloadedMap.markers.positionsOf(antwika::map::Marker::Key).empty());
-    EXPECT_TRUE(reloadedMap.markers.positionsOf(antwika::map::Marker::Door).empty());
     EXPECT_TRUE(reloadedMap.markers.positionsOf(antwika::map::Marker::Checkpoint).empty());
-    EXPECT_FALSE(reloadedMap.exitLocked);
+}
+
+TEST(MapFileTest, ReadMap_DropsTheGatesAMapHeldBeforeTheirRemoval)
+{
+    auto document = nlohmann::json::parse(
+        getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
+
+    ageTo(document, 48);
+    document["keys"] = nlohmann::json::array(
+        {nlohmann::json::array({1, 0, 2})});
+    document["doors"] = nlohmann::json::array(
+        {nlohmann::json::array({3, 0, 2})});
+    document["plates"] = nlohmann::json::array(
+        {nlohmann::json::object(
+            {{"at", nlohmann::json::array({5, 0, 2})},
+             {"sways", nlohmann::json::array()}})});
+    document["exitLocked"] = true;
+
+    const auto reloadedMap = getReadText(document.dump());
+
+    for (const auto marker : antwika::map::kEveryMarker)
+    {
+        EXPECT_TRUE(reloadedMap.markers.positionsOf(marker).empty());
+    }
 }
 
 TEST(MapFileTest, WriteMap_CarriesTheItemsItHolds)
@@ -1900,12 +1971,12 @@ TEST(MapFileTest, WriteMap_CarriesWhetherTheCornersAreJoined)
     EXPECT_TRUE(getReadText(getSerializeMap(map)).settings.cornersJoined);
 }
 
-TEST(MapFileTest, ReadMap_RefusesAKeyBeyondTheLattice)
+TEST(MapFileTest, ReadMap_RefusesACheckpointBeyondTheLattice)
 {
     auto document = nlohmann::json::parse(
         getSerializeMap(Map{.tilemap = getDefaultTilemap()}));
 
-    document["keys"] = nlohmann::json::array(
+    document["checkpoints"] = nlohmann::json::array(
         {nlohmann::json::array(
             {kMaxCellCoord + 1, 0, 0})});
 
@@ -1922,7 +1993,7 @@ TEST(MapFileTest, ReadMap_RefusesAKeyBeyondTheLattice)
            != character.components.end();
 }
 
-TEST(MapFileTest, WriteMap_CarriesTheComponentsAFigureNames)
+TEST(MapFileTest, WriteMap_CarriesTheComponentsACharacterNames)
 {
     auto map = getDemoMap();
 
@@ -2022,7 +2093,7 @@ TEST(MapFileTest, ReadMap_MovesOlderComponentNamesIntoComponent)
              "collision::Velocity",
              "collision::Player",
              "character::AnimationState",
-             "character::RosterIndex",
+             "character::CharacterIndex",
              "character::Speaker",
              "light::CarriedLight",
              "light::FillLight"});
@@ -2035,7 +2106,7 @@ TEST(MapFileTest, ReadMap_MovesOlderComponentNamesIntoComponent)
     EXPECT_TRUE(carries(loadedCharacter, "component::Velocity"));
     EXPECT_TRUE(carries(loadedCharacter, "component::Player"));
     EXPECT_TRUE(carries(loadedCharacter, "component::AnimationState"));
-    EXPECT_TRUE(carries(loadedCharacter, "component::RosterIndex"));
+    EXPECT_TRUE(carries(loadedCharacter, "component::CharacterIndex"));
     EXPECT_TRUE(carries(loadedCharacter, "component::Speaker"));
     EXPECT_TRUE(carries(loadedCharacter, "component::CarriedLight"));
     EXPECT_TRUE(carries(loadedCharacter, "component::FillLight"));
@@ -2413,4 +2484,114 @@ TEST(MapFileTest, WriteMap_ReadsBackEveryWorldSettingItWrote)
             EXPECT_EQ(loadedMap.settings.cornersJoined, joined);
         }
     }
+}
+
+TEST(MapFileTest, WriteMap_CarriesTheValuesACharacterSets)
+{
+    auto map = Map{.tilemap = getDefaultTilemap()};
+
+    antwika::map::Character character;
+
+    character.components = {
+        "component::Health", "component::CarriedLight"};
+    character.componentValues.insert_or_assign(
+        "component::Health",
+        antwika::loadout::ComponentValue(
+            antwika::component::Health{.food = 30, .water = 200}));
+
+    auto light = antwika::component::CarriedLight{};
+
+    light.tintColor = antwika::gfx::Color{
+        .red = 9, .green = 8, .blue = 7, .alpha = 255};
+    character.componentValues.insert_or_assign(
+        "component::CarriedLight",
+        antwika::loadout::ComponentValue(light));
+    map.characters = {character};
+
+    const auto text = getSerializeMap(map);
+    const auto document = nlohmann::json::parse(text);
+    const auto &values =
+        document["characters"][0]["componentValues"];
+
+    EXPECT_EQ(values["component::Health"]["food"], 30);
+    EXPECT_EQ(values["component::Health"]["water"], 200);
+    EXPECT_EQ(
+        values["component::CarriedLight"]["tint"],
+        nlohmann::json::array({9, 8, 7, 255}));
+    EXPECT_TRUE(values["component::CarriedLight"].contains("above"));
+    EXPECT_TRUE(values["component::CarriedLight"].contains("reach"));
+
+    EXPECT_EQ(getReadText(text).characters, map.characters);
+}
+
+TEST(MapFileTest, ReadMap_GivesACharacterKeptBeforeValuesNoneAtAll)
+{
+    auto map = Map{.tilemap = getDefaultTilemap()};
+
+    map.characters = {
+        antwika::map::Character{},
+        antwika::map::Character{.name = "Watcher"}};
+
+    auto document = nlohmann::json::parse(getSerializeMap(map));
+
+    ageTo(document, 47);
+
+    for (const auto &figure : document["characters"])
+    {
+        EXPECT_FALSE(figure.contains("tuning"));
+    }
+
+    const auto loadedMap = getReadText(document.dump());
+
+    ASSERT_EQ(loadedMap.characters.size(), 2U);
+    EXPECT_TRUE(loadedMap.characters.at(0).componentValues.empty());
+    EXPECT_TRUE(loadedMap.characters.at(1).componentValues.empty());
+}
+
+TEST(MapFileTest, ReadMap_RefusesAValueOfAComponentItDoesNotKnow)
+{
+    auto map = Map{.tilemap = getDefaultTilemap()};
+
+    map.characters = {antwika::map::Character{}};
+
+    auto document = nlohmann::json::parse(getSerializeMap(map));
+
+    document["characters"][0]["componentValues"]
+            ["component::Missing"] =
+        nlohmann::json::object();
+
+    EXPECT_THROW(
+        (void)getReadText(document.dump()), MapFileError);
+}
+
+TEST(MapFileTest, ReadMap_RefusesAValueFieldItDoesNotKnow)
+{
+    auto map = Map{.tilemap = getDefaultTilemap()};
+
+    map.characters = {antwika::map::Character{}};
+
+    auto document = nlohmann::json::parse(getSerializeMap(map));
+
+    document["characters"][0]["componentValues"]
+            ["component::Health"] = {
+        {"food", 1}, {"water", 1}, {"mana", 1}};
+
+    EXPECT_THROW(
+        (void)getReadText(document.dump()), MapFileError);
+}
+
+TEST(MapFileTest, ReadMap_RefusesAValueOfATagComponent)
+{
+    auto map = Map{.tilemap = getDefaultTilemap()};
+
+    map.characters = {antwika::map::Character{}};
+
+    auto document = nlohmann::json::parse(getSerializeMap(map));
+
+    document["characters"][0]["componentValues"]
+            ["component::Player"] =
+        nlohmann::json::object();
+
+    EXPECT_THROW(
+        (void)getReadText(document.dump()), MapFileError);
 }

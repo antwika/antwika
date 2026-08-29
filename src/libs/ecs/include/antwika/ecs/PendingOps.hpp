@@ -3,7 +3,9 @@
 #include <span>
 #include <utility>
 #include <vector>
+
 #include <antwika/log/ILogger.hpp>
+
 #include "antwika/ecs/Component.hpp"
 #include "antwika/ecs/ComponentKey.hpp"
 #include "antwika/ecs/ComponentPool.hpp"

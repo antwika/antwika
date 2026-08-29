@@ -9,9 +9,10 @@
 #include <antwika/component/AnimationState.hpp>
 #include <antwika/component/Orientation.hpp>
 #include <antwika/component/Position.hpp>
-#include <antwika/component/RosterIndex.hpp>
+#include <antwika/component/CharacterIndex.hpp>
 #include <antwika/gfx/Camera3D.hpp>
 #include <antwika/gfx/Color.hpp>
+#include <antwika/gfx/GfxError.hpp>
 #include <antwika/gfx/MeshBox.hpp>
 #include <antwika/gfx/MeshMaterial.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
@@ -21,17 +22,21 @@
 #include <antwika/gfx/WindowEvent.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/SelectedInputBackend.hpp>
+#include <antwika/component/DirectionKeys.hpp>
 #include <antwika/light/ActiveLight.hpp>
 #include <antwika/light/PointLight.hpp>
 #include <antwika/log/Level.hpp>
-#include <antwika/map/MapAssets.hpp>
-#include <antwika/gameplay/Roster.hpp>
+#include <antwika/assets/MapAssets.hpp>
+#include <antwika/assets/ShaderAssets.hpp>
+#include <antwika/gameplay/Characters.hpp>
+#include <antwika/gameplay/PadReports.hpp>
 #include <antwika/solver/VoxelWeave.hpp>
 #include <antwika/tilemap/AtlasLayout.hpp>
 #include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxel/VoxelOcclusion.hpp>
 #include <antwika/voxelmap/Voxel.hpp>
 #include <antwika/collision/Collision.hpp>
+#include <antwika/app/FramePacing.hpp>
 #include <antwika/app/WindowEvents.hpp>
 
 #include "antwika/game/app/Actions.hpp"
@@ -43,14 +48,6 @@ namespace antwika::game
     {
         constexpr gfx::Color kBackgroundColor{
             .red = 6, .green = 6, .blue = 10, .alpha = 255};
-
-        constexpr gfx::Color kSightPointColor{
-            .red = 255, .green = 64, .blue = 64, .alpha = 255};
-
-        constexpr float kSightPointSide = 3.0F;
-
-        constexpr gfx::Color kOriginPointColor{
-            .red = 255, .green = 255, .blue = 255, .alpha = 255};
 
         [[nodiscard]] gfx::Bitmap skinOf(
             const map::Map &laidMap,
@@ -64,7 +61,7 @@ namespace antwika::game
                           mapPath, character::kCharacterSheet)
                     : map::getSidecarPath(
                           mapPath,
-                          "figure-" + std::to_string(skinIndex)
+                          "character-" + std::to_string(skinIndex)
                               + "-20x28.png");
 
             try
@@ -76,11 +73,11 @@ namespace antwika::game
                     return loadedBitmap;
                 }
             }
-            catch (...)
+            catch (const gfx::GfxError &)
             {
             }
 
-            return map::getLoadCharacterSheet(mapPath, kAppName);
+            return assets::getLoadCharacterSheet(mapPath, kAppName);
         }
     }
 
@@ -90,21 +87,23 @@ namespace antwika::game
         input::IInputBackend &inputsGiven,
         std::string mapPath)
         : mapPath(std::move(mapPath)),
+          logger(logger),
           backend(backendGiven),
           inputs(inputsGiven),
           window(
               backend.createWindow(
                   gfx::WindowSpec{
-                      .title = "Antwika",
+                      .title = "Antwika game",
                       .size = app::kDefaultWindowSize,
-                      .resizable = true})),
+                      .resizable = true,
+                      .targetFps = app::kTargetFps})),
           viewportRenderer(
               window->renderer(), window->getSize(), camera::kCanvasSize),
           map(map::getLoadMap(this->mapPath)),
           world(logger),
-          playGame(logger, world, meshes.getCells(), patrolPositions)
+          patrolPositions(patrolStopsOf(map)),
+          playGame(logger, world, map, meshes.getCells(), patrolPositions)
     {
-        patrolPositions = patrolStopsOf(map);
         meshes.rebuild(
             viewportRenderer,
             map,
@@ -112,47 +111,41 @@ namespace antwika::game
             map.settings.cornersJoined
                 ? solver::CornerSeams::Included
                 : solver::CornerSeams::Ignored,
-            map::getLoadAtlasPair(this->mapPath, kAppName),
+            assets::getLoadAtlasPair(this->mapPath, kAppName),
             tick);
         sheets.open(
             viewportRenderer,
-            map::getLoadAtlasPair(this->mapPath, kAppName),
+            assets::getLoadAtlasPair(this->mapPath, kAppName),
             map,
             tick);
 
-        std::vector<gfx::Bitmap> figureBitmaps;
+        std::vector<gfx::Bitmap> characterBitmaps;
 
         for (std::size_t index = 0; index < map.characters.size(); ++index)
         {
-            figureBitmaps.push_back(skinOf(map, this->mapPath, index));
+            characterBitmaps.push_back(skinOf(map, this->mapPath, index));
         }
 
-        skins.take(viewportRenderer, std::move(figureBitmaps));
-        worldShader.open(viewportRenderer, map::getLoadShader("voxel"));
+        skins.take(viewportRenderer, std::move(characterBitmaps));
+        worldShader.open(viewportRenderer, assets::getShaderSource("voxel"));
         sprites.open(viewportRenderer);
-        lightPasses.open(viewportRenderer, map::getLoadShader("shadow"));
-        scenePass.open(viewportRenderer, map::getLoadShader("bloom"));
+        lightPasses.open(viewportRenderer, assets::getShaderSource("shadow"));
+        scenePass.open(viewportRenderer, assets::getShaderSource("bloom"));
 
-        playGame.setPlayer(
-            gameplay::spawnRoster(
-                world,
-                map,
-                map::getPlayerIndex(map).value_or(0),
-                gameplay::getStartingPlacement(
-                    map, meshes.getCells(), std::nullopt)));
-        playGame.setWorldFrozen(false);
-        playGame.setWalkerFrozen(false);
+        gameplay::spawnCharacters(
+            world, map, map::getPlayerIndex(map).value_or(0));
+        playGame.standPlayer();
+        playGame.setSimulation(simulationState);
         playGame.getCameraTransform() =
             camera::getSnappedPitch(camera::getDefaultTransform());
         viewHeight =
-            camera::getOrthoHalfHeight(camera::kCanvasSize, playGame.zoom());
+            camera::getOrthoHalfHeight(camera::kCanvasSize, playGame.getZoom());
 
         const auto stoodPosition =
             world.get<component::Position>(playGame.getPlayer());
 
         playGame.aimAt(
-            getWorldRotation(), gfx::Vec3{stoodPosition.x, stoodPosition.y,
-            stoodPosition.z});
+            getWorldRotation(), collision::positionOf(stoodPosition));
         logger.log(log::Level::Info, "Playing " + this->mapPath);
     }
 
@@ -173,7 +166,7 @@ namespace antwika::game
             }
 
             for (std::size_t tickCount = 0;
-                 tickDebt.owesTick()
+                 running && tickDebt.owesTick()
                  && tickCount < app::kMaxCatchUpTicks;
                  ++tickCount)
             {
@@ -219,14 +212,15 @@ namespace antwika::game
             running = false;
         }
 
-        auto &walkKeys = playGame.wasdKeys();
+        playGame.setWasdKeys(
+            component::DirectionKeys{
+                .north = actions.isActive(kWalkNorth, inputState),
+                .south = actions.isActive(kWalkSouth, inputState),
+                .west = actions.isActive(kWalkWest, inputState),
+                .east = actions.isActive(kWalkEast, inputState)});
 
-        walkKeys.north = actions.isActive(kWalkNorth, inputState);
-        walkKeys.south = actions.isActive(kWalkSouth, inputState);
-        walkKeys.west = actions.isActive(kWalkWest, inputState);
-        walkKeys.east = actions.isActive(kWalkEast, inputState);
-
-        playGame.setRunning(actions.isActive(kRun, inputState));
+        simulationState.running = actions.isActive(kRun, inputState);
+        playGame.setSimulation(simulationState);
     }
 
     void Runner::step()
@@ -234,25 +228,22 @@ namespace antwika::game
         playGame.stepAlongPath(true);
         playGame.run(tick);
 
-        if (!world.isAlive(playGame.getPlayer()))
+        static_cast<void>(
+            gameplay::takeCheckpointReport(
+                playGame, world, playGame.getPlayer()));
+
+        if (gameplay::takeExitReport(world, playGame.getPlayer()))
         {
-            playGame.setPlayer(
-                gameplay::spawnRoster(
-                    world,
-                    map,
-                    map::getPlayerIndex(map).value_or(0),
-                    gameplay::getStartingPlacement(
-                        map,
-                        meshes.getCells(),
-                        playGame.getGates().checkpointPlacement)));
+            logger.log(log::Level::Info, "the exit was reached");
+
+            running = false;
         }
 
         const auto stoodPosition =
             world.get<component::Position>(playGame.getPlayer());
-        const gfx::Vec3 walkerPosition{stoodPosition.x, stoodPosition.y,
-            stoodPosition.z};
 
-        playGame.follow(getWorldRotation(), walkerPosition);
+        playGame.follow(
+            getWorldRotation(), collision::positionOf(stoodPosition));
         ++tick;
     }
 
@@ -272,68 +263,42 @@ namespace antwika::game
             viewHeight);
     }
 
-    void Runner::drawSightPoints(
-        const gfx::Mat4 &modelMatrix,
-        const gfx::Camera3D &camera,
-        const gfx::Vec3 walkerPosition,
-        const bool upperSightOn)
+    Runner::Frame Runner::getFrame() const
     {
-        const auto markAt =
-            [this, &modelMatrix, &camera](
-                const gfx::Vec3 position, const gfx::Color markColor)
-        {
-            const auto onCanvas = voxelmap::getProjectToScreen(
-                camera, modelMatrix, camera::kCanvasSize, position);
-
-            if (!onCanvas.has_value())
-            {
-                return;
-            }
-
-            viewportRenderer.drawRect(
-                gfx::RectF{
-                    gfx::PointF{
-                        onCanvas->x - (kSightPointSide / 2.0F),
-                        onCanvas->y - (kSightPointSide / 2.0F)},
-                    gfx::SizeF{kSightPointSide, kSightPointSide}},
-                markColor);
-        };
-
-        markAt(gfx::Vec3{0.0F, 0.0F, 0.0F}, kOriginPointColor);
-
-        markAt(voxel::getLineOfSight(walkerPosition), kSightPointColor);
-
-        if (upperSightOn)
-        {
-            markAt(
-                voxel::getUpperLineOfSight(walkerPosition), kSightPointColor);
-        }
-    }
-
-    void Runner::draw()
-    {
-        const auto modelMatrix = getWorldRotation();
-        const auto camera = getWorldCamera();
         const auto stoodPosition =
             world.get<component::Position>(playGame.getPlayer());
-        const gfx::Vec3 walkerPosition{stoodPosition.x, stoodPosition.y,
-            stoodPosition.z};
-        const auto sightPoint =
-            voxel::getLineOfSight(walkerPosition);
-        const auto upperSightPoint =
-            voxel::getUpperLineOfSight(walkerPosition);
-        const auto upperSightOn =
-            !voxel::isCubeAbove(
-                meshes.getCells(), walkerPosition, light::kSightClearance);
+        const auto walkerPosition = collision::positionOf(stoodPosition);
+
+        return Frame{
+            .modelMatrix = getWorldRotation(),
+            .camera = getWorldCamera(),
+            .stoodPosition = stoodPosition,
+            .walkerPosition = walkerPosition,
+            .sightPoint = voxel::getLineOfSight(walkerPosition),
+            .upperSightPoint = voxel::getUpperLineOfSight(walkerPosition),
+            .walkerVoxelPosition =
+                voxel::VoxelPosition{
+                    .x = collision::columnOf(walkerPosition.x),
+                    .z = collision::columnOf(walkerPosition.z)},
+            .upperSightOn =
+                !voxel::isCubeAbove(
+                    meshes.getCells(),
+                    walkerPosition,
+                    light::kSightClearance)};
+    }
+
+    std::vector<light::ActiveLight> Runner::getFrameLights(
+        const Frame &frame) const
+    {
         auto lights = std::vector<light::ActiveLight>{
             light::ActiveLight{
-                .position = sightPoint, .brightness = 0.0F}};
+                .position = frame.sightPoint, .brightness = 0.0F}};
 
-        if (upperSightOn)
+        if (frame.upperSightOn)
         {
             lights.push_back(
                 light::ActiveLight{
-                    .position = upperSightPoint, .brightness = 0.0F});
+                    .position = frame.upperSightPoint, .brightness = 0.0F});
         }
 
         for (const auto &light : light::getActiveLights(world, map.lamps))
@@ -345,15 +310,23 @@ namespace antwika::game
 
             lights.push_back(light);
         }
+
+        return lights;
+    }
+
+    void Runner::bakeLightPasses(
+        const Frame &frame, const std::vector<light::ActiveLight> &lights)
+    {
         lightPasses.hide(
             viewportRenderer,
-            voxel::getOccludingVoxels(meshes.getCells(), walkerPosition),
-            voxel::VoxelPosition{
-                .x = static_cast<std::int32_t>(
-                    std::floor(walkerPosition.x / voxel::kVoxelSide)),
-                .z = static_cast<std::int32_t>(
-                    std::floor(walkerPosition.z / voxel::kVoxelSide))});
+            voxel::getOccludingVoxels(
+                meshes.getCells(), frame.walkerPosition),
+            frame.walkerVoxelPosition);
         lightPasses.bakeLamps(viewportRenderer, meshes.getSolid(), lights);
+    }
+
+    void Runner::refreshDecor()
+    {
         sheets.refresh(
             viewportRenderer,
             map,
@@ -365,7 +338,11 @@ namespace antwika::game
         {
             meshes.rebuildDecor(viewportRenderer, map, tick);
         }
+    }
 
+    void Runner::setWorldLook(
+        const Frame &frame, const std::vector<light::ActiveLight> &lights)
+    {
         worldShader.setLook(
             viewportRenderer,
             render::WorldShaderInputs{
@@ -373,26 +350,26 @@ namespace antwika::game
                 .lighting = map.settings.lighting,
                 .sightOn = true,
                 .ambient = static_cast<float>(map.ambient) / 100.0F,
-                .walkerPosition = walkerPosition,
-                .fadeAbove = stoodPosition.y,
+                .walkerPosition = frame.walkerPosition,
+                .fadeAbove = frame.stoodPosition.y,
                 .carrying =
                     light::getCarriedLightSlot(world, playGame.getPlayer()),
-                .hidingCornerPosition = voxelmap::getOcclusionMaskOrigin(
-                    voxel::VoxelPosition{
-                        .x = static_cast<std::int32_t>(
-                            std::floor(
-                                walkerPosition.x / voxel::kVoxelSide)),
-                        .z = static_cast<std::int32_t>(
-                            std::floor(
-                                walkerPosition.z / voxel::kVoxelSide))}),
-                .sightPoint = sightPoint,
+                .hidingCornerPosition =
+                    voxelmap::getOcclusionMaskOrigin(frame.walkerVoxelPosition),
+                .sightPoint = frame.sightPoint,
                 .sightSlot = 0,
-                .upperSightPoint = upperSightPoint,
+                .upperSightPoint = frame.upperSightPoint,
                 .upperSightSlot = 1,
-                .upperSightOn = upperSightOn},
+                .upperSightOn = frame.upperSightOn,
+                .viewPosition = frame.camera.getPosition(),
+                .viewTargetPoint = frame.camera.getTarget(),
+                .backdropColor = kBackgroundColor},
             lights,
             lightPasses.getLamps());
+    }
 
+    void Runner::drawPile(const Frame &frame)
+    {
         const auto material = [this](const bool keyed)
         {
             return gfx::MeshMaterial{
@@ -407,88 +384,112 @@ namespace antwika::game
                 .shader = &worldShader.getProgram()};
         };
 
-        const auto clipMatrix = camera.getViewProjection() * modelMatrix;
+        const auto clipMatrix =
+            frame.camera.getViewProjection() * frame.modelMatrix;
 
-        const auto pile = [&]
+        for (const auto &piece : meshes.getSolid())
         {
-            for (const auto &piece : meshes.getSolid())
+            if (gfx::isBoxOutside(piece.box, clipMatrix))
             {
-                if (gfx::isBoxOutside(piece.box, clipMatrix))
-                {
-                    continue;
-                }
-
-                viewportRenderer.drawMesh(
-                    *piece.mesh,
-                    modelMatrix,
-                    camera,
-                    material(false));
+                continue;
             }
 
-            if (meshes.getDecor() != nullptr)
+            viewportRenderer.drawMesh(
+                *piece.mesh,
+                frame.modelMatrix,
+                frame.camera,
+                material(false));
+        }
+
+        if (meshes.getDecor() != nullptr)
+        {
+            viewportRenderer.drawMesh(
+                *meshes.getDecor(),
+                frame.modelMatrix,
+                frame.camera,
+                material(true));
+        }
+
+        for (const auto &piece : meshes.getWater())
+        {
+            if (gfx::isBoxOutside(piece.box, clipMatrix))
             {
-                viewportRenderer.drawMesh(
-                    *meshes.getDecor(), modelMatrix, camera, material(true));
+                continue;
             }
 
-            for (const auto &piece : meshes.getWater())
-            {
-                if (gfx::isBoxOutside(piece.box, clipMatrix))
-                {
-                    continue;
-                }
+            viewportRenderer.drawMesh(
+                *piece.mesh,
+                frame.modelMatrix,
+                frame.camera,
+                material(false));
+        }
+    }
 
-                viewportRenderer.drawMesh(*piece.mesh,
-                    modelMatrix,
-                    camera,
-                    material(false));
-            }
-        };
+    void Runner::drawCharacters(const Frame &frame)
+    {
+        const auto ground = collision::getGroundHeightUnderFootprint(
+            meshes.getCells(),
+            frame.stoodPosition.x,
+            frame.stoodPosition.z,
+            frame.stoodPosition.y);
 
+        if (ground.has_value())
+        {
+            sprites.drawShadow(
+                viewportRenderer,
+                frame.camera,
+                frame.modelMatrix,
+                gfx::Vec3{
+                    frame.stoodPosition.x,
+                    *ground + 0.02F,
+                    frame.stoodPosition.z});
+        }
+
+        for (const auto entity :
+             world.view<
+                 component::Position,
+                 component::AnimationState,
+                 component::CharacterIndex>())
+        {
+            sprites.drawCharacter(
+                viewportRenderer,
+                worldShader.getProgram(),
+                frame.camera,
+                frame.modelMatrix,
+                skins.getPicture(
+                    world.get<component::CharacterIndex>(entity).index),
+                world.get<component::Position>(entity),
+                world.get<component::AnimationState>(entity),
+                tick,
+                lightPasses.getLampShadows());
+        }
+    }
+
+    void Runner::drawScene(const Frame &frame)
+    {
         scenePass.draw(
             viewportRenderer,
             worldShader.getProgram(),
             kBackgroundColor,
-            pile,
-            [&]
+            [this, &frame]
             {
-                const auto ground = collision::getGroundHeightUnderFootprint(
-                    meshes.getCells(), stoodPosition.x, stoodPosition.z,
-                        stoodPosition.y);
-
-                if (ground.has_value())
-                {
-                    sprites.drawShadow(
-                        viewportRenderer,
-                        camera,
-                        modelMatrix,
-                        gfx::Vec3{
-                            stoodPosition.x, *ground + 0.02F, stoodPosition.z});
-                }
-
-                for (const auto entity :
-                     world.view<
-                         component::Position,
-                         component::AnimationState,
-                         component::RosterIndex>())
-                {
-                    sprites.drawCharacter(
-                        viewportRenderer,
-                        worldShader.getProgram(),
-                        camera,
-                        modelMatrix,
-                        skins.getPicture(
-                            world.get<component::RosterIndex>(entity).index),
-                        world.get<component::Position>(entity),
-                        world.get<component::AnimationState>(entity),
-                        tick,
-                        lightPasses.getLampShadows());
-                }
+                drawPile(frame);
+            },
+            [this, &frame]
+            {
+                drawCharacters(frame);
             });
+    }
 
-        drawSightPoints(
-            modelMatrix, camera, walkerPosition, upperSightOn);
+    void Runner::draw()
+    {
+        const auto frame = getFrame();
+        const auto lights = getFrameLights(frame);
 
+        bakeLightPasses(frame, lights);
+        refreshDecor();
+        setWorldLook(frame, lights);
+        drawScene(frame);
         viewportRenderer.fillLetterbox(gfx::Color{});
         viewportRenderer.present();
     }

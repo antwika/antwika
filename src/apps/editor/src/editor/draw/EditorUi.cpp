@@ -13,6 +13,8 @@
 
 #include "antwika/editor/Editor.hpp"
 
+#include "antwika/editor/ui/WidgetIds.hpp"
+
 namespace antwika::editor
 {
 
@@ -38,7 +40,7 @@ namespace antwika::editor
         if (!play.playing)
         {
             antwika::ui::paint(
-                viewportRenderer.nativeRenderer(), frame.drawList);
+                viewportRenderer.innerRenderer(), frame.drawList);
 
             if (auto *view = viewNow(); view != nullptr)
             {
@@ -64,15 +66,16 @@ namespace antwika::editor
                 .positionPoint = pointer.pointerInWindow,
                 .down = buttonHeld,
                 .pressed = pressed,
-                .extendsSelection = getHeldModifiers().shift},
+                .extendsSelection = getHeldModifiers().shift,
+                .scrolledSteps = pointer.wheelSteps},
             pressed ? antwika::ui::Keyboard{}
                     : antwika::ui::Keyboard{
                           .keys = keyBench.keysNow,
                           .typedText = keyBench.typedThisFrame},
-            dialogs.fileDialog.has_value() && dialogs.fileDialog->isSaveMode
+            fileChooser.fileDialog.has_value() && fileChooser.fileDialog->isSaveMode
                 ? antwika::editor::kPickerNameWidget
-            : inkPicker.editingInk.has_value()
-                ? decor::kInkHexWidget
+            : inkPanel.inkPicker.editingInk.has_value()
+                ? kInkHexWidget
                 : antwika::widget::kNoWidget};
 
         {
@@ -118,14 +121,9 @@ namespace antwika::editor
                         .open = dialogs.openMenu == menu});
             };
 
-            for (const auto menu : antwika::editor::kBarMenus)
+            for (const auto menu : antwika::editor::kEveryMenu)
             {
                 dropMenu(menu);
-            }
-
-            if (dialogs.openMenu == antwika::editor::Menu::Settings)
-            {
-                dropMenu(antwika::editor::Menu::Settings);
             }
 
             context.spacer(antwika::ui::kGrowSizing);
@@ -140,7 +138,7 @@ namespace antwika::editor
                     .widthSizing = antwika::ui::kGrowSizing,
                     .backgroundColor = kPanelColor});
 
-            for (const auto tab : map::kEveryView)
+            for (const auto tab : kEveryView)
             {
                 context.button(
                     std::string(getTabName(tab)),
@@ -163,7 +161,7 @@ namespace antwika::editor
         if (layoutModals(context))
         {
         }
-        else if (dialogs.fileDialog.has_value())
+        else if (fileChooser.fileDialog.has_value())
         {
             const auto asking = context.row(
                 antwika::ui::ContainerSpec{
@@ -183,50 +181,50 @@ namespace antwika::editor
 
                 panelTitle(
                     context,
-                    dialogs.fileDialog->isSaveMode ? "Save the map as"
+                    fileChooser.fileDialog->isSaveMode ? "Save the map as"
                                    : "Load a map");
-                context.label(dialogs.fileDialog->folder, kGridLineColor);
+                context.label(fileChooser.fileDialog->folder, kGridLineColor);
 
                 context.button(
                     "..",
                     antwika::ui::ButtonSpec{
-                        .widgetId = antwika::editor::kPickerOverwriteWidget,
+                        .widgetId = antwika::editor::kPickerParentFolderWidget,
                         .widthSizing = antwika::ui::kGrowSizing});
 
                 for (std::size_t index = 0;
-                     index < dialogs.folderEntries.size();
+                     index < fileChooser.folderEntries.size();
                      ++index)
                 {
                     context.button(
-                        dialogs.folderEntries.at(index) + "/",
+                        fileChooser.folderEntries.at(index) + "/",
                         antwika::ui::ButtonSpec{
                             .widgetId = antwika::editor::getMapRowWidget(index),
                             .widthSizing = antwika::ui::kGrowSizing});
                 }
 
-                for (std::size_t index = 0; index < dialogs.mapEntries.size();
+                for (std::size_t index = 0; index < fileChooser.mapEntries.size();
                      ++index)
                 {
-                    const auto entry = dialogs.mapEntries.at(index);
+                    const auto entry = fileChooser.mapEntries.at(index);
 
                     context.button(
                         entry,
                         antwika::ui::ButtonSpec{
                             .widgetId = antwika::editor::getMapRowWidget(
-                                dialogs.folderEntries.size() + index),
+                                fileChooser.folderEntries.size() + index),
                             .widthSizing = antwika::ui::kGrowSizing,
-                            .fillColor = entry == dialogs.fileDialog->fileName
+                            .fillColor = entry == fileChooser.fileDialog->fileName
                                        ? kSelectionAccentColor
                                        : kGridLineColor});
                 }
 
-                if (dialogs.fileDialog->isSaveMode)
+                if (fileChooser.fileDialog->isSaveMode)
                 {
                     context.textField(
                         antwika::ui::TextFieldSpec{
                             .widgetId = antwika::editor::
                                 kPickerNameWidget,
-                            .text = dialogs.fileDialog->fileName,
+                            .text = fileChooser.fileDialog->fileName,
                             .placeholder = "Name of the map",
                             .focused = true});
                 }
@@ -236,7 +234,7 @@ namespace antwika::editor
                         .widthSizing = antwika::ui::kGrowSizing});
 
                 context.button(
-                    dialogs.fileDialog->isSaveMode ? "Save" : "Load",
+                    fileChooser.fileDialog->isSaveMode ? "Save" : "Load",
                     antwika::ui::ButtonSpec{
                         .widgetId = antwika::editor::kPickerConfirmWidget,
                         .widthSizing = antwika::ui::kGrowSizing});
@@ -257,66 +255,91 @@ namespace antwika::editor
                 antwika::ui::ContainerSpec{
                     .widthSizing = antwika::ui::kGrowSizing,
                     .heightSizing = antwika::ui::kGrowSizing,
-                    .padding = viewChoice.activeView == map::View::Atlases
+                    .padding = viewChoice.activeView == View::Atlases
                              ? kUiScale * 2
                              : 0,
                     .gap = kUiScale * 2});
+
+            if (isWorldShown() && !play.playing)
+            {
+                layoutEntityListPanel(context);
+            }
+
             {
                 const auto column = context.column(
                     antwika::ui::ContainerSpec{
-                        .widthSizing = antwika::ui::kFitSizing,
+                        .widthSizing =
+                            preferences.panelSizes.toolWidth == 0
+                                ? antwika::ui::kFitSizing
+                                : antwika::ui::getFixedSize(
+                                      panelWidthOf(
+                                          &PanelSizes::toolWidth,
+                                          kMinPanelWidth)),
                         .heightSizing = antwika::ui::kGrowSizing,
                         .backgroundColor = kPanelColor,
                         .padding = kPanelPadding,
                         .widgetId = antwika::editor::kToolPanelWidget});
 
-                panelTitle(context, "Tools");
-
                 if (isWorldShown())
                 {
-                    for (std::size_t rowStart = 0;
-                         rowStart < kEveryToolButton.size();
-                         rowStart += 2)
+                    for (const auto group : kEveryToolGroup)
                     {
-                        const auto pair = context.row(
+                        const auto members = getToolsIn(group);
+
+                        panelTitle(
+                            context,
+                            std::string(getToolGroupTitle(group)));
+
+                        for (std::size_t rowStart = 0;
+                             rowStart < members.count;
+                             rowStart += 2)
+                        {
+                            const auto pair = context.row(
+                                antwika::ui::ContainerSpec{
+                                    .widthSizing =
+                                        antwika::ui::kFitSizing});
+
+                            for (std::size_t rank = rowStart;
+                                 rank < members.count
+                                 && rank < rowStart + 2;
+                                 ++rank)
+                            {
+                                const auto which =
+                                    members.buttons.at(rank);
+                                const auto active =
+                                    isToolButtonActive(which);
+
+                                context.iconButton(
+                                    antwika::ui::Icon{
+                                        .sheetTexture =
+                                            iconsView.getTexture(),
+                                        .sourceRect = iconOf(which),
+                                        .scale = kUiScale},
+                                    antwika::ui::ButtonSpec{
+                                        .widgetId = getToolWidget(which),
+                                        .state =
+                                            active ? std::optional{
+                                                     antwika::ui::
+                                                         ButtonState::
+                                                             Pressed}
+                                               : std::nullopt});
+                            }
+                        }
+
+                        if (group != ToolGroup::Voxel
+                            || preferences.tool != Tool::Brush)
+                        {
+                            continue;
+                        }
+
+                        const auto shapes = context.row(
                             antwika::ui::ContainerSpec{
                                 .widthSizing = antwika::ui::kFitSizing});
 
-                        for (std::size_t rank = rowStart;
-                             rank < kEveryToolButton.size()
-                             && rank < rowStart + 2;
-                             ++rank)
-                        {
-                            const auto which =
-                                kEveryToolButton.at(rank);
-                            const auto active = isToolButtonActive(which);
-
-                            context.iconButton(
-                                antwika::ui::Icon{
-                                    .sheetTexture = iconsView.getTexture(),
-                                    .sourceRect = iconOf(which),
-                                    .scale = kUiScale},
-                                antwika::ui::ButtonSpec{
-                                    .widgetId = getToolWidget(which),
-                                    .state =
-                                        active ? std::optional{
-                                                 antwika::ui::
-                                                     ButtonState::
-                                                         Pressed}
-                                           : std::nullopt});
-                        }
-                    }
-
-                    if (preferences.tool == map::Tool::Brush)
-                    {
-                        context.spacer(
-                            antwika::ui::getFixedSize(
-                                kPanelGap * kUiScale));
-
                         for (const auto which :
-                             {map::Paint::Brush,
-                              map::Paint::Line,
-                              map::Paint::Rect})
+                             {Paint::Brush,
+                              Paint::Line,
+                              Paint::Rect})
                         {
                             context.iconButton(
                                 antwika::ui::Icon{
@@ -337,6 +360,8 @@ namespace antwika::editor
                 }
                 else
                 {
+                    panelTitle(context, "Tools");
+
                     for (const auto which : kEveryPaint)
                     {
                         const auto *shownView = viewNow();
@@ -363,8 +388,8 @@ namespace antwika::editor
                                         : std::nullopt});
                     }
 
-                    if (viewChoice.activeView == map::View::Character
-                        && characterView.mark.selection.has_value())
+                    if (viewChoice.activeView == View::Character
+                        && characterView.getMark().selection.has_value())
                     {
                         context.iconButton(
                             antwika::ui::Icon{
@@ -378,8 +403,8 @@ namespace antwika::editor
                     }
                 }
 
-                const auto marking = isWorldShown()
-                                     || viewChoice.activeView == map::View::Atlases;
+                const auto marking =
+                    viewChoice.activeView == View::Atlases;
 
                 if (marking)
                 {
@@ -394,12 +419,10 @@ namespace antwika::editor
                     for (const auto kind : voxel::kEveryKind)
                     {
                         const auto active =
-                            isWorldShown()
-                                        ? kind == preferences.kind
-                                        : stroke.selectedTile.has_value()
-                                      && getActiveRules(document.map, chosenLayer).kindOf(
-                                             *stroke.selectedTile)
-                                             == kind;
+                            stroke.selectedTile.has_value()
+                            && getActiveRules(document.map, chosenLayer).kindOf(
+                                   *stroke.selectedTile)
+                                   == kind;
 
                         context.iconButton(
                             antwika::ui::Icon{
@@ -426,12 +449,10 @@ namespace antwika::editor
                     for (const auto facing : kMarkedFacings)
                     {
                         const auto active =
-                            isWorldShown()
-                                        ? facing == rampFacing
-                                        : stroke.selectedTile.has_value()
-                                      && getActiveRules(document.map, chosenLayer).facingOf(
-                                             *stroke.selectedTile)
-                                             == facing;
+                            stroke.selectedTile.has_value()
+                            && getActiveRules(document.map, chosenLayer).facingOf(
+                                   *stroke.selectedTile)
+                                   == facing;
 
                         context.iconButton(
                             antwika::ui::Icon{
@@ -449,7 +470,7 @@ namespace antwika::editor
                     }
                 }
 
-                if (viewChoice.activeView == map::View::Atlases)
+                if (viewChoice.activeView == View::Atlases)
                 {
                     const auto parts = context.row(
                         antwika::ui::ContainerSpec{
@@ -476,7 +497,28 @@ namespace antwika::editor
                 }
             }
 
-            if (viewChoice.activeView == map::View::Atlases)
+            context.edge(
+                antwika::ui::EdgeSpec{
+                    .widgetId = antwika::editor::kToolPanelEdgeWidget,
+                    .panelWidget = antwika::editor::kToolPanelWidget,
+                    .minimum = kMinPanelWidth,
+                    .maximum = viewportRenderer.getWindowSize().width / 3,
+                    .dragging =
+                        pointer.heldEdgeWidget
+                        == antwika::editor::kToolPanelEdgeWidget});
+
+            if (isWorldPanelShown())
+            {
+                const auto world = context.column(
+                    antwika::ui::ContainerSpec{
+                        .widthSizing = antwika::ui::kGrowSizing,
+                        .heightSizing = antwika::ui::kGrowSizing,
+                        .widgetId = antwika::editor::kWorldPanelWidget,
+                        .clips = true});
+            }
+
+            if (const auto sheetNames = getSheetNames(viewChoice.activeView);
+                sheetNames.has_value())
             {
                 {
                     const auto middle = context.column(
@@ -484,7 +526,7 @@ namespace antwika::editor
                             .widthSizing = antwika::ui::kGrowSizing,
                             .heightSizing = antwika::ui::kGrowSizing});
 
-                    panelTitle(context, "Tiles");
+                    panelTitle(context, std::string(sheetNames->sheetName));
 
                     const auto sheet = context.column(
                         antwika::ui::ContainerSpec{
@@ -495,15 +537,29 @@ namespace antwika::editor
                             .clips = true});
                 }
 
+                context.edge(
+                    antwika::ui::EdgeSpec{
+                        .widgetId = antwika::editor::kDrawColumnEdgeWidget,
+                        .panelWidget = antwika::editor::kDrawColumnWidget,
+                        .minimum = kMinPanelWidth,
+                        .maximum =
+                            viewportRenderer.getWindowSize().width / 3,
+                        .dragging =
+                            pointer.heldEdgeWidget
+                            == antwika::editor::kDrawColumnEdgeWidget});
+
                 const auto drawing = context.column(
                     antwika::ui::ContainerSpec{
                         .widthSizing = antwika::ui::getFixedSize(
-                            getInspectColumnWidth(
-                                viewportRenderer.getWindowSize(),
-                                camera::kCanvasSize)),
-                        .heightSizing = antwika::ui::kGrowSizing});
+                            panelWidthOf(
+                                &PanelSizes::inspectWidth,
+                                getInspectColumnWidth(
+                                    viewportRenderer.getWindowSize(),
+                                    camera::kCanvasSize))),
+                        .heightSizing = antwika::ui::kGrowSizing,
+                        .widgetId = antwika::editor::kDrawColumnWidget});
 
-                panelTitle(context, "Drawing");
+                panelTitle(context, std::string(sheetNames->drawName));
 
                 const auto canvasPanel = context.column(
                     antwika::ui::ContainerSpec{
@@ -539,16 +595,19 @@ namespace antwika::editor
             if (isWorldShown() && !play.playing
                 && pointer.hoveredPosition.has_value())
             {
+                const auto cubePosition = antwika::voxel::cubeIndexOf(
+                    *pointer.hoveredPosition);
+
                 context.label(
-                    std::to_string(pointer.hoveredPosition->x) + " "
-                        + std::to_string(pointer.hoveredPosition->y) + " "
-                        + std::to_string(pointer.hoveredPosition->z)
+                    std::to_string(cubePosition.x) + " "
+                        + std::to_string(cubePosition.y) + " "
+                        + std::to_string(cubePosition.z)
                         + " - ",
                     kGridLineColor);
             }
 
             if (stroke.selectedTile.has_value()
-                && (viewChoice.activeView == map::View::Atlases
+                && (viewChoice.activeView == View::Atlases
                     || isWorldShown()))
             {
                 const auto drawnTile = getEditedTile(document.map, chosenLayer, stroke, assignMode);
@@ -596,20 +655,12 @@ namespace antwika::editor
                 return std::nullopt;
             }
 
-            const auto share =
-                static_cast<float>(port.denominator)
-                / static_cast<float>(port.numerator);
-
-            return gfx::RectF(
-                {(static_cast<float>(rect->originPoint.x)
-                  - static_cast<float>(port.offsetPoint.x))
-                     * share,
-                 (static_cast<float>(rect->originPoint.y)
-                  - static_cast<float>(port.offsetPoint.y))
-                     * share},
-                {static_cast<float>(rect->size.width) * share,
-                 static_cast<float>(rect->size.height)
-                     * share});
+            return port.toCanvas(
+                gfx::RectF(
+                    {static_cast<float>(rect->originPoint.x),
+                     static_cast<float>(rect->originPoint.y)},
+                    {static_cast<float>(rect->size.width),
+                     static_cast<float>(rect->size.height)}));
         };
 
         sheetView.sheetRect = roomOf(antwika::editor::kSheetPanelWidget);

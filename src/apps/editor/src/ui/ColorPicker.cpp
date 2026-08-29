@@ -27,7 +27,8 @@ namespace antwika::editor
         }
     }
 
-    gfx::RectF getPickerPlace(const gfx::Size canvasSize)
+    gfx::RectF getPickerPlace(
+        const gfx::Size canvasSize, const float railWidth)
     {
         const auto width = (2.0F * kPickerPad) + kFieldSide
                           + kPickerGap + kHueStripWidth;
@@ -35,15 +36,16 @@ namespace antwika::editor
         return gfx::RectF(
             gfx::PointF{
                 static_cast<float>(canvasSize.width) - kPaneMargin - width
-                    - kRightPanelWidth,
+                    - railWidth,
                 kPickerTop},
             gfx::SizeF{
                 width, (2.0F * kPickerPad) + kFieldSide});
     }
 
-    gfx::RectF getFieldPlace(const gfx::Size canvasSize)
+    gfx::RectF getFieldPlace(
+        const gfx::Size canvasSize, const float railWidth)
     {
-        const auto panel = getPickerPlace(canvasSize);
+        const auto panel = getPickerPlace(canvasSize, railWidth);
 
         return gfx::RectF(
             gfx::PointF{
@@ -52,9 +54,10 @@ namespace antwika::editor
             gfx::SizeF{kFieldSide, kFieldSide});
     }
 
-    gfx::RectF getHuePlace(const gfx::Size canvasSize)
+    gfx::RectF getHuePlace(
+        const gfx::Size canvasSize, const float railWidth)
     {
-        const auto field = getFieldPlace(canvasSize);
+        const auto field = getFieldPlace(canvasSize, railWidth);
 
         return gfx::RectF(
             gfx::PointF{
@@ -64,17 +67,20 @@ namespace antwika::editor
     }
 
     bool isOnPicker(
-        const gfx::Size canvasSize, const gfx::PointF point)
+        const gfx::Size canvasSize,
+        const float railWidth,
+        const gfx::PointF point)
     {
-        return holds(getPickerPlace(canvasSize), point);
+        return holds(getPickerPlace(canvasSize, railWidth), point);
     }
 
     std::optional<Hsv> getColorAtPoint(
         const gfx::Size canvasSize,
+        const float railWidth,
         const Hsv currentHsv,
         const gfx::PointF point)
     {
-        const auto field = getFieldPlace(canvasSize);
+        const auto field = getFieldPlace(canvasSize, railWidth);
 
         if (holds(field, point))
         {
@@ -88,7 +94,7 @@ namespace antwika::editor
                         point.y, field.originPoint.y, field.size.height)};
         }
 
-        const auto strip = getHuePlace(canvasSize);
+        const auto strip = getHuePlace(canvasSize, railWidth);
 
         if (holds(strip, point))
         {
@@ -103,9 +109,11 @@ namespace antwika::editor
     }
 
     gfx::PointF getFieldCursorPos(
-        const gfx::Size canvasSize, const Hsv colorHsv)
+        const gfx::Size canvasSize,
+        const float railWidth,
+        const Hsv colorHsv)
     {
-        const auto field = getFieldPlace(canvasSize);
+        const auto field = getFieldPlace(canvasSize, railWidth);
 
         return gfx::PointF{
             field.originPoint.x
@@ -116,9 +124,12 @@ namespace antwika::editor
                    * field.size.height)};
     }
 
-    float getHueCursorPos(const gfx::Size canvasSize, const Hsv colorHsv)
+    float getHueCursorPos(
+        const gfx::Size canvasSize,
+        const float railWidth,
+        const Hsv colorHsv)
     {
-        const auto strip = getHuePlace(canvasSize);
+        const auto strip = getHuePlace(canvasSize, railWidth);
 
         return strip.originPoint.y
                + (getWrappedValue(colorHsv.hue) * strip.size.height);
@@ -126,10 +137,11 @@ namespace antwika::editor
 
     gfx::RectF getBandPlace(
         const gfx::Size canvasSize,
+        const float railWidth,
         const std::size_t column,
         const std::size_t row)
     {
-        const auto field = getFieldPlace(canvasSize);
+        const auto field = getFieldPlace(canvasSize, railWidth);
         const auto side =
             field.size.width / static_cast<float>(kPickerBands);
 
@@ -154,9 +166,11 @@ namespace antwika::editor
     }
 
     gfx::RectF getHueBandPlace(
-        const gfx::Size canvasSize, const std::size_t bandIndex)
+        const gfx::Size canvasSize,
+        const float railWidth,
+        const std::size_t bandIndex)
     {
-        const auto strip = getHuePlace(canvasSize);
+        const auto strip = getHuePlace(canvasSize, railWidth);
         const auto height =
             strip.size.height / static_cast<float>(kPickerBands);
 

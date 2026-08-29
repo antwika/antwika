@@ -6,6 +6,7 @@ antwika_add_app(
         src/main.cpp
     LIBS
         antwika::app
+        antwika::assets
         antwika::camera
         antwika::character
         antwika::cli

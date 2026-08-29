@@ -3,12 +3,16 @@
 #include <cstdint>
 
 #include "antwika/gfx/Point.hpp"
+#include "antwika/gfx/PointF.hpp"
 #include "antwika/gfx/Rect.hpp"
+#include "antwika/gfx/RectF.hpp"
 #include "antwika/gfx/Size.hpp"
 #include "antwika/gfx/Viewport.hpp"
 
 using antwika::gfx::Point;
+using antwika::gfx::PointF;
 using antwika::gfx::Rect;
+using antwika::gfx::RectF;
 using antwika::gfx::Size;
 using antwika::gfx::Viewport;
 using antwika::gfx::viewportFor;
@@ -266,4 +270,32 @@ TEST(ViewportTest, ViewportFor_LandsEveryCanvasPixelOnAWholeBlock)
 
         EXPECT_EQ(nextPoint.x - one.x, 2);
     }
+}
+
+TEST(ViewportTest, ToCanvas_TakesAPointBackFromTheWindow)
+{
+    const auto viewport = viewportFor(
+        Size{.width = 1280, .height = 400}, Size{.width = 640, .height = 400});
+    const PointF canvasPoint{100.0F, 40.0F};
+
+    EXPECT_EQ(
+        viewport.toCanvas(viewport.toWindow(canvasPoint)), canvasPoint);
+}
+
+TEST(ViewportTest, ToCanvas_TakesARectBackFromTheWindow)
+{
+    const auto viewport = viewportFor(
+        Size{.width = 1280, .height = 400}, Size{.width = 640, .height = 400});
+    const RectF canvasRect({100.0F, 40.0F}, {200.0F, 80.0F});
+
+    EXPECT_EQ(viewport.toCanvas(viewport.toWindow(canvasRect)), canvasRect);
+}
+
+TEST(ViewportTest, ToCanvas_LeavesTheBarsOutsideTheCanvas)
+{
+    const auto viewport = viewportFor(
+        Size{.width = 1280, .height = 400}, Size{.width = 640, .height = 400});
+
+    EXPECT_LT(viewport.toCanvas(PointF{0.0F, 0.0F}).x, 0.0F);
+    EXPECT_EQ(viewport.toCanvas(PointF{0.0F, 0.0F}).y, 0.0F);
 }

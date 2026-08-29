@@ -17,9 +17,9 @@ namespace antwika::map::mapfile
         return shapeOf(kSettingsFields);
     } // GCOVR_EXCL_LINE
 
-    void gatesSchemaWiring(nlohmann::json &schema)
+    void markersSchemaWiring(nlohmann::json &schema)
     {
-        for (const auto &row : kGateRows)
+        for (const auto &row : kMarkerRows)
         {
             schema["required"].push_back(std::string(row.key));
             schema["properties"][std::string(row.key)]["type"] =
@@ -27,11 +27,6 @@ namespace antwika::map::mapfile
             schema["properties"][std::string(row.key)]["items"] =
                 getCellSchema();
         }
-
-        schema["required"].push_back(
-            std::string(kExitLockedKey));
-        schema["properties"][std::string(kExitLockedKey)]
-              ["type"] = "boolean";
     }
 
 }

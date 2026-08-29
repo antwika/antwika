@@ -4,10 +4,7 @@
 #include <cstdint>
 #include <vector>
 
-#include <optional>
-
 #include <antwika/enums/Enumeration.hpp>
-#include <antwika/map/Settings.hpp>
 #include <antwika/voxel/VoxelPosition.hpp>
 
 namespace antwika::map
@@ -15,8 +12,6 @@ namespace antwika::map
 
     enum class Marker : std::uint8_t
     {
-        Key,
-        Door,
         Checkpoint,
         Food,
         Water,
@@ -49,7 +44,5 @@ namespace antwika::map
 
         [[nodiscard]] bool operator==(const Markers &other) const = default;
     };
-
-    [[nodiscard]] std::optional<Marker> markerFor(Tool tool);
 
 }

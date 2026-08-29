@@ -57,7 +57,8 @@ namespace antwika::editor
     {
         if (keyBench.matchesHeld(Action::Run, key, getHeldModifiers()))
         {
-            play.game->setRunning(down);
+            play.simulationState.running = down;
+            play.game->setSimulation(play.simulationState);
         }
     }
 
@@ -70,43 +71,46 @@ namespace antwika::editor
 
         if (matches(Action::WalkNorth))
         {
-            play.game->wasdKeys().north = down;
+            play.wasdKeys.north = down;
         }
 
         if (matches(Action::WalkSouth))
         {
-            play.game->wasdKeys().south = down;
+            play.wasdKeys.south = down;
         }
 
         if (matches(Action::WalkWest))
         {
-            play.game->wasdKeys().west = down;
+            play.wasdKeys.west = down;
         }
 
         if (matches(Action::WalkEast))
         {
-            play.game->wasdKeys().east = down;
+            play.wasdKeys.east = down;
         }
 
         if (matches(Action::WalkNorthAlt))
         {
-            play.game->arrowKeys().north = down;
+            play.arrowKeys.north = down;
         }
 
         if (matches(Action::WalkSouthAlt))
         {
-            play.game->arrowKeys().south = down;
+            play.arrowKeys.south = down;
         }
 
         if (matches(Action::WalkWestAlt))
         {
-            play.game->arrowKeys().west = down;
+            play.arrowKeys.west = down;
         }
 
         if (matches(Action::WalkEastAlt))
         {
-            play.game->arrowKeys().east = down;
+            play.arrowKeys.east = down;
         }
+
+        play.game->setWasdKeys(play.wasdKeys);
+        play.game->setArrowKeys(play.arrowKeys);
     }
 
     bool Editor::consumeBindingsKey(const input::KeyPressed &pressedKey)

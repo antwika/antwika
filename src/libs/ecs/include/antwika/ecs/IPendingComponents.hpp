@@ -1,6 +1,7 @@
 #pragma once
 
 #include <antwika/log/ILogger.hpp>
+
 #include "antwika/ecs/Entity.hpp"
 
 namespace antwika::ecs::detail

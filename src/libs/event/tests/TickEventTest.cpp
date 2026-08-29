@@ -3,6 +3,7 @@
 #include "antwika/event/TickEvent.hpp"
 
 using antwika::event::Event;
+using antwika::event::EventName;
 using antwika::event::TickEvent;
 
 TEST(TickEventTest, Ctor_DefaultsToTickZeroAndAnEmptyEvent)
@@ -14,28 +15,28 @@ TEST(TickEventTest, Ctor_DefaultsToTickZeroAndAnEmptyEvent)
 
 TEST(TickEventTest, Ctor_TakesATickAndEvent)
 {
-    TickEvent timedEvent{.tick = 7, .event = Event{.name = "Event"}};
+    TickEvent timedEvent{.tick = 7, .event = Event{.name = EventName{"Event"}}};
     EXPECT_EQ(timedEvent.tick, 7);
-    EXPECT_EQ(timedEvent.event.name, "Event");
+    EXPECT_EQ(timedEvent.event.name, EventName{"Event"});
 }
 
 TEST(TickEventTest, OperatorEquals_MatchesOnEveryField)
 {
-    TickEvent timedEvent1{.tick = 1, .event = Event{.name = "Event"}};
-    TickEvent timedEvent2{.tick = 1, .event = Event{.name = "Event"}};
+    TickEvent timedEvent1{.tick = 1, .event = Event{.name = EventName{"Event"}}};
+    TickEvent timedEvent2{.tick = 1, .event = Event{.name = EventName{"Event"}}};
     EXPECT_EQ(timedEvent1, timedEvent2);
 }
 
 TEST(TickEventTest, OperatorEquals_SeparatesDifferentTicks)
 {
-    TickEvent timedEvent1{.tick = 1, .event = Event{.name = "Event"}};
-    TickEvent timedEvent2{.tick = 2, .event = Event{.name = "Event"}};
+    TickEvent timedEvent1{.tick = 1, .event = Event{.name = EventName{"Event"}}};
+    TickEvent timedEvent2{.tick = 2, .event = Event{.name = EventName{"Event"}}};
     EXPECT_NE(timedEvent1, timedEvent2);
 }
 
 TEST(TickEventTest, OperatorEquals_SeparatesDifferentEvents)
 {
-    TickEvent timedEvent1{.tick = 1, .event = Event{.name = "Event 1"}};
-    TickEvent timedEvent2{.tick = 1, .event = Event{.name = "Event 2"}};
+    TickEvent timedEvent1{.tick = 1, .event = Event{.name = EventName{"Event 1"}}};
+    TickEvent timedEvent2{.tick = 1, .event = Event{.name = EventName{"Event 2"}}};
     EXPECT_NE(timedEvent1, timedEvent2);
 }

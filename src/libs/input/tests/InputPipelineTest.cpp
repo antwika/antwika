@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include <antwika/event/EngineEvents.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/input/fakes/FakeHalvingPointerMapping.hpp>
@@ -25,6 +26,8 @@
 #include "antwika/input/fakes/FakeInputBackend.hpp"
 
 using antwika::event::Event;
+using antwika::event::kStop;
+using antwika::event::EventName;
 using antwika::event::TickEvent;
 using antwika::input::InputEvent;
 using antwika::input::InputEventCodec;
@@ -69,10 +72,10 @@ namespace
         return TickEvent{.tick = tick, .event = std::move(event)};
     }
 
-    [[nodiscard]] std::vector<std::string> namesOf(
+    [[nodiscard]] std::vector<EventName> namesOf(
         const std::vector<Event> &events)
     {
-        std::vector<std::string> names;
+        std::vector<EventName> names;
         for (const auto &event : events)
         {
             names.push_back(event.name);
@@ -155,7 +158,7 @@ TEST(InputPipelineTest, EventsFor_ThinsWhatTheDeviceReportedNotJustTheFile)
 
     EXPECT_EQ(
         namesOf(pipeline.eventsFor(0)),
-        (std::vector<std::string>{
+        (std::vector<EventName>{
             events::kPointerMove, events::kPointerDown}));
 }
 
@@ -175,7 +178,7 @@ TEST(InputPipelineTest, EventsFor_CoalescesOnlyWhenItWasAskedTo)
 
     EXPECT_EQ(
         namesOf(pipeline.eventsFor(0)),
-        (std::vector<std::string>{
+        (std::vector<EventName>{
             events::kPointerDown,
             events::kPointerMove,
             events::kPointerMove}));
@@ -208,7 +211,7 @@ TEST(InputPipelineTest, EventsFor_StopsOnTheChosenKeyOnlyWhenOneWasNamed)
 
     EXPECT_EQ(
         namesOf(stoppingPipeline.eventsFor(0)),
-        (std::vector<std::string>{events::kKeyDown, "engine.stop"}));
+        (std::vector<EventName>{events::kKeyDown, kStop}));
 }
 
 TEST(InputPipelineTest, EventsFor_RunsAReplayThroughTheSameStackAsTheRun)
@@ -480,7 +483,7 @@ TEST(InputPipelineTest, EventsFor_ThinsAcrossPumpsAsThoughOneTickReadThem)
 
     EXPECT_EQ(
         namesOf(pipeline.eventsFor(0)),
-        (std::vector<std::string>{
+        (std::vector<EventName>{
             events::kPointerDown, events::kPointerMove}));
 }
 

@@ -6,6 +6,7 @@
 #include <optional>
 #include <string>
 #include <vector>
+
 #include "antwika/editor/ui/ColorPicker.hpp"
 
 namespace antwika::editor
@@ -31,7 +32,7 @@ namespace antwika::editor
 
         std::vector<std::size_t> carriedCharacterInk{};
 
-        std::vector<std::vector<std::size_t>> carriedFigureInk{};
+        std::vector<std::vector<std::size_t>> carriedSkinInk{};
     };
 
 }

@@ -2,11 +2,11 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <span>
-#include <string_view>
+#include <string>
+#include <vector>
 
 #include "antwika/ui/DragOrigin.hpp"
-#include "antwika/ui/TextAreaSpec.hpp"
+#include "antwika/ui/LineRun.hpp"
 #include "antwika/ui/WidgetId.hpp"
 
 namespace antwika::ui::detail
@@ -22,7 +22,7 @@ namespace antwika::ui::detail
 
         std::size_t thumb = 0;
 
-        std::string_view text{};
+        std::string text{};
 
         std::size_t scroll = 0;
 
@@ -36,7 +36,7 @@ namespace antwika::ui::detail
 
         DragOrigin dragging = DragOrigin::None;
 
-        std::span<const LineRun> bandRuns{};
+        std::vector<LineRun> bandRuns{};
 
         std::uint32_t lineHeight = 1;
 

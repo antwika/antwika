@@ -7,7 +7,7 @@
 
 #include <antwika/component/Position.hpp>
 #include <antwika/component/Velocity.hpp>
-#include <antwika/gfx/Math3D.hpp>
+#include <antwika/geometry/Math3D.hpp>
 
 #include <antwika/voxelmap/Voxel.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
@@ -22,6 +22,8 @@ namespace antwika::collision
     inline constexpr float kRampSpeedFactor = 0.5F;
 
     inline constexpr float kWalkerStep = voxel::kVoxelSide;
+
+    inline constexpr float kRampSideStep = kWalkerStep / 2.0F;
 
     inline constexpr std::int32_t kMaxFallDepth = 64;
 
@@ -43,9 +45,11 @@ namespace antwika::collision
 
     inline constexpr float kFootprintPivotY = 7.0F * kWalkerPixel;
 
-    [[nodiscard]] gfx::Vec3 positionOf(component::Position position);
+    [[nodiscard]] std::int32_t columnOf(float coordinate);
 
-    [[nodiscard]] component::Position positionFrom(gfx::Vec3 position);
+    [[nodiscard]] geometry::Vec3 positionOf(component::Position position);
+
+    [[nodiscard]] component::Position positionFrom(geometry::Vec3 position);
 
     [[nodiscard]] bool isSolid(
         const voxel::Voxels &filledVoxels, voxel::VoxelPosition position);
@@ -66,6 +70,13 @@ namespace antwika::collision
         std::int32_t z,
         float feet);
 
+    [[nodiscard]] std::optional<voxel::VoxelCell> getSupportingVoxel(
+        const voxel::Voxels &filledVoxels,
+        std::int32_t x,
+        std::int32_t z,
+        float feet,
+        float stepUp);
+
     [[nodiscard]] float getGroundHeightOn(
         const voxel::Voxels &filledVoxels,
         voxel::VoxelCell groundCell,
@@ -77,6 +88,13 @@ namespace antwika::collision
         float x,
         float z,
         float feet);
+
+    [[nodiscard]] std::optional<float> getGroundHeightUnderFootprint(
+        const voxel::Voxels &filledVoxels,
+        float x,
+        float z,
+        float feet,
+        float stepUp);
 
     [[nodiscard]] std::optional<component::Position> getRestPositionOverColumn(
         const voxel::Voxels &filledVoxels,

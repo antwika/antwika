@@ -27,11 +27,13 @@ add_custom_target(antwika_gameplay_seam_stamp
 antwika_add_library(
     NAME gameplay
     SOURCES
+        src/Characters.cpp
         src/ComponentNames.cpp
         src/Game.cpp
         src/GameLoop.cpp
         src/Module.cpp
-        src/Roster.cpp
+        src/PadReports.cpp
+        src/SpawnSystem.cpp
     DEPENDS
         antwika::camera
         antwika::character
@@ -39,8 +41,8 @@ antwika_add_library(
         antwika::ecs
         antwika::enums
         antwika::gfx
-        antwika::intent
         antwika::light
+        antwika::loadout
         antwika::log
         antwika::map
         antwika::rules

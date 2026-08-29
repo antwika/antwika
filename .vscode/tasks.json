@@ -4,7 +4,7 @@
         {
             "label": "Conan install",
             "type": "shell",
-            "command": "conan install . -of build -pr:b=./profiles/build/${env:CONAN_PROFILE} -pr:h=./profiles/host/${env:CONAN_PROFILE} --build=missing -s build_type=Release --lockfile=conan.lock",
+            "command": "./scripts/register_editables.sh && conan install . -of build -pr:b=./profiles/build/${env:CONAN_PROFILE} -pr:h=./profiles/host/${env:CONAN_PROFILE} --build=missing --build=editable -s build_type=Release --lockfile=conan.lock",
             "options": {
                 "cwd": "${workspaceFolder}"
             }
@@ -73,6 +73,15 @@
             "options": {
                 "cwd": "${workspaceFolder}"
             }
+        },
+        {
+            "label": "Coverage baseline",
+            "type": "shell",
+            "command": "./scripts/coverage.sh --baseline-out coverage-baseline.json",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
         },
         {
             "label": "Select gfx backend",

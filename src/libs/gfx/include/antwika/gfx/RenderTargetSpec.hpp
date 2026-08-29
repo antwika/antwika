@@ -11,6 +11,8 @@ namespace antwika::gfx
 
         bool depth = false;
 
+        bool depthOnly = false;
+
         [[nodiscard]] bool operator==(
             const RenderTargetSpec &other) const = default;
     };

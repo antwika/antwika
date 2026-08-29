@@ -4,9 +4,11 @@ namespace antwika::editor
 {
 
     PlaySession::PlaySession(
-        log::ILogger &logger, const voxel::Voxels &solidVoxels)
+        log::ILogger &logger,
+        const map::Map &laidMap,
+        const voxel::Voxels &solidVoxels)
         : world(logger),
-          game(logger, world, solidVoxels, patrolPositions)
+          game(logger, world, laidMap, solidVoxels, patrolPositions)
     {
     }
 

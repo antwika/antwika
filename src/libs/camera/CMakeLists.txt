@@ -4,6 +4,4 @@ antwika_add_library(
         src/FlyCamera.cpp
     DEPENDS
         antwika::gfx
-        antwika::tilemap
-        antwika::voxel
 )

@@ -3,7 +3,6 @@
 #include <set>
 
 #include <antwika/tilemap/AtlasLayout.hpp>
-#include <antwika/voxelmap/Voxel.hpp>
 
 #include <antwika/tile/TilePaint.hpp>
 
@@ -394,18 +393,6 @@ TEST(TilePaintTest, PaintFill_LeavesTheNeighbouringTileAlone)
         kRedColor);
 }
 
-TEST(TilePaintTest, SwatchWidget_GivesEveryInkASwatchOfItsOwn)
-{
-    std::set<antwika::widget::WidgetId> seenWidgets;
-
-    for (std::size_t which = 0; which < antwika::tile::kMaxInks;
-         ++which)
-    {
-        EXPECT_TRUE(
-            seenWidgets.insert(antwika::tile::getSwatchWidget(which)).second);
-    }
-}
-
 TEST(TilePaintTest, SoleInk_KnowsAnInkAloneInItsColor)
 {
     const std::vector<Color> paletteColors{
@@ -428,6 +415,96 @@ TEST(TilePaintTest, SoleInk_KnowsAColorTwoInksOffer)
     EXPECT_FALSE(
         antwika::tile::isSoleInk(paletteColors, paletteColors.size() - 1));
     EXPECT_TRUE(antwika::tile::isSoleInk(paletteColors, 1));
+}
+
+TEST(TilePaintTest, SoleInkColorOf_KeepsAColorNoOtherInkHolds)
+{
+    const std::vector<Color> paletteColors{
+        kPaletteColors.begin(), kPaletteColors.end()};
+    const Color wantedColor{.red = 10, .green = 20, .blue = 30};
+
+    EXPECT_EQ(
+        antwika::tile::soleInkColorOf(paletteColors, 1, wantedColor),
+        wantedColor);
+    EXPECT_EQ(
+        antwika::tile::soleInkColorOf(paletteColors, 1, paletteColors[1]),
+        paletteColors[1]);
+}
+
+TEST(TilePaintTest, SoleInkColorOf_ShiftsAColorAnotherInkHolds)
+{
+    const std::vector<Color> paletteColors{
+        kPaletteColors.begin(), kPaletteColors.end()};
+    const auto shiftedColor =
+        antwika::tile::soleInkColorOf(paletteColors, 1, paletteColors[0]);
+
+    EXPECT_NE(shiftedColor, paletteColors[0]);
+    EXPECT_EQ(shiftedColor.red, paletteColors[0].red);
+    EXPECT_EQ(shiftedColor.green, paletteColors[0].green);
+
+    std::vector<Color> shiftedColors{paletteColors};
+
+    shiftedColors[1] = shiftedColor;
+
+    for (std::size_t which = 0; which < shiftedColors.size(); ++which)
+    {
+        EXPECT_TRUE(antwika::tile::isSoleInk(shiftedColors, which));
+    }
+}
+
+TEST(TilePaintTest, SoleInkColorOf_StepsPastACrowdOfNearbyBlues)
+{
+    const Color wantedColor{.red = 7, .green = 7, .blue = 4};
+    std::vector<Color> paletteColors;
+
+    for (std::uint8_t blue = 3; blue <= 5; ++blue)
+    {
+        paletteColors.push_back(
+            Color{.red = 7, .green = 7, .blue = blue});
+    }
+    paletteColors.push_back(Color{.red = 1, .green = 2, .blue = 3});
+
+    const auto shiftedColor = antwika::tile::soleInkColorOf(
+        paletteColors, paletteColors.size() - 1, wantedColor);
+
+    EXPECT_EQ(shiftedColor, (Color{.red = 7, .green = 7, .blue = 6}));
+}
+
+TEST(TilePaintTest, SoleInkColorOf_ShiftsDownwardAtTheBlueCeiling)
+{
+    const Color wantedColor{.red = 7, .green = 7, .blue = 255};
+    const std::vector<Color> paletteColors{
+        wantedColor, Color{.red = 1, .green = 2, .blue = 3}};
+
+    EXPECT_EQ(
+        antwika::tile::soleInkColorOf(paletteColors, 1, wantedColor),
+        (Color{.red = 7, .green = 7, .blue = 254}));
+}
+
+TEST(TilePaintTest, SoleInkColorOf_ShiftsUpwardAtTheBlueFloor)
+{
+    const Color wantedColor{.red = 7, .green = 7, .blue = 0};
+    const std::vector<Color> paletteColors{
+        wantedColor,
+        Color{.red = 7, .green = 7, .blue = 1},
+        Color{.red = 1, .green = 2, .blue = 3}};
+
+    EXPECT_EQ(
+        antwika::tile::soleInkColorOf(paletteColors, 2, wantedColor),
+        (Color{.red = 7, .green = 7, .blue = 2}));
+}
+
+TEST(TilePaintTest, SoleInkColorOf_MindsOnlyTheColorNotTheAlpha)
+{
+    const Color wantedColor{
+        .red = 7, .green = 7, .blue = 7, .alpha = 0};
+    const std::vector<Color> paletteColors{
+        Color{.red = 7, .green = 7, .blue = 7, .alpha = 255},
+        Color{.red = 1, .green = 2, .blue = 3}};
+    const auto shiftedColor =
+        antwika::tile::soleInkColorOf(paletteColors, 1, wantedColor);
+
+    EXPECT_NE(shiftedColor.blue, wantedColor.blue);
 }
 
 TEST(TilePaintTest, PaintedWith_FindsEveryPixelOfAColor)

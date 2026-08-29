@@ -48,4 +48,24 @@ namespace antwika::ecs::detail
         return value < aliveFlags.size() && aliveFlags[value];
     }
 
+    std::vector<Entity> EntityManager::getLiveEntities() const
+    {
+        std::vector<Entity> liveEntities;
+
+        for (std::uint64_t value = 1; value < aliveFlags.size(); ++value)
+        {
+            if (aliveFlags[value])
+            {
+                liveEntities.push_back(Entity{value});
+            }
+        }
+
+        return liveEntities;
+    } // GCOVR_EXCL_LINE
+
+    ILogger &EntityManager::getLogger() const noexcept
+    {
+        return logger;
+    }
+
 }

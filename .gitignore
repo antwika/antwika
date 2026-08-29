@@ -4,8 +4,13 @@
 __pycache__
 /.claude/
 /.worktrees/
+core
 core.*
+vgcore.*
+assets/maps/*-editor.json
 *.gcov
+*.bak1
+*.writing
 /coverage-detail.json
 /coverage-summary.json
 /STATUS.md
@@ -14,3 +19,4 @@ core.*
 Testing
 /src/libs/*/build/
 /src/libs/*/CMakeUserPresets.json
+/ENTITY-LIST-PLAN.md

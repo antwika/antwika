@@ -5,6 +5,7 @@
 #include <optional>
 #include <set>
 
+#include <antwika/voxel/FacingTraits.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/voxel/VoxelDetail.hpp>
 #include <antwika/voxel/VoxelStairs.hpp>
@@ -36,10 +37,10 @@ namespace antwika::voxel
         }
 
         constexpr std::array<VoxelPosition, 4> kAboutPositions{
-            VoxelPosition{.x = 1},
-            VoxelPosition{.x = -1},
-            VoxelPosition{.z = 1},
-            VoxelPosition{.z = -1}};
+            stepOf(Facing::East),
+            stepOf(Facing::West),
+            stepOf(Facing::South),
+            stepOf(Facing::North)};
 
         constexpr VoxelPosition kBelowPosition{.y = -1};
 
@@ -260,41 +261,20 @@ namespace antwika::voxel
 
     Facing getFacingOfStep(const VoxelPosition climbPosition)
     {
-        if (climbPosition.x > 0)
+        for (const FacingTraits &row : kFacingTraits)
         {
-            return Facing::East;
+            if (row.stepPosition == climbPosition)
+            {
+                return row.facing;
+            }
         }
 
-        if (climbPosition.x < 0)
-        {
-            return Facing::West;
-        }
-
-        if (climbPosition.z > 0)
-        {
-            return Facing::South;
-        }
-
-        return climbPosition.z < 0 ? Facing::North : Facing::Any;
+        return Facing::Any;
     }
 
     VoxelPosition stepVectorFor(const Facing facing)
     {
-        switch (facing)
-        {
-        case Facing::East:
-            return VoxelPosition{.x = 1};
-        case Facing::West:
-            return VoxelPosition{.x = -1};
-        case Facing::North:
-            return VoxelPosition{.z = -1};
-        case Facing::South:
-            return VoxelPosition{.z = 1};
-        case Facing::Any:
-            break;
-        }
-
-        return VoxelPosition{};
+        return stepOf(facing);
     }
 
     StairHalf stairHalfOf(

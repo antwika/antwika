@@ -1,9 +1,11 @@
 #pragma once
 
 #include <optional>
+
 #include <antwika/event/Event.hpp>
 #include <antwika/event/ITickEventSource.hpp>
 #include <antwika/time/Tick.hpp>
+
 #include "antwika/input/BufferedInputSource.hpp"
 #include "antwika/input/CoalescingPointerSource.hpp"
 #include "antwika/input/IFramePump.hpp"

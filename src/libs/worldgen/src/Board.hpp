@@ -3,8 +3,10 @@
 #include <cstddef>
 #include <span>
 #include <vector>
+
 #include <antwika/wfc/Domain.hpp>
 #include <antwika/worldgen/ruleset/CompiledRuleset.hpp>
+
 #include "antwika/worldgen/ChunkShape.hpp"
 #include "antwika/worldgen/Ruleset.hpp"
 

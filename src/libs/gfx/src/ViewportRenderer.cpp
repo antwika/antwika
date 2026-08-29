@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <variant>
 
 #include <antwika/gfx/PointF.hpp>
@@ -17,7 +18,7 @@ namespace antwika::gfx
         Size reportedSize,
         Size canvasSize,
         const Fit fit)
-        : innerRenderer(innerRenderer),
+        : ForwardingRenderer(innerRenderer),
           reportedSize(reportedSize),
           canvasSize(canvasSize),
           fit(fit),
@@ -35,11 +36,6 @@ namespace antwika::gfx
         return transformViewport;
     }
 
-    IRenderer &ViewportRenderer::nativeRenderer() noexcept
-    {
-        return innerRenderer;
-    }
-
     Size ViewportRenderer::getWindowSize() const noexcept
     {
         return reportedSize;
@@ -51,27 +47,17 @@ namespace antwika::gfx
         transformViewport = viewportFor(newReportedSize, canvasSize, fit);
     }
 
-    void ViewportRenderer::clear(Color color)
-    {
-        innerRenderer.clear(color);
-    }
-
     void ViewportRenderer::drawRect(RectF rect, Color color)
     {
-        innerRenderer.drawRect(
+        innerRenderer().drawRect(
             isTargetBound() ? rect : transformViewport.toWindow(rect),
             color);
     }
 
     void ViewportRenderer::beginClip(RectF areaRect)
     {
-        innerRenderer.beginClip(
+        innerRenderer().beginClip(
             isTargetBound() ? areaRect : transformViewport.toWindow(areaRect));
-    }
-
-    void ViewportRenderer::endClip()
-    {
-        innerRenderer.endClip();
     }
 
     void ViewportRenderer::drawLine(
@@ -79,12 +65,12 @@ namespace antwika::gfx
     {
         if (isTargetBound())
         {
-            innerRenderer.drawLine(fromPoint, toPoint, color);
+            innerRenderer().drawLine(fromPoint, toPoint, color);
 
             return;
         }
 
-        innerRenderer.drawLine(
+        innerRenderer().drawLine(
             transformViewport.toWindow(
                 fromPoint), transformViewport.toWindow(toPoint), color);
     }
@@ -92,32 +78,32 @@ namespace antwika::gfx
     void ViewportRenderer::drawText(
         PointF originPoint,
         std::string_view text,
-        std::uint32_t scale,
+        TextScale scale,
         Color color)
     {
         if (isTargetBound())
         {
-            innerRenderer.drawText(originPoint, text, scale, color);
+            innerRenderer().drawText(originPoint, text, scale, color);
 
             return;
         }
 
-        const auto multiplier = textMultiplierOf(scale);
-        const auto encodedScale = getEncodeTextScale(
-            textFaceOf(scale), transformViewport.toWindowScale(multiplier));
+        auto windowScale = scale;
+        windowScale.multiplier =
+            transformViewport.toWindowScale(scale.multiplier);
 
         const bool exact =
-            (static_cast<std::uint64_t>(multiplier)
+            (static_cast<std::uint64_t>(scale.multiplier)
              * transformViewport.numerator)
                 % transformViewport.denominator
             == 0;
 
         if (exact)
         {
-            innerRenderer.drawText(
+            innerRenderer().drawText(
                 transformViewport.toWindow(originPoint),
                 text,
-                encodedScale,
+                windowScale,
                 color);
             return;
         }
@@ -130,29 +116,12 @@ namespace antwika::gfx
             const PointF cellPoint{
                 originPoint.x + static_cast<float>(step), originPoint.y};
 
-            innerRenderer.drawText(
+            innerRenderer().drawText(
                 transformViewport.toWindow(cellPoint),
                 text.substr(index, 1),
-                encodedScale,
+                windowScale,
                 color);
         }
-    }
-
-    void ViewportRenderer::updateMesh(IMesh &mesh, const MeshData &data)
-    {
-        innerRenderer.updateMesh(mesh, data);
-    }
-
-    void ViewportRenderer::updateTexture(
-        ITexture &texture, const Bitmap &bitmap)
-    {
-        innerRenderer.updateTexture(texture, bitmap);
-    }
-
-    std::unique_ptr<ITexture> ViewportRenderer::createTexture(
-        const Bitmap &bitmap)
-    {
-        return innerRenderer.createTexture(bitmap);
     }
 
     void ViewportRenderer::drawTexture(
@@ -161,7 +130,7 @@ namespace antwika::gfx
         RectF destinationRect,
         Color tintColor)
     {
-        innerRenderer.drawTexture(
+        innerRenderer().drawTexture(
             texture,
             sourceRect,
             isTargetBound()
@@ -170,51 +139,11 @@ namespace antwika::gfx
             tintColor);
     }
 
-    std::unique_ptr<IMesh> ViewportRenderer::createMesh(
-        const MeshData &mesh)
-    {
-        return innerRenderer.createMesh(mesh);
-    }
-
-    std::unique_ptr<IShader> ViewportRenderer::createShader(
-        const ShaderSource &source)
-    {
-        return innerRenderer.createShader(source);
-    }
-
-    void ViewportRenderer::setShaderNumber(
-        const IShader &shader,
-        const std::string_view name,
-        const float value)
-    {
-        innerRenderer.setShaderNumber(shader, name, value);
-    }
-
-    void ViewportRenderer::setShaderVector(
-        const IShader &shader,
-        const std::string_view name,
-        const Vec3 vector)
-    {
-        innerRenderer.setShaderVector(shader, name, vector);
-    }
-
-    std::unique_ptr<IRenderTarget> ViewportRenderer::createRenderTarget(
-        const RenderTargetSpec &spec)
-    {
-        return innerRenderer.createRenderTarget(spec);
-    }
-
-    void ViewportRenderer::beginTarget(IRenderTarget &target)
+    void ViewportRenderer::beginTarget(
+        IRenderTarget &target, const std::optional<Rect> regionRect)
     {
         ++bound;
-        innerRenderer.beginTarget(target);
-    }
-
-    void ViewportRenderer::beginTargetRegion(
-        IRenderTarget &target, const Rect regionRect)
-    {
-        ++bound;
-        innerRenderer.beginTargetRegion(target, regionRect);
+        innerRenderer().beginTarget(target, regionRect);
     }
 
     void ViewportRenderer::endTarget()
@@ -224,23 +153,7 @@ namespace antwika::gfx
             --bound;
         }
 
-        innerRenderer.endTarget();
-    }
-
-    void ViewportRenderer::setShaderMatrix(
-        const IShader &shader,
-        const std::string_view name,
-        const Mat4 &matrix)
-    {
-        innerRenderer.setShaderMatrix(shader, name, matrix);
-    }
-
-    void ViewportRenderer::setShaderColor(
-        const IShader &shader,
-        const std::string_view name,
-        const Color valueColor)
-    {
-        innerRenderer.setShaderColor(shader, name, valueColor);
+        innerRenderer().endTarget();
     }
 
     void ViewportRenderer::drawMesh(
@@ -249,7 +162,7 @@ namespace antwika::gfx
         const Camera3D &camera,
         const MeshMaterial &material)
     {
-        innerRenderer.drawMesh(
+        innerRenderer().drawMesh(
             mesh,
             modelMatrix,
             isTargetBound() ? camera : getOnWindow(camera),
@@ -351,26 +264,6 @@ namespace antwika::gfx
             color);
     }
 
-    void ViewportRenderer::pushTransform(const Mat4 &matrix)
-    {
-        innerRenderer.pushTransform(matrix);
-    }
-
-    void ViewportRenderer::popTransform()
-    {
-        innerRenderer.popTransform();
-    }
-
-    Bitmap ViewportRenderer::readPixels()
-    {
-        return innerRenderer.readPixels();
-    }
-
-    void ViewportRenderer::present()
-    {
-        innerRenderer.present();
-    }
-
     void ViewportRenderer::fillIfDrawable(Rect rect, Color color)
     {
         if (rect.size.width == 0 || rect.size.height == 0)
@@ -378,7 +271,7 @@ namespace antwika::gfx
             return;
         }
 
-        innerRenderer.drawRect(rect, color);
+        innerRenderer().drawRect(rect, color);
     }
 
 }

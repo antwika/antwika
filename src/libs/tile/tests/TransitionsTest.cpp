@@ -5,7 +5,6 @@
 
 #include <antwika/tilemap/AtlasLayout.hpp>
 #include <antwika/tilemap/Tilemap.hpp>
-#include <antwika/voxelmap/Voxel.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/tilemap/TileEdges.hpp>
 

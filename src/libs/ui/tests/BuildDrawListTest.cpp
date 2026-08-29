@@ -55,7 +55,7 @@ namespace
         return Node{
             .kind = NodeKind::Text,
             .text = std::move(value),
-            .textScale = scale,
+            .textScale = {.multiplier = scale},
             .textColor = kInkColor};
     }
 
@@ -120,7 +120,7 @@ TEST(BuildDrawListTest, BuildDrawList_EmitsTextAtWhereItWasArranged)
         (DrawList{DrawText{
             .originPoint = {.x = 5, .y = 7},
             .text = "ab",
-            .scale = 1,
+            .scale = {.multiplier = 1},
             .color = kInkColor}}),
         createDrawList(tree));
 }
@@ -138,7 +138,7 @@ TEST(BuildDrawListTest, BuildDrawList_CutsTextToTheWholeCellsThatFit)
         (DrawList{DrawText{
             .originPoint = {.x = 0, .y = 0},
             .text = "abc",
-            .scale = 1,
+            .scale = {.multiplier = 1},
             .color = kInkColor}}),
         createDrawList(tree));
 }
@@ -157,7 +157,7 @@ TEST(BuildDrawListTest, BuildDrawList_CutsALongLineToTheCellsThatFit)
         (DrawList{DrawText{
             .originPoint = {.x = 0, .y = 0},
             .text = "abcdefghijklmnopqrst",
-            .scale = 1,
+            .scale = {.multiplier = 1},
             .color = kInkColor}}),
         createDrawList(tree));
 }
@@ -174,14 +174,37 @@ TEST(BuildDrawListTest, BuildDrawList_LeavesOutTextWithNoRoomForAWholeCell)
     EXPECT_EQ(DrawList{}, createDrawList(tree));
 }
 
-TEST(BuildDrawListTest, BuildDrawList_LeavesOutTextTallerThanItsBox)
+TEST(BuildDrawListTest, BuildDrawList_ClipsTextTallerThanItsBox)
+{
+    LayoutTree tree{getContainer(std::nullopt)};
+
+    const auto label = tree.add(getText("ab", 1));
+    const Rect shortRect{
+        .originPoint = {.x = 0, .y = 0},
+        .size = {.width = 100, .height = 5}};
+
+    tree.getNode(label).arrangedRect = shortRect;
+
+    EXPECT_EQ(
+        (DrawList{
+            PushClip{.rect = shortRect},
+            DrawText{
+                .originPoint = shortRect.originPoint,
+                .text = "ab",
+                .scale = {.multiplier = 1},
+                .color = kInkColor},
+            PopClip{}}),
+        createDrawList(tree));
+}
+
+TEST(BuildDrawListTest, BuildDrawList_LeavesOutTextWithNoHeightAtAll)
 {
     LayoutTree tree{getContainer(std::nullopt)};
 
     const auto label = tree.add(getText("ab", 1));
     tree.getNode(label).arrangedRect = Rect{
         .originPoint = {.x = 0, .y = 0},
-        .size = {.width = 100, .height = 5}};
+        .size = {.width = 100, .height = 0}};
 
     EXPECT_EQ(DrawList{}, createDrawList(tree));
 }
@@ -211,7 +234,7 @@ TEST(BuildDrawListTest, BuildDrawList_DrawsAContainerBeforeWhatIsInsideIt)
             DrawText{
                 .originPoint = {.x = 5, .y = 7},
                 .text = "ab",
-                .scale = 1,
+                .scale = {.multiplier = 1},
                 .color = kInkColor}}),
         createDrawList(tree));
 }
@@ -264,13 +287,13 @@ TEST(BuildDrawListTest, BuildDrawList_WrapsWhatAClippingNodeHoldsInAClip)
             DrawText{
                 .originPoint = kRoomyRect.originPoint,
                 .text = "ab",
-                .scale = 1,
+                .scale = {.multiplier = 1},
                 .color = kInkColor},
             PopClip{},
             DrawText{
                 .originPoint = kRoomyRect.originPoint,
                 .text = "cd",
-                .scale = 1,
+                .scale = {.multiplier = 1},
                 .color = kInkColor}}),
         createDrawList(tree));
 }
@@ -297,7 +320,7 @@ TEST(BuildDrawListTest, BuildDrawList_EndsAClipWithItsAncestorsSibling)
             DrawText{
                 .originPoint = kRoomyRect.originPoint,
                 .text = "cd",
-                .scale = 1,
+                .scale = {.multiplier = 1},
                 .color = kInkColor}}),
         createDrawList(tree));
 }
@@ -349,7 +372,7 @@ TEST(BuildDrawListTest, BuildDrawList_TurnsALaidOutTreeIntoAWholePicture)
             DrawText{
                 .originPoint = {.x = 4, .y = 4},
                 .text = "ab",
-                .scale = 1,
+                .scale = {.multiplier = 1},
                 .color = kInkColor}}),
         createDrawList(tree));
 }

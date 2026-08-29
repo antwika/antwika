@@ -1,8 +1,12 @@
 #include <gtest/gtest.h>
 
+#include <antwika/gfx/SizeF.hpp>
+
 #include "antwika/editor/ui/IconSheet.hpp"
 
 using antwika::editor::getEditedIconRect;
+using antwika::editor::getIconDrawBounds;
+using antwika::editor::getIconSheetBounds;
 using antwika::editor::iconCellAt;
 using antwika::editor::getIconCellRect;
 using antwika::editor::getIconCount;
@@ -54,10 +58,11 @@ TEST(IconSheetTest, IconSource_CutsEachIconFromItsOwnCell)
 
 TEST(IconSheetTest, IconCellRect_LaysTheIconsSoManyToARow)
 {
-    const auto first = getIconCellRect(kCanvasSize, kSomeIcons, 0);
-    const auto besideRect = getIconCellRect(kCanvasSize, kSomeIcons, 1);
+    const auto sheetRect = getIconSheetBounds(kCanvasSize);
+    const auto first = getIconCellRect(sheetRect, kSomeIcons, 0);
+    const auto besideRect = getIconCellRect(sheetRect, kSomeIcons, 1);
     const auto underRect =
-        getIconCellRect(kCanvasSize, kSomeIcons, kIconColumns);
+        getIconCellRect(sheetRect, kSomeIcons, kIconColumns);
 
     EXPECT_GT(besideRect.originPoint.x, first.originPoint.x);
     EXPECT_EQ(besideRect.originPoint.y, first.originPoint.y);
@@ -69,12 +74,12 @@ TEST(IconSheetTest, IconCellAt_FindsTheCellUnderItsOwnMiddle)
 {
     for (const std::size_t index : {0UL, 5UL, 12UL, 30UL})
     {
-        const auto place =
-            getIconCellRect(kCanvasSize, kSomeIcons, index);
+        const auto place = getIconCellRect(
+            getIconSheetBounds(kCanvasSize), kSomeIcons, index);
 
         EXPECT_EQ(
             iconCellAt(
-                kCanvasSize,
+                getIconSheetBounds(kCanvasSize),
                 kSomeIcons,
                 {place.originPoint.x + (place.size.width / 2.0F),
                  place.originPoint.y
@@ -83,21 +88,81 @@ TEST(IconSheetTest, IconCellAt_FindsTheCellUnderItsOwnMiddle)
     }
 }
 
-TEST(IconSheetTest, IconCellAt_FindsNothingOffEveryCell)
+TEST(IconSheetTest, IconCellRect_KeepsEveryCellInsideTheSheetRect)
 {
+    const antwika::gfx::RectF sheetRect(
+        antwika::gfx::PointF{40.0F, 30.0F},
+        antwika::gfx::SizeF{90.0F, 200.0F});
+
+    for (std::size_t index = 0; index < kSomeIcons; ++index)
+    {
+        const auto place = getIconCellRect(sheetRect, kSomeIcons, index);
+
+        EXPECT_GE(place.originPoint.x, sheetRect.originPoint.x - 0.01F);
+        EXPECT_GE(place.originPoint.y, sheetRect.originPoint.y - 0.01F);
+        EXPECT_LE(
+            place.originPoint.x + place.size.width,
+            sheetRect.originPoint.x + sheetRect.size.width + 0.01F);
+        EXPECT_LE(
+            place.originPoint.y + place.size.height,
+            sheetRect.originPoint.y + sheetRect.size.height + 0.01F);
+    }
+}
+
+TEST(IconSheetTest, IconCellAt_FindsNothingBesideTheSheetRect)
+{
+    const antwika::gfx::RectF sheetRect(
+        antwika::gfx::PointF{40.0F, 30.0F},
+        antwika::gfx::SizeF{90.0F, 200.0F});
+
+    for (const antwika::gfx::PointF point :
+         {antwika::gfx::PointF{300.0F, 100.0F},
+          antwika::gfx::PointF{10.0F, 100.0F},
+          antwika::gfx::PointF{80.0F, 250.0F},
+          antwika::gfx::PointF{80.0F, 10.0F}})
+    {
+        EXPECT_FALSE(iconCellAt(sheetRect, kSomeIcons, point).has_value());
+    }
+}
+
+TEST(IconSheetTest, IconCellRect_KeepsACellWhereNoIconIsCounted)
+{
+    const antwika::gfx::RectF sheetRect(
+        antwika::gfx::PointF{40.0F, 30.0F},
+        antwika::gfx::SizeF{90.0F, 200.0F});
+
+    EXPECT_GT(getIconCellRect(sheetRect, 0, 0).size.width, 0.0F);
+}
+
+TEST(IconSheetTest, IconCellAt_FindsNothingInTheGapBetweenTwoCells)
+{
+    const auto sheetRect = getIconSheetBounds(kCanvasSize);
+    const auto first = getIconCellRect(sheetRect, kSomeIcons, 0);
+    const auto nextCell = getIconCellRect(sheetRect, kSomeIcons, 1);
+    const auto gapMiddle =
+        (first.originPoint.x + first.size.width + nextCell.originPoint.x)
+        / 2.0F;
+
+    ASSERT_GT(
+        nextCell.originPoint.x, first.originPoint.x + first.size.width);
     EXPECT_FALSE(
-        iconCellAt(kCanvasSize, kSomeIcons, {0.0F, 0.0F})
+        iconCellAt(
+            sheetRect,
+            kSomeIcons,
+            {gapMiddle,
+             first.originPoint.y + (first.size.height / 2.0F)})
             .has_value());
 }
 
 TEST(IconSheetTest, EditedIconRect_StandsClearOfEveryCell)
 {
-    const auto drawnRect = getEditedIconRect(kCanvasSize);
+    const auto drawnRect =
+        getEditedIconRect(getIconDrawBounds(kCanvasSize));
 
     for (std::size_t index = 0; index < kSomeIcons; ++index)
     {
-        const auto place =
-            getIconCellRect(kCanvasSize, kSomeIcons, index);
+        const auto place = getIconCellRect(
+            getIconSheetBounds(kCanvasSize), kSomeIcons, index);
 
         EXPECT_LE(
             place.originPoint.x + place.size.width,
@@ -107,7 +172,8 @@ TEST(IconSheetTest, EditedIconRect_StandsClearOfEveryCell)
 
 TEST(IconSheetTest, IconPixelAt_FindsEveryPixelUnderItsPlace)
 {
-    const auto room = getEditedIconRect(kCanvasSize);
+    const auto room =
+        getEditedIconRect(getIconDrawBounds(kCanvasSize));
 
     for (const std::uint32_t column : {0U, 7U, 15U})
     {
@@ -131,7 +197,8 @@ TEST(IconSheetTest, IconPixelAt_FindsEveryPixelUnderItsPlace)
 
 TEST(IconSheetTest, IconPixelAt_FindsNothingOutsideTheIcon)
 {
-    const auto room = getEditedIconRect(kCanvasSize);
+    const auto room =
+        getEditedIconRect(getIconDrawBounds(kCanvasSize));
 
     EXPECT_FALSE(
         iconPixelAt(
@@ -151,6 +218,87 @@ TEST(IconSheetTest, SetIconPixel_SetsThePixelOfThatIconAlone)
     EXPECT_EQ(getIconPixelColor(sheet, 1, {2, 3}), kTextColor);
     EXPECT_EQ(getIconPixelColor(sheet, 0, {2, 3}).alpha, 0);
     EXPECT_EQ(getIconPixelColor(sheet, 2, {2, 3}).alpha, 0);
+}
+
+TEST(IconSheetTest, IconCellRect_FollowsTheSheetRectItIsGiven)
+{
+    const auto restingRect = getIconSheetBounds(kCanvasSize);
+    const antwika::gfx::RectF movedRect(
+        antwika::gfx::PointF{
+            restingRect.originPoint.x + 40.0F,
+            restingRect.originPoint.y},
+        restingRect.size);
+
+    const auto restingCell = getIconCellRect(restingRect, kSomeIcons, 0);
+    const auto movedCell = getIconCellRect(movedRect, kSomeIcons, 0);
+
+    EXPECT_FLOAT_EQ(
+        movedCell.originPoint.x, restingCell.originPoint.x + 40.0F);
+    EXPECT_FLOAT_EQ(movedCell.originPoint.y, restingCell.originPoint.y);
+}
+
+TEST(IconSheetTest, EditedIconRect_HangsFromTheTopOfTheDrawingRect)
+{
+    const antwika::gfx::RectF drawRect(
+        antwika::gfx::PointF{100.0F, 20.0F},
+        antwika::gfx::SizeF{200.0F, 400.0F});
+    const auto drawnRect = getEditedIconRect(drawRect);
+
+    EXPECT_GT(drawnRect.originPoint.y, drawRect.originPoint.y);
+    EXPECT_LT(
+        drawnRect.originPoint.y,
+        drawRect.originPoint.y + (drawRect.size.height / 2.0F));
+}
+
+TEST(IconSheetTest, EditedIconRect_StandsAgainstTheRightOfTheDrawingRect)
+{
+    for (const float wide : {80.0F, 160.0F, 400.0F})
+    {
+        const antwika::gfx::RectF drawRect(
+            antwika::gfx::PointF{100.0F, 20.0F},
+            antwika::gfx::SizeF{wide, 200.0F});
+        const auto drawnRect = getEditedIconRect(drawRect);
+
+        EXPECT_FLOAT_EQ(
+            drawnRect.originPoint.x + drawnRect.size.width,
+            drawRect.originPoint.x + drawRect.size.width);
+    }
+}
+
+TEST(IconSheetTest, EditedIconRect_TakesTheWidthOfATallDrawingRect)
+{
+    const antwika::gfx::RectF drawRect(
+        antwika::gfx::PointF{0.0F, 0.0F},
+        antwika::gfx::SizeF{40.0F, 400.0F});
+    const auto drawnRect = getEditedIconRect(drawRect);
+
+    EXPECT_FLOAT_EQ(drawnRect.size.width, drawnRect.size.height);
+    EXPECT_FLOAT_EQ(drawnRect.size.width, drawRect.size.width);
+}
+
+TEST(IconSheetTest, EditedIconRect_TakesTheHeightOfAWideDrawingRect)
+{
+    const antwika::gfx::RectF drawRect(
+        antwika::gfx::PointF{0.0F, 0.0F},
+        antwika::gfx::SizeF{400.0F, 80.0F});
+    const auto drawnRect = getEditedIconRect(drawRect);
+
+    EXPECT_FLOAT_EQ(drawnRect.size.width, drawnRect.size.height);
+    EXPECT_LT(drawnRect.size.width, drawRect.size.width);
+    EXPECT_LE(
+        drawnRect.originPoint.y + drawnRect.size.height,
+        drawRect.originPoint.y + drawRect.size.height);
+}
+
+TEST(IconSheetTest, EditedIconRect_KeepsNoRoomInsideAnEmptyDrawingRect)
+{
+    const auto drawnRect = getEditedIconRect(
+        antwika::gfx::RectF(
+            antwika::gfx::PointF{0.0F, 0.0F},
+            antwika::gfx::SizeF{0.0F, 0.0F}));
+
+    EXPECT_FLOAT_EQ(drawnRect.size.width, 0.0F);
+    EXPECT_FLOAT_EQ(drawnRect.size.height, 0.0F);
 }
 
 TEST(IconSheetTest, SetIconPixel_LeavesAPixelOffTheSheetAlone)

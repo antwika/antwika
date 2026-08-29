@@ -9,7 +9,8 @@
 namespace antwika::text
 {
 
-    gfx::Size getTextSize(std::string_view text, std::uint32_t scale) noexcept
+    gfx::Size getTextSize(
+        std::string_view text, gfx::TextScale scale) noexcept
     {
         const auto height = gfx::getScaledGlyphLineHeight(scale);
 

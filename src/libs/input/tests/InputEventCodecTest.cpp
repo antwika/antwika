@@ -16,6 +16,7 @@
 #include "antwika/input/Position.hpp"
 
 using antwika::event::Event;
+using antwika::event::EventName;
 using antwika::input::InputError;
 using antwika::input::InputEvent;
 using antwika::input::InputEventCodec;
@@ -128,9 +129,9 @@ TEST(InputEventCodecTest, Decode_ReturnsNulloptForAnEventFromSomewhereElse)
 {
     const InputEventCodec codec;
 
-    EXPECT_FALSE(decodes(codec, Event{.name = "engine.tick"}));
-    EXPECT_FALSE(decodes(codec, Event{.name = "life.toggle_cell"}));
-    EXPECT_FALSE(decodes(codec, Event{.name = ""}));
+    EXPECT_FALSE(decodes(codec, Event{.name = EventName{"engine.tick"}}));
+    EXPECT_FALSE(decodes(codec, Event{.name = EventName{"life.toggle_cell"}}));
+    EXPECT_FALSE(decodes(codec, Event{.name = EventName{""}}));
 }
 
 TEST(InputEventCodecTest, Decode_ThrowsOnAPayloadThatIsNotJson)

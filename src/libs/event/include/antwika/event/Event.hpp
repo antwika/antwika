@@ -2,11 +2,13 @@
 
 #include <string>
 
+#include "antwika/event/EventName.hpp"
+
 namespace antwika::event
 {
     struct Event final
     {
-        std::string name{};
+        EventName name{};
         std::string payload{};
         bool operator==(const Event &other) const = default;
     };

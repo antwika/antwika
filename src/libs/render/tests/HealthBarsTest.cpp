@@ -4,6 +4,7 @@
 #include <cstddef>
 
 #include <antwika/component/Health.hpp>
+
 #include "antwika/render/HealthBars.hpp"
 
 using antwika::component::Health;

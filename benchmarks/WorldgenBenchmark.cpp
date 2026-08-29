@@ -22,7 +22,7 @@ namespace
 
     using Clock = std::chrono::steady_clock;
 
-    [[nodiscard]] double millisSince(const Clock::time_point began)
+    [[nodiscard]] double getMillisSince(const Clock::time_point began)
     {
         return std::chrono::duration<double, std::milli>(
                    Clock::now() - began)
@@ -30,18 +30,18 @@ namespace
     }
 
     void timeOne(
-        const CompiledRuleset &rules,
+        const CompiledRuleset &ruleset,
         const ChunkShape shape,
         const std::uint64_t seed)
     {
         const auto began = Clock::now();
         const auto result =
-            getGrowChunk(rules, ChunkRequest{.seed = seed, .shape = shape});
-        const double grew = millisSince(began);
+            getGrowChunk(ruleset, ChunkRequest{.seed = seed, .shape = shape});
+        const double growMillis = getMillisSince(began);
 
         const auto laying = Clock::now();
         const auto voxels = getChunkVoxels(result.cubeVoxels);
-        const double laid = millisSince(laying);
+        const double layMillis = getMillisSince(laying);
 
         std::printf(
             "%2dx%2dx%-3d cells=%6zu seed=%2llu %-13s grow=%8.2fms "
@@ -53,8 +53,8 @@ namespace
             static_cast<unsigned long long>(seed),
             result.outcome == ChunkOutcome::Grown ? "grown"
                                                   : "not grown",
-            grew,
-            laid,
+            growMillis,
+            layMillis,
             result.cubeVoxels.size(),
             voxels.size());
     }
@@ -64,11 +64,11 @@ namespace
 int main()
 {
     const auto compiling = Clock::now();
-    const CompiledRuleset rules(getCityRuleset());
+    const CompiledRuleset ruleset(getCityRuleset());
     std::printf(
         "ruleset of %zu pieces compiled in %.2fms\n\n",
-        rules.getSize(),
-        millisSince(compiling));
+        ruleset.getSize(),
+        getMillisSince(compiling));
 
     for (const ChunkShape shape :
          {ChunkShape{.width = 16, .depth = 16, .height = 16},
@@ -78,7 +78,7 @@ int main()
     {
         for (std::uint64_t seed = 1; seed <= 3; ++seed)
         {
-            timeOne(rules, shape, seed);
+            timeOne(ruleset, shape, seed);
         }
 
         std::printf("\n");

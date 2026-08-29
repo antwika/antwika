@@ -13,47 +13,43 @@
 #include <antwika/input/Key.hpp>
 #include <antwika/voxelmap/Voxel.hpp>
 
-#include <antwika/map/Settings.hpp>
 #include <antwika/voxel/VoxelStairs.hpp>
+
+#include "antwika/editor/Preferences.hpp"
 
 namespace antwika::editor
 {
 
     enum class ToolButton : std::uint8_t
     {
-        Brush,
+        StoneCube,
+        WaterCube,
+        RampCube,
         Picker,
-        FreeLook,
-        Lighting,
+        Stamp,
+        Rubber,
+        Select,
         Lamp,
-        RuleLines,
         Start,
         Exit,
-        Stamp,
-        Figure,
-        PressurePlate,
-        Key,
-        Door,
+        Character,
         Checkpoint,
         Food,
         Water,
-        Eraser,
     };
 
     [[nodiscard]] constexpr ToolButton getLastEnumerator(ToolButton) noexcept
     {
-        return ToolButton::Eraser;
+        return ToolButton::Water;
     }
 
     inline constexpr std::array<ToolButton, enums::kCount<ToolButton>>
         kEveryToolButton = enums::kAll<ToolButton>;
 
-    inline constexpr std::array<map::Paint, enums::kCount<map::Paint>>
-        kEveryPaint = enums::kAll<map::Paint>;
+    inline constexpr std::array<Paint, enums::kCount<Paint>>
+        kEveryPaint = enums::kAll<Paint>;
 
     [[nodiscard]] gfx::Rect getMirrorIcon();
-
-    inline constexpr widget::WidgetId kMirrorWidget{203};
 
     inline constexpr float kToolButtonSide = 16.0F;
 
@@ -61,7 +57,7 @@ namespace antwika::editor
 
     [[nodiscard]] gfx::Rect iconOf(ToolButton whichButton);
 
-    [[nodiscard]] gfx::Rect iconOf(map::Paint whichPaint);
+    [[nodiscard]] gfx::Rect iconOf(Paint whichPaint);
 
     inline constexpr std::array<antwika::voxel::Facing, 4> kMarkedFacings{
         voxel::Facing::West,
@@ -84,7 +80,7 @@ namespace antwika::editor
 
     [[nodiscard]] widget::WidgetId getToolWidget(ToolButton whichButton);
 
-    [[nodiscard]] widget::WidgetId getPaintWidget(map::Paint whichPaint);
+    [[nodiscard]] widget::WidgetId getPaintWidget(Paint whichPaint);
 
     [[nodiscard]] widget::WidgetId getKindWidget(voxel::Kind whichKind);
 
@@ -92,63 +88,9 @@ namespace antwika::editor
 
     [[nodiscard]] widget::WidgetId getLevelWidget(voxel::StairHalf whichHalf);
 
-    inline constexpr widget::WidgetId kPartFrontWidget{180};
-
-    inline constexpr widget::WidgetId kPartSideWidget{181};
-
     [[nodiscard]] widget::WidgetId getPartWidget(voxel::StairPart whichPart);
 
-    inline constexpr widget::WidgetId kToolPanelWidget{64};
-
-    inline constexpr widget::WidgetId kStatusBarWidget{192};
-
-    inline constexpr widget::WidgetId kLayersPanelWidget{193};
-
-    inline constexpr widget::WidgetId kPaletteWidget{194};
-
-    inline constexpr widget::WidgetId kRailWidget{195};
-
-    inline constexpr widget::WidgetId kPreviewWidget{196};
-
-    inline constexpr widget::WidgetId kAddInkWidget{197};
-
-    inline constexpr widget::WidgetId kInkOkWidget{198};
-
-    inline constexpr widget::WidgetId kInkCancelWidget{199};
-
-    inline constexpr widget::WidgetId kInkDeleteWidget{200};
-
-    inline constexpr widget::WidgetId kQuitConfirmWidget{236};
-
-    inline constexpr widget::WidgetId kQuitCancelWidget{237};
-
-    inline constexpr widget::WidgetId kQuitAndSaveWidget{238};
-
-    inline constexpr widget::WidgetId kGlowWidget{245};
-
-    inline constexpr widget::WidgetId kAmbientWidget{246};
-
-    inline constexpr widget::WidgetId kExitTargetWidget{247};
-
-    inline constexpr widget::WidgetId kExitLockedWidget{402};
-
-    inline constexpr widget::WidgetId kSheetPanelWidget{403};
-
-    inline constexpr widget::WidgetId kDrawPanelWidget{404};
-
-    inline constexpr widget::WidgetId kFigureNameWidget{248};
-
-    inline constexpr widget::WidgetId kFigureLampWidget{254};
-
-    inline constexpr widget::WidgetId kAddFigureWidget{249};
-
-    inline constexpr widget::WidgetId kRemoveFigureWidget{250};
-
-    inline constexpr widget::WidgetId kFigureLineWidget{251};
-
-    inline constexpr widget::WidgetId kFigureLineAddWidget{252};
-
-    [[nodiscard]] widget::WidgetId getFigureWidget(std::size_t figureIndex);
+    [[nodiscard]] widget::WidgetId getCharacterWidget(std::size_t characterIndex);
 
     inline constexpr float kToolButtonGap = 4.0F;
 
@@ -157,9 +99,6 @@ namespace antwika::editor
     inline constexpr float kToolPanelTop = 24.0F;
 
     inline constexpr float kToolPanelLeft = 4.0F;
-
-    [[nodiscard]] std::optional<ToolButton> toolFor(
-        input::Key key, bool shiftHeld, bool ctrlHeld);
 
     struct Stroke final
     {
@@ -179,7 +118,7 @@ namespace antwika::editor
     [[nodiscard]] std::optional<antwika::voxel::Kind> kindFor(
         input::Key key, bool ctrlHeld);
 
-    [[nodiscard]] std::optional<map::Paint> paintFor(
+    [[nodiscard]] std::optional<Paint> paintFor(
         input::Key key, bool ctrlHeld);
 
 }

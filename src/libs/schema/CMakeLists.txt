@@ -7,6 +7,7 @@ antwika_add_library(
         src/DocumentDepth.cpp
         src/JsonSchemas.cpp
         src/MigrationChain.cpp
+        src/MigrationRow.cpp
         src/SchemaVersion.cpp
         src/Step.cpp
     DEPENDS

@@ -1,6 +1,7 @@
 #include "TextEditing.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <optional>
 #include <string>
@@ -98,6 +99,86 @@ namespace antwika::ui::detail
             edit.text.insert(edit.cursor, 1, character);
             putCaret(edit, edit.cursor + 1);
         }
+
+        [[nodiscard]] std::size_t getCharBefore(
+            const TextEdit &edit) noexcept
+        {
+            return edit.cursor > 0 ? edit.cursor - 1 : 0;
+        }
+
+        [[nodiscard]] std::size_t getCharAfter(
+            const TextEdit &edit) noexcept
+        {
+            return std::min(edit.cursor + 1, edit.text.size());
+        }
+
+        [[nodiscard]] std::size_t getLineBegin(
+            const TextEdit &edit) noexcept
+        {
+            return getBeginOfLine(edit.text, edit.cursor);
+        }
+
+        [[nodiscard]] std::size_t getLineEnd(const TextEdit &edit) noexcept
+        {
+            return getEndOfLine(edit.text, edit.cursor);
+        }
+
+        using Motion = std::size_t (*)(const TextEdit &) noexcept;
+
+        struct MotionKey final
+        {
+            Key key;
+
+            Motion motion;
+
+            Motion selectionMotion;
+
+            bool extendsSelection;
+        };
+
+        constexpr std::array<MotionKey, 12> kMotionKeys{{
+            {Key::MoveLeft, getCharBefore, getLowEnd, false},
+            {Key::MoveRight, getCharAfter, getHighEnd, false},
+            {Key::MoveUp, getLineAbove, getLineAbove, false},
+            {Key::MoveDown, getLineBelow, getLineBelow, false},
+            {Key::MoveLineStart, getLineBegin, getLineBegin, false},
+            {Key::MoveLineEnd, getLineEnd, getLineEnd, false},
+            {Key::SelectLeft, getCharBefore, getCharBefore, true},
+            {Key::SelectRight, getCharAfter, getCharAfter, true},
+            {Key::SelectUp, getLineAbove, getLineAbove, true},
+            {Key::SelectDown, getLineBelow, getLineBelow, true},
+            {Key::SelectLineStart, getLineBegin, getLineBegin, true},
+            {Key::SelectLineEnd, getLineEnd, getLineEnd, true},
+        }};
+
+        [[nodiscard]] const MotionKey *motionFor(const Key key) noexcept
+        {
+            for (const auto &motionKey : kMotionKeys)
+            {
+                if (motionKey.key == key)
+                {
+                    return &motionKey;
+                }
+            }
+
+            return nullptr;
+        }
+
+        void applyMotion(TextEdit &edit, const MotionKey &motionKey)
+        {
+            const auto motion =
+                !motionKey.extendsSelection && selects(edit)
+                    ? motionKey.selectionMotion
+                    : motionKey.motion;
+
+            if (motionKey.extendsSelection)
+            {
+                edit.cursor = motion(edit);
+                return;
+            }
+
+            putCaret(edit, motion(edit));
+        }
     }
 
     std::size_t getBeginOfLine(
@@ -134,120 +215,61 @@ namespace antwika::ui::detail
 
         for (const auto key : keyboard.keys)
         {
-            if (
-            key == Key::Character && nextCharacter < keyboard.typedText.size())
+            if (const auto *motionKey = motionFor(key))
             {
-                insert(edit, keyboard.typedText[nextCharacter]);
-                ++nextCharacter;
+                applyMotion(edit, *motionKey);
+                continue;
             }
 
-            if (key == Key::Backspace && selects(edit))
+            switch (key)
             {
-                takeSelection(edit);
-            }
-            else if (key == Key::Backspace && edit.cursor > 0)
-            {
-                edit.text.erase(edit.cursor - 1, 1);
-                putCaret(edit, edit.cursor - 1);
-            }
-
-            if (key == Key::Delete && selects(edit))
-            {
-                takeSelection(edit);
-            }
-            else if (key == Key::Delete && edit.cursor < edit.text.size())
-            {
-                edit.text.erase(edit.cursor, 1);
-                putCaret(edit, edit.cursor);
-            }
-
-            if (key == Key::MoveLeft && selects(edit))
-            {
-                putCaret(edit, getLowEnd(edit));
-            }
-            else if (key == Key::MoveLeft)
-            {
-                putCaret(edit, edit.cursor > 0 ? edit.cursor - 1 : 0);
-            }
-
-            if (key == Key::MoveRight && selects(edit))
-            {
-                putCaret(edit, getHighEnd(edit));
-            }
-            else if (key == Key::MoveRight)
-            {
-                putCaret(
-                    edit, std::min(edit.cursor + 1, edit.text.size()));
-            }
-
-            if (key == Key::MoveUp)
-            {
-                putCaret(edit, getLineAbove(edit));
-            }
-
-            if (key == Key::MoveDown)
-            {
-                putCaret(edit, getLineBelow(edit));
-            }
-
-            if (key == Key::MoveLineStart)
-            {
-                putCaret(edit, getBeginOfLine(edit.text, edit.cursor));
-            }
-
-            if (key == Key::MoveLineEnd)
-            {
-                putCaret(edit, getEndOfLine(edit.text, edit.cursor));
-            }
-
-            if (key == Key::SelectLeft && edit.cursor > 0)
-            {
-                --edit.cursor;
-            }
-
-            if (key == Key::SelectRight && edit.cursor < edit.text.size())
-            {
-                ++edit.cursor;
-            }
-
-            if (key == Key::SelectUp)
-            {
-                edit.cursor = getLineAbove(edit);
-            }
-
-            if (key == Key::SelectDown)
-            {
-                edit.cursor = getLineBelow(edit);
-            }
-
-            if (key == Key::SelectLineStart)
-            {
-                edit.cursor = getBeginOfLine(edit.text, edit.cursor);
-            }
-
-            if (key == Key::SelectLineEnd)
-            {
-                edit.cursor = getEndOfLine(edit.text, edit.cursor);
-            }
-
-            if (key == Key::SelectAll)
-            {
+            case Key::Character:
+                if (nextCharacter < keyboard.typedText.size())
+                {
+                    insert(edit, keyboard.typedText[nextCharacter]);
+                    ++nextCharacter;
+                }
+                break;
+            case Key::Backspace:
+                if (selects(edit))
+                {
+                    takeSelection(edit);
+                }
+                else if (edit.cursor > 0)
+                {
+                    edit.text.erase(edit.cursor - 1, 1);
+                    putCaret(edit, edit.cursor - 1);
+                }
+                break;
+            case Key::Delete:
+                if (selects(edit))
+                {
+                    takeSelection(edit);
+                }
+                else if (edit.cursor < edit.text.size())
+                {
+                    edit.text.erase(edit.cursor, 1);
+                    putCaret(edit, edit.cursor);
+                }
+                break;
+            case Key::SelectAll:
                 edit.anchor = 0;
                 edit.cursor = edit.text.size();
-            }
-
-            if ((key == Key::Copy || key == Key::Cut) && selects(edit))
-            {
-                edit.copiedText = getSelectedText(edit);
-            }
-
-            if (key == Key::Cut && selects(edit))
-            {
-                takeSelection(edit);
-            }
-
-            if (key == Key::Activate)
-            {
+                break;
+            case Key::Copy:
+                if (selects(edit))
+                {
+                    edit.copiedText = getSelectedText(edit);
+                }
+                break;
+            case Key::Cut:
+                if (selects(edit))
+                {
+                    edit.copiedText = getSelectedText(edit);
+                    takeSelection(edit);
+                }
+                break;
+            case Key::Activate:
                 if (fieldInput.multiline)
                 {
                     insert(edit, '\n');
@@ -256,13 +278,13 @@ namespace antwika::ui::detail
                 {
                     edit.submitted = true;
                 }
-            }
-
-            if (key == Key::Cancel)
-            {
+                break;
+            case Key::Cancel:
                 edit.cancelled = true;
+                break;
+            default:
+                break;
             }
-
         }
 
         const bool changed = std::string_view{edit.text} != fieldInput.text

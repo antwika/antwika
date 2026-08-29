@@ -1,6 +1,7 @@
 #include "NullRenderer.hpp"
 
 #include <memory>
+#include <optional>
 
 #include <antwika/gfx/PointF.hpp>
 #include <antwika/gfx/RectF.hpp>
@@ -48,7 +49,7 @@ namespace antwika::gfx::detail
     }
 
     void NullRenderer::drawText(
-        PointF, std::string_view, std::uint32_t, Color)
+        PointF, std::string_view, TextScale, Color)
     {
         logger.log(Level::Trace, "gfx.null: draw text");
     }
@@ -67,8 +68,18 @@ namespace antwika::gfx::detail
         return std::make_unique<NullTexture>(bitmap.size);
     }
 
-    void NullRenderer::updateTexture(ITexture &, const Bitmap &)
+    void NullRenderer::updateTexture(ITexture &texture, const Bitmap &bitmap)
     {
+        if (!bitmap.isValid() || texture.getSize() != bitmap.size)
+        {
+            logger.log(
+                Level::Warning,
+                "gfx.null: a texture was updated from a picture of "
+                "another size");
+
+            return;
+        }
+
         logger.log(Level::Trace, "gfx.null: update texture");
     }
 
@@ -132,11 +143,8 @@ namespace antwika::gfx::detail
         return std::make_unique<NullRenderTarget>(spec);
     }
 
-    void NullRenderer::beginTargetRegion(IRenderTarget &, const Rect)
-    {
-    }
-
-    void NullRenderer::beginTarget(IRenderTarget &)
+    void NullRenderer::beginTarget(
+        IRenderTarget &, const std::optional<Rect>)
     {
         logger.log(Level::Trace, "gfx.null: begin target");
     }
@@ -172,6 +180,11 @@ namespace antwika::gfx::detail
 
     void NullRenderer::pushTransform(const Mat4 &)
     {
+        if (pushedCount == kMaxTransformDepth)
+        {
+            throw GfxError("gfx.null: the transform stack is full");
+        }
+
         ++pushedCount;
 
         logger.log(Level::Trace, "gfx.null: push transform");

@@ -27,6 +27,7 @@ using antwika::gfx::kGlyphLineHeight;
 using antwika::gfx::Point;
 using antwika::gfx::Rect;
 using antwika::gfx::Size;
+using antwika::gfx::TextScale;
 using antwika::text::getTextSize;
 
 namespace
@@ -54,7 +55,7 @@ namespace
             cache,
             originPoint,
             text,
-            scale,
+            TextScale{.multiplier = scale},
             color,
             [&visitedPixels](Rect pixel, Color pixelColor) {
                 visitedPixels.push_back(PixelSample{pixel, pixelColor});
@@ -66,7 +67,7 @@ namespace
     [[nodiscard]] std::size_t getInkedPixels(
         char character, std::uint32_t scale)
     {
-        const GlyphCells cells{scale};
+        const GlyphCells cells{TextScale{.multiplier = scale}};
         std::size_t count = 0;
 
         for (std::uint32_t row = 0; row < cells.getCellSize().height; ++row)
@@ -156,7 +157,8 @@ TEST(TextRasterTest, ForEachGlyphPixel_InksNothingOutsideTheMeasuredBox)
 
     for (std::uint32_t scale = 1; scale <= 4; ++scale)
     {
-        const Size boxSize = getTextSize(line, scale);
+        const Size boxSize =
+            getTextSize(line, TextScale{.multiplier = scale});
 
         for (const auto &sample : pixelsOf(kOriginPoint, line, scale))
         {
@@ -223,7 +225,7 @@ TEST(TextRasterTest, ForEachGlyphPixel_HandsOverTheCellsOwnCoverage)
     constexpr std::uint32_t scale = 2;
     constexpr std::string_view text = "gW";
 
-    const GlyphCells cells{scale};
+    const GlyphCells cells{TextScale{.multiplier = scale}};
     std::vector<PixelSample> expectedSamples;
 
     for (std::size_t cell = 0; cell < text.size(); ++cell)

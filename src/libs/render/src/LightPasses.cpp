@@ -11,11 +11,15 @@
 #include <antwika/gfx/MeshMaterial.hpp>
 #include <antwika/voxelmap/Voxel.hpp>
 
+#include "antwika/render/TextureUpload.hpp"
+
 namespace antwika::render
 {
 
     namespace
     {
+        constexpr gfx::Size kUnlitAtlasSize{.width = 1, .height = 1};
+
         [[nodiscard]] bool isPieceUnseen(
             const MeshPiece &piece,
             const gfx::Vec3 standingPosition,
@@ -41,9 +45,10 @@ namespace antwika::render
         const gfx::ShaderSource &shadowSource)
     {
         shadowShader = viewportRenderer.createShader(shadowSource);
+        atlasSize = kUnlitAtlasSize;
         lampShadowAtlasTarget = viewportRenderer.createRenderTarget(
             gfx::RenderTargetSpec{
-                .size = light::getShadowAtlasSize(), .depth = true});
+                .size = atlasSize, .depthOnly = true});
     }
 
     void LightPasses::forget() noexcept
@@ -70,14 +75,7 @@ namespace antwika::render
         const auto drawnOver = voxelmap::getOcclusionMask(
             occludingVoxelsHeld, voxelmap::getOcclusionMaskOrigin(aboutPosition));
 
-        if (occlusionTexture)
-        {
-            viewportRenderer.updateTexture(*occlusionTexture, drawnOver);
-
-            return;
-        }
-
-        occlusionTexture = viewportRenderer.createTexture(drawnOver);
+        layBitmapIntoTexture(viewportRenderer, occlusionTexture, drawnOver);
     }
 
     const voxel::Voxels &LightPasses::getHiddenVoxels()
@@ -103,6 +101,14 @@ namespace antwika::render
         }
 
         const auto relit = light::getDirtyShadowSlots(bakedLights, lights);
+
+        if (!relit.empty() && atlasSize != light::getShadowAtlasSize())
+        {
+            atlasSize = light::getShadowAtlasSize();
+            lampShadowAtlasTarget = viewportRenderer.createRenderTarget(
+                gfx::RenderTargetSpec{
+                    .size = atlasSize, .depthOnly = true});
+        }
 
         for (const auto index : relit)
         {

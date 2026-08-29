@@ -5,7 +5,6 @@
 #include <utility>
 
 #include <antwika/tilemap/AtlasLayout.hpp>
-#include <antwika/voxelmap/Voxel.hpp>
 #include <antwika/voxel/VoxelCube.hpp>
 #include <antwika/tilemap/TileEdges.hpp>
 
@@ -337,11 +336,5 @@ namespace antwika::tile
 
         return updatedRules;
     } // GCOVR_EXCL_LINE
-
-    widget::WidgetId getTransitionRowWidget(const std::size_t rowIndex)
-    {
-        return widget::WidgetId{
-            353 + static_cast<std::uint64_t>(rowIndex)};
-    }
 
 }

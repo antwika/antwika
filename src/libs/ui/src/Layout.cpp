@@ -36,6 +36,7 @@ namespace antwika::ui::detail
             Axis axis;
             Alignment crossAlignment;
             std::uint32_t gap;
+            std::optional<std::uint32_t> scrollOffset{};
         };
 
         std::uint32_t getSaturatingSub(
@@ -272,15 +273,19 @@ namespace antwika::ui::detail
                     offset = available - extent;
                 }
 
-                const auto start = std::min(cursor, room);
+                const auto start =
+                    box.scrollOffset ? cursor : std::min(cursor, room);
                 const auto alongExtent =
-                    std::min(extents[index], room - start);
+                    box.scrollOffset ? extents[index]
+                                     : std::min(extents[index], room - start);
+                const auto alongPoint =
+                    static_cast<std::int64_t>(mainOf(box.originPoint, box.axis))
+                    + start - box.scrollOffset.value_or(0);
 
                 value.arrangedRect = Rect{
                     .originPoint = pointFrom(
                         box.axis,
-                        mainOf(box.originPoint, box.axis)
-                            + static_cast<std::int32_t>(start),
+                        static_cast<std::int32_t>(alongPoint),
                         crossOf(box.originPoint, box.axis)
                             + static_cast<std::int32_t>(offset)),
                     .size = sizeFrom(box.axis, alongExtent, extent)};
@@ -361,7 +366,7 @@ namespace antwika::ui::detail
             const auto inset = getDoubledLength(parent.padding);
             const auto pad = static_cast<std::int32_t>(parent.padding);
 
-            const ContentBox box{
+            ContentBox box{
                 .originPoint =
                     {.x = parent.arrangedRect.originPoint.x + pad,
                      .y = parent.arrangedRect.originPoint.y + pad},
@@ -420,6 +425,19 @@ namespace antwika::ui::detail
             else if (demand > room && !parent.clips)
             {
                 distributeShrink(extents, demand, room);
+            }
+
+            if (parent.scrollOffset)
+            {
+                const auto overflow =
+                    demand > room
+                             ? getClampToU32(demand - room)
+                             : 0U;
+                const auto appliedOffset =
+                    std::min(*parent.scrollOffset, overflow);
+
+                tree.getNode(index).scrollOffset = appliedOffset;
+                box.scrollOffset = appliedOffset;
             }
 
             place(tree, children, extents, box);

@@ -5,6 +5,7 @@
 #include <optional>
 #include <set>
 
+#include <antwika/voxel/FacingTraits.hpp>
 #include <antwika/voxel/VoxelStairs.hpp>
 #include <antwika/worldgen/ruleset/CompiledRuleset.hpp>
 
@@ -13,12 +14,6 @@ namespace antwika::worldgen::detail
 
     namespace
     {
-        constexpr std::array kWaysAbout{
-            voxel::Facing::East,
-            voxel::Facing::West,
-            voxel::Facing::North,
-            voxel::Facing::South};
-
         constexpr std::uint64_t kStairWeight = 5;
         constexpr std::uint64_t kAcrossWeight = 2;
 
@@ -396,7 +391,7 @@ namespace antwika::worldgen::detail
             {
                 std::vector<Move> moves;
 
-                for (const voxel::Facing facing : kWaysAbout)
+                for (const voxel::Facing facing : voxel::kCardinalFacings)
                 {
                     addStair(moves, position, facing);
                     addAcross(moves, position, facing);

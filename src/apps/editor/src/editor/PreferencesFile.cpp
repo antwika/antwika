@@ -19,17 +19,15 @@ namespace antwika::editor
     {
         constexpr std::string_view kPreferencesName = "editor.json";
 
-        constexpr enums::NameTable<map::Tool> kToolNames{
-            {"brush",
+        constexpr enums::NameTable<Tool> kToolNames{
+            {"select",
+             "brush",
              "picker",
              "lamp",
              "start",
              "exit",
              "stamp",
-             "figure",
-             "plate",
-             "key",
-             "door",
+             "character",
              "checkpoint",
              "food",
              "water",
@@ -37,13 +35,13 @@ namespace antwika::editor
 
         static_assert(kToolNames.isComplete());
 
-        constexpr enums::NameTable<map::Paint> kPaintNames{
+        constexpr enums::NameTable<Paint> kPaintNames{
             {"brush", "line", "fill", "select", "rect", "circle"}};
 
         static_assert(kPaintNames.isComplete());
 
-        constexpr enums::NameTable<map::View> kViewNames{
-            {"world", "atlases", "character", "icons", "plan"}};
+        constexpr enums::NameTable<View> kViewNames{
+            {"world", "atlases", "character", "icons", "plan", "gizmos"}};
 
         static_assert(kViewNames.isComplete());
 
@@ -70,6 +68,23 @@ namespace antwika::editor
                 .value_or(whenMissing);
         }
 
+        [[nodiscard]] std::uint32_t getNumberOf(
+            const nlohmann::json &document,
+            const std::string_view key,
+            const std::uint32_t whenMissing)
+        {
+            const auto foundNumber = document.find(std::string(key));
+
+            if (foundNumber == document.end()
+                || !foundNumber->is_number_unsigned()
+                || foundNumber->get<std::uint64_t>() > kMaxPanelWidth)
+            {
+                return whenMissing;
+            }
+
+            return foundNumber->get<std::uint32_t>();
+        }
+
         [[nodiscard]] bool isFlagOn(
             const nlohmann::json &document,
             const std::string_view key,
@@ -88,9 +103,9 @@ namespace antwika::editor
         return map::getSidecarPath(mapPath, kPreferencesName);
     }
 
-    Preferences getLoadPreferences(const std::string &mapPath)
+    Preferences getLoadPreferences(
+        const std::string &mapPath, const Preferences &restingPreferences)
     {
-        const Preferences restingPreferences;
         const auto path = getPreferencesPath(mapPath);
 
         if (!std::filesystem::exists(path))
@@ -120,6 +135,8 @@ namespace antwika::editor
             .paint = enumOf(document, "paint", kPaintNames, restingPreferences.paint),
             .view = enumOf(document, "view", kViewNames, restingPreferences.view),
             .kind = enumOf(document, "kind", kKindNames, restingPreferences.kind),
+            .lighting =
+                isFlagOn(document, "lighting", restingPreferences.lighting),
             .showRuleLines =
                 isFlagOn(document, "ties", restingPreferences.showRuleLines),
             .grid = isFlagOn(document, "grid", restingPreferences.grid),
@@ -129,7 +146,36 @@ namespace antwika::editor
             .cameraFollows =
                 isFlagOn(document, "following", restingPreferences.cameraFollows),
             .hideAboveLevel =
-                isFlagOn(document, "aboveHidden", restingPreferences.hideAboveLevel)};
+                isFlagOn(document, "aboveHidden", restingPreferences.hideAboveLevel),
+            .panelSizes = PanelSizes{
+                .toolWidth = getNumberOf(
+                    document,
+                    "toolWidth",
+                    restingPreferences.panelSizes.toolWidth),
+                .entityWidth = getNumberOf(
+                    document,
+                    "entityWidth",
+                    restingPreferences.panelSizes.entityWidth),
+                .inspectWidth = getNumberOf(
+                    document,
+                    "inspectWidth",
+                    restingPreferences.panelSizes.inspectWidth),
+                .railWidth = getNumberOf(
+                    document,
+                    "railWidth",
+                    restingPreferences.panelSizes.railWidth),
+                .cardWidth = getNumberOf(
+                    document,
+                    "cardWidth",
+                    restingPreferences.panelSizes.cardWidth),
+                .planFirstWidth = getNumberOf(
+                    document,
+                    "planFirstWidth",
+                    restingPreferences.panelSizes.planFirstWidth),
+                .planSecondWidth = getNumberOf(
+                    document,
+                    "planSecondWidth",
+                    restingPreferences.panelSizes.planSecondWidth)}};
     }
 
     void savePreferences(
@@ -142,12 +188,20 @@ namespace antwika::editor
             std::string(kPaintNames.getName(preferences.paint));
         document["view"] = std::string(kViewNames.getName(preferences.view));
         document["kind"] = std::string(kKindNames.getName(preferences.kind));
+        document["lighting"] = preferences.lighting;
         document["ties"] = preferences.showRuleLines;
         document["grid"] = preferences.grid;
         document["marker"] = preferences.showPlacementGhost;
         document["sight"] = preferences.lampSight;
         document["following"] = preferences.cameraFollows;
         document["aboveHidden"] = preferences.hideAboveLevel;
+        document["toolWidth"] = preferences.panelSizes.toolWidth;
+        document["entityWidth"] = preferences.panelSizes.entityWidth;
+        document["inspectWidth"] = preferences.panelSizes.inspectWidth;
+        document["railWidth"] = preferences.panelSizes.railWidth;
+        document["cardWidth"] = preferences.panelSizes.cardWidth;
+        document["planFirstWidth"] = preferences.panelSizes.planFirstWidth;
+        document["planSecondWidth"] = preferences.panelSizes.planSecondWidth;
 
         const auto path = getPreferencesPath(mapPath);
         auto writing = io::openToWriteAs<map::MapFileError>(

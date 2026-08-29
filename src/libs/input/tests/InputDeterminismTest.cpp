@@ -11,7 +11,7 @@
 
 #include <antwika/engine/Engine.hpp>
 #include <antwika/engine/EngineLoop.hpp>
-#include <antwika/engine/Events.hpp>
+#include <antwika/event/EngineEvents.hpp>
 #include <antwika/engine/StopSignal.hpp>
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/ITickEventSink.hpp>
@@ -171,7 +171,7 @@ TEST(
     ReplaySource stopAtTwoSource(
         {TickEvent{
             .tick = 2,
-            .event = {.name = antwika::engine::events::kStop}}});
+            .event = {.name = antwika::event::kStop}}});
     FakeInputBackend backend(getScriptedSession());
     const InputEventCodec codec;
     LiveInputSource liveSource(stopAtTwoSource, backend, codec);
@@ -200,7 +200,7 @@ TEST(InputDeterminismTest, Live_FoldsSomething)
     ReplaySource stopAtTwoSource(
         {TickEvent{
             .tick = 2,
-            .event = {.name = antwika::engine::events::kStop}}});
+            .event = {.name = antwika::event::kStop}}});
     FakeInputBackend backend(getScriptedSession());
     const InputEventCodec codec;
     LiveInputSource liveSource(stopAtTwoSource, backend, codec);
@@ -221,7 +221,7 @@ TEST(InputDeterminismTest, Recording_KeepsInputAndDropsTicks)
     ReplaySource stopAtTwoSource(
         {TickEvent{
             .tick = 2,
-            .event = {.name = antwika::engine::events::kStop}}});
+            .event = {.name = antwika::event::kStop}}});
     FakeInputBackend backend(getScriptedSession());
     const InputEventCodec codec;
     LiveInputSource liveSource(stopAtTwoSource, backend, codec);
@@ -235,7 +235,7 @@ TEST(InputDeterminismTest, Recording_KeepsInputAndDropsTicks)
     std::size_t inputEvents = 0;
     for (const auto &event : loadedEvents)
     {
-        EXPECT_NE(event.event.name, antwika::engine::events::kTick);
+        EXPECT_NE(event.event.name, antwika::event::kTick);
 
         if (codec.getDecodedEvent(event.event).has_value())
         {
@@ -255,7 +255,7 @@ TEST(InputDeterminismTest, IdleMotionGate_ChangesNothingTheAppFolds)
     ReplaySource ungatedStopSource(
         {TickEvent{
             .tick = kWanderingTicks,
-            .event = {.name = antwika::engine::events::kStop}}});
+            .event = {.name = antwika::event::kStop}}});
     FakeInputBackend ungatedBackend(getWanderingSession());
     LiveInputSource ungatedLive(ungatedStopSource, ungatedBackend, codec);
 
@@ -267,7 +267,7 @@ TEST(InputDeterminismTest, IdleMotionGate_ChangesNothingTheAppFolds)
     ReplaySource gatedStopSource(
         {TickEvent{
             .tick = kWanderingTicks,
-            .event = {.name = antwika::engine::events::kStop}}});
+            .event = {.name = antwika::event::kStop}}});
     FakeInputBackend gatedBackend(getWanderingSession());
     LiveInputSource gatedLive(gatedStopSource, gatedBackend, codec);
     IdleMotionFilter gatedFilter(gatedLive, codec);
@@ -285,7 +285,7 @@ TEST(InputDeterminismTest, IdleMotionGate_KeepsOnlyMotionThatDidSomething)
     ReplaySource stoppingSource(
         {TickEvent{
             .tick = kWanderingTicks,
-            .event = {.name = antwika::engine::events::kStop}}});
+            .event = {.name = antwika::event::kStop}}});
     FakeInputBackend backend(getWanderingSession());
     LiveInputSource liveSource(stoppingSource, backend, codec);
     IdleMotionFilter gatedFilter(liveSource, codec);
@@ -303,7 +303,7 @@ TEST(InputDeterminismTest, Replay_ReachesTheSameStateWhenGated)
     ReplaySource stoppingSource(
         {TickEvent{
             .tick = kWanderingTicks,
-            .event = {.name = antwika::engine::events::kStop}}});
+            .event = {.name = antwika::event::kStop}}});
     FakeInputBackend backend(getWanderingSession());
     LiveInputSource liveSource(stoppingSource, backend, codec);
     IdleMotionFilter gatedFilter(liveSource, codec);

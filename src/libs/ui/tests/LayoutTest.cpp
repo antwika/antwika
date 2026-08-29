@@ -44,7 +44,7 @@ namespace
             .widthSizing = kFitSizing,
             .heightSizing = kFitSizing,
             .text = std::move(value),
-            .textScale = scale};
+            .textScale = {.multiplier = scale}};
     }
 
     constexpr Size kTwoGlyphsSize{.width = 12, .height = 8};

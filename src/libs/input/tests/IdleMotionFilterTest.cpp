@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include <antwika/event/EngineEvents.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/replay/ReplaySource.hpp>
@@ -17,6 +18,8 @@
 #include "antwika/input/MouseButton.hpp"
 
 using antwika::event::Event;
+using antwika::event::kStop;
+using antwika::event::EventName;
 using antwika::event::TickEvent;
 using antwika::input::IdleMotionFilter;
 using antwika::input::InputEventCodec;
@@ -55,10 +58,10 @@ namespace
         return TickEvent{.tick = tick, .event = std::move(event)};
     }
 
-    [[nodiscard]] std::vector<std::string> namesOf(
+    [[nodiscard]] std::vector<EventName> namesOf(
         const std::vector<Event> &events)
     {
-        std::vector<std::string> names;
+        std::vector<EventName> names;
         for (const auto &event : events)
         {
             names.push_back(event.name);
@@ -85,7 +88,7 @@ TEST(IdleMotionFilterTest, EventsFor_PassesMovementWhileAButtonIsHeld)
 
     EXPECT_EQ(
         namesOf(sourceFilter.eventsFor(0)),
-        (std::vector<std::string>{
+        (std::vector<EventName>{
             events::kPointerDown,
             events::kPointerMove,
             events::kPointerMove}));
@@ -130,18 +133,18 @@ TEST(IdleMotionFilterTest, EventsFor_ReleasesTheMovementBeforeAKey)
 
     EXPECT_EQ(
         namesOf(sourceFilter.eventsFor(0)),
-        (std::vector<std::string>{events::kPointerMove, events::kKeyDown}));
+        (std::vector<EventName>{events::kPointerMove, events::kKeyDown}));
 }
 
 TEST(IdleMotionFilterTest, EventsFor_ReleasesTheMovementBeforeAnyOtherEvent)
 {
     ReplaySource innerSource(
-        {getEntryAt(0, getEncodedMoveEvent(7, 8)), getEntryAt(0, Event{.name = "engine.stop"})});
+        {getEntryAt(0, getEncodedMoveEvent(7, 8)), getEntryAt(0, Event{.name = kStop})});
     IdleMotionFilter sourceFilter(innerSource, kCodec);
 
     EXPECT_EQ(
         namesOf(sourceFilter.eventsFor(0)),
-        (std::vector<std::string>{events::kPointerMove, "engine.stop"}));
+        (std::vector<EventName>{events::kPointerMove, kStop}));
 }
 
 TEST(IdleMotionFilterTest, EventsFor_ReleasesAHeldBackMovementOnALaterTick)
@@ -172,7 +175,7 @@ TEST(IdleMotionFilterTest, EventsFor_ReleasesAHeldBackMovementOnlyOnce)
 
     EXPECT_EQ(
         namesOf(sourceFilter.eventsFor(0)),
-        (std::vector<std::string>{
+        (std::vector<EventName>{
             events::kPointerMove,
             events::kPointerDown,
             events::kPointerUp}));
@@ -189,7 +192,7 @@ TEST(IdleMotionFilterTest, EventsFor_HoldsBackMovementAgainAfterARelease)
 
     EXPECT_EQ(
         namesOf(sourceFilter.eventsFor(0)),
-        (std::vector<std::string>{
+        (std::vector<EventName>{
             events::kPointerDown,
             events::kPointerMove,
             events::kPointerUp}));

@@ -16,6 +16,9 @@ namespace antwika::component
         std::uint32_t nextStopIndex = 0;
 
         std::uint32_t pathIndex = 0;
+
+        [[nodiscard]] bool operator==(
+            const Patrol &other) const = default;
     };
 
 }

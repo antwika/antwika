@@ -32,6 +32,18 @@ namespace antwika::ui::detail
         bool underOverlay,
         Interactions &interactions);
 
+    void resolveEdges(
+        const LayoutTree &tree,
+        const Pointer &pointer,
+        bool underOverlay,
+        Interactions &interactions);
+
+    void resolvePanes(
+        LayoutTree &tree,
+        const Pointer &pointer,
+        bool underOverlay,
+        Interactions &interactions);
+
     void applyVisualState(
         LayoutTree &tree,
         const Interactions &interactions,

@@ -12,6 +12,7 @@
 #include <antwika/gfx/Size.hpp>
 
 #include <antwika/tilemap/Tilemap.hpp>
+
 #include "antwika/editor/ui/EditorLook.hpp"
 
 namespace antwika::editor
@@ -35,30 +36,41 @@ namespace antwika::editor
 
     inline constexpr std::size_t kPickerBands = 22;
 
-    [[nodiscard]] gfx::RectF getPickerPlace(gfx::Size canvasSize);
+    [[nodiscard]] gfx::RectF getPickerPlace(
+        gfx::Size canvasSize, float railWidth);
 
-    [[nodiscard]] gfx::RectF getFieldPlace(gfx::Size canvasSize);
+    [[nodiscard]] gfx::RectF getFieldPlace(
+        gfx::Size canvasSize, float railWidth);
 
-    [[nodiscard]] gfx::RectF getHuePlace(gfx::Size canvasSize);
+    [[nodiscard]] gfx::RectF getHuePlace(
+        gfx::Size canvasSize, float railWidth);
 
-    [[nodiscard]] bool isOnPicker(gfx::Size canvasSize, gfx::PointF point);
+    [[nodiscard]] bool isOnPicker(
+        gfx::Size canvasSize, float railWidth, gfx::PointF point);
 
     [[nodiscard]] std::optional<Hsv> getColorAtPoint(
-        gfx::Size canvasSize, Hsv currentHsv, gfx::PointF point);
+        gfx::Size canvasSize,
+        float railWidth,
+        Hsv currentHsv,
+        gfx::PointF point);
 
     [[nodiscard]] gfx::PointF getFieldCursorPos(
-        gfx::Size canvasSize, Hsv colorHsv);
+        gfx::Size canvasSize, float railWidth, Hsv colorHsv);
 
-    [[nodiscard]] float getHueCursorPos(gfx::Size canvasSize, Hsv colorHsv);
+    [[nodiscard]] float getHueCursorPos(
+        gfx::Size canvasSize, float railWidth, Hsv colorHsv);
 
     [[nodiscard]] gfx::RectF getBandPlace(
-        gfx::Size canvasSize, std::size_t column, std::size_t row);
+        gfx::Size canvasSize,
+        float railWidth,
+        std::size_t column,
+        std::size_t row);
 
     [[nodiscard]] Hsv getBandHsv(
         Hsv colorHsv, std::size_t column, std::size_t row);
 
     [[nodiscard]] gfx::RectF getHueBandPlace(
-        gfx::Size canvasSize, std::size_t bandIndex);
+        gfx::Size canvasSize, float railWidth, std::size_t bandIndex);
 
     [[nodiscard]] float getHueBand(std::size_t bandIndex);
 

@@ -101,6 +101,18 @@ namespace antwika::voxel
 
     [[nodiscard]] VoxelPosition cubeCornerOf(VoxelPosition position);
 
+    /**
+     * @brief The cube a voxel belongs to, counted in whole cubes, so that
+     * one step of the count is one cube of the pile.
+     */
+    [[nodiscard]] VoxelPosition cubeIndexOf(VoxelPosition position);
+
+    /**
+     * @brief The voxel a cube of the count corners on, the way back from
+     * cubeIndexOf.
+     */
+    [[nodiscard]] VoxelPosition cubeCornerAt(VoxelPosition cubePosition);
+
     [[nodiscard]] std::vector<VoxelPosition> getCubeCells(
         VoxelPosition cornerPosition);
 

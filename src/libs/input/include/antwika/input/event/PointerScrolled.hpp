@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+
 #include "antwika/input/Key.hpp"
 #include "antwika/input/KeyModifiers.hpp"
 #include "antwika/input/MouseButton.hpp"

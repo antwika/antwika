@@ -1,3 +1,6 @@
+#include <algorithm>
+#include <cstdint>
+
 #include <antwika/decor/Decor.hpp>
 #include <antwika/editor/ui/AtlasView.hpp>
 #include <antwika/geometry/Grid.hpp>
@@ -13,6 +16,8 @@
 #include <antwika/voxelmap/VoxelPick.hpp>
 
 #include "antwika/editor/Editor.hpp"
+
+#include "antwika/editor/ui/WidgetCatalog.hpp"
 
 namespace antwika::editor
 {
@@ -52,118 +57,80 @@ namespace antwika::editor
 
     void Editor::onScrolled(const input::PointerScrolled &rolledScrolled)
     {
-        if (rolledScrolled.vertical != 0
-            && pointer.hoveredWidget
-                   == decor::kVariantWeightWidget
-            && stroke.selectedTile.has_value())
+        pointer.wheelSteps -= rolledScrolled.vertical;
+
+        if (rolledScrolled.vertical != 0)
         {
-            if (tick >= remesh.lastWheelNudgeTick + 60)
+            for (const auto &row : getWidgetCatalog().sliderRows)
             {
-                pushUndo();
+                if (row.valueOf == nullptr
+                    || pointer.hoveredWidget != row.widget
+                    || (row.decorNeed && !isDecorLayer(chosenLayer))
+                    || (row.slideGate != nullptr && !row.slideGate(*this)))
+                {
+                    continue;
+                }
+
+                if (row.undoNeed
+                    && tick >= remesh.lastWheelNudgeTick + 60)
+                {
+                    pushUndo();
+                }
+
+                if (row.decorNeed)
+                {
+                    ensureDecor();
+                }
+
+                const auto value = static_cast<int>(row.valueOf(*this));
+                const auto nudgedValue =
+                    rolledScrolled.vertical > 0
+                        ? std::min<int>(
+                              value + 1,
+                              decor::kFullFrequency)
+                        : std::max<int>(value - 1, 0);
+
+                row.slideEffect(
+                    *this, static_cast<std::uint32_t>(nudgedValue));
+                remesh.lastWheelNudgeTick = tick;
+                remesh.afterNudge = true;
+
+                return;
             }
+        }
 
-            const auto weight = variantWeightOf(*stroke.selectedTile);
-            const auto nextIndex =
-                rolledScrolled.vertical > 0
-                    ? std::min<int>(
-                          weight + 1,
-                          decor::kFullFrequency)
-                    : std::max<int>(weight - 1, 0);
-
-            document.map.familyGroups = getWithVariantWeightSet(
-                document.map.familyGroups,
-                *stroke.selectedTile,
-                static_cast<std::uint8_t>(nextIndex));
-            remesh.lastWheelNudgeTick = tick;
-            remesh.afterNudge = true;
-
+        if (isInspectorHovered() || isEntityListHovered())
+        {
             return;
         }
 
-        if (rolledScrolled.vertical != 0
-            && pointer.hoveredWidget == decor::kFrequencyWidget
-            && isDecorLayer(chosenLayer) && stroke.selectedTile.has_value())
+        if (auto *view = viewNow();
+            view != nullptr
+            && view->consumeScroll(viewContextNow(), rolledScrolled))
         {
-            if (tick >= remesh.lastWheelNudgeTick + 60)
-            {
-                pushUndo();
-            }
-
-            ensureDecor();
-
-            const auto *nudgedDecor = decor::decorOf(
-                document.map.decor, *stroke.selectedTile);
-            const auto nextIndex =
-                rolledScrolled.vertical > 0
-                    ? std::min<int>(
-                          nudgedDecor->frequency + 1,
-                          decor::kFullFrequency)
-                    : std::max<int>(nudgedDecor->frequency - 1, 0);
-
-            document.map.decor = getWithFrequencySet(
-                document.map.decor,
-                *stroke.selectedTile,
-                static_cast<std::uint8_t>(nextIndex));
-            remesh.lastWheelNudgeTick = tick;
-            remesh.afterNudge = true;
-
             return;
         }
 
-        if (rolledScrolled.vertical != 0
-            && pointer.hoveredWidget
-                   == decor::kDecorWeightWidget
-            && isDecorLayer(chosenLayer) && stroke.selectedTile.has_value())
+        if (rolledScrolled.vertical != 0)
         {
-            if (tick >= remesh.lastWheelNudgeTick + 60)
-            {
-                pushUndo();
-            }
-
-            ensureDecor();
-
-            const auto *nudgedDecor = decor::decorOf(
-                document.map.decor, *stroke.selectedTile);
-            const auto nextIndex =
-                rolledScrolled.vertical > 0
-                    ? std::min<int>(
-                          nudgedDecor->weight + 1,
-                          decor::kFullFrequency)
-                    : std::max<int>(nudgedDecor->weight - 1, 0);
-
-            document.map.decor = getWithWeightSet(
-                document.map.decor,
-                *stroke.selectedTile,
-                static_cast<std::uint8_t>(nextIndex));
-            remesh.lastWheelNudgeTick = tick;
-            remesh.afterNudge = true;
-
-            return;
-        }
-
-        if (rolledScrolled.vertical != 0
-            && viewChoice.activeView == map::View::Atlases)
-        {
-            sheetView.zoom = std::clamp(
-                sheetView.zoom
-                    * (rolledScrolled.vertical > 0
-                           ? kGridZoomStep
-                           : 1.0F / kGridZoomStep),
-                kMinGridZoom,
-                kMaxGridZoom);
-        }
-        else if (rolledScrolled.vertical != 0)
-        {
-            auto &zoomValue = play.playing ? play.game->zoom(
-                ) : cameraRig.view.zoom;
-
-            zoomValue = std::clamp(
+            const auto zoomValue =
+                play.playing ? play.game->getZoom() : cameraRig.view.zoom;
+            const auto nextZoom = std::clamp(
                 zoomValue
                     + (rolledScrolled.vertical > 0
                            ? camera::kZoomStep
                            : -camera::kZoomStep),
                 camera::kMinZoom,
                 camera::kMaxZoom);
+
+            if (play.playing)
+            {
+                play.game->setZoom(nextZoom);
+            }
+            else
+            {
+                cameraRig.view.zoom = nextZoom;
+            }
         }
 
         return;
@@ -172,361 +139,50 @@ namespace antwika::editor
     bool Editor::beginSliderDrag(
         const ui::Interactions &interactions)
     {
-        if (interactions.slidChange.has_value()
-            && interactions.slidChange->sliderWidget
-                   == decor::kFrequencyWidget
-            && stroke.selectedTile.has_value())
-        {
-            pushUndo();
-            ensureDecor();
-            document.map.decor = getWithFrequencySet(
-                document.map.decor,
-                *stroke.selectedTile,
-                static_cast<std::uint8_t>(
-                    interactions.slidChange->value));
-            slidingWidget = decor::kFrequencyWidget;
-
-            return true;
-        }
-
-        if (interactions.slidChange.has_value()
-            && interactions.slidChange->sliderWidget
-                   == decor::kDecorWeightWidget
-            && stroke.selectedTile.has_value())
-        {
-            pushUndo();
-            ensureDecor();
-            document.map.decor = getWithWeightSet(
-                document.map.decor,
-                *stroke.selectedTile,
-                static_cast<std::uint8_t>(
-                    interactions.slidChange->value));
-            slidingWidget = decor::kDecorWeightWidget;
-
-            return true;
-        }
-
-        if (interactions.slidChange.has_value()
-            && interactions.slidChange->sliderWidget
-                   == decor::kVariantWeightWidget
-            && stroke.selectedTile.has_value())
-        {
-            pushUndo();
-            document.map.familyGroups = getWithVariantWeightSet(
-                document.map.familyGroups,
-                *stroke.selectedTile,
-                static_cast<std::uint8_t>(
-                    interactions.slidChange->value));
-            slidingWidget = decor::kVariantWeightWidget;
-
-            return true;
-        }
-
-        if (interactions.slidChange.has_value()
-            && interactions.slidChange->sliderWidget
-                   == antwika::editor::kGlowWidget
-            && inkPicker.editingInk.has_value())
-        {
-            if (*inkPicker.editingInk < document.map.glows.size())
-            {
-                document.map.glows.at(*inkPicker.editingInk) =
-                    static_cast<std::uint8_t>(
-                        interactions.slidChange->value);
-            }
-
-            slidingWidget = antwika::editor::kGlowWidget;
-
-            return true;
-        }
-
-        if (interactions.slidChange.has_value()
-            && interactions.slidChange->sliderWidget
-                   == antwika::editor::kAmbientWidget)
-        {
-            pushUndo();
-            document.map.ambient = static_cast<std::uint8_t>(
-                interactions.slidChange->value);
-            slidingWidget = antwika::editor::kAmbientWidget;
-
-            return true;
-        }
-
-        return false;
-    }
-
-    bool Editor::consumePickerPress(
-        const input::PointerButtonPressed &downPressed)
-    {
-        if (!inkPicker.editingInk.has_value())
+        if (!interactions.slidChange.has_value())
         {
             return false;
         }
 
-
-            const auto projectToScreen =
-                viewportRenderer.getViewport().toCanvas(
-                    antwika::gfx::Point{
-                        .x = downPressed.position.x,
-                        .y = downPressed.position.y});
-
-            pointer.pointerOnCanvas = antwika::gfx::PointF{
-                static_cast<float>(projectToScreen.x),
-                static_cast<float>(projectToScreen.y)};
-
-            const auto withLeft =
-                downPressed.button == input::MouseButton::Left;
-            const auto takenColor =
-                withLeft ? getColorAtPoint(
-                               camera::kCanvasSize, inkPicker.pickerHsv,
-                                   pointer.pointerOnCanvas)
-                         : std::nullopt;
-
-            if (takenColor.has_value())
+        for (const auto &row : getWidgetCatalog().sliderRows)
+        {
+            if (interactions.slidChange->sliderWidget != row.widget
+                || (row.slideGate != nullptr && !row.slideGate(*this)))
             {
-                if (!inkPicker.pickerDragging)
-                {
-                    pushUndo();
-                }
-
-                inkPicker.pickerHsv = *takenColor;
-                recolorInk(colorOf(inkPicker.pickerHsv));
-                inkPicker.hexText = getColorToHex(
-                    document.map.paletteColors.at(*inkPicker.editingInk));
-                inkPicker.pickerDragging = true;
-
-                return true;
+                continue;
             }
 
-            if (isOnPicker(camera::kCanvasSize, pointer.pointerOnCanvas))
+            if (row.undoNeed)
             {
-                return true;
+                pushUndo();
             }
 
-            if (withLeft)
+            if (row.decorNeed)
             {
-                inkPicker.editingInk.reset();
-
-                return true;
+                ensureDecor();
             }
+
+            row.slideEffect(*this, interactions.slidChange->value);
+            slidingWidget = row.widget;
+
+            return true;
+        }
 
         return false;
     }
 
     void Editor::endSliderDrag()
     {
-        if (slidingWidget == decor::kFrequencyWidget
-            || slidingWidget == decor::kDecorWeightWidget
-            || slidingWidget
-                   == decor::kVariantWeightWidget)
+        for (const auto &row : getWidgetCatalog().sliderRows)
         {
-            rebuildWorld();
-        }
-
-        if (slidingWidget == antwika::editor::kGlowWidget)
-        {
-            atlasSheets.touch();
+            if (slidingWidget == row.widget
+                && row.settleEffect != nullptr)
+            {
+                row.settleEffect(*this);
+            }
         }
 
         slidingWidget.reset();
-    }
-
-    bool Editor::consumePaletteWidgets(
-        const ui::Interactions &interactions)
-    {
-        auto consumedKey = false;
-
-        for (std::size_t which = 0;
-             which < document.map.paletteColors.size();
-             ++which)
-        {
-            if (interactions.activatedWidget
-                != tile::getSwatchWidget(which))
-            {
-                continue;
-            }
-
-            consumedKey = true;
-
-            if (ui::isDoubleClick(
-                    pointer.clickTracker, tick, pointer.pointerOnCanvas))
-            {
-                inkPicker.editingInk = which;
-                inkPicker.inkBeforeEditColor =
-                    document.map.paletteColors.at(which);
-                inkPicker.glowBeforeEdit = glowOf(which);
-                inkPicker.pickerHsv = hsvOf(
-                    document.map.paletteColors.at(which));
-                inkPicker.hexText = getColorToHex(
-                    document.map.paletteColors.at(which));
-                carryInk();
-            }
-
-            pointer.clickTracker =
-                ui::getTrackClick(tick, pointer.pointerOnCanvas);
-            inkPicker.activeInk = which;
-        }
-
-        if (interactions.activatedWidget
-                == antwika::editor::
-                    kAddInkWidget
-            && document.map.paletteColors.size() < tile::kMaxInks)
-        {
-            pushUndo();
-            document.map.paletteColors.push_back(
-                document.map.paletteColors.at(inkPicker.activeInk));
-            document.map.glows.push_back(
-                inkPicker.activeInk < document.map.glows.size()
-                    ? document.map.glows.at(inkPicker.activeInk)
-                    : 0);
-            inkPicker.activeInk = document.map.paletteColors.size() - 1;
-            inkPicker.editingInk = inkPicker.activeInk;
-            inkPicker.inkBeforeEditColor = document.map.paletteColors.at(
-                inkPicker.activeInk);
-            inkPicker.glowBeforeEdit = glowOf(inkPicker.activeInk);
-            inkPicker.pickerHsv =
-                hsvOf(document.map.paletteColors.at(inkPicker.activeInk));
-            inkPicker.hexText =
-                getColorToHex(document.map.paletteColors.at(inkPicker.activeInk));
-            carryInk();
-            consumedKey = true;
-        }
-
-        if (interactions.activatedWidget
-            == antwika::editor::kInkOkWidget)
-        {
-            inkPicker.editingInk.reset();
-            consumedKey = true;
-        }
-
-        if (interactions.activatedWidget
-                == antwika::editor::
-                    kInkCancelWidget
-            && inkPicker.editingInk.has_value())
-        {
-            recolorInk(inkPicker.inkBeforeEditColor);
-            inkPicker.editingInk.reset();
-            consumedKey = true;
-        }
-
-        if (interactions.activatedWidget
-                == antwika::editor::
-                    kInkDeleteWidget
-            && inkPicker.editingInk.has_value()
-            && document.map.paletteColors.size() > 1)
-        {
-            pushUndo();
-            document.map.paletteColors.erase(
-                std::next(
-                    document.map.paletteColors.begin(),
-                    static_cast<
-                        std::ptrdiff_t>(
-                        *inkPicker.editingInk)));
-
-            if (*inkPicker.editingInk < document.map.glows.size())
-            {
-                document.map.glows.erase(
-                    std::next(
-                        document.map.glows.begin(),
-                        static_cast<
-                            std::ptrdiff_t>(
-                            *inkPicker.editingInk)));
-            }
-            inkPicker.activeInk = std::min(
-                inkPicker.activeInk,
-                document.map.paletteColors.size() - 1);
-            inkPicker.editingInk.reset();
-            consumedKey = true;
-        }
-
-        return consumedKey;
-    }
-
-    std::uint8_t Editor::glowOf(const std::size_t ink) const
-    {
-        return ink < document.map.glows.size() ? document.map.glows.at(ink) : 0;
-    }
-
-    void Editor::carryInk()
-    {
-        inkPicker.carriedInk = {};
-        inkPicker.carriedCharacterInk.clear();
-        inkPicker.carriedFigureInk.clear();
-
-        if (!tile::isSoleInk(document.map.paletteColors, *inkPicker.editingInk))
-        {
-            return;
-        }
-
-        const auto color = document.map.paletteColors.at(*inkPicker.editingInk);
-
-        for (std::size_t sheet = 0;
-             sheet < atlasSheets.getSheets().size();
-             ++sheet)
-        {
-            inkPicker.carriedInk.at(sheet) =
-                tile::getPaintedWith(atlasSheets.sheet(sheet), color);
-        }
-
-        if (*inkPicker.editingInk == character::kTransparentInk)
-        {
-            return;
-        }
-
-        inkPicker.carriedCharacterInk =
-            tile::getPaintedWith(characterView.getSheet(), color);
-        for (const auto &skin : rosterSkins.getSheets())
-        {
-            inkPicker.carriedFigureInk.push_back(
-                tile::getPaintedWith(skin, color));
-        }
-    }
-
-    void Editor::recolorInk(const gfx::Color nextColor)
-    {
-        document.map.paletteColors.at(*inkPicker.editingInk) = nextColor;
-
-        for (std::size_t sheet = 0;
-             sheet < atlasSheets.getSheets().size();
-             ++sheet)
-        {
-            if (!inkPicker.carriedInk.at(sheet).empty())
-            {
-                tile::repaintAt(
-                    atlasSheets.sheet(sheet),
-                    inkPicker.carriedInk.at(sheet),
-                    nextColor);
-                atlasSheets.touch();
-            }
-        }
-
-        if (!inkPicker.carriedCharacterInk.empty())
-        {
-            tile::repaintAt(
-                characterView.getSheet(),
-                inkPicker.carriedCharacterInk,
-                nextColor);
-            characterView.touch();
-        }
-
-        for (std::size_t figure = 0;
-             figure < inkPicker.carriedFigureInk.size()
-             && figure < rosterSkins.getSheets().size();
-             ++figure)
-        {
-            if (inkPicker.carriedFigureInk.at(figure).empty())
-            {
-                continue;
-            }
-
-            auto paintedSkin = rosterSkins.getSheets().at(figure);
-
-            tile::repaintAt(
-                paintedSkin,
-                inkPicker.carriedFigureInk.at(figure),
-                nextColor);
-            characterView.repaint(
-                viewportRenderer, rosterSkins, figure, std::move(paintedSkin));
-        }
     }
 
 }

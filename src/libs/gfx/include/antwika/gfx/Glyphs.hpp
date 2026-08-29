@@ -1,5 +1,6 @@
 #pragma once
 
+#include <compare>
 #include <cstddef>
 #include <cstdint>
 
@@ -27,29 +28,18 @@ namespace antwika::gfx
 
     inline constexpr std::uint32_t kSmallGlyphLineHeight = 6;
 
-    inline constexpr std::uint32_t kTextFaceShift = 24;
-
-    inline constexpr std::uint32_t kTextMultiplierMask =
-        (std::uint32_t{1} << kTextFaceShift) - 1;
-
-    [[nodiscard]] constexpr std::uint32_t getEncodeTextScale(
-        TextFace face, std::uint32_t multiplier) noexcept
+    struct TextScale final
     {
-        return (static_cast<std::uint32_t>(face) << kTextFaceShift)
-               | (multiplier & kTextMultiplierMask);
-    }
+        TextFace face = TextFace::Normal;
 
-    [[nodiscard]] constexpr TextFace textFaceOf(
-        std::uint32_t scale) noexcept
-    {
-        return static_cast<TextFace>(scale >> kTextFaceShift);
-    }
+        std::uint32_t multiplier = 0;
 
-    [[nodiscard]] constexpr std::uint32_t textMultiplierOf(
-        std::uint32_t scale) noexcept
-    {
-        return scale & kTextMultiplierMask;
-    }
+        [[nodiscard]] bool operator==(const TextScale &other) const
+            = default;
+
+        [[nodiscard]] auto operator<=>(const TextScale &other) const
+            = default;
+    };
 
     [[nodiscard]] constexpr std::uint32_t glyphAdvanceOf(
         TextFace face) noexcept
@@ -66,17 +56,15 @@ namespace antwika::gfx
     }
 
     [[nodiscard]] constexpr std::uint32_t getScaledGlyphAdvance(
-        std::uint32_t scale) noexcept
+        TextScale scale) noexcept
     {
-        return glyphAdvanceOf(textFaceOf(scale))
-               * textMultiplierOf(scale);
+        return glyphAdvanceOf(scale.face) * scale.multiplier;
     }
 
     [[nodiscard]] constexpr std::uint32_t getScaledGlyphLineHeight(
-        std::uint32_t scale) noexcept
+        TextScale scale) noexcept
     {
-        return glyphLineHeightOf(textFaceOf(scale))
-               * textMultiplierOf(scale);
+        return glyphLineHeightOf(scale.face) * scale.multiplier;
     }
 
 }

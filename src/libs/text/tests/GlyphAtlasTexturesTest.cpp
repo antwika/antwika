@@ -25,6 +25,7 @@ using antwika::gfx::ITexture;
 using antwika::gfx::Point;
 using antwika::gfx::Rect;
 using antwika::gfx::Size;
+using antwika::gfx::TextScale;
 using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::mocks::MockTexture;
 using ::testing::_;
@@ -35,7 +36,7 @@ namespace
 {
     constexpr Point kOriginPoint{.x = 10, .y = 20};
 
-    constexpr std::uint32_t kScale = 2;
+    constexpr TextScale kScale{.multiplier = 2};
 
     constexpr Color kInkColor{
         .red = 200, .green = 100, .blue = 50, .alpha = 255};
@@ -82,8 +83,8 @@ TEST(GlyphAtlasTexturesTest, Draw_UploadsAnAtlasOfItsOwnForEachScale)
         .Times(2)
         .WillRepeatedly([](const Bitmap &) { return getATexture(); });
 
-    atlases.draw(renderer, kOriginPoint, "small", 1, kInkColor);
-    atlases.draw(renderer, kOriginPoint, "large", 3, kInkColor);
+    atlases.draw(renderer, kOriginPoint, "small", TextScale{.multiplier = 1}, kInkColor);
+    atlases.draw(renderer, kOriginPoint, "large", TextScale{.multiplier = 3}, kInkColor);
 }
 
 TEST(GlyphAtlasTexturesTest, Draw_UploadsAnAtlasCutToTheScaleItWasAsked)
@@ -92,7 +93,7 @@ TEST(GlyphAtlasTexturesTest, Draw_UploadsAnAtlasCutToTheScaleItWasAsked)
     GlyphAtlasTextures atlases;
 
     GlyphCellsCache cells;
-    const Size cellSize = cells.at(3).getCellSize();
+    const Size cellSize = cells.at(TextScale{.multiplier = 3}).getCellSize();
 
     Size uploadedSize{};
 
@@ -102,7 +103,7 @@ TEST(GlyphAtlasTexturesTest, Draw_UploadsAnAtlasCutToTheScaleItWasAsked)
             return getATexture();
         });
 
-    atlases.draw(renderer, kOriginPoint, "a", 3, kInkColor);
+    atlases.draw(renderer, kOriginPoint, "a", TextScale{.multiplier = 3}, kInkColor);
 
     EXPECT_EQ(
         uploadedSize,
@@ -130,7 +131,7 @@ TEST(GlyphAtlasTexturesTest, Draw_TakesNoAtlasForAScaleOfNothing)
     EXPECT_CALL(renderer, createTexture(_)).Times(0);
     EXPECT_CALL(renderer, drawTexture(_, _, _, _)).Times(0);
 
-    atlases.draw(renderer, kOriginPoint, "text", 0, kInkColor);
+    atlases.draw(renderer, kOriginPoint, "text", TextScale{.multiplier = 0}, kInkColor);
 }
 
 TEST(GlyphAtlasTexturesTest, Draw_DrawsNothingWhenTheAtlasCouldNotBeMade)

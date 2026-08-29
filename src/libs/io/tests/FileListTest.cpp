@@ -130,6 +130,25 @@ TEST(FileListTest, EntriesIn_LeavesOutWhatIsNeitherFileNorDirectory)
         (std::vector<FileEntry>{getParent()}));
 }
 
+TEST(FileListTest, EntriesIn_ListsPastAnEntryItCannotRead)
+{
+    const ScratchDirectory scratchDirectory("io_unreadable");
+
+    std::filesystem::create_symlink(
+        scratchDirectory.pathIn(
+            "nothing-here"), scratchDirectory.pathIn("dangling"));
+    std::filesystem::create_directories(scratchDirectory.pathIn("nested"));
+
+    scratchDirectory.write("alone.png", "x");
+
+    EXPECT_EQ(
+        entriesIn(scratchDirectory.getString()),
+        (std::vector<FileEntry>{
+            getParent(),
+            FileEntry{.name = "nested", .directory = true},
+            FileEntry{.name = "alone.png"}}));
+}
+
 TEST(FileListTest, EntriesIn_NamesAFileTooLongToSitInsideAString)
 {
     const ScratchDirectory scratchDirectory("io_long");

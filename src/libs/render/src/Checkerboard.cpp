@@ -1,5 +1,6 @@
 #include "antwika/render/Checkerboard.hpp"
 
+#include <algorithm>
 #include <cstddef>
 
 #include <antwika/gfx/Color.hpp>
@@ -15,6 +16,8 @@ namespace antwika::render
         constexpr antwika::gfx::Color kLitColor{
             .red = 78, .green = 80, .blue = 96, .alpha = 255};
 
+        const auto checkSpan = std::max<std::uint32_t>(check, 1U);
+
         antwika::gfx::Bitmap bitmap{.size = size, .pixels = {}};
 
         bitmap.pixels.reserve(
@@ -28,7 +31,7 @@ namespace antwika::render
                  ++column)
             {
                 const auto color =
-                    ((row / check) + (column / check)) % 2 == 0
+                    ((row / checkSpan) + (column / checkSpan)) % 2 == 0
                         ? kDimColor
                         : kLitColor;
 

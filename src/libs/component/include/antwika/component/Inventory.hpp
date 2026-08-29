@@ -14,6 +14,9 @@ namespace antwika::component
     struct Inventory final
     {
         std::array<std::uint8_t, kInventorySlots> slots{};
+
+        [[nodiscard]] bool operator==(
+            const Inventory &other) const = default;
     };
 
 }

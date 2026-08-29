@@ -127,8 +127,10 @@ TEST(TextAreaScrollTest, TextArea_APaneAsksForNoRoomOnItsDocumentsBehalf)
 {
     Context uiContext{kCanvasSize, getPlainTheme()};
 
+    const auto text = linesOf(40);
+
     uiContext.textArea(
-        TextAreaSpec{.widgetId = kCodeWidget, .text = linesOf(40)});
+        TextAreaSpec{.widgetId = kCodeWidget, .text = text});
 
     const auto foundRect = uiContext.build().rects.getWidgetRect(kCodeWidget);
 
@@ -405,8 +407,10 @@ TEST(TextAreaScrollTest, TextArea_AnUnnamedAreaReportsNoScroll)
 {
     Context uiContext{kCanvasSize, getPlainTheme()};
 
+    const auto text = linesOf(20);
+
     uiContext.textArea(TextAreaSpec{
-        .text = linesOf(20), .cursor = 0, .scroll = 500});
+        .text = text, .cursor = 0, .scroll = 500});
 
     EXPECT_FALSE(uiContext.build().interactions.scrollChange.has_value());
 }
@@ -418,8 +422,10 @@ TEST(TextAreaScrollTest, TextArea_AnUnnamedAreaReportsNoPress)
 
     Context uiContext{kCanvasSize, getPlainTheme(), pointer};
 
+    const auto text = linesOf(20);
+
     uiContext.textArea(TextAreaSpec{
-        .text = linesOf(20), .cursor = 0, .focused = true});
+        .text = text, .cursor = 0, .focused = true});
 
     EXPECT_FALSE(uiContext.build().interactions.areaPress.has_value());
 }

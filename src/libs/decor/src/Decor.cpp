@@ -5,14 +5,10 @@
 
 #include <antwika/tilemap/AtlasLayout.hpp>
 #include <antwika/gfx/MeshData.hpp>
+#include <antwika/voxelmap/QuadPaint.hpp>
 
 namespace antwika::decor
 {
-
-    namespace
-    {
-        constexpr std::uint64_t kFirstFrameWidget = 225;
-    }
 
     const DecorTile *decorOf(
         const std::span<const DecorTile> decor, const tilemap::Tile tile)
@@ -293,12 +289,6 @@ namespace antwika::decor
         const time::Tick tick,
         const float lift)
     {
-        constexpr std::array<std::pair<float, float>, 4> kWithin{
-            std::pair{0.0F, 1.0F},
-            std::pair{1.0F, 1.0F},
-            std::pair{1.0F, 0.0F},
-            std::pair{0.0F, 0.0F}};
-
         gfx::MeshData mesh;
 
         for (const auto &[faceIndex, identity] : placedTiles)
@@ -310,76 +300,20 @@ namespace antwika::decor
             const auto tile = tilemap::getTileCoords(
                 frame.index, tilemap::tileSizeOf(frame.atlas));
             const auto &face = faces[faceIndex];
-            const auto middlePoint = voxelmap::getCellMiddle(face.cell.position);
-            const auto liftedPoint =
-                gfx::Vec3(voxelmap::getFaceNormal(face.side)) * lift;
             const auto climbs =
                 face.climbPosition.x != 0 || face.climbPosition.z != 0;
-            const auto flight = climbs
-                              ? voxel::getStairQuads(face.climbPosition)
-                              : std::vector<voxel::StairQuad>{};
 
-            std::vector<voxel::StairQuad> layingQuads;
-
-            for (const auto &quad : flight)
-            {
-                if (quad.side == face.side)
-                {
-                    layingQuads.push_back(quad);
-                }
-            }
-
-            if (!climbs)
-            {
-                voxel::StairQuad wholeQuad{.side = face.side};
-
-                for (std::size_t corner = 0;
-                     corner < wholeQuad.corners.size();
-                     ++corner)
-                {
-                    wholeQuad.corners.at(corner) = gfx::Vec3(
-                        voxelmap::getFaceCorner(face.side, corner));
-                }
-
-                layingQuads.push_back(wholeQuad);
-            }
-
-            for (const auto &quad : layingQuads)
-            {
-                const auto part = voxelmap::getStairUvRect(tile, quad);
-                const auto first = static_cast<std::uint32_t>(
-                    mesh.vertices.size());
-
-                for (std::size_t corner = 0;
-                     corner < kWithin.size();
-                     ++corner)
-                {
-                    mesh.vertices.push_back(
-                        gfx::Vertex3D{
-                            .position =
-                                middlePoint + quad.corners[corner]
-                                + liftedPoint,
-                            .normal = voxelmap::getFaceNormal(face.side),
-                            .texCoordinate =
-                                gfx::Vec2{
-                                    part.originPoint.x
-                                        + (kWithin[corner]
-                                               .first
-                                           * part.size
-                                                 .width),
-                                    part.originPoint.y
-                                        + (kWithin[corner]
-                                               .second
-                                           * part.size
-                                                 .height)}});
-                }
-
-                for (const std::uint32_t step :
-                     {0U, 1U, 2U, 0U, 2U, 3U})
-                {
-                    mesh.indices.push_back(first + step);
-                }
-            }
+            voxelmap::addFaceQuads(
+                mesh,
+                face.side,
+                face.climbPosition,
+                climbs,
+                voxelmap::getCellMiddle(face.cell.position),
+                voxelmap::QuadPaint{
+                    .tileRect = tile,
+                    .liftPoint =
+                        gfx::Vec3(voxelmap::getFaceNormal(face.side))
+                        * lift});
         }
 
         return mesh;
@@ -413,18 +347,6 @@ namespace antwika::decor
     {
         return rules.hasNoRuleFor(tile, edge, otherTile.atlas)
                || rules.allows(tile, edge, otherTile);
-    }
-
-    widget::WidgetId getFrameWidget(const std::size_t frame)
-    {
-        return widget::WidgetId{
-            kFirstFrameWidget + static_cast<std::uint64_t>(frame)};
-    }
-
-    widget::WidgetId getMemberWidget(const std::size_t member)
-    {
-        return widget::WidgetId{
-            386 + static_cast<std::uint64_t>(member)};
     }
 
 }

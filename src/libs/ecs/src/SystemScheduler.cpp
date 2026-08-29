@@ -57,12 +57,14 @@ namespace antwika::ecs
     {
         for (const auto &phase : phases)
         {
-            const OpenPhase openPhase(world);
+            OpenPhase openPhase(world);
 
             for (auto *system : phase.systems)
             {
                 system->update(world, tick);
             }
+
+            openPhase.close();
         }
     }
 

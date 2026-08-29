@@ -1,6 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
@@ -14,6 +15,7 @@
 #include "antwika/gfx/Point.hpp"
 #include "antwika/gfx/Rect.hpp"
 #include "antwika/gfx/RectF.hpp"
+#include "antwika/gfx/RenderTargetSpec.hpp"
 #include "antwika/gfx/Size.hpp"
 
 #include "NullRenderer.hpp"
@@ -25,6 +27,7 @@ using antwika::gfx::kBytesPerPixel;
 using antwika::gfx::Point;
 using antwika::gfx::Rect;
 using antwika::gfx::Size;
+using antwika::gfx::TextScale;
 using antwika::gfx::detail::NullRenderer;
 using antwika::gfx::mocks::MockTexture;
 using antwika::log::Level;
@@ -108,7 +111,10 @@ TEST(NullRendererTest, DrawText_DiscardsTheTextAndTracesIt)
     EXPECT_CALL(logger, log(Level::Trace, "gfx.null: draw text"));
 
     renderer.drawText(
-        Point{.x = 5, .y = 6}, "As", 2, Color{.blue = 255});
+        Point{.x = 5, .y = 6},
+        "As",
+        TextScale{.multiplier = 2},
+        Color{.blue = 255});
 }
 
 TEST(NullRendererTest, CreateTexture_ReportsTheBitmapSizeAndTracesIt)
@@ -134,6 +140,40 @@ TEST(NullRendererTest, CreateTexture_ThrowsOnAnIncompleteBitmap)
             const auto texture = renderer.createTexture(Bitmap{});
         },
         GfxError);
+}
+
+TEST(NullRendererTest, UpdateTexture_TracesAMatchingBitmap)
+{
+    MockLogger logger;
+    NullRenderer renderer(logger);
+
+    EXPECT_CALL(logger, log(Level::Trace, "gfx.null: create texture"));
+    EXPECT_CALL(logger, log(Level::Trace, "gfx.null: update texture"));
+
+    const auto texture = renderer.createTexture(getTwoByTwo());
+
+    renderer.updateTexture(*texture, getTwoByTwo());
+}
+
+TEST(NullRendererTest, UpdateTexture_RefusesABitmapOfAnotherSize)
+{
+    MockLogger logger;
+    NullRenderer renderer(logger);
+
+    EXPECT_CALL(logger, log(Level::Trace, "gfx.null: create texture"));
+    EXPECT_CALL(
+        logger,
+        log(Level::Warning,
+            "gfx.null: a texture was updated from a picture of "
+            "another size"));
+
+    const auto texture = renderer.createTexture(getTwoByTwo());
+
+    const Bitmap smallBitmap{
+        .size = {.width = 1, .height = 1},
+        .pixels = std::vector<std::uint8_t>(kBytesPerPixel, 0)};
+
+    renderer.updateTexture(*texture, smallBitmap);
 }
 
 TEST(NullRendererTest, DrawTexture_DiscardsTheBlitAndTracesIt)
@@ -211,4 +251,41 @@ TEST(NullRendererTest, PopTransform_UndoesOnePushEach)
     renderer.popTransform();
 
     EXPECT_THROW(renderer.popTransform(), antwika::gfx::GfxError);
+}
+
+TEST(NullRendererTest, PushTransform_ThrowsWhenTheStackIsFull)
+{
+    NiceMock<MockLogger> logger;
+    NullRenderer renderer(logger);
+
+    for (std::size_t depth = 0;
+         depth < antwika::gfx::kMaxTransformDepth;
+         ++depth)
+    {
+        renderer.pushTransform(antwika::gfx::getIdentityMatrix());
+    }
+
+    EXPECT_THROW(
+        renderer.pushTransform(antwika::gfx::getIdentityMatrix()),
+        antwika::gfx::GfxError);
+}
+
+TEST(NullRendererTest, BeginTargetRegion_TracesLikeBeginTarget)
+{
+    NiceMock<MockLogger> logger;
+    NullRenderer renderer(logger);
+
+    const auto target = renderer.createRenderTarget(
+        antwika::gfx::RenderTargetSpec{
+            .size = {.width = 2, .height = 2}});
+
+    EXPECT_CALL(logger, log(Level::Trace, "gfx.null: begin target"));
+    EXPECT_CALL(logger, log(Level::Trace, "gfx.null: end target"));
+
+    renderer.beginTargetRegion(
+        *target,
+        Rect{
+            .originPoint = {.x = 0, .y = 0},
+            .size = {.width = 1, .height = 1}});
+    renderer.endTarget();
 }

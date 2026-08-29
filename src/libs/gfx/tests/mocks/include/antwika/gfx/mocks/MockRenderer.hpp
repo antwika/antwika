@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string_view>
 
 #include <antwika/gfx/Bitmap.hpp>
@@ -45,7 +46,7 @@ namespace antwika::gfx::mocks
             drawText,
             (PointF originPoint,
              std::string_view text,
-             std::uint32_t scale,
+             TextScale scale,
              Color color),
             (override));
         MOCK_METHOD(
@@ -103,13 +104,12 @@ namespace antwika::gfx::mocks
             createRenderTarget,
             (const RenderTargetSpec &spec),
             (override));
-        MOCK_METHOD(
-            void, beginTarget, (IRenderTarget & target), (override));
+        using IRenderer::beginTarget;
 
         MOCK_METHOD(
             void,
-            beginTargetRegion,
-            (IRenderTarget & target, Rect region),
+            beginTarget,
+            (IRenderTarget & target, std::optional<Rect> region),
             (override));
         MOCK_METHOD(void, endTarget, (), (override));
         MOCK_METHOD(

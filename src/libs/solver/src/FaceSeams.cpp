@@ -36,7 +36,7 @@ namespace antwika::solver
         for (std::size_t which = 0; which < faces.size(); ++which)
         {
             const auto face = faces[which];
-            const std::array<gfx::Vec3, 4> directions{
+            const std::array<geometry::Vec3, 4> directions{
                 acrossOf(face.side),
                 -acrossOf(face.side),
                 downOf(face.side),
