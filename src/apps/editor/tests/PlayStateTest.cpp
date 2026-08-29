@@ -10,6 +10,8 @@
 #include <antwika/input/NullInputBackend.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/map/Marker.hpp>
+#include <antwika/component/Orientation.hpp>
+#include <antwika/ecs/OpenPhase.hpp>
 #include <antwika/voxel/VoxelPosition.hpp>
 #include <antwika/voxelmap/Voxel.hpp>
 
@@ -98,4 +100,20 @@ TEST_F(PlayStateTest, EscapeAfterPlay_KeepsACleanMapUnsoiled)
     probe.keyPressed(KeyPressed{.key = Key::Escape});
 
     EXPECT_FALSE(probe.document.isDirty());
+}
+
+TEST_F(PlayStateTest, TurnPlayer_TurnsTheEyeTheWorldIsLookedThrough)
+{
+    auto &world = probe.playedWorld();
+
+    probe.turnPlayer(0.25F, 0.1F);
+
+    {
+        const antwika::ecs::OpenPhase phase(world);
+    }
+
+    const auto eye = world.get<antwika::component::Orientation>(probe.getEye());
+
+    EXPECT_FLOAT_EQ(eye.yaw, 0.25F);
+    EXPECT_FLOAT_EQ(eye.pitch, 0.1F);
 }

@@ -161,6 +161,11 @@ namespace antwika::editor::fakes
             return editor.moveEntityTo(nextPosition, snapsToGround);
         }
 
+        void turnPlayer(const float byYaw, const float byPitch)
+        {
+            editor.turnPlayer(byYaw, byPitch);
+        }
+
         void pressTool(const ToolButton whichButton)
         {
             editor.pressTool(whichButton);
@@ -190,6 +195,11 @@ namespace antwika::editor::fakes
         [[nodiscard]] ecs::World &playedWorld()
         {
             return editor.play.game->getWorld();
+        }
+
+        [[nodiscard]] ecs::Entity getEye() const
+        {
+            return editor.play.game->getEye();
         }
 
         bool consumeWidgets(const ui::Interactions &interactions)

@@ -5,6 +5,7 @@
 #include <limits>
 #include <span>
 #include <tuple>
+#include <utility>
 
 #include "antwika/ecs/Component.hpp"
 #include "antwika/ecs/ComponentStorage.hpp"
@@ -78,16 +79,19 @@ namespace antwika::ecs
                 }
             }
 
+            template <std::size_t... Slot>
+            [[nodiscard]] bool matchesEvery(
+                Entity entity, std::index_sequence<Slot...>) const noexcept
+            {
+                // GCOVR_EXCL_START
+                return (... && std::get<Slot>(pools)->contains(entity));
+                // GCOVR_EXCL_STOP
+            }
+
             [[nodiscard]] bool matches(Entity entity) const noexcept
             {
-                return std::apply(
-                    [entity](const auto *...storages) // GCOVR_EXCL_LINE
-                    {
-                        // GCOVR_EXCL_START
-                        return (... && storages->contains(entity));
-                        // GCOVR_EXCL_STOP
-                    },
-                    pools);
+                return matchesEvery(
+                    entity, std::index_sequence_for<Ts...>{});
             }
 
             std::span<const Entity> entities{};
@@ -119,19 +123,24 @@ namespace antwika::ecs
             std::span<const Entity> smallestEntities;
             std::size_t smallestSize = std::numeric_limits<std::size_t>::max();
 
-            auto consider = [&](auto *storage) // GCOVR_EXCL_LINE
-            {
-                const auto entities = storage->getEntities();
-                if (entities.size() < smallestSize) // GCOVR_EXCL_LINE
-                {
-                    smallestSize = entities.size();
-                    smallestEntities = entities;
-                }
-            };
-            (consider(storages), ...);
+            (takeSmaller(
+                 smallestEntities, smallestSize, storages->getEntities()),
+             ...);
 
             return smallestEntities;
         } // GCOVR_EXCL_LINE
+
+        static void takeSmaller(
+            std::span<const Entity> &smallestEntities,
+            std::size_t &smallestSize,
+            std::span<const Entity> entities) noexcept
+        {
+            if (entities.size() < smallestSize) // GCOVR_EXCL_LINE
+            {
+                smallestSize = entities.size();
+                smallestEntities = entities;
+            }
+        }
 
         Pools pools;
         std::span<const Entity> drivingEntities{};

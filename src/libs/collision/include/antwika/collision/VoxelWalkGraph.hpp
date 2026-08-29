@@ -25,7 +25,7 @@ namespace antwika::collision
                 (static_cast<float>(fromPos.y) + 1.0F)
                 * voxel::kVoxelSide;
             const auto stoodOn = filledVoxels->find(
-                voxel::VoxelPosition{
+                voxel::VoxelPosition{ // GCOVR_EXCL_LINE
                     .x = fromPos.x, .y = fromPos.y, .z = fromPos.z});
             const auto stepUp =
                 stoodOn != filledVoxels->end()

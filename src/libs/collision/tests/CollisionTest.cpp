@@ -634,6 +634,36 @@ namespace
         return filledVoxels;
     }
 
+    [[nodiscard]] Voxels getRampSouthward()
+    {
+        Voxels filledVoxels;
+
+        for (std::int32_t x = -2; x <= 2; ++x)
+        {
+            for (std::int32_t z = -3; z <= 0; ++z)
+            {
+                filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = x,
+                    .y = 0, .z = z}}}));
+            }
+
+            filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = x, .y = 1,
+                .z = 1}, .material = {.kind =
+                        Kind::Ramp, .facing = antwika::voxel::Facing::South}}}));
+            filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = x, .y = 0,
+                .z = 1}}}));
+
+            for (std::int32_t z = 2; z <= 4; ++z)
+            {
+                filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = x,
+                    .y = 0, .z = z}}}));
+                filledVoxels.merge(voxelsOf({VoxelCell{.position = {.x = x,
+                    .y = 1, .z = z}}}));
+            }
+        }
+
+        return filledVoxels;
+    }
+
     [[nodiscard]] Voxels getWalledRamp()
     {
         auto filledVoxels = getRampEastward();
@@ -685,6 +715,29 @@ TEST(CollisionTest, GroundHeightOn_RisesEvenlyAcrossARamp)
         kTolerance);
     EXPECT_NEAR(
         antwika::collision::getGroundHeightOn(filledVoxels, rampCell, 2.0F, 0.5F),
+        2.0F,
+        kTolerance);
+}
+
+TEST(CollisionTest, GroundHeightOn_RisesEvenlyAcrossARampThatClimbsAlongZ)
+{
+    const auto filledVoxels = getRampSouthward();
+    const VoxelCell rampCell{
+        .position = {.x = 0, .y = 1, .z = 1},
+        .material = {
+            .kind = Kind::Ramp,
+            .facing = antwika::voxel::Facing::South}};
+
+    EXPECT_NEAR(
+        antwika::collision::getGroundHeightOn(filledVoxels, rampCell, 0.5F, 1.0F),
+        1.0F,
+        kTolerance);
+    EXPECT_NEAR(
+        antwika::collision::getGroundHeightOn(filledVoxels, rampCell, 0.5F, 1.5F),
+        1.5F,
+        kTolerance);
+    EXPECT_NEAR(
+        antwika::collision::getGroundHeightOn(filledVoxels, rampCell, 0.5F, 2.0F),
         2.0F,
         kTolerance);
 }

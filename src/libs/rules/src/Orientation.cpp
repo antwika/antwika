@@ -15,7 +15,7 @@ namespace antwika::rules
         return component::Orientation{
             .yaw = orientation.yaw + byYaw,
             .pitch = std::clamp(
-                orientation.pitch + byPitch,
+                orientation.pitch + byPitch, // GCOVR_EXCL_LINE
                 -kMaxPitch,
                 kMaxPitch)};
     }

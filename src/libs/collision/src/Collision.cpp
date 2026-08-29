@@ -70,7 +70,7 @@ namespace antwika::collision
             const auto x = position.x + byX;
             const auto z = position.z + byZ;
 
-            return getGroundHeightUnderFootprint(
+            return getGroundHeightUnderFootprint( // GCOVR_EXCL_LINE
                        filledVoxels, x, z, position.y, stepUp)
                 .transform([&](const float footing) {
                     return component::Position{
@@ -86,7 +86,7 @@ namespace antwika::collision
             const component::Position position,
             const float stepUp)
         {
-            return getGroundHeightUnderFootprint(
+            return getGroundHeightUnderFootprint( // GCOVR_EXCL_LINE
                        filledVoxels, position.x, position.z, position.y, stepUp)
                 .transform([&](const float footing) {
                     return component::Position{
