@@ -18,7 +18,6 @@
 #include <antwika/voxel/Voxels.hpp>
 
 #include "antwika/editor/editor/SimulationSteps.hpp"
-#include "antwika/editor/fakes/FakeEditSteps.hpp"
 #include "antwika/editor/ui/EditorLook.hpp"
 
 using antwika::component::AnimationState;
@@ -31,7 +30,6 @@ using antwika::component::TalkIntent;
 using antwika::ecs::OpenPhase;
 using antwika::ecs::World;
 using antwika::editor::SimulationSteps;
-using antwika::editor::fakes::FakeEditSteps;
 using antwika::gameplay::fakes::FakeCheckpointProgress;
 using antwika::gameplay::fakes::FakeWorldAccess;
 using antwika::log::mocks::MockLogger;
@@ -71,9 +69,8 @@ namespace
         FakeWorldAccess access;
         FakeCheckpointProgress progress;
         antwika::editor::EditorDocument document;
-        FakeEditSteps steps;
         std::uint32_t tick = 0;
-        SimulationSteps simulation{document, steps, tick};
+        SimulationSteps simulation{document, tick};
     };
 
 }
