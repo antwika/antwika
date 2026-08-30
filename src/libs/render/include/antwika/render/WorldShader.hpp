@@ -24,6 +24,10 @@ namespace antwika::render
 
     inline constexpr float kFogStrength = 0.3F;
 
+    // How far a voxel corner may wobble from its grid spot, in world
+    // units; the cull boxes in WorldMeshes grow by the same amount.
+    inline constexpr float kCornerJitter = 0.05F;
+
     class WorldShader final
     {
     public:

@@ -678,7 +678,11 @@ namespace
                 .climbPosition = antwika::voxel::VoxelPosition{.x = 1}}};
         const std::map<std::size_t, Tile> placedTiles{{0, kOneTile}};
         const auto mesh = antwika::decor::getDecorMesh(
-            faces, placedTiles, getWithDecorToggled({}, kOneTile), 0);
+            antwika::voxel::Voxels{},
+            faces,
+            placedTiles,
+            getWithDecorToggled({}, kOneTile),
+            0);
         std::size_t treads = 0;
 
         for (const auto &quad :
@@ -689,8 +693,12 @@ namespace
         }
 
         EXPECT_GT(treads, 1U);
-        EXPECT_EQ(mesh.vertices.size(), treads * 4);
-        EXPECT_EQ(mesh.indices.size(), treads * 6);
+        EXPECT_EQ(
+            mesh.vertices.size(),
+            treads * antwika::voxelmap::kFaceVertices);
+        EXPECT_EQ(
+            mesh.indices.size(),
+            treads * antwika::voxelmap::kFaceTriangles * 3U);
     }
 
 

@@ -283,6 +283,7 @@ namespace antwika::decor
     } // GCOVR_EXCL_LINE
 
     gfx::MeshData getDecorMesh(
+        const voxel::Voxels &voxels,
         const std::vector<voxelmap::FaceRef> &faces,
         const std::map<std::size_t, tilemap::Tile> &placedTiles,
         const std::span<const DecorTile> decor,
@@ -303,8 +304,11 @@ namespace antwika::decor
             const auto climbs =
                 face.climbPosition.x != 0 || face.climbPosition.z != 0;
 
+            // The overlay bevels with the face beneath it, so decor
+            // is never left hanging over a sunken border band.
             voxelmap::addFaceQuads(
                 mesh,
+                voxels,
                 face.side,
                 face.climbPosition,
                 climbs,
@@ -313,7 +317,9 @@ namespace antwika::decor
                     .tileRect = tile,
                     .liftPoint =
                         gfx::Vec3(voxelmap::getFaceNormal(face.side))
-                        * lift});
+                        * lift,
+                    .beveled = face.cell.material.kind
+                               == voxel::Kind::Normal});
         }
 
         return mesh;

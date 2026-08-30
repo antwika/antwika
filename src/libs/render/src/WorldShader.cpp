@@ -123,6 +123,8 @@ namespace antwika::render
             *voxelShader, "walkerLightRange", light::kWalkerLightRange);
         viewportRenderer.setShaderNumber(*voxelShader, "fogNear", kFogNear);
         viewportRenderer.setShaderNumber(*voxelShader, "fogFar", kFogFar);
+        viewportRenderer.setShaderNumber(
+            *voxelShader, "jitterAmount", kCornerJitter);
 
         for (const auto &[face, uniformName] :
              {std::pair{gfx::CubeFace::East, "lampViewEast"},

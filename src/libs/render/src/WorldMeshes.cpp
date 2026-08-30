@@ -11,11 +11,27 @@
 #include <antwika/assets/MapAssets.hpp>
 #include <antwika/tile/Transitions.hpp>
 
+#include "antwika/render/WorldShader.hpp"
+
 namespace antwika::render
 {
 
     namespace
     {
+        // The corner jitter in the voxel shader can carry a vertex
+        // just outside its mesh box, so the cull box grows by the
+        // same reach to keep the wobble from vanishing at the frame's
+        // edge.
+        [[nodiscard]] gfx::MeshBox getJitterRoomBox(
+            const gfx::MeshBox meshBox)
+        {
+            const gfx::Vec3 wobble{kCornerJitter};
+
+            return gfx::MeshBox{
+                .lowPosition = meshBox.lowPosition - wobble,
+                .highPosition = meshBox.highPosition + wobble};
+        }
+
         [[nodiscard]] bool isSameWeave(
             const std::vector<voxelmap::FaceRef> &oneFaces,
             const std::vector<voxelmap::FaceRef> &otherFaces)
@@ -77,7 +93,7 @@ namespace antwika::render
                 pieceMeshes.push_back(
                     MeshPiece{
                         .mesh = viewportRenderer.createMesh(piece),
-                        .box = gfx::getMeshBox(piece)});
+                        .box = getJitterRoomBox(gfx::getMeshBox(piece))});
             }
 
             return pieceMeshes;
@@ -113,6 +129,7 @@ namespace antwika::render
         for (std::size_t rank = 0; rank < decorByFace.size(); ++rank)
         {
             const auto mesh = decor::getDecorMesh(
+                meshedVoxels,
                 visibleFaces,
                 decorByFace[rank].second,
                 drawnMap.decor,

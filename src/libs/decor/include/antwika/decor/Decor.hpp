@@ -139,6 +139,7 @@ namespace antwika::decor
     inline constexpr float kDecorDepthBias = 0.01F;
 
     [[nodiscard]] gfx::MeshData getDecorMesh(
+        const voxel::Voxels &voxels,
         const std::vector<voxelmap::FaceRef> &faces,
         const std::map<std::size_t, tilemap::Tile> &placedTiles,
         std::span<const DecorTile> decor,

@@ -97,8 +97,10 @@ TEST(ScenePassTest, Draw_DrawsThePileOnceForTheGlowAndOnceForTheScene)
         [&piles] { ++piles; },
         [&overs] { ++overs; });
 
+    // The characters draw into both passes too: they occlude the
+    // glow behind them, so bloom cannot shine through them.
     EXPECT_EQ(piles, 2);
-    EXPECT_EQ(overs, 1);
+    EXPECT_EQ(overs, 2);
 }
 
 TEST(ScenePassTest, Draw_MakesItsTargetsOnceAndKeepsThem)

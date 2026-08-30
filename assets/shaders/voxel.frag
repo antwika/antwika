@@ -6,6 +6,7 @@ in vec2 fragTexCoord;
 in vec4 fragColor;
 in vec3 fragLocal;
 in vec3 fragLocalNormal;
+in vec3 fragJitter;
 
 out vec4 finalColor;
 
@@ -221,6 +222,67 @@ float lampReaching(int lamp, vec3 held)
     return reached / 4.0;
 }
 
+// The corners wobble in the vertex stage but the painting must not:
+// the texels stay pinned to the flat plane the face had before its
+// corners moved. The wobbled offset is carried back onto that plane
+// along the way the camera looks, and the uv is re-read where the
+// ray lands, so the texel grid holds still and only the outline
+// bends. fragTexCoord and fragLocal share one interpolation, so the
+// screen derivatives give the exact uv-per-plane-step ratio.
+vec2 anchoredUv()
+{
+    vec3 alongX = dFdx(fragLocal);
+    vec3 alongY = dFdy(fragLocal);
+    vec2 paintX = dFdx(fragTexCoord);
+    vec2 paintY = dFdy(fragTexCoord);
+
+    vec3 outward = normalize(fragLocalNormal);
+    float toward = dot(fogWay, outward);
+
+    float xx = dot(alongX, alongX);
+    float xy = dot(alongX, alongY);
+    float yy = dot(alongY, alongY);
+    float spread = (xx * yy) - (xy * xy);
+
+    if (abs(toward) < 0.05 || spread < 1e-12)
+    {
+        return fragTexCoord;
+    }
+
+    vec3 slide =
+        fragJitter - (fogWay * (dot(fragJitter, outward) / toward));
+
+    float onX = ((dot(slide, alongX) * yy) - (dot(slide, alongY) * xy))
+                / spread;
+    float onY = ((dot(slide, alongY) * xx) - (dot(slide, alongX) * xy))
+                / spread;
+
+    return fragTexCoord + (onX * paintX) + (onY * paintY);
+}
+
+// The atlases keep two blank pixels between tiles, so a sample that
+// slid past its tile edge is pulled back inside. The shape mirrors
+// tilemap::AtlasLayout: sixteen columns and rows with the padding
+// only between tiles, so the tile size falls out of the sheet size.
+const float kSheetTiles = 16.0;
+const float kSheetPadding = 2.0;
+
+vec2 clampedToTile(vec2 uv, vec2 sheetSize)
+{
+    vec2 tileSize =
+        (sheetSize - ((kSheetTiles - 1.0) * kSheetPadding))
+        / kSheetTiles;
+    vec2 stride = tileSize + vec2(kSheetPadding);
+    vec2 cornerPixel =
+        floor((fragTexCoord * sheetSize) / stride) * stride;
+
+    return clamp(
+               uv * sheetSize,
+               cornerPixel + vec2(0.5),
+               (cornerPixel + tileSize) - vec2(0.5))
+           / sheetSize;
+}
+
 float sightReaching(int slot, vec3 point, vec3 stood, vec3 outward)
 {
     vec3 toSight = point - stood;
@@ -241,14 +303,23 @@ void main()
 
     vec3 outward = normalize(facing);
 
+    vec2 anchored = anchoredUv();
+
     vec4 skin =
         sprite
             ? texture(
                   texture0,
                   spriteFrom.xy
                       + (fragTexCoord * spriteSpan.xy))
-        : abs(normal.y) > 0.5 ? texture(texture0, fragTexCoord)
-                              : texture(texture1, fragTexCoord);
+        : abs(normal.y) > 0.5
+            ? texture(
+                  texture0,
+                  clampedToTile(
+                      anchored, vec2(textureSize(texture0, 0))))
+            : texture(
+                  texture1,
+                  clampedToTile(
+                      anchored, vec2(textureSize(texture1, 0))));
 
     if (skin.a < 0.5)
     {
@@ -259,6 +330,7 @@ void main()
     {
         discard;
     }
+
 
     float glow =
         sprite ? 0.0 : clamp((1.0 - skin.a) * 2.55, 0.0, 1.0);

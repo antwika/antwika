@@ -46,10 +46,4 @@ namespace antwika::voxelmap::voxeldetail
     constexpr gfx::Color kNoTintColor{
         .red = 255, .green = 255, .blue = 255, .alpha = 255};
 
-    constexpr std::array<gfx::Vec2, kCornersPerFace> kFaceCorners{
-        gfx::Vec2{0.0F, 1.0F},
-        gfx::Vec2{1.0F, 1.0F},
-        gfx::Vec2{1.0F, 0.0F},
-        gfx::Vec2{0.0F, 0.0F}};
-
 }
