@@ -156,18 +156,16 @@ TEST(VoxelTest, VoxelMesh_LeavesThePileWhereItWasWhenOneIsAdded)
     const auto beforeMesh = getVoxelMesh(beforeCells);
     const auto afterMesh = getVoxelMesh(grownCells);
 
-    std::size_t kept = 0;
+    std::size_t keptVertices = 0;
 
     for (const auto &vertex : beforeMesh.vertices)
     {
-        // The geometry near the new voxel refolds into its bevels;
-        // everything on the far side must stay exactly put.
         if (vertex.position.x > 0.9F)
         {
             continue;
         }
 
-        ++kept;
+        ++keptVertices;
 
         const auto match = std::ranges::find_if(
             afterMesh.vertices,
@@ -177,7 +175,7 @@ TEST(VoxelTest, VoxelMesh_LeavesThePileWhereItWasWhenOneIsAdded)
         EXPECT_NE(match, afterMesh.vertices.end());
     }
 
-    EXPECT_GT(kept, 0U);
+    EXPECT_GT(keptVertices, 0U);
 }
 
 TEST(VoxelTest, VoxelMesh_LeavesThePileWhereItWasWhenOneIsTaken)
@@ -733,14 +731,14 @@ TEST(VoxelTest, VoxelMesh_LeavesARampUnderAnotherWhole)
         getVoxelMesh(voxels, getDefaultTiles(faces), Pass::Solid);
 
     const auto lowest = getCellMiddle(VoxelPosition{});
-    auto reached = lowest.y;
+    auto reachedY = lowest.y;
 
     for (const auto &vertex : mesh.vertices)
     {
-        reached = std::min(reached, vertex.position.y);
+        reachedY = std::min(reachedY, vertex.position.y);
     }
 
-    EXPECT_NEAR(reached, lowest.y - (kVoxelSide / 2.0F), 1e-4F);
+    EXPECT_NEAR(reachedY, lowest.y - (kVoxelSide / 2.0F), 1e-4F);
 }
 
 TEST(VoxelTest, VisibleFacesOf_CarriesTheClimbOfTheFlightItBelongsTo)

@@ -89,10 +89,6 @@ namespace antwika::render
 
             viewportRenderer.clear(gfx::Color{});
             pile();
-            // The characters give off no glow themselves, but they
-            // stand in front of things that do: drawn here they
-            // write black over the glow they cover, so the bloom
-            // no longer shines through them.
             afterPass();
         }
 

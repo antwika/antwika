@@ -18,18 +18,20 @@ namespace antwika::render
 
     namespace
     {
-        // The corner jitter in the voxel shader can carry a vertex
-        // just outside its mesh box, so the cull box grows by the
-        // same reach to keep the wobble from vanishing at the frame's
-        // edge.
+        /**
+         * @brief The corner jitter in the voxel shader can carry a
+         * vertex just outside its mesh box, so the cull box grows by
+         * the same reach to keep the wobble from vanishing at the
+         * frame's edge.
+         */
         [[nodiscard]] gfx::MeshBox getJitterRoomBox(
             const gfx::MeshBox meshBox)
         {
-            const gfx::Vec3 wobble{kCornerJitter};
+            const gfx::Vec3 jitterExtent{kCornerJitter};
 
             return gfx::MeshBox{
-                .lowPosition = meshBox.lowPosition - wobble,
-                .highPosition = meshBox.highPosition + wobble};
+                .lowPosition = meshBox.lowPosition - jitterExtent,
+                .highPosition = meshBox.highPosition + jitterExtent};
         }
 
         [[nodiscard]] bool isSameWeave(

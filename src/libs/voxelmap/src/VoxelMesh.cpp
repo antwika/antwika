@@ -203,20 +203,20 @@ namespace antwika::voxelmap
         constexpr auto gridSide =
             static_cast<std::uint32_t>(kFaceGridSide);
 
-        const auto beveled = paint.beveled && !climbing;
+        const auto bevelAllowed = paint.beveled && !climbing;
         const voxel::VoxelPosition cellPosition{
             .x = static_cast<std::int32_t>(std::floor(middlePoint.x)),
             .y = static_cast<std::int32_t>(std::floor(middlePoint.y)),
             .z = static_cast<std::int32_t>(std::floor(middlePoint.z))};
 
-        const auto axisWayOf = [](const gfx::Vec3 along)
+        const auto axisWayOf = [](const gfx::Vec3 alongVector)
         {
-            const int axis = std::abs(along.x) > 0.5F ? 0
-                           : std::abs(along.y) > 0.5F ? 1
+            const int axis = std::abs(alongVector.x) > 0.5F ? 0
+                           : std::abs(alongVector.y) > 0.5F ? 1
                                                       : 2;
 
             return std::pair<int, std::int32_t>{
-                axis, along[axis] > 0.0F ? 1 : -1};
+                axis, alongVector[axis] > 0.0F ? 1 : -1};
         };
 
         const auto [heldAxis, heldWay] = axisWayOf(face.normal);
@@ -225,24 +225,24 @@ namespace antwika::voxelmap
         const auto [downAxis, downWorldWay] =
             axisWayOf(face.corners[0] - face.corners[3]);
 
-        const auto stepped = [](voxel::VoxelPosition from,
+        const auto stepped = [](voxel::VoxelPosition fromPosition,
                                 const int axis,
                                 const std::int32_t way)
         {
             if (axis == 0)
             {
-                from.x += way;
+                fromPosition.x += way;
             }
             else if (axis == 1)
             {
-                from.y += way;
+                fromPosition.y += way;
             }
             else
             {
-                from.z += way;
+                fromPosition.z += way;
             }
 
-            return from;
+            return fromPosition;
         };
 
         const auto filledAt = [&voxels](const voxel::VoxelPosition spot)
@@ -250,82 +250,63 @@ namespace antwika::voxelmap
 
         const auto plainAt = [&voxels](const voxel::VoxelPosition spot)
         {
-            const auto held = voxels.find(spot);
+            const auto foundCell = voxels.find(spot);
 
-            return held != voxels.end()
-                   && held->second.kind == voxel::Kind::Normal;
+            return foundCell != voxels.end()
+                   && foundCell->second.kind == voxel::Kind::Normal;
         };
 
-        // An edge stands open when no coplanar face continues past
-        // it and no block leans against it across the corner; only
-        // there may the border band sink.
         const auto openAt = [&](const int crossAxis,
                                 const std::int32_t crossWay)
         {
-            const auto beside =
+            const auto besideCell =
                 stepped(cellPosition, crossAxis, crossWay);
 
-            return !filledAt(beside)
-                   && !filledAt(stepped(beside, heldAxis, heldWay));
+            return !filledAt(besideCell)
+                   && !filledAt(stepped(besideCell, heldAxis, heldWay));
         };
 
-        // At a cell corner the bevel carries on only when the next
-        // cell along holds the same kind of open edge, so a long
-        // edge chamfers in one run while a block's true corner
-        // tapers back to a sharp point. Every face that shares the
-        // corner asks the same questions of the same cells, so they
-        // all sink it alike and the mesh stays sealed.
         const auto carriedOn = [&](const int crossAxis,
                                    const std::int32_t crossWay,
                                    const int alongAxis,
                                    const std::int32_t alongWay)
         {
-            const auto next =
+            const auto nextCell =
                 stepped(cellPosition, alongAxis, alongWay);
-            const auto nextBeside = stepped(next, crossAxis, crossWay);
+            const auto nextBeside = stepped(nextCell, crossAxis, crossWay);
 
-            return plainAt(next) && !isRampStep(voxels, next)
-                   && !filledAt(stepped(next, heldAxis, heldWay))
+            return plainAt(nextCell) && !isRampStep(voxels, nextCell)
+                   && !filledAt(stepped(nextCell, heldAxis, heldWay))
                    && !filledAt(nextBeside)
                    && !filledAt(
                        stepped(nextBeside, heldAxis, heldWay));
         };
 
-        // A corner is mitred only when every cell around it stands
-        // empty; each of the three faces meeting there asks after
-        // the same cells, so they sink the shared corner alike.
-        // openAt covers the two cells beside the edge, so together
-        // the checks see all seven cells around the corner point.
         const auto cornerOpenAt = [&](const int crossAxis,
                                       const std::int32_t crossWay,
                                       const int alongAxis,
                                       const std::int32_t alongWay)
         {
-            const auto beyond =
+            const auto beyondCell =
                 stepped(cellPosition, alongAxis, alongWay);
-            const auto diagonal = stepped(beyond, crossAxis, crossWay);
+            const auto diagonal = stepped(beyondCell, crossAxis, crossWay);
 
-            return !filledAt(beyond)
-                   && !filledAt(stepped(beyond, heldAxis, heldWay))
+            return !filledAt(beyondCell)
+                   && !filledAt(stepped(beyondCell, heldAxis, heldWay))
                    && !filledAt(diagonal)
                    && !filledAt(
                        stepped(diagonal, heldAxis, heldWay));
         };
 
-        // Each face folds its edge row down to the middle of the
-        // cut, half the band width along both the normal and the
-        // crossing axis; the partner face folds to the same line
-        // from its side, and the two half-bands meet as one flat
-        // 45-degree chamfer.
         const auto sunkWayOf = [&](const int crossAxis,
                                    const std::int32_t crossWay)
         {
-            gfx::Vec3 way{0.0F, 0.0F, 0.0F};
+            gfx::Vec3 sinkDirection{0.0F, 0.0F, 0.0F};
 
-            way[heldAxis] = -static_cast<float>(heldWay);
-            way[crossAxis] = -static_cast<float>(crossWay);
+            sinkDirection[heldAxis] = -static_cast<float>(heldWay);
+            sinkDirection[crossAxis] = -static_cast<float>(crossWay);
 
-            return way * (kEdgeBevel * 0.5F);
+            return sinkDirection * (kEdgeBevel * 0.5F);
         };
 
         for (const auto &quad : layingQuads)
@@ -335,56 +316,54 @@ namespace antwika::voxelmap
             const auto first =
                 static_cast<std::uint32_t>(mesh.vertices.size());
 
-            std::array<gfx::Vec3, kCornersPerFace> placed{};
+            std::array<gfx::Vec3, kCornersPerFace> placedCorners{};
 
             for (std::size_t corner = 0;
                  corner < kCornersPerFace;
                  ++corner)
             {
-                placed[corner] = middlePoint + quad.corners[corner]
+                placedCorners[corner] = middlePoint + quad.corners[corner]
                                  + paint.liftPoint;
             }
 
-            // A quad's corners sit on the tile's (across, down)
-            // plane with corner 3 at (0, 0), 2 at (1, 0), 0 at
-            // (0, 1) and 1 at (1, 1). One product per
-            // corner and commutative sums keep a point two faces
-            // share bit-identical on both, so the jitter hash in the
-            // voxel shader moves the two copies together.
-            const auto pointAt =
-                [&placed](const float across, const float down)
+            const auto pointAt = [&placedCorners](
+                                     const float acrossWay,
+                                     const float downWay)
             {
-                const auto nearSide = ((1.0F - across) * placed[3])
-                                      + (across * placed[2]);
-                const auto farSide = ((1.0F - across) * placed[0])
-                                     + (across * placed[1]);
+                const auto nearSide =
+                    ((1.0F - acrossWay) * placedCorners[3])
+                    + (acrossWay * placedCorners[2]);
+                const auto farSide =
+                    ((1.0F - acrossWay) * placedCorners[0])
+                    + (acrossWay * placedCorners[1]);
 
-                return ((1.0F - down) * nearSide) + (down * farSide);
+                return ((1.0F - downWay) * nearSide)
+                       + (downWay * farSide);
             };
 
-            for (std::uint32_t down = 0; down < gridSide; ++down)
+            for (std::uint32_t downAt = 0; downAt < gridSide; ++downAt)
             {
-                for (std::uint32_t across = 0;
-                     across < gridSide;
-                     ++across)
+                for (std::uint32_t acrossAt = 0;
+                     acrossAt < gridSide;
+                     ++acrossAt)
                 {
-                    const auto acrossStation = kFaceGridWays[across];
-                    const auto downStation = kFaceGridWays[down];
+                    const auto acrossStation = kFaceGridWays[acrossAt];
+                    const auto downStation = kFaceGridWays[downAt];
 
-                    gfx::Vec3 sunk{0.0F, 0.0F, 0.0F};
+                    gfx::Vec3 sunkOffset{0.0F, 0.0F, 0.0F};
 
-                    if (beveled)
+                    if (bevelAllowed)
                     {
-                        constexpr auto last = gridSide - 1U;
+                        constexpr auto lastStation = gridSide - 1U;
                         const auto onAcrossEdge =
-                            across == 0U || across == last;
+                            acrossAt == 0U || acrossAt == lastStation;
                         const auto onDownEdge =
-                            down == 0U || down == last;
+                            downAt == 0U || downAt == lastStation;
                         const auto acrossCrossWay =
-                            across == 0U ? -acrossWorldWay
+                            acrossAt == 0U ? -acrossWorldWay
                                          : acrossWorldWay;
                         const auto downCrossWay =
-                            down == 0U ? -downWorldWay : downWorldWay;
+                            downAt == 0U ? -downWorldWay : downWorldWay;
 
                         const auto edgeSink =
                             [&](const int crossAxis,
@@ -398,14 +377,9 @@ namespace antwika::voxelmap
                                 return;
                             }
 
-                            // The two stations nearest an end sink
-                            // when the edge carries on into the
-                            // next cell or turns a fully open,
-                            // mitred corner; only a corner a block
-                            // rests against tapers back to sharp.
                             const auto nearLowEnd = alongAt <= 1U;
                             const auto nearHighEnd =
-                                alongAt + 1U >= last;
+                                alongAt + 1U >= lastStation;
                             const auto endWay =
                                 nearLowEnd ? -alongWorldWay
                                            : alongWorldWay;
@@ -422,7 +396,7 @@ namespace antwika::voxelmap
                                     alongAxis,
                                     endWay))
                             {
-                                sunk += sunkWayOf(crossAxis, crossWay);
+                                sunkOffset += sunkWayOf(crossAxis, crossWay);
                             }
                         };
 
@@ -440,7 +414,7 @@ namespace antwika::voxelmap
                                     downAxis,
                                     downCrossWay))
                             {
-                                sunk += sunkWayOf(
+                                sunkOffset += sunkWayOf(
                                     acrossAxis, acrossCrossWay);
                             }
                             else if (
@@ -451,7 +425,7 @@ namespace antwika::voxelmap
                                     acrossAxis,
                                     acrossCrossWay))
                             {
-                                sunk += sunkWayOf(
+                                sunkOffset += sunkWayOf(
                                     downAxis, downCrossWay);
                             }
                             else if (
@@ -462,20 +436,18 @@ namespace antwika::voxelmap
                                     downAxis,
                                     downCrossWay))
                             {
-                                // The corner sinks to where the
-                                // three chamfer planes cross, so
-                                // the bevels wrap the block's
-                                // corner as one mitred cut.
-                                gfx::Vec3 way{0.0F, 0.0F, 0.0F};
+                                gfx::Vec3 sinkDirection{
+                                    0.0F, 0.0F, 0.0F};
 
-                                way[heldAxis] =
+                                sinkDirection[heldAxis] =
                                     -static_cast<float>(heldWay);
-                                way[acrossAxis] = -static_cast<float>(
-                                    acrossCrossWay);
-                                way[downAxis] = -static_cast<float>(
-                                    downCrossWay);
+                                sinkDirection[acrossAxis] =
+                                    -static_cast<float>(acrossCrossWay);
+                                sinkDirection[downAxis] =
+                                    -static_cast<float>(downCrossWay);
 
-                                sunk += way * (kEdgeBevel * 0.5F);
+                                sunkOffset +=
+                                    sinkDirection * (kEdgeBevel * 0.5F);
                             }
                         }
                         else if (onAcrossEdge)
@@ -485,7 +457,7 @@ namespace antwika::voxelmap
                                 acrossCrossWay,
                                 downAxis,
                                 downWorldWay,
-                                down);
+                                downAt);
                         }
                         else if (onDownEdge)
                         {
@@ -494,7 +466,7 @@ namespace antwika::voxelmap
                                 downCrossWay,
                                 acrossAxis,
                                 acrossWorldWay,
-                                across);
+                                acrossAt);
                         }
                     }
 
@@ -502,7 +474,7 @@ namespace antwika::voxelmap
                         gfx::Vertex3D{
                             .position =
                                 pointAt(acrossStation, downStation)
-                                + sunk,
+                                + sunkOffset,
                             .normal = face.normal,
                             .texCoordinate =
                                 gfx::Vec2{
@@ -516,19 +488,19 @@ namespace antwika::voxelmap
                 }
             }
 
-            for (std::uint32_t down = 0; down + 1U < gridSide; ++down)
+            for (std::uint32_t downAt = 0; downAt + 1U < gridSide; ++downAt)
             {
-                for (std::uint32_t across = 0;
-                     across + 1U < gridSide;
-                     ++across)
+                for (std::uint32_t acrossAt = 0;
+                     acrossAt + 1U < gridSide;
+                     ++acrossAt)
                 {
-                    const auto below =
-                        first + (down * gridSide) + across;
-                    const auto above = below + gridSide;
+                    const auto belowVertex =
+                        first + (downAt * gridSide) + acrossAt;
+                    const auto aboveVertex = belowVertex + gridSide;
 
                     for (const std::uint32_t step :
-                         {above, above + 1U, below + 1U,
-                          above, below + 1U, below})
+                         {aboveVertex, aboveVertex + 1U, belowVertex + 1U,
+                          aboveVertex, belowVertex + 1U, belowVertex})
                     {
                         mesh.indices.push_back(step);
                     }

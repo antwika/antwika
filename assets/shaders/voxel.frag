@@ -331,7 +331,6 @@ void main()
         discard;
     }
 
-
     float glow =
         sprite ? 0.0 : clamp((1.0 - skin.a) * 2.55, 0.0, 1.0);
 

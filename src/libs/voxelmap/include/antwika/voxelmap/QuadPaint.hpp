@@ -23,9 +23,11 @@ namespace antwika::voxelmap
         gfx::Color color{
             .red = 255, .green = 255, .blue = 255, .alpha = 255};
 
-        // Whether the face's border band may sink into a bevel
-        // where its edges stand open to the air. Stays off for
-        // water, stairs and ramps, whose edges keep their corners.
+        /**
+         * @brief Whether the face's border band may sink into a bevel
+         * where its edges stand open to the air; stays off for water,
+         * stairs and ramps, whose edges keep their corners.
+         */
         bool beveled = false;
     };
 

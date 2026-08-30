@@ -304,8 +304,6 @@ namespace antwika::decor
             const auto climbs =
                 face.climbPosition.x != 0 || face.climbPosition.z != 0;
 
-            // The overlay bevels with the face beneath it, so decor
-            // is never left hanging over a sunken border band.
             voxelmap::addFaceQuads(
                 mesh,
                 voxels,

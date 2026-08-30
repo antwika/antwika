@@ -120,19 +120,23 @@ namespace antwika::voxelmap
 
     inline constexpr std::int32_t kMeshRegionSide = 16;
 
-    // The width of the border band a face folds into a bevel where
-    // an edge stands open to the air, in world units; the two faces
-    // meeting at the edge each fold half-way and meet as one flat
-    // 45-degree chamfer.
+    /**
+     * @brief The width of the border band a face folds into a bevel
+     * where an edge stands open to the air, in world units; the two
+     * faces meeting at the edge each fold half-way and meet as one
+     * flat 45-degree chamfer.
+     */
     inline constexpr float kEdgeBevel = 0.0625F;
 
-    // Every face quad is laid as a grid over these way stations, so
-    // the corner jitter in the voxel shader can bend an edge
-    // mid-span and the narrow border band can sink into a bevel.
-    // The stations must be dyadic and symmetric (each w alongside
-    // 1 - w): the blends are then exact, and a point two faces
-    // share lands on bit-identical spots that hash alike in the
-    // shader, keeping the wobbled mesh sealed.
+    /**
+     * @brief Every face quad is laid as a grid over these way
+     * stations, so the corner jitter in the voxel shader can bend an
+     * edge mid-span and the narrow border band can sink into a bevel.
+     * The stations must be dyadic and symmetric (each w alongside
+     * 1 - w): the blends are then exact, and a point two faces share
+     * lands on bit-identical spots that hash alike in the shader,
+     * keeping the wobbled mesh sealed.
+     */
     inline constexpr std::array<float, 5> kFaceGridWays{
         0.0F, kEdgeBevel, 0.5F, 1.0F - kEdgeBevel, 1.0F};
 
