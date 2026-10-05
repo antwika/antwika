@@ -57,7 +57,7 @@ class AntwikaConan(ConanFile):
         self.requires("nlohmann_json/3.12.0", override=True)
         self.requires("json-schema-validator/2.4.0")
 
-        self.requires("stb/cci.20240531")
+        self.requires("stb/cci.20220909")
 
         self.requires("glm/1.0.1")
 
